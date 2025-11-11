@@ -24,6 +24,7 @@ interface LandingPagePreviewDialogProps {
   onOpenChange: (open: boolean) => void;
   productId: string;
   productTitle: string;
+  productHandle: string;
   currentLandingPage?: string;
 }
 
@@ -32,9 +33,11 @@ export function LandingPagePreviewDialog({
   onOpenChange,
   productId,
   productTitle,
+  productHandle,
   currentLandingPage,
 }: LandingPagePreviewDialogProps) {
   const [selectedVersion, setSelectedVersion] = useState<LandingPageVersion | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch version history
@@ -64,6 +67,35 @@ export function LandingPagePreviewDialog({
       setSelectedVersion(null);
     }
   }, [open, versions, selectedVersion]);
+
+  // Sync to Shopify mutation
+  const syncMutation = useMutation({
+    mutationFn: async (htmlContent: string) => {
+      setIsSyncing(true);
+      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
+        body: {
+          productId,
+          productTitle,
+          productHandle,
+          htmlContent,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Landing page synchronisée avec Shopify", {
+        description: data.productUrl ? `Lien: ${data.productUrl}` : undefined,
+      });
+      setIsSyncing(false);
+    },
+    onError: (error) => {
+      console.error("Sync error:", error);
+      toast.error("Erreur lors de la synchronisation");
+      setIsSyncing(false);
+    },
+  });
 
   // Restore version mutation
   const restoreMutation = useMutation({
@@ -111,28 +143,86 @@ export function LandingPagePreviewDialog({
   };
 
   const previewHtml = selectedVersion?.landing_page_html || currentLandingPage || "";
+  const latestVersion = versions?.[0];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh]`}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Landing Page - {productTitle}
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Landing Page - {productTitle}
+            </div>
+            {latestVersion && (
+              <Button
+                onClick={() => syncMutation.mutate(latestVersion.landing_page_html)}
+                disabled={isSyncing}
+                className="ml-4"
+              >
+                {isSyncing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Synchronisation...
+                  </>
+                ) : (
+                  "Synchroniser avec Shopify"
+                )}
+              </Button>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Prévisualisez et gérez les versions de votre landing page
+            {latestVersion 
+              ? `Version actuelle: ${latestVersion.version_number} - ${format(new Date(latestVersion.created_at), "dd MMM yyyy 'à' HH:mm", { locale: fr })}`
+              : "Prévisualisez et gérez les versions de votre landing page"
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(90vh-180px)]">
-          {/* Version History Sidebar */}
-          <div className="lg:col-span-1 border rounded-lg p-4">
+        <div className="space-y-4 h-[calc(90vh-200px)]">
+          {/* Preview Panel */}
+          <div className="border rounded-lg overflow-hidden flex-1 min-h-[400px]">
+            <div className="bg-muted/50 p-2 border-b flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedVersion ? `Version ${selectedVersion.version_number}` : "Aperçu actuel"}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (previewHtml) {
+                    const blob = new Blob([previewHtml], { type: "text/html" });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  }
+                }}
+              >
+                Ouvrir dans un nouvel onglet
+              </Button>
+            </div>
+            <ScrollArea className="h-[400px]">
+              {previewHtml ? (
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full min-h-[400px] border-0"
+                  sandbox="allow-same-origin allow-scripts"
+                  title="Landing Page Preview"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>Aucune landing page disponible</p>
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+
+          {/* Version History List */}
+          <div className="border rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Historique des versions
             </h3>
-            <ScrollArea className="h-[calc(100%-40px)]">
+            <ScrollArea className="h-[200px]">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -189,7 +279,7 @@ export function LandingPagePreviewDialog({
                             ) : (
                               <RotateCcw className="h-3 w-3 mr-1" />
                             )}
-                            Restaurer
+                            Appliquer cette version
                           </Button>
                         )}
                       </div>
@@ -202,42 +292,6 @@ export function LandingPagePreviewDialog({
                   <p className="text-xs mt-2">
                     Les versions sont créées automatiquement lors de la génération
                   </p>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="lg:col-span-2 border rounded-lg overflow-hidden">
-            <div className="bg-muted/50 p-2 border-b flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedVersion ? `Version ${selectedVersion.version_number}` : "Aperçu actuel"}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (previewHtml) {
-                    const blob = new Blob([previewHtml], { type: "text/html" });
-                    const url = URL.createObjectURL(blob);
-                    window.open(url, "_blank");
-                  }
-                }}
-              >
-                Ouvrir dans un nouvel onglet
-              </Button>
-            </div>
-            <ScrollArea className="h-[calc(100%-50px)]">
-              {previewHtml ? (
-                <iframe
-                  srcDoc={previewHtml}
-                  className="w-full min-h-[600px] border-0"
-                  sandbox="allow-same-origin allow-scripts"
-                  title="Landing Page Preview"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>Aucune landing page disponible</p>
                 </div>
               )}
             </ScrollArea>

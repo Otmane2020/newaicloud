@@ -25,6 +25,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
+import { LandingPagePreviewDialog } from "@/components/seo/LandingPagePreviewDialog";
 import {
   Pagination,
   PaginationContent,
@@ -72,6 +73,7 @@ interface Product {
   image_url: string | null;
   shopify_id: number | null;
   vendor: string | null;
+  handle: string | null;
 }
 
 interface ProductImage {
@@ -178,7 +180,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor")
+        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -316,7 +318,7 @@ export default function ProductTitleDescription() {
         // Update local state - Fetch fresh data from DB
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor")
+          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle")
           .eq("id", productId)
           .single();
 
@@ -1734,6 +1736,15 @@ export default function ProductTitleDescription() {
           refreshLimits();
           setShowUpgradeDialog(false);
         }}
+      />
+
+      <LandingPagePreviewDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        productId={previewProduct?.id || ""}
+        productTitle={previewProduct?.title || ""}
+        productHandle={previewProduct?.handle || ""}
+        currentLandingPage={previewProduct?.landing_page || ""}
       />
     </div>
   );
