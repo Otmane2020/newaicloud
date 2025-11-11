@@ -98,33 +98,48 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // ⚡ Ultra-fast parallel queries with aggressive timeout
+    // ⚡ Ultra-fast parallel queries with 5s timeout and fallback
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    console.log('[LIMITS] Starting parallel queries...');
+    console.log('[LIMITS] Starting parallel queries with timeout...');
 
-    // Fetch profile AND usage data in parallel with 3s timeout
-    const [profileResult, usageResult] = await Promise.all([
-      supabaseAdmin
-        .from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at')
-        .eq('id', user.id)
-        .single()
-        .then(res => ({ data: res.data, error: res.error }))
-        .catch(err => ({ data: null, error: err })),
-      
-      supabaseAdmin
-        .from('usage_tracking')
-        .select('*')
-        .eq('seller_id', user.id)
-        .eq('month', monthKey)
-        .maybeSingle()
-        .then(res => ({ data: res.data, error: res.error }))
-        .catch(err => ({ data: null, error: err }))
-    ]);
+    // Timeout wrapper - 5 seconds max
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('QUERY_TIMEOUT')), 5000)
+    );
+
+    // Fetch profile AND usage data in parallel with timeout
+    const [profileResult, usageResult] = await Promise.race([
+      Promise.all([
+        supabaseAdmin
+          .from('profiles')
+          .select('subscription_status, current_plan_id, trial_ends_at')
+          .eq('id', user.id)
+          .single()
+          .then(res => ({ data: res.data, error: res.error }))
+          .catch(err => ({ data: null, error: err })),
+        
+        supabaseAdmin
+          .from('usage_tracking')
+          .select('*')
+          .eq('seller_id', user.id)
+          .eq('month', monthKey)
+          .maybeSingle()
+          .then(res => ({ data: res.data, error: res.error }))
+          .catch(err => ({ data: null, error: err }))
+      ]),
+      timeoutPromise
+    ]).catch((err) => {
+      // Timeout occurred - return safe defaults
+      console.error('[LIMITS] Query timeout - returning safe defaults');
+      return [
+        { data: { subscription_status: 'trialing', current_plan_id: null, trial_ends_at: null }, error: null },
+        { data: null, error: null }
+      ];
+    });
 
     const profile = profileResult.data;
     const profileError = profileResult.error;
