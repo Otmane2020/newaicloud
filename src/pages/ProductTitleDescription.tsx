@@ -311,7 +311,7 @@ export default function ProductTitleDescription() {
           throw error;
         }
 
-        // Update local state
+        // Update local state - Fetch fresh data from DB
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
           .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor")
@@ -347,39 +347,33 @@ export default function ProductTitleDescription() {
               if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
                 console.log("✅ HTML landing page généré (10 optimisations consommées)");
                 
-                // Save HTML to shopify_products.landing_page instead of description
-                await supabase
+                // Save HTML to shopify_products.landing_page
+                const { error: updateError } = await supabase
                   .from("shopify_products")
                   .update({ landing_page: htmlData.htmlLandingPage })
                   .eq("id", productId);
                 
-                // Update local product with HTML in landing_page
-                updatedProduct.landing_page = htmlData.htmlLandingPage;
+                if (!updateError) {
+                  // Update local product with HTML in landing_page
+                  updatedProduct.landing_page = htmlData.htmlLandingPage;
+                }
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
-                // Don't block the process, continue with SEO only
               }
             } catch (htmlErr) {
               console.error("❌ Erreur génération HTML:", htmlErr);
-              // Don't block the process, continue with SEO only
             }
           } else {
             console.log("✅ HTML déjà présent, pas de régénération");
           }
 
-          // Update optimizedProducts progressively
+          // Update optimizedProducts progressively with fresh data
           setOptimizedProducts((prev) => [...prev, updatedProduct]);
+          
+          // Force update products state with fresh data including landing_page
           setProducts((prev) =>
             prev.map((p) =>
-              p.id === productId
-                ? { 
-                    ...p, 
-                    seo_title: updatedProduct.seo_title, 
-                    seo_description: updatedProduct.seo_description,
-                    description: updatedProduct.description,
-                    landing_page: updatedProduct.landing_page
-                  }
-                : p
+              p.id === productId ? updatedProduct : p
             )
           );
         }
