@@ -1335,7 +1335,16 @@ export default function ProductTitleDescription() {
                           const toastId = toast.loading("Mise à jour du statut...");
                           
                           try {
+                            // Get current session to pass auth token
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session) {
+                              throw new Error("Session non trouvée");
+                            }
+
                             const { data, error } = await supabase.functions.invoke('update-product-status', {
+                              headers: {
+                                Authorization: `Bearer ${session.access_token}`
+                              },
                               body: {
                                 productId: product.id,
                                 shopifyId: product.shopify_id,
