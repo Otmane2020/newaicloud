@@ -11,20 +11,37 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    console.log('[UPDATE-STATUS] Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      console.error('[UPDATE-STATUS] No authorization header found');
+      throw new Error('No authorization header');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError) {
+      console.error('[UPDATE-STATUS] Auth error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+    
     if (!user) {
+      console.error('[UPDATE-STATUS] No user found after auth');
       throw new Error('Unauthorized');
     }
+    
+    console.log('[UPDATE-STATUS] User authenticated:', user.id);
 
     const { productId, shopifyId, storeId, newStatus } = await req.json();
 
