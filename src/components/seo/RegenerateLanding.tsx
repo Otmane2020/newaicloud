@@ -261,7 +261,7 @@ export default function RegenerateLanding({
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
-          style: config.style,
+          designStyle: config.designStyle || 'modern',
           mainColor:
             typeof config.colorScheme === "string" ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
           colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
@@ -271,7 +271,6 @@ export default function RegenerateLanding({
           imageAnalysis: imageAnalysis,
           contentLengthParams: contentParams,
           language: language,
-          designStyle: config.designStyle || 'modern', // Pass design style
         },
       });
 

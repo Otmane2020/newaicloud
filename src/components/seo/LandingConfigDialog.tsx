@@ -26,13 +26,12 @@ export interface ColorScheme {
 }
 
 export interface LandingConfig {
-  style: string;
   layout: string;
   colorScheme: ColorScheme;
   contentLength: string;
   vendorSource: "shopify" | "extract" | "generate";
-  customHighlights?: string; // Texte libre pour highlights personnalisés
-  designStyle?: 'minimalist' | 'modern' | 'premium'; // Nouveau: modèle de design
+  customHighlights?: string;
+  designStyle: 'minimalist' | 'modern' | 'premium';
 }
 
 interface LandingConfigDialogProps {
@@ -42,15 +41,6 @@ interface LandingConfigDialogProps {
   productTitle?: string;
 }
 
-// Predefined visual styles
-const VISUAL_STYLES = [
-  { id: "moderne", name: "Moderne", icon: "✨", color: "from-blue-500 to-purple-500" },
-  { id: "minimaliste", name: "Minimaliste", icon: "⚪", color: "from-gray-400 to-gray-600" },
-  { id: "scandinave", name: "Scandinave", icon: "🌲", color: "from-green-400 to-blue-400" },
-  { id: "premium", name: "Premium", icon: "👑", color: "from-yellow-500 to-orange-500" },
-  { id: "neutre", name: "Neutre", icon: "⬜", color: "from-gray-300 to-gray-400" },
-  { id: "coloré", name: "Coloré", icon: "🎨", color: "from-pink-500 to-red-500" },
-];
 
 // Layout previews
 const LAYOUT_PREVIEWS = [
@@ -152,7 +142,6 @@ const STORAGE_KEY = "landing-config-preferences";
 export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitle }: LandingConfigDialogProps) {
   const { t } = useTranslation();
   const [config, setConfig] = useState<LandingConfig>({
-    style: "moderne",
     layout: "2 colonnes",
     colorScheme: {
       paletteId: "modern",
@@ -166,26 +155,11 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     contentLength: "moyenne (800 mots)",
     vendorSource: "shopify",
     customHighlights: "",
-    designStyle: "modern", // Default design style
+    designStyle: "modern",
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
   const [useCustomColor, setUseCustomColor] = useState(false);
-
-  // Predefined visual styles
-  const VISUAL_STYLES = [
-    { id: "moderne", name: t.landingConfig.visualStyle.modern, icon: "✨", color: "from-blue-500 to-purple-500" },
-    { id: "minimaliste", name: t.landingConfig.visualStyle.minimalist, icon: "⚪", color: "from-gray-400 to-gray-600" },
-    {
-      id: "scandinave",
-      name: t.landingConfig.visualStyle.scandinavian,
-      icon: "🌲",
-      color: "from-green-400 to-blue-400",
-    },
-    { id: "premium", name: t.landingConfig.visualStyle.premium, icon: "👑", color: "from-yellow-500 to-orange-500" },
-    { id: "neutre", name: t.landingConfig.visualStyle.neutral, icon: "⬜", color: "from-gray-300 to-gray-400" },
-    { id: "coloré", name: t.landingConfig.visualStyle.colorful, icon: "🎨", color: "from-pink-500 to-red-500" },
-  ];
 
   // Layout previews
   const LAYOUT_PREVIEWS = [
@@ -347,37 +321,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         </DialogHeader>
 
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
-          {/* Style visuel */}
-          <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎨 {t.landingConfig.visualStyle.title}</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {VISUAL_STYLES.map((style, index) => (
-                <button
-                  key={style.id}
-                  type="button"
-                  onClick={() => setConfig({ ...config, style: style.id })}
-                  className={`p-3 rounded-lg border-2 transition-all duration-300 hover:scale-105 ${
-                    config.style === style.id
-                      ? "border-primary bg-primary/10 scale-105"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div
-                    className={`text-3xl mb-1 bg-gradient-to-br ${style.color} bg-clip-text text-transparent transition-transform duration-300`}
-                  >
-                    {style.icon}
-                  </div>
-                  <p className="text-xs font-semibold">{style.name}</p>
-                  {config.style === style.id && (
-                    <Check className="w-3 h-3 text-primary mx-auto mt-1 animate-scale-in" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Modèle de design (Nouveau) */}
+          {/* Modèle de design */}
           <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎯 Modèle de design</Label>
             <div className="grid grid-cols-3 gap-4">
