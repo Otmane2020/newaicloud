@@ -1838,25 +1838,21 @@ export default function ProductTitleDescription() {
               autoGenerate={true}
               onGenerated={async (html) => {
                 console.log('Generated HTML:', html.substring(0, 100));
-                // Rafraîchir la liste des produits pour afficher la nouvelle landing page
-                await fetchProducts();
                 
-                // Mettre à jour previewProduct avec les données fraîches
-                const { data: updatedProduct } = await supabase
-                  .from("shopify_products")
-                  .select("*")
-                  .eq("id", selectedLandingProduct.id)
-                  .single();
+                // Mettre à jour directement le produit avec le HTML généré (évite double aperçu)
+                const updatedProduct = {
+                  ...selectedLandingProduct,
+                  landing_page: html
+                };
                 
-                if (updatedProduct) {
-                  // Fermer le dialog de génération et ouvrir le preview
-                  setShowLandingDialog(false);
-                  setPreviewProduct(updatedProduct);
-                  setShowPreviewDialog(true);
-                }
+                // Fermer le dialog de génération et ouvrir le preview immédiatement
+                setShowLandingDialog(false);
+                setPreviewProduct(updatedProduct);
+                setShowPreviewDialog(true);
                 
-                // Rafraîchir les limites d'utilisation
-                await refreshLimits();
+                // Rafraîchir en arrière-plan (sans bloquer l'aperçu)
+                fetchProducts();
+                refreshLimits();
               }}
               onClose={() => setShowLandingDialog(false)}
             />
