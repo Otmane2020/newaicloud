@@ -19,25 +19,19 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header');
     }
 
-    // Extract JWT token from Bearer header
-    const token = authHeader.replace('Bearer ', '');
-    console.log('[UPDATE-STATUS] Token extracted:', token.substring(0, 20) + '...');
-
-    const supabaseClient = createClient(
+    // Create admin client to verify JWT
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get user using the JWT token directly
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    // Verify the JWT and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
     
-    if (authError) {
+    if (authError || !user) {
       console.error('[UPDATE-STATUS] Auth error:', authError);
-      throw new Error(`Authentication failed: ${authError.message}`);
-    }
-    
-    if (!user) {
-      console.error('[UPDATE-STATUS] No user found after auth');
       throw new Error('Unauthorized');
     }
     
@@ -52,7 +46,7 @@ Deno.serve(async (req) => {
     console.log('Updating product status:', { productId, shopifyId, storeId, newStatus });
 
     // Get store connection
-    const { data: connection, error: connError } = await supabaseClient
+    const { data: connection, error: connError } = await supabaseAdmin
       .from('shopify_connections')
       .select('store_url, access_token')
       .eq('id', storeId)
@@ -88,7 +82,7 @@ Deno.serve(async (req) => {
     }
 
     // Update local database
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await supabaseAdmin
       .from('shopify_products')
       .update({ status: newStatus })
       .eq('id', productId)
