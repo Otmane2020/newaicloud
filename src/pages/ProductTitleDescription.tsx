@@ -83,8 +83,25 @@ interface ProductImage {
 
 // Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
-  return !!((product.landing_page && product.landing_page.includes('<h1')) || 
-            (product.description && product.description.includes('<h1')));
+  // Check landing_page first (AI-generated content)
+  if (product.landing_page) {
+    const hasHtmlTags = product.landing_page.includes('<div') || 
+                        product.landing_page.includes('<section') || 
+                        product.landing_page.includes('<h1') ||
+                        product.landing_page.includes('<article') ||
+                        product.landing_page.length > 500; // Long content is likely HTML
+    if (hasHtmlTags) return true;
+  }
+  
+  // Fallback to description
+  if (product.description) {
+    return product.description.includes('<div') || 
+           product.description.includes('<section') || 
+           product.description.includes('<h1') ||
+           product.description.includes('<article');
+  }
+  
+  return false;
 };
 
 interface PreviewImage {
