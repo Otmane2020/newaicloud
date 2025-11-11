@@ -729,9 +729,11 @@ ${selectedStyle.rules}
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
 - Use one breakpoint per property (✅ class="text-lg md:text-2xl")
 
-🎯 ICON TEMPLATE TO USE FOR LIST ITEMS:
+🎯 ICON TEMPLATE TO USE FOR LIST ITEMS (MANDATORY):
 ${selectedIcon}
-Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si multiple icônes (iconGrad1, iconGrad2, etc.)
+🚨 CRITICAL: Use this EXACT structure for ALL list items. 
+🚨 CRITICAL: Adapt gradient IDs to be unique (iconGrad1, iconGrad2, etc.)
+🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
 
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:
@@ -778,23 +780,46 @@ STRUCTURE:
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎨 PROFESSIONAL SVG ICONS (CRITICAL):
-- Use inline SVG with gradient fills for premium look
-- Apply theme colors (primary, secondary, accent) with HSL values
-- Add subtle shadows and glows for depth
-- Example structure:
-  <svg class="w-16 h-16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+🎨 PROFESSIONAL SVG ICONS (CRITICAL - MANDATORY):
+- ✅ REQUIRED: Use inline SVG with gradient fills for ALL list items
+- ✅ REQUIRED: Apply theme colors (primary, accent) with HSL values
+- ✅ REQUIRED: Add elegant checkmark icons for bullet points
+- 
+- 📋 MANDATORY SVG ICON TEMPLATE FOR LISTS:
+  ${selectedIcon}
+  
+- 🎯 EXAMPLE FOR EACH LIST ITEM:
+  <div class="flex items-start gap-3 mb-4">
+    <svg class="w-6 h-6 flex-shrink-0 mt-1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+          <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="url(#checkGrad)" opacity="0.15"/>
+      <path d="M7 12l3 3 7-7" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h4 class="font-semibold mb-1">Benefit Title</h4>
+      <p class="text-muted-foreground">Benefit description...</p>
+    </div>
+  </div>
+
+- 🎨 FOR FEATURE CARDS, USE LARGER ICONS:
+  <svg class="w-16 h-16 mx-auto mb-4" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="cardIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
         <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
       </linearGradient>
     </defs>
-    <circle cx="32" cy="32" r="28" fill="url(#iconGrad)" opacity="0.2"/>
-    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="32" cy="32" r="28" fill="url(#cardIconGrad)" opacity="0.2"/>
+    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
-- For list items, use elegant checkmark or star icons with theme colors
-- Add hover effects: transform hover:scale-110 transition-transform duration-300
+
+- 🚨 CRITICAL: Use UNIQUE gradient IDs for each icon (checkGrad1, checkGrad2, cardIcon1, etc.)
+- 🚨 CRITICAL: ALWAYS include the SVG icons - they are NOT optional
 
 🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
 - NO "Add to Cart" buttons or any purchase buttons
@@ -807,11 +832,15 @@ STRUCTURE:
 ✅ REQUIRED SECTIONS:
 Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
 
-ICONS USAGE:
-- Use simple SVG checkmark icons ONLY for bullet lists
-- ONE checkmark icon per list item
-- Example: <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-- NO decorative icons elsewhere`
+ICONS USAGE (MANDATORY):
+🚨 CRITICAL: SVG icons are REQUIRED, not optional!
+- ✅ Use SVG checkmark/star icons for EVERY bullet list item
+- ✅ Use gradient fills with theme colors (primary + accent)
+- ✅ Each icon needs unique gradient ID (grad1, grad2, etc.)
+- ✅ Example template is provided above - USE IT
+- ❌ NO simple text bullets (-, *, •)
+- ❌ NO emoji icons (✓, ★, ✔)
+- ❌ NO decorative icons elsewhere`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle.
 
