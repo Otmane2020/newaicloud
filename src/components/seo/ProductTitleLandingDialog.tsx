@@ -18,7 +18,6 @@ interface Product {
   id: string;
   title: string;
   description?: string | null;
-  landing_page?: string | null;
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
@@ -73,31 +72,16 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
-// Generate rich HTML preview from product landing_page or description fallback
+// Generate rich HTML preview from product description or fallback to simple version
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
-  // CRITICAL: Use landing_page first (AI-generated), then fallback to description
-  const htmlDescription = product.landing_page || product.description || "";
+  const htmlDescription = product.description || "";
   const imageUrl = product.image_url || "";
 
-  // If we have rich HTML content (landing page or description), use it directly
-  const hasRichHtml = htmlDescription && (
-    htmlDescription.includes("<div") || 
-    htmlDescription.includes("<section") ||
-    htmlDescription.includes("<article") ||
-    htmlDescription.includes("<!DOCTYPE") ||
-    htmlDescription.includes("<html") ||
-    htmlDescription.length > 1000 // Long content is likely full HTML
-  );
-
-  if (hasRichHtml) {
-    // If it's a complete HTML document, return it as-is
-    if (htmlDescription.includes("<!DOCTYPE") || htmlDescription.includes("<html")) {
-      return htmlDescription;
-    }
-    
-    // Otherwise, wrap in a container for consistent styling
+  // If we have a rich HTML description in the description field, use it directly
+  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
+    // Wrap in a container for consistent styling
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         ${htmlDescription}
