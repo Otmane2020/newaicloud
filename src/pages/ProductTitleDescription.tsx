@@ -824,7 +824,7 @@ export default function ProductTitleDescription() {
               productId: product.id,
               productTitle: product.title,
               productHandle: productData.handle,
-              htmlContent: product.description || '', // The HTML landing page content
+              htmlContent: product.landing_page || product.description || '', // Use landing_page first
             }
           });
 
@@ -1318,7 +1318,7 @@ export default function ProductTitleDescription() {
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => {
                                 if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
                                   setOptimizedProducts([product]);
@@ -1327,8 +1327,12 @@ export default function ProductTitleDescription() {
                                   toast.error(t.contentOptimization.toasts.notOptimizedYet);
                                 }
                               }}
+                              className="h-8 gap-2"
                             >
                               <Eye className="h-4 w-4" />
+                              {hasRichHtmlDescription(product) && (
+                                <span className="text-xs">generated landing page</span>
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
