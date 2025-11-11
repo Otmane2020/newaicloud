@@ -44,6 +44,14 @@ export function LandingPagePreviewDialog({
   const { data: versions, isLoading, error: historyError } = useQuery<LandingPageVersion[]>({
     queryKey: ["landing-page-history", productId],
     queryFn: async () => {
+      // Vérifier que l'utilisateur est authentifié avant de charger
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("No active session, skipping history load");
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("landing_page_history")
         .select("*")
@@ -52,12 +60,17 @@ export function LandingPagePreviewDialog({
 
       if (error) {
         console.error("Error loading history:", error);
+        // Si erreur d'auth, retourner tableau vide au lieu de throw
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          console.log("Authentication error, returning empty array");
+          return [];
+        }
         throw error;
       }
       return data as LandingPageVersion[];
     },
     enabled: open && !!productId,
-    retry: 1,
+    retry: 0, // Ne pas réessayer sur erreur d'auth
   });
 
   // Show error toast if history fails to load and no current landing page
