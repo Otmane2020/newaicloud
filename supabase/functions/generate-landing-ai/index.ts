@@ -581,99 +581,186 @@ serve(async (req) => {
     // Build product URLs
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
 
-    // Design style templates
+    // Design style templates - DISTINCT VISUAL IDENTITIES
     const styleTemplates = {
       minimalist: {
-        name: "Minimaliste",
-        description: "Lignes épurées, espaces blancs généreux, typographie claire",
+        name: "MINIMALISTE - Épuré et Zen",
+        description: "ULTRA-MINIMAL: Espaces blancs massifs, typographie géante, palette monochrome",
         rules: `
-🎨 STYLE MINIMALISTE (CRITIQUE) :
-- Palette : Noir/Blanc/Gris avec un accent de couleur unique
-- Typographie : Grandes tailles, police sans-serif, espacement généreux
-- Espaces : Padding/margin généreux (py-16, py-20, space-y-12)
-- Ombres : Minimales ou absentes (shadow-sm uniquement)
-- Bordures : Fines et discrètes (border border-gray-200)
-- Images : Pleine largeur, sans effets
-- Icônes : Traits fins (stroke-width="1.5"), monochromes
-- Layout : Maximum 2 colonnes sur desktop, beaucoup d'espace vertical
-- Animations : Aucune ou très subtiles
+🎨 STYLE MINIMALISTE (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - MONOCHROME:
+- ❌ PAS de dégradés colorés
+- ✅ Noir + Blanc + 1 seul accent de couleur (primary)
+- Background: Blanc pur ou gris très clair (bg-white, bg-gray-50)
+- Texte: Noir intense (text-gray-900)
+
+TYPOGRAPHIE - GÉANTE ET AÉRÉE:
+- Titres H1: text-5xl md:text-7xl lg:text-8xl (ÉNORME)
+- Titres sections: text-4xl md:text-5xl
+- Line-height: leading-tight, letterspacing: tracking-tight
+- Font-weight: 300 (léger) ou 700 (bold), jamais moyen
+
+ESPACES - MASSIFS:
+- Sections: py-24 md:py-32 lg:py-40 (TRÈS GÉNÉREUX)
+- Entre éléments: space-y-16 md:space-y-20
+- Containers: max-w-4xl (ÉTROIT pour focus)
+
+ÉLÉMENTS VISUELS - MINIMALISTES:
+- ❌ AUCUNE ombre (pas de shadow)
+- ❌ AUCUN arrondi (angles droits, sharp corners)
+- Bordures: border border-gray-200 (fines et discrètes)
+- Images: Pleine largeur, aucun effet, aspect-video ou aspect-square
+
+ICÔNES - ULTRA-SIMPLES:
+- Taille: w-5 h-5 (PETIT et discret)
+- Style: Traits fins (stroke-width="1.5")
+- Couleur: Monochrome (noir ou primary)
+- ❌ PAS de dégradés, PAS de remplissage
+
+LAYOUT - LINÉAIRE:
+- 1 seule colonne principale
+- Maximum 2 colonnes sur desktop (grid-cols-1 md:grid-cols-2)
+- Alignement: Centré, symétrique
+- ❌ PAS d'asymétrie
 `,
       },
       
       modern: {
-        name: "Moderne",
-        description: "Dégradés, ombres douces, micro-animations, design équilibré",
+        name: "MODERNE - Équilibré et Dynamique",
+        description: "DESIGN 2024: Dégradés subtils, cartes flottantes, animations douces",
         rules: `
-🎨 STYLE MODERNE (CRITIQUE) :
-- Palette : Couleurs vives avec dégradés subtils
-- Typographie : Mix de weights (300-800), hiérarchie claire
-- Espaces : Équilibrés (py-12 md:py-16)
-- Ombres : Progressives (shadow-md, shadow-lg, shadow-xl)
-- Bordures : Arrondies (rounded-xl, rounded-2xl)
-- Images : Coins arrondis, ombres portées
-- Icônes : Dégradés, ombres colorées, épaisseur moyenne (stroke-width="2")
-- Layout : Grilles 3 colonnes, asymétrie contrôlée
-- Animations : Hover effects, transitions smooth (transition-all duration-300)
+🎨 STYLE MODERNE (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - VIBRANTE:
+- ✅ Dégradés subtils partout (primary → accent)
+- ✅ 2-3 couleurs vives bien équilibrées
+- Background: Blanc/gris avec touches colorées
+- Sections alternées: bg-white / bg-gray-50
+
+TYPOGRAPHIE - ÉQUILIBRÉE:
+- Titres H1: text-4xl md:text-6xl (GRAND mais pas géant)
+- Mix de font-weights: 300 (light), 500 (medium), 700 (bold)
+- Line-height: leading-snug
+- Contraste weight entre titres et texte
+
+ESPACES - HARMONIEUX:
+- Sections: py-16 md:py-24 (équilibré)
+- Entre éléments: space-y-8 md:space-y-12
+- Containers: max-w-7xl (standard large)
+
+ÉLÉMENTS VISUELS - CARTES FLOTTANTES:
+- ✅ Ombres progressives: shadow-md hover:shadow-xl
+- ✅ Bordures arrondies: rounded-xl, rounded-2xl
+- Cartes: bg-white p-6 rounded-2xl shadow-lg
+- Images: rounded-xl avec shadow-md
+
+ICÔNES - DÉGRADÉS ÉLÉGANTS:
+- Taille: w-8 h-8 (taille moyenne, bien visible)
+- Style: Dégradés (primary → accent)
+- Background: Cercle avec opacity 0.15
+- Stroke: stroke-width="2" (épaisseur moyenne)
+- ✅ Effets hover: scale-110 transition
+
+LAYOUT - GRILLES MODERNES:
+- 3 colonnes sur desktop (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+- Asymétrie légère (images alternées)
+- Grid gap: gap-6 md:gap-8
 `,
       },
       
       premium: {
-        name: "Premium",
-        description: "Luxe, sophistication, détails raffinés, effets visuels riches",
+        name: "PREMIUM - Luxueux et Sophistiqué",
+        description: "ULTRA-LUXE: Backgrounds sombres, or/argent, typographie serif, effets riches",
         rules: `
-🎨 STYLE PREMIUM (CRITIQUE) :
-- Palette : Sombres sophistiqués (noirs, gris foncés) avec accents or/argent
-- Typographie : Serif pour titres, letterspacing large, sizes XXL
-- Espaces : Très généreux (py-20 md:py-32, space-y-16)
-- Ombres : Multiples, profondes (shadow-2xl, drop-shadow-2xl)
-- Bordures : Très arrondies (rounded-3xl) ou angles vifs selon contexte
-- Images : Effets de profondeur, overlays subtils, cadres élégants
-- Icônes : Dégradés complexes, effets de brillance, animations subtiles
-- Layout : Asymétrique créatif, overlaps élégants, z-index layers
-- Animations : Subtiles mais présentes (parallax hints, fade-ins)
-- Textures : Patterns subtils en background
+🎨 STYLE PREMIUM (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - SOPHISTIQUÉE SOMBRE:
+- ✅ Background SOMBRE: bg-gray-900, bg-slate-900
+- ✅ Accents métalliques: or (#D4AF37 converti en HSL), argent
+- ✅ Dégradés complexes multi-stops
+- Texte sur fond sombre: text-gray-100, text-white
+
+TYPOGRAPHIE - LUXUEUSE SERIF:
+- ✅ Serif pour les titres: font-serif tracking-wide
+- Titres H1: text-5xl md:text-7xl lg:text-9xl (GIGANTESQUE)
+- Letterspacing: tracking-wide, tracking-wider
+- Font-weight: 300 (ultra-light) ou 800 (extra-bold)
+
+ESPACES - TRÈS GÉNÉREUX:
+- Sections: py-24 md:py-36 lg:py-48 (MAXIMUM espace)
+- Entre éléments: space-y-16 md:space-y-24
+- Containers: max-w-7xl avec beaucoup de breathing room
+
+ÉLÉMENTS VISUELS - PROFONDEUR RICHE:
+- ✅ Ombres profondes multiples: shadow-2xl, drop-shadow-2xl
+- ✅ Bordures très arrondies: rounded-3xl, rounded-full
+- ✅ Overlays subtils: backdrop-blur, gradient overlays
+- Images: Cadres élégants, effets de profondeur
+
+ICÔNES - COMPLEXES ET BRILLANTES:
+- Taille: w-12 h-12 lg:w-16 lg:h-16 (GRANDES et imposantes)
+- Style: Dégradés 3+ couleurs avec effet glow
+- Filters: feGaussianBlur pour effet lumineux
+- Strokes: stroke-width="3" (épais)
+- ✅ Effets brillance: multiple layers, opacity variations
+
+LAYOUT - CRÉATIF ASYMÉTRIQUE:
+- Overlaps créatifs (z-index layers)
+- Asymétrie contrôlée
+- Grid cols variées: grid-cols-2 lg:grid-cols-5
+- Effets parallax hints
+- Sections alternées sombres/claires
 `,
       },
     };
 
-    // Icon templates by style
+    // Icon templates by style - CLEARLY DIFFERENTIATED
     const iconTemplates = {
       minimalist: `
-  <svg class="w-6 h-6" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24">
+  <!-- MINIMALIST: Simple stroke, no fill, monochrome -->
+  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" style="color: hsl(${designTokens.text})" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path>
   </svg>`,
       
       modern: `
-  <svg class="w-8 h-8" viewBox="0 0 32 32">
+  <!-- MODERN: Gradient circle + check, clean & balanced -->
+  <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="modernGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="modernCheckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
         <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
       </linearGradient>
     </defs>
-    <circle cx="16" cy="16" r="14" fill="url(#modernGrad)" opacity="0.15"/>
-    <path d="M10 16 L14 20 L22 12" stroke="url(#modernGrad)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="16" cy="16" r="14" fill="url(#modernCheckGrad)" opacity="0.12"/>
+    <path d="M10 16 L14 20 L22 12" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
       
       premium: `
-  <svg class="w-12 h-12" viewBox="0 0 48 48">
+  <!-- PREMIUM: Multi-layer gradient + glow effect, luxurious -->
+  <svg class="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="premiumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="premiumCheckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
         <stop offset="50%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
-        <stop offset="100%" style="stop-color:hsl(${designTokens.primary});stop-opacity:0.7" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.primary});stop-opacity:0.8" />
       </linearGradient>
-      <filter id="premiumGlow">
-        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <filter id="premiumCheckGlow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
         <feMerge>
           <feMergeNode in="coloredBlur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
     </defs>
-    <circle cx="24" cy="24" r="20" fill="url(#premiumGrad)" opacity="0.2" filter="url(#premiumGlow)"/>
-    <circle cx="24" cy="24" r="18" stroke="url(#premiumGrad)" stroke-width="1" fill="none" opacity="0.3"/>
-    <path d="M15 24 L21 30 L33 18" stroke="url(#premiumGrad)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#premiumGlow)"/>
+    <!-- Outer glow circle -->
+    <circle cx="28" cy="28" r="24" fill="url(#premiumCheckGrad)" opacity="0.08" filter="url(#premiumCheckGlow)"/>
+    <!-- Mid circle with gradient -->
+    <circle cx="28" cy="28" r="22" fill="url(#premiumCheckGrad)" opacity="0.15"/>
+    <!-- Inner border circle -->
+    <circle cx="28" cy="28" r="20" stroke="url(#premiumCheckGrad)" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <!-- Check mark with glow -->
+    <path d="M17 28 L24 35 L39 20" stroke="url(#premiumCheckGrad)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#premiumCheckGlow)"/>
   </svg>`,
     };
 
