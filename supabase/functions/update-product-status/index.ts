@@ -51,11 +51,16 @@ Deno.serve(async (req) => {
       .select('store_url, access_token')
       .eq('id', storeId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (connError || !connection) {
+    if (connError) {
       console.error('Store connection error:', connError);
-      throw new Error(`Store connection not found: ${connError?.message || 'No connection data'}`);
+      throw new Error(`Failed to fetch store connection: ${connError.message}`);
+    }
+
+    if (!connection) {
+      console.error('Store connection not found for storeId:', storeId, 'userId:', user.id);
+      throw new Error('Store connection not found. Please verify your Shopify connection.');
     }
 
     console.log('Store connection found:', connection.store_url);
