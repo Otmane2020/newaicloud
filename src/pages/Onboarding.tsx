@@ -462,7 +462,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-subtle p-2 sm:p-4 md:p-6">
       <div className="container mx-auto max-w-7xl">
         {/* Logout Button */}
         <div className="flex justify-end mb-4">
@@ -480,20 +480,20 @@ export default function Onboarding() {
         </div>
 
       {/* Header */}
-      <div className="text-center mb-8 sm:mb-10 md:mb-12">
+      <div className="text-center mb-4 sm:mb-8 md:mb-10">
         {plans.some(p => p.trial_days > 0) && (
-          <Badge className="mb-3 sm:mb-4 bg-primary/20 text-primary-foreground border-primary/30 text-xs sm:text-sm">
+          <Badge className="mb-2 sm:mb-3 bg-primary/20 text-primary-foreground border-primary/30 text-xs sm:text-sm">
             <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.onboarding.trial.available}
           </Badge>
         )}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4 px-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3 px-2">
           {t.onboarding.title.split('NewAI')[0]}
           <span className="bg-gradient-primary bg-clip-text text-transparent">
             NewAI
           </span>
         </h1>
-        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
           {t.onboarding.subtitle}
         </p>
       </div>
@@ -528,7 +528,7 @@ export default function Onboarding() {
       )}
 
         {/* Billing Toggle */}
-        <div className="flex justify-center mb-8 sm:mb-10 md:mb-12 px-4">
+        <div className="flex justify-center mb-4 sm:mb-8 md:mb-10 px-2">
           <div className="bg-card rounded-full p-1 border-2 border-border">
             <Button
               variant={billingCycle === 'monthly' ? 'default' : 'ghost'}
@@ -553,7 +553,7 @@ export default function Onboarding() {
         </div>
 
         {/* Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto mb-8 sm:mb-10 md:mb-12 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-8 max-w-6xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2">
           {/* Starter Plan */}
           {(() => {
             const starterPlan = plans.find(p => p.id === 'starter');
@@ -939,21 +939,6 @@ export default function Onboarding() {
           })()}
         </div>
 
-        {/* Info footer */}
-        <div className="text-center mt-8 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {t.onboarding.infoFooter.starterOnly}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t.onboarding.infoFooter.cardRequired}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t.onboarding.infoFooter.proEnterprise}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t.onboarding.infoFooter.cancelAnytime}
-          </p>
-        </div>
       </div>
     </div>
   );
