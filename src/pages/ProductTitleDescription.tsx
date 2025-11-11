@@ -148,6 +148,8 @@ export default function ProductTitleDescription() {
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
   const [showLandingConfigDialog, setShowLandingConfigDialog] = useState(false);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
@@ -354,6 +356,22 @@ export default function ProductTitleDescription() {
                   .eq("id", productId);
                 
                 if (!updateError) {
+                  // Save to history
+                  const { data: userData } = await supabase.auth.getUser();
+                  if (userData.user) {
+                    const { data: versionData } = await supabase.rpc('get_next_version_number', {
+                      p_product_id: productId
+                    });
+                    
+                    await supabase.from("landing_page_history").insert({
+                      product_id: productId,
+                      user_id: userData.user.id,
+                      landing_page_html: htmlData.htmlLandingPage,
+                      version_number: versionData || 1,
+                      is_current: true
+                    });
+                  }
+                  
                   // Update local product with HTML in landing_page
                   updatedProduct.landing_page = htmlData.htmlLandingPage;
                 }
@@ -1166,8 +1184,15 @@ export default function ProductTitleDescription() {
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
+                  <TableRow 
+                    key={product.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setPreviewProduct(product);
+                      setShowPreviewDialog(true);
+                    }}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
                         onCheckedChange={() => handleSelectProduct(product.id)}
@@ -1237,14 +1262,15 @@ export default function ProductTitleDescription() {
                         <Badge variant="outline">{t.contentOptimization.table.status.toOptimize}</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
@@ -1274,7 +1300,8 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);

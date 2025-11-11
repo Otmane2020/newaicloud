@@ -1407,6 +1407,44 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_history: {
+        Row: {
+          created_at: string
+          id: string
+          is_current: boolean | null
+          landing_page_html: string
+          product_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          landing_page_html: string
+          product_id: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          landing_page_html?: string
+          product_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_feed_settings: {
         Row: {
           auto_sync_enabled: boolean | null
@@ -3866,6 +3904,10 @@ export type Database = {
       }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
       get_next_image_version: { Args: { p_image_id: string }; Returns: number }
+      get_next_version_number: {
+        Args: { p_product_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
