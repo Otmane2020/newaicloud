@@ -418,7 +418,13 @@ export function GoogleShopping() {
 
     // Check usage limits before starting
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
       const { data: limitCheck, error: limitError } = await supabase.functions.invoke('check-usage-limits', {
+        headers,
         body: { 
           action: 'optimize',
           count: unoptimized.length

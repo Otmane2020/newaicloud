@@ -58,7 +58,16 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       
       // Check Stripe for the real subscription status
       console.log('🔄 Checking Stripe subscription status...');
-      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription');
+      
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
+      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
+        headers
+      });
       
       if (stripeError) {
         console.error('❌ Error checking Stripe subscription:', stripeError);
@@ -167,7 +176,15 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const handleFixSubscription = async () => {
     setFixingSubscription(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fix-invalid-trial-subscriptions');
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
+      const { data, error } = await supabase.functions.invoke('fix-invalid-trial-subscriptions', {
+        headers
+      });
       
       if (error) throw error;
       

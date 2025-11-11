@@ -17,12 +17,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    { auth: { persistSession: false } }
-  );
-
   try {
     logStep('Function started');
 
@@ -34,72 +28,54 @@ serve(async (req) => {
     if (!authHeader) throw new Error('No authorization header provided');
     logStep('Authorization header found');
 
-    const token = authHeader.replace('Bearer ', '');
-    logStep('Authenticating user with token');
+    // Create client with ANON key and authorization header to validate user token
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { 
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false } 
+      }
+    );
+
+    // Create admin client for privileged operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+    
+    logStep('Authenticating user');
+    
+    // Get user from token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     // Retry logic to handle race condition during signup
-    let userData: any = null;
-    let userError: any = null;
     let retries = 3;
     
-    while (retries > 0) {
-      try {
-        const result = await supabaseClient.auth.getUser(token);
-        userData = result.data;
-        userError = result.error;
-      } catch (authException: any) {
-        // Handle cases where getUser throws instead of returning error
-        logStep('Auth exception caught', { message: authException.message });
-        return new Response(JSON.stringify({ 
-          error: 'invalid_session',
-          message: 'Session expired or invalid. Please log in again.' 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401,
-        });
-      }
-      
-      if (!userError) break;
-      
-      // If user doesn't exist yet (race condition during signup), retry
-      if (userError.message.includes('User from sub claim in JWT does not exist')) {
-        logStep('User not yet available, retrying...', { retriesLeft: retries - 1 });
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-        retries--;
-      } else {
+    while (retries > 0 && userError) {
+      logStep('User not yet available, retrying...', { retriesLeft: retries - 1 });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      retries--;
+      const retryResult = await supabaseClient.auth.getUser();
+      if (!retryResult.error) {
         break;
       }
     }
     
-    // Handle authentication errors with proper status codes
-    if (userError) {
-      const errorMsg = userError.message.toLowerCase();
-      if (errorMsg.includes('session') || errorMsg.includes('jwt') || errorMsg.includes('auth') || errorMsg.includes('token')) {
-        logStep('Invalid or expired token detected');
-        return new Response(JSON.stringify({ 
-          error: 'invalid_session',
-          message: 'Session expired or invalid. Please log in again.' 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401,
-        });
-      }
-      throw new Error(`Authentication error: ${userError.message}`);
-    }
-    
-    if (!userData) {
-      logStep('No user data returned');
+    // Handle authentication errors
+    if (userError || !user) {
+      logStep('Authentication failed', { error: userError });
       return new Response(JSON.stringify({ 
         error: 'invalid_session',
-        message: 'Unable to retrieve user data. Please log in again.' 
+        message: 'Session expired or invalid. Please log in again.' 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
     
-    const user = userData.user;
-    if (!user?.email) {
+    if (!user.email) {
       logStep('User missing email');
       return new Response(JSON.stringify({ 
         error: 'invalid_user',
@@ -119,7 +95,7 @@ serve(async (req) => {
       logStep('No customer found, checking database profile');
       
       // Check if user has trialing status in database
-      const { data: profile } = await supabaseClient
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('subscription_status, trial_ends_at, current_plan_id')
         .eq('id', user.id)
@@ -184,8 +160,8 @@ serve(async (req) => {
       if (trialEnd && trialEnd * 1000 < Date.now()) {
         logStep('Trial expired but status not updated', { trialEnd: new Date(trialEnd * 1000) });
         
-        // Mettre à jour le profil
-        await supabaseClient
+        // Update profile using admin client
+        await supabaseAdmin
           .from('profiles')
           .update({ 
             subscription_status: 'inactive',
@@ -234,8 +210,8 @@ serve(async (req) => {
       planId = subscription.items.data[0].price.product as string;
       logStep('Determined subscription plan', { planId });
       
-      // Update profile with correct status
-      await supabaseClient
+      // Update profile with correct status using admin client
+      await supabaseAdmin
         .from('profiles')
         .update({
           subscription_status: status,
@@ -249,8 +225,8 @@ serve(async (req) => {
     } else {
       logStep('No active subscription found in Stripe, checking Supabase profile');
       
-      // Fallback: check if user has active plan in Supabase
-      const { data: profile } = await supabaseClient
+      // Fallback: check if user has active plan in Supabase using admin client
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('subscription_status, current_plan_id')
         .eq('id', user.id)

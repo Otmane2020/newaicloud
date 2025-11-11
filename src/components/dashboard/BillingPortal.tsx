@@ -52,7 +52,15 @@ export function BillingPortal() {
       // Only check Stripe if we have a customer ID
       let hasStripeSubscription = false;
       if (profileData?.stripe_customer_id) {
-        const stripeResult = await supabase.functions.invoke('check-subscription');
+        // Get current session token
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers = session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : {};
+        
+        const stripeResult = await supabase.functions.invoke('check-subscription', {
+          headers
+        });
         hasStripeSubscription = stripeResult.data?.subscribed === true;
       }
       

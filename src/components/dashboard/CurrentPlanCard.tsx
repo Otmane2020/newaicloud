@@ -71,7 +71,14 @@ export function CurrentPlanCard() {
           
           // Always try to get fresh data from Stripe via check-subscription
           // This ensures subscription_end is always up to date
-          const { data: stripeData } = await supabase.functions.invoke('check-subscription');
+          const { data: { session } } = await supabase.auth.getSession();
+          const headers = session?.access_token ? {
+            Authorization: `Bearer ${session.access_token}`
+          } : {};
+          
+          const { data: stripeData } = await supabase.functions.invoke('check-subscription', {
+            headers
+          });
           
           if (stripeData?.subscription_end) {
             setSubscriptionEnd(stripeData.subscription_end);

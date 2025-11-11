@@ -42,8 +42,16 @@ export function SubscriptionManagement() {
     try {
       console.log('🔄 Loading subscription data...');
       
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
       // Load current subscription from Stripe
-      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
+      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription', {
+        headers
+      });
       
       if (subError) {
         console.error('❌ Error checking subscription:', subError);

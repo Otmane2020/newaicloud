@@ -258,7 +258,15 @@ export default function ShopifyConnectionsList() {
 
   const checkUsageLimits = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-usage-limits');
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
+      const { data, error } = await supabase.functions.invoke('check-usage-limits', {
+        headers
+      });
       if (!error && data) {
         setUsageLimits(data);
       }
@@ -868,8 +876,14 @@ export default function ShopifyConnectionsList() {
       setImportingStoreId(store.id);
       
       // Check usage limits first
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? {
+        Authorization: `Bearer ${session.access_token}`
+      } : {};
+      
       const { data: limitsData, error: limitsError } = await supabase.functions.invoke(
-        'check-usage-limits'
+        'check-usage-limits',
+        { headers }
       );
       
       if (limitsError) {
