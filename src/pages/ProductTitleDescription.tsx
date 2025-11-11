@@ -1251,31 +1251,6 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                // Vérifier les limites AVANT de sélectionner et optimiser
-                                if (!canDoAction('optimizations')) {
-                                  toast.error(t.contentOptimization.toasts.limitReached);
-                                  setShowUpgradeDialog(true);
-                                  return;
-                                }
-                                setSelectedProducts(new Set([product.id]));
-                                setTimeout(() => handleOptimizeSelected(), 0);
-                              }}
-                              disabled={generating}
-                            >
-                              <Sparkles className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t.contentOptimization.tooltips.optimize}</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
