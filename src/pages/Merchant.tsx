@@ -34,9 +34,9 @@ export default function Merchant() {
   const tabs = [
     {
       id: "integration",
-      label: "Intégration",
+      label: t.googleConsole.integration,
       icon: Globe,
-      description: "Connectez votre compte Google Merchant Center",
+      description: t.merchant.tabs.integration.description,
       component: <GoogleMerchantIntegration />,
     },
     {
@@ -55,9 +55,9 @@ export default function Merchant() {
     },
     {
       id: "sync",
-      label: "Synchronisation Auto",
+      label: t.merchant.tabs.sync.label,
       icon: RefreshCw,
-      description: "Configurez la synchronisation automatique de vos flux",
+      description: t.merchant.tabs.sync.description,
       component: <GoogleMerchantSyncSettings />,
     },
     {

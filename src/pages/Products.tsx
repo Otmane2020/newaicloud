@@ -165,8 +165,8 @@ export default function Products() {
   const [syncResults, setSyncResults] = useState<any>(null);
 
   const handleManualSync = async (store: any) => {
-    if (!user) {
-      toast.error('Utilisateur non authentifié');
+      if (!user) {
+      toast.error(t.sync.notAuthenticated);
       return;
     }
 
@@ -177,7 +177,7 @@ export default function Products() {
       
       // 🆕 Toast de démarrage
       syncToastId = toast.loading(
-        `🔄 Synchronisation en cours pour ${store.store_name}...`
+        tf('sync.syncingStore', { storeName: store.store_name })
       );
       
       console.log('🔄 [MANUAL SYNC] Starting manual sync for store:', store.store_name);
@@ -191,7 +191,7 @@ export default function Products() {
 
       if (storeError || !storeData) {
         console.error('❌ [SYNC ERROR] Store not found:', storeError);
-        toast.error('Boutique introuvable');
+        toast.error(t.sync.storeNotFound);
         setSyncingStoreId(null);
         return;
       }
@@ -389,14 +389,14 @@ export default function Products() {
       await refreshLimits();
 
       if (errorMessages.length === 0) {
-        toast.success(`✅ Synchronisation réussie: ${totalSynced} éléments`, { id: syncToastId });
+        toast.success(tf('sync.success', { count: totalSynced }), { id: syncToastId });
       } else {
-        toast.warning(`⚠️ Synchronisation partielle: ${totalSynced} éléments, ${errorMessages.length} erreurs`, { id: syncToastId });
+        toast.warning(tf('sync.partialSuccess', { synced: totalSynced, errors: errorMessages.length }), { id: syncToastId });
       }
 
     } catch (error: any) {
       console.error('❌ [SYNC ERROR]', error);
-      toast.error(`Erreur de synchronisation: ${error.message}`, { id: syncToastId || undefined });
+      toast.error(`${t.sync.error}: ${error.message}`, { id: syncToastId || undefined });
     } finally {
       setSyncingStoreId(null);
     }
@@ -404,7 +404,7 @@ export default function Products() {
 
   const handleSync = async () => {
     if (!user?.id) {
-      toast.error("Utilisateur non authentifié");
+      toast.error(t.sync.notAuthenticated);
       return;
     }
 
@@ -420,7 +420,7 @@ export default function Products() {
         .single();
 
       if (error || !store) {
-        toast.error("Aucune boutique Shopify connectée");
+        toast.error(t.sync.noActiveConnection);
         return;
       }
       

@@ -2909,6 +2909,9 @@ export const translations = {
       sync: "Synchronisation",
     },
     tabs: {
+      integration: {
+        description: "Connectez votre compte Google Merchant Center",
+      },
       feed: {
         description: "Gérez votre flux Google Shopping XML",
       },
@@ -2916,7 +2919,8 @@ export const translations = {
         description: "Configurez votre boutique et vos paramètres de flux",
       },
       sync: {
-        description: "Synchronisez avec Shopify",
+        label: "Synchronisation Auto",
+        description: "Configurez la synchronisation automatique de vos flux",
       },
     },
     feed: {
@@ -3171,13 +3175,46 @@ export const translations = {
     insights: "Insights",
     products: "Produits",
     sitemaps: "Sitemaps",
-    articles: "Articles"
+    articles: "Articles",
+    title: "Console Google Search",
+    description: "Connectez votre compte et analysez les performances de votre site",
+    selectDomain: "Sélectionnez un domaine dans l'onglet Intégration",
   },
   
   // Navigation items
   mediaHistory: "Media - Historique",
   usageLimits: "Limites d'utilisation",
   merchantIntegration: "Intégration",
+
+  // Sync messages
+  sync: {
+    shopifyConnected: "Boutique Shopify connectée avec succès !",
+    autoImport: "Import automatique de vos 10 premiers produits en cours...",
+    importing: "Import en cours...",
+    importingCollections: "Import des collections en cours...",
+    importingFromShopify: "Import des collections depuis Shopify...",
+    importingCollectionImages: "Import des images des collections...",
+    importingArticles: "Import des articles en cours...",
+    importingArticlesInProgress: "Import des articles depuis Shopify en cours...",
+    importingArticleImages: "Import des images des articles...",
+    fullImportInProgress: "Import complet en cours...",
+    step1: "Étape 1/3: Import des collections...",
+    step2: "Étape 2/3: Import des articles...",
+    step3: "Étape 3/3: Import des pages...",
+    success: "✅ Synchronisation réussie: {{count}} éléments",
+    partialSuccess: "⚠️ Synchronisation partielle: {{synced}} éléments, {{errors}} erreurs",
+    collectionsAndImagesImported: "✅ {{count}} collection(s) et {{images}} image(s) importées",
+    articlesAndImagesImported: "✅ {{totalArticles}} article(s) et {{totalImages}} image(s) importés",
+    fullImportComplete: "✅ Import complet terminé: {{parts}}",
+    noContentFound: "Aucun contenu à importer",
+    error: "Erreur de synchronisation",
+    notAuthenticated: "Utilisateur non authentifié",
+    noActiveConnection: "Aucune connexion Shopify active trouvée",
+    importError: "Erreur lors de l'importation",
+    storeNotFound: "Boutique introuvable",
+    connectionFailed: "Échec de la connexion à la boutique Shopify. Veuillez réessayer depuis la page d'intégration.",
+    syncingStore: "🔄 Synchronisation en cours pour {{storeName}}...",
+  },
 
   notificationSettings: {
     title: "Paramètres de Notification",

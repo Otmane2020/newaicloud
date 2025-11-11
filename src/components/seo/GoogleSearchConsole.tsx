@@ -9,8 +9,10 @@ import { GoogleSearchConsoleProducts } from './GoogleSearchConsoleProducts';
 import { GoogleSearchConsoleSitemaps } from './GoogleSearchConsoleSitemaps';
 import { GoogleSearchConsoleArticles } from './GoogleSearchConsoleArticles';
 import { TrendingUp, Package, FileText, Link } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 export function GoogleSearchConsole() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const subtab = searchParams.get('subtab') || 'integration';
   const [isConnected, setIsConnected] = useState(false);
@@ -66,9 +68,9 @@ export function GoogleSearchConsole() {
     <div className="space-y-6">
       <Card className="p-6">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold">Console Google Search</h2>
+          <h2 className="text-2xl font-bold">{t.googleConsole.title}</h2>
           <p className="text-muted-foreground">
-            Connectez votre compte et analysez les performances de votre site
+            {t.googleConsole.description}
           </p>
         </div>
       </Card>
@@ -121,7 +123,7 @@ export function GoogleSearchConsole() {
               <GoogleSearchConsoleInsights selectedDomain={selectedDomain} />
             ) : (
               <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Sélectionnez un domaine dans l'onglet Intégration</p>
+                <p className="text-muted-foreground">{t.googleConsole.selectDomain}</p>
               </Card>
             )}
           </TabsContent>

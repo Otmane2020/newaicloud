@@ -40,7 +40,7 @@ export default function Collections() {
   const [importing, setImporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
 
   const fetchCollections = async () => {
     try {
@@ -93,11 +93,11 @@ export default function Collections() {
 
   const handleImportCollections = async () => {
     setImporting(true);
-    const toastId = toast.loading('Import des collections en cours...');
+    const toastId = toast.loading(t.sync.importingCollections);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t.collections.import.notAuthenticated);
+      if (!user) throw new Error(t.sync.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -107,12 +107,12 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error(t.collections.import.noActiveConnection, { id: toastId });
+        toast.error(t.sync.noActiveConnection, { id: toastId });
         return;
       }
 
       // Import collections from Shopify
-      toast.loading('Import des collections depuis Shopify...', { id: toastId });
+      toast.loading(t.sync.importingFromShopify, { id: toastId });
       const { data: collectionsData, error: collectionsError } = await supabase.functions.invoke('import-shopify-collections');
 
       if (collectionsError) throw collectionsError;
@@ -120,7 +120,7 @@ export default function Collections() {
       const importedCount = collectionsData?.imported || 0;
 
       // Import collection images
-      toast.loading('Import des images des collections...', { id: toastId });
+      toast.loading(t.sync.importingCollectionImages, { id: toastId });
       const { data: imagesData, error: imagesError } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['collections'] }
       });
@@ -129,11 +129,11 @@ export default function Collections() {
 
       const imagesCount = imagesData?.totalImported || 0;
 
-      toast.success(`✅ ${importedCount} collection(s) et ${imagesCount} image(s) importées`, { id: toastId });
+      toast.success(tf('sync.collectionsAndImagesImported', { count: importedCount, images: imagesCount }), { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error importing collections:', error);
-      toast.error(error.message || t.collections.import.importError, { id: toastId });
+      toast.error(error.message || t.sync.importError, { id: toastId });
     } finally {
       setImporting(false);
     }
@@ -141,11 +141,11 @@ export default function Collections() {
 
   const handleImportArticles = async () => {
     setImporting(true);
-    const toastId = toast.loading(t.collections.import.importingArticles);
+    const toastId = toast.loading(t.sync.importingArticles);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t.collections.import.notAuthenticated);
+      if (!user) throw new Error(t.sync.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -155,11 +155,11 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error(t.collections.import.noActiveConnection, { id: toastId });
+        toast.error(t.sync.noActiveConnection, { id: toastId });
         return;
       }
 
-      toast.loading(t.collections.import.importingArticlesInProgress, { id: toastId });
+      toast.loading(t.sync.importingArticlesInProgress, { id: toastId });
       const { data: articlesData, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
         body: { 
           shopName: storeData.store_url.replace('.myshopify.com', ''),
@@ -170,7 +170,7 @@ export default function Collections() {
 
       if (articlesError) throw articlesError;
 
-      toast.loading(t.collections.import.importingArticleImages, { id: toastId });
+      toast.loading(t.sync.importingArticleImages, { id: toastId });
       const { data: imagesData, error: imagesError } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['articles'] }
       });
@@ -179,13 +179,10 @@ export default function Collections() {
 
       const totalArticles = articlesData?.count || 0;
       const totalImages = imagesData?.totalImported || 0;
-      const message = t.collections.import.articlesAndImagesImported
-        .replace('{{totalArticles}}', String(totalArticles))
-        .replace('{{totalImages}}', String(totalImages));
-      toast.success(message, { id: toastId });
+      toast.success(tf('sync.articlesAndImagesImported', { totalArticles, totalImages }), { id: toastId });
     } catch (error: any) {
       console.error('Error importing articles:', error);
-      toast.error(error.message || t.collections.import.importError, { id: toastId });
+      toast.error(error.message || t.sync.importError, { id: toastId });
     } finally {
       setImporting(false);
     }
@@ -193,11 +190,11 @@ export default function Collections() {
 
   const handleFullImport = async () => {
     setImporting(true);
-    const toastId = toast.loading(t.collections.import.fullImportInProgress);
+    const toastId = toast.loading(t.sync.fullImportInProgress);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t.collections.import.notAuthenticated);
+      if (!user) throw new Error(t.sync.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -207,7 +204,7 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error(t.collections.import.noActiveConnection, { id: toastId });
+        toast.error(t.sync.noActiveConnection, { id: toastId });
         return;
       }
 
@@ -217,7 +214,7 @@ export default function Collections() {
       let pagesCount = 0;
 
       // Import collections
-      toast.loading(t.collections.import.step1, { id: toastId });
+      toast.loading(t.sync.step1, { id: toastId });
       const { data: collectionsData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['collections'] }
       });
@@ -231,7 +228,7 @@ export default function Collections() {
       collectionsCount = colCount || 0;
 
       // Import articles
-      toast.loading(t.collections.import.step2, { id: toastId });
+      toast.loading(t.sync.step2, { id: toastId });
       await supabase.functions.invoke('import-shopify-articles', {
         body: { 
           shopName: storeData.store_url.replace('.myshopify.com', ''),
@@ -252,7 +249,7 @@ export default function Collections() {
       articlesCount = artCount || 0;
 
       // Import pages
-      toast.loading(t.collections.import.step3, { id: toastId });
+      toast.loading(t.sync.step3, { id: toastId });
       const { data: pagesData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['pages'] }
       });
@@ -273,15 +270,15 @@ export default function Collections() {
       if (totalImages > 0) parts.push(`${totalImages} images`);
 
       if (parts.length === 0) {
-        toast.info(t.collections.import.noContentFound, { id: toastId });
+        toast.info(t.sync.noContentFound, { id: toastId });
       } else {
-        toast.success(t.collections.import.fullImportComplete.replace('{{parts}}', parts.join(', ')), { id: toastId });
+        toast.success(tf('sync.fullImportComplete', { parts: parts.join(', ') }), { id: toastId });
       }
 
       await fetchCollections();
     } catch (error: any) {
       console.error('Error during full import:', error);
-      toast.error(error.message || t.collections.import.importError, { id: toastId });
+      toast.error(error.message || t.sync.importError, { id: toastId });
     } finally {
       setImporting(false);
     }

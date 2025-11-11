@@ -87,10 +87,10 @@ export default function Onboarding() {
           if (error) throw error;
 
           if (data?.success) {
-            toast.success("Boutique Shopify connectée avec succès !");
+            toast.success(t.sync.shopifyConnected);
             
             // Show import toast
-            toast.info("Import automatique de vos 10 premiers produits en cours...", { 
+            toast.info(t.sync.autoImport, { 
               duration: 5000,
             });
             
@@ -104,7 +104,7 @@ export default function Onboarding() {
           }
         } catch (error) {
           console.error('Failed to claim Shopify connection:', error);
-          toast.error("Échec de la connexion à la boutique Shopify. Veuillez réessayer depuis la page d'intégration.");
+          toast.error(t.sync.connectionFailed);
         } finally {
           setClaimingShopify(false);
         }

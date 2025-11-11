@@ -2908,6 +2908,9 @@ export const translations = {
       sync: "Synchronization",
     },
     tabs: {
+      integration: {
+        description: "Connect your Google Merchant Center account",
+      },
       feed: {
         description: "Manage your Google Shopping XML feed",
       },
@@ -2915,7 +2918,8 @@ export const translations = {
         description: "Configure your store and feed settings",
       },
       sync: {
-        description: "Synchronize with Shopify",
+        label: "Auto Sync",
+        description: "Configure automatic feed synchronization",
       },
     },
     feed: {
@@ -3080,13 +3084,46 @@ export const translations = {
     insights: "Insights",
     products: "Products",
     sitemaps: "Sitemaps",
-    articles: "Articles"
+    articles: "Articles",
+    title: "Google Search Console",
+    description: "Connect your account and analyze your site's performance",
+    selectDomain: "Select a domain in the Integration tab",
   },
   
   // Navigation items
   mediaHistory: "Media - History",
   usageLimits: "Usage Limits",
   merchantIntegration: "Integration",
+
+  // Sync messages
+  sync: {
+    shopifyConnected: "Shopify store connected successfully!",
+    autoImport: "Automatic import of your first 10 products in progress...",
+    importing: "Importing...",
+    importingCollections: "Importing collections...",
+    importingFromShopify: "Importing collections from Shopify...",
+    importingCollectionImages: "Importing collection images...",
+    importingArticles: "Importing articles...",
+    importingArticlesInProgress: "Importing articles from Shopify...",
+    importingArticleImages: "Importing article images...",
+    fullImportInProgress: "Full import in progress...",
+    step1: "Step 1/3: Importing collections...",
+    step2: "Step 2/3: Importing articles...",
+    step3: "Step 3/3: Importing pages...",
+    success: "✅ Synchronization successful: {{count}} items",
+    partialSuccess: "⚠️ Partial synchronization: {{synced}} items, {{errors}} errors",
+    collectionsAndImagesImported: "✅ {{count}} collection(s) and {{images}} image(s) imported",
+    articlesAndImagesImported: "✅ {{totalArticles}} article(s) and {{totalImages}} image(s) imported",
+    fullImportComplete: "✅ Full import complete: {{parts}}",
+    noContentFound: "No content to import",
+    error: "Synchronization error",
+    notAuthenticated: "User not authenticated",
+    noActiveConnection: "No active Shopify connection found",
+    importError: "Import error",
+    storeNotFound: "Store not found",
+    connectionFailed: "Failed to connect to Shopify store. Please try again from the integration page.",
+    syncingStore: "🔄 Synchronizing {{storeName}}...",
+  },
 
   notificationSettings: {
     title: "Notification Settings",
