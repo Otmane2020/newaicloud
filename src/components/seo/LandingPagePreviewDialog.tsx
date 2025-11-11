@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 
 interface LandingPagePreviewDialogProps {
@@ -25,6 +25,7 @@ export function LandingPagePreviewDialog({
   currentLandingPage,
 }: LandingPagePreviewDialogProps) {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [productUrl, setProductUrl] = useState<string | null>(null);
 
   // Sync to Shopify mutation
   const syncMutation = useMutation({
@@ -43,9 +44,10 @@ export function LandingPagePreviewDialog({
       return data;
     },
     onSuccess: (data) => {
-      toast.success("Landing page synchronisée avec Shopify", {
-        description: data.productUrl ? `Lien: ${data.productUrl}` : undefined,
-      });
+      toast.success("Landing page synchronisée avec Shopify");
+      if (data.productUrl) {
+        setProductUrl(data.productUrl);
+      }
       setIsSyncing(false);
     },
     onError: (error) => {
@@ -87,6 +89,16 @@ export function LandingPagePreviewDialog({
                 >
                   Télécharger HTML
                 </Button>
+                {productUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(productUrl, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Visualiser en ligne
+                  </Button>
+                )}
                 <Button
                   onClick={() => syncMutation.mutate(currentLandingPage)}
                   disabled={isSyncing || !currentLandingPage}

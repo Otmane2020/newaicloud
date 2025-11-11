@@ -13,6 +13,7 @@ import {
   Brain,
   Wand2,
   Layout,
+  ExternalLink,
   Zap,
   Target,
   Palette,
@@ -58,6 +59,7 @@ export default function RegenerateLanding({
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
+  const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
@@ -369,7 +371,9 @@ export default function RegenerateLanding({
       }
 
       toast.success(t.landingGeneration.success.synced);
-      if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });
+      if (data?.productUrl) {
+        setSyncedProductUrl(data.productUrl);
+      }
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
       toast.error(err?.message || t.landingGeneration.errors.sync);
@@ -662,6 +666,19 @@ export default function RegenerateLanding({
                   </>
                 )}
               </Button>
+
+              {syncedProductUrl && (
+                <Button
+                  onClick={() => window.open(syncedProductUrl, '_blank')}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Visualiser en ligne</span>
+                  <span className="sm:hidden">Voir en ligne</span>
+                </Button>
+              )}
             </div>
           </div>
 
