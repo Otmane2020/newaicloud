@@ -227,11 +227,11 @@ export function LandingPagePreviewDialog({
                 Ouvrir dans un nouvel onglet
               </Button>
             </div>
-            <ScrollArea className="h-[400px]">
+            <div className="h-[400px] overflow-auto">
               {previewHtml ? (
                 <iframe
                   srcDoc={previewHtml}
-                  className="w-full min-h-[400px] border-0"
+                  className="w-full h-full min-h-[400px] border-0"
                   sandbox="allow-same-origin allow-scripts"
                   title="Landing Page Preview"
                 />
@@ -240,7 +240,7 @@ export function LandingPagePreviewDialog({
                   <p>Aucune landing page disponible</p>
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Version History List */}
@@ -249,7 +249,7 @@ export function LandingPagePreviewDialog({
               <Clock className="h-4 w-4" />
               Historique des versions
             </h3>
-            <ScrollArea className="h-[200px]">
+            <div className="max-h-[200px] overflow-y-auto pr-2">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -328,7 +328,7 @@ export function LandingPagePreviewDialog({
                   </p>
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </div>
         </div>
       </DialogContent>

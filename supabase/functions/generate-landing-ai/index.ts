@@ -723,6 +723,44 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
       } else {
         console.log(`✅ Landing page v${newVersion} saved successfully`);
       }
+
+      // 💾 NOUVEAU : Sauvegarder dans shopify_products.landing_page
+      console.log("💾 Updating shopify_products.landing_page...");
+      const { error: updateProductError } = await supabaseAdmin
+        .from("shopify_products")
+        .update({ landing_page: html })
+        .eq("id", product_id);
+
+      if (updateProductError) {
+        console.error("❌ Error updating shopify_products:", updateProductError);
+      } else {
+        console.log("✅ shopify_products.landing_page updated");
+      }
+
+      // 💾 NOUVEAU : Sauvegarder dans landing_page_history
+      console.log("💾 Saving to landing_page_history...");
+      
+      // Marquer toutes les anciennes versions comme non-current
+      await supabaseAdmin
+        .from("landing_page_history")
+        .update({ is_current: false })
+        .eq("product_id", product_id);
+
+      // Insérer la nouvelle version
+      const { error: historyError } = await supabaseAdmin
+        .from("landing_page_history")
+        .insert({
+          product_id: product_id,
+          version_number: newVersion,
+          landing_page_html: html,
+          is_current: true,
+        });
+
+      if (historyError) {
+        console.error("❌ Error saving to history:", historyError);
+      } else {
+        console.log(`✅ Version ${newVersion} saved to landing_page_history`);
+      }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
     }
