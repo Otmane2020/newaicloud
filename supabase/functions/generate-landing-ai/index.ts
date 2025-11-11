@@ -328,6 +328,17 @@ serve(async (req) => {
       language,
     } = body ?? {};
 
+    console.log("🔐 User authentication:", {
+      hasAuthHeader: !!authHeader,
+      userId: userId,
+      productId: product_id,
+      willAttemptSave: !!(userId && product_id),
+    });
+
+    // Initialize version tracking variables
+    let versionSaved = false;
+    let savedVersionNumber = null;
+
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
@@ -349,31 +360,83 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🔧 STEP 1: Product Enrichment (with timeout)
-    console.log("🔧 Starting product enrichment...");
+    // 🔧 STEP 1: Product Enrichment (with conditional logic and retry)
+    console.log("🔧 Starting product enrichment check...");
     let enrichmentStatus = "skipped";
     let attributesCount = 0;
-    try {
-      const enrichController = new AbortController();
-      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
 
-      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
-        body: { productId: product_id },
-        signal: enrichController.signal,
-      });
+    // First, check if product already has recent enrichment
+    const { data: existingProduct } = await supabaseAdmin
+      .from("shopify_products")
+      .select("enriched_at, ai_color, ai_material, smart_length, smart_width, smart_height")
+      .eq("id", product_id)
+      .maybeSingle();
 
-      clearTimeout(enrichTimeout);
+    const hasRecentEnrichment =
+      existingProduct?.enriched_at && new Date().getTime() - new Date(existingProduct.enriched_at).getTime() < 86400000; // 24 hours
 
-      if (enrichError) {
-        console.log("⚠️ Enrichment failed:", enrichError.message);
-        enrichmentStatus = "failed";
-      } else {
-        console.log("✅ Enrichment completed successfully");
+    const hasEnrichedData =
+      existingProduct &&
+      (existingProduct.ai_color ||
+        existingProduct.ai_material ||
+        existingProduct.smart_length ||
+        existingProduct.smart_width ||
+        existingProduct.smart_height);
+
+    if (hasRecentEnrichment && hasEnrichedData) {
+      console.log("✅ Using existing enrichment (less than 24h old)");
+      enrichmentStatus = "cached";
+    } else {
+      console.log("🔧 Starting product enrichment (no recent data)...");
+
+      // Helper function to attempt enrichment
+      const attemptEnrichment = async (attemptNumber: number): Promise<boolean> => {
+        try {
+          console.log(`📡 Enrichment attempt ${attemptNumber}...`);
+
+          const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+            body: { productId: product_id },
+          });
+
+          if (enrichError) {
+            console.error(`❌ Enrichment attempt ${attemptNumber} failed:`, {
+              message: enrichError.message,
+              status: enrichError.status,
+              details: enrichError.details,
+            });
+            return false;
+          }
+
+          console.log(`✅ Enrichment attempt ${attemptNumber} completed successfully`);
+          return true;
+        } catch (err) {
+          console.error(`❌ Enrichment attempt ${attemptNumber} exception:`, {
+            message: err.message,
+            name: err.name,
+            stack: err.stack?.substring(0, 200),
+          });
+          return false;
+        }
+      };
+
+      // Try enrichment with retry logic
+      const firstAttempt = await attemptEnrichment(1);
+
+      if (firstAttempt) {
         enrichmentStatus = "success";
+      } else {
+        console.log("⏳ Waiting 2s before retry...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const secondAttempt = await attemptEnrichment(2);
+
+        if (secondAttempt) {
+          enrichmentStatus = "success";
+        } else {
+          console.warn("⚠️ Enrichment failed after 2 attempts (continuing without it)");
+          enrichmentStatus = "failed";
+        }
       }
-    } catch (err) {
-      console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
-      enrichmentStatus = "failed";
     }
 
     // Fetch product data including handle, store domain, AND enriched attributes
@@ -685,53 +748,23 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
 
     console.log("✅ HTML generated and sanitized successfully");
 
-    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
+    // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
-      console.log("💾 Saving landing page to database...");
+      console.log("💾 Updating landing_page field in shopify_products...");
 
-      // Désactiver les anciennes versions
-      await supabaseAdmin
-        .from("product_landing_pages")
-        .update({ is_active: false })
-        .eq("product_id", product_id)
+      const { error: updateError } = await supabaseAdmin
+        .from("shopify_products")
+        .update({
+          landing_page: html,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", product_id)
         .eq("seller_id", userId);
 
-      // Récupérer le numéro de version
-      const { data: existingPages } = await supabaseAdmin
-        .from("product_landing_pages")
-        .select("version")
-        .eq("product_id", product_id)
-        .order("version", { ascending: false })
-        .limit(1);
-
-      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
-
-      // Créer la nouvelle version
-      const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
-        product_id: product_id,
-        seller_id: userId,
-        html_content: html,
-        config: {
-          language: detectedLanguage,
-          vendor,
-          image_url: imageUrl,
-          description,
-          content_length: length,
-          style,
-          layout,
-          mainColor,
-          customHighlights,
-          enrichment_status: enrichmentStatus,
-          attributes_count: attributesCount,
-        },
-        version: newVersion,
-        is_active: true,
-      });
-
-      if (saveError) {
-        console.error("❌ Save error:", saveError);
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
       } else {
-        console.log(`✅ Landing page v${newVersion} saved successfully`);
+        console.log("✅ Landing page updated successfully in shopify_products");
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
