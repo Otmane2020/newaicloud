@@ -1279,7 +1279,7 @@ export default function ProductTitleDescription() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{product.seo_title || product.title}</p>
-                          {product.description && product.description.includes('<!DOCTYPE html>') && (
+                          {hasRichHtmlDescription(product) && (
                             <Badge variant="default" className="gap-1 text-xs">
                               <FileText className="h-3 w-3" />
                               Landing
