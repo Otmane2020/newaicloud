@@ -32,17 +32,22 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
+    console.log('Updating product status:', { productId, shopifyId, storeId, newStatus });
+
     // Get store connection
     const { data: connection, error: connError } = await supabaseClient
       .from('shopify_connections')
       .select('store_url, access_token')
       .eq('id', storeId)
-      .eq('seller_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (connError || !connection) {
-      throw new Error('Store connection not found');
+      console.error('Store connection error:', connError);
+      throw new Error(`Store connection not found: ${connError?.message || 'No connection data'}`);
     }
+
+    console.log('Store connection found:', connection.store_url);
 
     // Update product status in Shopify
     const shopifyResponse = await fetch(
