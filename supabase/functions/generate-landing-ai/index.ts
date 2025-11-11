@@ -177,6 +177,38 @@ function generateDesignTokens(colorScheme: any) {
 }
 
 // Helper to build enriched product summary
+// Helper to build Vision AI summary
+function buildVisionSummary(attributes: any, language = "fr") {
+  if (!attributes) return "";
+  
+  const sections = [];
+  
+  if (attributes.visualDescription) {
+    sections.push(language === "en" ? "VISUAL ANALYSIS:" : "ANALYSE VISUELLE:");
+    sections.push(attributes.visualDescription);
+  }
+  
+  const details = [];
+  if (attributes.dominantColors?.length) {
+    details.push(`${language === "en" ? "Colors" : "Couleurs"}: ${attributes.dominantColors.join(", ")}`);
+  }
+  if (attributes.materials?.length) {
+    details.push(`${language === "en" ? "Materials" : "Matériaux"}: ${attributes.materials.join(", ")}`);
+  }
+  if (attributes.style) {
+    details.push(`${language === "en" ? "Style" : "Style"}: ${attributes.style}`);
+  }
+  if (attributes.condition) {
+    details.push(`${language === "en" ? "Condition" : "État"}: ${attributes.condition}`);
+  }
+  
+  if (details.length > 0) {
+    sections.push("\n" + details.map((d: string) => `- ${d}`).join("\n"));
+  }
+  
+  return sections.join("\n");
+}
+
 function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (!enriched) return "";
 
@@ -553,6 +585,7 @@ PRODUCT:
 - Product URL: ${productUrl}
 
 ${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `VISUAL AI INSIGHTS:\n${visualAnalysis}\n` : ""}
 
 IMAGES:
 ${imgs}
@@ -619,6 +652,7 @@ PRODUIT :
 - URL produit : ${productUrl}
 
 ${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `INSIGHTS IA VISUELLE :\n${visualAnalysis}\n` : ""}
 
 IMAGES :
 ${imgs}
