@@ -76,7 +76,7 @@ export default function Account() {
           <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
           <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
           <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
-          <TabsTrigger value="usage">Limites</TabsTrigger>
+          <TabsTrigger value="usage">{t.account.tabs.limits}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -115,9 +115,9 @@ export default function Account() {
           <div className="flex flex-col items-center">
             <div className="w-full max-w-2xl space-y-6">
               <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Limites d'utilisation</h2>
+                <h2 className="text-2xl font-bold">{t.account.usage.title}</h2>
                 <p className="text-muted-foreground">
-                  Suivez votre consommation mensuelle et les limites de votre plan
+                  {t.account.usage.description}
                 </p>
               </div>
               <UsageWidget />

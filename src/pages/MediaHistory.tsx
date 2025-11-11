@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Image as ImageIcon, Clock, Download, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,8 @@ import {
 
 export default function MediaHistory() {
   const queryClient = useQueryClient();
+  const { t, language } = useTranslation();
+  const dateLocale = language === 'fr' ? fr : enUS;
 
   const { data: history, isLoading } = useQuery({
     queryKey: ['media-history'],
@@ -67,13 +70,13 @@ export default function MediaHistory() {
       if (updateError) throw updateError;
     },
     onSuccess: () => {
-      toast.success('Image appliquée avec succès');
+      toast.success(t.mediaHistoryPage.actions.applySuccess);
       queryClient.invalidateQueries({ queryKey: ['media-history'] });
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
     },
     onError: (error) => {
       console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application');
+      toast.error(t.mediaHistoryPage.actions.applyError);
     }
   });
 
@@ -84,17 +87,17 @@ export default function MediaHistory() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Téléchargement démarré');
+    toast.success(t.mediaHistoryPage.actions.downloadStarted);
   };
 
   const getOptimizationTypeLabel = (type: string) => {
     switch (type) {
       case 'white_background':
-        return 'Fond Blanc';
+        return t.mediaHistoryPage.types.whiteBackground;
       case 'ai_background':
-        return 'Arrière-plan IA';
+        return t.mediaHistoryPage.types.aiBackground;
       case 'description':
-        return 'Description';
+        return t.mediaHistoryPage.types.description;
       default:
         return type;
     }
@@ -122,7 +125,7 @@ export default function MediaHistory() {
   }
 
   const groupedByProduct = history?.reduce((acc, item) => {
-    const productTitle = item.shopify_products?.title || 'Produit inconnu';
+    const productTitle = item.shopify_products?.title || t.mediaHistoryPage.unknownProduct;
     if (!acc[productTitle]) {
       acc[productTitle] = [];
     }
@@ -133,9 +136,9 @@ export default function MediaHistory() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Historique Media</h1>
+        <h1 className="text-3xl font-bold mb-2">{t.mediaHistoryPage.title}</h1>
         <p className="text-muted-foreground">
-          Consultez l'historique complet de toutes vos optimisations d'images par produit
+          {t.mediaHistoryPage.description}
         </p>
       </div>
 
@@ -148,7 +151,9 @@ export default function MediaHistory() {
                 {productTitle}
               </CardTitle>
               <CardDescription>
-                {items.length} optimisation{items.length > 1 ? 's' : ''} effectuée{items.length > 1 ? 's' : ''}
+                {t.mediaHistoryPage.optimizationCount
+                  .replace('{{count}}', String(items.length))
+                  .replace('{{s}}', items.length > 1 ? 's' : '')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -173,11 +178,11 @@ export default function MediaHistory() {
                         </Badge>
                         {item.is_current && (
                           <Badge variant="default" className="bg-primary/10 text-primary border-primary/20">
-                            Actuel
+                            {t.mediaHistoryPage.badges.current}
                           </Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          v{item.version_number}
+                          {t.mediaHistoryPage.badges.version.replace('{{version}}', String(item.version_number))}
                         </span>
                       </div>
 
@@ -186,7 +191,7 @@ export default function MediaHistory() {
                           <Clock className="w-3 h-3" />
                           {formatDistanceToNow(new Date(item.created_at), {
                             addSuffix: true,
-                            locale: fr,
+                            locale: dateLocale,
                           })}
                         </div>
                         
@@ -196,14 +201,14 @@ export default function MediaHistory() {
                         
                         {item.quality_score && (
                           <span className="text-xs">
-                            Qualité: {item.quality_score}/100
+                            {t.mediaHistoryPage.details.quality}: {item.quality_score}/100
                           </span>
                         )}
                       </div>
 
                       {item.ai_prompt && (
                         <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
-                          Prompt: {item.ai_prompt}
+                          {t.mediaHistoryPage.details.prompt}: {item.ai_prompt}
                         </p>
                       )}
                     </div>
@@ -230,7 +235,7 @@ export default function MediaHistory() {
                               disabled={applyToImage.isPending}
                             >
                               <CheckCircle2 className="w-4 h-4 mr-1" />
-                              Appliquer
+                              {t.mediaHistoryPage.actions.apply}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -245,7 +250,9 @@ export default function MediaHistory() {
                                     optimizedUrl: item.optimized_url
                                   })}
                                 >
-                                  {idx === 0 ? '📸 Image principale' : `📷 Image ${idx + 1}`}
+                                  {idx === 0 
+                                    ? `📸 ${t.mediaHistoryPage.actions.mainImage}` 
+                                    : `📷 ${t.mediaHistoryPage.actions.image.replace('{{number}}', String(idx + 1))}`}
                                 </DropdownMenuItem>
                               ))
                             }
@@ -265,7 +272,7 @@ export default function MediaHistory() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <ImageIcon className="w-12 h-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                Aucun historique d'optimisation disponible
+                {t.mediaHistoryPage.noHistory}
               </p>
             </CardContent>
           </Card>

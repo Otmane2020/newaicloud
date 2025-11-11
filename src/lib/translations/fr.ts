@@ -1576,6 +1576,11 @@ export const translations = {
       integrations: "Intégrations",
       subscription: "Abonnement",
       billing: "Portail de facturation",
+      limits: "Limites",
+    },
+    usage: {
+      title: "Limites d'utilisation",
+      description: "Suivez votre consommation mensuelle et les limites de votre plan",
     },
     submenu: {
       profile: "Mon Profil",
@@ -1714,6 +1719,7 @@ export const translations = {
     title: "Optimisation SEO",
     description: "Optimisez votre boutique pour les moteurs de recherche avec des outils IA",
     clearCache: "Vider le cache",
+    cacheCleared: "Cache vidé avec succès",
     altImage: {
       homepage: "🏠 Page d'accueil",
       loadError: "Erreur lors du chargement des images",
@@ -2910,6 +2916,7 @@ export const translations = {
     },
     tabs: {
       integration: {
+        label: "Intégration",
         description: "Connectez votre compte Google Merchant Center",
       },
       feed: {
@@ -2921,6 +2928,10 @@ export const translations = {
       sync: {
         label: "Synchronisation Auto",
         description: "Configurez la synchronisation automatique de vos flux",
+      },
+      monitoring: {
+        label: "Monitoring",
+        description: "Suivez les performances et l'état de votre flux",
       },
     },
     feed: {
@@ -3179,6 +3190,91 @@ export const translations = {
     title: "Console Google Search",
     description: "Connectez votre compte et analysez les performances de votre site",
     selectDomain: "Sélectionnez un domaine dans l'onglet Intégration",
+    insightsData: {
+      loading: "Chargement des données...",
+      success: "Données chargées avec succès",
+      error: "Erreur lors du chargement des données",
+      noData: "Aucune donnée disponible",
+      period: "Période d'analyse",
+      days7: "7 derniers jours",
+      days30: "30 derniers jours",
+      days90: "90 derniers jours",
+      analyzeAnomalies: "Analyser les anomalies",
+      settings: "Paramètres",
+      alerts: "Alertes détectées",
+      severity: {
+        critical: "Critique",
+        high: "Important",
+        medium: "Moyen",
+        low: "Faible",
+      },
+      markRead: "Marquer lu",
+      resolve: "Résoudre",
+      alertResolved: "Alerte résolue",
+      metrics: {
+        totalClicks: "Clics totaux",
+        totalImpressions: "Impressions",
+        avgCtr: "CTR moyen",
+        avgPosition: "Position moyenne",
+      },
+      syncSettings: {
+        title: "Paramètres de synchronisation automatique",
+        autoSync: "Synchronisation automatique",
+        autoSyncDesc: "Synchroniser automatiquement les données quotidiennement",
+        notifications: "Notifications",
+        notificationsDesc: "Recevoir des notifications pour les alertes et synchronisations",
+        lastSync: "Dernière synchronisation",
+        updated: "Configuration mise à jour",
+        updateError: "Erreur lors de la mise à jour",
+      },
+      charts: {
+        clicksImpressions: "Clics et Impressions",
+        position: "Position moyenne",
+        ctr: "Taux de clic (CTR)",
+      },
+      tables: {
+        topPages: "Pages les plus performantes",
+        topQueries: "Requêtes principales",
+        page: "Page",
+        query: "Requête",
+        clicks: "Clics",
+        impressions: "Impressions",
+        ctr: "CTR",
+        position: "Position",
+      },
+    },
+  },
+  
+  // Media History
+  mediaHistoryPage: {
+    title: "Historique Media",
+    description: "Consultez l'historique complet de toutes vos optimisations d'images par produit",
+    loading: "Chargement...",
+    noHistory: "Aucun historique d'optimisation disponible",
+    unknownProduct: "Produit inconnu",
+    optimizationCount: "{{count}} optimisation{{s}} effectuée{{s}}",
+    types: {
+      whiteBackground: "Fond Blanc",
+      aiBackground: "Arrière-plan IA",
+      description: "Description",
+    },
+    badges: {
+      current: "Actuel",
+      version: "v{{version}}",
+    },
+    actions: {
+      download: "Télécharger",
+      apply: "Appliquer",
+      mainImage: "Image principale",
+      image: "Image {{number}}",
+      downloadStarted: "Téléchargement démarré",
+      applySuccess: "Image appliquée avec succès",
+      applyError: "Erreur lors de l'application",
+    },
+    details: {
+      quality: "Qualité",
+      prompt: "Prompt",
+    },
   },
   
   // Navigation items

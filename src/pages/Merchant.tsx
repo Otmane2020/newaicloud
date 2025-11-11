@@ -62,9 +62,9 @@ export default function Merchant() {
     },
     {
       id: "monitoring",
-      label: "Monitoring",
+      label: t.merchant.tabs.monitoring.label,
       icon: BarChart3,
-      description: "Suivez les performances de vos synchronisations",
+      description: t.merchant.tabs.monitoring.description,
       component: <GoogleMerchantMonitoring />,
     },
   ];

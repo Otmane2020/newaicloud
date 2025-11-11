@@ -1575,6 +1575,11 @@ export const translations = {
       integrations: "Integrations",
       subscription: "Subscription",
       billing: "Billing Portal",
+      limits: "Limits",
+    },
+    usage: {
+      title: "Usage Limits",
+      description: "Track your monthly usage and plan limits",
     },
     submenu: {
       profile: "My Profile",
@@ -1713,6 +1718,7 @@ export const translations = {
     title: "SEO Optimization",
     description: "Optimize your store for search engines with AI tools",
     clearCache: "Clear Cache",
+    cacheCleared: "Cache cleared successfully",
     altImage: {
       homepage: "🏠 Homepage",
       loadError: "Error loading images",
@@ -2909,6 +2915,7 @@ export const translations = {
     },
     tabs: {
       integration: {
+        label: "Integration",
         description: "Connect your Google Merchant Center account",
       },
       feed: {
@@ -2920,6 +2927,10 @@ export const translations = {
       sync: {
         label: "Auto Sync",
         description: "Configure automatic feed synchronization",
+      },
+      monitoring: {
+        label: "Monitoring",
+        description: "Track your feed performance and status",
       },
     },
     feed: {
@@ -3088,6 +3099,91 @@ export const translations = {
     title: "Google Search Console",
     description: "Connect your account and analyze your site's performance",
     selectDomain: "Select a domain in the Integration tab",
+    insightsData: {
+      loading: "Loading data...",
+      success: "Data loaded successfully",
+      error: "Error loading data",
+      noData: "No data available",
+      period: "Analysis period",
+      days7: "Last 7 days",
+      days30: "Last 30 days",
+      days90: "Last 90 days",
+      analyzeAnomalies: "Analyze anomalies",
+      settings: "Settings",
+      alerts: "Alerts detected",
+      severity: {
+        critical: "Critical",
+        high: "High",
+        medium: "Medium",
+        low: "Low",
+      },
+      markRead: "Mark read",
+      resolve: "Resolve",
+      alertResolved: "Alert resolved",
+      metrics: {
+        totalClicks: "Total clicks",
+        totalImpressions: "Impressions",
+        avgCtr: "Avg CTR",
+        avgPosition: "Avg position",
+      },
+      syncSettings: {
+        title: "Automatic sync settings",
+        autoSync: "Automatic sync",
+        autoSyncDesc: "Automatically sync data daily",
+        notifications: "Notifications",
+        notificationsDesc: "Receive notifications for alerts and syncs",
+        lastSync: "Last sync",
+        updated: "Configuration updated",
+        updateError: "Update error",
+      },
+      charts: {
+        clicksImpressions: "Clicks and Impressions",
+        position: "Average position",
+        ctr: "Click-through rate (CTR)",
+      },
+      tables: {
+        topPages: "Top performing pages",
+        topQueries: "Top queries",
+        page: "Page",
+        query: "Query",
+        clicks: "Clicks",
+        impressions: "Impressions",
+        ctr: "CTR",
+        position: "Position",
+      },
+    },
+  },
+  
+  // Media History
+  mediaHistoryPage: {
+    title: "Media History",
+    description: "View complete history of all your image optimizations by product",
+    loading: "Loading...",
+    noHistory: "No optimization history available",
+    unknownProduct: "Unknown product",
+    optimizationCount: "{{count}} optimization{{s}} completed",
+    types: {
+      whiteBackground: "White Background",
+      aiBackground: "AI Background",
+      description: "Description",
+    },
+    badges: {
+      current: "Current",
+      version: "v{{version}}",
+    },
+    actions: {
+      download: "Download",
+      apply: "Apply",
+      mainImage: "Main image",
+      image: "Image {{number}}",
+      downloadStarted: "Download started",
+      applySuccess: "Image applied successfully",
+      applyError: "Error applying image",
+    },
+    details: {
+      quality: "Quality",
+      prompt: "Prompt",
+    },
   },
   
   // Navigation items
