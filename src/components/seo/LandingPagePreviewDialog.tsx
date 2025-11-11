@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -52,6 +52,18 @@ export function LandingPagePreviewDialog({
     },
     enabled: open,
   });
+
+  // Auto-select the current version or the most recent one when dialog opens
+  useEffect(() => {
+    if (open && versions && versions.length > 0 && !selectedVersion) {
+      const currentVersion = versions.find(v => v.is_current) || versions[0];
+      setSelectedVersion(currentVersion);
+    }
+    // Reset selection when dialog closes
+    if (!open) {
+      setSelectedVersion(null);
+    }
+  }, [open, versions, selectedVersion]);
 
   // Restore version mutation
   const restoreMutation = useMutation({
