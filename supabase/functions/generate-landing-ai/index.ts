@@ -653,6 +653,24 @@ STRUCTURE:
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
+🎨 PROFESSIONAL SVG ICONS (CRITICAL):
+- Use inline SVG with gradient fills for premium look
+- Apply theme colors (primary, secondary, accent) with HSL values
+- Add subtle shadows and glows for depth
+- Example structure:
+  <svg class="w-16 h-16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28" fill="url(#iconGrad)" opacity="0.2"/>
+    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>
+- For list items, use elegant checkmark or star icons with theme colors
+- Add hover effects: transform hover:scale-110 transition-transform duration-300
+
 🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
 - NO "Add to Cart" buttons or any purchase buttons
 - NO "Buy Now" or "Order Now" buttons
@@ -747,6 +765,24 @@ STRUCTURE :
   </div>
   <!-- Table bureau -->
   <table class="hidden md:table min-w-full">
+
+🎨 ICÔNES SVG PROFESSIONNELLES (CRITIQUE) :
+- Utiliser des SVG inline avec dégradés pour un look premium
+- Appliquer les couleurs du thème (primary, secondary, accent) en HSL
+- Ajouter ombres et lueurs subtiles pour la profondeur
+- Structure exemple :
+  <svg class="w-16 h-16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28" fill="url(#iconGrad)" opacity="0.2"/>
+    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>
+- Pour les listes, utiliser des icônes élégantes (checkmark, étoile) avec couleurs du thème
+- Ajouter effets hover : transform hover:scale-110 transition-transform duration-300
 
 🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
 - AUCUN bouton "Ajouter au panier" ou bouton d'achat
