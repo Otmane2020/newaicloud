@@ -638,9 +638,23 @@ STRUCTURE:
 - Mobile-first (sm:, md:, lg:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-- No <footer>, no CTA buttons
 
-SECTIONS: Hero with image, Key Benefits (3-4 cards), Specifications, Materials, Gallery, Care Instructions, FAQ.`
+🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
+- NO "Add to Cart" buttons or any purchase buttons
+- NO "Buy Now" or "Order Now" buttons
+- NO navigation menus or breadcrumbs
+- NO footer section
+- NO links to external pages (use href="#" only)
+- NO call-to-action buttons of any kind
+
+✅ REQUIRED SECTIONS:
+Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
+
+ICONS USAGE:
+- Use simple SVG checkmark icons ONLY for bullet lists
+- ONE checkmark icon per list item
+- Example: <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+- NO decorative icons elsewhere`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle.
 
@@ -705,9 +719,23 @@ STRUCTURE :
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-- Pas de <footer>, pas de boutons CTA
 
-SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matériaux, Galerie, Entretien, FAQ.`;
+🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
+- AUCUN bouton "Ajouter au panier" ou bouton d'achat
+- AUCUN bouton "Acheter maintenant" ou "Commander"
+- AUCUN menu de navigation ou fil d'Ariane (breadcrumb)
+- AUCUNE section footer
+- AUCUN lien vers des pages externes (utiliser href="#" uniquement)
+- AUCUN bouton call-to-action de quelque nature que ce soit
+
+✅ SECTIONS REQUISES :
+Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
+
+UTILISATION DES ICÔNES :
+- Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
+- UNE SEULE icône par élément de liste
+- Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+- AUCUNE icône décorative ailleurs`;
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
@@ -729,8 +757,8 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
               role: "system",
               content:
                 detectedLanguage === "en"
-                  ? "You are a professional Shopify landing page designer. You create beautiful, conversion-optimized HTML pages with real working buttons and links. You write persuasive copy and structure content for maximum engagement. Always include functional onclick handlers and href attributes for all buttons and links. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections."
-                  : "Tu es un designer professionnel de landing pages Shopify. Tu crées de belles pages HTML optimisées pour la conversion avec de vrais boutons et liens fonctionnels. Tu rédiges un contenu persuasif et structures l'information pour un engagement maximum. Inclus toujours des handlers onclick et attributs href fonctionnels pour tous les boutons et liens. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes.",
+                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
+                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.",
             },
             { role: "user", content: prompt },
           ],
