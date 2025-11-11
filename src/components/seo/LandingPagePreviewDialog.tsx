@@ -111,14 +111,28 @@ export function LandingPagePreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="h-[calc(90vh-200px)] overflow-auto bg-white">
+        <div className="h-[calc(90vh-200px)] overflow-auto bg-background">
           {currentLandingPage ? (
-            <iframe
-              srcDoc={currentLandingPage}
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin allow-scripts"
-              title="Landing Page Preview"
-            />
+            <div className="relative w-full h-full">
+              <iframe
+                srcDoc={currentLandingPage}
+                className="w-full h-full border-0"
+                sandbox="allow-same-origin allow-scripts"
+                title="Landing Page Preview"
+                onLoad={(e) => {
+                  // Ensure Tailwind is loaded in iframe
+                  const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
+                  if (iframeDoc) {
+                    const checkTailwind = setInterval(() => {
+                      if (iframeDoc.body?.classList.contains('tailwind-loaded')) {
+                        clearInterval(checkTailwind);
+                      }
+                    }, 50);
+                    setTimeout(() => clearInterval(checkTailwind), 3000);
+                  }
+                }}
+              />
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center p-8">

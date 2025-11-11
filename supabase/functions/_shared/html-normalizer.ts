@@ -57,14 +57,26 @@ export function normalizeHTML(
     }
   }
 
-  // Build complete HTML5 document
+  // Build complete HTML5 document with optimized Tailwind loading
   return `<!DOCTYPE html>
 <html lang="${language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${productTitle}</title>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Prevent FOUC (Flash of Unstyled Content) */
+    body { visibility: hidden; }
+    body.tailwind-loaded { visibility: visible; }
+  </style>
+  <script>
+    // Show content as soon as Tailwind is loaded
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => document.body.classList.add('tailwind-loaded'), 100);
+    });
+  </script>
 </head>
 <body>
 ${bodyContent}
