@@ -56,21 +56,25 @@ export default function RegenerateLanding({
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [existingLanding, setExistingLanding] = useState<any>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
 
-  // Charger la landing page existante depuis shopify_products
+  // Charger la landing page existante
   useEffect(() => {
     const loadExistingLanding = async () => {
       try {
         const { data, error } = await supabase
-          .from("shopify_products")
-          .select("landing_page")
-          .eq("id", product.id)
-          .single();
+          .from("product_landing_pages")
+          .select("*")
+          .eq("product_id", product.id)
+          .eq("is_active", true)
+          .maybeSingle();
 
         if (error) throw error;
-        if (data?.landing_page) {
-          setHtmlContent(data.landing_page);
+
+        if (data) {
+          setExistingLanding(data);
+          setHtmlContent(data.html_content);
         }
       } catch (error) {
         console.error("Erreur chargement landing:", error);
@@ -80,11 +84,14 @@ export default function RegenerateLanding({
     };
 
     loadExistingLanding();
-  }, [product.id]);
 
-  // Auto-generate simplifié
+    if (autoGenerate && !loading) {
+      handleGenerate();
+    }
+  }, [product.id, autoGenerate]);
+
   useEffect(() => {
-    if (autoGenerate && !loading && !htmlContent) {
+    if (autoGenerate) {
       handleGenerate();
     }
   }, [autoGenerate]);
@@ -233,7 +240,7 @@ export default function RegenerateLanding({
       if (product.image_url) {
         imageAnalysis = await analyzeImageWithAI(product.image_url);
       } else {
-        setProgress(25);
+        setProgress(25); // Skip to same progress if no image
       }
 
       setProgress(30);
@@ -293,7 +300,7 @@ export default function RegenerateLanding({
 
       if (data?.html?.trim()) {
         const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words`);
+        console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
 
         setHtmlContent(data.html);
         setProgress(100);
@@ -301,6 +308,18 @@ export default function RegenerateLanding({
 
         toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
+
+        // Recharger les données pour mettre à jour le badge
+        const { data: updatedLanding } = await supabase
+          .from("product_landing_pages")
+          .select("*")
+          .eq("product_id", product.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (updatedLanding) {
+          setExistingLanding(updatedLanding);
+        }
       } else {
         throw new Error(t.landingGeneration.errors.noGenerated);
       }
@@ -356,9 +375,9 @@ export default function RegenerateLanding({
       if (error) throw error;
       if (data?.error) {
         // Check if it's a "needs import" error
-        if (data?.needsImport || data.error.includes('non synchronisé') || data.error.includes('not synchronized')) {
-          toast.error('Ce produit doit d\'abord être importé depuis Shopify', {
-            description: 'Rendez-vous sur la page Intégration pour importer vos produits Shopify.'
+        if (data?.needsImport || data.error.includes("non synchronisé") || data.error.includes("not synchronized")) {
+          toast.error("Ce produit doit d'abord être importé depuis Shopify", {
+            description: "Rendez-vous sur la page Intégration pour importer vos produits Shopify.",
           });
         } else {
           toast.error(data.error);
@@ -368,6 +387,18 @@ export default function RegenerateLanding({
 
       toast.success(t.landingGeneration.success.synced);
       if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });
+
+      // Recharger les données pour mettre à jour le badge
+      const { data: updatedLanding } = await supabase
+        .from("product_landing_pages")
+        .select("*")
+        .eq("product_id", product.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (updatedLanding) {
+        setExistingLanding(updatedLanding);
+      }
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
       toast.error(err?.message || t.landingGeneration.errors.sync);
@@ -382,17 +413,20 @@ export default function RegenerateLanding({
   return (
     <div className="space-y-6">
       {/* Existing Landing Page Status */}
-      {!loadingExisting && htmlContent && (
+      {!loadingExisting && existingLanding && (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-primary" />
             <div>
               <p className="font-medium text-sm">Landing page existante</p>
               <p className="text-xs text-muted-foreground">
-                Dernière modification: {new Date().toLocaleDateString()}
+                Version {existingLanding.version} • Créée le {new Date(existingLanding.created_at).toLocaleDateString()}
               </p>
             </div>
           </div>
+          <Badge variant={existingLanding.last_synced_at ? "default" : "secondary"}>
+            {existingLanding.last_synced_at ? "Synchronisée" : "Non synchronisée"}
+          </Badge>
         </div>
       )}
 

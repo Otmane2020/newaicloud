@@ -24,30 +24,38 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 function hexToHsl(hex: string): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return "0 0% 0%";
-  
+
   const r = rgb.r / 255;
   const g = rgb.g / 255;
   const b = rgb.b / 255;
-  
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
-  
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
+
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-      case g: h = ((b - r) / d + 2) / 6; break;
-      case b: h = ((r - g) / d + 4) / 6; break;
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
     }
   }
-  
+
   h = Math.round(h * 360);
   s = Math.round(s * 100);
   l = Math.round(l * 100);
-  
+
   return `${h} ${s}% ${l}%`;
 }
 
@@ -55,7 +63,7 @@ function getLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
   const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) =>
-    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4),
   );
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
@@ -76,29 +84,37 @@ function ensureAccessibleText(bgColor: string): string {
 function adjustSaturation(hex: string, factor: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  
+
   const r = rgb.r / 255;
   const g = rgb.g / 255;
   const b = rgb.b / 255;
-  
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
-  
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
+
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-      case g: h = ((b - r) / d + 2) / 6; break;
-      case b: h = ((r - g) / d + 4) / 6; break;
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
     }
   }
-  
+
   // Adjust saturation
   s = Math.min(1, s * factor);
-  
+
   // Convert back to RGB
   let r2, g2, b2;
   if (s === 0) {
@@ -107,24 +123,24 @@ function adjustSaturation(hex: string, factor: number): string {
     const hue2rgb = (p: number, q: number, t: number) => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
-    
+
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
-    r2 = hue2rgb(p, q, h + 1/3);
+    r2 = hue2rgb(p, q, h + 1 / 3);
     g2 = hue2rgb(p, q, h);
-    b2 = hue2rgb(p, q, h - 1/3);
+    b2 = hue2rgb(p, q, h - 1 / 3);
   }
-  
+
   const toHex = (c: number) => {
     const hex = Math.round(c * 255).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
+    return hex.length === 1 ? "0" + hex : hex;
   };
-  
+
   return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
 }
 
@@ -228,33 +244,27 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
 
 function detectLanguage(text: string): string {
   if (!text || text.length < 10) return "fr"; // Default to French
-  
+
   const cleanText = text.toLowerCase().trim();
-  
+
   // French indicators (articles, common words)
-  const frenchWords = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'avec', 'pour', 'dans', 'sur'];
-  const frenchCount = frenchWords.filter(w => 
-    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
-  ).length;
-  
+  const frenchWords = ["le", "la", "les", "un", "une", "des", "de", "du", "et", "avec", "pour", "dans", "sur"];
+  const frenchCount = frenchWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
+
   // English indicators
-  const englishWords = ['the', 'and', 'for', 'with', 'this', 'that', 'from', 'our', 'your'];
-  const englishCount = englishWords.filter(w => 
-    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
-  ).length;
-  
+  const englishWords = ["the", "and", "for", "with", "this", "that", "from", "our", "your"];
+  const englishCount = englishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
+
   // Spanish indicators
-  const spanishWords = ['el', 'la', 'los', 'las', 'un', 'una', 'con', 'para', 'que', 'en'];
-  const spanishCount = spanishWords.filter(w => 
-    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
-  ).length;
-  
+  const spanishWords = ["el", "la", "los", "las", "un", "una", "con", "para", "que", "en"];
+  const spanishCount = spanishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
+
   // Determine language by highest count
   const counts = { fr: frenchCount, en: englishCount, es: spanishCount };
-  const maxLang = Object.entries(counts).reduce((a, b) => b[1] > a[1] ? b : a)[0];
-  
+  const maxLang = Object.entries(counts).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+
   console.log(`🌍 Language detection: FR=${frenchCount}, EN=${englishCount}, ES=${spanishCount} → ${maxLang}`);
-  
+
   return maxLang;
 }
 
@@ -318,17 +328,6 @@ serve(async (req) => {
       language,
     } = body ?? {};
 
-    console.log("🔐 User authentication:", {
-      hasAuthHeader: !!authHeader,
-      userId: userId,
-      productId: product_id,
-      willAttemptSave: !!(userId && product_id)
-    });
-    
-    // Initialize version tracking variables
-    let versionSaved = false;
-    let savedVersionNumber = null;
-    
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
@@ -350,83 +349,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🔧 STEP 1: Product Enrichment (with conditional logic and retry)
-    console.log("🔧 Starting product enrichment check...");
+    // 🔧 STEP 1: Product Enrichment (with timeout)
+    console.log("🔧 Starting product enrichment...");
     let enrichmentStatus = "skipped";
     let attributesCount = 0;
+    try {
+      const enrichController = new AbortController();
+      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
 
-    // First, check if product already has recent enrichment
-    const { data: existingProduct } = await supabaseAdmin
-      .from("shopify_products")
-      .select("enriched_at, ai_color, ai_material, smart_length, smart_width, smart_height")
-      .eq("id", product_id)
-      .maybeSingle();
+      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+        body: { productId: product_id },
+        signal: enrichController.signal,
+      });
 
-    const hasRecentEnrichment = existingProduct?.enriched_at && 
-      (new Date().getTime() - new Date(existingProduct.enriched_at).getTime()) < 86400000; // 24 hours
+      clearTimeout(enrichTimeout);
 
-    const hasEnrichedData = existingProduct && (
-      existingProduct.ai_color || 
-      existingProduct.ai_material || 
-      existingProduct.smart_length || 
-      existingProduct.smart_width || 
-      existingProduct.smart_height
-    );
-
-    if (hasRecentEnrichment && hasEnrichedData) {
-      console.log("✅ Using existing enrichment (less than 24h old)");
-      enrichmentStatus = "cached";
-    } else {
-      console.log("🔧 Starting product enrichment (no recent data)...");
-      
-      // Helper function to attempt enrichment
-      const attemptEnrichment = async (attemptNumber: number): Promise<boolean> => {
-        try {
-          console.log(`📡 Enrichment attempt ${attemptNumber}...`);
-          
-          const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
-            body: { productId: product_id },
-          });
-
-          if (enrichError) {
-            console.error(`❌ Enrichment attempt ${attemptNumber} failed:`, {
-              message: enrichError.message,
-              status: enrichError.status,
-              details: enrichError.details,
-            });
-            return false;
-          }
-
-          console.log(`✅ Enrichment attempt ${attemptNumber} completed successfully`);
-          return true;
-        } catch (err) {
-          console.error(`❌ Enrichment attempt ${attemptNumber} exception:`, {
-            message: err.message,
-            name: err.name,
-            stack: err.stack?.substring(0, 200),
-          });
-          return false;
-        }
-      };
-
-      // Try enrichment with retry logic
-      const firstAttempt = await attemptEnrichment(1);
-      
-      if (firstAttempt) {
-        enrichmentStatus = "success";
+      if (enrichError) {
+        console.log("⚠️ Enrichment failed:", enrichError.message);
+        enrichmentStatus = "failed";
       } else {
-        console.log("⏳ Waiting 2s before retry...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const secondAttempt = await attemptEnrichment(2);
-        
-        if (secondAttempt) {
-          enrichmentStatus = "success";
-        } else {
-          console.warn("⚠️ Enrichment failed after 2 attempts (continuing without it)");
-          enrichmentStatus = "failed";
-        }
+        console.log("✅ Enrichment completed successfully");
+        enrichmentStatus = "success";
       }
+    } catch (err) {
+      console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
+      enrichmentStatus = "failed";
     }
 
     // Fetch product data including handle, store domain, AND enriched attributes
@@ -738,23 +685,53 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
 
     console.log("✅ HTML generated and sanitized successfully");
 
-    // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
+    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
-      console.log("💾 Updating landing_page field in shopify_products...");
-      
-      const { error: updateError } = await supabaseAdmin
-        .from("shopify_products")
-        .update({ 
-          landing_page: html,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", product_id)
+      console.log("💾 Saving landing page to database...");
+
+      // Désactiver les anciennes versions
+      await supabaseAdmin
+        .from("product_landing_pages")
+        .update({ is_active: false })
+        .eq("product_id", product_id)
         .eq("seller_id", userId);
 
-      if (updateError) {
-        console.error("❌ Update error:", updateError);
+      // Récupérer le numéro de version
+      const { data: existingPages } = await supabaseAdmin
+        .from("product_landing_pages")
+        .select("version")
+        .eq("product_id", product_id)
+        .order("version", { ascending: false })
+        .limit(1);
+
+      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+
+      // Créer la nouvelle version
+      const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
+        product_id: product_id,
+        seller_id: userId,
+        html_content: html,
+        config: {
+          language: detectedLanguage,
+          vendor,
+          image_url: imageUrl,
+          description,
+          content_length: length,
+          style,
+          layout,
+          mainColor,
+          customHighlights,
+          enrichment_status: enrichmentStatus,
+          attributes_count: attributesCount,
+        },
+        version: newVersion,
+        is_active: true,
+      });
+
+      if (saveError) {
+        console.error("❌ Save error:", saveError);
       } else {
-        console.log("✅ Landing page updated successfully in shopify_products");
+        console.log(`✅ Landing page v${newVersion} saved successfully`);
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
