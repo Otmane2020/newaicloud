@@ -69,6 +69,13 @@ export default function Products() {
   }, [currentPage]);
 
   const loadProducts = async () => {
+    if (!selectedStore) {
+      setProducts([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -76,7 +83,8 @@ export default function Products() {
       const { count } = await supabase
         .from("shopify_products")
         .select("*", { count: 'exact', head: true })
-        .eq("seller_id", user?.id);
+        .eq("seller_id", user?.id)
+        .eq("store_id", selectedStore.id);
       
       setTotalCount(count || 0);
       
@@ -85,6 +93,7 @@ export default function Products() {
         .from("shopify_products")
         .select("*")
         .eq("seller_id", user?.id)
+        .eq("store_id", selectedStore.id)
         .order("created_at", { ascending: false })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
@@ -107,7 +116,7 @@ export default function Products() {
       loadProducts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentPage]);
+  }, [user, currentPage, selectedStore]);
 
   useEffect(() => {
     filterAndSortProducts();

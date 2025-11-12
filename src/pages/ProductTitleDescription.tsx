@@ -178,7 +178,7 @@ export default function ProductTitleDescription() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [selectedStore]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {
@@ -200,6 +200,12 @@ export default function ProductTitleDescription() {
   }, [refreshLimits]);
 
   const fetchProducts = async () => {
+    if (!selectedStore) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -209,6 +215,7 @@ export default function ProductTitleDescription() {
         .from("shopify_products")
         .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
         .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
 
       if (error) throw error;
