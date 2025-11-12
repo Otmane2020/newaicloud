@@ -2022,7 +2022,7 @@ export default function ProductTitleDescription() {
               Créez une landing page personnalisée et optimisée pour votre produit
             </DialogDescription>
           </DialogHeader>
-          {selectedLandingProduct && landingConfig && (
+          {selectedLandingProduct && landingConfig && showLandingDialog && (
             <RegenerateLanding 
               product={selectedLandingProduct}
               config={landingConfig}
@@ -2041,9 +2041,11 @@ export default function ProductTitleDescription() {
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
                 
-                // Rafraîchir en arrière-plan (sans bloquer l'aperçu)
-                fetchProducts();
-                refreshLimits();
+                // Débouncer le refresh pour éviter les boucles
+                setTimeout(() => {
+                  fetchProducts();
+                  refreshLimits();
+                }, 2000);
               }}
               onClose={() => setShowLandingDialog(false)}
             />

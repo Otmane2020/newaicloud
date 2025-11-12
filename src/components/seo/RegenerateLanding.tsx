@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Loader2,
   Eye,
@@ -63,6 +63,8 @@ export default function RegenerateLanding({
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
+    let isMounted = true;
+    
     const loadExistingLanding = async () => {
       try {
         const { data, error } = await supabase
@@ -73,25 +75,40 @@ export default function RegenerateLanding({
 
         if (error) throw error;
         
-        if (data?.landing_page) {
+        if (data?.landing_page && isMounted) {
           setHtmlContent(data.landing_page);
         }
       } catch (error) {
         console.error("Erreur chargement landing:", error);
       } finally {
-        setLoadingExisting(false);
+        if (isMounted) {
+          setLoadingExisting(false);
+        }
       }
     };
 
     loadExistingLanding();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [product.id]);
+
+  // Ref pour éviter les générations multiples
+  const hasGeneratedRef = useRef(false);
+
+  // Reset le ref quand le produit change
+  useEffect(() => {
+    hasGeneratedRef.current = false;
   }, [product.id]);
 
   // Auto-generate simplifié
   useEffect(() => {
-    if (autoGenerate && !loading && !htmlContent) {
+    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current) {
+      hasGeneratedRef.current = true;
       handleGenerate();
     }
-  }, [autoGenerate, loading, htmlContent]);
+  }, [autoGenerate, loading]);
 
   /** ----------------------------
    * 🏷️ Resolve Vendor based on config
