@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/lib/language';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
@@ -53,6 +54,7 @@ interface ProductWithImages {
 
 export function SeoAltImageList() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const { t, tf } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductWithImages[]>([]);
@@ -72,14 +74,22 @@ export function SeoAltImageList() {
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
-    fetchImages();
-  }, [user]);
+    if (selectedStore) {
+      fetchImages();
+    }
+  }, [user, selectedStore?.id]);
 
   const fetchImages = async () => {
+    if (!selectedStore?.id) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Fetch product images with their product info
+      // Fetch product images with their product info, filtered by store
       const { data: imagesData, error: imagesError } = await supabase
         .from('product_images')
         .select(`
@@ -94,10 +104,12 @@ export function SeoAltImageList() {
             id,
             title,
             handle,
-            seller_id
+            seller_id,
+            store_id
           )
         `)
         .eq('shopify_products.seller_id', user?.id)
+        .eq('shopify_products.store_id', selectedStore.id)
         .order('product_id', { ascending: true })
         .order('position', { ascending: true });
 

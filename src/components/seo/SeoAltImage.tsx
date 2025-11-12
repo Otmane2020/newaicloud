@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useStore } from '@/contexts/StoreContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -86,6 +87,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function SeoAltImage() {
   const [searchParams] = useSearchParams();
+  const { selectedStore } = useStore();
   const [images, setImages] = useState<ImageWithProduct[]>([]);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -115,16 +117,23 @@ export function SeoAltImage() {
   const IMAGES_PER_PAGE = 50;
 
   const fetchImages = async () => {
+    if (!selectedStore?.id) {
+      setImages([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Fetch product images
+      // Fetch product images with store filter
       const { data: productImagesData, error: productError } = await supabase
         .from('product_images')
         .select(`
           *,
-          product:shopify_products(id, title, vendor, category)
+          product:shopify_products!inner(id, title, vendor, category, store_id)
         `)
+        .eq('product.store_id', selectedStore.id)
         .order('product_id', { ascending: true })
         .order('position', { ascending: true });
 
@@ -239,8 +248,11 @@ export function SeoAltImage() {
   };
 
   useEffect(() => {
-    fetchImages();
-  }, []);
+    if (selectedStore) {
+      setLoading(true);
+      fetchImages();
+    }
+  }, [selectedStore?.id]);
 
   // Handle URL filter params
   useEffect(() => {

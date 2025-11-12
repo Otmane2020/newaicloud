@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useStore } from '@/contexts/StoreContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ interface ProductWithImages {
 }
 
 export const ProductMediaOptimization = () => {
+  const { selectedStore } = useStore();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<ProductImage | null>(null);
   const [showWhiteBgPreview, setShowWhiteBgPreview] = useState(false);
@@ -64,20 +66,23 @@ export const ProductMediaOptimization = () => {
     applyOptimizedImage
   } = useImageOptimization();
 
-  // Load products with images
+  // Load products with images filtered by store
   const { data: products, isLoading } = useQuery({
-    queryKey: ['products-with-images'],
+    queryKey: ['products-with-images', selectedStore?.id],
     queryFn: async (): Promise<ProductWithImages[]> => {
+      if (!selectedStore?.id) return [];
+
       try {
         const userResponse: any = await (supabase as any).auth.getUser();
         const user = userResponse?.data?.user;
         if (!user) throw new Error('Not authenticated');
 
-        // Load products - using any to avoid TS infinite type recursion
+        // Load products filtered by store
         const productsResponse: any = await (supabase as any)
           .from('shopify_products')
           .select('id, title')
-          .eq('user_id', user.id)
+          .eq('seller_id', user.id)
+          .eq('store_id', selectedStore.id)
           .order('title');
 
         if (productsResponse.error) throw productsResponse.error;
