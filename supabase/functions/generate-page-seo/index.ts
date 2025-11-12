@@ -263,11 +263,79 @@ ${baseContent}`;
 
     console.log(`Using language: ${storeLanguage} for ${isHomepage ? 'homepage' : 'page'}`);
 
+    // Get store localization for SERP analysis
+    let storeCountry = 'FR';
+    if (isHomepage && connection?.country_code) {
+      storeCountry = connection.country_code.toUpperCase();
+    } else if (!isHomepage) {
+      const { data: pageData } = await supabaseClient
+        .from('shopify_pages')
+        .select('store_id')
+        .eq('id', pageId)
+        .single();
+      
+      if (pageData?.store_id) {
+        const { data: storeData } = await supabaseClient
+          .from('shopify_connections')
+          .select('country_code')
+          .eq('id', pageData.store_id)
+          .single();
+        
+        if (storeData?.country_code) {
+          storeCountry = storeData.country_code.toUpperCase();
+        }
+      }
+    }
+
+    // Analyze SERP competitors for strategic pages
+    let serpInsights = '';
+    try {
+      let serpKeyword = '';
+      let serpAnalysisType: 'landing' | 'product' | 'article' = 'landing';
+
+      if (isHomepage && connection) {
+        serpKeyword = `${connection.store_label || connection.store_name} ${connection.store_category || 'boutique'}`;
+      } else {
+        serpKeyword = pageTitle;
+        // Detect page type for better SERP analysis
+        const isContactPage = pageTitle.toLowerCase().includes('contact');
+        const isAboutPage = pageTitle.toLowerCase().includes('about') || pageTitle.toLowerCase().includes('propos');
+        serpAnalysisType = (isContactPage || isAboutPage) ? 'landing' : 'landing';
+      }
+
+      console.log(`🔍 Analyzing SERP for page: ${serpKeyword}`);
+      const serpResponse = await supabaseClient.functions.invoke('analyze-serp-competitors', {
+        body: {
+          keyword: serpKeyword,
+          analysisType: serpAnalysisType,
+          location: storeCountry,
+          language: storeLanguage,
+          maxResults: 10
+        }
+      });
+
+      if (!serpResponse.error && serpResponse.data?.insights) {
+        const insights = serpResponse.data.insights;
+        serpInsights = `
+
+🎯 ANALYSE SERP CONCURRENTS :
+- Sections communes : ${insights.commonSections?.join(', ') || 'N/A'}
+- CTAs récurrents : ${insights.ctaPatterns?.join(', ') || 'N/A'}
+- Structure type : ${insights.layoutPatterns?.join(', ') || 'N/A'}
+- Éléments clés : ${insights.keyElements?.join(', ') || 'N/A'}
+
+📌 Optimise le SEO en alignant sur ces patterns qui performent.`;
+        console.log('✅ SERP analysis successful for page');
+      }
+    } catch (serpError) {
+      console.log('⚠️ SERP analysis failed, continuing without it:', serpError);
+    }
+
     // Générer le SEO avec Lovable AI (enriched context)
     const promptType = isHomepage ? 'pageHomepage' : 'pageRegular';
     const prompt = getSeoPrompt(storeLanguage, promptType, {
       title: pageTitle,
-      textContent: textContent,
+      textContent: textContent + serpInsights,
       isHomepage: isHomepage
     });
 

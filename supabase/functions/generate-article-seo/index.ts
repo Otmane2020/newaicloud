@@ -152,6 +152,51 @@ Deno.serve(async (req) => {
 
         console.log(`Using language: ${storeLanguage} for article ${article_id}`);
 
+        // Get store localization for SERP analysis
+        let storeCountry = 'FR';
+        if (article.store_id) {
+          const { data: storeData } = await supabase
+            .from('shopify_connections')
+            .select('country_code')
+            .eq('id', article.store_id)
+            .single();
+          
+          if (storeData?.country_code) {
+            storeCountry = storeData.country_code.toUpperCase();
+          }
+        }
+
+        // Analyze SERP competitors for the article
+        let serpInsights = '';
+        try {
+          console.log(`🔍 Analyzing SERP for article: ${article.title}`);
+          const serpResponse = await supabase.functions.invoke('analyze-serp-competitors', {
+            body: {
+              keyword: article.title,
+              analysisType: 'article',
+              location: storeCountry,
+              language: storeLanguage,
+              maxResults: 10
+            }
+          });
+
+          if (!serpResponse.error && serpResponse.data?.insights) {
+            const insights = serpResponse.data.insights;
+            serpInsights = `
+
+🎯 ANALYSE SERP CONCURRENTS :
+- H2 fréquents : ${insights.commonH2s?.join(', ') || 'N/A'}
+- Thèmes couverts : ${insights.topicCoverage?.join(', ') || 'N/A'}
+- Angles éditoriaux : ${insights.editorialAngles?.join(', ') || 'N/A'}
+- Longueur article moyenne : ${insights.avgContentLength || 'N/A'} mots
+
+📌 Couvre ces sujets et angles pour mieux matcher les intentions de recherche.`;
+            console.log('✅ SERP analysis successful for article');
+          }
+        } catch (serpError) {
+          console.log('⚠️ SERP analysis failed, continuing without it:', serpError);
+        }
+
         // Generate SEO using AI with Vision context
         let visionContextText = '';
         if (visionData?.visualAttributes) {
@@ -179,7 +224,7 @@ ${labels.instruction}`;
 
         const prompt = getSeoPrompt(storeLanguage, 'article', {
           title: article.title,
-          content: article.content + visionContextText,
+          content: article.content + visionContextText + serpInsights,
           keywords: article.keywords
         });
 

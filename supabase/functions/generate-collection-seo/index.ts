@@ -95,6 +95,20 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Using language: ${storeLanguage} for collection ${collection_id}`);
 
+        // Get store localization for SERP analysis
+        let storeCountry = 'FR';
+        if (collection.store_id) {
+          const { data: storeData } = await supabase
+            .from('shopify_connections')
+            .select('country_code, primary_locale')
+            .eq('id', collection.store_id)
+            .single();
+          
+          if (storeData?.country_code) {
+            storeCountry = storeData.country_code.toUpperCase();
+          }
+        }
+
         // Get products from this collection
         const { data: products } = await supabase
           .from('shopify_products')
@@ -104,13 +118,44 @@ Deno.serve(async (req: Request) => {
 
         const productTitles = products?.map(p => p.title).join(', ') || '';
 
+        // Analyze SERP competitors for the collection
+        let serpInsights = '';
+        try {
+          console.log(`🔍 Analyzing SERP for collection: ${collection.title}`);
+          const serpResponse = await supabase.functions.invoke('analyze-serp-competitors', {
+            body: {
+              keyword: collection.title,
+              analysisType: 'product',
+              location: storeCountry,
+              language: storeLanguage,
+              maxResults: 10
+            }
+          });
+
+          if (!serpResponse.error && serpResponse.data?.insights) {
+            const insights = serpResponse.data.insights;
+            serpInsights = `
+
+🎯 ANALYSE SERP CONCURRENTS :
+- Mots-clés fréquents : ${insights.commonKeywords?.join(', ') || 'N/A'}
+- Arguments de vente récurrents : ${insights.sellingPoints?.join(', ') || 'N/A'}
+- Longueur titre moyenne : ${insights.avgTitleLength || 'N/A'} caractères
+- Structures de description communes : ${insights.descriptionPatterns?.join(', ') || 'N/A'}
+
+📌 Intègre ces insights pour créer un SEO plus compétitif que les résultats actuels.`;
+            console.log('✅ SERP analysis successful for collection');
+          }
+        } catch (serpError) {
+          console.log('⚠️ SERP analysis failed, continuing without it:', serpError);
+        }
+
         // Generate SEO with Lovable AI
         const prompt = getSeoPrompt(storeLanguage, 'collection', {
           title: collection.title,
           handle: collection.handle,
           body_html: collection.body_html,
           productTitles: productTitles
-        });
+        }) + serpInsights;
 
         const systemRole = getSystemRole(storeLanguage, 'collection');
 
