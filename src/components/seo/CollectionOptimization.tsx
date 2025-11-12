@@ -926,41 +926,6 @@ export function CollectionOptimization() {
             </div>
             <div className="flex gap-3">
               <Button
-                variant="outline"
-                size="lg"
-                onClick={async () => {
-                  const toastId = toast.loading("Synchronisation avec Shopify...");
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) throw new Error("Non authentifié");
-
-                    const { data, error } = await supabase.functions.invoke('sync-deleted-resources', {
-                      body: { resourceType: 'collections' },
-                      headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
-                    });
-
-                    if (error) throw error;
-                    
-                    toast.success(
-                      `Synchronisation terminée: ${data.results.collectionsDeleted} collection(s) supprimée(s)`,
-                      { id: toastId }
-                    );
-                    
-                    // Refresh collections after sync
-                    fetchCollections();
-                  } catch (error) {
-                    console.error("Sync error:", error);
-                    toast.error("Erreur lors de la synchronisation", { id: toastId });
-                  }
-                }}
-                className="gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Synchroniser
-              </Button>
-              <Button
                 size="lg"
                 onClick={handleGenerateAll}
                 disabled={optimizing || notOptimizedCount === 0}

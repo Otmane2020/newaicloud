@@ -253,3 +253,10 @@ verify_jwt = false
 [functions.trigger-hourly-sync]
 verify_jwt = false
 
+[functions.sync-deleted-resources]
+verify_jwt = false
+
+[functions.trigger-cleanup-sync]
+verify_jwt = false
+
+
