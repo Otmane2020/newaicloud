@@ -224,6 +224,80 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       console.log("⚠️ Erreur détection langue, utilisation du français par défaut:", err);
     }
 
+    // Configuration de la langue (doit être défini tôt pour les prompts)
+    const languageConfig: Record<
+      string,
+      {
+        name: string;
+        toc: string;
+        intro: string;
+        criteria: string;
+        selection: string;
+        comparison: string;
+        advice: string;
+        faq: string;
+        conclusion: string;
+      }
+    > = {
+      fr: {
+        name: "français",
+        toc: "Sommaire",
+        intro: "Introduction",
+        criteria: "Critères de choix essentiels",
+        selection: "Notre sélection de produits",
+        comparison: "Guide comparatif d'achat",
+        advice: "Conseils d'experts",
+        faq: "Questions Fréquentes",
+        conclusion: "Conclusion",
+      },
+      en: {
+        name: "english",
+        toc: "Table of Contents",
+        intro: "Introduction",
+        criteria: "Key Selection Criteria",
+        selection: "Our Product Selection",
+        comparison: "Comparative Buying Guide",
+        advice: "Expert Advice",
+        faq: "Frequently Asked Questions",
+        conclusion: "Conclusion",
+      },
+      es: {
+        name: "español",
+        toc: "Índice",
+        intro: "Introducción",
+        criteria: "Criterios esenciales de elección",
+        selection: "Nuestra selección de productos",
+        comparison: "Guía comparativa de compra",
+        advice: "Consejos de expertos",
+        faq: "Preguntas Frecuentes",
+        conclusion: "Conclusión",
+      },
+      de: {
+        name: "deutsch",
+        toc: "Inhaltsverzeichnis",
+        intro: "Einführung",
+        criteria: "Wesentliche Auswahlkriterien",
+        selection: "Unsere Produktauswahl",
+        comparison: "Vergleichender Kaufratgeber",
+        advice: "Expertenrat",
+        faq: "Häufig gestellte Fragen",
+        conclusion: "Fazit",
+      },
+      it: {
+        name: "italiano",
+        toc: "Indice",
+        intro: "Introduzione",
+        criteria: "Criteri essenziali di scelta",
+        selection: "La nostra selezione di prodotti",
+        comparison: "Guida all'acquisto comparativa",
+        advice: "Consigli degli esperti",
+        faq: "Domande Frequenti",
+        conclusion: "Conclusione",
+      },
+    };
+
+    const lang = languageConfig[detectedLanguage] || languageConfig.fr;
+
     // Default article config if not provided
     const config = {
       style: articleConfig.style || "magazine",
@@ -258,6 +332,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
+    const mainKeyword = keywords.length > 0 ? keywords[0] : category;
 
     console.log(`Génération article : ${articleTitle} pour user ${user_id}`);
 
@@ -400,7 +475,6 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
     }
 
     // Génération du titre optimisé SEO
-    const mainKeyword = keywords.length > 0 ? keywords[0] : category;
 
     const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -489,80 +563,6 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 
     // Génération du contenu HTML complet avec présentation améliorée
     const wordCountTarget = parseInt(config.contentLength);
-
-    // Configuration de la langue pour le prompt
-    const languageConfig: Record<
-      string,
-      {
-        name: string;
-        toc: string;
-        intro: string;
-        criteria: string;
-        selection: string;
-        comparison: string;
-        advice: string;
-        faq: string;
-        conclusion: string;
-      }
-    > = {
-      fr: {
-        name: "français",
-        toc: "Table des matières",
-        intro: "Introduction",
-        criteria: "Critères essentiels de choix",
-        selection: "Notre sélection de produits",
-        comparison: "Guide d'achat comparatif",
-        advice: "Conseils d'experts",
-        faq: "Questions Fréquentes",
-        conclusion: "Conclusion",
-      },
-      en: {
-        name: "English",
-        toc: "Table of Contents",
-        intro: "Introduction",
-        criteria: "Essential Selection Criteria",
-        selection: "Our Product Selection",
-        comparison: "Buyer's Guide & Comparison",
-        advice: "Expert Tips",
-        faq: "Frequently Asked Questions",
-        conclusion: "Conclusion",
-      },
-      es: {
-        name: "español",
-        toc: "Tabla de contenidos",
-        intro: "Introducción",
-        criteria: "Criterios esenciales de selección",
-        selection: "Nuestra selección de productos",
-        comparison: "Guía de compra comparativa",
-        advice: "Consejos de expertos",
-        faq: "Preguntas Frecuentes",
-        conclusion: "Conclusión",
-      },
-      de: {
-        name: "Deutsch",
-        toc: "Inhaltsverzeichnis",
-        intro: "Einführung",
-        criteria: "Wesentliche Auswahlkriterien",
-        selection: "Unsere Produktauswahl",
-        comparison: "Kaufratgeber & Vergleich",
-        advice: "Expertentipps",
-        faq: "Häufig gestellte Fragen",
-        conclusion: "Fazit",
-      },
-      it: {
-        name: "italiano",
-        toc: "Sommario",
-        intro: "Introduzione",
-        criteria: "Criteri essenziali di scelta",
-        selection: "La nostra selezione di prodotti",
-        comparison: "Guida all'acquisto comparativa",
-        advice: "Consigli degli esperti",
-        faq: "Domande Frequenti",
-        conclusion: "Conclusione",
-      },
-    };
-
-    const lang = languageConfig[detectedLanguage] || languageConfig.fr;
     const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
     
     console.log(`📝 Génération en ${lang.name} (langue détectée: ${detectedLanguage})`);
