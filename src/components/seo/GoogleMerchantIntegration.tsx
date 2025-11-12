@@ -95,15 +95,18 @@ export function GoogleMerchantIntegration() {
 
   const fetchMerchantAccounts = async () => {
     try {
+      console.log('[GoogleMerchant] 🔵 Fetching merchant accounts...');
       setIsLoadingAccounts(true);
       
       const { data, error } = await supabase.functions.invoke('list-merchant-accounts');
       
       if (error) {
-        console.error('Error fetching accounts:', error);
+        console.error('[GoogleMerchant] ❌ Error fetching accounts:', error);
         toast.error(t.googleMerchant.integration.errors.loadAccounts + ': ' + (error.message || 'Unknown error'));
         return;
       }
+      
+      console.log('[GoogleMerchant] 🔵 Accounts response:', data);
 
       // Handle API not enabled error
       if (!data?.success && data?.error === 'API_NOT_ENABLED') {
@@ -161,13 +164,16 @@ export function GoogleMerchantIntegration() {
 
   const connectWithGoogle = async () => {
     try {
+      console.log('[GoogleMerchant] 🔵 Starting OAuth flow');
       const redirectUri = `${window.location.origin}/merchant?tab=integration`;
+      console.log('[GoogleMerchant] 🔵 Redirect URI:', redirectUri);
       
       // Using the same Google OAuth endpoint but with different scopes
       const scopes = [
         'https://www.googleapis.com/auth/content',
         'https://www.googleapis.com/auth/siteverification'
       ];
+      console.log('[GoogleMerchant] 🔵 Scopes:', scopes);
       
       const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-url', {
         body: { 
@@ -178,8 +184,11 @@ export function GoogleMerchantIntegration() {
       });
       
       if (urlError || !urlData?.url) {
+        console.error('[GoogleMerchant] ❌ Failed to generate OAuth URL:', urlError);
         throw new Error('Failed to generate OAuth URL');
       }
+      
+      console.log('[GoogleMerchant] ✅ OAuth URL generated successfully');
       
       const width = 600;
       const height = 700;
@@ -201,10 +210,12 @@ export function GoogleMerchantIntegration() {
         if (event.origin !== window.location.origin) return;
         
         if (event.data.type === 'GOOGLE_MERCHANT_OAUTH_CODE' && event.data.code) {
+          console.log('[GoogleMerchant] 🔵 Received OAuth code');
           window.removeEventListener('message', handleMessage);
           
           toast.loading(t.googleMerchant.sync.syncing);
           
+          console.log('[GoogleMerchant] 🔵 Exchanging code for token...');
           const { data, error } = await supabase.functions.invoke('google-merchant-oauth-token', {
             body: {
               code: event.data.code,
@@ -213,14 +224,17 @@ export function GoogleMerchantIntegration() {
           });
           
           if (error || !data?.success) {
-            console.error('Error exchanging code:', error);
+            console.error('[GoogleMerchant] ❌ Error exchanging code:', error);
+            console.error('[GoogleMerchant] ❌ Response data:', data);
             toast.error(t.googleMerchant.integration.errors.connect);
             return;
           }
           
+          console.log('[GoogleMerchant] ✅ Token exchange successful');
           toast.success(t.googleMerchant.integration.success.connected);
           
           // Refresh connection and fetch accounts
+          console.log('[GoogleMerchant] 🔵 Fetching merchant accounts...');
           await checkGoogleConnection();
           
           // Auto-create feed after accounts are loaded

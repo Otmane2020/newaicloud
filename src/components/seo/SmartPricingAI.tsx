@@ -47,6 +47,18 @@ interface CompetitorPrice {
   similarity: number;
 }
 
+interface ProductVariant {
+  id: string;
+  title: string;
+  sku: string | null;
+  price: number;
+  compare_at_price: number | null;
+  cost_price: number | null;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+}
+
 interface ProductPricing {
   id: string;
   title: string;
@@ -66,6 +78,9 @@ interface ProductPricing {
   net_margin: number | null;
   ai_reasoning: string | null;
   competitors: CompetitorPrice[];
+  variants: ProductVariant[];
+  hasMultipleVariants: boolean;
+  isExpanded?: boolean;
 }
 
 interface BulkOperation {
@@ -127,13 +142,13 @@ export function SmartPricingAI() {
 
       setCollections(collectionsData || []);
 
-      // Fetch products with collection names and variants (for SKU) + AI analysis data
+      // Fetch products with collection names and ALL variants data + AI analysis
       const { data: productsData, error: productsError } = await supabase
         .from("shopify_products")
         .select(
           `
           *,
-          product_variants(sku, cost_price),
+          product_variants(id, title, sku, price, compare_at_price, cost_price, option1, option2, option3),
           market_price,
           smart_price,
           ai_reasoning,
@@ -155,7 +170,20 @@ export function SmartPricingAI() {
             .map((id) => collectionsData?.find((c) => c.id === id)?.title)
             .filter(Boolean) as string[];
 
-          const firstVariant = (product as any).product_variants?.[0];
+          const rawVariants = (product as any).product_variants || [];
+          const variants: ProductVariant[] = rawVariants.map((v: any) => ({
+            id: v.id,
+            title: v.title || "Default",
+            sku: v.sku || null,
+            price: v.price || product.price || 0,
+            compare_at_price: v.compare_at_price || null,
+            cost_price: v.cost_price || null,
+            option1: v.option1 || null,
+            option2: v.option2 || null,
+            option3: v.option3 || null,
+          }));
+
+          const firstVariant = variants[0];
 
           return {
             id: product.id,
@@ -178,6 +206,9 @@ export function SmartPricingAI() {
             competitors: Array.isArray(product.competitors)
               ? (product.competitors as unknown as CompetitorPrice[])
               : [],
+            variants,
+            hasMultipleVariants: variants.length > 1,
+            isExpanded: false,
           };
         });
 
@@ -250,6 +281,10 @@ export function SmartPricingAI() {
 
   const toggleProductSelection = (productId: string) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, selected: !p.selected } : p)));
+  };
+
+  const toggleProductExpand = (productId: string) => {
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p)));
   };
 
   const toggleAllSelection = () => {
@@ -1218,10 +1253,23 @@ export function SmartPricingAI() {
                 const netMargin = calculateNetMargin(product.price, product.cost_price, product.shipping_cost);
 
                 return (
-                  <tr key={product.id} className="border-b hover:bg-muted/30 transition-colors">
-                    <td className="p-4">
-                      <Checkbox checked={product.selected} onCheckedChange={() => toggleProductSelection(product.id)} />
-                    </td>
+                  <>
+                    <tr key={product.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={product.selected} onCheckedChange={() => toggleProductSelection(product.id)} />
+                          {product.hasMultipleVariants && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => toggleProductExpand(product.id)}
+                            >
+                              <ArrowUpDown className={`h-4 w-4 transition-transform ${product.isExpanded ? 'rotate-180' : ''}`} />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.image_url ? (
@@ -1558,6 +1606,30 @@ export function SmartPricingAI() {
                       </TooltipProvider>
                     </td>
                   </tr>
+
+                  {/* Variant Rows - Expandable */}
+                  {product.isExpanded && product.variants.map((variant, idx) => (
+                    <tr key={`${product.id}-variant-${idx}`} className="bg-muted/20 border-b hover:bg-muted/40">
+                      <td className="p-2 pl-12" colSpan={2}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge variant="outline" className="text-xs">Variant</Badge>
+                          <span className="text-muted-foreground">{variant.title}</span>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <span className="text-sm font-mono text-muted-foreground">{variant.sku || '-'}</span>
+                      </td>
+                      <td className="p-2" colSpan={1}></td>
+                      <td className="p-2 text-right">
+                        <span className="text-sm font-medium">{formatPrice(variant.price)}</span>
+                      </td>
+                      <td className="p-2 text-right">
+                        <span className="text-sm text-muted-foreground">{formatPrice(variant.compare_at_price)}</span>
+                      </td>
+                      <td className="p-2" colSpan={8}></td>
+                    </tr>
+                  ))}
+                </>
                 );
               })}
             </tbody>

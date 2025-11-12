@@ -986,6 +986,54 @@ export type Database = {
         }
         Relationships: []
       }
+      google_ads_campaigns: {
+        Row: {
+          advertising_channel_type: string | null
+          campaign_id: string
+          clicks: number | null
+          cost_micros: number | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          impressions: number | null
+          last_sync_at: string | null
+          name: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          advertising_channel_type?: string | null
+          campaign_id: string
+          clicks?: number | null
+          cost_micros?: number | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          impressions?: number | null
+          last_sync_at?: string | null
+          name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          advertising_channel_type?: string | null
+          campaign_id?: string
+          clicks?: number | null
+          cost_micros?: number | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          impressions?: number | null
+          last_sync_at?: string | null
+          name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_merchant_feeds: {
         Row: {
           created_at: string
