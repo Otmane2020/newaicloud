@@ -1467,32 +1467,27 @@ export function CollectionOptimization() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell colSpan={2}>
-                        {collection.seo_title && collection.seo_description ? (
-                          <div 
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => setPreviewCollectionId(collection.id)}
-                          >
-                            <GoogleSearchPreview
-                              title={collection.seo_title}
-                              description={collection.seo_description}
-                              url={`https://${storeDomain}/collections/${collection.handle}`}
-                            />
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="max-w-[200px]">
-                              <Badge variant="outline" className="text-xs">
-                                Not optimized
-                              </Badge>
-                            </div>
-                            <div className="max-w-[250px]">
-                              <Badge variant="outline" className="text-xs">
-                                Not optimized
-                              </Badge>
-                            </div>
-                          </div>
-                        )}
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          {collection.seo_title ? (
+                            <p className="text-sm font-medium line-clamp-2">{collection.seo_title}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[250px]">
+                          {collection.seo_description ? (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{collection.seo_description}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">
