@@ -21,6 +21,7 @@ import {
   Info,
   Truck,
   Image,
+  AlertCircle,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -95,6 +96,7 @@ export function SmartPricingAI() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [taxRate, setTaxRate] = useState<number>(20); // Taux de TVA par défaut: 20%
   const [lastAnalysisTime, setLastAnalysisTime] = useState<Date | null>(null);
+  const [showMissingSku, setShowMissingSku] = useState(false);
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>({
     type: "discount",
     method: "percentage",
@@ -754,8 +756,11 @@ export function SmartPricingAI() {
       !searchQuery ||
       product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCollection && matchesSearch;
+    const matchesSku = !showMissingSku || !product.sku || product.sku.trim() === "";
+    return matchesCollection && matchesSearch && matchesSku;
   });
+
+  const missingSkuCount = products.filter(p => !p.sku || p.sku.trim() === "").length;
 
   const currency = products[0]?.currency || "EUR";
   const currencySymbol = currency === "USD" ? "$" : currency === "GBP" ? "£" : "€";
@@ -969,18 +974,41 @@ export function SmartPricingAI() {
         </Card>
       )}
 
+      {/* SKU Stats */}
+      {missingSkuCount > 0 && (
+        <Card className="p-3 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+              <div className="text-sm">
+                <span className="font-semibold text-amber-900 dark:text-amber-100">{missingSkuCount}</span>
+                <span className="text-amber-700 dark:text-amber-300"> produits sans SKU</span>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowMissingSku(!showMissingSku)}
+              className="text-xs"
+            >
+              {showMissingSku ? "Tout afficher" : "Afficher"}
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
           <Input
             type="text"
             placeholder="🔍 Rechercher par titre ou SKU..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
+            className="w-full sm:max-w-md"
           />
           <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-            <SelectTrigger className="w-[250px]">
+            <SelectTrigger className="w-full sm:w-[250px]">
               <SelectValue placeholder="Filtrer par collection" />
             </SelectTrigger>
             <SelectContent>
@@ -992,33 +1020,38 @@ export function SmartPricingAI() {
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="outline">{filteredProducts.length} produits</Badge>
-          {selectedCount > 0 && <Badge variant="default">{selectedCount} sélectionné(s)</Badge>}
+          <Badge variant="outline" className="w-fit">{filteredProducts.length} produits</Badge>
+          {selectedCount > 0 && <Badge variant="default" className="w-fit">{selectedCount} sélectionné(s)</Badge>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           <Button
             variant="default"
             onClick={() => analyzeCompetitorPrices(true)}
             disabled={analyzingPrices || syncing || selectedCount === 0}
-            className="gap-2 bg-purple-600 hover:bg-purple-700"
+            className="gap-2 bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
+            size="sm"
           >
             {analyzingPrices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
-            🤖 Analyser Prix IA
+            <span className="hidden sm:inline">🤖 Analyser Prix IA</span>
+            <span className="sm:hidden">Analyser IA</span>
           </Button>
           <Button
             variant="secondary"
             onClick={() => applySmartPrices(true)}
             disabled={syncing || products.filter((p) => p.selected && p.smart_price).length === 0}
-            className="gap-2"
+            className="gap-2 text-xs sm:text-sm"
+            size="sm"
           >
             <CheckCheck className="w-4 h-4" />
-            Appliquer Smart Price
+            <span className="hidden sm:inline">Appliquer Smart Price</span>
+            <span className="sm:hidden">Smart Price</span>
           </Button>
           <Button
             variant="default"
             onClick={handleWhiteBackground}
             disabled={isGeneratingWhiteBg || selectedCount === 0}
-            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-xs sm:text-sm"
+            size="sm"
           >
             {isGeneratingWhiteBg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
             Fond blanc
@@ -1031,10 +1064,12 @@ export function SmartPricingAI() {
                     <Button
                       variant="outline"
                       disabled={importing || syncing || products.length === 0}
-                      className="gap-2"
+                      className="gap-2 text-xs sm:text-sm"
+                      size="sm"
                     >
                       {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      Importer Coûts
+                      <span className="hidden sm:inline">Importer Coûts</span>
+                      <span className="sm:hidden">Coûts</span>
                     </Button>
                   </TooltipTrigger>
                 </AlertDialogTrigger>
@@ -1111,19 +1146,19 @@ export function SmartPricingAI() {
                   />
                 </th>
                 <th className="p-4 text-left">Produit</th>
-                <th className="p-4 text-left">SKU</th>
-                <th className="p-4 text-left">Collection(s)</th>
+                <th className="hidden md:table-cell p-4 text-left">SKU</th>
+                <th className="hidden lg:table-cell p-4 text-left">Collection(s)</th>
                 <th className="p-4 text-right">Prix</th>
-                <th className="p-4 text-right">Prix comparé</th>
-                <th className="p-4 text-center">Remise</th>
-                <th className="p-4 text-right">Prix de revient</th>
-                <th className="p-4 text-right">Frais livraison</th>
-                <th className="p-4 text-right">Marge Brute (€)</th>
-                <th className="p-4 text-center">Marge Brute (%)</th>
+                <th className="hidden sm:table-cell p-4 text-right">Prix comparé</th>
+                <th className="hidden sm:table-cell p-4 text-center">Remise</th>
+                <th className="hidden lg:table-cell p-4 text-right">Prix de revient</th>
+                <th className="hidden lg:table-cell p-4 text-right">Frais livraison</th>
+                <th className="hidden xl:table-cell p-4 text-right">Marge Brute (€)</th>
+                <th className="hidden xl:table-cell p-4 text-center">Marge Brute (%)</th>
                 <th className="p-4 text-right">Marge Nette (€)</th>
-                <th className="p-4 text-center">Marge Nette (%)</th>
-                <th className="p-4 text-right">Market Price</th>
-                <th className="p-4 text-right">Smart Price</th>
+                <th className="hidden md:table-cell p-4 text-center">Marge Nette (%)</th>
+                <th className="hidden lg:table-cell p-4 text-right">Market Price</th>
+                <th className="hidden lg:table-cell p-4 text-right">Smart Price</th>
                 <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -1160,10 +1195,17 @@ export function SmartPricingAI() {
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className="text-sm text-muted-foreground font-mono">{product.sku || "-"}</span>
+                    <td className="hidden md:table-cell p-4">
+                      {product.sku && product.sku.trim() !== "" ? (
+                        <span className="text-sm text-muted-foreground font-mono">{product.sku}</span>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs flex items-center gap-1 w-fit">
+                          <AlertCircle className="w-3 h-3" />
+                          SKU Manquant
+                        </Badge>
+                      )}
                     </td>
-                    <td className="p-4">
+                    <td className="hidden lg:table-cell p-4">
                       <div className="flex flex-wrap gap-1">
                         {product.collection_names.map((name, i) => (
                           <Badge key={i} variant="outline" className="text-xs">

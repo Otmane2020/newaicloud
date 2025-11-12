@@ -572,7 +572,7 @@ Deno.serve(async (req: Request) => {
         const variantsToInsert = product.variants.map((variant) => ({
           product_id: productId,
           shopify_variant_id: variant.id,
-          sku: variant.sku || "",
+          sku: variant.sku && variant.sku.trim() !== "" ? variant.sku.trim() : null,
           title: variant.title || "Default",
           option1: variant.option1 || "",
           option2: variant.option2 || "",
