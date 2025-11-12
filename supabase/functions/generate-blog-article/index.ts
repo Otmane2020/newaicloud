@@ -637,29 +637,112 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 ❌ Pas de <html>, <head>, <body>
 ❌ Pas de JavaScript
 
-🛍️ CONTRAINTE PRODUITS (OBLIGATOIRE) :
+🛍️ CONTRAINTE PRODUITS (CRITIQUE - OBLIGATOIRE) :
 ${
   hasProducts
-    ? `Tu DOIS intégrer les ${products.length} produits ci-dessous dans l'article.
-Chaque produit DOIT être présenté avec:
-  ✅ Image produit réelle : <img src="[full_image_url]" alt="[title]" class="w-full h-48 object-cover rounded-lg" />
-  ✅ Titre cliquable : <a href="[product_url]" class="text-xl font-bold hover:text-primary" style="color: ${config.colorScheme}">[title]</a>
-  ✅ Prix : <span class="text-lg font-semibold">[price]€</span>
-  ✅ Description courte
-  ✅ Bouton "Voir le produit" : <a href="[product_url]" class="px-6 py-3 rounded-lg text-white" style="background-color: ${config.colorScheme}">Voir le produit</a>
+    ? `⚠️ OBLIGATION ABSOLUE : Tu DOIS afficher TOUS les ${products.length} produits avec leurs VRAIES photos et liens cliquables.
 
-📦 LISTE DES PRODUITS À INTÉGRER :
+📐 TEMPLATE ${config.productDisplay.toUpperCase()} À UTILISER :
+
+${config.productDisplay === 'grid' ? `
+<!-- TEMPLATE GRILLE (Grid) - Copie ce code exactement pour chaque produit -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
+  <!-- PRODUIT 1 -->
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300">
+    <a href="[PRODUCT_URL_ICI]">
+      <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-64 object-cover" />
+    </a>
+    <div class="p-6">
+      <a href="[PRODUCT_URL_ICI]" class="block">
+        <h3 class="text-xl font-bold mb-2 hover:text-primary" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
+      </a>
+      <p class="text-gray-600 text-sm mb-4">[DESCRIPTION_COURTE_ICI]</p>
+      <div class="flex items-center justify-between">
+        <span class="text-2xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
+        <a href="[PRODUCT_URL_ICI]" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-all" style="background-color: ${config.colorScheme}">
+          ${lang.name === 'français' ? 'Voir le produit' : lang.name === 'English' ? 'View Product' : lang.name === 'español' ? 'Ver producto' : lang.name === 'Deutsch' ? 'Produkt ansehen' : 'Vedi prodotto'}
+        </a>
+      </div>
+    </div>
+  </div>
+  <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
+</div>
+` : config.productDisplay === 'carousel' ? `
+<!-- TEMPLATE CAROUSEL - Affichage horizontal scrollable -->
+<div class="overflow-x-auto my-8">
+  <div class="flex gap-6 pb-4" style="min-width: min-content;">
+    <!-- PRODUIT 1 -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 flex-shrink-0 w-80">
+      <a href="[PRODUCT_URL_ICI]">
+        <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-56 object-cover" />
+      </a>
+      <div class="p-5">
+        <a href="[PRODUCT_URL_ICI]">
+          <h3 class="text-lg font-bold mb-2" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
+        </a>
+        <p class="text-gray-600 text-sm mb-3">[DESCRIPTION_COURTE_ICI]</p>
+        <div class="flex items-center justify-between">
+          <span class="text-xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
+          <a href="[PRODUCT_URL_ICI]" class="px-4 py-2 rounded-lg text-white text-sm font-semibold" style="background-color: ${config.colorScheme}">
+            ${lang.name === 'français' ? 'Voir' : lang.name === 'English' ? 'View' : lang.name === 'español' ? 'Ver' : lang.name === 'Deutsch' ? 'Ansehen' : 'Vedi'}
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
+  </div>
+</div>
+` : `
+<!-- TEMPLATE SHOWCASE - Affichage détaillé produit par produit -->
+<div class="space-y-8 my-8">
+  <!-- PRODUIT 1 -->
+  <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+    <div class="md:flex">
+      <a href="[PRODUCT_URL_ICI]" class="md:w-1/2">
+        <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-80 object-cover" />
+      </a>
+      <div class="p-8 md:w-1/2">
+        <a href="[PRODUCT_URL_ICI]">
+          <h3 class="text-2xl font-bold mb-4 hover:text-primary" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
+        </a>
+        <p class="text-gray-700 mb-6 leading-relaxed">[DESCRIPTION_COMPLETE_ICI]</p>
+        <div class="flex items-center gap-4 mb-6">
+          <span class="text-3xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
+          ${lang.name === 'français' ? '<span class="text-sm text-green-600">✓ Livraison offerte</span>' : ''}
+        </div>
+        <a href="[PRODUCT_URL_ICI]" class="inline-block px-8 py-4 rounded-lg text-white text-lg font-semibold hover:opacity-90 transition-all shadow-lg" style="background-color: ${config.colorScheme}">
+          ${lang.name === 'français' ? 'Acheter maintenant' : lang.name === 'English' ? 'Buy Now' : lang.name === 'español' ? 'Comprar ahora' : lang.name === 'Deutsch' ? 'Jetzt kaufen' : 'Acquista ora'}
+        </a>
+      </div>
+    </div>
+  </div>
+  <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
+</div>
+`}
+
+📦 PRODUITS À INTÉGRER (Remplace [PRODUCT_URL_ICI], [FULL_IMAGE_URL_ICI], etc. avec ces données) :
 ${products.map((p: any, i: number) => `
-## Produit ${i + 1}: ${p.title}
-- Prix : ${p.price}€
-- Catégorie : ${p.category || 'N/A'}
-- Description : ${p.description?.substring(0, 200) || 'N/A'}
-- Image URL : ${p.full_image_url || 'N/A'}
-- Lien produit : ${p.product_url}
-**⚠️ ACTION REQUISE : Intègre ce produit avec son IMAGE et son LIEN cliquable dans la section showcase**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRODUIT ${i + 1}: ${p.title}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[PRODUCT_URL_ICI] = ${p.product_url}
+[FULL_IMAGE_URL_ICI] = ${p.full_image_url || 'N/A'}
+[TITLE_ICI] = ${p.title}
+[PRICE_ICI] = ${p.price}
+[DESCRIPTION_COURTE_ICI] = ${p.description?.substring(0, 150) || 'Produit de qualité premium'}
+[DESCRIPTION_COMPLETE_ICI] = ${p.description?.substring(0, 300) || 'Produit de qualité premium avec des caractéristiques exceptionnelles'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**✅ ACTION : Copie le template ci-dessus et remplace TOUS les placeholders [XXX_ICI] avec ces valeurs**
 `).join('\n')}
 
-⚠️ NE PAS utiliser d'images Unsplash pour les produits ! Utilise UNIQUEMENT les images fournies ci-dessus.`
+🚨 RÈGLES CRITIQUES (Non négociables) :
+1. ✅ Utilise le template ${config.productDisplay.toUpperCase()} fourni ci-dessus
+2. ✅ Remplace TOUS les placeholders [XXX_ICI] par les vraies valeurs
+3. ✅ TOUTES les images doivent utiliser full_image_url (pas d'URL Unsplash)
+4. ✅ TOUS les liens <a href="..."> doivent pointer vers product_url
+5. ✅ TOUS les ${products.length} produits doivent apparaître dans l'article
+6. ❌ NE JAMAIS inventer d'URL d'image
+7. ❌ NE JAMAIS utiliser d'images de placeholder ou Unsplash pour les produits`
     : `Article informatif générique sur ${topicInfo} (sans produits)`
 }
 ${netlinkingContext}

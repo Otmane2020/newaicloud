@@ -31,6 +31,7 @@ import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
+import BlogCampaignMonitoring from "./pages/BlogCampaignMonitoring";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
@@ -161,6 +162,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ArticleManagement />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/blog-monitoring"
+              element={
+                <ProtectedLayout>
+                  <BlogCampaignMonitoring />
                 </ProtectedLayout>
               }
             />

@@ -40,7 +40,7 @@ export default function Blog() {
   useEffect(() => {
     const subtab = searchParams.get('subtab');
     
-    if (subtab && ['articles', 'create-article', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
+    if (subtab && ['articles', 'create-article', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
       setActiveSubtab(subtab);
     }
   }, [searchParams]);
@@ -170,6 +170,12 @@ export default function Blog() {
       label: t.blog.submenu.campaigns, 
       icon: CalendarClock, 
       description: t.blog.submenu.campaignsDesc 
+    },
+    { 
+      id: 'monitoring', 
+      label: 'Suivi & Diagnostic', 
+      icon: PenSquare, 
+      description: 'Surveillez vos campagnes et diagnostiquez les problèmes'
     },
     { 
       id: 'opportunities', 
@@ -565,6 +571,49 @@ export default function Blog() {
               )}
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Monitoring */}
+      {activeSubtab === 'monitoring' && (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6 sm:p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-2">
+                  <PenSquare className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                    Suivi & Diagnostic des Campagnes
+                  </h2>
+                </div>
+                <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                  Surveillez vos campagnes automatiques, forcez des générations et diagnostiquez les problèmes
+                </p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <CalendarClock className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="font-medium">{campaigns.length} campagnes actives</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <span className="font-medium">Diagnostic en temps réel</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button size="lg" onClick={() => navigate('/blog-monitoring')} className="w-full sm:w-auto">
+                  <PenSquare className="w-4 h-4 mr-2" />
+                  Voir le monitoring complet
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <iframe 
+            src="/blog-monitoring" 
+            className="w-full h-[800px] rounded-lg border-2 border-border"
+            title="Campaign Monitoring"
+          />
         </div>
       )}
 
