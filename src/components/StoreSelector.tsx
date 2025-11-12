@@ -45,8 +45,12 @@ export function StoreSelector() {
           console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
           const store = stores.find(s => s.id === value);
           if (store) {
-            console.log('✅ [STORE_SELECTOR] Store found:', store.store_name);
+            console.log('✅ [STORE_SELECTOR] Store found:', {
+              id: store.id,
+              name: store.store_name
+            });
             setSelectedStore(store);
+            console.log('✅ [STORE_SELECTOR] setSelectedStore called with store:', store.store_name);
           } else {
             console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
           }
