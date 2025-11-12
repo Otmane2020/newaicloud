@@ -1,0 +1,164 @@
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Check } from 'lucide-react';
+
+interface ProductImage {
+  id: string;
+  src: string;
+  alt_text?: string;
+  position: number;
+}
+
+interface ImageSelectionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  productTitle: string;
+  mainImageUrl: string | null;
+  variantImages: ProductImage[];
+  onConfirm: (selectedImageUrl: string, applyTo: 'main' | 'all') => void;
+}
+
+export function ImageSelectionDialog({
+  open,
+  onOpenChange,
+  productTitle,
+  mainImageUrl,
+  variantImages,
+  onConfirm,
+}: ImageSelectionDialogProps) {
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>(mainImageUrl || '');
+  const [applyTo, setApplyTo] = useState<'main' | 'all'>('main');
+
+  const handleConfirm = () => {
+    if (!selectedImageUrl) return;
+    onConfirm(selectedImageUrl, applyTo);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base sm:text-lg">Sélectionner l'image à traiter</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
+            Choisissez l'image source et où appliquer le résultat pour "{productTitle}"
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Source Image Selection */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Image source</Label>
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {mainImageUrl && (
+                  <button
+                    onClick={() => setSelectedImageUrl(mainImageUrl)}
+                    className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                      selectedImageUrl === mainImageUrl
+                        ? 'border-primary ring-2 ring-primary ring-offset-2'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <img
+                      src={mainImageUrl}
+                      alt="Image principale"
+                      className="w-full h-full object-cover"
+                    />
+                    {selectedImageUrl === mainImageUrl && (
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                    <Badge className="absolute bottom-2 left-2 text-xs">
+                      Principale
+                    </Badge>
+                  </button>
+                )}
+                {variantImages.map((img) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setSelectedImageUrl(img.src)}
+                    className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                      selectedImageUrl === img.src
+                        ? 'border-primary ring-2 ring-primary ring-offset-2'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <img
+                      src={img.src}
+                      alt={img.alt_text || `Variante ${img.position}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {selectedImageUrl === img.src && (
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                    <Badge className="absolute bottom-2 left-2 text-xs">
+                      Variante {img.position}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Application Target */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Appliquer le résultat à</Label>
+            <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'all')}>
+              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="main" id="main" />
+                <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
+                  Image principale uniquement
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Remplace uniquement l'image principale du produit
+                  </p>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="all" id="all" />
+                <Label htmlFor="all" className="flex-1 cursor-pointer text-sm">
+                  Toutes les images
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Remplace l'image principale et toutes les variantes
+                  </p>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto text-xs sm:text-sm"
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedImageUrl}
+            className="w-full sm:w-auto text-xs sm:text-sm"
+          >
+            Confirmer et générer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

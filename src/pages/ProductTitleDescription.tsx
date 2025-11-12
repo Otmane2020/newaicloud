@@ -51,6 +51,7 @@ import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/O
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundConfigDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundConfigDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
+import { ImageSelectionDialog } from "@/components/seo/ImageSelectionDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -170,6 +171,10 @@ export default function ProductTitleDescription() {
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [showImageSelectionDialog, setShowImageSelectionDialog] = useState(false);
+  const [imageSelectionMode, setImageSelectionMode] = useState<'whitebg' | 'aibg'>('whitebg');
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [pendingProductImages, setPendingProductImages] = useState<ProductImage[]>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -546,6 +551,28 @@ export default function ProductTitleDescription() {
       return;
     }
 
+    // Si un seul produit sélectionné, afficher la sélection d'image
+    if (selectedProducts.size === 1) {
+      const productId = Array.from(selectedProducts)[0];
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        setPendingProduct(product);
+        setImageSelectionMode('whitebg');
+        
+        // Charger les images des variantes
+        const { data: images } = await supabase
+          .from('product_images')
+          .select('id, src, alt_text, position')
+          .eq('product_id', productId)
+          .order('position', { ascending: true });
+        
+        setPendingProductImages(images || []);
+        setShowImageSelectionDialog(true);
+        setShowWhiteBgConfigDialog(false);
+        return;
+      }
+    }
+
     const selectedProductsList = products.filter((p) =>
       selectedProducts.has(p.id) && p.image_url
     );
@@ -621,6 +648,113 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
+  const handleImageSelectionConfirm = async (selectedImageUrl: string, applyTo: 'main' | 'all') => {
+    if (!pendingProduct) return;
+    
+    setShowImageSelectionDialog(false);
+    
+    if (imageSelectionMode === 'whitebg') {
+      // Start white background generation with selected image
+      setGeneratingWhiteBg(true);
+      
+      const previews: PreviewImage[] = [{
+        productId: pendingProduct.id,
+        productTitle: pendingProduct.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      }];
+
+      setWhiteBgPreviews(previews);
+      setShowWhiteBgDialog(true);
+
+      setWhiteBgPreviews((prev) =>
+        prev.map((p) => ({ ...p, status: 'generating' }))
+      );
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: { 
+            imageUrl: selectedImageUrl,
+            productTitle: pendingProduct.title,
+            imageType: selectedImageType,
+            applyTo: applyTo
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success && data.imageUrl) {
+          setWhiteBgPreviews((prev) =>
+            prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.imageUrl }))
+          );
+        } else {
+          throw new Error(data.error || 'Échec de la génération');
+        }
+      } catch (error: any) {
+        console.error('Error generating white background:', error);
+        setWhiteBgPreviews((prev) =>
+          prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
+        );
+      }
+
+      setGeneratingWhiteBg(false);
+      await refreshLimits();
+    } else if (imageSelectionMode === 'aibg') {
+      // Start AI background generation with selected image
+      setGeneratingAiBg(true);
+      
+      const previews: PreviewImage[] = [{
+        productId: pendingProduct.id,
+        productTitle: pendingProduct.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      }];
+
+      setAiBgPreviews(previews);
+      setShowAiBgDialog(true);
+
+      setAiBgPreviews((prev) =>
+        prev.map((p) => ({ ...p, status: 'generating' }))
+      );
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
+          body: {
+            imageUrl: selectedImageUrl,
+            productTitle: pendingProduct.title,
+            prompt: customPrompt,
+            format: selectedImageFormat,
+            similarity: selectedSimilarity,
+            applyTo: applyTo
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.variants && data.variants.length > 0) {
+          setAiBgPreviews((prev) =>
+            prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.variants[0] }))
+          );
+        } else {
+          throw new Error('Aucune image générée');
+        }
+      } catch (error: any) {
+        console.error('Error generating AI background:', error);
+        setAiBgPreviews((prev) =>
+          prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
+        );
+      }
+
+      setGeneratingAiBg(false);
+      await refreshLimits();
+    }
+    
+    setPendingProduct(null);
+    setPendingProductImages([]);
+  };
+
   const handleStartAiBackground = async (prompt: string, format: string, similarity: string) => {
     // Vérifier les limites d'utilisation
     if (!canDoAction('optimizations')) {
@@ -635,6 +769,32 @@ export default function ProductTitleDescription() {
     if (selectedProductsList.length === 0) {
       toast.error("Aucun produit sélectionné n'a d'image");
       return;
+    }
+
+    // Si un seul produit sélectionné, afficher la sélection d'image
+    if (selectedProducts.size === 1) {
+      const productId = Array.from(selectedProducts)[0];
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        setPendingProduct(product);
+        setImageSelectionMode('aibg');
+        setCustomPrompt(prompt);
+        setSelectedImageFormat(format);
+        setSelectedSimilarity(similarity);
+        
+        // Charger les images des variantes
+        const { data: images } = await supabase
+          .from('product_images')
+          .select('id, src, alt_text, position')
+          .eq('product_id', productId)
+          .order('position', { ascending: true });
+        
+        setPendingProductImages(images || []);
+        setShowImageSelectionDialog(true);
+        setShowPromptDialog(false);
+        setShowAiConfigDialog(false);
+        return;
+      }
     }
 
     setShowPromptDialog(false);
@@ -1558,12 +1718,15 @@ export default function ProductTitleDescription() {
           
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center py-4 border-t">
+            <div className="flex justify-center py-4 border-t overflow-x-auto">
               <Pagination>
-                <PaginationContent>
+                <PaginationContent className="flex-wrap gap-1">
                   <PaginationItem>
                     <PaginationPrevious 
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      onClick={() => {
+                        setCurrentPage(p => Math.max(1, p - 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
@@ -1577,7 +1740,10 @@ export default function ProductTitleDescription() {
                       return (
                         <PaginationItem key={page}>
                           <PaginationLink
-                            onClick={() => setCurrentPage(page)}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
                             isActive={currentPage === page}
                             className="cursor-pointer"
                           >
@@ -1597,7 +1763,10 @@ export default function ProductTitleDescription() {
                   
                   <PaginationItem>
                     <PaginationNext 
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => {
+                        setCurrentPage(p => Math.min(totalPages, p + 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
@@ -1905,6 +2074,16 @@ export default function ProductTitleDescription() {
           refreshLimits();
           setShowUpgradeDialog(false);
         }}
+      />
+
+      {/* Image Selection Dialog */}
+      <ImageSelectionDialog
+        open={showImageSelectionDialog}
+        onOpenChange={setShowImageSelectionDialog}
+        productTitle={pendingProduct?.title || ''}
+        mainImageUrl={pendingProduct?.image_url || null}
+        variantImages={pendingProductImages}
+        onConfirm={handleImageSelectionConfirm}
       />
 
       <LandingPagePreviewDialog
