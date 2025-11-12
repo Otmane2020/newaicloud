@@ -23,6 +23,7 @@ import { ReoptimizeConfirmDialog } from './ReoptimizeConfirmDialog';
 import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
+import { GoogleSearchPreview } from './GoogleSearchPreview';
 import {
   Table,
   TableBody,
@@ -127,10 +128,65 @@ export function CollectionOptimization() {
   const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
   const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [pendingOptimizationCollections, setPendingOptimizationCollections] = useState<Collection[]>([]);
+  const [storeDomain, setStoreDomain] = useState<string>('example.com');
+  const [previewCollectionId, setPreviewCollectionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCollections();
   }, []);
+
+  // Fetch store domain
+  useEffect(() => {
+    const fetchStoreDomain = async () => {
+      if (!selectedStore?.id) return;
+      
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('public_domain, store_url, access_token')
+        .eq('id', selectedStore.id)
+        .single();
+      
+      if (data && !error) {
+        // If we have a public_domain, use it
+        if (data.public_domain) {
+          setStoreDomain(data.public_domain);
+        } else if (data.access_token && data.store_url) {
+          // Try to fetch the domain from Shopify API
+          try {
+            const response = await fetch(`https://${data.store_url}/admin/api/2025-10/shop.json`, {
+              headers: {
+                'X-Shopify-Access-Token': data.access_token,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              const shopData = await response.json();
+              const shopifyDomain = shopData.shop?.domain || data.store_url.replace(/^https?:\/\//, '');
+              setStoreDomain(shopifyDomain);
+              
+              // Update the public_domain in the database for future use
+              if (shopData.shop?.domain) {
+                await supabase
+                  .from('shopify_connections')
+                  .update({ public_domain: shopData.shop.domain })
+                  .eq('id', selectedStore.id);
+              }
+            } else {
+              setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
+            }
+          } catch (err) {
+            console.error('Error fetching Shopify domain:', err);
+            setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
+          }
+        } else {
+          setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
+        }
+      }
+    };
+    
+    fetchStoreDomain();
+  }, [selectedStore?.id]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {
@@ -1411,27 +1467,32 @@ export function CollectionOptimization() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="max-w-[200px]">
-                          {collection.seo_title ? (
-                            <p className="text-sm line-clamp-2">{collection.seo_title}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Not optimized
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[250px]">
-                          {collection.seo_description ? (
-                            <p className="text-sm line-clamp-2 text-muted-foreground">{collection.seo_description}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Not optimized
-                            </Badge>
-                          )}
-                        </div>
+                      <TableCell colSpan={2}>
+                        {collection.seo_title && collection.seo_description ? (
+                          <div 
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setPreviewCollectionId(collection.id)}
+                          >
+                            <GoogleSearchPreview
+                              title={collection.seo_title}
+                              description={collection.seo_description}
+                              url={`https://${storeDomain}/collections/${collection.handle}`}
+                            />
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="max-w-[200px]">
+                              <Badge variant="outline" className="text-xs">
+                                Not optimized
+                              </Badge>
+                            </div>
+                            <div className="max-w-[250px]">
+                              <Badge variant="outline" className="text-xs">
+                                Not optimized
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">
