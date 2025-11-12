@@ -139,6 +139,7 @@ export function SmartPricingAI() {
   const [isGeneratingWhiteBg, setIsGeneratingWhiteBg] = useState(false);
   const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
   const [showWhiteBgPreview, setShowWhiteBgPreview] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -850,6 +851,108 @@ export function SmartPricingAI() {
     }
   };
 
+  const handleImageUpload = async (file: File, productId: string, variantId?: string) => {
+    try {
+      setUploadingImage(variantId || productId);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Non authentifié");
+        return;
+      }
+      
+      // Upload to Supabase Storage
+      const fileName = `${variantId ? 'variant' : 'product'}-${productId}-${Date.now()}.${file.name.split('.').pop()}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('generated-images')
+        .upload(fileName, file, { contentType: file.type, upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('generated-images')
+        .getPublicUrl(fileName);
+
+      // Update database
+      if (variantId) {
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: publicUrl })
+          .eq('id', variantId);
+        if (updateError) throw updateError;
+      } else {
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: publicUrl })
+          .eq('id', productId);
+        if (updateError) throw updateError;
+      }
+
+      // Sync with Shopify
+      const { data: connectionData } = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (connectionData) {
+        const shopifyProductId = variantId ? null : productId; // Will need actual Shopify ID
+        const endpoint = variantId 
+          ? `https://${connectionData.store_url}/admin/api/2024-01/variants/${variantId}.json`
+          : `https://${connectionData.store_url}/admin/api/2024-01/products/${shopifyProductId}.json`;
+        
+        await fetch(endpoint, {
+          method: 'PUT',
+          headers: {
+            'X-Shopify-Access-Token': connectionData.access_token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [variantId ? 'variant' : 'product']: {
+              id: variantId || shopifyProductId,
+              image: { src: publicUrl }
+            }
+          })
+        });
+      }
+
+      // Update local state
+      setProducts(prev => prev.map(p => {
+        if (variantId) {
+          return {
+            ...p,
+            variants: p.variants?.map(v => v.id === variantId ? { ...v, image_url: publicUrl } : v)
+          };
+        } else if (p.id === productId) {
+          return { ...p, image_url: publicUrl };
+        }
+        return p;
+      }));
+
+      toast.success("Image uploadée et synchronisée avec Shopify");
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error("Erreur lors de l'upload de l'image");
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
+  const triggerFileInput = (productId: string, variantId?: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleImageUpload(file, productId, variantId);
+      }
+    };
+    input.click();
+  };
+
   const handleApplyWhiteBackground = async (selectedPreviews: string[], format: string) => {
     console.log("Applying white background with format:", format);
     const successfulPreviews = whiteBgPreviews.filter(
@@ -1446,8 +1549,14 @@ export function SmartPricingAI() {
                             variant="ghost"
                             className="w-12 h-12 bg-muted rounded-md flex items-center justify-center border border-border hover:bg-muted/80"
                             title="Upload image"
+                            onClick={() => triggerFileInput(product.id)}
+                            disabled={uploadingImage === product.id}
                           >
-                            <Upload className="w-4 h-4 text-muted-foreground" />
+                            {uploadingImage === product.id ? (
+                              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 text-muted-foreground" />
+                            )}
                           </Button>
                         )}
                         <div className="max-w-[200px]">
@@ -1804,8 +1913,14 @@ export function SmartPricingAI() {
                                 variant="ghost"
                                 className="w-8 h-8 bg-muted rounded border border-border flex items-center justify-center hover:bg-muted/80"
                                 title="Upload variant image"
+                                onClick={() => triggerFileInput(product.id, variant.id)}
+                                disabled={uploadingImage === variant.id}
                               >
-                                <Upload className="w-3 h-3 text-muted-foreground" />
+                                {uploadingImage === variant.id ? (
+                                  <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
+                                ) : (
+                                  <Upload className="w-3 h-3 text-muted-foreground" />
+                                )}
                               </Button>
                             )}
                             <div className="flex items-center gap-2 text-xs">
