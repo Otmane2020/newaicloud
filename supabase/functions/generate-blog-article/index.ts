@@ -817,15 +817,15 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .split(",")
       .map((k: string) => k.trim())
       .filter(Boolean)
-      .slice(0, 12);
+      .slice(0, 5); // Réduit de 12 à 5
 
-    // Limiter les mots-clés individuellement pour éviter erreur index
+    // Limiter drastiquement les mots-clés pour éviter erreur index DB
     const truncatedKeywords = [...targetKeywords, ...seoKeywords]
-      .slice(0, 15)
-      .map(k => k.substring(0, 100)); // Max 100 caractères par mot-clé
+      .slice(0, 5) // Max 5 keywords au lieu de 15
+      .map(k => k.substring(0, 30)); // Max 30 caractères au lieu de 100
 
     const metaDescription = `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`
-      .substring(0, 500); // Limite meta description
+      .substring(0, 300); // Réduit de 500 à 300
 
     // Sauvegarde de l'article
     const { data: savedArticle, error: saveError } = await supabaseClient
@@ -833,7 +833,7 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .insert([
         {
           user_id,
-          title: optimizedTitle.substring(0, 500), // Limite titre
+          title: optimizedTitle.substring(0, 300), // Réduit de 500 à 300
           content,
           featured_image: featuredImage,
           meta_description: metaDescription,
