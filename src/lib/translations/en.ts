@@ -3316,7 +3316,7 @@ export const translations = {
   },
   
   // Navigation items
-  mediaHistory: "Media - History",
+  mediaHistory: "AI Images History",
   usageLimits: "Usage Limits",
   merchantIntegration: "Integration",
 

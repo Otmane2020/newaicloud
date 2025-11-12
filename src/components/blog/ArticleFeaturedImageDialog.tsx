@@ -138,6 +138,35 @@ export function ArticleFeaturedImageDialog({
   const handleApplyGenerated = async () => {
     try {
       setIsApplying(true);
+      
+      // Save to history before applying
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: versionData } = await supabase.rpc('get_next_article_image_version', {
+          p_article_id: article.id
+        });
+        
+        await supabase.from('article_image_history').insert({
+          article_id: article.id,
+          user_id: user.id,
+          version_number: versionData || 1,
+          optimization_type: 'ai_generated',
+          original_url: currentFeaturedImage,
+          optimized_url: previewImageUrl,
+          ai_prompt: aiPrompt || `Auto-generated for ${article.title}`,
+          ai_model: 'Lovable AI',
+          resolution: '1200x675',
+          is_current: true
+        });
+        
+        // Mark previous versions as not current
+        await supabase
+          .from('article_image_history')
+          .update({ is_current: false })
+          .eq('article_id', article.id)
+          .neq('version_number', versionData || 1);
+      }
+      
       await updateArticleImage(previewImageUrl);
       setShowPreviewDialog(false);
       

@@ -298,6 +298,65 @@ export type Database = {
           },
         ]
       }
+      article_image_history: {
+        Row: {
+          ai_model: string | null
+          ai_prompt: string | null
+          article_id: string
+          created_at: string
+          id: string
+          is_current: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url: string | null
+          quality_score: number | null
+          resolution: string | null
+          restored_at: string | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          article_id: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url?: string | null
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          article_id?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          optimization_type?: string
+          optimized_url?: string
+          original_url?: string | null
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_image_history_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           alt_auto_enabled: boolean | null
@@ -881,6 +940,65 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      collection_image_history: {
+        Row: {
+          ai_model: string | null
+          ai_prompt: string | null
+          collection_id: string
+          created_at: string
+          id: string
+          is_current: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url: string | null
+          quality_score: number | null
+          resolution: string | null
+          restored_at: string | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          collection_id: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url?: string | null
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          collection_id?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          optimization_type?: string
+          optimized_url?: string
+          original_url?: string | null
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_image_history_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_collections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_images: {
         Row: {
@@ -3951,6 +4069,14 @@ export type Database = {
         }[]
       }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
+      get_next_article_image_version: {
+        Args: { p_article_id: string }
+        Returns: number
+      }
+      get_next_collection_image_version: {
+        Args: { p_collection_id: string }
+        Returns: number
+      }
       get_next_image_version: { Args: { p_image_id: string }; Returns: number }
       get_next_version_number: {
         Args: { p_product_id: string }

@@ -3407,7 +3407,7 @@ export const translations = {
   },
   
   // Navigation items
-  mediaHistory: "Media - Historique",
+  mediaHistory: "Historique des images IA",
   usageLimits: "Limites d'utilisation",
   merchantIntegration: "Intégration",
 
