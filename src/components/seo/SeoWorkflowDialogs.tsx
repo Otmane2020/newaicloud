@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { useState, useEffect } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 
@@ -235,16 +236,14 @@ export function ResultsDialog({
                     
                         {type === 'seo' && (
                           <div className="space-y-3">
-                            {item.seo_title && (
-                              <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs font-semibold">Titre SEO</Badge>
-                                <p className="text-sm font-medium">{item.seo_title}</p>
-                              </div>
-                            )}
-                            {item.seo_description && (
-                              <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs font-semibold">Meta Description SEO</Badge>
-                                <p className="text-sm">{item.seo_description}</p>
+                            {item.seo_title && item.seo_description && (
+                              <div className="space-y-2">
+                                <Badge variant="outline" className="text-xs font-semibold">Aperçu Google</Badge>
+                                <GoogleSearchPreview
+                                  title={item.seo_title}
+                                  description={item.seo_description}
+                                  url={`https://example.com/products/${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                                />
                               </div>
                             )}
                             {item.body_html && (
