@@ -531,6 +531,29 @@ serve(async (req) => {
       console.log("📊 Using enriched attributes in landing page generation");
     }
 
+    // 🌍 Get store localization for SERP analysis
+    let storeCountry = 'United States';
+    let storeLanguage = 'en';
+    
+    if (enrichedProduct.store_id) {
+      console.log("🔍 Fetching store localization info...");
+      try {
+        const { data: storeData } = await supabaseAdmin
+          .from('shopify_connections')
+          .select('primary_locale, country_code')
+          .eq('id', enrichedProduct.store_id)
+          .maybeSingle();
+        
+        if (storeData) {
+          storeCountry = storeData.country_code || 'United States';
+          storeLanguage = storeData.primary_locale?.split('-')[0] || 'en';
+          console.log(`📍 Store location: ${storeCountry}, language: ${storeLanguage}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch store info, using defaults:', error);
+      }
+    }
+
     // 🔍 SERP Analysis for landing page structure
     console.log("🔍 Analyzing SERP competitors for landing page structure...");
     let serpInsights: any = null;
@@ -540,6 +563,8 @@ serve(async (req) => {
         body: {
           keyword: productTitle,
           analysisType: "landing",
+          location: storeCountry,
+          language: storeLanguage,
           maxResults: 10
         }
       });

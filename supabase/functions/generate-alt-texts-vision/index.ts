@@ -424,10 +424,10 @@ Deno.serve(async (req: Request) => {
         }
       }
     } else {
-      // Get product info (including title for keyword mixing)
+      // Get product info (including title for keyword mixing and store_id for localization)
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("title, description, category, ai_color, ai_material, seller_id")
+        .select("title, description, category, ai_color, ai_material, seller_id, store_id")
         .eq("id", image.product_id)
         .maybeSingle();
 
@@ -483,6 +483,52 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🎯 Vision AI Analysis for image: ${image.id}`);
 
+    // 🌍 Get store localization for SERP analysis
+    let storeCountry = 'United States';
+    let storeLanguage = 'en';
+    let storeId = null;
+    
+    // Get store_id based on image type
+    if (imageType === 'content') {
+      if (image.content_type === 'collection') {
+        const { data: collection } = await supabaseClient
+          .from("shopify_collections")
+          .select("store_id")
+          .eq("id", image.content_id)
+          .maybeSingle();
+        storeId = collection?.store_id;
+      } else if (image.content_type === 'article') {
+        const { data: article } = await supabaseClient
+          .from("blog_articles")
+          .select("store_id")
+          .eq("id", image.content_id)
+          .maybeSingle();
+        storeId = article?.store_id;
+      }
+    } else {
+      // For product images, we already have store_id from product query
+      storeId = product?.store_id;
+    }
+    
+    if (storeId) {
+      console.log("🔍 Fetching store localization info...");
+      try {
+        const { data: storeData } = await supabaseClient
+          .from('shopify_connections')
+          .select('primary_locale, country_code')
+          .eq('id', storeId)
+          .maybeSingle();
+        
+        if (storeData) {
+          storeCountry = storeData.country_code || 'United States';
+          storeLanguage = storeData.primary_locale?.split('-')[0] || 'en';
+          console.log(`📍 Store location: ${storeCountry}, language: ${storeLanguage}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch store info, using defaults:', error);
+      }
+    }
+
     // Step 1: Analyze SERP for image visual patterns
     let serpImageInsights: any = null;
     if (productTitle) {
@@ -492,6 +538,8 @@ Deno.serve(async (req: Request) => {
           body: {
             keyword: productTitle,
             analysisType: "images",
+            location: storeCountry,
+            language: storeLanguage,
             maxResults: 10
           }
         });
