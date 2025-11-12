@@ -1304,32 +1304,32 @@ export function SmartPricingAI() {
       </div>
 
       {/* Products Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-0 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="border-b">
-                <th className="p-4 text-left">
+            <thead className="bg-muted/30 border-b-2 border-border">
+              <tr>
+                <th className="p-3 text-left w-12">
                   <Checkbox
                     checked={products.length > 0 && products.every((p) => p.selected)}
                     onCheckedChange={toggleAllSelection}
                   />
                 </th>
-                <th className="p-4 text-left">{t.smartPricing.table.product}</th>
-                <th className="hidden md:table-cell p-4 text-left">{t.smartPricing.table.sku}</th>
-                <th className="hidden lg:table-cell p-4 text-left">{t.smartPricing.table.collections}</th>
-                <th className="p-4 text-right">{t.smartPricing.table.price}</th>
-                <th className="hidden sm:table-cell p-4 text-right">{t.smartPricing.table.comparePrice}</th>
-                <th className="hidden sm:table-cell p-4 text-center">{t.smartPricing.table.discount}</th>
-                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.costPrice}</th>
-                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.shippingCost}</th>
-                <th className="hidden xl:table-cell p-4 text-right">{t.smartPricing.table.grossMargin}</th>
-                <th className="hidden xl:table-cell p-4 text-center">{t.smartPricing.table.grossMarginPercent}</th>
-                <th className="p-4 text-right">{t.smartPricing.table.netMargin}</th>
-                <th className="hidden md:table-cell p-4 text-center">{t.smartPricing.table.netMarginPercent}</th>
-                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.marketPrice}</th>
-                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.smartPrice}</th>
-                <th className="p-4 text-center">{t.smartPricing.table.actions}</th>
+                <th className="p-3 text-left font-semibold text-sm">{t.smartPricing.table.product}</th>
+                <th className="hidden md:table-cell p-3 text-left font-semibold text-sm">{t.smartPricing.table.sku}</th>
+                <th className="hidden lg:table-cell p-3 text-left font-semibold text-sm">{t.smartPricing.table.collections}</th>
+                <th className="p-3 text-right font-semibold text-sm">{t.smartPricing.table.price}</th>
+                <th className="hidden sm:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.comparePrice}</th>
+                <th className="hidden sm:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.discount}</th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.costPrice}</th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.shippingCost}</th>
+                <th className="hidden xl:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.grossMargin}</th>
+                <th className="hidden xl:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.grossMarginPercent}</th>
+                <th className="p-3 text-right font-semibold text-sm">{t.smartPricing.table.netMargin}</th>
+                <th className="hidden md:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.netMarginPercent}</th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.marketPrice}</th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.smartPrice}</th>
+                <th className="p-3 text-center font-semibold text-sm">{t.smartPricing.table.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -1344,22 +1344,22 @@ export function SmartPricingAI() {
 
                 return (
                   <>
-                    <tr key={product.id} className={`border-b hover:bg-muted/30 transition-colors ${product.hasMultipleVariants ? 'bg-muted/10' : ''}`}>
-                      <td className="p-4">
+                    <tr key={product.id} className={`border-b hover:bg-muted/20 transition-colors ${product.hasMultipleVariants ? 'bg-muted/5' : ''}`}>
+                      <td className="p-3">
                         <div className="flex items-center gap-2">
                           <Checkbox checked={product.selected} onCheckedChange={() => toggleProductSelection(product.id)} />
                         </div>
                       </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <div className="flex items-center gap-3">
                         {product.image_url ? (
                           <img
                             src={product.image_url}
                             alt={product.title}
-                            className="w-12 h-12 object-cover rounded-lg"
+                            className="w-12 h-12 object-cover rounded-md border border-border"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center border border-border">
                             <Package className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
@@ -1368,30 +1368,26 @@ export function SmartPricingAI() {
                         </div>
                       </div>
                     </td>
-              <td className="hidden md:table-cell p-4">
+              <td className="hidden md:table-cell p-3">
                 {product.hasMultipleVariants ? (
                   <span className="text-xs text-muted-foreground italic">{t.smartPricing.messages.seeVariants}</span>
                 ) : product.sku && product.sku.trim() !== "" ? (
-                  <span className="text-sm text-muted-foreground font-mono">{product.sku}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground italic">-</span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => {
-                        if (product.variants[0]) {
-                          generateSku(product.variants[0].id, product.title);
-                        }
-                      }}
+                      className="h-6 px-2 text-xs hover:bg-primary/10"
+                      onClick={() => generateSku(product.id, product.title)}
                     >
                       {t.smartPricing.buttons.generateSku}
                     </Button>
                   </div>
                 )}
               </td>
-                    <td className="hidden lg:table-cell p-4">
+                    <td className="hidden lg:table-cell p-3">
                       <div className="flex flex-wrap gap-1">
                         {product.collection_names.map((name, i) => (
                           <Badge key={i} variant="outline" className="text-xs">
@@ -1400,7 +1396,7 @@ export function SmartPricingAI() {
                         ))}
                       </div>
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-3 text-right">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
                       ) : (
@@ -1411,13 +1407,13 @@ export function SmartPricingAI() {
                             step="0.01"
                             value={product.price || ""}
                             onChange={(e) => updateProductPrice(product.id, "price", e.target.value)}
-                            className="w-24 text-right"
+                            className="w-20 text-right text-xs h-8"
                           />
                           <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                         </div>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell p-4 text-right">
+                    <td className="hidden sm:table-cell p-3 text-right">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
                       ) : (
@@ -1428,24 +1424,24 @@ export function SmartPricingAI() {
                             step="0.01"
                             value={product.compare_at_price || ""}
                             onChange={(e) => updateProductPrice(product.id, "compare_at_price", e.target.value)}
-                            className="w-24 text-right"
+                            className="w-20 text-right text-xs h-8"
                           />
                           <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                         </div>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell p-4 text-center">
+                    <td className="hidden sm:table-cell p-3 text-center">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
                       ) : discount > 0 ? (
-                        <Badge variant="destructive" className="gap-1">
+                        <Badge variant="destructive" className="gap-1 text-xs">
                           <Percent className="w-3 h-3" />-{discount}%
                         </Badge>
                       ) : (
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </td>
-                    <td className="hidden lg:table-cell p-4 text-right">
+                    <td className="hidden lg:table-cell p-3 text-right">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
                       ) : (
@@ -1456,14 +1452,14 @@ export function SmartPricingAI() {
                             step="0.01"
                             value={product.cost_price || ""}
                             onChange={(e) => updateProductPrice(product.id, "cost_price", e.target.value)}
-                            className="w-24 text-right"
+                            className="w-20 text-right text-xs h-8"
                             placeholder="0.00"
                           />
                           <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                         </div>
                       )}
                     </td>
-                    <td className="hidden lg:table-cell p-4 text-right">
+                    <td className="hidden lg:table-cell p-3 text-right">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
                       ) : (
@@ -1474,7 +1470,7 @@ export function SmartPricingAI() {
                             step="0.01"
                             value={product.shipping_cost || ""}
                             onChange={(e) => updateProductPrice(product.id, "shipping_cost", e.target.value)}
-                            className="w-24 text-right"
+                            className="w-20 text-right text-xs h-8"
                             placeholder="0.00"
                           />
                           <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
@@ -1483,21 +1479,21 @@ export function SmartPricingAI() {
                     </td>
                     {!product.hasMultipleVariants ? (
                       <>
-                        <td className="hidden xl:table-cell p-4 text-right">
+                        <td className="hidden xl:table-cell p-3 text-right">
                           {product.price && (product.cost_price || product.shipping_cost) ? (
-                            <div className="text-sm font-semibold">
+                            <div className="text-xs font-semibold">
                               {grossMarginValue >= 0 ? "+" : ""}
                               {grossMarginValue.toFixed(2)} {currencySymbol}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </td>
-                        <td className="hidden xl:table-cell p-4 text-center">
+                        <td className="hidden xl:table-cell p-3 text-center">
                           {product.price && (product.cost_price || product.shipping_cost) ? (
                             <Badge
                               variant="outline"
-                              className={`gap-1 ${
+                              className={`gap-1 text-xs ${
                                 grossMarginPercent >= 40
                                   ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
                                   : grossMarginPercent >= 20
@@ -1509,13 +1505,13 @@ export function SmartPricingAI() {
                               {grossMarginPercent.toFixed(1)}%
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-3 text-right">
                           {product.price ? (
                             <div
-                              className={`text-sm font-bold ${
+                              className={`text-xs font-bold ${
                                 netMargin.value >= 0
                                   ? "text-green-600 dark:text-green-400"
                                   : "text-red-600 dark:text-red-400"
@@ -1525,14 +1521,14 @@ export function SmartPricingAI() {
                               {netMargin.value.toFixed(2)} {currencySymbol}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </td>
-                        <td className="hidden md:table-cell p-4 text-center">
+                        <td className="hidden md:table-cell p-3 text-center">
                           {product.price ? (
                             <Badge
                               variant="outline"
-                              className={`gap-1 font-semibold ${
+                              className={`gap-1 font-semibold text-xs ${
                                 netMargin.percentage >= 20
                                   ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
                                   : netMargin.percentage >= 10
@@ -1550,24 +1546,24 @@ export function SmartPricingAI() {
                               {netMargin.percentage.toFixed(1)}%
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="hidden xl:table-cell p-4"></td>
-                        <td className="hidden xl:table-cell p-4"></td>
-                        <td className="p-4"></td>
-                        <td className="hidden md:table-cell p-4"></td>
+                        <td className="hidden xl:table-cell p-3"></td>
+                        <td className="hidden xl:table-cell p-3"></td>
+                        <td className="p-3"></td>
+                        <td className="hidden md:table-cell p-3"></td>
                       </>
                     )}
-                    <td className="p-4 text-right">
+                    <td className="hidden lg:table-cell p-3 text-right">
                       {product.market_price ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+                              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
                                 {product.market_price.toFixed(2)} {currencySymbol}
                               </div>
                             </TooltipTrigger>
@@ -1616,16 +1612,16 @@ export function SmartPricingAI() {
                         <span className="text-muted-foreground text-xs">Non analysé</span>
                       )}
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="hidden lg:table-cell p-3 text-right">
                       {product.smart_price ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex items-center justify-end gap-2">
-                                <Badge variant="secondary" className="gap-1">
+                                <Badge variant="secondary" className="gap-1 text-xs">
                                   🤖 Analysé
                                 </Badge>
-                                <div className="text-sm font-bold text-purple-600 dark:text-purple-400 cursor-help">
+                                <div className="text-xs font-bold text-purple-600 dark:text-purple-400 cursor-help">
                                   {product.smart_price.toFixed(2)} {currencySymbol}
                                 </div>
                               </div>
@@ -1675,7 +1671,7 @@ export function SmartPricingAI() {
                         <span className="text-muted-foreground text-xs">Non calculé</span>
                       )}
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-3 text-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1684,9 +1680,9 @@ export function SmartPricingAI() {
                               size="sm"
                               onClick={() => syncSingleProduct(product.id)}
                               disabled={syncing}
-                              className="gap-1"
+                              className="gap-1 h-8 px-2"
                             >
-                              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+                              <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1709,39 +1705,41 @@ export function SmartPricingAI() {
                       const variantGrossMargin = calculateMargin(variant.price, variant.cost_price || 0);
                       
                       return (
-                      <tr key={`${product.id}-variant-${idx}`} className="bg-muted/20 border-b hover:bg-muted/40">
-                        <td className="p-2 pl-8"></td>
+                      <tr key={`${product.id}-variant-${idx}`} className="bg-muted/10 border-b border-dashed border-border/50 hover:bg-muted/20">
+                        <td className="p-3 pl-6"></td>
                         
-                        <td className="p-2 pl-8">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground">↳</span>
+                        <td className="p-3 pl-6">
+                          <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground text-xs">↳</span>
                             {variant.image_url ? (
                               <img 
                                 src={variant.image_url} 
                                 alt={`Variante ${idx + 1}`}
-                                className="w-10 h-10 object-cover rounded border border-border"
+                                className="w-8 h-8 object-cover rounded border border-border"
                               />
                             ) : (
-                              <div className="w-10 h-10 bg-muted rounded border border-border flex items-center justify-center">
+                              <div className="w-8 h-8 bg-muted rounded border border-border flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">-</span>
                               </div>
                             )}
-                            {variant.option1 && <span className="text-xs">• {variant.option1}</span>}
-                            {variant.option2 && <span className="text-xs">• {variant.option2}</span>}
-                            {variant.option3 && <span className="text-xs">• {variant.option3}</span>}
+                            <div className="flex items-center gap-2 text-xs">
+                              {variant.option1 && <span className="text-muted-foreground">{variant.option1}</span>}
+                              {variant.option2 && <span className="text-muted-foreground">• {variant.option2}</span>}
+                              {variant.option3 && <span className="text-muted-foreground">• {variant.option3}</span>}
+                            </div>
                           </div>
                         </td>
                         
-                        <td className="hidden md:table-cell p-2">
+                        <td className="hidden md:table-cell p-3">
                           {variant.sku && variant.sku.trim() !== "" ? (
-                            <span className="text-sm font-mono text-muted-foreground">{variant.sku}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{variant.sku}</span>
                           ) : (
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground italic">-</span>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 px-2 text-xs"
+                                className="h-6 px-2 text-xs hover:bg-primary/10"
                                 onClick={() => generateSku(variant.id, product.title)}
                               >
                                 {t.smartPricing.buttons.generateSku}
@@ -1750,31 +1748,31 @@ export function SmartPricingAI() {
                           )}
                         </td>
                         
-                        <td className="hidden lg:table-cell p-2"></td>
+                        <td className="hidden lg:table-cell p-3"></td>
                         
-                        <td className="p-2 text-right">
+                        <td className="p-3 text-right">
                           <Input
                             type="number"
                             min="0"
                             step="0.01"
                             value={variant.price || ""}
                             onChange={(e) => updateVariantPrice(variant.id, "price", parseFloat(e.target.value) || null)}
-                            className="w-24 text-right text-sm"
+                            className="w-20 text-right text-xs h-8"
                           />
                         </td>
                         
-                        <td className="hidden sm:table-cell p-2 text-right">
+                        <td className="hidden sm:table-cell p-3 text-right">
                           <Input
                             type="number"
                             min="0"
                             step="0.01"
                             value={variant.compare_at_price || ""}
                             onChange={(e) => updateVariantPrice(variant.id, "compare_at_price", parseFloat(e.target.value) || null)}
-                            className="w-24 text-right text-sm"
+                            className="w-20 text-right text-xs h-8"
                           />
                         </td>
                         
-                        <td className="hidden sm:table-cell p-2 text-center">
+                        <td className="hidden sm:table-cell p-3 text-center">
                           {variant.compare_at_price && variant.compare_at_price > variant.price ? (
                             <Badge variant="destructive" className="text-xs">
                               -{Math.round(((variant.compare_at_price - variant.price) / variant.compare_at_price) * 100)}%
@@ -1784,47 +1782,47 @@ export function SmartPricingAI() {
                           )}
                         </td>
                         
-                        <td className="hidden lg:table-cell p-2 text-right">
+                        <td className="hidden lg:table-cell p-3 text-right">
                           <Input
                             type="number"
                             min="0"
                             step="0.01"
                             value={variant.cost_price || ""}
                             onChange={(e) => updateVariantPrice(variant.id, "cost_price", parseFloat(e.target.value) || null)}
-                            className="w-24 text-right text-sm"
+                            className="w-20 text-right text-xs h-8"
                             placeholder="0.00"
                           />
                         </td>
                         
-                        <td className="hidden lg:table-cell p-2 text-right">
+                        <td className="hidden lg:table-cell p-3 text-right">
                           <span className="text-xs text-muted-foreground">{formatPrice(product.shipping_cost)}</span>
                         </td>
                         
-                        <td className="hidden xl:table-cell p-2 text-right">
-                          <span className="text-sm">{formatPrice(variant.price - (variant.cost_price || 0))}</span>
+                        <td className="hidden xl:table-cell p-3 text-right">
+                          <span className="text-xs">{formatPrice(variant.price - (variant.cost_price || 0))}</span>
                         </td>
                         
-                        <td className="hidden xl:table-cell p-2 text-center">
+                        <td className="hidden xl:table-cell p-3 text-center">
                           <Badge variant="outline" className="text-xs">
                             {variantGrossMargin.toFixed(1)}%
                           </Badge>
                         </td>
                         
-                        <td className="p-2 text-right">
-                          <span className={`text-sm font-medium ${variantNetMargin.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <td className="p-3 text-right">
+                          <span className={`text-xs font-medium ${variantNetMargin.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatPrice(variantNetMargin.value)}
                           </span>
                         </td>
                         
-                        <td className="hidden md:table-cell p-2 text-center">
+                        <td className="hidden md:table-cell p-3 text-center">
                           <Badge variant="outline" className="text-xs">
                             {variantNetMargin.percentage.toFixed(1)}%
                           </Badge>
                         </td>
                         
-                        <td className="hidden lg:table-cell p-2"></td>
-                        <td className="hidden lg:table-cell p-2"></td>
-                        <td className="p-2"></td>
+                        <td className="hidden lg:table-cell p-3"></td>
+                        <td className="hidden lg:table-cell p-3"></td>
+                        <td className="p-3"></td>
                       </tr>
                     );
                   });
