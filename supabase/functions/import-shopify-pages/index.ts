@@ -40,9 +40,15 @@ Deno.serve(async (req: Request) => {
       .select("*")
       .eq("user_id", user.id)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
-    if (connectionError || !connection) {
+    if (connectionError) {
+      console.error(`❌ [IMPORT-PAGES] Connection error:`, connectionError);
+      throw new Error(`Failed to fetch Shopify connection: ${connectionError.message}`);
+    }
+
+    if (!connection) {
+      console.error(`❌ [IMPORT-PAGES] No active connection found for user: ${user.id}`);
       throw new Error("No active Shopify connection found");
     }
 
