@@ -31,7 +31,16 @@ serve(async (req) => {
     const imgResponse = await fetch(imageUrl);
     if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
     const imgBuffer = await imgResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+    
+    // Convert to base64 using chunking to avoid stack overflow
+    const uint8Array = new Uint8Array(imgBuffer);
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binaryString += String.fromCharCode(...chunk);
+    }
+    const base64Image = btoa(binaryString);
     console.log("✅ Image converted to base64");
 
     // ---------- Prompt centering rules ----------
