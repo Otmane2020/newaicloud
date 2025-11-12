@@ -10,6 +10,8 @@ import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { useState, useEffect } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
+import { useStore } from '@/contexts/StoreContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -175,6 +177,29 @@ export function ResultsDialog({
 }: ResultsDialogProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
+  const [storeDomain, setStoreDomain] = useState<string>('example.com');
+  const { selectedStore } = useStore();
+
+  // Fetch store domain
+  useEffect(() => {
+    const fetchStoreDomain = async () => {
+      if (!selectedStore?.id) return;
+      
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('public_domain, store_url')
+        .eq('id', selectedStore.id)
+        .single();
+      
+      if (data && !error) {
+        // Use public_domain if available, otherwise fallback to store_url
+        const domain = data.public_domain || data.store_url.replace(/^https?:\/\//, '');
+        setStoreDomain(domain);
+      }
+    };
+    
+    fetchStoreDomain();
+  }, [selectedStore?.id]);
 
   const getTitle = () => {
     switch (type) {
@@ -242,7 +267,7 @@ export function ResultsDialog({
                                 <GoogleSearchPreview
                                   title={item.seo_title}
                                   description={item.seo_description}
-                                  url={`https://example.com/products/${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                                  url={`https://${storeDomain}/products/${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                                 />
                               </div>
                             )}

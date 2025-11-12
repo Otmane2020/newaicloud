@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useStore } from '@/contexts/StoreContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,17 +36,40 @@ interface SerpInsight {
 export default function SeoSerpAnalysis() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
+  const { selectedStore } = useStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [serpInsights, setSerpInsights] = useState<SerpInsight | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [seoScore, setSeoScore] = useState(0);
+  const [storeDomain, setStoreDomain] = useState<string>('example.com');
 
   useEffect(() => {
     if (productId) {
       loadProductData();
     }
   }, [productId]);
+
+  // Fetch store domain
+  useEffect(() => {
+    const fetchStoreDomain = async () => {
+      if (!selectedStore?.id) return;
+      
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('public_domain, store_url')
+        .eq('id', selectedStore.id)
+        .single();
+      
+      if (data && !error) {
+        // Use public_domain if available, otherwise fallback to store_url
+        const domain = data.public_domain || data.store_url.replace(/^https?:\/\//, '');
+        setStoreDomain(domain);
+      }
+    };
+    
+    fetchStoreDomain();
+  }, [selectedStore?.id]);
 
   const loadProductData = async () => {
     try {
@@ -263,7 +287,7 @@ export default function SeoSerpAnalysis() {
                   <GoogleSearchPreview
                     title={product.seo_title}
                     description={product.seo_description}
-                    url={`https://example.com/products/${product.title.toLowerCase().replace(/\s+/g, '-')}`}
+                    url={`https://${storeDomain}/products/${product.title.toLowerCase().replace(/\s+/g, '-')}`}
                   />
                   <Separator />
                   <div className="flex items-center justify-between">
