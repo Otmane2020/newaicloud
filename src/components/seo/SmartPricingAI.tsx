@@ -36,8 +36,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { WhiteBgPreviewDialog } from "@/components/seo/WhiteBgPreviewDialog";
 import { useTranslation } from "@/lib/language";
+import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
 
 interface CompetitorPrice {
   url: string;
@@ -885,6 +895,21 @@ export function SmartPricingAI() {
     return matchesCollection && matchesSearch && matchesSku;
   });
 
+  const {
+    paginatedItems,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: filteredProducts,
+    itemsPerPage: 50,
+    cacheKey: 'smart-pricing-products',
+  });
+
   const missingSkuCount = products.filter(p => !p.sku || p.sku.trim() === "").length;
 
   const currency = products[0]?.currency || "EUR";
@@ -1288,7 +1313,7 @@ export function SmartPricingAI() {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product) => {
+              {paginatedItems.map((product) => {
                 const discount = calculateDiscount(product.price || 0, product.compare_at_price);
                 const grossMarginValue = calculateMarginValue(product.price, product.cost_price, product.shipping_cost);
                 const grossMarginPercent = calculateMargin(
@@ -1779,6 +1804,69 @@ export function SmartPricingAI() {
           </table>
         </div>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+          <p className="text-sm text-muted-foreground">
+            {t.smartPricing.messages.showingProducts 
+              ? tf('smartPricing.messages.showingProducts', {
+                  start: (currentPage - 1) * 50 + 1,
+                  end: Math.min(currentPage * 50, filteredProducts.length),
+                  total: filteredProducts.length
+                })
+              : `Affichage de ${(currentPage - 1) * 50 + 1}-${Math.min(currentPage * 50, filteredProducts.length)} sur ${filteredProducts.length} produits`
+            }
+          </p>
+          
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = currentPage <= 3 
+                  ? i + 1 
+                  : currentPage >= totalPages - 2 
+                    ? totalPages - 4 + i 
+                    : currentPage - 2 + i;
+                
+                if (pageNum < 1 || pageNum > totalPages) return null;
+                
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={() => goToPage(pageNum)}
+                      isActive={currentPage === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={nextPage}
+                  className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       {filteredProducts.length === 0 && (
         <Card className="p-12 text-center">

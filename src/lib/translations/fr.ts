@@ -1285,7 +1285,8 @@ export const translations = {
       selectProducts: "Sélectionnez des produits à synchroniser",
       errorLoading: "Erreur lors du chargement",
       noVariantFound: "Aucune variante trouvée pour ce produit",
-      seeVariants: "Voir variants"
+      seeVariants: "Voir variants",
+      showingProducts: "Affichage de {{start}}-{{end}} sur {{total}} produits"
     },
     
     tooltips: {
