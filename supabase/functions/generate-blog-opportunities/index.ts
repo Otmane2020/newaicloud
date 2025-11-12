@@ -257,6 +257,7 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Utiliser tool calling pour garantir JSON valide
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -268,7 +269,7 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert en marketing de contenu et SEO e-commerce. Tu analyses des catalogues produits et génères des opportunités d\'articles de blog stratégiques et pertinents. Tu réponds UNIQUEMENT en JSON valide, sans markdown ni backticks.'
+            content: 'Tu es un expert en marketing de contenu et SEO e-commerce. Tu analyses des catalogues produits et génères des opportunités d\'articles de blog stratégiques et pertinents.'
           },
           {
             role: 'user',
@@ -276,7 +277,40 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
           }
         ],
         temperature: 0.7,
-        max_tokens: 3000
+        max_tokens: 3000,
+        tools: [{
+          type: "function",
+          function: {
+            name: "generate_opportunities",
+            description: "Génère une liste d'opportunités d'articles blog",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunities: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      category: { type: "string" },
+                      type: { type: "string" },
+                      keywords: { type: "array", items: { type: "string" } },
+                      suggestedProductTitles: { type: "array", items: { type: "string" } },
+                      estimatedTraffic: { type: "string" },
+                      difficulty: { type: "string" },
+                      searchVolume: { type: "string" }
+                    },
+                    required: ["title", "category", "type", "keywords", "suggestedProductTitles"],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ["opportunities"],
+              additionalProperties: false
+            }
+          }
+        }],
+        tool_choice: { type: "function", function: { name: "generate_opportunities" } }
       })
     });
 
@@ -289,20 +323,13 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
     const aiData = await aiResponse.json();
     console.log('[OPPS] AI response received');
 
-    const generatedText = aiData.choices[0].message.content;
-    console.log('[OPPS] Raw AI response (first 300 chars):', generatedText.substring(0, 300));
-
-    // Parse JSON response
-    let cleanedText = generatedText.trim();
-    
-    // Remove markdown code blocks if present
-    if (cleanedText.includes('```json')) {
-      cleanedText = cleanedText.split('```json')[1].split('```')[0].trim();
-    } else if (cleanedText.includes('```')) {
-      cleanedText = cleanedText.split('```')[1].split('```')[0].trim();
+    // Extract opportunities from tool call
+    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    if (!toolCall || toolCall.function.name !== 'generate_opportunities') {
+      throw new Error('AI did not return expected tool call');
     }
 
-    const parsed = JSON.parse(cleanedText);
+    const parsed = JSON.parse(toolCall.function.arguments);
 
     // Handle both formats: direct array or object with opportunities property
     let opportunitiesArray: any[];
