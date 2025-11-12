@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { WhiteBgPreviewDialog } from "@/components/seo/WhiteBgPreviewDialog";
+import { useTranslation } from "@/lib/language";
 
 interface CompetitorPrice {
   url: string;
@@ -80,7 +81,6 @@ interface ProductPricing {
   competitors: CompetitorPrice[];
   variants: ProductVariant[];
   hasMultipleVariants: boolean;
-  isExpanded?: boolean;
 }
 
 interface BulkOperation {
@@ -100,6 +100,7 @@ interface PreviewImage {
 }
 
 export function SmartPricingAI() {
+  const { t, tf } = useTranslation();
   const [products, setProducts] = useState<ProductPricing[]>([]);
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ export function SmartPricingAI() {
             compare_at_price: typeof product.compare_at_price === "number" ? product.compare_at_price : null,
             cost_price: typeof product.cost_price === "number" ? product.cost_price : firstVariant?.cost_price || null,
             shipping_cost: typeof product.shipping_cost === "number" ? product.shipping_cost : null,
-            sku: firstVariant?.sku || null,
+            sku: variants.length === 1 ? (firstVariant?.sku || null) : null,
             shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
             currency: product.currency || "EUR",
             selected: false,
@@ -208,7 +209,6 @@ export function SmartPricingAI() {
               : [],
             variants,
             hasMultipleVariants: variants.length > 1,
-            isExpanded: false,
           };
         });
 
@@ -283,8 +283,53 @@ export function SmartPricingAI() {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, selected: !p.selected } : p)));
   };
 
-  const toggleProductExpand = (productId: string) => {
-    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p)));
+  const generateSku = async (variantId: string, productTitle: string) => {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newSku = `SKU-${timestamp}-${random}`;
+
+    try {
+      const { error } = await supabase
+        .from('product_variants')
+        .update({ sku: newSku })
+        .eq('id', variantId);
+
+      if (error) {
+        console.error('Error generating SKU:', error);
+        toast.error(t.smartPricing.errors.save);
+        return;
+      }
+
+      toast.success(tf('smartPricing.messages.skuGenerated', { sku: newSku }));
+      fetchData();
+    } catch (error) {
+      console.error('Error generating SKU:', error);
+      toast.error(t.smartPricing.errors.save);
+    }
+  };
+
+  const updateVariantPrice = async (
+    variantId: string,
+    field: "price" | "compare_at_price" | "cost_price",
+    value: number | null,
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("product_variants")
+        .update({ [field]: value })
+        .eq("id", variantId);
+
+      if (error) {
+        console.error("Error updating variant price:", error);
+        toast.error(t.smartPricing.errors.save);
+        return;
+      }
+
+      await fetchData();
+    } catch (error) {
+      console.error("Error updating variant price:", error);
+      toast.error(t.smartPricing.errors.save);
+    }
   };
 
   const toggleAllSelection = () => {
@@ -1225,21 +1270,21 @@ export function SmartPricingAI() {
                     onCheckedChange={toggleAllSelection}
                   />
                 </th>
-                <th className="p-4 text-left">Produit</th>
-                <th className="hidden md:table-cell p-4 text-left">SKU</th>
-                <th className="hidden lg:table-cell p-4 text-left">Collection(s)</th>
-                <th className="p-4 text-right">Prix</th>
-                <th className="hidden sm:table-cell p-4 text-right">Prix comparé</th>
-                <th className="hidden sm:table-cell p-4 text-center">Remise</th>
-                <th className="hidden lg:table-cell p-4 text-right">Prix de revient</th>
-                <th className="hidden lg:table-cell p-4 text-right">Frais livraison</th>
-                <th className="hidden xl:table-cell p-4 text-right">Marge Brute (€)</th>
-                <th className="hidden xl:table-cell p-4 text-center">Marge Brute (%)</th>
-                <th className="p-4 text-right">Marge Nette (€)</th>
-                <th className="hidden md:table-cell p-4 text-center">Marge Nette (%)</th>
-                <th className="hidden lg:table-cell p-4 text-right">Market Price</th>
-                <th className="hidden lg:table-cell p-4 text-right">Smart Price</th>
-                <th className="p-4 text-center">Actions</th>
+                <th className="p-4 text-left">{t.smartPricing.table.product}</th>
+                <th className="hidden md:table-cell p-4 text-left">{t.smartPricing.table.sku}</th>
+                <th className="hidden lg:table-cell p-4 text-left">{t.smartPricing.table.collections}</th>
+                <th className="p-4 text-right">{t.smartPricing.table.price}</th>
+                <th className="hidden sm:table-cell p-4 text-right">{t.smartPricing.table.comparePrice}</th>
+                <th className="hidden sm:table-cell p-4 text-center">{t.smartPricing.table.discount}</th>
+                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.costPrice}</th>
+                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.shippingCost}</th>
+                <th className="hidden xl:table-cell p-4 text-right">{t.smartPricing.table.grossMargin}</th>
+                <th className="hidden xl:table-cell p-4 text-center">{t.smartPricing.table.grossMarginPercent}</th>
+                <th className="p-4 text-right">{t.smartPricing.table.netMargin}</th>
+                <th className="hidden md:table-cell p-4 text-center">{t.smartPricing.table.netMarginPercent}</th>
+                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.marketPrice}</th>
+                <th className="hidden lg:table-cell p-4 text-right">{t.smartPricing.table.smartPrice}</th>
+                <th className="p-4 text-center">{t.smartPricing.table.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -1254,19 +1299,14 @@ export function SmartPricingAI() {
 
                 return (
                   <>
-                    <tr key={product.id} className="border-b hover:bg-muted/30 transition-colors">
+                    <tr key={product.id} className={`border-b hover:bg-muted/30 transition-colors ${product.hasMultipleVariants ? 'bg-muted/10' : ''}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Checkbox checked={product.selected} onCheckedChange={() => toggleProductSelection(product.id)} />
                           {product.hasMultipleVariants && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => toggleProductExpand(product.id)}
-                            >
-                              <ArrowUpDown className={`h-4 w-4 transition-transform ${product.isExpanded ? 'rotate-180' : ''}`} />
-                            </Button>
+                            <Badge variant="outline" className="text-xs">
+                              {tf('smartPricing.variants.count', { count: product.variants.length })}
+                            </Badge>
                           )}
                         </div>
                       </td>
@@ -1289,7 +1329,9 @@ export function SmartPricingAI() {
                       </div>
                     </td>
               <td className="hidden md:table-cell p-4">
-                {product.sku && product.sku.trim() !== "" ? (
+                {product.hasMultipleVariants ? (
+                  <span className="text-xs text-muted-foreground italic">{t.smartPricing.messages.seeVariants}</span>
+                ) : product.sku && product.sku.trim() !== "" ? (
                   <span className="text-sm text-muted-foreground font-mono">{product.sku}</span>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -1298,34 +1340,13 @@ export function SmartPricingAI() {
                       size="sm"
                       variant="ghost"
                       className="h-6 px-2 text-xs"
-                      onClick={async () => {
-                        const newSku = `SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-                        
-                        // Get first variant for this product
-                        const { data: variants } = await supabase
-                          .from('product_variants')
-                          .select('id')
-                          .eq('product_id', product.id)
-                          .limit(1);
-                        
-                        if (variants && variants[0]) {
-                          const { error } = await supabase
-                            .from('product_variants')
-                            .update({ sku: newSku })
-                            .eq('id', variants[0].id);
-                          
-                          if (!error) {
-                            toast.success(`SKU généré: ${newSku}`);
-                            fetchData();
-                          } else {
-                            toast.error("Erreur lors de la génération du SKU");
-                          }
-                        } else {
-                          toast.error("Aucune variante trouvée pour ce produit");
+                      onClick={() => {
+                        if (product.variants[0]) {
+                          generateSku(product.variants[0].id, product.title);
                         }
                       }}
                     >
-                      Générer
+                      {t.smartPricing.buttons.generateSku}
                     </Button>
                   </div>
                 )}
@@ -1340,33 +1361,43 @@ export function SmartPricingAI() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={product.price || ""}
-                          onChange={(e) => updateProductPrice(product.id, "price", e.target.value)}
-                          className="w-24 text-right"
-                        />
-                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
-                      </div>
+                      {product.hasMultipleVariants ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : (
+                        <div className="flex items-center gap-1 justify-end">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={product.price || ""}
+                            onChange={(e) => updateProductPrice(product.id, "price", e.target.value)}
+                            className="w-24 text-right"
+                          />
+                          <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                        </div>
+                      )}
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={product.compare_at_price || ""}
-                          onChange={(e) => updateProductPrice(product.id, "compare_at_price", e.target.value)}
-                          className="w-24 text-right"
-                        />
-                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
-                      </div>
+                    <td className="hidden sm:table-cell p-4 text-right">
+                      {product.hasMultipleVariants ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : (
+                        <div className="flex items-center gap-1 justify-end">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={product.compare_at_price || ""}
+                            onChange={(e) => updateProductPrice(product.id, "compare_at_price", e.target.value)}
+                            className="w-24 text-right"
+                          />
+                          <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                        </div>
+                      )}
                     </td>
-                    <td className="p-4 text-center">
-                      {discount > 0 ? (
+                    <td className="hidden sm:table-cell p-4 text-center">
+                      {product.hasMultipleVariants ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : discount > 0 ? (
                         <Badge variant="destructive" className="gap-1">
                           <Percent className="w-3 h-3" />-{discount}%
                         </Badge>
@@ -1374,104 +1405,123 @@ export function SmartPricingAI() {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={product.cost_price || ""}
-                          onChange={(e) => updateProductPrice(product.id, "cost_price", e.target.value)}
-                          className="w-24 text-right"
-                          placeholder="0.00"
-                        />
-                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={product.shipping_cost || ""}
-                          onChange={(e) => updateProductPrice(product.id, "shipping_cost", e.target.value)}
-                          className="w-24 text-right"
-                          placeholder="0.00"
-                        />
-                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      {product.price && (product.cost_price || product.shipping_cost) ? (
-                        <div className="text-sm font-semibold">
-                          {grossMarginValue >= 0 ? "+" : ""}
-                          {grossMarginValue.toFixed(2)} {currencySymbol}
+                    <td className="hidden lg:table-cell p-4 text-right">
+                      {product.hasMultipleVariants ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : (
+                        <div className="flex items-center gap-1 justify-end">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={product.cost_price || ""}
+                            onChange={(e) => updateProductPrice(product.id, "cost_price", e.target.value)}
+                            className="w-24 text-right"
+                            placeholder="0.00"
+                          />
+                          <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-4 text-center">
-                      {product.price && (product.cost_price || product.shipping_cost) ? (
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 ${
-                            grossMarginPercent >= 40
-                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
-                              : grossMarginPercent >= 20
-                                ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300"
-                                : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300"
-                          }`}
-                        >
-                          <TrendingUp className="w-3 h-3" />
-                          {grossMarginPercent.toFixed(1)}%
-                        </Badge>
+                    <td className="hidden lg:table-cell p-4 text-right">
+                      {product.hasMultipleVariants ? (
+                        <span className="text-xs text-muted-foreground">-</span>
                       ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-right">
-                      {product.price ? (
-                        <div
-                          className={`text-sm font-bold ${
-                            netMargin.value >= 0
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {netMargin.value >= 0 ? "+" : ""}
-                          {netMargin.value.toFixed(2)} {currencySymbol}
+                        <div className="flex items-center gap-1 justify-end">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={product.shipping_cost || ""}
+                            onChange={(e) => updateProductPrice(product.id, "shipping_cost", e.target.value)}
+                            className="w-24 text-right"
+                            placeholder="0.00"
+                          />
+                          <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-4 text-center">
-                      {product.price ? (
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 font-semibold ${
-                            netMargin.percentage >= 20
-                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
-                              : netMargin.percentage >= 10
-                                ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300"
-                                : netMargin.percentage >= 0
-                                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300"
-                                  : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300"
-                          }`}
-                        >
-                          {netMargin.percentage >= 0 ? (
-                            <TrendingUp className="w-3 h-3" />
+                    {!product.hasMultipleVariants ? (
+                      <>
+                        <td className="hidden xl:table-cell p-4 text-right">
+                          {product.price && (product.cost_price || product.shipping_cost) ? (
+                            <div className="text-sm font-semibold">
+                              {grossMarginValue >= 0 ? "+" : ""}
+                              {grossMarginValue.toFixed(2)} {currencySymbol}
+                            </div>
                           ) : (
-                            <TrendingUp className="w-3 h-3 rotate-180" />
+                            <span className="text-muted-foreground">-</span>
                           )}
-                          {netMargin.percentage.toFixed(1)}%
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </td>
+                        </td>
+                        <td className="hidden xl:table-cell p-4 text-center">
+                          {product.price && (product.cost_price || product.shipping_cost) ? (
+                            <Badge
+                              variant="outline"
+                              className={`gap-1 ${
+                                grossMarginPercent >= 40
+                                  ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
+                                  : grossMarginPercent >= 20
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300"
+                                    : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300"
+                              }`}
+                            >
+                              <TrendingUp className="w-3 h-3" />
+                              {grossMarginPercent.toFixed(1)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right">
+                          {product.price ? (
+                            <div
+                              className={`text-sm font-bold ${
+                                netMargin.value >= 0
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {netMargin.value >= 0 ? "+" : ""}
+                              {netMargin.value.toFixed(2)} {currencySymbol}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="hidden md:table-cell p-4 text-center">
+                          {product.price ? (
+                            <Badge
+                              variant="outline"
+                              className={`gap-1 font-semibold ${
+                                netMargin.percentage >= 20
+                                  ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300"
+                                  : netMargin.percentage >= 10
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300"
+                                    : netMargin.percentage >= 0
+                                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300"
+                                      : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300"
+                              }`}
+                            >
+                              {netMargin.percentage >= 0 ? (
+                                <TrendingUp className="w-3 h-3" />
+                              ) : (
+                                <TrendingUp className="w-3 h-3 rotate-180" />
+                              )}
+                              {netMargin.percentage.toFixed(1)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="hidden xl:table-cell p-4"></td>
+                        <td className="hidden xl:table-cell p-4"></td>
+                        <td className="p-4"></td>
+                        <td className="hidden md:table-cell p-4"></td>
+                      </>
+                    )}
                     <td className="p-4 text-right">
                       {product.market_price ? (
                         <TooltipProvider>
@@ -1607,28 +1657,121 @@ export function SmartPricingAI() {
                     </td>
                   </tr>
 
-                  {/* Variant Rows - Expandable */}
-                  {product.isExpanded && product.variants.map((variant, idx) => (
-                    <tr key={`${product.id}-variant-${idx}`} className="bg-muted/20 border-b hover:bg-muted/40">
-                      <td className="p-2 pl-12" colSpan={2}>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Badge variant="outline" className="text-xs">Variant</Badge>
-                          <span className="text-muted-foreground">{variant.title}</span>
-                        </div>
-                      </td>
-                      <td className="p-2">
-                        <span className="text-sm font-mono text-muted-foreground">{variant.sku || '-'}</span>
-                      </td>
-                      <td className="p-2" colSpan={1}></td>
-                      <td className="p-2 text-right">
-                        <span className="text-sm font-medium">{formatPrice(variant.price)}</span>
-                      </td>
-                      <td className="p-2 text-right">
-                        <span className="text-sm text-muted-foreground">{formatPrice(variant.compare_at_price)}</span>
-                      </td>
-                      <td className="p-2" colSpan={8}></td>
-                    </tr>
-                  ))}
+                  {/* Variant Rows - ALWAYS VISIBLE for multi-variants */}
+                  {product.hasMultipleVariants && product.variants.map((variant, idx) => {
+                    const variantNetMargin = calculateNetMargin(variant.price, variant.cost_price, product.shipping_cost);
+                    const variantGrossMargin = calculateMargin(variant.price, variant.cost_price || 0);
+                    
+                    return (
+                      <tr key={`${product.id}-variant-${idx}`} className="bg-muted/20 border-b hover:bg-muted/40">
+                        <td className="p-2 pl-8"></td>
+                        
+                        <td className="p-2 pl-8">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">↳</span>
+                            <Badge variant="outline" className="text-xs">{t.smartPricing.variants.label}</Badge>
+                            {variant.option1 && <span className="text-xs">{variant.option1}</span>}
+                            {variant.option2 && <span className="text-xs">• {variant.option2}</span>}
+                            {variant.option3 && <span className="text-xs">• {variant.option3}</span>}
+                          </div>
+                        </td>
+                        
+                        <td className="hidden md:table-cell p-2">
+                          {variant.sku && variant.sku.trim() !== "" ? (
+                            <span className="text-sm font-mono text-muted-foreground">{variant.sku}</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground italic">-</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => generateSku(variant.id, product.title)}
+                              >
+                                {t.smartPricing.buttons.generateSku}
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                        
+                        <td className="hidden lg:table-cell p-2"></td>
+                        
+                        <td className="p-2 text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={variant.price || ""}
+                            onChange={(e) => updateVariantPrice(variant.id, "price", parseFloat(e.target.value) || null)}
+                            className="w-24 text-right text-sm"
+                          />
+                        </td>
+                        
+                        <td className="hidden sm:table-cell p-2 text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={variant.compare_at_price || ""}
+                            onChange={(e) => updateVariantPrice(variant.id, "compare_at_price", parseFloat(e.target.value) || null)}
+                            className="w-24 text-right text-sm"
+                          />
+                        </td>
+                        
+                        <td className="hidden sm:table-cell p-2 text-center">
+                          {variant.compare_at_price && variant.compare_at_price > variant.price ? (
+                            <Badge variant="destructive" className="text-xs">
+                              -{Math.round(((variant.compare_at_price - variant.price) / variant.compare_at_price) * 100)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        
+                        <td className="hidden lg:table-cell p-2 text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={variant.cost_price || ""}
+                            onChange={(e) => updateVariantPrice(variant.id, "cost_price", parseFloat(e.target.value) || null)}
+                            className="w-24 text-right text-sm"
+                            placeholder="0.00"
+                          />
+                        </td>
+                        
+                        <td className="hidden lg:table-cell p-2 text-right">
+                          <span className="text-xs text-muted-foreground">{formatPrice(product.shipping_cost)}</span>
+                        </td>
+                        
+                        <td className="hidden xl:table-cell p-2 text-right">
+                          <span className="text-sm">{formatPrice(variant.price - (variant.cost_price || 0))}</span>
+                        </td>
+                        
+                        <td className="hidden xl:table-cell p-2 text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {variantGrossMargin.toFixed(1)}%
+                          </Badge>
+                        </td>
+                        
+                        <td className="p-2 text-right">
+                          <span className={`text-sm font-medium ${variantNetMargin.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPrice(variantNetMargin.value)}
+                          </span>
+                        </td>
+                        
+                        <td className="hidden md:table-cell p-2 text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {variantNetMargin.percentage.toFixed(1)}%
+                          </Badge>
+                        </td>
+                        
+                        <td className="hidden lg:table-cell p-2"></td>
+                        <td className="hidden lg:table-cell p-2"></td>
+                        <td className="p-2"></td>
+                      </tr>
+                    );
+                  })}
                 </>
                 );
               })}

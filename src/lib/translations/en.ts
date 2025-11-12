@@ -1229,6 +1229,80 @@ export const translations = {
   },
   
   smartPricing: {
+    title: "Smart Pricing AI",
+    subtitle: "Intelligent pricing management with AI analysis",
+    
+    filters: {
+      searchPlaceholder: "Search a product...",
+      allCollections: "All collections",
+      showMissingSku: "Show only products without SKU"
+    },
+    
+    stats: {
+      totalProducts: "Products",
+      averageMargin: "Average margin",
+      totalValue: "Total value",
+      selected: "selected"
+    },
+    
+    table: {
+      product: "Product",
+      sku: "SKU",
+      collections: "Collection(s)",
+      price: "Price",
+      comparePrice: "Compare price",
+      discount: "Discount",
+      costPrice: "Cost price",
+      shippingCost: "Shipping cost",
+      grossMargin: "Gross Margin (€)",
+      grossMarginPercent: "Gross Margin (%)",
+      netMargin: "Net Margin (€)",
+      netMarginPercent: "Net Margin (%)",
+      marketPrice: "Market Price",
+      smartPrice: "Smart Price",
+      actions: "Actions"
+    },
+    
+    buttons: {
+      analyzeAll: "Analyze prices (AI)",
+      importCosts: "Import Shopify costs",
+      importShipping: "Import shipping costs",
+      exportCSV: "Export CSV",
+      generateWhiteBg: "White backgrounds",
+      bulkPricing: "Bulk pricing",
+      syncSelection: "Sync Selection",
+      syncAll: "Sync All",
+      generateSku: "Generate",
+      applySmartPrice: "Apply Smart Price"
+    },
+    
+    messages: {
+      noProducts: "No products found",
+      importPrompt: "Import your products from Shopify to start",
+      skuGenerated: "SKU generated: {{sku}}",
+      syncSuccess: "{{count}} product(s) synced",
+      syncError: "Sync error",
+      selectProducts: "Select products to sync",
+      errorLoading: "Error loading",
+      noVariantFound: "No variant found for this product",
+      seeVariants: "See variants"
+    },
+    
+    tooltips: {
+      syncProduct: "Sync this product with Shopify",
+      marketPriceSources: "Sources used",
+      aiReasoning: "AI reasoning",
+      topCompetitors: "Top 10 Competitors",
+      noCompetitors: "No competitor sources found for this product"
+    },
+    
+    variants: {
+      label: "Variant",
+      count: "{{count}} variants",
+      notAnalyzed: "Not analyzed",
+      notCalculated: "Not calculated"
+    },
+    
     errors: {
       loadData: "Error loading data",
       save: "Error saving",
@@ -1236,12 +1310,14 @@ export const translations = {
       notDeployed: "Import function not yet deployed",
       analysis: "Analysis function not deployed",
     },
+    
     success: {
       bulkApplied: "Modification applied successfully",
       costsImported: "Import completed: {{count}} costs imported",
       shippingImported: "Shopify shipping costs imported",
       analysisComplete: "Analysis complete: {{count}} product(s)",
     },
+    
     prompts: {
       importCosts: "Importing costs in progress...",
       importShipping: "Importing shipping costs...",

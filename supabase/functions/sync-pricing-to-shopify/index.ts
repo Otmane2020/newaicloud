@@ -46,7 +46,7 @@ serve(async (req) => {
 
     console.log(`🏪 [SYNC-PRICING] Store: ${connection.store_url}`);
 
-    // Fetch products to sync
+    // Fetch products to sync with ALL their variants
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
       .select(`
@@ -56,7 +56,7 @@ serve(async (req) => {
         price, 
         compare_at_price,
         cost_price,
-        product_variants(id, shopify_variant_id, cost_price)
+        product_variants(id, shopify_variant_id, title, sku, price, compare_at_price, cost_price, option1, option2, option3)
       `)
       .in('id', product_ids);
 
@@ -70,7 +70,7 @@ serve(async (req) => {
     let errorCount = 0;
     const failedProducts: Array<{ title: string; error: string }> = [];
 
-    // Sync each product with retry logic
+    // Sync each product with ALL its variants
     for (const product of products || []) {
       if (!product.shopify_id) {
         console.warn(`⚠️ [SYNC-PRICING] Product ${product.title} has no Shopify ID`);
@@ -79,16 +79,22 @@ serve(async (req) => {
         continue;
       }
 
-      let retries = 3;
-      let success = false;
-      let lastError: any = null;
+      try {
+        console.log(`🔄 [SYNC-PRICING] Syncing "${product.title}"...`);
 
-      while (retries > 0 && !success) {
-        try {
-          console.log(`🔄 [SYNC-PRICING] Syncing "${product.title}" (attempt ${4 - retries}/3)...`);
-          console.log(`   Price: ${product.price}, Compare: ${product.compare_at_price}`);
+        // Récupérer TOUS les variants du produit depuis notre DB
+        const dbVariants = (product as any).product_variants || [];
 
-        // First, get the product to find its variant
+        if (dbVariants.length === 0) {
+          console.warn(`⚠️ [SYNC-PRICING] No variants found for ${product.title}`);
+          errorCount++;
+          failedProducts.push({ title: product.title, error: 'No variants in DB' });
+          continue;
+        }
+
+        console.log(`   Found ${dbVariants.length} variant(s) to sync`);
+
+        // Récupérer le produit Shopify pour mapper les variants
         const getResponse = await fetch(
           `${storeUrl}/admin/api/2025-01/products/${product.shopify_id}.json`,
           {
@@ -104,106 +110,117 @@ serve(async (req) => {
         }
 
         const productData = await getResponse.json();
-        const variantId = productData.product?.variants?.[0]?.id;
+        const shopifyVariants = productData.product?.variants || [];
 
-        if (!variantId) {
-          throw new Error('No variant found for product');
+        if (shopifyVariants.length === 0) {
+          throw new Error('No variants found in Shopify');
         }
 
-        // Update the variant with new pricing
-        const updateResponse = await fetch(
-          `${storeUrl}/admin/api/2025-01/variants/${variantId}.json`,
-          {
-            method: 'PUT',
-            headers: {
-              'X-Shopify-Access-Token': connection.access_token,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              variant: {
-                id: variantId,
-                price: product.price?.toString() || '0',
-                compare_at_price: product.compare_at_price?.toString() || null,
-              }
-            })
+        console.log(`   Found ${shopifyVariants.length} variant(s) in Shopify`);
+
+        // Synchroniser chaque variant individuellement
+        let variantsSynced = 0;
+        let variantsErrored = 0;
+
+        for (const dbVariant of dbVariants) {
+          // Trouver le variant Shopify correspondant par shopify_variant_id
+          const shopifyVariant = shopifyVariants.find((sv: any) => 
+            String(sv.id) === String(dbVariant.shopify_variant_id)
+          );
+
+          if (!shopifyVariant) {
+            console.warn(`⚠️ [SYNC-PRICING] Variant ${dbVariant.title} not found in Shopify`);
+            variantsErrored++;
+            continue;
           }
-        );
 
-        if (!updateResponse.ok) {
-          const errorText = await updateResponse.text();
-          console.error(`❌ [SYNC-PRICING] Shopify API error: ${updateResponse.status}`, errorText);
-          throw new Error(`Shopify API error: ${updateResponse.status}`);
-        }
-
-          console.log(`✅ [SYNC-PRICING] Successfully synced pricing for "${product.title}"`);
-          success = true;
-
-          // Sync cost_price to inventory_item if available
-        const variants = (product as any).product_variants || [];
-        if (variants.length > 0 && variants[0].cost_price !== null) {
-          const variant = variants[0];
-          
-          // Inventory item ID is already in the variant data we fetched
-          const inventoryItemId = productData.product?.variants?.[0]?.inventory_item_id;
-
-          if (inventoryItemId && variant.cost_price) {
-            try {
-              const inventoryUpdateResponse = await fetch(
-                `${storeUrl}/admin/api/2025-01/inventory_items/${inventoryItemId}.json`,
-                {
-                  method: 'PUT',
-                  headers: {
-                    'X-Shopify-Access-Token': connection.access_token,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    inventory_item: {
-                      id: inventoryItemId,
-                      cost: variant.cost_price.toString()
-                    }
-                  })
-                }
-              );
-
-              if (inventoryUpdateResponse.ok) {
-                console.log(`✅ [SYNC-PRICING] Cost synced: ${variant.cost_price} for "${product.title}"`);
-              } else {
-                console.warn(`⚠️ [SYNC-PRICING] Failed to sync cost: ${inventoryUpdateResponse.status}`);
+          // Mettre à jour le variant
+          try {
+            const updateResponse = await fetch(
+              `${storeUrl}/admin/api/2025-01/variants/${shopifyVariant.id}.json`,
+              {
+                method: 'PUT',
+                headers: {
+                  'X-Shopify-Access-Token': connection.access_token,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  variant: {
+                    id: shopifyVariant.id,
+                    price: dbVariant.price?.toString() || '0',
+                    compare_at_price: dbVariant.compare_at_price?.toString() || null,
+                  }
+                })
               }
-            } catch (costError) {
-              console.error(`❌ [SYNC-PRICING] Error syncing cost:`, costError);
+            );
+
+            if (!updateResponse.ok) {
+              const errorText = await updateResponse.text();
+              console.error(`❌ [SYNC-PRICING] Failed to sync variant ${dbVariant.title}: ${errorText}`);
+              variantsErrored++;
+              continue;
             }
-          }
-          }
-        } catch (error) {
-          lastError = error;
-          retries--;
-          console.error(`❌ [SYNC-PRICING] Error syncing product ${product.title} (retries left: ${retries}):`, error);
-          
-          if (retries > 0) {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          } else {
-            // Final failure
-            errorCount++;
-            failedProducts.push({ 
-              title: product.title, 
-              error: error instanceof Error ? error.message : 'Unknown error'
-            });
+
+            console.log(`   ✅ Variant "${dbVariant.title}" synced`);
+            variantsSynced++;
+
+            // Synchroniser le cost_price si disponible
+            if (dbVariant.cost_price !== null && shopifyVariant.inventory_item_id) {
+              try {
+                const inventoryUpdateResponse = await fetch(
+                  `${storeUrl}/admin/api/2025-01/inventory_items/${shopifyVariant.inventory_item_id}.json`,
+                  {
+                    method: 'PUT',
+                    headers: {
+                      'X-Shopify-Access-Token': connection.access_token,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      inventory_item: {
+                        id: shopifyVariant.inventory_item_id,
+                        cost: dbVariant.cost_price.toString()
+                      }
+                    })
+                  }
+                );
+
+                if (inventoryUpdateResponse.ok) {
+                  console.log(`   💰 Cost synced for "${dbVariant.title}"`);
+                }
+              } catch (costError) {
+                console.error(`❌ [SYNC-PRICING] Error syncing cost:`, costError);
+              }
+            }
+
+            // Rate limiting entre variants
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+          } catch (variantError) {
+            console.error(`❌ [SYNC-PRICING] Error syncing variant ${dbVariant.title}:`, variantError);
+            variantsErrored++;
           }
         }
-      }
 
-      if (success) {
-        successCount++;
-        
-        // Progress logging every 10 products
-        if (successCount % 10 === 0) {
-          console.log(`📊 [SYNC-PRICING] Progress: ${successCount}/${products.length} synced`);
+        // Résultat pour ce produit
+        if (variantsSynced > 0) {
+          console.log(`✅ [SYNC-PRICING] Product "${product.title}": ${variantsSynced}/${dbVariants.length} variants synced`);
+          successCount++;
+        } else {
+          console.error(`❌ [SYNC-PRICING] Product "${product.title}": All variants failed`);
+          errorCount++;
+          failedProducts.push({ title: product.title, error: `${variantsErrored} variants failed` });
         }
+
+      } catch (error) {
+        console.error(`❌ [SYNC-PRICING] Error syncing product ${product.title}:`, error);
+        errorCount++;
+        failedProducts.push({ 
+          title: product.title, 
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
 
-      // Rate limiting
+      // Rate limiting entre produits
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 

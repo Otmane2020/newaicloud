@@ -1229,6 +1229,80 @@ export const translations = {
   },
   
   smartPricing: {
+    title: "Prix Intelligent IA",
+    subtitle: "Gestion intelligente des prix avec analyse IA",
+    
+    filters: {
+      searchPlaceholder: "Rechercher un produit...",
+      allCollections: "Toutes les collections",
+      showMissingSku: "Afficher uniquement les produits sans SKU"
+    },
+    
+    stats: {
+      totalProducts: "Produits",
+      averageMargin: "Marge moyenne",
+      totalValue: "Valeur totale",
+      selected: "sélectionné(s)"
+    },
+    
+    table: {
+      product: "Produit",
+      sku: "SKU",
+      collections: "Collection(s)",
+      price: "Prix",
+      comparePrice: "Prix comparé",
+      discount: "Remise",
+      costPrice: "Prix de revient",
+      shippingCost: "Frais livraison",
+      grossMargin: "Marge Brute (€)",
+      grossMarginPercent: "Marge Brute (%)",
+      netMargin: "Marge Nette (€)",
+      netMarginPercent: "Marge Nette (%)",
+      marketPrice: "Market Price",
+      smartPrice: "Smart Price",
+      actions: "Actions"
+    },
+    
+    buttons: {
+      analyzeAll: "Analyser les prix (IA)",
+      importCosts: "Importer coûts Shopify",
+      importShipping: "Importer frais livraison",
+      exportCSV: "Exporter CSV",
+      generateWhiteBg: "Fonds blancs",
+      bulkPricing: "Tarification en masse",
+      syncSelection: "Sync Sélection",
+      syncAll: "Sync Tout",
+      generateSku: "Générer",
+      applySmartPrice: "Appliquer Smart Price"
+    },
+    
+    messages: {
+      noProducts: "Aucun produit trouvé",
+      importPrompt: "Importez vos produits depuis Shopify pour commencer",
+      skuGenerated: "SKU généré : {{sku}}",
+      syncSuccess: "{{count}} produit(s) synchronisé(s)",
+      syncError: "Erreur de synchronisation",
+      selectProducts: "Sélectionnez des produits à synchroniser",
+      errorLoading: "Erreur lors du chargement",
+      noVariantFound: "Aucune variante trouvée pour ce produit",
+      seeVariants: "Voir variants"
+    },
+    
+    tooltips: {
+      syncProduct: "Synchroniser ce produit avec Shopify",
+      marketPriceSources: "Sources utilisées pour le calcul",
+      aiReasoning: "Raisonnement IA",
+      topCompetitors: "Top 10 Concurrents",
+      noCompetitors: "Aucune source concurrente trouvée pour ce produit"
+    },
+    
+    variants: {
+      label: "Variant",
+      count: "{{count}} variants",
+      notAnalyzed: "Non analysé",
+      notCalculated: "Non calculé"
+    },
+    
     errors: {
       loadData: "Erreur lors du chargement des données",
       save: "Erreur lors de la sauvegarde",
@@ -1236,12 +1310,14 @@ export const translations = {
       notDeployed: "La fonction d'import n'est pas encore déployée",
       analysis: "Fonction d'analyse non déployée",
     },
+    
     success: {
       bulkApplied: "Modification appliquée avec succès",
       costsImported: "Import terminé : {{count}} coûts importés",
       shippingImported: "Frais de livraison Shopify importés",
       analysisComplete: "Analyse terminée : {{count}} produit(s)",
     },
+    
     prompts: {
       importCosts: "Import des coûts en cours...",
       importShipping: "Import des frais de livraison...",
