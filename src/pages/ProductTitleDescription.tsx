@@ -180,17 +180,6 @@ export default function ProductTitleDescription() {
     fetchProducts();
   }, [selectedStore]);
 
-  // Auto-refresh toutes les 30 secondes, mais seulement si aucune opération en cours
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Ne pas rafraîchir si un dialog est ouvert ou si une génération est en cours
-      if (!showLandingDialog && !showConfigDialog && !isOptimizing && !generating) {
-        fetchProducts();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [showLandingDialog, showConfigDialog, isOptimizing, generating]);
 
   // Rafraîchir les limites au montage et toutes les 10 secondes
   useEffect(() => {
