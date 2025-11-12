@@ -485,12 +485,12 @@ Deno.serve(async (req: Request) => {
     console.log(`🤖 Smart mode: ${syncMode === 'smart' ? 'ENABLED' : 'DISABLED'}`);
     
     const productsToInsert = products.map((product) => {
-      const firstVariant = product.variants[0] || {} as ShopifyVariant;
-      const firstImage = product.images[0];
-      const totalInventory = product.variants.reduce(
+      const firstVariant = product.variants?.[0] || {} as ShopifyVariant;
+      const firstImage = product.images?.[0];
+      const totalInventory = product.variants?.reduce(
         (sum, v) => sum + (v.inventory_quantity || 0),
         0
-      );
+      ) || 0;
       
       const existing = existingMap.get(product.id);
       const isOptimized = existing && existing.optimization_count > 0;
