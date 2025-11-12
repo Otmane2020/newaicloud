@@ -32,17 +32,28 @@ export default function ResetPassword() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
-    });
+    try {
+      // Generate reset link with unique token
+      const resetLink = `${window.location.origin}/update-password`;
+      
+      // Use custom Resend email function instead of Supabase native email
+      const { error } = await supabase.functions.invoke('send-reset-password-email', {
+        body: {
+          email: email.trim(),
+          resetLink,
+          language: 'fr',
+        },
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    if (error) {
-      toast.error(error.message);
-    } else {
       setSent(true);
       toast.success('Email de réinitialisation envoyé !');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast.error(error.message || 'Erreur lors de l\'envoi de l\'email');
+    } finally {
+      setLoading(false);
     }
   };
 

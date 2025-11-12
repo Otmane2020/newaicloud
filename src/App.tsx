@@ -32,6 +32,7 @@ import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
 import BlogCampaignMonitoring from "./pages/BlogCampaignMonitoring";
+import CronMonitoring from "./pages/CronMonitoring";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
@@ -170,6 +171,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <BlogCampaignMonitoring />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/cron-monitoring"
+              element={
+                <ProtectedLayout>
+                  <CronMonitoring />
                 </ProtectedLayout>
               }
             />

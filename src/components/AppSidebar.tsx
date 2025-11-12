@@ -28,6 +28,7 @@ import {
   Crown,
   Megaphone,
   FileSearch,
+  Clock,
   RefreshCw,
   AlertCircle,
   Target,
@@ -157,6 +158,7 @@ export function AppSidebar() {
     { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
+    { title: "Monitoring Crons", url: "/cron-monitoring", icon: Clock, key: "cron-monitoring" },
   ];
 
   useEffect(() => {
