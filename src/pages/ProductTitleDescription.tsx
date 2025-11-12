@@ -2033,13 +2033,8 @@ export default function ProductTitleDescription() {
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
                 
-                // Attendre plus longtemps avant de rafraîchir pour stabiliser l'UI
-                console.log('⏳ [Landing] Waiting 5s before refresh...');
-                setTimeout(() => {
-                  console.log('🔄 [Landing] Refreshing products...');
-                  fetchProducts();
-                  refreshLimits();
-                }, 5000); // Augmenté à 5 secondes
+                // PAS de rafraîchissement automatique - cause des boucles infinies
+                console.log('✅ [Landing] Preview displayed, no refresh needed');
               }}
               onClose={() => setShowLandingDialog(false)}
             />
