@@ -127,10 +127,11 @@ Titre: ${data.title}
 Contenu: ${data.textContent}
 
 OBJECTIF: Créer un titre SEO et une meta description de haute qualité qui:
-1. Intègrent le nom de la boutique si c'est une page de contact
-2. Utilisent des mots-clés pertinents liés au contenu de la page
-3. Créent de l'engagement avec un appel à l'action
-4. Se démarquent et incitent au clic
+1. Intègrent le nom EXACT de la boutique fourni dans le contenu (JAMAIS de placeholder générique comme "[Nom de la Boutique]")
+2. Utilisent le nom de boutique réel mentionné dans le texte ci-dessus
+3. Utilisent des mots-clés pertinents liés au contenu de la page
+4. Créent de l'engagement avec un appel à l'action
+5. Se démarquent et incitent au clic
 
 RÈGLES STRICTES :
 - Titre SEO : Exactement 55-65 caractères, inclure le nom de la page et 1-2 mots-clés
@@ -138,6 +139,7 @@ RÈGLES STRICTES :
 - Utilise des power words (Découvrez, Contactez, Profitez, etc.)
 - Pour une page de contact: mentionner service client, réponse rapide, assistance
 - Pour d'autres pages: mettre en avant l'information utile et la valeur ajoutée
+- IMPORTANT: Utilise UNIQUEMENT le nom de boutique réel fourni dans le contenu, JAMAIS de texte entre crochets ou de placeholder
 
 FORMAT JSON strict uniquement (sans markdown):
 {
@@ -296,10 +298,11 @@ Title: ${data.title}
 Content: ${data.textContent}
 
 OBJECTIVE: Create a high-quality SEO title and meta description that:
-1. Integrate the store name if it's a contact page
-2. Use relevant keywords related to the page content
-3. Create engagement with a call-to-action
-4. Stand out and encourage clicks
+1. Integrate the EXACT store name provided in the content (NEVER use generic placeholders like "[Store Name]")
+2. Use the real store name mentioned in the text above
+3. Use relevant keywords related to the page content
+4. Create engagement with a call-to-action
+5. Stand out and encourage clicks
 
 STRICT RULES:
 - SEO Title: Exactly 55-65 characters, include page name and 1-2 keywords
@@ -307,6 +310,7 @@ STRICT RULES:
 - Use power words (Discover, Contact, Shop, etc.)
 - For contact page: mention customer service, fast response, support
 - For other pages: highlight useful information and added value
+- IMPORTANT: Use ONLY the real store name provided in the content, NEVER use brackets or placeholders
 
 Strict JSON format only (no markdown):
 {
