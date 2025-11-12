@@ -175,6 +175,15 @@ export default function ProductTitleDescription() {
     fetchProducts();
   }, []);
 
+  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchProducts();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Rafraîchir les limites au montage et toutes les 10 secondes
   useEffect(() => {
     refreshLimits();

@@ -129,6 +129,15 @@ export function CollectionOptimization() {
     fetchCollections();
   }, []);
 
+  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCollections();
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {
     const filterParam = searchParams.get("filter") as QualityFilter;

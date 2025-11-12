@@ -100,6 +100,15 @@ export function ArticleManagement() {
     fetchArticles();
   }, []);
 
+  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchArticles();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {
     const filterParam = searchParams.get("filter") as QualityFilter;
