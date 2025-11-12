@@ -603,6 +603,23 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 - Mots-clés : ${targetKeywords.join(", ")}
 - Langue cible : ${lang.name}
 
+${serpInsights ? `
+🎯 ANALYSE SERP - STRUCTURE DES TOP ARTICLES :
+
+📋 H2 Fréquents dans les Premiers Résultats :
+${serpInsights.commonH2?.map((h: string) => `- ${h}`).join('\n') || '- Introduction\n- Contenu principal\n- Conclusion'}
+
+📚 Sujets Couverts par les Concurrents :
+${serpInsights.topicCoverage?.slice(0, 5).map((t: string) => `- ${t}`).join('\n') || '- Caractéristiques produit\n- Guide d\'achat'}
+
+🏗️ Patterns de Structure Typiques :
+${serpInsights.structurePatterns?.map((p: string) => `- ${p}`).join('\n') || '- Introduction\n- Corps\n- Conclusion\n- FAQ'}
+
+📊 Nombre de Mots Moyen : ${serpInsights.avgWordCount || config.contentLength} mots
+
+💡 UTILISE CES INSIGHTS : Structure ton article pour couvrir ces sujets et répondre aux intentions de recherche.
+` : ""}
+
 🎨 DESIGN & STYLE :
 - Style visuel : ${config.style}
   → Guide : ${styleGuides[config.style]}
