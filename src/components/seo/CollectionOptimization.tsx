@@ -24,6 +24,7 @@ import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
+import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import {
   Table,
   TableBody,
@@ -147,8 +148,14 @@ export function CollectionOptimization() {
         .single();
       
       if (data && !error) {
-        // Use public_domain if available, otherwise use store_url
-        const domain = data.public_domain || data.store_url?.replace(/^https?:\/\//, '') || 'example.com';
+        // Prioritize public_domain, clean store_url as fallback
+        let domain = 'example.com';
+        if (data.public_domain) {
+          domain = data.public_domain;
+        } else if (data.store_url) {
+          domain = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        }
+        console.log('Store domain fetched:', domain);
         setStoreDomain(domain);
       }
     };
@@ -1716,6 +1723,7 @@ export function CollectionOptimization() {
         items={optimizedCollections.map(c => ({
           id: c.id,
           title: c.title,
+          handle: c.handle,  // Add handle for correct URL generation
           seo_title: c.seo_title || '',
           seo_description: c.seo_description || '',
           body_html: c.body_html || '',

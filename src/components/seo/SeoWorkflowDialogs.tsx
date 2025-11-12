@@ -8,6 +8,7 @@ import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, Tr
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
+import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import { useState, useEffect } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
@@ -17,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface WorkflowItem {
   id: string;
   title: string;
+  handle?: string; // For collections and products URL generation
   image_url?: string;
   seo_title?: string;
   seo_description?: string;
@@ -192,8 +194,14 @@ export function ResultsDialog({
         .single();
       
       if (data && !error) {
-        // Use public_domain if available, otherwise use store_url
-        const domain = data.public_domain || data.store_url?.replace(/^https?:\/\//, '') || 'example.com';
+        // Prioritize public_domain, clean store_url as fallback
+        let domain = 'example.com';
+        if (data.public_domain) {
+          domain = data.public_domain;
+        } else if (data.store_url) {
+          domain = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        }
+        console.log('Store domain fetched:', domain);
         setStoreDomain(domain);
       }
     };
@@ -267,7 +275,12 @@ export function ResultsDialog({
                                 <GoogleSearchPreview
                                   title={item.seo_title}
                                   description={item.seo_description}
-                                  url={`https://${storeDomain}/products/${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                                  url={buildPublicUrl(
+                                    item.handle 
+                                      ? `/collections/${item.handle}` 
+                                      : `/products/${item.title.toLowerCase().replace(/\s+/g, '-')}`,
+                                    storeDomain
+                                  )}
                                 />
                               </div>
                             )}
