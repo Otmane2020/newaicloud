@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye } from 'lucide-react';
+import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
@@ -263,6 +263,17 @@ export function ResultsDialog({
                                 Prévisualiser l'article
                               </Button>
                             )}
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(`/product/${item.id}/seo-analysis`, '_blank')}
+                                className="flex-1"
+                              >
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Analyse SEO
+                              </Button>
+                            </div>
                           </div>
                         )}
 

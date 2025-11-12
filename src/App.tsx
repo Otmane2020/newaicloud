@@ -42,6 +42,7 @@ import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
 import ArticleLanding from "./pages/ArticleLanding";
+import SeoSerpAnalysis from "./pages/SeoSerpAnalysis";
 import LandingPage from "./pages/LandingPage";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
@@ -379,6 +380,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ArticleLanding />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/product/:productId/seo-analysis"
+              element={
+                <ProtectedLayout>
+                  <SeoSerpAnalysis />
                 </ProtectedLayout>
               }
             />
