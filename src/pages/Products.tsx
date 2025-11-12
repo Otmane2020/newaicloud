@@ -132,7 +132,12 @@ export default function Products() {
     });
     
     if (user && selectedStore) {
+      setLoading(true);
       loadProducts();
+    } else if (!selectedStore) {
+      setProducts([]);
+      setTotalCount(0);
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, currentPage, selectedStore?.id]);
