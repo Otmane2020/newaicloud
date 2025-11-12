@@ -581,29 +581,74 @@ export function SmartPricingAI() {
 
       const toastId = toast.loading(`Synchronisation de ${productsToSync.length} produit(s)...`);
 
-      // Update prices in database
-      const updates = productsToSync.map((p) => ({
-        id: p.id,
-        seller_id: (p as any).seller_id, // Keep seller_id
-        title: p.title,
-        price: p.price,
-        compare_at_price: p.compare_at_price,
-      }));
+      // Update local DB first with UPDATE only (fix RLS error)
+      for (const product of productsToSync) {
+        const { error: updateError } = await supabase
+          .from("shopify_products")
+          .update({
+            price: product.price,
+            compare_at_price: product.compare_at_price,
+          })
+          .eq('id', product.id);
 
-      const { error: updateError } = await supabase.from("shopify_products").upsert(updates);
+        if (updateError) {
+          console.error('❌ [SMART-PRICING] DB Update Error:', updateError);
+          throw new Error(`Erreur DB: ${updateError.message}`);
+        }
+      }
 
-      if (updateError) throw updateError;
+      // Batch processing for mass sync
+      const BATCH_SIZE = 100;
+      const batches = [];
+      for (let i = 0; i < productsToSync.length; i += BATCH_SIZE) {
+        batches.push(productsToSync.slice(i, i + BATCH_SIZE));
+      }
 
-      // Sync to Shopify
-      const { error: syncError } = await supabase.functions.invoke("sync-pricing-to-shopify", {
-        body: {
-          product_ids: productsToSync.map((p) => p.id),
-        },
-      });
+      let totalSynced = 0;
+      let totalErrors = 0;
+      const failedProducts: string[] = [];
 
-      if (syncError) throw syncError;
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        
+        toast.loading(
+          `Batch ${i + 1}/${batches.length} (${totalSynced}/${productsToSync.length} synchronisés)`,
+          { id: toastId }
+        );
 
-      toast.success(`✅ ${productsToSync.length} produit(s) synchronisé(s)`, { id: toastId });
+        const { data, error: syncError } = await supabase.functions.invoke("sync-pricing-to-shopify", {
+          body: { product_ids: batch.map(p => p.id) },
+        });
+
+        if (syncError) {
+          console.error(`❌ Batch ${i + 1} failed:`, syncError);
+          totalErrors += batch.length;
+          failedProducts.push(...batch.map(p => p.title));
+        } else if (data) {
+          totalSynced += data.synced || 0;
+          totalErrors += data.errors || 0;
+          if (data.failedProducts) {
+            failedProducts.push(...data.failedProducts.map((fp: any) => fp.title));
+          }
+        }
+
+        // Pause between batches to avoid rate limits
+        if (i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      if (totalErrors > 0) {
+        toast.error(
+          `${totalSynced} produits synchronisés, ${totalErrors} erreurs`,
+          { id: toastId }
+        );
+        if (failedProducts.length > 0) {
+          console.warn('Produits échoués:', failedProducts);
+        }
+      } else {
+        toast.success(`✅ ${totalSynced} produit(s) synchronisé(s)`, { id: toastId });
+      }
 
       // Unselect all after sync
       if (selectedOnly) {

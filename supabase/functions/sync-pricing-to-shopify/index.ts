@@ -29,6 +29,8 @@ serve(async (req) => {
 
     const { product_ids } = await req.json();
     console.log(`📦 [SYNC-PRICING] Syncing ${product_ids.length} product(s)`);
+    console.log(`📊 [SYNC-PRICING] Product IDs:`, product_ids);
+    console.log(`⏱️ [SYNC-PRICING] Estimated time: ${product_ids.length * 0.5}s`);
 
     // Get user's Shopify connection
     const { data: connection, error: connectionError } = await supabase
@@ -66,18 +68,25 @@ serve(async (req) => {
 
     let successCount = 0;
     let errorCount = 0;
+    const failedProducts: Array<{ title: string; error: string }> = [];
 
-    // Sync each product
+    // Sync each product with retry logic
     for (const product of products || []) {
       if (!product.shopify_id) {
         console.warn(`⚠️ [SYNC-PRICING] Product ${product.title} has no Shopify ID`);
         errorCount++;
+        failedProducts.push({ title: product.title, error: 'No Shopify ID' });
         continue;
       }
 
-      try {
-        console.log(`🔄 [SYNC-PRICING] Syncing "${product.title}"...`);
-        console.log(`   Price: ${product.price}, Compare: ${product.compare_at_price}`);
+      let retries = 3;
+      let success = false;
+      let lastError: any = null;
+
+      while (retries > 0 && !success) {
+        try {
+          console.log(`🔄 [SYNC-PRICING] Syncing "${product.title}" (attempt ${4 - retries}/3)...`);
+          console.log(`   Price: ${product.price}, Compare: ${product.compare_at_price}`);
 
         // First, get the product to find its variant
         const getResponse = await fetch(
@@ -126,9 +135,10 @@ serve(async (req) => {
           throw new Error(`Shopify API error: ${updateResponse.status}`);
         }
 
-        console.log(`✅ [SYNC-PRICING] Successfully synced pricing for "${product.title}"`);
+          console.log(`✅ [SYNC-PRICING] Successfully synced pricing for "${product.title}"`);
+          success = true;
 
-        // Sync cost_price to inventory_item if available
+          // Sync cost_price to inventory_item if available
         const variants = (product as any).product_variants || [];
         if (variants.length > 0 && variants[0].cost_price !== null) {
           const variant = variants[0];
@@ -164,26 +174,52 @@ serve(async (req) => {
               console.error(`❌ [SYNC-PRICING] Error syncing cost:`, costError);
             }
           }
+          }
+        } catch (error) {
+          lastError = error;
+          retries--;
+          console.error(`❌ [SYNC-PRICING] Error syncing product ${product.title} (retries left: ${retries}):`, error);
+          
+          if (retries > 0) {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            // Final failure
+            errorCount++;
+            failedProducts.push({ 
+              title: product.title, 
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
         }
-
-        successCount++;
-
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`❌ [SYNC-PRICING] Error syncing product ${product.title}:`, error);
-        errorCount++;
       }
+
+      if (success) {
+        successCount++;
+        
+        // Progress logging every 10 products
+        if (successCount % 10 === 0) {
+          console.log(`📊 [SYNC-PRICING] Progress: ${successCount}/${products.length} synced`);
+        }
+      }
+
+      // Rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     console.log(`📊 [SYNC-PRICING] Sync complete: ${successCount} success, ${errorCount} errors`);
+    
+    if (failedProducts.length > 0) {
+      console.warn(`⚠️ [SYNC-PRICING] Failed products:`, failedProducts);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         synced: successCount,
         errors: errorCount,
-        total: products?.length || 0
+        total: products?.length || 0,
+        failedProducts: failedProducts
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
