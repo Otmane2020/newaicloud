@@ -66,24 +66,28 @@ export function NetlinkingTable() {
   const { t, tf } = useTranslation();
 
   useEffect(() => {
-    if (user && selectedStore) {
-      setLoading(true);
-      loadNetlinking();
-      
-      // Auto-check links every 24 hours if there are unchecked links
-      const checkInterval = setInterval(() => {
-        if (stats.unchecked > 0 && !checking) {
-          console.log('Auto-checking links...');
-          handleCheckLinks();
-        }
-      }, 24 * 60 * 60 * 1000); // 24 hours
+    const timeoutId = setTimeout(() => {
+      if (user && selectedStore) {
+        setLoading(true);
+        loadNetlinking();
+        
+        // Auto-check links every 24 hours if there are unchecked links
+        const checkInterval = setInterval(() => {
+          if (stats.unchecked > 0 && !checking) {
+            console.log('Auto-checking links...');
+            handleCheckLinks();
+          }
+        }, 24 * 60 * 60 * 1000);
 
-      return () => clearInterval(checkInterval);
-    } else if (!selectedStore) {
-      setEntries([]);
-      setLoading(false);
-    }
-  }, [user, selectedStore?.id, stats.unchecked]);
+        return () => clearInterval(checkInterval);
+      } else if (!selectedStore) {
+        setEntries([]);
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [user, selectedStore?.id]);
 
   const loadNetlinking = async () => {
     if (!selectedStore?.id) {

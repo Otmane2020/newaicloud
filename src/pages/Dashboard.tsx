@@ -102,35 +102,39 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && selectedStore) {
-      loadStats();
-      
-      const checkoutStatus = searchParams.get('checkout');
-      if (checkoutStatus === 'success') {
-        toast({
-          title: t.toasts.subscriptionActivated,
-          description: t.toasts.subscriptionActivatedMessage,
-        });
+    const timeoutId = setTimeout(() => {
+      if (user && selectedStore) {
+        loadStats();
         
-        searchParams.delete('checkout');
-        searchParams.delete('session_id');
-        setSearchParams(searchParams);
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      } else if (checkoutStatus === 'cancelled') {
-        toast({
-          title: t.toasts.paymentCancelled,
-          description: t.toasts.paymentCancelledMessage,
-          variant: "destructive"
-        });
-        
-        searchParams.delete('checkout');
-        searchParams.delete('plan_id');
-        setSearchParams(searchParams);
+        const checkoutStatus = searchParams.get('checkout');
+        if (checkoutStatus === 'success') {
+          toast({
+            title: t.toasts.subscriptionActivated,
+            description: t.toasts.subscriptionActivatedMessage,
+          });
+          
+          searchParams.delete('checkout');
+          searchParams.delete('session_id');
+          setSearchParams(searchParams);
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else if (checkoutStatus === 'cancelled') {
+          toast({
+            title: t.toasts.paymentCancelled,
+            description: t.toasts.paymentCancelledMessage,
+            variant: "destructive"
+          });
+          
+          searchParams.delete('checkout');
+          searchParams.delete('plan_id');
+          setSearchParams(searchParams);
+        }
       }
-    }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [user, selectedStore?.id]);
 
   const loadStats = async () => {

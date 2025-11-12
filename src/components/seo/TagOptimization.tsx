@@ -126,13 +126,17 @@ export function TagOptimization() {
   };
 
   useEffect(() => {
-    if (selectedStore) {
-      setLoading(true);
-      fetchProducts();
-    } else {
-      setProducts([]);
-      setLoading(false);
-    }
+    const timeoutId = setTimeout(() => {
+      if (selectedStore) {
+        setLoading(true);
+        fetchProducts();
+      } else {
+        setProducts([]);
+        setLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
 
   // Réagir aux changements de filtre dans l'URL

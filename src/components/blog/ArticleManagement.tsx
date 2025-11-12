@@ -42,6 +42,7 @@ import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useStore } from '@/contexts/StoreContext';
 import {
   Select,
   SelectContent,
@@ -76,6 +77,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function ArticleManagement() {
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
@@ -97,17 +99,28 @@ export function ArticleManagement() {
   const [optimizedArticle, setOptimizedArticle] = useState<Article | null>(null);
 
   useEffect(() => {
-    fetchArticles();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      if (selectedStore?.id) {
+        fetchArticles();
+      } else {
+        setArticles([]);
+        setLoading(false);
+      }
+    }, 200);
 
-  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+    return () => clearTimeout(timeoutId);
+  }, [selectedStore?.id]);
+
+  // Auto-refresh toutes les 30 secondes UNIQUEMENT si store sélectionné
   useEffect(() => {
+    if (!selectedStore?.id) return;
+    
     const interval = setInterval(() => {
       fetchArticles();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStore?.id]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {
@@ -118,6 +131,12 @@ export function ArticleManagement() {
   }, [searchParams]);
 
   const fetchArticles = async () => {
+    if (!selectedStore?.id) {
+      setArticles([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -132,6 +151,7 @@ export function ArticleManagement() {
         .from('blog_articles')
         .select('*')
         .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;

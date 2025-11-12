@@ -40,10 +40,14 @@ export function SeoAuditDashboard() {
   const activeSubTab = searchParams.get("subtab") || "overview";
 
   useEffect(() => {
-    if (selectedStore) {
-      loadLatestAudit();
-      loadStats();
-    }
+    const timeoutId = setTimeout(() => {
+      if (selectedStore) {
+        loadLatestAudit();
+        loadStats();
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
 
   const loadStats = async () => {

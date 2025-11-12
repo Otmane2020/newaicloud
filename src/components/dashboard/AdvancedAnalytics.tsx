@@ -71,10 +71,14 @@ export function AdvancedAnalytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && selectedStore) {
-      setLoading(true);
-      loadAnalytics();
-    }
+    const timeoutId = setTimeout(() => {
+      if (user && selectedStore) {
+        setLoading(true);
+        loadAnalytics();
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [user, selectedStore?.id, period]);
 
   const loadAnalytics = async () => {

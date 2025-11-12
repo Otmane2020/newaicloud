@@ -41,22 +41,26 @@ export function BlogOpportunities() {
   const { t, tf } = useTranslation();
 
   useEffect(() => {
-    const initOpportunities = async () => {
-      if (!selectedStore?.id) {
-        setOpportunities([]);
-        setLoading(false);
-        return;
-      }
+    const timeoutId = setTimeout(() => {
+      const initOpportunities = async () => {
+        if (!selectedStore?.id) {
+          setOpportunities([]);
+          setLoading(false);
+          return;
+        }
 
-      try {
-        setLoading(true);
-        await loadOpportunities();
-      } catch (error) {
-        console.error("Error initializing opportunities:", error);
-        toast.error(t.blog.dialogs.opportunities.errorLoading);
-      }
-    };
-    initOpportunities();
+        try {
+          setLoading(true);
+          await loadOpportunities();
+        } catch (error) {
+          console.error("Error initializing opportunities:", error);
+          toast.error(t.blog.dialogs.opportunities.errorLoading);
+        }
+      };
+      initOpportunities();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
 
   const analyzeAndGenerateOpportunities = async (products: any[], userId: string): Promise<Opportunity[]> => {
