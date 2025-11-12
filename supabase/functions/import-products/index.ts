@@ -472,7 +472,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // Fetch existing products to check optimization status (for smart mode)
-    const existingProductIds = products.map(p => p.id);
+    // Filter out any invalid products
+    const validProducts = products.filter(p => p && p.id);
+    const existingProductIds = validProducts.map(p => p.id);
+    
+    if (validProducts.length !== products.length) {
+      console.warn(`⚠️ Filtered out ${products.length - validProducts.length} invalid products`);
+    }
+    
+    products = validProducts; // Update products to only include valid ones
+    
     const { data: existingProducts } = await supabaseServiceClient
       .from('shopify_products')
       .select('shopify_id, optimization_count, title, description, seo_title, seo_description')
