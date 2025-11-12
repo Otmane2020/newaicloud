@@ -47,7 +47,6 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
               title={article.seo_title || article.title}
               description={article.seo_description || "Description manquante"}
               url={`https://yourstore.com/blogs/news/${article.handle || 'article'}`}
-              date={article.published_at}
             />
           </div>
 

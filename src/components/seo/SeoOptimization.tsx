@@ -61,6 +61,8 @@ import {
 
 import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
 import { VisionAIBanner } from "./VisionAIBanner";
+import { GoogleSearchPreview } from "./GoogleSearchPreview";
+import { useStore } from "@/contexts/StoreContext";
 
 interface Product {
   id: string;
@@ -84,6 +86,51 @@ type SeoScoreSort = "none" | "asc" | "desc";
 type StatusFilter = "all" | "optimized" | "not-optimized";
 type SyncFilter = "all" | "synced" | "not-synced";
 type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
+
+// Helper component for Google Search Preview in table
+function GoogleSearchPreviewCell({ product }: { product: Product }) {
+  const { selectedStore } = useStore();
+  const [domain, setDomain] = useState<string>("example.com");
+
+  useEffect(() => {
+    const fetchDomain = async () => {
+      if (!selectedStore?.id) return;
+
+      const { data } = await supabase
+        .from("shopify_connections")
+        .select("public_domain, store_url")
+        .eq("id", selectedStore.id)
+        .single();
+
+      if (data?.public_domain) {
+        setDomain(data.public_domain);
+      } else if (data?.store_url && !data.store_url.includes('.myshopify.com')) {
+        setDomain(data.store_url.replace(/^https?:\/\//, ''));
+      }
+    };
+
+    fetchDomain();
+  }, [selectedStore?.id]);
+
+  if (!product.seo_title || !product.seo_description) {
+    return (
+      <Badge variant="outline" className="text-xs">
+        Non optimisé
+      </Badge>
+    );
+  }
+
+  const url = `https://${domain}/products/${product.title.toLowerCase().replace(/\s+/g, '-')}`;
+
+  return (
+    <GoogleSearchPreview
+      title={product.seo_title}
+      description={product.seo_description}
+      url={url}
+      compact={true}
+    />
+  );
+}
 
 export function SeoOptimization() {
   const { t, tf } = useTranslation();
@@ -1175,8 +1222,7 @@ export function SeoOptimization() {
                   </TableHead>
                   <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
                   <TableHead>{t.products.title}</TableHead>
-                  <TableHead className="min-w-[200px]">{t.seo.optimization.seoTitle}</TableHead>
-                  <TableHead className="min-w-[250px]">{t.seo.optimization.seoDescription}</TableHead>
+                  <TableHead className="min-w-[350px]">Aperçu Google</TableHead>
                   <TableHead className="w-32">
                     <button
                       onClick={handleSeoScoreSortToggle}
@@ -1228,26 +1274,7 @@ export function SeoOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-[200px]">
-                          {product.seo_title ? (
-                            <p className="text-sm line-clamp-2">{product.seo_title}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {t.seo.optimization.notOptimizedBadge}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[250px]">
-                          {product.seo_description ? (
-                            <p className="text-xs text-muted-foreground line-clamp-3">{product.seo_description}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {t.seo.optimization.notOptimizedBadge}
-                            </Badge>
-                          )}
-                        </div>
+                        <GoogleSearchPreviewCell product={product} />
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">
