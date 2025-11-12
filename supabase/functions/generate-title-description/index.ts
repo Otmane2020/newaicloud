@@ -243,6 +243,61 @@ Sois concis et précis.`
       userPrompt += `\n\n🖼️ IMAGE PRODUIT: ${imageUrl}`;
     }
 
+    // 🎯 ANALYSE SERP CONCURRENTS via DataForSEO
+    let serpInsights = "";
+    try {
+      console.log("🔍 Analyse SERP concurrents pour:", currentTitle);
+      const serpResponse = await supabaseClient.functions.invoke('analyze-serp-competitors', {
+        body: {
+          keyword: currentTitle,
+          analysisType: 'title_meta',
+          maxResults: 5
+        }
+      });
+
+      if (serpResponse.data && !serpResponse.error) {
+        const insights = serpResponse.data.insights;
+        console.log("✅ Insights SERP récupérés:", JSON.stringify(insights).substring(0, 200));
+        
+        serpInsights = `\n\n🏆 TOP RÉSULTATS GOOGLE (À SURPASSER):`;
+        
+        // Top titres concurrents
+        if (insights.topTitles?.length > 0) {
+          serpInsights += `\n\n📊 Titres top 5:`;
+          insights.topTitles.slice(0, 5).forEach((item: any, i: number) => {
+            serpInsights += `\n${i + 1}. "${item.title}" (${item.length} car)`;
+          });
+        }
+        
+        // Mots-clés dominants
+        if (insights.commonKeywords?.length > 0) {
+          serpInsights += `\n\n🔑 Mots-clés dominants à intégrer: ${insights.commonKeywords.slice(0, 8).join(', ')}`;
+        }
+        
+        // Patterns de titres
+        if (insights.titlePatterns?.length > 0) {
+          serpInsights += `\n\n📐 Patterns de titres concurrents: ${insights.titlePatterns.join(', ')}`;
+        }
+        
+        // Statistiques
+        serpInsights += `\n\n📏 Stats concurrents:`;
+        serpInsights += `\n- Longueur moyenne titre: ${insights.avgTitleLength} car`;
+        serpInsights += `\n- Longueur moyenne description: ${insights.avgDescLength} car`;
+        
+        serpInsights += `\n\n💡 MISSION: Créer un titre et une description PLUS impactants que ces résultats en:`;
+        serpInsights += `\n- Intégrant les mots-clés dominants naturellement`;
+        serpInsights += `\n- Respectant les longueurs optimales (titre: 50-60 car, desc: 150-160 car)`;
+        serpInsights += `\n- Se différenciant avec une proposition de valeur unique`;
+        
+        userPrompt += serpInsights;
+      } else {
+        console.warn("⚠️ Pas d'insights SERP disponibles:", serpResponse.error);
+      }
+    } catch (serpError) {
+      console.error("❌ Erreur analyse SERP:", serpError);
+      // Continue sans insights SERP si l'API échoue
+    }
+
     userPrompt += `\n\n✨ À GÉNÉRER:
 
 1️⃣ TITRE SEO (50-60 caractères):

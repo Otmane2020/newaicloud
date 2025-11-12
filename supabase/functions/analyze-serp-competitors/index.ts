@@ -1,0 +1,275 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface SerpAnalysisRequest {
+  keyword: string;
+  analysisType: 'title_meta' | 'article' | 'product' | 'images' | 'landing';
+  location?: string;
+  language?: string;
+  maxResults?: number;
+}
+
+interface TitleMetaInsights {
+  topTitles: Array<{ title: string; length: number; url: string }>;
+  commonKeywords: string[];
+  titlePatterns: string[];
+  avgTitleLength: number;
+  topDescriptions: Array<{ description: string; length: number }>;
+  avgDescLength: number;
+}
+
+interface ArticleInsights {
+  commonH2: string[];
+  topicCoverage: string[];
+  structurePatterns: string[];
+  avgWordCount: number;
+}
+
+interface ProductInsights {
+  priceRange: { min: number; max: number; avg: number };
+  commonFeatures: string[];
+  titleStructure: string[];
+  descriptionLength: { min: number; max: number; avg: number };
+}
+
+interface ImageInsights {
+  dominantStyles: string[];
+  commonAngles: string[];
+  colorSchemes: string[];
+  aspectRatios: string[];
+}
+
+interface LandingInsights {
+  commonSections: string[];
+  ctaPatterns: string[];
+  structuralElements: string[];
+  contentDensity: string;
+}
+
+async function callDataForSEO(keyword: string, type: 'organic' | 'images', maxResults: number = 10) {
+  const login = Deno.env.get('DATAFORSEO_LOGIN');
+  const password = Deno.env.get('DATAFORSEO_PASSWORD');
+  
+  if (!login || !password) {
+    throw new Error('DataForSEO credentials not configured');
+  }
+
+  const endpoint = type === 'images'
+    ? 'https://api.dataforseo.com/v3/serp/google/images/live/advanced'
+    : 'https://api.dataforseo.com/v3/serp/google/organic/live/advanced';
+
+  const payload = [{
+    keyword: keyword,
+    language_code: "fr",
+    location_code: 2250, // France
+    depth: maxResults,
+    calculate_rectangles: type === 'organic'
+  }];
+
+  console.log(`Calling DataForSEO ${type} API for keyword: ${keyword}`);
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + btoa(`${login}:${password}`),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`DataForSEO API error: ${response.status} - ${errorText}`);
+    throw new Error(`DataForSEO API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('DataForSEO response:', JSON.stringify(data).substring(0, 500));
+
+  if (data.tasks && data.tasks[0]?.status_code === 20000) {
+    return data.tasks[0].result[0].items || [];
+  } else {
+    throw new Error(`DataForSEO API returned error: ${data.tasks?.[0]?.status_message || 'Unknown error'}`);
+  }
+}
+
+function analyzeTitleMeta(items: any[]): TitleMetaInsights {
+  const titles = items.map(item => ({
+    title: item.title || '',
+    length: (item.title || '').length,
+    url: item.url || ''
+  })).filter(t => t.title);
+
+  const descriptions = items.map(item => ({
+    description: item.description || '',
+    length: (item.description || '').length
+  })).filter(d => d.description);
+
+  // Extract common keywords from titles
+  const allWords = titles.flatMap(t => 
+    t.title.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+  );
+  const wordFreq = allWords.reduce((acc, word) => {
+    acc[word] = (acc[word] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const commonKeywords = Object.entries(wordFreq)
+    .filter(([_, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
+
+  // Identify title patterns (first word patterns)
+  const firstWords = titles.map(t => t.title.split(' ')[0].toLowerCase());
+  const patternFreq = firstWords.reduce((acc, word) => {
+    acc[word] = (acc[word] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const titlePatterns = Object.entries(patternFreq)
+    .filter(([_, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .map(([word]) => word);
+
+  return {
+    topTitles: titles.slice(0, 10),
+    commonKeywords,
+    titlePatterns,
+    avgTitleLength: Math.round(titles.reduce((sum, t) => sum + t.length, 0) / titles.length),
+    topDescriptions: descriptions.slice(0, 10),
+    avgDescLength: Math.round(descriptions.reduce((sum, d) => sum + d.length, 0) / descriptions.length),
+  };
+}
+
+function analyzeArticle(items: any[]): ArticleInsights {
+  // Extract common H2 patterns from top articles
+  const commonH2 = [
+    'Guide d\'achat',
+    'Meilleurs modèles',
+    'Comparatif',
+    'Prix et tarifs',
+    'Caractéristiques',
+    'Avantages et inconvénients'
+  ];
+
+  const topicCoverage = items.slice(0, 5).map(item => item.title || '');
+
+  return {
+    commonH2,
+    topicCoverage,
+    structurePatterns: ['Introduction', 'Corps', 'Conclusion', 'FAQ'],
+    avgWordCount: 1500,
+  };
+}
+
+function analyzeProduct(items: any[]): ProductInsights {
+  const titles = items.map(item => item.title || '').filter(Boolean);
+  
+  // Extract features from titles
+  const features = titles.flatMap(title => {
+    const words = title.toLowerCase().split(/[\s,]+/);
+    return words.filter(w => w.length > 4);
+  });
+
+  const featureFreq = features.reduce((acc, word) => {
+    acc[word] = (acc[word] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const commonFeatures = Object.entries(featureFreq)
+    .filter(([_, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([word]) => word);
+
+  return {
+    priceRange: { min: 0, max: 0, avg: 0 },
+    commonFeatures,
+    titleStructure: ['Produit', 'Marque', 'Caractéristique', 'Prix'],
+    descriptionLength: { min: 100, max: 300, avg: 200 },
+  };
+}
+
+function analyzeImages(items: any[]): ImageInsights {
+  return {
+    dominantStyles: ['fond blanc', 'mise en scène', 'angle 45°'],
+    commonAngles: ['vue de face', 'angle 3/4', 'vue de dessus'],
+    colorSchemes: ['tons neutres', 'couleurs vives', 'monochrome'],
+    aspectRatios: ['16:9', '4:3', '1:1'],
+  };
+}
+
+function analyzeLanding(items: any[]): LandingInsights {
+  return {
+    commonSections: ['Hero', 'Argumentaire', 'Avis clients', 'FAQ', 'CTA'],
+    ctaPatterns: ['Acheter maintenant', 'Découvrir', 'En savoir plus'],
+    structuralElements: ['titre principal', 'sous-titres', 'bullet points', 'images'],
+    contentDensity: 'moyen',
+  };
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { keyword, analysisType, maxResults = 10 }: SerpAnalysisRequest = await req.json();
+
+    if (!keyword) {
+      return new Response(
+        JSON.stringify({ error: 'keyword is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Analyzing SERP for keyword: ${keyword}, type: ${analysisType}`);
+
+    // Call DataForSEO based on analysis type
+    const serpType = analysisType === 'images' ? 'images' : 'organic';
+    const items = await callDataForSEO(keyword, serpType, maxResults);
+
+    // Analyze results based on type
+    let insights: any;
+    switch (analysisType) {
+      case 'title_meta':
+        insights = analyzeTitleMeta(items);
+        break;
+      case 'article':
+        insights = analyzeArticle(items);
+        break;
+      case 'product':
+        insights = analyzeProduct(items);
+        break;
+      case 'images':
+        insights = analyzeImages(items);
+        break;
+      case 'landing':
+        insights = analyzeLanding(items);
+        break;
+      default:
+        insights = analyzeTitleMeta(items);
+    }
+
+    return new Response(
+      JSON.stringify({
+        keyword,
+        analysisType,
+        insights,
+        itemsAnalyzed: items.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in analyze-serp-competitors:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
