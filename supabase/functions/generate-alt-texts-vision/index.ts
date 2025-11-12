@@ -481,18 +481,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`🎯 Analyzing image: ${image.id} with Vision AI + DeepSeek`);
+    console.log(`🎯 Vision AI Analysis for image: ${image.id}`);
 
-    // Step 1: Analyze title with DeepSeek to extract keywords
+    // Step 1: Analyze title with DeepSeek to extract SEO keywords
     let titleKeywords: string[] = [];
     if (productTitle) {
-      console.log(`🧠 Analyzing title with DeepSeek: "${productTitle}"`);
+      console.log(`🧠 DeepSeek - Analyzing title: "${productTitle}"`);
       const titleAnalysis = await analyzeTitle(productTitle);
       titleKeywords = titleAnalysis.keywords;
-      console.log(`✅ Keywords extracted: ${titleKeywords.join(', ')}`);
+      console.log(`✅ DeepSeek - Keywords extracted: ${titleKeywords.join(', ')}`);
     }
 
-    // Step 2: Analyze image with Vision AI using extracted keywords
+    // Step 2: Analyze image with Vision AI + incorporate DeepSeek keywords
     const visionResponse = await callVisionAI(image.src, productContext, titleKeywords);
     const visionContent = visionResponse.text;
 
