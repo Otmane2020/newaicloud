@@ -74,7 +74,7 @@ REQUIREMENTS:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
+          model: "google/gemini-2.5-flash-image-preview",
           messages: [
             {
               role: "user",
@@ -172,7 +172,7 @@ REQUIREMENTS:
         success: true,
         image_url: publicUrl || base64Image,
         metadata: {
-          model: "google/gemini-2.5-flash-image",
+          model: "google/gemini-2.5-flash-image-preview",
           product_type,
           style,
           format: "square",
