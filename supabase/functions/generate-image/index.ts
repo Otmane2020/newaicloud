@@ -30,12 +30,12 @@ serve(async (req) => {
     }
 
     // --- CONFIG ---
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY non configurée");
     }
 
-    console.log("🧠 Generating Gemini image for:", prompt);
+    console.log("🧠 Generating image for:", prompt);
 
     // --- IMPROVED PROMPT ---
     const enhancedPrompt = `
@@ -64,26 +64,31 @@ REQUIREMENTS:
 - Commercial-grade quality, suitable for Shopify or Amazon
     `.trim();
 
-    // --- GEMINI IMAGE GENERATION ---
+    // --- LOVABLE AI IMAGE GENERATION ---
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GOOGLE_GEMINI_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [
+          model: "google/gemini-2.5-flash-image",
+          messages: [
             {
-              parts: [{ text: enhancedPrompt }],
+              role: "user",
+              content: enhancedPrompt,
             },
           ],
-          generationConfig: { aspectRatio: "1:1" },
+          modalities: ["image", "text"],
         }),
       },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API Error:", response.status, errorText);
+      console.error("Lovable AI Error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
@@ -97,22 +102,38 @@ REQUIREMENTS:
         );
       }
 
-      throw new Error(`Erreur API Gemini: ${response.status}`);
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: "Paiement requis. Ajoutez des crédits à votre workspace Lovable AI.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      throw new Error(`Erreur Lovable AI: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("✅ Gemini response received");
+    console.log("✅ Lovable AI response received");
 
     // --- EXTRACT IMAGE BASE64 ---
-    const base64Image =
-      data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+    const base64Image = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!base64Image) {
       console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
       throw new Error("Aucune image générée - format inattendu.");
     }
 
-    const imageBuffer = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
+    // Extract base64 from data URL if needed
+    const base64Data = base64Image.startsWith('data:') 
+      ? base64Image.split(',')[1] 
+      : base64Image;
+
+    const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     // --- SUPABASE UPLOAD ---
     let publicUrl = null;
@@ -124,7 +145,7 @@ REQUIREMENTS:
 
       if (supabaseUrl && supabaseKey) {
         const supabase = createClient(supabaseUrl, supabaseKey);
-        const filename = `gemini_${collection_id || "product"}_${article_id || "img"}_${Date.now()}.png`;
+        const filename = `ai_gen_${collection_id || "product"}_${article_id || "img"}_${Date.now()}.png`;
 
         const { error: uploadError } = await supabase.storage.from("generated-images").upload(filename, imageBuffer, {
           contentType: "image/png",
@@ -149,9 +170,9 @@ REQUIREMENTS:
     return new Response(
       JSON.stringify({
         success: true,
-        image_url: publicUrl || `data:image/png;base64,${base64Image}`,
+        image_url: publicUrl || base64Image,
         metadata: {
-          model: "gemini-2.5-flash-image",
+          model: "google/gemini-2.5-flash-image",
           product_type,
           style,
           format: "square",
