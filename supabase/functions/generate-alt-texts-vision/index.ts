@@ -376,6 +376,7 @@ Deno.serve(async (req: Request) => {
     // Get context based on image type
     let productContext = "";
     let userId = image.user_id;
+    let productTitle = "";
     
     if (imageType === 'content') {
       // Get content context
@@ -390,6 +391,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
         
         if (collection) {
+          productTitle = collection.title;
           productContext = `Collection: ${collection.title}\n`;
           if (collection.body_html) {
             const shortDesc = collection.body_html.replace(/<[^>]*>/g, '').substring(0, 150);
@@ -404,6 +406,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
         
         if (page) {
+          productTitle = page.title;
           productContext = `Page: ${page.title}\n`;
         }
       } else if (contentType === 'article') {
@@ -414,6 +417,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
         
         if (article) {
+          productTitle = article.title;
           productContext = `Article: ${article.title}\n`;
           const shortContent = article.content.replace(/<[^>]*>/g, '').substring(0, 150);
           productContext += `Content: ${shortContent}\n`;
@@ -443,6 +447,7 @@ Deno.serve(async (req: Request) => {
       }
       
       userId = product.seller_id;
+      productTitle = product.title;
 
       // Get variants for this product (for variable products)
       const { data: variants } = await supabaseClient
@@ -476,15 +481,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`Analyzing image with Google Gemini: ${image.id}`);
+    console.log(`🎯 Analyzing image: ${image.id} with Vision AI + DeepSeek`);
 
     // Step 1: Analyze title with DeepSeek to extract keywords
     let titleKeywords: string[] = [];
-    if (imageType === 'product' && product?.title) {
-      console.log(`Analyzing title with DeepSeek: "${product.title}"`);
-      const titleAnalysis = await analyzeTitle(product.title);
+    if (productTitle) {
+      console.log(`🧠 Analyzing title with DeepSeek: "${productTitle}"`);
+      const titleAnalysis = await analyzeTitle(productTitle);
       titleKeywords = titleAnalysis.keywords;
-      console.log(`Keywords extracted: ${titleKeywords.join(', ')}`);
+      console.log(`✅ Keywords extracted: ${titleKeywords.join(', ')}`);
     }
 
     // Step 2: Analyze image with Vision AI using extracted keywords
@@ -541,12 +546,12 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Visual Analysis: ${visualAnalysis}`);
     console.log(`   - Character count: ${altText.length}`);
 
-    // Track usage
+    // Track usage - Alt image counts as 3 optimizations
     if (userId) {
       await supabaseClient.rpc('increment_usage', {
         p_seller_id: userId,
         p_field: 'optimizations_count',
-        p_increment: 1
+        p_increment: 3
       });
     }
 

@@ -114,6 +114,58 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     { id: 5, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
   ];
 
+  // Prefill from URL params (opportunity data)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const opportunityId = params.get('opportunityId');
+    
+    if (opportunityId) {
+      // Prefill keywords
+      const primaryKeywords = params.get('primaryKeywords')?.split(',').filter(Boolean) || [];
+      const secondaryKeywords = params.get('secondaryKeywords')?.split(',').filter(Boolean) || [];
+      setKeywords([...primaryKeywords, ...secondaryKeywords]);
+      
+      // Prefill estimated word count as articleLength
+      const estimatedWordCount = params.get('estimatedWordCount');
+      if (estimatedWordCount) {
+        const wordCount = parseInt(estimatedWordCount, 10);
+        if (wordCount <= 1000) {
+          setFormData(prev => ({ ...prev, articleLength: "700" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "700" }));
+        } else if (wordCount <= 3000) {
+          setFormData(prev => ({ ...prev, articleLength: "2000" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "2000" }));
+        } else {
+          setFormData(prev => ({ ...prev, articleLength: "4000" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "4000" }));
+        }
+      }
+      
+      // Prefill collection IDs
+      const collectionIds = params.get('collectionIds')?.split(',').filter(Boolean) || [];
+      if (collectionIds.length > 0) {
+        setFormData(prev => ({ ...prev, collection_ids: collectionIds }));
+      }
+      
+      // Prefill product IDs - will select them once products are loaded
+      const productIds = params.get('productIds')?.split(',').filter(Boolean) || [];
+      if (productIds.length > 0) {
+        // Store temporarily to select after products are loaded
+        (window as any).__preselectedProductIds = productIds;
+      }
+    }
+  }, []);
+
+  // Select products after they're loaded from opportunity
+  useEffect(() => {
+    const preselectedIds = (window as any).__preselectedProductIds;
+    if (preselectedIds && products.length > 0) {
+      const productsToSelect = products.filter(p => preselectedIds.includes(p.id));
+      setSelectedProducts(productsToSelect);
+      delete (window as any).__preselectedProductIds;
+    }
+  }, [products]);
+
   useEffect(() => {
     if (user?.id) {
       fetchProducts();

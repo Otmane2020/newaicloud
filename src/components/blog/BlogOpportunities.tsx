@@ -200,51 +200,24 @@ export function BlogOpportunities() {
   };
 
   const handleCreateArticle = async (opp: Opportunity) => {
-    // Check usage limits first
-    if (!canDoAction('articles')) {
-      toast.error('Limite d\'articles atteinte', {
-        description: limits.isTrialing 
-          ? 'Passez à un plan payant pour créer plus d\'articles.'
-          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
-      });
-      setShowUpgradeDialog(true);
-      return;
-    }
-
-    try {
-      setGenerating(opp.id);
-      toast.info(t.blog.dialogs.opportunities.generating);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
-
-      const { data, error } = await supabase.functions.invoke("generate-blog-article", {
-        body: {
-          user_id: user.id,
-          title: opp.title,
-          category: opp.category,
-          sub_category: opp.subCategory,
-          keywords: [...opp.primaryKeywords, ...opp.secondaryKeywords],
-          primary_keywords: opp.primaryKeywords,
-          secondary_keywords: opp.secondaryKeywords,
-          meta_description: opp.metaDescription,
-          angle: opp.angle,
-          target_audience: opp.targetAudience,
-          estimated_word_count: opp.estimatedWordCount,
-          product_ids: opp.productIds,
-          collection_ids: opp.collectionIds || []
-        },
-      });
-
-      if (error) throw error;
-
-      toast.success(tf('blog.dialogs.opportunities.generated', { title: opp.title }));
-      await refreshLimits();
-      window.location.href = "/blog?tab=articles";
-    } catch (error: any) {
-      toast.error(error.message || t.blog.dialogs.opportunities.errorGenerate);
-    } finally {
-      setGenerating(null);
-    }
+    // Open wizard with prefilled opportunity data via URL params
+    const params = new URLSearchParams({
+      opportunityId: opp.id,
+      title: opp.title,
+      category: opp.category,
+      subCategory: opp.subCategory || '',
+      primaryKeywords: opp.primaryKeywords.join(','),
+      secondaryKeywords: opp.secondaryKeywords.join(','),
+      metaDescription: opp.metaDescription,
+      angle: opp.angle || '',
+      targetAudience: opp.targetAudience || '',
+      estimatedWordCount: opp.estimatedWordCount.toString(),
+      productIds: opp.productIds.join(','),
+      collectionIds: (opp.collectionIds || []).join(','),
+      difficulty: opp.difficulty,
+    });
+    
+    window.location.href = `/blog?tab=new&${params.toString()}`;
   };
 
   const handleRegenerate = async () => {
