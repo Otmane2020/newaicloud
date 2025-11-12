@@ -96,17 +96,27 @@ export default function RegenerateLanding({
 
   // Ref pour éviter les générations multiples
   const hasGeneratedRef = useRef(false);
+  const isGeneratingRef = useRef(false);
 
   // Reset le ref quand le produit change
   useEffect(() => {
+    console.log(`🔄 [Landing] Product changed to: ${product.id}, resetting refs`);
     hasGeneratedRef.current = false;
+    isGeneratingRef.current = false;
   }, [product.id]);
 
-  // Auto-generate simplifié
+  // Auto-generate simplifié avec double protection
   useEffect(() => {
-    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current) {
+    console.log(`🔍 [Landing] Auto-generate check: autoGenerate=${autoGenerate}, loading=${loading}, hasContent=${!!htmlContent}, hasGenerated=${hasGeneratedRef.current}, isGenerating=${isGeneratingRef.current}`);
+    
+    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current && !isGeneratingRef.current) {
+      console.log('🚀 [Landing] Starting generation...');
       hasGeneratedRef.current = true;
-      handleGenerate();
+      isGeneratingRef.current = true;
+      handleGenerate().finally(() => {
+        console.log('✅ [Landing] Generation completed, releasing lock');
+        isGeneratingRef.current = false;
+      });
     }
   }, [autoGenerate, loading]);
 

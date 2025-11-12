@@ -180,14 +180,17 @@ export default function ProductTitleDescription() {
     fetchProducts();
   }, [selectedStore]);
 
-  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+  // Auto-refresh toutes les 30 secondes, mais seulement si aucune opération en cours
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchProducts();
+      // Ne pas rafraîchir si un dialog est ouvert ou si une génération est en cours
+      if (!showLandingDialog && !showConfigDialog && !isOptimizing && !generating) {
+        fetchProducts();
+      }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [showLandingDialog, showConfigDialog, isOptimizing, generating]);
 
   // Rafraîchir les limites au montage et toutes les 10 secondes
   useEffect(() => {
@@ -2028,7 +2031,7 @@ export default function ProductTitleDescription() {
               config={landingConfig}
               autoGenerate={true}
               onGenerated={async (html) => {
-                console.log('Generated HTML:', html.substring(0, 100));
+                console.log('🎉 [Landing] Generated HTML:', html.substring(0, 100));
                 
                 // Mettre à jour directement le produit avec le HTML généré (évite double aperçu)
                 const updatedProduct = {
@@ -2041,11 +2044,13 @@ export default function ProductTitleDescription() {
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
                 
-                // Débouncer le refresh pour éviter les boucles
+                // Attendre plus longtemps avant de rafraîchir pour stabiliser l'UI
+                console.log('⏳ [Landing] Waiting 5s before refresh...');
                 setTimeout(() => {
+                  console.log('🔄 [Landing] Refreshing products...');
                   fetchProducts();
                   refreshLimits();
-                }, 2000);
+                }, 5000); // Augmenté à 5 secondes
               }}
               onClose={() => setShowLandingDialog(false)}
             />
