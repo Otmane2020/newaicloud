@@ -1079,7 +1079,7 @@ UTILISATION DES ICÔNES :
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 12000,
+          max_tokens: 16000,
           temperature: 0.7,
         }),
         signal: aiController.signal,
