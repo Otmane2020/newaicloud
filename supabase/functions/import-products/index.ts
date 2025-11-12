@@ -569,28 +569,37 @@ Deno.serve(async (req: Request) => {
       if (!productId) continue;
 
       if (product.variants && product.variants.length > 0) {
-        const variantsToInsert = product.variants.map((variant) => ({
-          product_id: productId,
-          shopify_variant_id: variant.id,
-          sku: variant.sku && variant.sku.trim() !== "" ? variant.sku.trim() : null,
-          title: variant.title || "Default",
-          option1: variant.option1 || "",
-          option2: variant.option2 || "",
-          option3: variant.option3 || "",
-          price: parseFloat(variant.price || "0"),
-          compare_at_price: variant.compare_at_price
-            ? parseFloat(variant.compare_at_price)
-            : null,
-          inventory_quantity: variant.inventory_quantity || 0,
-          weight: variant.weight,
-          weight_unit: variant.weight_unit || "kg",
-          barcode: variant.barcode || "",
-          currency: shopCurrency,
-          image_url: variant.image_id
-            ? product.images.find((img) => img.id === variant.image_id)?.src || ""
-            : "",
-          raw_data: variant,
-        }));
+        const variantsToInsert = product.variants.map((variant) => {
+          // Robust SKU handling - handle string, number, null, undefined
+          let variantSku: string | null = null;
+          if (variant.sku !== null && variant.sku !== undefined) {
+            const skuStr = String(variant.sku).trim();
+            variantSku = skuStr.length > 0 ? skuStr : null;
+          }
+          
+          return {
+            product_id: productId,
+            shopify_variant_id: variant.id,
+            sku: variantSku,
+            title: variant.title || "Default",
+            option1: variant.option1 || "",
+            option2: variant.option2 || "",
+            option3: variant.option3 || "",
+            price: parseFloat(variant.price || "0"),
+            compare_at_price: variant.compare_at_price
+              ? parseFloat(variant.compare_at_price)
+              : null,
+            inventory_quantity: variant.inventory_quantity || 0,
+            weight: variant.weight,
+            weight_unit: variant.weight_unit || "kg",
+            barcode: variant.barcode || "",
+            currency: shopCurrency,
+            image_url: variant.image_id
+              ? product.images.find((img) => img.id === variant.image_id)?.src || ""
+              : "",
+            raw_data: variant,
+          };
+        });
 
         if (variantsToInsert.length > 0) {
           const { error: variantError } = await supabaseServiceClient

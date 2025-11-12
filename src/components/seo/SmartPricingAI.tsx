@@ -1195,16 +1195,48 @@ export function SmartPricingAI() {
                         </div>
                       </div>
                     </td>
-                    <td className="hidden md:table-cell p-4">
-                      {product.sku && product.sku.trim() !== "" ? (
-                        <span className="text-sm text-muted-foreground font-mono">{product.sku}</span>
-                      ) : (
-                        <Badge variant="destructive" className="text-xs flex items-center gap-1 w-fit">
-                          <AlertCircle className="w-3 h-3" />
-                          SKU Manquant
-                        </Badge>
-                      )}
-                    </td>
+              <td className="hidden md:table-cell p-4">
+                {product.sku && product.sku.trim() !== "" ? (
+                  <span className="text-sm text-muted-foreground font-mono">{product.sku}</span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground italic">-</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs"
+                      onClick={async () => {
+                        const newSku = `SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                        
+                        // Get first variant for this product
+                        const { data: variants } = await supabase
+                          .from('product_variants')
+                          .select('id')
+                          .eq('product_id', product.id)
+                          .limit(1);
+                        
+                        if (variants && variants[0]) {
+                          const { error } = await supabase
+                            .from('product_variants')
+                            .update({ sku: newSku })
+                            .eq('id', variants[0].id);
+                          
+                          if (!error) {
+                            toast.success(`SKU généré: ${newSku}`);
+                            fetchData();
+                          } else {
+                            toast.error("Erreur lors de la génération du SKU");
+                          }
+                        } else {
+                          toast.error("Aucune variante trouvée pour ce produit");
+                        }
+                      }}
+                    >
+                      Générer
+                    </Button>
+                  </div>
+                )}
+              </td>
                     <td className="hidden lg:table-cell p-4">
                       <div className="flex flex-wrap gap-1">
                         {product.collection_names.map((name, i) => (
