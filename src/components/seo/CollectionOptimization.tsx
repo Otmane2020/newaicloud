@@ -150,10 +150,17 @@ export function CollectionOptimization() {
     try {
       setLoading(true);
       
-      // Récupérer les collections
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user');
+        setLoading(false);
+        return;
+      }
+
       const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('*')
+        .eq('user_id', user.id)
         .order('title', { ascending: true });
 
       if (error) throw error;

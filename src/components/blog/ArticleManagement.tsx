@@ -120,9 +120,18 @@ export function ArticleManagement() {
   const fetchArticles = async () => {
     try {
       setLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
