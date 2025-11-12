@@ -20,6 +20,7 @@ serve(async (req) => {
       product_type,
       style = "professional",
       type = "white",
+      aspect_ratio = "1:1",
     } = await req.json();
 
     if (!prompt) {
@@ -37,32 +38,22 @@ serve(async (req) => {
 
     console.log("🧠 Generating image for:", prompt);
 
-    // --- IMPROVED PROMPT ---
-    const enhancedPrompt = `
-You are a professional e-commerce photographer.
+    // Determine if it's for a blog article (16:9) or product/collection (1:1)
+    const isArticle = !!article_id;
+    const finalAspectRatio = isArticle ? "16:9" : aspect_ratio;
+    const resolution = isArticle ? "1920x1080" : "1024x1024";
 
-GOAL:
-Generate a high-quality, realistic product photo for an online store.
+    // --- SIMPLIFIED PROMPT ---
+    const enhancedPrompt = `Generate a professional ${isArticle ? 'blog featured' : 'product'} image.
 
-PRODUCT:
 ${prompt}
 
-CATEGORY: ${product_type || "general home decor"}
-STYLE: ${style}
-
-REQUIREMENTS:
-- Square format (1:1)
-- Resolution 1024x1024 or higher
-- ${
-      type === "white"
-        ? "Pure white background (RGB 255,255,255), subtle ground shadow."
-        : "Realistic lifestyle background (natural light, elegant room setting)."
-    }
-- Professional studio lighting
-- Realistic texture, natural shadows, perfect focus
-- No watermark, text, border or logo
-- Commercial-grade quality, suitable for Shopify or Amazon
-    `.trim();
+Requirements:
+- Aspect ratio: ${finalAspectRatio}
+- High resolution: ${resolution}
+- ${type === "white" ? "Pure white background" : "Natural lifestyle setting"}
+- Professional lighting and composition
+- No text, watermarks, or borders`.trim();
 
     // --- LOVABLE AI IMAGE GENERATION ---
     const response = await fetch(
@@ -175,8 +166,8 @@ REQUIREMENTS:
           model: "google/gemini-2.5-flash-image-preview",
           product_type,
           style,
-          format: "square",
-          resolution: "1024x1024",
+          aspect_ratio: finalAspectRatio,
+          resolution: resolution,
           generated_at: new Date().toISOString(),
           storage: storageMetadata,
         },
