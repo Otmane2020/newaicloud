@@ -525,7 +525,9 @@ export function PageOptimization() {
             p.title, // Shopify title
             p.body_html?.substring(0, 160) || '',
             false,
-            !!p.handle
+            !!p.handle,
+            undefined, // No tags for pages
+            0 // Non-optimized = 0
           );
           return sum + score.score;
         }, 0) / pagesNotOptimized.length
@@ -920,7 +922,9 @@ export function PageOptimization() {
                     page.seo_title,
                     page.seo_description,
                     false,
-                    true
+                    true,
+                    undefined, // No tags for pages
+                    page.optimization_count || 0 // Pass optimization count
                   );
                   const scoreBadge = getSeoScoreBadge(seoScore.score);
                   

@@ -305,9 +305,13 @@ export function calculateTagsScore(tags: string | null | undefined): number {
 
 /**
  * Calculate detailed SEO score combining title, description, and tags
- * Pondération: Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
+ * Pondération: Title 35% + Description 35% + Tags 15% + Image 6% + URL 6%
  * 
- * @param optimizationCount - Number of times content was AI-optimized (adds +10 bonus if > 0)
+ * NOUVELLE RÈGLE:
+ * - Si non-optimisé (optimization_count === 0), le score est divisé par 2 (pénalité de 50%)
+ * - Si optimisé (optimization_count > 0), bonus d'optimisation garantit score > 80%
+ * 
+ * @param optimizationCount - Number of times content was AI-optimized
  */
 export function calculateDetailedSeoScore(
   title: string | null | undefined,
@@ -330,16 +334,19 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Calculate final score with AI optimization bonus
+  // NOUVELLE RÈGLE: Pénalité pour produits non-optimisés
+  const isOptimized = optimizationCount && optimizationCount > 0;
+  
   let finalScore: number;
   
-  if (optimizationCount && optimizationCount > 0) {
-    // For AI-optimized products, allow up to 100
-    const optimizationBonus = Math.min(optimizationCount * 3, 10);
+  if (isOptimized) {
+    // ✅ Pour produits OPTIMISÉS: Bonus d'optimisation pour garantir > 80%
+    // Le bonus est calculé pour atteindre minimum 82% après optimisation
+    const optimizationBonus = Math.max(15, Math.ceil(82 - weightedScore));
     finalScore = Math.min(100, weightedScore + optimizationBonus);
   } else {
-    // For non-optimized products, allow full score up to 100
-    finalScore = Math.max(0, Math.min(100, weightedScore));
+    // ❌ Pour produits NON-OPTIMISÉS: Score divisé par 2 (pénalité 50%)
+    finalScore = Math.round(weightedScore * 0.5);
   }
 
   return {
@@ -632,13 +639,28 @@ export function calculateArticleSeoScore(
 
   // Determine quality level
   let quality: 'poor' | 'average' | 'good' | 'excellent';
-  if (score >= 90) quality = 'excellent';
-  else if (score >= 70) quality = 'good';
-  else if (score >= 50) quality = 'average';
+  
+  // NOUVELLE RÈGLE: Pénalité pour articles non-optimisés
+  const isOptimized = optimizationCount > 0;
+  let finalScore: number;
+  
+  if (isOptimized) {
+    // ✅ Pour articles OPTIMISÉS: Bonus d'optimisation pour garantir > 80%
+    const optimizationBonus = Math.max(15, Math.ceil(82 - score));
+    finalScore = Math.min(100, score + optimizationBonus);
+  } else {
+    // ❌ Pour articles NON-OPTIMISÉS: Score divisé par 2 (pénalité 50%)
+    finalScore = Math.round(score * 0.5);
+  }
+  
+  // Determine quality level based on final score
+  if (finalScore >= 90) quality = 'excellent';
+  else if (finalScore >= 70) quality = 'good';
+  else if (finalScore >= 50) quality = 'average';
   else quality = 'poor';
 
   return {
-    score,
+    score: finalScore,
     breakdown,
     quality
   };

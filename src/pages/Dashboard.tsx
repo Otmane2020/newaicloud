@@ -151,7 +151,7 @@ export default function Dashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
-        .select('id, price, seo_title, seo_description, image_url')
+        .select('id, price, seo_title, seo_description, image_url, optimization_count')
         .eq('seller_id', user?.id)
         .in('store_id', storeFilter.length > 0 ? storeFilter : ['']);
 
@@ -173,7 +173,7 @@ export default function Dashboard() {
             !!p.image_url, 
             true, 
             null,
-            1
+            p.optimization_count || 0 // Pass actual optimization count
           );
           totalOptimizedScore += score.score;
           optimizedCount++;
@@ -222,7 +222,14 @@ export default function Dashboard() {
 
         products?.forEach(p => {
           if (p.seo_title || p.seo_description) {
-            const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
+            const result = calculateDetailedSeoScore(
+              p.seo_title, 
+              p.seo_description, 
+              true, 
+              true,
+              null,
+              p.optimization_count || 0 // Pass actual optimization count
+            );
             totalScore += result.score;
             validProducts++;
           }
@@ -262,7 +269,7 @@ export default function Dashboard() {
       
       const { data: oldProducts } = await supabase
         .from('shopify_products')
-        .select('id, seo_title, seo_description')
+        .select('id, seo_title, seo_description, optimization_count')
         .eq('seller_id', user?.id)
         .in('store_id', storeFilter.length > 0 ? storeFilter : [''])
         .lt('created_at', thirtyDaysAgo.toISOString());
