@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -37,6 +38,7 @@ export function GoogleMerchant() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
   const [copied, setCopied] = useState(false);
   const [feedStatus, setFeedStatus] = useState<FeedStatus>({
     lastFetch: null,
@@ -119,10 +121,16 @@ export function GoogleMerchant() {
     try {
       toast.info(t.merchant.feed.status.generating);
       
+      if (!selectedStore) {
+        toast.error('Aucune boutique sélectionnée');
+        return;
+      }
+
       // Fetch products from database
       const { data: products, error } = await supabase
         .from('shopify_products')
         .select('*')
+        .eq('store_id', selectedStore.id)
         .order('title');
 
       if (error) throw error;

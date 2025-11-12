@@ -48,6 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useStore } from '@/contexts/StoreContext';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Pagination,
   PaginationContent,
@@ -76,6 +78,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function PageOptimization() {
   const [searchParams] = useSearchParams();
+  const { selectedStore } = useStore();
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
@@ -128,10 +131,16 @@ export function PageOptimization() {
         return;
       }
 
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('shopify_pages')
         .select('*')
         .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('published_at', { ascending: false });
 
       if (error) throw error;
@@ -483,6 +492,18 @@ export function PageOptimization() {
       setSyncing(false);
     }
   };
+
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les pages.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading || limitsLoading) {
     return (

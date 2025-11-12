@@ -17,11 +17,12 @@ import {
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
 import { ReoptimizeConfirmDialog } from './ReoptimizeConfirmDialog';
 import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 import {
   Table,
   TableBody,
@@ -50,7 +51,8 @@ import {
   Image as ImageIcon,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  AlertCircle
 } from 'lucide-react';
 import {
   Select,
@@ -95,6 +97,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
   const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [searchParams] = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -157,10 +160,16 @@ export function CollectionOptimization() {
         return;
       }
 
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
       const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('*')
         .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -853,6 +862,18 @@ export function CollectionOptimization() {
     setOptimizedCollections([]);
     setSelectedCollections(new Set());
   };
+
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les collections.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading || loading) {
     return (

@@ -20,7 +20,8 @@ import {
   ImageIcon,
   RefreshCw,
   CheckCircle,
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -32,6 +33,9 @@ import { calculateArticleSeoScore, getSeoScoreBadge, passesQualityFilter } from 
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useStore } from '@/contexts/StoreContext';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 interface Article {
   id: string;
@@ -54,6 +58,7 @@ interface Article {
 
 export default function ArticleManagement() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +87,18 @@ export default function ArticleManagement() {
     loadCategories();
   }, []);
 
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les articles.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   const loadCategories = async () => {
     try {
       const { data } = await supabase
@@ -99,10 +116,17 @@ export default function ArticleManagement() {
   const loadArticles = async () => {
     try {
       setLoading(true);
+      
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
         .eq('user_id', user?.id)
+        .eq('store_id', selectedStore.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { FileText, Send, CheckCircle, Clock, AlertCircle, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useStore } from '@/contexts/StoreContext';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface Article {
   id: string;
@@ -19,6 +21,7 @@ interface GoogleSearchConsoleArticlesProps {
 }
 
 export function GoogleSearchConsoleArticles({ selectedDomain }: GoogleSearchConsoleArticlesProps) {
+  const { selectedStore } = useStore();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,10 +37,16 @@ export function GoogleSearchConsoleArticles({ selectedDomain }: GoogleSearchCons
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('blog_articles')
         .select('id, title, status, created_at')
         .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -124,6 +133,18 @@ export function GoogleSearchConsoleArticles({ selectedDomain }: GoogleSearchCons
       </Badge>
     );
   };
+
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les articles.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">

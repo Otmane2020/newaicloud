@@ -48,6 +48,8 @@ import {
 import { WhiteBgPreviewDialog } from "@/components/seo/WhiteBgPreviewDialog";
 import { useTranslation } from "@/lib/language";
 import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
+import { useStore } from "@/contexts/StoreContext";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface CompetitorPrice {
   url: string;
@@ -113,6 +115,7 @@ interface PreviewImage {
 
 export function SmartPricingAI() {
   const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
   const [products, setProducts] = useState<ProductPricing[]>([]);
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
   const [vendors, setVendors] = useState<string[]>([]);
@@ -153,11 +156,17 @@ export function SmartPricingAI() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
       // Fetch collections
       const { data: collectionsData } = await supabase
         .from("shopify_collections")
         .select("id, title")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("store_id", selectedStore.id);
 
       setCollections(collectionsData || []);
 
@@ -175,7 +184,8 @@ export function SmartPricingAI() {
           last_pricing_analysis
         `,
         )
-        .eq("seller_id", user.id);
+        .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id);
 
       if (productsError) {
         console.error("Products error:", productsError);
@@ -1097,6 +1107,18 @@ export function SmartPricingAI() {
   };
 
   const estimatedTime = Math.ceil(products.length * 0.5); // ~0.5 sec per product
+
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les produits.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (
