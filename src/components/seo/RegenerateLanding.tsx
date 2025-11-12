@@ -63,34 +63,42 @@ export default function RegenerateLanding({
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
-    const loadExistingLanding = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("shopify_products")
-          .select("landing_page")
-          .eq("id", product.id)
-          .single();
+    const timeoutId = setTimeout(() => {
+      const loadExistingLanding = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("shopify_products")
+            .select("landing_page")
+            .eq("id", product.id)
+            .single();
 
-        if (error) throw error;
-        
-        if (data?.landing_page) {
-          setHtmlContent(data.landing_page);
+          if (error) throw error;
+          
+          if (data?.landing_page) {
+            setHtmlContent(data.landing_page);
+          }
+        } catch (error) {
+          console.error("Erreur chargement landing:", error);
+        } finally {
+          setLoadingExisting(false);
         }
-      } catch (error) {
-        console.error("Erreur chargement landing:", error);
-      } finally {
-        setLoadingExisting(false);
-      }
-    };
+      };
 
-    loadExistingLanding();
+      loadExistingLanding();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [product.id]);
 
   // Auto-generate simplifié
   useEffect(() => {
-    if (autoGenerate && !loading && !htmlContent) {
-      handleGenerate();
-    }
+    const timeoutId = setTimeout(() => {
+      if (autoGenerate && !loading && !htmlContent) {
+        handleGenerate();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [autoGenerate, loading, htmlContent]);
 
   /** ----------------------------

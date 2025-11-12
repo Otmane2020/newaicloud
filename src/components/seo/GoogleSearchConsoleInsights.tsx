@@ -126,9 +126,18 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
   const { t, language } = useTranslation();
 
   useEffect(() => {
-    if (selectedDomain) {
-      loadCachedData();
-    }
+    const timeoutId = setTimeout(() => {
+      if (selectedDomain) {
+        loadCachedData();
+      } else {
+        setData([]);
+        setTopPages([]);
+        setTopQueries([]);
+        setLoading(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [selectedDomain, dateRange]);
 
   const loadCachedData = async () => {
@@ -145,9 +154,15 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
   };
 
   useEffect(() => {
-    if (selectedDomain) {
-      loadAlerts();
-    }
+    const timeoutId = setTimeout(() => {
+      if (selectedDomain) {
+        loadAlerts();
+      } else {
+        setAlerts([]);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [selectedDomain]);
 
   useEffect(() => {

@@ -58,9 +58,13 @@ export function GoogleSearchConsoleIntegration({
   const [newDomain, setNewDomain] = useState('');
 
   useEffect(() => {
-    if (isConnected) {
-      loadDomains();
-    }
+    const timeoutId = setTimeout(() => {
+      if (isConnected) {
+        loadDomains();
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [isConnected]);
 
   const loadDomains = async () => {

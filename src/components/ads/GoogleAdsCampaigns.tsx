@@ -37,12 +37,16 @@ export function GoogleAdsCampaigns() {
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadCampaigns();
-    } else {
-      setCampaigns([]);
-      setLoading(false);
-    }
+    const timeoutId = setTimeout(() => {
+      if (user) {
+        loadCampaigns();
+      } else {
+        setCampaigns([]);
+        setLoading(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
   const loadCampaigns = async () => {
