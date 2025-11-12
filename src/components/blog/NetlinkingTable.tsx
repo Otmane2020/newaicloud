@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, FileText, Link, Download, ExternalLink, Search, Settings, Rocket, Eye, AlertCircle, RefreshCw, Loader2, Trash2, Edit } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 import { ReplaceLinkDialog } from './ReplaceLinkDialog';
 import {
   AlertDialog,
@@ -43,6 +44,7 @@ interface NetlinkingEntry {
 
 export function NetlinkingTable() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const [entries, setEntries] = useState<NetlinkingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -64,7 +66,8 @@ export function NetlinkingTable() {
   const { t, tf } = useTranslation();
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedStore) {
+      setLoading(true);
       loadNetlinking();
       
       // Auto-check links every 24 hours if there are unchecked links
@@ -76,13 +79,37 @@ export function NetlinkingTable() {
       }, 24 * 60 * 60 * 1000); // 24 hours
 
       return () => clearInterval(checkInterval);
+    } else if (!selectedStore) {
+      setEntries([]);
+      setLoading(false);
     }
-  }, [user, stats.unchecked]);
+  }, [user, selectedStore?.id, stats.unchecked]);
 
   const loadNetlinking = async () => {
+    if (!selectedStore?.id) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
+      // First get articles from selected store
+      const { data: storeArticles } = await supabase
+        .from('blog_articles')
+        .select('id')
+        .eq('store_id', selectedStore.id);
+
+      const articleIds = storeArticles?.map(a => a.id) || [];
+
+      if (articleIds.length === 0) {
+        setEntries([]);
+        setStats({ total: 0, internal: 0, external: 0, totalClicks: 0, broken: 0, working: 0, unchecked: 0 });
+        setLoading(false);
+        return;
+      }
+
       const { data: netlinkingData, error: netlinkingError } = await supabase
         .from('blog_netlinking')
         .select(`
@@ -90,6 +117,7 @@ export function NetlinkingTable() {
           article:blog_articles!article_id(title)
         `)
         .eq('user_id', user?.id)
+        .in('article_id', articleIds)
         .order('updated_at', { ascending: false });
 
       if (netlinkingError) throw netlinkingError;
