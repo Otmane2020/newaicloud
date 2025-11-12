@@ -69,7 +69,10 @@ export default function Products() {
   }, [currentPage]);
 
   const loadProducts = async () => {
+    console.log('🏪 [PRODUCTS] selectedStore:', selectedStore);
+    
     if (!selectedStore) {
+      console.log('⚠️ [PRODUCTS] No store selected, clearing products');
       setProducts([]);
       setTotalCount(0);
       setLoading(false);
@@ -78,6 +81,7 @@ export default function Products() {
 
     try {
       setLoading(true);
+      console.log('📦 [PRODUCTS] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
       
       // Count total products first
       const { count } = await supabase
@@ -85,6 +89,8 @@ export default function Products() {
         .select("*", { count: 'exact', head: true })
         .eq("seller_id", user?.id)
         .eq("store_id", selectedStore.id);
+      
+      console.log('📊 [PRODUCTS] Count result:', count);
       
       setTotalCount(count || 0);
       
