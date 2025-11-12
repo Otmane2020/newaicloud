@@ -42,8 +42,14 @@ export function StoreSelector() {
       <Select
         value={selectedStore?.id || ''}
         onValueChange={(value) => {
+          console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
           const store = stores.find(s => s.id === value);
-          if (store) setSelectedStore(store);
+          if (store) {
+            console.log('✅ [STORE_SELECTOR] Store found:', store.store_name);
+            setSelectedStore(store);
+          } else {
+            console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
+          }
         }}
       >
         <SelectTrigger className="w-[200px] h-9 bg-background/50 border-border/50">
