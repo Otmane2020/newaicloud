@@ -163,8 +163,9 @@ Deno.serve(async (req) => {
                 });
                 break;
               case 'collections':
+                // CRITICAL: Pass apiSecret instead of authToken for collections
                 result = await userClient.functions.invoke('import-shopify-collections', {
-                  body: { shopName, authToken, storeId }
+                  body: { shopName, apiSecret: authToken, storeId }
                 });
                 break;
               case 'pages':
