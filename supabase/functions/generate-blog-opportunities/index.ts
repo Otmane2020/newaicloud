@@ -37,6 +37,11 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[OPPS] User authenticated: ${user.id}`);
 
+    // Parse request body for store_id
+    const body = await req.json().catch(() => ({}));
+    const storeId = body.store_id;
+    console.log(`[OPPS] Store ID: ${storeId || 'all stores'}`);
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -45,11 +50,17 @@ Deno.serve(async (req: Request) => {
     // 1. GET COMPREHENSIVE DATA
     console.log('[OPPS] Fetching comprehensive catalog data...');
 
-    // Products with full details
-    const { data: products, error: productsError } = await supabaseAdmin
+    // Products with full details - filter by store_id if provided
+    const productsQuery = supabaseAdmin
       .from('shopify_products')
       .select('id, title, category, sub_category, product_type, price, vendor, tags, description, handle, image_url')
-      .eq('seller_id', user.id)
+      .eq('seller_id', user.id);
+    
+    if (storeId) {
+      productsQuery.eq('store_id', storeId);
+    }
+    
+    const { data: products, error: productsError } = await productsQuery
       .order('price', { ascending: false });
 
     if (productsError) {
@@ -57,22 +68,33 @@ Deno.serve(async (req: Request) => {
       throw productsError;
     }
 
-    // Collections
-    const { data: collections, error: collectionsError } = await supabaseAdmin
+    // Collections - filter by store_id if provided
+    const collectionsQuery = supabaseAdmin
       .from('shopify_collections')
       .select('id, title, handle, body_html')
       .eq('user_id', user.id);
+    
+    if (storeId) {
+      collectionsQuery.eq('store_id', storeId);
+    }
+    
+    const { data: collections, error: collectionsError } = await collectionsQuery;
 
     if (collectionsError) {
       console.error('[OPPS] Error fetching collections:', collectionsError);
     }
 
-    // Shop info
-    const { data: shopInfo, error: shopError } = await supabaseAdmin
+    // Shop info - filter by store_id if provided
+    const shopQuery = supabaseAdmin
       .from('shopify_connections')
       .select('store_name, store_url')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
+    
+    if (storeId) {
+      shopQuery.eq('id', storeId);
+    }
+    
+    const { data: shopInfo, error: shopError } = await shopQuery.maybeSingle();
 
     if (shopError) {
       console.error('[OPPS] Error fetching shop info:', shopError);
@@ -144,7 +166,7 @@ Deno.serve(async (req: Request) => {
     const topProducts = products.slice(0, 10);
 
     // 3. BUILD RICH CONTEXT PROMPT
-    const prompt = `Tu es un expert en marketing de contenu et SEO e-commerce. Analyse ce catalogue en profondeur et génère 6-8 opportunités d'articles de blog stratégiques.
+    const prompt = `Tu es un expert en marketing de contenu et SEO e-commerce. Analyse ce catalogue en profondeur et génère EXACTEMENT 8 opportunités d'articles de blog stratégiques (MINIMUM 5, IDÉALEMENT 8).
 
 🏪 INFORMATIONS BOUTIQUE :
 ${shopInfo ? `- Nom : ${shopInfo.store_name}
@@ -218,13 +240,14 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
 
 ⚠️ RÈGLES CRITIQUES :
 - Retourne UNIQUEMENT du JSON valide (ZÉRO markdown, ZÉRO backticks)
-- Génère EXACTEMENT 6-8 opportunités variées
+- Génère EXACTEMENT 8 opportunités variées (MINIMUM 5, IDÉALEMENT 8)
 - Utilise les VRAIS noms de produits et collections du catalogue
+- Chaque opportunité DOIT avoir AU MOINS 5 produits associés dans "suggestedProductTitles"
 - Chaque opportunité doit être CONCRÈTE et ACTIONNABLE
 - Mélange les 5 types d'articles
 - Les titres doivent être SEO-optimisés et accrocheurs
 - Les keywords doivent être pertinents et recherchés
-- Suggère 3-5 produits réels par opportunité`;
+- Suggère 5-8 produits réels par opportunité (OBLIGATOIRE)`;
 
     console.log('[OPPS] Calling Lovable AI with rich context...');
     console.log('[OPPS] Prompt length:', prompt.length);
@@ -354,15 +377,36 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
         return { product, score };
       });
 
-      // Sort by score and take top 8
+      // Sort by score and take top 8, but ensure minimum of 5 products
       const matchedProducts = scoredProducts
         .filter(sp => sp.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 8)
-        .map(sp => {
-          console.log(`[OPPS] Matched: ${sp.product.title} (score: ${sp.score})`);
-          return sp.product.id;
-        });
+        .slice(0, 8);
+      
+      // If less than 5 products matched, add more from the same category
+      if (matchedProducts.length < 5 && opp.category) {
+        const categoryProducts = scoredProducts
+          .filter(sp => {
+            const prodCategory = (sp.product.category || sp.product.product_type || '').toLowerCase();
+            return prodCategory.includes(opp.category.toLowerCase()) && 
+                   !matchedProducts.some(mp => mp.product.id === sp.product.id);
+          })
+          .slice(0, 5 - matchedProducts.length);
+        matchedProducts.push(...categoryProducts);
+      }
+      
+      // If still less than 5, add any products
+      if (matchedProducts.length < 5) {
+        const additionalProducts = scoredProducts
+          .filter(sp => !matchedProducts.some(mp => mp.product.id === sp.product.id))
+          .slice(0, 5 - matchedProducts.length);
+        matchedProducts.push(...additionalProducts);
+      }
+      
+      const productIds = matchedProducts.map(sp => {
+        console.log(`[OPPS] Matched: ${sp.product.title} (score: ${sp.score})`);
+        return sp.product.id;
+      });
 
       // Map collection titles to IDs
       let collectionIds: string[] = [];
@@ -375,7 +419,7 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
           .map(c => c.id);
       }
 
-      console.log(`[OPPS] Matched ${matchedProducts.length} products and ${collectionIds.length} collections`);
+      console.log(`[OPPS] Matched ${productIds.length} products and ${collectionIds.length} collections`);
 
       return {
         id: crypto.randomUUID(),
@@ -388,8 +432,8 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
         targetAudience: opp.targetAudience,
         primaryKeywords: opp.primaryKeywords || [],
         secondaryKeywords: opp.secondaryKeywords || [],
-        productIds: matchedProducts,
-        productsCount: matchedProducts.length,
+        productIds: productIds,
+        productsCount: productIds.length,
         collectionIds: collectionIds,
         metaDescription: opp.description,
         estimatedWordCount: opp.estimatedWordCount || 2000,

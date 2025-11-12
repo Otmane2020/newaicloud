@@ -63,7 +63,9 @@ export function BlogOpportunities() {
     try {
       console.log('🧠 Calling generate-blog-opportunities edge function...');
       
-      const { data, error } = await supabase.functions.invoke('generate-blog-opportunities');
+      const { data, error } = await supabase.functions.invoke('generate-blog-opportunities', {
+        body: { store_id: selectedStore?.id }
+      });
 
       if (error) {
         console.error('❌ Error from edge function:', error);
@@ -92,13 +94,19 @@ export function BlogOpportunities() {
       if (!user) throw new Error('Non authentifié');
 
       // Check cache first (24h expiration)
-      const { data: cachedOpportunities, error: cacheError } = await supabase
+      const cacheQuery = supabase
         .from('blog_opportunities')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_cached', true)
         .gt('cache_expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
+      
+      if (selectedStore?.id) {
+        cacheQuery.eq('store_id', selectedStore.id);
+      }
+      
+      const { data: cachedOpportunities, error: cacheError } = await cacheQuery;
 
       if (!cacheError && cachedOpportunities && cachedOpportunities.length > 0) {
         console.log('✅ Using cached opportunities:', cachedOpportunities.length);
