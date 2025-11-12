@@ -68,6 +68,7 @@ interface ProductVariant {
   option1: string | null;
   option2: string | null;
   option3: string | null;
+  image_url: string | null;
 }
 
 interface ProductPricing {
@@ -159,7 +160,7 @@ export function SmartPricingAI() {
         .select(
           `
           *,
-          product_variants(id, title, sku, price, compare_at_price, cost_price, option1, option2, option3),
+          product_variants(id, title, sku, price, compare_at_price, cost_price, option1, option2, option3, image_url),
           market_price,
           smart_price,
           ai_reasoning,
@@ -192,6 +193,7 @@ export function SmartPricingAI() {
             option1: v.option1 || null,
             option2: v.option2 || null,
             option3: v.option3 || null,
+            image_url: v.image_url || null,
           }));
 
           const firstVariant = variants[0];
@@ -1718,7 +1720,17 @@ export function SmartPricingAI() {
                         <td className="p-2 pl-8">
                           <div className="flex items-center gap-2 text-sm">
                             <span className="text-muted-foreground">↳</span>
-                            <span className="text-xs font-medium">Photo variante {idx + 1}</span>
+                            {variant.image_url ? (
+                              <img 
+                                src={variant.image_url} 
+                                alt={`Variante ${idx + 1}`}
+                                className="w-10 h-10 object-cover rounded border border-border"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-muted rounded border border-border flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">-</span>
+                              </div>
+                            )}
                             {variant.option1 && <span className="text-xs">• {variant.option1}</span>}
                             {variant.option2 && <span className="text-xs">• {variant.option2}</span>}
                             {variant.option3 && <span className="text-xs">• {variant.option3}</span>}
