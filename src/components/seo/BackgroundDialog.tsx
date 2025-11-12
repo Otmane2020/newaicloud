@@ -11,8 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, RefreshCw, Sparkles } from 'lucide-react';
+import { Loader2, Check, X, RefreshCw, Sparkles, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -78,6 +80,7 @@ export function BackgroundDialog({
 }: BackgroundDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(customPrompt);
   const [selectedPreset, setSelectedPreset] = useState<string>('');
 
@@ -137,6 +140,43 @@ export function BackgroundDialog({
       onOpenChange(false);
     } finally {
       setApplying(false);
+    }
+  };
+
+  const handleSyncToShopify = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setSyncing(true);
+    const toastId = toast.loading('Synchronisation avec Shopify en cours...');
+    
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const productId of Array.from(selectedIds)) {
+        try {
+          const { error } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+            body: { productId }
+          });
+          
+          if (error) throw error;
+          successCount++;
+        } catch (error: any) {
+          console.error(`Erreur sync produit ${productId}:`, error);
+          errorCount++;
+        }
+      }
+      
+      if (errorCount === 0) {
+        toast.success(`✅ ${successCount} image(s) synchronisée(s) avec Shopify`, { id: toastId });
+      } else {
+        toast.warning(`${successCount} synchronisée(s), ${errorCount} erreur(s)`, { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Erreur synchronisation:', error);
+      toast.error('Erreur lors de la synchronisation', { id: toastId });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -317,14 +357,34 @@ export function BackgroundDialog({
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={applying || isGenerating}
+              disabled={applying || isGenerating || syncing}
               className="w-full sm:w-auto text-xs sm:text-sm"
             >
               Annuler
             </Button>
+            {successfulPreviews.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleSyncToShopify}
+                disabled={syncing || selectedIds.size === 0 || isGenerating || applying}
+                className="w-full sm:w-auto text-xs sm:text-sm gap-2"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">Sync...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Sync Shopify {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               onClick={handleApply}
-              disabled={applying || selectedIds.size === 0 || isGenerating}
+              disabled={applying || selectedIds.size === 0 || isGenerating || syncing}
               className="w-full sm:w-auto text-xs sm:text-sm"
             >
               {applying ? (

@@ -48,7 +48,74 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function callVisionAI(imageUrl: string, productContext: string, retryCount = 0) {
+// Analyze title with DeepSeek to extract key SEO keywords
+async function analyzeTitle(productTitle: string) {
+  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+  
+  if (!deepseekApiKey) {
+    console.warn('DeepSeek API key not configured, skipping title analysis');
+    return { keywords: [], analysis: '' };
+  }
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${deepseekApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'Tu es un expert SEO. Extrais les mots-clés importants d\'un titre produit pour optimiser le référencement.'
+          },
+          {
+            role: 'user',
+            content: `Analyse ce titre produit et extrais les mots-clés SEO importants (marque, style, matériau, fonction, couleur). Élimine les mots génériques comme "premium", "qualité", "top".
+
+Titre: "${productTitle}"
+
+Réponds UNIQUEMENT avec un JSON valide :
+{
+  "keywords": ["mot-clé 1", "mot-clé 2", ...],
+  "analysis": "Brève analyse du titre en 1-2 phrases"
+}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 200
+      })
+    });
+
+    if (!response.ok) {
+      console.error('DeepSeek API error:', response.status);
+      return { keywords: [], analysis: '' };
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '{}';
+    
+    try {
+      const cleaned = cleanJsonResponse(content);
+      const parsed = JSON.parse(cleaned);
+      return {
+        keywords: parsed.keywords || [],
+        analysis: parsed.analysis || ''
+      };
+    } catch (e) {
+      console.error('Failed to parse DeepSeek response:', content);
+      return { keywords: [], analysis: '' };
+    }
+  } catch (error) {
+    console.error('DeepSeek analysis error:', error);
+    return { keywords: [], analysis: '' };
+  }
+}
+
+// Analyze image with Vision AI (Gemini)
+async function callVisionAI(imageUrl: string, productContext: string, titleKeywords: string[], retryCount = 0) {
   const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
   if (!geminiApiKey) {
@@ -96,6 +163,10 @@ async function callVisionAI(imageUrl: string, productContext: string, retryCount
   const minDelayBetweenRequests = 6500; // 6.5s to stay under 10 req/min
   await sleep(minDelayBetweenRequests);
 
+  const keywordsContext = titleKeywords.length > 0 
+    ? `\nMots-clés SEO du titre à intégrer : ${titleKeywords.join(', ')}`
+    : '';
+
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
@@ -106,51 +177,42 @@ async function callVisionAI(imageUrl: string, productContext: string, retryCount
         {
           parts: [
             {
-              text: `Tu es un expert en SEO et analyse d'images de produits e-commerce. Ta mission : créer un texte ALT optimal en CROISANT l'analyse visuelle de l'image avec les mots-clés importants du titre produit.
+              text: `🎯 MISSION : Créer un ALT text impactant en fusionnant l'analyse visuelle ET les mots-clés SEO du titre.
 
-MÉTHODOLOGIE - CROISEMENT VISION + TITRE :
-
-1. ANALYSE VISUELLE (ce que tu VOIS) :
-   - Couleurs dominantes et secondaires
+📊 ANALYSE VISUELLE DÉTAILLÉE (ce que tu VOIS dans l'image) :
+   - Couleurs dominantes et secondaires précises
    - Matériaux visibles (bois, métal, tissu, cuir, plastique, verre)
-   - Formes et dimensions apparentes
-   - Textures visibles (lisse, rugueux, brillant, mat)
+   - Formes, dimensions apparentes, proportions
+   - Textures (lisse, rugueux, brillant, mat, structuré)
    - Style visuel (moderne, vintage, minimaliste, classique, industriel)
-   - Détails importants (pieds, poignées, motifs, finitions)
+   - Détails importants (pieds, poignées, motifs, finitions, ornements)
+   - Environnement et contexte visuel
 
-2. EXTRACTION MOTS-CLÉS DU TITRE :
-   - Identifie les mots-clés SEO importants dans le titre produit
-   - Conserve les termes de marque, style, fonction principale
-   - Élimine les mots génériques ("premium", "qualité", "top")
+🔑 MOTS-CLÉS SEO DU TITRE À INTÉGRER :${keywordsContext}
 
-3. FUSION INTELLIGENTE :
-   - Combine les mots-clés du titre avec ta description visuelle
-   - Valide que les mots-clés correspondent à ce que tu vois
-   - Enrichis avec les détails visuels observés
-   - Crée une description naturelle et fluide
-
-Context produit (TITRE CONTIENT DES MOTS-CLÉS IMPORTANTS À MIXER) :
+📝 Context produit :
 ${productContext}
 
-FORMAT DE RÉPONSE - 15 à 25 mots maximum :
-- Intègre les mots-clés pertinents du titre
-- Enrichis avec les détails visuels observés
-- Description naturelle et optimisée SEO
-- Évite la répétition mot à mot du titre
+✨ FUSION INTELLIGENTE - Crée un résumé IMPACTANT :
+   1. Valide que les mots-clés du titre correspondent à ce que tu vois
+   2. Enrichis avec tes observations visuelles précises
+   3. Crée une description fluide, naturelle et SEO-optimisée
+   4. Mets en avant les points forts visuels + mots-clés importants
+   5. 15-25 mots maximum, percutants et descriptifs
 
-Exemples de CROISEMENT correct :
+💎 EXEMPLES DE RÉSULTATS IMPACTANTS :
 Titre: "Canapé d'angle Scandinave OSLO 5 Places Tissu Beige"
-Vision: Canapé angle, tissu beige clair, pieds bois clair
-✅ ALT: "Canapé d'angle scandinave Oslo 5 places, tissu beige clair, pieds bois naturel, style épuré"
+Vision: Canapé angle, tissu beige clair texturé, pieds bois clair épuré
+✅ ALT: "Canapé d'angle scandinave Oslo 5 places, tissu beige texturé, pieds bois naturel, design épuré et élégant"
 
-Titre: "Chaise Design Industriel LOFT - Métal Noir & Bois"
-Vision: Chaise métal noir, assise bois foncé, pieds tubulaires
-✅ ALT: "Chaise design industriel Loft, structure métal noir, assise bois massif, pieds tubulaires"
+Titre: "Lampe Design Industriel Edison - Métal Noir Mat"
+Vision: Lampe suspension métal noir mat, ampoule Edison visible, câble tressé
+✅ ALT: "Lampe suspension industrielle Edison, structure métal noir mat, ampoule apparente, câble textile tressé noir"
 
 Réponds UNIQUEMENT avec ce JSON valide :
 {
-  "alt_text": "Ta description croisant titre + analyse visuelle",
-  "visual_analysis": "Description technique complète de ce que tu vois dans l'image"
+  "alt_text": "Ton ALT text impactant fusionnant vision + mots-clés",
+  "visual_analysis": "Description technique complète de tout ce que tu observes dans l'image (couleurs précises, matériaux, style, détails)"
 }`
             },
             {
@@ -416,7 +478,17 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Analyzing image with Google Gemini: ${image.id}`);
 
-    const visionResponse = await callVisionAI(image.src, productContext);
+    // Step 1: Analyze title with DeepSeek to extract keywords
+    let titleKeywords: string[] = [];
+    if (imageType === 'product' && product?.title) {
+      console.log(`Analyzing title with DeepSeek: "${product.title}"`);
+      const titleAnalysis = await analyzeTitle(product.title);
+      titleKeywords = titleAnalysis.keywords;
+      console.log(`Keywords extracted: ${titleKeywords.join(', ')}`);
+    }
+
+    // Step 2: Analyze image with Vision AI using extracted keywords
+    const visionResponse = await callVisionAI(image.src, productContext, titleKeywords);
     const visionContent = visionResponse.text;
 
     let altText = "";
@@ -464,6 +536,7 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`✅ Vision ALT text generated for image ${imageId}:`);
+    console.log(`   - Title Keywords: ${titleKeywords.join(', ')}`);
     console.log(`   - ALT Text: ${altText}`);
     console.log(`   - Visual Analysis: ${visualAnalysis}`);
     console.log(`   - Character count: ${altText.length}`);
