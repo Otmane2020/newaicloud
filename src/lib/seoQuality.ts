@@ -338,8 +338,8 @@ export function calculateDetailedSeoScore(
     const optimizationBonus = Math.min(optimizationCount * 3, 10);
     finalScore = Math.min(100, weightedScore + optimizationBonus);
   } else {
-    // For non-optimized products, cap at 85 to encourage optimization
-    finalScore = Math.max(21, Math.min(85, weightedScore));
+    // For non-optimized products, allow full score up to 100
+    finalScore = Math.max(0, Math.min(100, weightedScore));
   }
 
   return {
@@ -350,7 +350,7 @@ export function calculateDetailedSeoScore(
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: (optimizationCount && optimizationCount > 0) ? 100 : 85
+    maxScore: 100
   };
 }
 

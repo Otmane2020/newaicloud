@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText, ExternalLink } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Search } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
+import { GoogleSearchPreview } from "./GoogleSearchPreview";
 
 interface LandingPagePreviewDialogProps {
   open: boolean;
@@ -14,6 +16,9 @@ interface LandingPagePreviewDialogProps {
   productTitle: string;
   productHandle: string;
   currentLandingPage?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  storeUrl?: string;
 }
 
 export function LandingPagePreviewDialog({
@@ -23,6 +28,9 @@ export function LandingPagePreviewDialog({
   productTitle,
   productHandle,
   currentLandingPage,
+  seoTitle,
+  seoDescription,
+  storeUrl,
 }: LandingPagePreviewDialogProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
@@ -125,38 +133,60 @@ export function LandingPagePreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="h-[calc(90vh-200px)] overflow-auto bg-background">
-          {currentLandingPage ? (
-            <div className="relative w-full h-full">
-              <iframe
-                srcDoc={currentLandingPage}
-                className="w-full h-full border-0"
-                sandbox="allow-same-origin allow-scripts"
-                title="Landing Page Preview"
-                onLoad={(e) => {
-                  // Ensure Tailwind is loaded in iframe
-                  const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
-                  if (iframeDoc) {
-                    const checkTailwind = setInterval(() => {
-                      if (iframeDoc.body?.classList.contains('tailwind-loaded')) {
-                        clearInterval(checkTailwind);
-                      }
-                    }, 50);
-                    setTimeout(() => clearInterval(checkTailwind), 3000);
-                  }
-                }}
+        <Tabs defaultValue="preview" className="h-[calc(90vh-200px)]">
+          <TabsList className="mx-6 mb-2">
+            <TabsTrigger value="preview" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Aperçu complet
+            </TabsTrigger>
+            <TabsTrigger value="google" className="gap-2">
+              <Search className="h-4 w-4" />
+              Aperçu Google
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="google" className="h-[calc(100%-48px)] px-6 overflow-auto">
+            <div className="py-4">
+              <GoogleSearchPreview
+                title={seoTitle || productTitle}
+                description={seoDescription || "Description manquante"}
+                url={storeUrl ? `${storeUrl}/products/${productHandle}` : `https://yourstore.com/products/${productHandle}`}
               />
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center p-8">
-                <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                <p className="font-medium">Aucune landing page disponible</p>
-                <p className="text-sm mt-2">Générez une landing page pour voir l'aperçu</p>
+          </TabsContent>
+
+          <TabsContent value="preview" className="h-[calc(100%-48px)] overflow-auto bg-background">
+            {currentLandingPage ? (
+              <div className="relative w-full h-full">
+                <iframe
+                  srcDoc={currentLandingPage}
+                  className="w-full h-full border-0"
+                  sandbox="allow-same-origin allow-scripts"
+                  title="Landing Page Preview"
+                  onLoad={(e) => {
+                    const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
+                    if (iframeDoc) {
+                      const checkTailwind = setInterval(() => {
+                        if (iframeDoc.body?.classList.contains('tailwind-loaded')) {
+                          clearInterval(checkTailwind);
+                        }
+                      }, 50);
+                      setTimeout(() => clearInterval(checkTailwind), 3000);
+                    }
+                  }}
+                />
               </div>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center p-8">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="font-medium">Aucune landing page disponible</p>
+                  <p className="text-sm mt-2">Générez une landing page pour voir l'aperçu</p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

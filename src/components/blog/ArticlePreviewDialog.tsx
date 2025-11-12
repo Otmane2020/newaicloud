@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Eye } from 'lucide-react';
+import { GoogleSearchPreview } from '../seo/GoogleSearchPreview';
 
 interface ArticlePreviewDialogProps {
   open: boolean;
@@ -10,6 +11,10 @@ interface ArticlePreviewDialogProps {
     title: string;
     content: string;
     featured_image?: string;
+    seo_title?: string;
+    seo_description?: string;
+    handle?: string;
+    published_at?: string;
   } | null;
 }
 
@@ -35,6 +40,17 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
         </div>
 
         <ScrollArea className="h-full px-6 pb-6">
+          {/* Google Search Preview */}
+          <div className="py-4 border-b mb-6">
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Aperçu dans Google</h3>
+            <GoogleSearchPreview
+              title={article.seo_title || article.title}
+              description={article.seo_description || "Description manquante"}
+              url={`https://yourstore.com/blogs/news/${article.handle || 'article'}`}
+              date={article.published_at}
+            />
+          </div>
+
           <article className="prose prose-slate dark:prose-invert max-w-none py-6">
             {article.featured_image && (
               <div className="mb-8 -mx-6">
