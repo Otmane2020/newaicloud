@@ -74,6 +74,7 @@ interface ProductVariant {
 interface ProductPricing {
   id: string;
   title: string;
+  vendor: string | null;
   image_url: string | null;
   collection_ids: string[];
   collection_names: string[];
@@ -114,11 +115,16 @@ export function SmartPricingAI() {
   const { t, tf } = useTranslation();
   const [products, setProducts] = useState<ProductPricing[]>([]);
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
+  const [vendors, setVendors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [analyzingPrices, setAnalyzingPrices] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
+  const [selectedVendor, setSelectedVendor] = useState<string>("all");
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
+  const [sortBy, setSortBy] = useState<"title" | "price" | "margin">("title");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState("");
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [taxRate, setTaxRate] = useState<number>(20); // Taux de TVA par défaut: 20%
@@ -201,6 +207,7 @@ export function SmartPricingAI() {
           return {
             id: product.id,
             title: product.title || "",
+            vendor: product.vendor || null,
             image_url: product.image_url || null,
             collection_ids: (product.collection_ids || []) as string[],
             collection_names: collectionNames,
@@ -241,6 +248,10 @@ export function SmartPricingAI() {
             }))
           });
         });
+
+        // Extract unique vendors
+        const uniqueVendors = Array.from(new Set(enrichedProducts.map(p => p.vendor).filter(Boolean))) as string[];
+        setVendors(uniqueVendors);
 
         setProducts(enrichedProducts);
       }
@@ -907,12 +918,35 @@ export function SmartPricingAI() {
 
   const filteredProducts = products.filter((product) => {
     const matchesCollection = selectedCollection === "all" || product.collection_ids.includes(selectedCollection);
+    const matchesVendor = selectedVendor === "all" || product.vendor === selectedVendor;
+    const productPrice = product.price || 0;
+    const matchesPriceRange = productPrice >= priceRange.min && productPrice <= priceRange.max;
     const matchesSearch =
       !searchQuery ||
       product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+      (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.vendor && product.vendor.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesSku = !showMissingSku || !product.sku || product.sku.trim() === "";
-    return matchesCollection && matchesSearch && matchesSku;
+    return matchesCollection && matchesVendor && matchesPriceRange && matchesSearch && matchesSku;
+  }).sort((a, b) => {
+    // Sort simple products first, then variable products
+    if (a.hasMultipleVariants !== b.hasMultipleVariants) {
+      return a.hasMultipleVariants ? 1 : -1;
+    }
+    
+    // Then apply custom sorting
+    let comparison = 0;
+    if (sortBy === "title") {
+      comparison = a.title.localeCompare(b.title);
+    } else if (sortBy === "price") {
+      comparison = (a.price || 0) - (b.price || 0);
+    } else if (sortBy === "margin") {
+      const marginA = calculateNetMargin(a.price, a.cost_price, a.shipping_cost).percentage;
+      const marginB = calculateNetMargin(b.price, b.cost_price, b.shipping_cost).percentage;
+      comparison = marginA - marginB;
+    }
+    
+    return sortOrder === "asc" ? comparison : -comparison;
   });
 
   const {
@@ -1169,20 +1203,20 @@ export function SmartPricingAI() {
 
       {/* Actions Bar */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 flex-wrap">
           <Input
             type="text"
-            placeholder="🔍 Rechercher par titre ou SKU..."
+            placeholder="🔍 Rechercher par titre, SKU ou vendor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:max-w-md"
           />
           <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-            <SelectTrigger className="w-full sm:w-[250px]">
-              <SelectValue placeholder="Filtrer par collection" />
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Collection" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les collections</SelectItem>
+              <SelectItem value="all">Toutes collections</SelectItem>
               {collections.map((col) => (
                 <SelectItem key={col.id} value={col.id}>
                   {col.title}
@@ -1190,6 +1224,55 @@ export function SmartPricingAI() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Vendor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous vendors</SelectItem>
+              {vendors.map((vendor) => (
+                <SelectItem key={vendor} value={vendor}>
+                  {vendor}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2 items-center w-full sm:w-auto">
+            <Input
+              type="number"
+              placeholder="Prix min"
+              value={priceRange.min}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseFloat(e.target.value) || 0 }))}
+              className="w-24"
+            />
+            <span className="text-xs">-</span>
+            <Input
+              type="number"
+              placeholder="Prix max"
+              value={priceRange.max}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseFloat(e.target.value) || 10000 }))}
+              className="w-24"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="title">Titre</SelectItem>
+              <SelectItem value="price">Prix</SelectItem>
+              <SelectItem value="margin">Marge</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+            className="w-full sm:w-auto"
+          >
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            {sortOrder === "asc" ? "↑" : "↓"}
+          </Button>
           <Badge variant="outline" className="w-fit">{filteredProducts.length} produits</Badge>
           {selectedCount > 0 && <Badge variant="default" className="w-fit">{selectedCount} sélectionné(s)</Badge>}
         </div>
@@ -1317,7 +1400,6 @@ export function SmartPricingAI() {
                 </th>
                 <th className="p-3 text-left font-semibold text-sm">{t.smartPricing.table.product}</th>
                 <th className="hidden md:table-cell p-3 text-left font-semibold text-sm">{t.smartPricing.table.sku}</th>
-                <th className="hidden lg:table-cell p-3 text-left font-semibold text-sm">{t.smartPricing.table.collections}</th>
                 <th className="p-3 text-right font-semibold text-sm">{t.smartPricing.table.price}</th>
                 <th className="hidden sm:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.comparePrice}</th>
                 <th className="hidden sm:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.discount}</th>
@@ -1359,12 +1441,20 @@ export function SmartPricingAI() {
                             className="w-12 h-12 object-cover rounded-md border border-border"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center border border-border">
-                            <Package className="w-6 h-6 text-muted-foreground" />
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-12 h-12 bg-muted rounded-md flex items-center justify-center border border-border hover:bg-muted/80"
+                            title="Upload image"
+                          >
+                            <Upload className="w-4 h-4 text-muted-foreground" />
+                          </Button>
                         )}
                         <div className="max-w-[200px]">
                           <p className="font-medium line-clamp-2 text-sm">{product.title}</p>
+                          {product.vendor && (
+                            <p className="text-xs text-muted-foreground">{product.vendor}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1387,15 +1477,6 @@ export function SmartPricingAI() {
                   </div>
                 )}
               </td>
-                    <td className="hidden lg:table-cell p-3">
-                      <div className="flex flex-wrap gap-1">
-                        {product.collection_names.map((name, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </td>
                     <td className="p-3 text-right">
                       {product.hasMultipleVariants ? (
                         <span className="text-xs text-muted-foreground">-</span>
@@ -1718,9 +1799,14 @@ export function SmartPricingAI() {
                                 className="w-8 h-8 object-cover rounded border border-border"
                               />
                             ) : (
-                              <div className="w-8 h-8 bg-muted rounded border border-border flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground">-</span>
-                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="w-8 h-8 bg-muted rounded border border-border flex items-center justify-center hover:bg-muted/80"
+                                title="Upload variant image"
+                              >
+                                <Upload className="w-3 h-3 text-muted-foreground" />
+                              </Button>
                             )}
                             <div className="flex items-center gap-2 text-xs">
                               {variant.option1 && <span className="text-muted-foreground">{variant.option1}</span>}
@@ -1747,8 +1833,6 @@ export function SmartPricingAI() {
                             </div>
                           )}
                         </td>
-                        
-                        <td className="hidden lg:table-cell p-3"></td>
                         
                         <td className="p-3 text-right">
                           <Input
