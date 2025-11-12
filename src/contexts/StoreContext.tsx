@@ -28,6 +28,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const loadStores = async () => {
     if (!user?.id) {
+      console.log('🏪 [STORE_CONTEXT] No user, clearing stores');
       setStores([]);
       setSelectedStore(null);
       setLoading(false);
@@ -35,6 +36,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log('🏪 [STORE_CONTEXT] Loading stores for user:', user.id);
       const { data, error } = await supabase
         .from('shopify_connections')
         .select('id, store_name, store_url, store_label, is_active')
@@ -44,19 +46,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
+      console.log('🏪 [STORE_CONTEXT] Loaded stores:', data?.length, data);
       setStores(data || []);
       
       // Auto-select first store if none selected and stores exist
       if (data && data.length > 0 && !selectedStore) {
+        console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
         setSelectedStore(data[0]);
       }
       
       // If selected store no longer exists, reset
       if (selectedStore && !data?.find(s => s.id === selectedStore.id)) {
+        console.log('🏪 [STORE_CONTEXT] Selected store no longer exists, resetting to first');
         setSelectedStore(data?.[0] || null);
       }
+      
+      console.log('🏪 [STORE_CONTEXT] Final selectedStore:', selectedStore?.store_name);
     } catch (error) {
-      console.error('Error loading stores:', error);
+      console.error('❌ [STORE_CONTEXT] Error loading stores:', error);
       setStores([]);
       setSelectedStore(null);
     } finally {
