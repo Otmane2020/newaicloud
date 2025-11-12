@@ -199,7 +199,11 @@ export function ResultsDialog({
         if (data.public_domain) {
           domain = data.public_domain;
         } else if (data.store_url) {
-          domain = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+          const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+          // Only use store_url if it's NOT a myshopify.com domain
+          if (!cleanUrl.includes('.myshopify.com')) {
+            domain = cleanUrl;
+          }
         }
         console.log('Store domain fetched:', domain);
         setStoreDomain(domain);
