@@ -200,7 +200,10 @@ export default function ProductTitleDescription() {
   }, [refreshLimits]);
 
   const fetchProducts = async () => {
+    console.log('🏪 [PRODUCT_TITLE] selectedStore:', selectedStore);
+    
     if (!selectedStore) {
+      console.log('⚠️ [PRODUCT_TITLE] No store selected, clearing products');
       setProducts([]);
       setLoading(false);
       return;
@@ -211,12 +214,16 @@ export default function ProductTitleDescription() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      console.log('📦 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
+
       const { data, error } = await supabase
         .from("shopify_products")
         .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
+      
+      console.log('📊 [PRODUCT_TITLE] Fetched products:', data?.length);
 
       if (error) throw error;
       setProducts(data || []);
