@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/contexts/StoreContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import { useTranslation } from "@/lib/language";
 export function SeoAuditDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { selectedStore } = useStore();
   const { t, tf } = useTranslation();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -38,21 +40,28 @@ export function SeoAuditDashboard() {
   const activeSubTab = searchParams.get("subtab") || "overview";
 
   useEffect(() => {
-    loadLatestAudit();
-    loadStats();
-  }, []);
+    if (selectedStore) {
+      loadLatestAudit();
+      loadStats();
+    }
+  }, [selectedStore?.id]);
 
   const loadStats = async () => {
+    if (!selectedStore?.id) {
+      setStats(null);
+      return;
+    }
+
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       const [products, collections, pages, articles] = await Promise.all([
-        supabase.from("shopify_products").select("id, enrichment_status").eq("seller_id", user?.id),
-        supabase.from("shopify_collections").select("id, optimization_count").eq("user_id", user?.id),
-        supabase.from("shopify_pages").select("id, optimized").eq("user_id", user?.id),
-        supabase.from("blog_articles").select("id, optimization_count").eq("user_id", user?.id),
+        supabase.from("shopify_products").select("id, enrichment_status").eq("seller_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("shopify_collections").select("id, optimization_count").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("shopify_pages").select("id, optimized").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("blog_articles").select("id, optimization_count").eq("user_id", user?.id).eq("store_id", selectedStore.id),
       ]);
 
       setStats({
@@ -79,12 +88,19 @@ export function SeoAuditDashboard() {
   };
 
   const loadLatestAudit = async () => {
+    if (!selectedStore?.id) {
+      setAudit(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Note: seo_audit_reports remain global (no store filter) as table doesn't have store_id
       const { data, error } = await supabase
         .from("seo_audit_reports")
         .select("*")

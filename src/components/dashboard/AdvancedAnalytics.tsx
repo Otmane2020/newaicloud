@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStore } from '@/contexts/StoreContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/lib/language';
 
@@ -62,6 +63,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 export function AdvancedAnalytics() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
@@ -69,13 +71,14 @@ export function AdvancedAnalytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedStore) {
+      setLoading(true);
       loadAnalytics();
     }
-  }, [user, period]);
+  }, [user, selectedStore?.id, period]);
 
   const loadAnalytics = async () => {
-    if (!user) return;
+    if (!user || !selectedStore?.id) return;
 
     setLoading(true);
     try {
@@ -85,15 +88,17 @@ export function AdvancedAnalytics() {
 
       // Fetch real products data
       const { data: products } = await supabase
-        .from('products')
+        .from('shopify_products')
         .select('id, seo_score, seo_optimized, updated_at, created_at')
-        .eq('user_id', user.id);
+        .eq('seller_id', user.id)
+        .eq('store_id', selectedStore.id);
 
       // Fetch real blog articles
       const { data: articles } = await supabase
         .from('blog_articles')
         .select('id, created_at, status')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id);
 
       // Fetch real SEO audits
       const { data: audits } = await supabase

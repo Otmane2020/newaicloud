@@ -72,7 +72,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
-  const googleShoppingScore = useGoogleShoppingScore(user?.id);
+  const googleShoppingScore = useGoogleShoppingScore(user?.id, selectedStore?.id);
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
     optimizedProducts: 0,
@@ -240,7 +240,8 @@ export default function Dashboard() {
       const { count: articlesCount } = await supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id);
+        .eq('user_id', user?.id)
+        .in('store_id', storeFilter.length > 0 ? storeFilter : ['']);
 
       // Count products with/without alt texts
       const productsWithImages = products?.filter(p => p.image_url)?.length || 0;

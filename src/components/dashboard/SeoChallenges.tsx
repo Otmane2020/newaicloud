@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/contexts/StoreContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -25,11 +26,14 @@ interface Challenge {
 export const SeoChallenges = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selectedStore } = useStore();
   const { toast } = useToast();
   const { tf } = useTranslation();
 
   useEffect(() => {
-    fetchChallenges();
+    if (selectedStore) {
+      fetchChallenges();
+    }
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -50,13 +54,20 @@ export const SeoChallenges = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedStore?.id]);
 
   const fetchChallenges = async () => {
+    if (!selectedStore?.id) {
+      setChallenges([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Note: Keeping global challenges (no store filter) as table likely doesn't have store_id
       const { data, error } = await supabase
         .from('seo_challenges')
         .select('*')

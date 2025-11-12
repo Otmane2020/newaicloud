@@ -8,7 +8,7 @@ interface GoogleShoppingScoreData {
   loading: boolean;
 }
 
-export function useGoogleShoppingScore(userId: string | undefined) {
+export function useGoogleShoppingScore(userId: string | undefined, storeId: string | undefined) {
   const [data, setData] = useState<GoogleShoppingScoreData>({
     score: 0,
     totalProducts: 0,
@@ -17,14 +17,18 @@ export function useGoogleShoppingScore(userId: string | undefined) {
   });
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !storeId) {
+      setData({ score: 0, totalProducts: 0, optimizedProducts: 0, loading: false });
+      return;
+    }
 
     const fetchScore = async () => {
       try {
         const { data: products, error } = await supabase
           .from('shopify_products')
           .select('id, google_product_category, google_gtin, google_white_background')
-          .eq('seller_id', userId);
+          .eq('seller_id', userId)
+          .eq('store_id', storeId);
 
         if (error) throw error;
 
@@ -54,7 +58,7 @@ export function useGoogleShoppingScore(userId: string | undefined) {
     // Refresh every 30 seconds
     const interval = setInterval(fetchScore, 30000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [userId, storeId]);
 
   return data;
 }
