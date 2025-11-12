@@ -1348,11 +1348,6 @@ export function SmartPricingAI() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Checkbox checked={product.selected} onCheckedChange={() => toggleProductSelection(product.id)} />
-                          {product.hasMultipleVariants && (
-                            <Badge variant="outline" className="text-xs">
-                              {tf('smartPricing.variants.count', { count: product.variants.length })}
-                            </Badge>
-                          )}
                         </div>
                       </td>
                     <td className="p-4">
