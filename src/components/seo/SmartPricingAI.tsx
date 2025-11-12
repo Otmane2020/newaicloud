@@ -900,32 +900,47 @@ export function SmartPricingAI() {
         if (updateError) throw updateError;
       }
 
-      // Sync with Shopify
+      // Get product data with Shopify ID
+      const { data: productData } = await supabase
+        .from('shopify_products')
+        .select('shopify_id, seller_id, store_id')
+        .eq('id', productId)
+        .single();
+
+      if (!productData?.shopify_id) {
+        toast.warning("Image uploadée localement uniquement (ID Shopify manquant)");
+        return;
+      }
+
+      // Get store connection
       const { data: connectionData } = await supabase
         .from('shopify_connections')
         .select('store_url, access_token')
-        .eq('user_id', user.id)
+        .eq('id', productData.store_id)
         .maybeSingle();
 
       if (connectionData) {
-        const shopifyProductId = variantId ? null : productId; // Will need actual Shopify ID
-        const endpoint = variantId 
-          ? `https://${connectionData.store_url}/admin/api/2024-01/variants/${variantId}.json`
-          : `https://${connectionData.store_url}/admin/api/2024-01/products/${shopifyProductId}.json`;
+        const endpoint = `https://${connectionData.store_url}/admin/api/2024-01/products/${productData.shopify_id}.json`;
         
-        await fetch(endpoint, {
+        const shopifyResponse = await fetch(endpoint, {
           method: 'PUT',
           headers: {
             'X-Shopify-Access-Token': connectionData.access_token,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            [variantId ? 'variant' : 'product']: {
-              id: variantId || shopifyProductId,
-              image: { src: publicUrl }
+            product: {
+              id: productData.shopify_id,
+              images: [{ src: publicUrl }]
             }
           })
         });
+
+        if (!shopifyResponse.ok) {
+          const errorText = await shopifyResponse.text();
+          console.error('Shopify sync error:', errorText);
+          throw new Error('Erreur de synchronisation Shopify');
+        }
       }
 
       // Update local state
