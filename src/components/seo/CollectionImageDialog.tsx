@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ImageIcon, Upload, Sparkles, TrendingUp, Loader2, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { ImageGenerationPreviewDialog } from './ImageGenerationPreviewDialog';
 
 interface CollectionImageDialogProps {
   open: boolean;
@@ -35,6 +36,10 @@ export function CollectionImageDialog({
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
   const [processingAlt, setProcessingAlt] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [isApplying, setIsApplying] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleUsePopularProduct = async () => {
     try {
@@ -71,9 +76,14 @@ export function CollectionImageDialog({
     }
   };
 
-  const handleGenerateWithAI = async () => {
+  const handleGenerateWithAI = async (customPrompt?: string) => {
     try {
-      setLoading(true);
+      const isRegeneration = !!customPrompt;
+      if (isRegeneration) {
+        setIsRegenerating(true);
+      } else {
+        setLoading(true);
+      }
       
       // Get products from this collection to enrich the prompt
       const { data: products } = await supabase
@@ -82,7 +92,7 @@ export function CollectionImageDialog({
         .contains('collection_ids', [collection.id])
         .limit(5);
       
-      let enrichedPrompt = aiPrompt;
+      let enrichedPrompt = customPrompt || aiPrompt;
       
       if (!enrichedPrompt) {
         // Build prompt from collection and products
@@ -135,7 +145,12 @@ export function CollectionImageDialog({
           console.log('✅ Image uploaded to storage:', publicUrl);
         }
         
-        await updateCollectionImage(imageUrl, true); // Pass true to indicate AI-generated
+        // Store for preview instead of applying immediately
+        setPreviewImageUrl(imageUrl);
+        setShowPreviewDialog(true);
+        
+        // Close main dialog
+        onOpenChange(false);
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
@@ -144,7 +159,26 @@ export function CollectionImageDialog({
       toast.error(error.message || 'Erreur lors de la génération de l\'image');
     } finally {
       setLoading(false);
+      setIsRegenerating(false);
     }
+  };
+
+  const handleApplyGenerated = async () => {
+    try {
+      setIsApplying(true);
+      await updateCollectionImage(previewImageUrl, true);
+      setShowPreviewDialog(false);
+      toast.success('Image appliquée avec succès');
+    } catch (error: any) {
+      console.error('Error applying image:', error);
+      toast.error('Erreur lors de l\'application de l\'image');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const handleRegenerateImage = async (newPrompt: string) => {
+    await handleGenerateWithAI(newPrompt);
   };
 
   const handleUploadCustomImage = async () => {
@@ -357,7 +391,7 @@ export function CollectionImageDialog({
                     Annuler
                   </Button>
                   <Button 
-                    onClick={handleGenerateWithAI}
+                    onClick={() => handleGenerateWithAI()}
                     disabled={loading}
                     className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                   >
@@ -486,6 +520,20 @@ export function CollectionImageDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Preview Dialog */}
+    <ImageGenerationPreviewDialog
+      open={showPreviewDialog}
+      onOpenChange={setShowPreviewDialog}
+      currentImage={collection.image_url}
+      generatedImage={previewImageUrl}
+      title={collection.title}
+      isApplying={isApplying}
+      isRegenerating={isRegenerating}
+      onApply={handleApplyGenerated}
+      onRegenerate={handleRegenerateImage}
+      imageMetadata={{ model: 'Lovable AI' }}
+    />
 
     {/* Success Dialog with Export Options */}
     <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>

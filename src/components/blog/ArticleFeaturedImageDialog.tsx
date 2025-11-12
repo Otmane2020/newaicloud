@@ -10,6 +10,7 @@ import { ImageIcon, Upload, Sparkles, Loader2, CheckCircle, Eye } from "lucide-r
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/language";
+import { ImageGenerationPreviewDialog } from "../seo/ImageGenerationPreviewDialog";
 
 interface ArticleFeaturedImageDialogProps {
   open: boolean;
@@ -37,30 +38,55 @@ export function ArticleFeaturedImageDialog({
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
   const [generatedImageId, setGeneratedImageId] = useState<string>("");
   const [processingAlt, setProcessingAlt] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [isApplying, setIsApplying] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [currentFeaturedImage, setCurrentFeaturedImage] = useState<string | null>(null);
   const { t } = useTranslation();
 
   const MAX_PROMPT_LENGTH = 500;
 
-  // Reset states when dialog opens/closes
+  // Fetch current featured image when dialog opens
   useEffect(() => {
     if (open) {
       setError(null);
       setSelectedOption(null);
       setCustomImageUrl("");
       setAiPrompt("");
+      
+      // Fetch current featured image
+      const fetchCurrentImage = async () => {
+        const { data } = await supabase
+          .from('content_images')
+          .select('src')
+          .eq('content_type', 'article')
+          .eq('content_id', article.id)
+          .eq('position', 0)
+          .maybeSingle();
+        
+        setCurrentFeaturedImage(data?.src || null);
+      };
+      
+      fetchCurrentImage();
     }
-  }, [open]);
+  }, [open, article.id]);
 
   const isValidImageUrl = (url: string) => {
     return url.startsWith("http") && /\.(jpg|jpeg|png|webp|gif|svg|bmp)(\?.*)?$/i.test(url);
   };
 
-  const handleGenerateWithAI = async () => {
+  const handleGenerateWithAI = async (customPrompt?: string) => {
     try {
-      setLoading(true);
+      const isRegeneration = !!customPrompt;
+      if (isRegeneration) {
+        setIsRegenerating(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
-      let enrichedPrompt = aiPrompt;
+      let enrichedPrompt = customPrompt || aiPrompt;
 
       if (!enrichedPrompt) {
         // Build prompt from article title and content excerpt
@@ -92,17 +118,12 @@ export function ArticleFeaturedImageDialog({
       // The edge function already handles upload and returns a public URL
       const publicUrl = data.image_url;
 
-      await updateArticleImage(publicUrl);
-
-      toast.success(
-        <div className="flex items-start gap-3">
-          <img src={publicUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
-          <div>
-            <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
-            <p className="text-xs text-muted-foreground">Image mise à jour</p>
-          </div>
-        </div>,
-      );
+      // Store for preview instead of applying immediately
+      setPreviewImageUrl(publicUrl);
+      setShowPreviewDialog(true);
+      
+      // Close main dialog
+      onOpenChange(false);
     } catch (error: any) {
       console.error("Error:", error);
       const errorMessage = error.message || t.blog.dialogs.featuredImage.errorGenerate;
@@ -110,7 +131,35 @@ export function ArticleFeaturedImageDialog({
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      setIsRegenerating(false);
     }
+  };
+
+  const handleApplyGenerated = async () => {
+    try {
+      setIsApplying(true);
+      await updateArticleImage(previewImageUrl);
+      setShowPreviewDialog(false);
+      
+      toast.success(
+        <div className="flex items-start gap-3">
+          <img src={previewImageUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
+          <div>
+            <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
+            <p className="text-xs text-muted-foreground">Image mise à jour</p>
+          </div>
+        </div>,
+      );
+    } catch (error: any) {
+      console.error('Error applying image:', error);
+      toast.error('Erreur lors de l\'application de l\'image');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const handleRegenerateImage = async (newPrompt: string) => {
+    await handleGenerateWithAI(newPrompt);
   };
 
   const handleUploadCustomImage = async () => {
@@ -402,7 +451,7 @@ export function ArticleFeaturedImageDialog({
                     Annuler
                   </Button>
                   <Button
-                    onClick={handleGenerateWithAI}
+                    onClick={() => handleGenerateWithAI()}
                     disabled={loading || aiPrompt.length > MAX_PROMPT_LENGTH}
                     className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                     aria-label="Générer l'image avec IA"
@@ -598,6 +647,20 @@ export function ArticleFeaturedImageDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Preview Dialog */}
+      <ImageGenerationPreviewDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        currentImage={currentFeaturedImage}
+        generatedImage={previewImageUrl}
+        title={article.title}
+        isApplying={isApplying}
+        isRegenerating={isRegenerating}
+        onApply={handleApplyGenerated}
+        onRegenerate={handleRegenerateImage}
+        imageMetadata={{ model: 'Lovable AI', width: 1200, height: 675 }}
+      />
     </>
   );
 }
