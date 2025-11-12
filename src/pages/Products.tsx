@@ -69,19 +69,19 @@ export default function Products() {
   }, [currentPage]);
 
   const loadProducts = async () => {
-    console.log('🔄 [PRODUCTS] loadProducts called with selectedStore:', {
-      id: selectedStore?.id,
-      name: selectedStore?.store_name,
-      hasStore: !!selectedStore
-    });
-    
-    if (!selectedStore) {
-      console.log('⚠️ [PRODUCTS] No store selected, clearing products');
+    if (!selectedStore?.id) {
+      console.log('⚠️ [PRODUCTS] No store ID, clearing products');
       setProducts([]);
       setTotalCount(0);
       setLoading(false);
       return;
     }
+    
+    console.log('🔄 [PRODUCTS] loadProducts called with selectedStore:', {
+      id: selectedStore.id,
+      name: selectedStore.store_name,
+      hasStore: !!selectedStore
+    });
 
     try {
       setLoading(true);
@@ -124,18 +124,18 @@ export default function Products() {
   
 
   useEffect(() => {
-    console.log('🔄 [PRODUCTS] useEffect triggered - selectedStore changed:', {
+    console.log('🔄 [PRODUCTS] useEffect triggered - selectedStore.id changed:', {
       id: selectedStore?.id,
       name: selectedStore?.store_name,
       currentPage,
       hasUser: !!user
     });
     
-    if (user) {
+    if (user && selectedStore) {
       loadProducts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentPage, selectedStore]);
+  }, [user, currentPage, selectedStore?.id]);
 
   useEffect(() => {
     filterAndSortProducts();
