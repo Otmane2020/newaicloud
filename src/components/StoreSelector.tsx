@@ -1,4 +1,4 @@
-import { Store, ChevronDown } from 'lucide-react';
+import { Store } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,7 +13,7 @@ export function StoreSelector() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg animate-pulse">
+      <div className="flex items-center gap-3 px-3 py-2 bg-muted/30 rounded-lg animate-pulse">
         <Store className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">Chargement...</span>
       </div>
@@ -24,12 +24,12 @@ export function StoreSelector() {
     return null;
   }
 
-  // If only one store, show it without selector
+  // If only one store, show it in sidebar style
   if (stores.length === 1) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
-        <Store className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium text-foreground">
+      <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
+        <Store className="w-4 h-4 text-primary shrink-0" />
+        <span className="text-sm font-medium text-foreground truncate">
           {stores[0].store_label || stores[0].store_name || 'Boutique'}
         </span>
       </div>
@@ -37,39 +37,39 @@ export function StoreSelector() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Store className="w-4 h-4 text-muted-foreground" />
-      <Select
-        value={selectedStore?.id || ''}
-        onValueChange={(value) => {
-          console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
-          const store = stores.find(s => s.id === value);
-          if (store) {
-            console.log('✅ [STORE_SELECTOR] Store found:', {
-              id: store.id,
-              name: store.store_name
-            });
-            setSelectedStore(store);
-            console.log('✅ [STORE_SELECTOR] setSelectedStore called with store:', store.store_name);
-          } else {
-            console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
-          }
-        }}
-      >
-        <SelectTrigger className="w-[200px] h-9 bg-background/50 border-border/50">
-          <SelectValue placeholder="Sélectionner une boutique" />
-        </SelectTrigger>
-        <SelectContent>
-          {stores.map((store) => (
-            <SelectItem key={store.id} value={store.id}>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${store.is_active ? 'bg-success' : 'bg-muted-foreground'}`} />
-                <span>{store.store_label || store.store_name || store.store_url}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={selectedStore?.id || ''}
+      onValueChange={(value) => {
+        console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
+        const store = stores.find(s => s.id === value);
+        if (store) {
+          console.log('✅ [STORE_SELECTOR] Store found:', {
+            id: store.id,
+            name: store.store_name
+          });
+          setSelectedStore(store);
+          console.log('✅ [STORE_SELECTOR] setSelectedStore called with store:', store.store_name);
+        } else {
+          console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
+        }
+      }}
+    >
+      <SelectTrigger className="flex items-center gap-3 px-3 py-2.5 h-auto bg-primary/10 hover:bg-primary/15 rounded-lg border-0 transition-colors">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Store className="w-4 h-4 text-primary shrink-0" />
+          <SelectValue placeholder="Sélectionner une boutique" className="text-sm font-medium text-foreground truncate" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        {stores.map((store) => (
+          <SelectItem key={store.id} value={store.id}>
+            <div className="flex items-center gap-3">
+              <Store className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">{store.store_label || store.store_name || store.store_url}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
