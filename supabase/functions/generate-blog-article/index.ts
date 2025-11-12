@@ -474,6 +474,32 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
       console.error("❌ Erreur génération image:", imgErr);
     }
 
+    // 🔍 SERP Analysis for article structure
+    console.log("🔍 Analyzing SERP competitors for article structure...");
+    let serpInsights: any = null;
+    
+    try {
+      const { data: serpData, error: serpError } = await supabaseClient.functions.invoke("analyze-serp-competitors", {
+        body: {
+          keyword: mainKeyword,
+          analysisType: "article",
+          maxResults: 10
+        }
+      });
+
+      if (serpError) {
+        console.warn("⚠️ SERP analysis failed:", serpError);
+      } else if (serpData) {
+        serpInsights = serpData.insights;
+        console.log("✅ SERP analysis completed:", {
+          commonH2: serpInsights?.commonH2?.length || 0,
+          topicCoverage: serpInsights?.topicCoverage?.length || 0
+        });
+      }
+    } catch (serpErr) {
+      console.warn("⚠️ SERP analysis error:", serpErr);
+    }
+
     // Génération du titre optimisé SEO
 
     const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

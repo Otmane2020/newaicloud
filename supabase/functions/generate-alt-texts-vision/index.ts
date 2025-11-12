@@ -483,17 +483,57 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🎯 Vision AI Analysis for image: ${image.id}`);
 
-    // Step 1: Analyze title with DeepSeek to extract SEO keywords
+    // Step 1: Analyze SERP for image visual patterns
+    let serpImageInsights: any = null;
+    if (productTitle) {
+      console.log("🔍 Analyzing SERP for image patterns...");
+      try {
+        const { data: serpData, error: serpError } = await supabaseClient.functions.invoke("analyze-serp-competitors", {
+          body: {
+            keyword: productTitle,
+            analysisType: "images",
+            maxResults: 10
+          }
+        });
+
+        if (serpError) {
+          console.warn("⚠️ SERP image analysis failed:", serpError);
+        } else if (serpData) {
+          serpImageInsights = serpData.insights;
+          console.log("✅ SERP image analysis completed:", {
+            dominantStyles: serpImageInsights?.dominantStyles?.length || 0,
+            commonAngles: serpImageInsights?.commonAngles?.length || 0
+          });
+        }
+      } catch (serpErr) {
+        console.warn("⚠️ SERP image analysis error:", serpErr);
+      }
+    }
+
+    // Step 2: Analyze title with DeepSeek to extract SEO keywords
     let titleKeywords: string[] = [];
     if (productTitle) {
       console.log(`🧠 DeepSeek - Analyzing title: "${productTitle}"`);
       const titleAnalysis = await analyzeTitle(productTitle);
       titleKeywords = titleAnalysis.keywords;
       console.log(`✅ DeepSeek - Keywords extracted: ${titleKeywords.join(', ')}`);
+      
+      // Enhance keywords with SERP visual insights
+      if (serpImageInsights?.dominantStyles) {
+        console.log(`✨ Adding SERP visual context: ${serpImageInsights.dominantStyles.slice(0, 2).join(', ')}`);
+      }
     }
 
-    // Step 2: Analyze image with Vision AI + incorporate DeepSeek keywords
-    const visionResponse = await callVisionAI(image.src, productContext, titleKeywords);
+    // Step 3: Analyze image with Vision AI + incorporate DeepSeek keywords + SERP visual patterns
+    const enhancedContext = serpImageInsights 
+      ? `${productContext}\n\n🎨 SERP VISUAL PATTERNS:\n` +
+        `Dominant styles: ${serpImageInsights.dominantStyles?.join(', ') || 'N/A'}\n` +
+        `Common angles: ${serpImageInsights.commonAngles?.join(', ') || 'N/A'}\n` +
+        `Color schemes: ${serpImageInsights.colorSchemes?.join(', ') || 'N/A'}\n` +
+        `Aspect ratios: ${serpImageInsights.aspectRatios?.join(', ') || 'N/A'}`
+      : productContext;
+
+    const visionResponse = await callVisionAI(image.src, enhancedContext, titleKeywords);
     const visionContent = visionResponse.text;
 
     let altText = "";

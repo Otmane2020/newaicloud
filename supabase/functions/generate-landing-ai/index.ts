@@ -531,6 +531,32 @@ serve(async (req) => {
       console.log("📊 Using enriched attributes in landing page generation");
     }
 
+    // 🔍 SERP Analysis for landing page structure
+    console.log("🔍 Analyzing SERP competitors for landing page structure...");
+    let serpInsights: any = null;
+    
+    try {
+      const { data: serpData, error: serpError } = await supabaseAdmin.functions.invoke("analyze-serp-competitors", {
+        body: {
+          keyword: productTitle,
+          analysisType: "landing",
+          maxResults: 10
+        }
+      });
+
+      if (serpError) {
+        console.warn("⚠️ SERP analysis failed:", serpError);
+      } else if (serpData) {
+        serpInsights = serpData.insights;
+        console.log("✅ SERP analysis completed:", {
+          commonSections: serpInsights?.commonSections?.length || 0,
+          ctaPatterns: serpInsights?.ctaPatterns?.length || 0
+        });
+      }
+    } catch (serpErr) {
+      console.warn("⚠️ SERP analysis error:", serpErr);
+    }
+
     // Vision AI with timeout (15s) - Optional, won't block if it fails
     let visualAnalysis = "";
     if (imageUrl) {
@@ -786,6 +812,22 @@ PRODUCT:
 
 ${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🔍 VISUAL AI INSIGHTS (TRUST THESE OBSERVATIONS - THEY ARE WHAT IS ACTUALLY VISIBLE IN THE IMAGE):\n${visualAnalysis}\n\n🚨 CRITICAL: You MUST describe only what Vision AI observed. DO NOT mention features, colors, or materials that contradict the visual analysis above. If Vision AI says the product has wooden elements, DO NOT write about metal elements. BE 100% ACCURATE TO THE VISUAL OBSERVATIONS.\n` : ""}
+${serpInsights ? `
+🎯 COMPETITOR LANDING PAGE ANALYSIS (USE THIS TO STRUCTURE YOUR PAGE):
+
+📋 Common Sections Found in Top Results:
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join('\n') || '- Hero section\n- Product benefits\n- FAQ'}
+
+💬 Effective CTA Patterns:
+${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join('\n') || '- Buy now\n- Learn more'}
+
+🏗️ Structural Elements to Include:
+${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join('\n') || '- Clear headline\n- Visual imagery\n- Trust signals'}
+
+📊 Content Density: ${serpInsights.contentDensity || 'medium'}
+
+💡 RECOMMENDATION: Structure your landing page using these proven patterns while maintaining uniqueness.
+` : ""}
 
 IMAGES:
 ${imgs}
