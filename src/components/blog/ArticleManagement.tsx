@@ -38,8 +38,10 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
-import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
+import { GoogleSearchPreview } from '../seo/GoogleSearchPreview';
+import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import { useTranslation } from '@/lib/language';
+import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useStore } from '@/contexts/StoreContext';
@@ -67,6 +69,8 @@ interface Article {
   last_optimization_at?: string | null;
   featured_image?: string | null;
   last_synced_at?: string | null;
+  seo_title?: string | null;
+  handle?: string | null;
 }
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
@@ -97,11 +101,13 @@ export function ArticleManagement() {
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedArticle, setOptimizedArticle] = useState<Article | null>(null);
+  const [storeDomain, setStoreDomain] = useState<string>('example.com');
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (selectedStore?.id) {
         fetchArticles();
+        fetchStoreDomain();
       } else {
         setArticles([]);
         setLoading(false);
@@ -110,6 +116,30 @@ export function ArticleManagement() {
 
     return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
+
+  // Fetch store domain
+  const fetchStoreDomain = async () => {
+    if (!selectedStore?.id) return;
+    
+    const { data, error } = await supabase
+      .from('shopify_connections')
+      .select('public_domain, store_url')
+      .eq('id', selectedStore.id)
+      .single();
+    
+    if (data && !error) {
+      let domain = 'example.com';
+      if (data.public_domain) {
+        domain = data.public_domain;
+      } else if (data.store_url) {
+        const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        if (!cleanUrl.includes('.myshopify.com')) {
+          domain = cleanUrl;
+        }
+      }
+      setStoreDomain(domain);
+    }
+  };
 
   // Auto-refresh toutes les 30 secondes UNIQUEMENT si store sélectionné
   useEffect(() => {
@@ -772,7 +802,7 @@ const handleOptimizeArticle = async (articleId: string) => {
                 </TableHead>
                 <TableHead className="w-20">Image</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead className="min-w-[200px]">Meta Description</TableHead>
+                <TableHead className="min-w-[400px]">Aperçu Google</TableHead>
                 <TableHead className="w-32">
                   <button
                     onClick={handleSeoScoreSortToggle}
@@ -836,15 +866,18 @@ const handleOptimizeArticle = async (articleId: string) => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-[250px]">
-                        {article.meta_description ? (
-                          <p className="text-sm line-clamp-2 text-muted-foreground">{article.meta_description}</p>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            Not optimized
-                          </Badge>
-                        )}
-                      </div>
+                      {article.seo_title && article.meta_description ? (
+                        <GoogleSearchPreview
+                          title={article.seo_title || article.title}
+                          description={article.meta_description}
+                          url={buildPublicUrl(`/blogs/news/${article.handle}`, storeDomain)}
+                          compact
+                        />
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Not optimized
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

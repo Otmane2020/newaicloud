@@ -964,8 +964,7 @@ export function PageOptimization() {
                   />
                 </TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead className="min-w-[200px]">SEO Title</TableHead>
-                <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                <TableHead className="min-w-[400px]">Aperçu Google</TableHead>
                 <TableHead className="w-32">SEO Score</TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-40">Sync Status</TableHead>
@@ -998,7 +997,7 @@ export function PageOptimization() {
                           <p className="text-xs text-muted-foreground mt-1">{page.handle}</p>
                         </div>
                       </TableCell>
-                      <TableCell colSpan={2}>
+                      <TableCell>
                         {page.seo_title && page.seo_description ? (
                           <div 
                             className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -1008,21 +1007,13 @@ export function PageOptimization() {
                               title={page.seo_title}
                               description={page.seo_description}
                               url={`https://${storeDomain}/pages/${page.handle}`}
+                              compact
                             />
                           </div>
                         ) : (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="max-w-[200px]">
-                              <Badge variant="outline" className="text-xs">
-                                Not optimized
-                              </Badge>
-                            </div>
-                            <div className="max-w-[250px]">
-                              <Badge variant="outline" className="text-xs">
-                                Not optimized
-                              </Badge>
-                            </div>
-                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            Not optimized
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>

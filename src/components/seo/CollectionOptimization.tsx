@@ -1371,8 +1371,7 @@ export function CollectionOptimization() {
                   <TableHead>{t.collections.optimization.table.title}</TableHead>
                   <TableHead className="w-24">{t.collections.optimization.table.products}</TableHead>
                   <TableHead className="min-w-[200px]">{t.collections.optimization.table.description}</TableHead>
-                  <TableHead className="min-w-[200px]">{t.collections.optimization.table.seoTitle}</TableHead>
-                  <TableHead className="min-w-[250px]">{t.collections.optimization.table.seoDescription}</TableHead>
+                  <TableHead className="min-w-[400px]">Aperçu Google</TableHead>
                   <TableHead className="w-32">
                     <button
                       onClick={handleSeoScoreSortToggle}
@@ -1447,26 +1446,18 @@ export function CollectionOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-[200px]">
-                          {collection.seo_title ? (
-                            <p className="text-sm font-medium line-clamp-2">{collection.seo_title}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Not optimized
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[250px]">
-                          {collection.seo_description ? (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{collection.seo_description}</p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Not optimized
-                            </Badge>
-                          )}
-                        </div>
+                        {collection.seo_title && collection.seo_description ? (
+                          <GoogleSearchPreview
+                            title={collection.seo_title}
+                            description={collection.seo_description}
+                            url={buildPublicUrl(`/collections/${collection.handle}`, storeDomain)}
+                            compact
+                          />
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Not optimized
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">
