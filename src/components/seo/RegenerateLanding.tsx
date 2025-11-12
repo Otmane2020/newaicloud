@@ -709,13 +709,18 @@ export default function RegenerateLanding({
           </div>
 
           <div
-            className={`border rounded-xl overflow-auto bg-white shadow-inner transition-all duration-300 ${
+            className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
               previewMode === "mobile"
-                ? "max-w-[375px] mx-auto p-2 sm:p-4 max-h-[600px] sm:max-h-[650px]"
-                : "p-4 sm:p-6 lg:p-8 max-h-[500px] sm:max-h-[650px]"
+                ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]"
+                : "h-[500px] sm:h-[650px]"
             }`}
           >
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+            <iframe
+              srcDoc={htmlContent}
+              className="w-full h-full border-0"
+              sandbox="allow-same-origin allow-scripts"
+              title="Landing Page Preview"
+            />
           </div>
         </div>
       )}
