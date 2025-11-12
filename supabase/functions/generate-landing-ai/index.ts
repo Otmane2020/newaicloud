@@ -822,6 +822,26 @@ ${selectedIcon}
 🚨 CRITICAL: Adapt gradient IDs to be unique (iconGrad1, iconGrad2, etc.)
 🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
 
+🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
+🚨 CRITICAL: For ALL titles/text on images, you MUST:
+1. Add semi-transparent dark overlay: <div class="absolute inset-0 bg-black/40"></div>
+2. Use text-shadow for contrast: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+3. Bright white text: class="text-white"
+4. Large font size: class="text-4xl md:text-6xl font-bold"
+5. MANDATORY structure example for hero with image:
+   <div class="relative h-[500px] md:h-[600px]">
+     <img src="..." class="absolute inset-0 w-full h-full object-cover">
+     <div class="absolute inset-0 bg-black/40"></div>
+     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
+       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+         ${productTitle}
+       </h1>
+       <p class="text-xl md:text-2xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+         Short description
+       </p>
+     </div>
+   </div>
+
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:
 - Minimal, elegant, clean design
@@ -973,6 +993,26 @@ ${selectedStyle.rules}
 🎯 TEMPLATE D'ICÔNE À UTILISER POUR LES LISTES :
 ${selectedIcon}
 Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
+
+🖼️ IMAGES ET TITRES (CRITIQUE - LISIBILITÉ MAXIMALE) :
+🚨 CRITICAL: Pour TOUS les titres/textes sur images, tu DOIS :
+1. Ajouter overlay sombre semi-transparent : <div class="absolute inset-0 bg-black/40"></div>
+2. Utiliser text-shadow pour contraste : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+3. Texte en blanc éclatant : class="text-white"
+4. Taille de police grande : class="text-4xl md:text-6xl font-bold"
+5. Structure exemple OBLIGATOIRE pour hero avec image :
+   <div class="relative h-[500px] md:h-[600px]">
+     <img src="..." class="absolute inset-0 w-full h-full object-cover">
+     <div class="absolute inset-0 bg-black/40"></div>
+     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
+       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+         ${productTitle}
+       </h1>
+       <p class="text-xl md:text-2xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+         Description courte
+       </p>
+     </div>
+   </div>
 
 DESIGN & TON (CRITIQUE) :
 ✅ STYLE PROFESSIONNEL REQUIS :
