@@ -1718,8 +1718,8 @@ export function SmartPricingAI() {
                         <td className="p-2 pl-8">
                           <div className="flex items-center gap-2 text-sm">
                             <span className="text-muted-foreground">↳</span>
-                            <Badge variant="outline" className="text-xs">{t.smartPricing.variants.label}</Badge>
-                            {variant.option1 && <span className="text-xs">{variant.option1}</span>}
+                            <span className="text-xs font-medium">Photo variante {idx + 1}</span>
+                            {variant.option1 && <span className="text-xs">• {variant.option1}</span>}
                             {variant.option2 && <span className="text-xs">• {variant.option2}</span>}
                             {variant.option3 && <span className="text-xs">• {variant.option3}</span>}
                           </div>
