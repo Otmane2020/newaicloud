@@ -1961,32 +1961,18 @@ export default function ProductTitleDescription() {
                 const toastId = toast.loading("Suppression du produit...");
                 
                 try {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) throw new Error("Non authentifié");
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) throw new Error("Non authentifié");
 
-                  const { data: connection } = await supabase
-                    .from('shopify_connections')
-                    .select('store_url, access_token')
-                    .eq('user_id', user.id)
-                    .single();
+                  const { data, error } = await supabase.functions.invoke('delete-shopify-product', {
+                    body: { productId: productToDelete.id },
+                    headers: {
+                      Authorization: `Bearer ${session.access_token}`,
+                    },
+                  });
 
-                  if (!connection) throw new Error("Connexion Shopify introuvable");
-
-                  if (productToDelete.shopify_id) {
-                    const response = await fetch(`https://${connection.store_url}/admin/api/2024-01/products/${productToDelete.shopify_id}.json`, {
-                      method: 'DELETE',
-                      headers: {
-                        'X-Shopify-Access-Token': connection.access_token,
-                      }
-                    });
-
-                    if (!response.ok) throw new Error("Erreur lors de la suppression Shopify");
-                  }
-
-                  await supabase
-                    .from('shopify_products')
-                    .delete()
-                    .eq('id', productToDelete.id);
+                  if (error) throw error;
+                  if (!data.success) throw new Error(data.error || "Erreur inconnue");
 
                   setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
                   toast.success("Produit supprimé avec succès", { id: toastId });
