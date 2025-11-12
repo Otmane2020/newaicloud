@@ -16,6 +16,7 @@ interface StoreMetadata {
   store_address: string;
   store_business_hours: string;
   store_description: string;
+  public_domain: string;
 }
 
 export function StoreMetadataForm() {
@@ -30,6 +31,7 @@ export function StoreMetadataForm() {
     store_address: '',
     store_business_hours: '',
     store_description: '',
+    public_domain: '',
   });
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export function StoreMetadataForm() {
 
       const { data, error } = await supabase
         .from('shopify_connections')
-        .select('id, store_label, store_category, store_phone, store_address, store_business_hours, store_description')
+        .select('id, store_label, store_category, store_phone, store_address, store_business_hours, store_description, public_domain')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -59,6 +61,7 @@ export function StoreMetadataForm() {
           store_address: data.store_address || '',
           store_business_hours: data.store_business_hours || '',
           store_description: data.store_description || '',
+          public_domain: data.public_domain || '',
         });
       }
     } catch (error) {
@@ -185,6 +188,21 @@ export function StoreMetadataForm() {
             value={metadata.store_address}
             onChange={(e) => setMetadata({ ...metadata, store_address: e.target.value })}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="public_domain">
+            Domaine public <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="public_domain"
+            placeholder="exemple: decora-home.fr"
+            value={metadata.public_domain}
+            onChange={(e) => setMetadata({ ...metadata, public_domain: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            Votre domaine personnalisé (sans https://)
+          </p>
         </div>
 
         <div className="space-y-2">
