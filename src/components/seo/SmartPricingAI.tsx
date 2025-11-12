@@ -222,6 +222,24 @@ export function SmartPricingAI() {
           };
         });
 
+        // Debug logs to identify variant display issues
+        enrichedProducts.forEach(product => {
+          console.log(`[DEBUG] Product "${product.title}":`, {
+            productId: product.id,
+            variantCount: product.variants.length,
+            hasMultipleVariants: product.hasMultipleVariants,
+            variants: product.variants.map(v => ({ 
+              id: v.id, 
+              title: v.title, 
+              sku: v.sku,
+              price: v.price,
+              option1: v.option1,
+              option2: v.option2,
+              option3: v.option3
+            }))
+          });
+        });
+
         setProducts(enrichedProducts);
       }
     } catch (error) {
@@ -1683,11 +1701,17 @@ export function SmartPricingAI() {
                   </tr>
 
                   {/* Variant Rows - ALWAYS VISIBLE for multi-variants */}
-                  {product.hasMultipleVariants && product.variants.map((variant, idx) => {
-                    const variantNetMargin = calculateNetMargin(variant.price, variant.cost_price, product.shipping_cost);
-                    const variantGrossMargin = calculateMargin(variant.price, variant.cost_price || 0);
-                    
-                    return (
+                  {(() => {
+                    console.log(`[RENDER] Checking variants for "${product.title}":`, {
+                      hasMultipleVariants: product.hasMultipleVariants,
+                      variantsLength: product.variants?.length || 0,
+                      variants: product.variants
+                    });
+                    return product.hasMultipleVariants && product.variants.map((variant, idx) => {
+                      const variantNetMargin = calculateNetMargin(variant.price, variant.cost_price, product.shipping_cost);
+                      const variantGrossMargin = calculateMargin(variant.price, variant.cost_price || 0);
+                      
+                      return (
                       <tr key={`${product.id}-variant-${idx}`} className="bg-muted/20 border-b hover:bg-muted/40">
                         <td className="p-2 pl-8"></td>
                         
@@ -1796,10 +1820,11 @@ export function SmartPricingAI() {
                         <td className="p-2"></td>
                       </tr>
                     );
-                  })}
+                  });
+                })()}
                 </>
-                );
-              })}
+              );
+            })}
             </tbody>
           </table>
         </div>
