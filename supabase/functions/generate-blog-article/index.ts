@@ -764,6 +764,7 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
           },
           { role: "user", content: prompt },
         ],
+        max_tokens: 5000, // Limite pour éviter dépassement index DB
       }),
     });
 
@@ -780,6 +781,13 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .replace(/```html/g, "")
       .replace(/```/g, "")
       .trim();
+
+    // Limiter la taille du contenu pour éviter erreur index DB (max ~500KB)
+    const maxContentLength = 500000; // 500KB
+    if (content.length > maxContentLength) {
+      console.warn(`⚠️ Contenu tronqué de ${content.length} à ${maxContentLength} caractères`);
+      content = content.substring(0, maxContentLength);
+    }
 
     // Génération des mots-clés SEO
     const keywordsResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -811,17 +819,25 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .filter(Boolean)
       .slice(0, 12);
 
+    // Limiter les mots-clés individuellement pour éviter erreur index
+    const truncatedKeywords = [...targetKeywords, ...seoKeywords]
+      .slice(0, 15)
+      .map(k => k.substring(0, 100)); // Max 100 caractères par mot-clé
+
+    const metaDescription = `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`
+      .substring(0, 500); // Limite meta description
+
     // Sauvegarde de l'article
     const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
       .insert([
         {
           user_id,
-          title: optimizedTitle,
+          title: optimizedTitle.substring(0, 500), // Limite titre
           content,
           featured_image: featuredImage,
-          meta_description: `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
-          keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
+          meta_description: metaDescription,
+          keywords: truncatedKeywords,
           status: "draft",
         },
       ])
