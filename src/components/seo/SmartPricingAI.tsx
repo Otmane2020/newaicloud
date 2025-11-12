@@ -1118,13 +1118,13 @@ export function SmartPricingAI() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold">Smart Pricing AI</h2>
+              <h2 className="text-2xl font-bold">{t.smartPricing.title}</h2>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-3 py-1 text-xs shadow-lg animate-pulse">
-                ✨ NEW
+                ✨ {t.smartPricing.badge}
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Gérez vos prix, remises et marges par collection avec synchronisation Shopify instantanée
+              {t.smartPricing.description}
             </p>
           </div>
         </div>
@@ -1137,12 +1137,12 @@ export function SmartPricingAI() {
             <Percent className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2">Configuration des Taxes</h3>
+            <h3 className="text-lg font-semibold mb-2">{t.smartPricing.taxConfig.title}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Définissez le taux de taxe (TVA) pour calculer automatiquement les marges nettes
+              {t.smartPricing.taxConfig.description}
             </p>
             <div className="flex items-center gap-3">
-              <label className="text-sm font-medium">Taux de taxe :</label>
+              <label className="text-sm font-medium">{t.smartPricing.taxConfig.label}</label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
@@ -1156,7 +1156,7 @@ export function SmartPricingAI() {
                 <span className="text-sm font-semibold">%</span>
               </div>
               <Badge variant="outline" className="ml-2">
-                {taxRate}% appliqué aux calculs de marge nette
+                {tf('smartPricing.taxConfig.appliedInfo', { rate: taxRate })}
               </Badge>
             </div>
           </div>
@@ -1167,7 +1167,7 @@ export function SmartPricingAI() {
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Calculator className="w-5 h-5" />
-          Opérations en masse
+          {t.smartPricing.bulkOperations.title}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Select
@@ -1178,7 +1178,7 @@ export function SmartPricingAI() {
               <SelectValue placeholder="Collection" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les collections</SelectItem>
+              <SelectItem value="all">{t.smartPricing.bulkOperations.allCollections}</SelectItem>
               {collections.map((col) => (
                 <SelectItem key={col.id} value={col.id}>
                   {col.title}
@@ -1195,8 +1195,8 @@ export function SmartPricingAI() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="discount">Réduction</SelectItem>
-              <SelectItem value="increase">Augmentation</SelectItem>
+              <SelectItem value="discount">{t.smartPricing.bulkOperations.reduction}</SelectItem>
+              <SelectItem value="increase">{t.smartPricing.bulkOperations.increase}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1208,8 +1208,8 @@ export function SmartPricingAI() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="percentage">Pourcentage (%)</SelectItem>
-              <SelectItem value="value">Valeur (€)</SelectItem>
+              <SelectItem value="percentage">{t.smartPricing.bulkOperations.percentage}</SelectItem>
+              <SelectItem value="value">{t.smartPricing.bulkOperations.value}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1224,23 +1224,8 @@ export function SmartPricingAI() {
 
           <Button onClick={applyBulkOperation} className="gap-2">
             <ArrowUpDown className="w-4 h-4" />
-            Appliquer
+            {t.smartPricing.bulkOperations.apply}
           </Button>
-        </div>
-      </Card>
-
-      {/* Info Banner about shipping costs */}
-      <Card className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2 border-green-200">
-        <div className="flex items-start gap-3">
-          <Truck className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-green-900 dark:text-green-100">
-            <strong>🚚 Frais de livraison Shopify :</strong>
-            <p className="mt-1 text-green-700 dark:text-green-300">
-              Cliquez sur "Importer Livraison" pour récupérer les <strong>vrais tarifs de livraison</strong> depuis
-              votre configuration Shopify (basé sur une adresse France par défaut: Paris). Cette opération peut prendre
-              2-3 minutes.
-            </p>
-          </div>
         </div>
       </Card>
 
@@ -1276,29 +1261,6 @@ export function SmartPricingAI() {
             >
               <RefreshCw className={`w-4 h-4 ${analyzingPrices ? "animate-spin" : ""}`} />
               Actualiser
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* SKU Stats */}
-      {missingSkuCount > 0 && (
-        <Card className="p-3 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
-              <div className="text-sm">
-                <span className="font-semibold text-amber-900 dark:text-amber-100">{missingSkuCount}</span>
-                <span className="text-amber-700 dark:text-amber-300"> produits sans SKU</span>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowMissingSku(!showMissingSku)}
-              className="text-xs"
-            >
-              {showMissingSku ? "Tout afficher" : "Afficher"}
             </Button>
           </div>
         </Card>

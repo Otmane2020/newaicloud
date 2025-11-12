@@ -1231,6 +1231,26 @@ export const translations = {
   smartPricing: {
     title: "Smart Pricing AI",
     subtitle: "Intelligent pricing management with AI analysis",
+    badge: "NEW",
+    description: "Manage your prices, discounts and margins per collection with instant Shopify synchronization",
+    
+    taxConfig: {
+      title: "Tax Configuration",
+      description: "Set the tax rate (VAT) to automatically calculate net margins",
+      label: "Tax rate:",
+      appliedInfo: "{{rate}}% applied to net margin calculations"
+    },
+    
+    bulkOperations: {
+      title: "Bulk Operations",
+      allCollections: "All collections",
+      reduction: "Reduction",
+      increase: "Increase",
+      percentage: "Percentage (%)",
+      amount: "Amount",
+      value: "Value (€)",
+      apply: "Apply"
+    },
     
     filters: {
       searchPlaceholder: "Search a product...",

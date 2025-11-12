@@ -1231,6 +1231,26 @@ export const translations = {
   smartPricing: {
     title: "Prix Intelligent IA",
     subtitle: "Gestion intelligente des prix avec analyse IA",
+    badge: "NOUVEAU",
+    description: "Gérez vos prix, remises et marges par collection avec synchronisation Shopify instantanée",
+    
+    taxConfig: {
+      title: "Configuration des Taxes",
+      description: "Définissez le taux de taxe (TVA) pour calculer automatiquement les marges nettes",
+      label: "Taux de taxe :",
+      appliedInfo: "{{rate}}% appliqué aux calculs de marge nette"
+    },
+    
+    bulkOperations: {
+      title: "Opérations en masse",
+      allCollections: "Toutes les collections",
+      reduction: "Réduction",
+      increase: "Augmentation",
+      percentage: "Pourcentage (%)",
+      amount: "Montant",
+      value: "Valeur (€)",
+      apply: "Appliquer"
+    },
     
     filters: {
       searchPlaceholder: "Rechercher un produit...",
