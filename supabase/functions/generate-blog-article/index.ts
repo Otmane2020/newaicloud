@@ -764,7 +764,7 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 5000, // Limite pour éviter dépassement index DB
+        max_tokens: 3000, // Réduit à 3000 pour éviter contenu trop long
       }),
     });
 
@@ -782,11 +782,15 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .replace(/```/g, "")
       .trim();
 
-    // Limiter la taille du contenu pour éviter erreur index DB (max ~500KB)
-    const maxContentLength = 500000; // 500KB
+     // CRITICAL: Limite drastique pour éviter erreur index DB (8191 bytes limit)
+    // Réduire le contenu à 50KB maximum au lieu de 500KB
+    const maxContentLength = 50000; // 50KB au lieu de 500KB
     if (content.length > maxContentLength) {
       console.warn(`⚠️ Contenu tronqué de ${content.length} à ${maxContentLength} caractères`);
-      content = content.substring(0, maxContentLength);
+      // Tronquer intelligemment au dernier paragraph complet
+      const truncated = content.substring(0, maxContentLength);
+      const lastParagraph = truncated.lastIndexOf('</p>');
+      content = lastParagraph > 0 ? truncated.substring(0, lastParagraph + 4) : truncated;
     }
 
     // Génération des mots-clés SEO
