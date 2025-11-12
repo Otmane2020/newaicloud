@@ -94,19 +94,32 @@ export function BlogOpportunities() {
       if (!user) throw new Error('Non authentifié');
 
       // Check cache first (24h expiration)
-      const cacheQuery = supabase
-        .from('blog_opportunities')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_cached', true)
-        .gt('cache_expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+      let cachedOpportunities: any = null;
+      let cacheError: any = null;
       
       if (selectedStore?.id) {
-        cacheQuery.eq('store_id', selectedStore.id);
+        // @ts-expect-error - Avoiding TS2589 type instantiation depth issue with Supabase query builder
+        const result = await supabase
+          .from('blog_opportunities')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('store_id', selectedStore.id)
+          .eq('is_cached', true)
+          .gt('cache_expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false });
+        cachedOpportunities = result.data;
+        cacheError = result.error;
+      } else {
+        const result = await supabase
+          .from('blog_opportunities')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_cached', true)
+          .gt('cache_expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false });
+        cachedOpportunities = result.data;
+        cacheError = result.error;
       }
-      
-      const { data: cachedOpportunities, error: cacheError } = await cacheQuery;
 
       if (!cacheError && cachedOpportunities && cachedOpportunities.length > 0) {
         console.log('✅ Using cached opportunities:', cachedOpportunities.length);
