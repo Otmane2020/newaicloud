@@ -201,29 +201,45 @@ export function GoogleMerchant() {
   };
 
   useEffect(() => {
-    // Tester automatiquement le flux au chargement
-    testFeed();
-    fetchOptimizationScore();
-    
-    // Auto-refresh score every 10 seconds to catch external updates
-    const interval = setInterval(() => {
+    if (selectedStore) {
+      // Tester automatiquement le flux au chargement
+      testFeed();
       fetchOptimizationScore();
-    }, 10000);
-    
-    return () => clearInterval(interval);
-  }, []);
+      
+      // Auto-refresh score every 10 seconds to catch external updates
+      const interval = setInterval(() => {
+        fetchOptimizationScore();
+      }, 10000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setFeedStatus({ lastFetch: null, itemCount: null, status: 'idle' });
+      setOptimizationScore(0);
+      setTotalProducts(0);
+      setDbProductCount(0);
+    }
+  }, [selectedStore?.id]);
 
   const fetchOptimizationScore = async () => {
     try {
-      // Fetch total products
+      if (!selectedStore?.id) {
+        setTotalProducts(0);
+        setDbProductCount(0);
+        setOptimizationScore(0);
+        return;
+      }
+
+      // Fetch total products for selected store
       const { count: total } = await supabase
         .from('shopify_products')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
 
       // Fetch optimized products (with category, gtin, and white background)
       const { count: optimized } = await supabase
         .from('shopify_products')
         .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id)
         .not('google_product_category', 'is', null)
         .not('google_gtin', 'is', null)
         .eq('google_white_background', true);

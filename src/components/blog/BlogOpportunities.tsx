@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
 
 interface Opportunity {
   id: string;
@@ -30,6 +31,7 @@ interface Opportunity {
 }
 
 export function BlogOpportunities() {
+  const { selectedStore } = useStore();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
@@ -40,7 +42,14 @@ export function BlogOpportunities() {
 
   useEffect(() => {
     const initOpportunities = async () => {
+      if (!selectedStore?.id) {
+        setOpportunities([]);
+        setLoading(false);
+        return;
+      }
+
       try {
+        setLoading(true);
         await loadOpportunities();
       } catch (error) {
         console.error("Error initializing opportunities:", error);
@@ -48,7 +57,7 @@ export function BlogOpportunities() {
       }
     };
     initOpportunities();
-  }, []);
+  }, [selectedStore?.id]);
 
   const analyzeAndGenerateOpportunities = async (products: any[], userId: string): Promise<Opportunity[]> => {
     try {
@@ -116,10 +125,16 @@ export function BlogOpportunities() {
       console.log('📦 No valid cache, checking database...');
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
+      if (!selectedStore?.id) {
+        setOpportunities([]);
+        return;
+      }
+
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
         .select('id, title, category, product_type, price, vendor')
-        .eq('seller_id', authUser?.id);
+        .eq('seller_id', authUser?.id)
+        .eq('store_id', selectedStore.id);
 
       if (productsError) {
         console.error('❌ Error fetching products:', productsError);

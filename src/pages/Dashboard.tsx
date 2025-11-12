@@ -21,6 +21,7 @@ import { OnboardingTour } from '@/components/OnboardingTour';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
 import { useGoogleShoppingScore } from '@/hooks/useGoogleShoppingScore';
+import { useStore } from '@/contexts/StoreContext';
 import {
   ShoppingBag, 
   FileText, 
@@ -66,6 +67,7 @@ interface Stats {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
@@ -100,7 +102,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedStore) {
       loadStats();
       
       const checkoutStatus = searchParams.get('checkout');
@@ -129,24 +131,25 @@ export default function Dashboard() {
         setSearchParams(searchParams);
       }
     }
-  }, [user]);
+  }, [user, selectedStore?.id]);
 
   const loadStats = async () => {
     try {
-      const { data: activeStores } = await supabase
+      // Get count of all connected stores
+      const { count: connectedStores } = await supabase
         .from('shopify_connections')
-        .select('id')
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
-      const activeStoreIds = activeStores?.map(s => s.id) || [];
-      const connectedStores = activeStores?.length || 0;
+      // Use selected store filter (default to all if none selected)
+      const storeFilter = selectedStore?.id ? [selectedStore.id] : [];
 
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
         .select('id, price, seo_title, seo_description, image_url')
         .eq('seller_id', user?.id)
-        .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : ['']);
+        .in('store_id', storeFilter.length > 0 ? storeFilter : ['']);
 
       if (productsError) throw productsError;
 
@@ -256,7 +259,7 @@ export default function Dashboard() {
         .from('shopify_products')
         .select('id, seo_title, seo_description')
         .eq('seller_id', user?.id)
-        .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : [''])
+        .in('store_id', storeFilter.length > 0 ? storeFilter : [''])
         .lt('created_at', thirtyDaysAgo.toISOString());
       
       const oldTotalProducts = oldProducts?.length || 0;
@@ -289,7 +292,7 @@ export default function Dashboard() {
         seoScore,
         avgOptimizedScore,
         seoCategories,
-        connectedStores,
+        connectedStores: connectedStores || 0,
         productsWithImages,
         productsWithoutAlt: imagesWithoutAlt || 0,
         trends: {

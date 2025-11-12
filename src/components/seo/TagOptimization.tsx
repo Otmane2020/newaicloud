@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -66,6 +67,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function TagOptimization() {
   const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -99,11 +101,18 @@ export function TagOptimization() {
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
   const fetchProducts = async () => {
+    if (!selectedStore?.id) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('shopify_products')
         .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify, optimization_count')
+        .eq('store_id', selectedStore.id)
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -117,8 +126,14 @@ export function TagOptimization() {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (selectedStore) {
+      setLoading(true);
+      fetchProducts();
+    } else {
+      setProducts([]);
+      setLoading(false);
+    }
+  }, [selectedStore?.id]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {

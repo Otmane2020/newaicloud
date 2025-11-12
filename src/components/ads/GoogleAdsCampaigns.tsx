@@ -5,6 +5,7 @@ import { useTranslation } from '@/lib/language';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -30,20 +31,33 @@ interface GoogleAdsCampaign {
 
 export function GoogleAdsCampaigns() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<GoogleAdsCampaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    loadCampaigns();
-  }, []);
+    if (user) {
+      loadCampaigns();
+    } else {
+      setCampaigns([]);
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadCampaigns = async () => {
+    if (!user?.id) {
+      setCampaigns([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('google_ads_campaigns')
         .select('*')
+        .eq('user_id', user.id)
         .order('last_sync_at', { ascending: false });
 
       if (error) throw error;
