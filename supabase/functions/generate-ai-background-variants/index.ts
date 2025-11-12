@@ -21,10 +21,10 @@ serve(async (req) => {
     const { imageUrl, basePrompt, productTitle } = await req.json();
     if (!imageUrl) throw new Error("Image URL is required");
 
-    console.log("🎨 Generating 4 Gemini variants for:", productTitle);
+    console.log("🎨 Generating 4 AI variants for:", productTitle);
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // Download and convert reference image to base64
     console.log("📥 Downloading reference image...");
@@ -114,21 +114,26 @@ Product: ${productTitle || "product"}
           console.log(`🧠 Generating variant ${i + 1}/4: ${variant.style}`);
           
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+            "https://ai.gateway.lovable.dev/v1/chat/completions",
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json"
+              },
               body: JSON.stringify({
-                contents: [{
-                  parts: [
-                    { text: variant.prompt },
-                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                model: "google/gemini-2.5-flash-image-preview",
+                messages: [{
+                  role: "user",
+                  content: [
+                    { type: "text", text: variant.prompt },
+                    { 
+                      type: "image_url",
+                      image_url: { url: `data:image/jpeg;base64,${base64Image}` }
+                    }
                   ]
                 }],
-                generationConfig: {
-                  response_modalities: ["image"],
-                  aspectRatio: "1:1"
-                }
+                modalities: ["image", "text"]
               }),
             },
           );
@@ -148,12 +153,15 @@ Product: ${productTitle || "product"}
           }
 
           const data = await res.json();
-          const base64 = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+          const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
           
-          if (!base64) {
+          if (!imageUrl) {
             console.error(`⚠️ No image in response for variant ${variant.style}. Response structure:`, JSON.stringify(data, null, 2));
             return null;
           }
+
+          // Extract base64 from data URL
+          const base64 = imageUrl.split(',')[1];
 
           const qualityScore = Math.floor(85 + Math.random() * 15);
 
