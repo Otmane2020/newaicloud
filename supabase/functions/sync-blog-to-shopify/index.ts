@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
       .select("*")
       .eq("user_id", article.user_id)
       .eq("is_active", true)
+      .eq("id", article.store_id)
       .maybeSingle();
 
     if (storeError) {
