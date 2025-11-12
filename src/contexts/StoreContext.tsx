@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,7 +26,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadStores = async () => {
+  const loadStores = useCallback(async () => {
     if (!user?.id) {
       console.log('🏪 [STORE_CONTEXT] No user, clearing stores');
       setStores([]);
@@ -49,19 +49,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('🏪 [STORE_CONTEXT] Loaded stores:', data?.length, data);
       setStores(data || []);
       
-      // Auto-select first store if none selected and stores exist
-      if (data && data.length > 0 && !selectedStore) {
-        console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
-        setSelectedStore(data[0]);
+      // Only auto-select if no stores were loaded before
+      if (data && data.length > 0) {
+        setSelectedStore(prev => {
+          // Keep current selection if it still exists
+          if (prev && data.find(s => s.id === prev.id)) {
+            console.log('🏪 [STORE_CONTEXT] Keeping current store:', prev.store_name);
+            return prev;
+          }
+          // Otherwise select first store
+          console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
+          return data[0];
+        });
       }
-      
-      // If selected store no longer exists, reset
-      if (selectedStore && !data?.find(s => s.id === selectedStore.id)) {
-        console.log('🏪 [STORE_CONTEXT] Selected store no longer exists, resetting to first');
-        setSelectedStore(data?.[0] || null);
-      }
-      
-      console.log('🏪 [STORE_CONTEXT] Final selectedStore:', selectedStore?.store_name);
     } catch (error) {
       console.error('❌ [STORE_CONTEXT] Error loading stores:', error);
       setStores([]);
@@ -69,7 +69,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     loadStores();

@@ -69,7 +69,11 @@ export default function Products() {
   }, [currentPage]);
 
   const loadProducts = async () => {
-    console.log('🏪 [PRODUCTS] selectedStore:', selectedStore);
+    console.log('🔄 [PRODUCTS] loadProducts called with selectedStore:', {
+      id: selectedStore?.id,
+      name: selectedStore?.store_name,
+      hasStore: !!selectedStore
+    });
     
     if (!selectedStore) {
       console.log('⚠️ [PRODUCTS] No store selected, clearing products');
@@ -84,17 +88,19 @@ export default function Products() {
       console.log('📦 [PRODUCTS] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
       
       // Count total products first
+      console.log('📊 [PRODUCTS] Executing count query with store_id:', selectedStore.id);
       const { count } = await supabase
         .from("shopify_products")
         .select("*", { count: 'exact', head: true })
         .eq("seller_id", user?.id)
         .eq("store_id", selectedStore.id);
       
-      console.log('📊 [PRODUCTS] Count result:', count);
+      console.log('📊 [PRODUCTS] Count result for store', selectedStore.store_name, ':', count);
       
       setTotalCount(count || 0);
       
       // Load products with pagination
+      console.log('📊 [PRODUCTS] Executing products query with store_id:', selectedStore.id);
       const { data, error } = await supabase
         .from("shopify_products")
         .select("*")
@@ -106,9 +112,9 @@ export default function Products() {
       if (error) throw error;
 
       setProducts(data || []);
-      console.log(`📦 Loaded ${data?.length || 0} products (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
+      console.log(`✅ [PRODUCTS] Loaded ${data?.length || 0} products for store ${selectedStore.store_name} (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
     } catch (error) {
-      console.error("Error loading products:", error);
+      console.error("❌ [PRODUCTS] Error loading products:", error);
       toast.error(t.products.loadError);
     } finally {
       setLoading(false);
@@ -118,6 +124,13 @@ export default function Products() {
   
 
   useEffect(() => {
+    console.log('🔄 [PRODUCTS] useEffect triggered - selectedStore changed:', {
+      id: selectedStore?.id,
+      name: selectedStore?.store_name,
+      currentPage,
+      hasUser: !!user
+    });
+    
     if (user) {
       loadProducts();
     }
