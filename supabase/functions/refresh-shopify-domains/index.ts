@@ -39,9 +39,10 @@ serve(async (req) => {
     }
 
     if (!connections || connections.length === 0) {
+      console.log('No Shopify connections found for user');
       return new Response(
-        JSON.stringify({ success: true, message: 'No Shopify connections found', updated: 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, message: 'No Shopify connections found', updated: 0, connections: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 

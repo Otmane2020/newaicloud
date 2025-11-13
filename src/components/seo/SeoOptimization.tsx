@@ -109,25 +109,8 @@ function GoogleSearchPreviewCell({ product }: { product: Product }) {
         // Fallback to store_url if it's not a myshopify domain
         setDomain(data.store_url.replace(/^https?:\/\//, ''));
       } else {
-        // If no valid domain found, try to refresh it from Shopify
-        console.log('No valid public domain found, refreshing from Shopify...');
-        try {
-          const { error } = await supabase.functions.invoke('refresh-shopify-domains');
-          if (!error) {
-            // Retry fetching after refresh
-            const { data: refreshedData } = await supabase
-              .from("shopify_connections")
-              .select("public_domain")
-              .eq("id", selectedStore.id)
-              .single();
-            
-            if (refreshedData?.public_domain && !refreshedData.public_domain.includes('.myshopify.com')) {
-              setDomain(refreshedData.public_domain);
-            }
-          }
-        } catch (e) {
-          console.error('Failed to refresh domain:', e);
-        }
+        // If no valid domain found, use placeholder
+        setDomain("example.com");
       }
     };
 
