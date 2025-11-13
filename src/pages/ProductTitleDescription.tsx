@@ -1967,7 +1967,6 @@ export default function ProductTitleDescription() {
           setSelectedImageType(config.imageType);
           setSelectedImageFormat(config.format);
           setSelectedSimilarity(config.similarity);
-          setSelectedGalleryImages(config.selectedGalleryImages);
           handleStartAiBackground(config.prompt, config.format, config.similarity);
         }}
         productImages={galleryImages}

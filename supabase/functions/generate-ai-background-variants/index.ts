@@ -18,92 +18,47 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageUrl, basePrompt, productTitle } = await req.json();
-    if (!imageUrl) throw new Error("Image URL is required");
-
-    console.log("🎨 Generating 4 AI variants for:", productTitle);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    // Download and convert reference image to base64
-    console.log("📥 Downloading reference image...");
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
-    const imgBuffer = await imgResponse.arrayBuffer();
+    const { basePrompt = '', productTitle, style = 'professional', format = 'square' } = await req.json();
     
-    // Convert to base64 using chunking to avoid stack overflow
-    const uint8Array = new Uint8Array(imgBuffer);
-    let binaryString = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, i + chunkSize);
-      binaryString += String.fromCharCode(...chunk);
+    if (!productTitle) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing productTitle' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-    const base64Image = btoa(binaryString);
-    console.log("✅ Image converted to base64");
 
-    // ---------- Prompt centering rules ----------
-    const centeringInstruction = `
-CRITICAL: Product must remain perfectly centered.
-- Central 70-80% of frame
-- Equal margins each side (10-15%)
-- No crop, correct proportions
-- Background fills the frame 2000×2000px
-- Sharp, photo-realistic
-`;
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('🎨 Creating 4 background variants from text prompt for:', productTitle);
 
     // ---------- Variants ----------
     const variants = [
       {
         style: "professional" as const,
         description: "Studio professionnel élégant",
-        prompt: `${centeringInstruction}
-Create a PROFESSIONAL STUDIO background:
-- Clean modern studio
-- Soft gradient (white→light gray)
-- Balanced reflections
-- Minimalist, elegant look
-${basePrompt || ""}
-Product: ${productTitle || "product"}
-`,
+        prompt: `Professional e-commerce product photography of ${productTitle}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
       },
       {
         style: "lifestyle" as const,
         description: "Scène de vie naturelle",
-        prompt: `${centeringInstruction}
-Create a LIFESTYLE scene:
-- Natural realistic environment
-- Warm inviting mood
-- Soft daylight, bokeh background
-- Authentic home setting
-${basePrompt || ""}
-Product: ${productTitle || "product"}
-`,
+        prompt: `Lifestyle product photography of ${productTitle}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
       },
       {
         style: "artistic" as const,
         description: "Design artistique et créatif",
-        prompt: `${centeringInstruction}
-Create an ARTISTIC background:
-- Bold, creative composition
-- Modern colors, abstract shapes
-- High visual impact
-${basePrompt || ""}
-Product: ${productTitle || "product"}
-`,
+        prompt: `Artistic product photography of ${productTitle}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
       },
       {
         style: "minimalist" as const,
         description: "Minimaliste épuré",
-        prompt: `${centeringInstruction}
-Create a MINIMALIST background:
-- Ultra clean, simple
-- Solid tone or subtle gradient
-- Lots of white space
-${basePrompt || ""}
-Product: ${productTitle || "product"}
-`,
+        prompt: `Minimalist product photography of ${productTitle}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
       },
     ];
 
@@ -119,6 +74,20 @@ Product: ${productTitle || "product"}
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash-image-preview",
+                messages: [
+                  {
+                    role: "user",
+                    content: variant.prompt
+                  }
+                ],
+                modalities: ["image", "text"]
+              }),
+            }
+          );
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({

@@ -192,9 +192,10 @@ export const ProductMediaOptimization = () => {
 
     try {
       const result = await generateAIBackgroundVariants.mutateAsync({
-        imageUrl: image.src,
         productTitle: product.title,
-        basePrompt: aiPrompt
+        basePrompt: aiPrompt,
+        style: 'professional',
+        format: 'square'
       });
 
       if (result.variants && result.variants.length > 0) {
