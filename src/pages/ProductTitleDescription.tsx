@@ -177,6 +177,13 @@ export default function ProductTitleDescription() {
   const [imageSelectionMode, setImageSelectionMode] = useState<'whitebg' | 'aibg'>('whitebg');
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
   const [pendingProductImages, setPendingProductImages] = useState<ProductImage[]>([]);
+  const [pendingProductVariants, setPendingProductVariants] = useState<Array<{
+    id: string;
+    title: string;
+    option1?: string;
+    option2?: string;
+    option3?: string;
+  }>>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -575,6 +582,15 @@ export default function ProductTitleDescription() {
           .order('position', { ascending: true });
         
         setPendingProductImages(images || []);
+        
+        // Charger les variantes du produit
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select('id, title, option1, option2, option3')
+          .eq('product_id', productId)
+          .order('position', { ascending: true });
+        
+        setPendingProductVariants(variants || []);
         setShowImageSelectionDialog(true);
         setShowWhiteBgConfigDialog(false);
         return;
@@ -656,7 +672,11 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
-  const handleImageSelectionConfirm = async (selectedImageUrl: string, applyTo: 'main' | 'all') => {
+  const handleImageSelectionConfirm = async (
+    selectedImageUrl: string, 
+    applyTo: 'main' | 'secondary' | 'variants',
+    selectedVariantIds?: string[]
+  ) => {
     if (!pendingProduct) return;
     
     setShowImageSelectionDialog(false);
@@ -686,7 +706,8 @@ export default function ProductTitleDescription() {
             imageUrl: selectedImageUrl,
             productTitle: pendingProduct.title,
             imageType: selectedImageType,
-            applyTo: applyTo
+            applyTo: applyTo,
+            variantIds: selectedVariantIds
           }
         });
 
@@ -761,6 +782,7 @@ export default function ProductTitleDescription() {
     
     setPendingProduct(null);
     setPendingProductImages([]);
+    setPendingProductVariants([]);
   };
 
   const handleStartAiBackground = async (prompt: string, format: string, similarity: string) => {
@@ -798,6 +820,15 @@ export default function ProductTitleDescription() {
           .order('position', { ascending: true });
         
         setPendingProductImages(images || []);
+        
+        // Charger les variantes du produit
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select('id, title, option1, option2, option3')
+          .eq('product_id', productId)
+          .order('position', { ascending: true });
+        
+        setPendingProductVariants(variants || []);
         setShowImageSelectionDialog(true);
         setShowPromptDialog(false);
         setShowAiConfigDialog(false);
@@ -2090,6 +2121,8 @@ export default function ProductTitleDescription() {
         productTitle={pendingProduct?.title || ''}
         mainImageUrl={pendingProduct?.image_url || null}
         variantImages={pendingProductImages}
+        hasVariants={pendingProductVariants.length > 1}
+        variants={pendingProductVariants}
         onConfirm={handleImageSelectionConfirm}
       />
 
