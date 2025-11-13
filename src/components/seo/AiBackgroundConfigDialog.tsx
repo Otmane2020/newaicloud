@@ -34,7 +34,6 @@ export interface AiBackgroundConfig {
   format: string;
   similarity: string;
   imageType: "primary" | "secondary";
-  selectedGalleryImages: Map<string, string>;
 }
 
 export function AiBackgroundConfigDialog({
@@ -49,8 +48,7 @@ export function AiBackgroundConfigDialog({
     prompt: '',
     format: 'square',
     similarity: 'very-close',
-    imageType: 'primary',
-    selectedGalleryImages: new Map()
+    imageType: 'primary'
   });
 
   const handleConfirm = () => {
@@ -179,78 +177,6 @@ export function AiBackgroundConfigDialog({
             </Card>
           </div>
 
-          {/* Sélection d'images de galerie */}
-          {selectedProducts.length > 0 && (
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
-              {selectedProducts.map((productId) => {
-                const product = products.find(p => p.id === productId);
-                const images = productImages.get(productId) || [];
-                
-                if (!product) return null;
-                
-                return (
-                  <Card key={productId} className="p-3 sm:p-4">
-                    <h4 className="font-semibold mb-3 text-xs sm:text-sm line-clamp-1">{product.title}</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Image principale */}
-                      <div
-                        className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                          (!config.selectedGalleryImages.get(productId) || config.selectedGalleryImages.get(productId) === product.image_url)
-                            ? 'border-primary ring-2 ring-primary'
-                            : 'border-muted hover:border-primary/50'
-                        }`}
-                        onClick={() => {
-                          const newMap = new Map(config.selectedGalleryImages);
-                          newMap.set(productId, product.image_url!);
-                          setConfig({ ...config, selectedGalleryImages: newMap });
-                        }}
-                      >
-                        <div className="aspect-square bg-muted rounded overflow-hidden">
-                          <img
-                            src={product.image_url || ''}
-                            alt="Image principale"
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
-                          Principal
-                        </div>
-                      </div>
-                      
-                      {/* Images de galerie */}
-                      {images.slice(0, 2).map((img, idx) => (
-                        <div
-                          key={img.id}
-                          className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                            config.selectedGalleryImages.get(productId) === img.src
-                              ? 'border-primary ring-2 ring-primary'
-                              : 'border-muted hover:border-primary/50'
-                          }`}
-                          onClick={() => {
-                            const newMap = new Map(config.selectedGalleryImages);
-                            newMap.set(productId, img.src);
-                            setConfig({ ...config, selectedGalleryImages: newMap });
-                          }}
-                        >
-                          <div className="aspect-square bg-muted rounded overflow-hidden">
-                            <img
-                              src={img.src}
-                              alt={img.alt_text || `Galerie ${idx + 1}`}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded">
-                            #{idx + 1}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
 
           {/* Style Selection */}
           <div className="space-y-2">
