@@ -28,10 +28,13 @@ import {
   Calendar,
   AlertCircle,
   Settings,
+  CheckCircle2,
+  Eye,
+  Target,
+  Zap,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
-import { GSCArticleOpportunities } from "./GSCArticleOpportunities";
 import { useTranslation } from "@/lib/language";
 
 interface SearchConsoleData {
@@ -58,15 +61,27 @@ interface TopQuery {
   position: number;
 }
 
-interface MetricCardProps {
+interface InsightProps {
   title: string;
   value: string | number;
   change: number;
   icon: React.ReactNode;
   trend?: "up" | "down" | "neutral";
+  description?: string;
+  alert?: boolean;
+  size?: "default" | "large";
 }
 
-const MetricCard = ({ title, value, change, icon, trend = "neutral" }: MetricCardProps) => {
+const Insight = ({
+  title,
+  value,
+  change,
+  icon,
+  trend = "neutral",
+  description,
+  alert = false,
+  size = "default",
+}: InsightProps) => {
   const getTrendColor = () => {
     if (trend === "up") return "text-green-600";
     if (trend === "down") return "text-red-600";
@@ -79,10 +94,22 @@ const MetricCard = ({ title, value, change, icon, trend = "neutral" }: MetricCar
     return null;
   };
 
+  const getValueSize = () => {
+    return size === "large" ? "text-3xl" : "text-2xl";
+  };
+
   return (
-    <Card className="p-6">
+    <Card className={`p-6 ${alert ? "border-orange-200 bg-orange-50/50" : ""} hover:shadow-md transition-shadow`}>
       <div className="flex items-center justify-between mb-4">
-        <div className="p-2 bg-primary/10 rounded-lg">{icon}</div>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${alert ? "bg-orange-100" : "bg-primary/10"}`}>{icon}</div>
+          {alert && (
+            <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Alerte
+            </Badge>
+          )}
+        </div>
         <div className={`flex items-center gap-1 text-sm font-medium ${getTrendColor()}`}>
           {getTrendIcon()}
           <span>
@@ -91,9 +118,28 @@ const MetricCard = ({ title, value, change, icon, trend = "neutral" }: MetricCar
           </span>
         </div>
       </div>
-      <div>
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-2xl font-bold">{value}</p>
+
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground font-medium">{title}</p>
+        <p className={`font-bold ${getValueSize()} ${alert ? "text-orange-900" : ""}`}>{value}</p>
+
+        {description && <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{description}</p>}
+
+        {!alert && change !== 0 && (
+          <div className="flex items-center gap-1 text-xs mt-2">
+            {trend === "up" ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                <span className="text-green-600 font-medium">Performance positive</span>
+              </>
+            ) : trend === "down" ? (
+              <>
+                <AlertCircle className="h-3 w-3 text-red-500" />
+                <span className="text-red-600 font-medium">Attention nécessaire</span>
+              </>
+            ) : null}
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -137,7 +183,6 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Always fetch from API to get both charts data and tables data
       loadSearchConsoleData();
     } catch (error) {
       console.error("Error loading cached data:", error);
@@ -320,6 +365,13 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
     const avgCTR = data.reduce((sum, d) => sum + d.ctr, 0) / data.length;
     const avgPosition = data.reduce((sum, d) => sum + d.position, 0) / data.length;
 
+    // Calculate performance insights
+    const highCTRPages = topPages.filter((page) => page.ctr > 5).length;
+    const lowPositionQueries = topQueries.filter((query) => query.position <= 10).length;
+    const highPotentialQueries = topQueries.filter(
+      (query) => query.impressions > 100 && query.position > 10 && query.position <= 20,
+    ).length;
+
     const halfLength = Math.floor(data.length / 2);
     const recentData = data.slice(halfLength);
     const oldData = data.slice(0, halfLength);
@@ -349,6 +401,9 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       impressionsChange: Math.round(impressionsChange),
       ctrChange: Math.round(ctrChange),
       positionChange: Math.round(positionChange),
+      highCTRPages,
+      lowPositionQueries,
+      highPotentialQueries,
     };
   };
 
@@ -493,37 +548,77 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         )}
       </Card>
 
-      {/* Metrics cards */}
+      {/* Metrics cards with improved Insight component */}
       {metrics && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title={t.googleConsole.insightsData.metrics.totalClicks}
-            value={metrics.totalClicks.toLocaleString()}
-            change={metrics.clicksChange}
-            icon={<MousePointer className="h-5 w-5 text-primary" />}
-            trend={metrics.clicksChange > 0 ? "up" : metrics.clicksChange < 0 ? "down" : "neutral"}
-          />
-          <MetricCard
-            title={t.googleConsole.insightsData.metrics.totalImpressions}
-            value={metrics.totalImpressions.toLocaleString()}
-            change={metrics.impressionsChange}
-            icon={<Users className="h-5 w-5 text-primary" />}
-            trend={metrics.impressionsChange > 0 ? "up" : metrics.impressionsChange < 0 ? "down" : "neutral"}
-          />
-          <MetricCard
-            title={t.googleConsole.insightsData.metrics.avgCtr}
-            value={`${metrics.avgCTR}%`}
-            change={metrics.ctrChange}
-            icon={<BarChart3 className="h-5 w-5 text-primary" />}
-            trend={metrics.ctrChange > 0 ? "up" : metrics.ctrChange < 0 ? "down" : "neutral"}
-          />
-          <MetricCard
-            title={t.googleConsole.insightsData.metrics.avgPosition}
-            value={metrics.avgPosition}
-            change={metrics.positionChange}
-            icon={<TrendingUp className="h-5 w-5 text-primary" />}
-            trend={metrics.positionChange > 0 ? "up" : metrics.positionChange < 0 ? "down" : "neutral"}
-          />
+        <div className="space-y-6">
+          {/* Performance principale */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Insight
+              title={t.googleConsole.insightsData.metrics.totalClicks}
+              value={metrics.totalClicks.toLocaleString()}
+              change={metrics.clicksChange}
+              icon={<MousePointer className="h-5 w-5 text-primary" />}
+              trend={metrics.clicksChange > 0 ? "up" : metrics.clicksChange < 0 ? "down" : "neutral"}
+              description="Total des clics sur la période"
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.totalImpressions}
+              value={metrics.totalImpressions.toLocaleString()}
+              change={metrics.impressionsChange}
+              icon={<Eye className="h-5 w-5 text-primary" />}
+              trend={metrics.impressionsChange > 0 ? "up" : metrics.impressionsChange < 0 ? "down" : "neutral"}
+              description="Total des impressions dans les résultats"
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.avgCtr}
+              value={`${metrics.avgCTR}%`}
+              change={metrics.ctrChange}
+              icon={<BarChart3 className="h-5 w-5 text-primary" />}
+              trend={metrics.ctrChange > 0 ? "up" : metrics.ctrChange < 0 ? "down" : "neutral"}
+              description="Taux de clic moyen"
+              alert={metrics.ctrChange < -5}
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.avgPosition}
+              value={metrics.avgPosition}
+              change={metrics.positionChange}
+              icon={<Target className="h-5 w-5 text-primary" />}
+              trend={metrics.positionChange > 0 ? "up" : metrics.positionChange < 0 ? "down" : "neutral"}
+              description="Position moyenne dans les résultats"
+              size="large"
+            />
+          </div>
+
+          {/* Insights avancés */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Insight
+              title="Pages performantes"
+              value={metrics.highCTRPages}
+              change={0}
+              icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+              description="Pages avec CTR > 5%"
+              trend="neutral"
+            />
+            <Insight
+              title="Mots-clés bien classés"
+              value={metrics.lowPositionQueries}
+              change={0}
+              icon={<CheckCircle2 className="h-5 w-5 text-blue-600" />}
+              description="Requêtes en top 10"
+              trend="neutral"
+            />
+            <Insight
+              title="Opportunités SEO"
+              value={metrics.highPotentialQueries}
+              change={0}
+              icon={<Zap className="h-5 w-5 text-orange-600" />}
+              description="Requêtes avec fort potentiel"
+              trend="neutral"
+            />
+          </div>
         </div>
       )}
 
@@ -711,11 +806,6 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
             </Button>
           </div>
         </Card>
-      )}
-
-      {/* Article Opportunities */}
-      {!loading && topQueries.length > 0 && (
-        <GSCArticleOpportunities selectedDomain={selectedDomain} topQueries={topQueries} />
       )}
     </div>
   );
