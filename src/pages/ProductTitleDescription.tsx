@@ -868,6 +868,9 @@ export default function ProductTitleDescription() {
     setAiBgPreviews(previews);
     setShowAiBgDialog(true);
 
+    // Map imageType to targetType
+    const targetType = selectedImageType === 'primary' ? 'main' : 'variants';
+
     for (let i = 0; i < selectedProductsList.length; i++) {
       const product = selectedProductsList[i];
       const selectedImageUrl = selectedGalleryImages.get(product.id) || product.image_url!;
@@ -879,20 +882,29 @@ export default function ProductTitleDescription() {
       );
 
       try {
-        const { data, error } = await supabase.functions.invoke('generate-image-background', {
+        const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
           body: {
             imageUrl: selectedImageUrl,
-            prompt: prompt,
             productTitle: product.title,
-            imageType: selectedImageType,
+            prompt: prompt,
+            style: similarity,
             format: format,
-            similarity: similarity
+            targetType: targetType
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          // Handle specific Lovable AI errors
+          if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+            throw new Error('Limite de taux dépassée. Veuillez réessayer plus tard.');
+          }
+          if (error.message?.includes('402') || error.message?.includes('Payment required')) {
+            throw new Error('Crédits insuffisants. Veuillez ajouter des crédits à votre espace de travail Lovable AI.');
+          }
+          throw error;
+        }
 
-        if (data.success && data.imageUrl) {
+        if (data.imageUrl) {
           setAiBgPreviews((prev) =>
             prev.map((p) =>
               p.productId === product.id
@@ -901,7 +913,7 @@ export default function ProductTitleDescription() {
             )
           );
         } else {
-          throw new Error('No image generated');
+          throw new Error('Aucune image générée');
         }
       } catch (error: any) {
         console.error('Error generating AI background:', error);
@@ -912,6 +924,10 @@ export default function ProductTitleDescription() {
               : p
           )
         );
+        // Show toast for critical errors
+        if (error.message?.includes('Limite de taux') || error.message?.includes('Crédits insuffisants')) {
+          toast.error(error.message);
+        }
       }
     }
 
