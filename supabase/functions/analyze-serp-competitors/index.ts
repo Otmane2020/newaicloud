@@ -274,12 +274,26 @@ serve(async (req) => {
         insights = analyzeTitleMeta(items);
     }
 
+    // Extract competitor URLs and data
+    const competitors = items.slice(0, 10).map((item, index) => ({
+      rank: index + 1,
+      url: item.url || '',
+      domain: item.domain || (item.url ? new URL(item.url).hostname : ''),
+      title: item.title || '',
+      description: item.description || '',
+      titleLength: (item.title || '').length,
+      descriptionLength: (item.description || '').length
+    }));
+
     return new Response(
       JSON.stringify({
         keyword,
         analysisType,
         insights,
+        competitors,
+        searchQuery: keyword,
         itemsAnalyzed: items.length,
+        timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -352,8 +366,11 @@ serve(async (req) => {
         keyword,
         analysisType,
         insights: fallbackInsights,
+        competitors: [],
+        searchQuery: keyword || 'unknown',
         itemsAnalyzed: 0,
         fallback: true,
+        timestamp: new Date().toISOString(),
         message: 'Analyse basée sur les meilleures pratiques SEO (DataForSEO temporairement indisponible)',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

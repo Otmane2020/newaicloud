@@ -33,12 +33,31 @@ interface SerpInsight {
   recommendations?: string[];
 }
 
+interface SerpCompetitor {
+  rank: number;
+  url: string;
+  domain: string;
+  title: string;
+  description: string;
+  titleLength: number;
+  descriptionLength: number;
+}
+
+interface SerpData {
+  insights: SerpInsight;
+  competitors: SerpCompetitor[];
+  searchQuery: string;
+  itemsAnalyzed: number;
+  timestamp?: string;
+  fallback?: boolean;
+}
+
 export default function SeoSerpAnalysis() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const { selectedStore } = useStore();
   const [product, setProduct] = useState<Product | null>(null);
-  const [serpInsights, setSerpInsights] = useState<SerpInsight | null>(null);
+  const [serpData, setSerpData] = useState<SerpData | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [seoScore, setSeoScore] = useState(0);
@@ -52,7 +71,7 @@ export default function SeoSerpAnalysis() {
 
   // Auto-analyze SERP when product is loaded
   useEffect(() => {
-    if (product && !serpInsights && !analyzing) {
+    if (product && !serpData && !analyzing) {
       analyzeSerpCompetitors();
     }
   }, [product]);
@@ -186,21 +205,21 @@ export default function SeoSerpAnalysis() {
       }
       
       console.log('✅ SERP analysis response:', data);
-      console.log('📊 Insights structure:', data?.insights);
+      console.log('📊 Data structure:', data);
       
-      // Validate insights structure
+      // Validate data structure
       if (!data?.insights) {
         console.error('❌ No insights in response');
         toast.error('Aucune donnée d\'analyse reçue');
         return;
       }
 
-      setSerpInsights(data.insights);
+      setSerpData(data);
       
       if (data.fallback) {
         toast.info('Analyse basée sur les meilleures pratiques SEO');
       } else {
-        toast.success('Analyse SERP complétée avec succès');
+        toast.success(`Analyse SERP complétée avec ${data.itemsAnalyzed} résultats`);
       }
     } catch (error: any) {
       console.error('❌ Error analyzing SERP:', error);
@@ -381,7 +400,7 @@ export default function SeoSerpAnalysis() {
                     Insights basés sur l'analyse des résultats de recherche pour des mots-clés similaires
                   </CardDescription>
                 </div>
-                {serpInsights && (
+                {serpData && (
                   <Badge variant="outline" className="gap-1">
                     <CheckCircle className="h-3 w-3" />
                     Analysé
@@ -390,17 +409,86 @@ export default function SeoSerpAnalysis() {
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              {serpInsights ? (
+              {serpData ? (
                 <div className="space-y-8">
+                  {/* Search Info */}
+                  {serpData.searchQuery && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Search className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold text-lg">Requête analysée</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-4 items-center text-sm">
+                        <Badge variant="outline" className="text-base px-4 py-2">
+                          {serpData.searchQuery}
+                        </Badge>
+                        {serpData.itemsAnalyzed > 0 && (
+                          <span className="text-muted-foreground">
+                            {serpData.itemsAnalyzed} résultats analysés
+                          </span>
+                        )}
+                        {serpData.timestamp && (
+                          <span className="text-muted-foreground">
+                            Analysé le {new Date(serpData.timestamp).toLocaleDateString('fr-FR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Competitors Section */}
+                  {serpData.competitors && serpData.competitors.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <BarChart3 className="h-5 w-5 text-orange-500" />
+                        <h4 className="font-semibold text-lg">Concurrents analysés</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {serpData.competitors.slice(0, 10).map((competitor) => (
+                          <div 
+                            key={competitor.rank} 
+                            className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <span className="text-sm font-bold text-primary">#{competitor.rank}</span>
+                              </div>
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div>
+                                  <a 
+                                    href={competitor.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-sm hover:text-primary transition-colors truncate block"
+                                  >
+                                    {competitor.title || competitor.url}
+                                  </a>
+                                  <p className="text-xs text-muted-foreground truncate">{competitor.domain}</p>
+                                </div>
+                                {competitor.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{competitor.description}</p>
+                                )}
+                                <div className="flex gap-4 text-xs text-muted-foreground">
+                                  <span>Titre: {competitor.titleLength} car.</span>
+                                  <span>Description: {competitor.descriptionLength} car.</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Keywords Section */}
-                  {serpInsights.commonKeywords && serpInsights.commonKeywords.length > 0 && (
+                  {serpData.insights.commonKeywords && serpData.insights.commonKeywords.length > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <TrendingUp className="h-5 w-5 text-primary" />
                         <h4 className="font-semibold text-lg">Mots-clés fréquents chez les concurrents</h4>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {serpInsights.commonKeywords.map((keyword, idx) => (
+                        {serpData.insights.commonKeywords.map((keyword, idx) => (
                           <Badge 
                             key={idx} 
                             variant="secondary"
@@ -414,14 +502,14 @@ export default function SeoSerpAnalysis() {
                   )}
 
                   {/* Features Section */}
-                  {serpInsights.topFeatures && serpInsights.topFeatures.length > 0 && (
+                  {serpData.insights.topFeatures && serpData.insights.topFeatures.length > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <CheckCircle className="h-5 w-5 text-green-500" />
                         <h4 className="font-semibold text-lg">Caractéristiques mises en avant</h4>
                       </div>
                       <div className="grid gap-3">
-                        {serpInsights.topFeatures.map((feature, idx) => (
+                        {serpData.insights.topFeatures.map((feature, idx) => (
                           <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                             <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                               <span className="text-xs font-semibold text-primary">{idx + 1}</span>
@@ -434,34 +522,34 @@ export default function SeoSerpAnalysis() {
                   )}
 
                   {/* Stats Grid */}
-                  {(serpInsights.avgTitleLength || serpInsights.avgDescriptionLength) && (
+                  {(serpData.insights.avgTitleLength || serpData.insights.avgDescriptionLength) && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <BarChart3 className="h-5 w-5 text-blue-500" />
                         <h4 className="font-semibold text-lg">Statistiques moyennes</h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {serpInsights.avgTitleLength && (
+                        {serpData.insights.avgTitleLength && (
                           <Card className="p-6 border-2 bg-gradient-to-br from-blue-500/5 to-blue-500/10">
                             <div className="space-y-2">
                               <p className="text-sm font-medium text-muted-foreground">Longueur moyenne titre</p>
                               <div className="flex items-baseline gap-2">
-                                <p className="text-4xl font-bold text-blue-600">{serpInsights.avgTitleLength}</p>
+                                <p className="text-4xl font-bold text-blue-600">{serpData.insights.avgTitleLength}</p>
                                 <span className="text-lg text-muted-foreground">caractères</span>
                               </div>
-                              <Progress value={(serpInsights.avgTitleLength / 60) * 100} className="h-2" />
+                              <Progress value={(serpData.insights.avgTitleLength / 60) * 100} className="h-2" />
                             </div>
                           </Card>
                         )}
-                        {serpInsights.avgDescriptionLength && (
+                        {serpData.insights.avgDescriptionLength && (
                           <Card className="p-6 border-2 bg-gradient-to-br from-green-500/5 to-green-500/10">
                             <div className="space-y-2">
                               <p className="text-sm font-medium text-muted-foreground">Longueur moyenne description</p>
                               <div className="flex items-baseline gap-2">
-                                <p className="text-4xl font-bold text-green-600">{serpInsights.avgDescriptionLength}</p>
+                                <p className="text-4xl font-bold text-green-600">{serpData.insights.avgDescriptionLength}</p>
                                 <span className="text-lg text-muted-foreground">caractères</span>
                               </div>
-                              <Progress value={(serpInsights.avgDescriptionLength / 160) * 100} className="h-2" />
+                              <Progress value={(serpData.insights.avgDescriptionLength / 160) * 100} className="h-2" />
                             </div>
                           </Card>
                         )}
@@ -544,10 +632,10 @@ export default function SeoSerpAnalysis() {
                   </div>
                 )}
 
-                {serpInsights?.recommendations && serpInsights.recommendations.length > 0 && (
+                {serpData?.insights.recommendations && serpData.insights.recommendations.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-semibold">Basé sur l'analyse SERP</h4>
-                    {serpInsights.recommendations.map((rec, idx) => (
+                    {serpData.insights.recommendations.map((rec, idx) => (
                       <div key={idx} className="flex items-start gap-3 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                         <CheckCircle className="h-5 w-5 text-blue-500 mt-0.5" />
                         <p className="text-sm">{rec}</p>
