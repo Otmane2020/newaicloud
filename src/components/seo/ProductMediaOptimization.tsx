@@ -161,10 +161,10 @@ export const ProductMediaOptimization = () => {
 
     try {
       await applyOptimizedImage.mutateAsync({
+        imageId: selectedImage.id,
         productId: selectedImage.product_id,
         optimizedUrl: whiteBgResult,
         originalUrl: selectedImage.src,
-        applyTo: 'main',
         optimizationType: 'white_background',
         aiModel: 'gemini-2.5-flash-image-preview',
         resolution: '2000x2000',
@@ -223,10 +223,10 @@ export const ProductMediaOptimization = () => {
 
     try {
       await applyOptimizedImage.mutateAsync({
+        imageId: selectedImage.id,
         productId: selectedImage.product_id,
         optimizedUrl: variant.imageUrl,
         originalUrl: selectedImage.src,
-        applyTo: 'main',
         optimizationType: 'ai_background',
         aiModel: 'gemini-2.5-flash-image-preview',
         aiPrompt: variant.prompt,
