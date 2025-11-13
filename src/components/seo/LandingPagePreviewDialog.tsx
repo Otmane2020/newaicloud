@@ -82,12 +82,12 @@ export function LandingPagePreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] p-0`}>
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Landing Page - {productTitle}
-            </div>
-            {currentLandingPage && (
+          {currentLandingPage && (
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Landing Page - {productTitle}
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -123,8 +123,8 @@ export function LandingPagePreviewDialog({
                   </Button>
                 )}
               </div>
-            )}
-          </DialogTitle>
+            </DialogTitle>
+          )}
         </DialogHeader>
 
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
