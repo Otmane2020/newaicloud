@@ -106,7 +106,6 @@ export function AppSidebar() {
 
   const mainMenuItems = [
     { title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
-    { title: "🧪 Test Global", url: "/testglobale", icon: Zap, key: "testglobale" },
   ];
 
   const productOptimizationSubItems = [
