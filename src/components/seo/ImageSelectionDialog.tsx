@@ -19,6 +19,10 @@ interface ProductImage {
   src: string;
   alt_text?: string;
   position: number;
+  variant_id?: string;
+  option1?: string | null;
+  option2?: string | null;
+  option3?: string | null;
 }
 
 interface ImageSelectionDialogProps {
@@ -55,6 +59,13 @@ export function ImageSelectionDialog({
         ? prev.filter(id => id !== variantId)
         : [...prev, variantId]
     );
+  };
+
+  const getVariantLabel = (variant: ProductImage): string => {
+    const options = [variant.option1, variant.option2, variant.option3]
+      .filter(Boolean)
+      .join(' - ');
+    return options || `Variante ${variant.position}`;
   };
 
   return (
@@ -109,7 +120,7 @@ export function ImageSelectionDialog({
                   >
                     <img
                       src={img.src}
-                      alt={img.alt_text || `Variante ${img.position}`}
+                      alt={img.alt_text || getVariantLabel(img)}
                       className="w-full h-full object-cover"
                     />
                     {selectedImageUrl === img.src && (
@@ -118,7 +129,7 @@ export function ImageSelectionDialog({
                       </div>
                     )}
                     <Badge className="absolute bottom-2 left-2 text-xs">
-                      Variante {img.position}
+                      {getVariantLabel(img)}
                     </Badge>
                   </button>
                 ))}
@@ -172,7 +183,7 @@ export function ImageSelectionDialog({
                         >
                           <img
                             src={variant.src}
-                            alt={variant.alt_text || `Variante ${variant.position}`}
+                            alt={variant.alt_text || getVariantLabel(variant)}
                             className="w-full h-full object-cover"
                           />
                           {selectedVariantIds.includes(variant.id) && (
@@ -182,8 +193,8 @@ export function ImageSelectionDialog({
                               </div>
                             </div>
                           )}
-                          <Badge className="absolute bottom-1 left-1 text-[10px]">
-                            #{variant.position}
+                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
+                            {getVariantLabel(variant)}
                           </Badge>
                         </button>
                       ))}
