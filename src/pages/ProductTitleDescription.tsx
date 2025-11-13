@@ -249,7 +249,7 @@ export default function ProductTitleDescription() {
 
   // Scroll to top when page changes
   useEffect(() => {
-    const scrollContainer = document.querySelector('.scroll-area-viewport');
+    const scrollContainer = document.querySelector('[data-radix-scroll-area-viewport]');
     if (scrollContainer) {
       scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
