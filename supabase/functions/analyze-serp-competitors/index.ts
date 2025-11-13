@@ -298,16 +298,34 @@ serve(async (req) => {
     });
     console.log(`✅ Created ${competitors.length} competitor entries`);
 
+    // CRITICAL: Build final response with explicit competitors array
+    const finalResponse = {
+      keyword,
+      analysisType,
+      insights,
+      competitors, // Explicitly include competitors array
+      searchQuery: keyword,
+      itemsAnalyzed: items.length,
+      timestamp: new Date().toISOString()
+    };
+    
+    // LOG FINAL RESPONSE STRUCTURE BEFORE SENDING
+    console.log(`🎯 FINAL RESPONSE READY:`, {
+      keyword: finalResponse.keyword,
+      analysisType: finalResponse.analysisType,
+      hasInsights: !!finalResponse.insights,
+      competitorsCount: finalResponse.competitors?.length || 0,
+      itemsAnalyzed: finalResponse.itemsAnalyzed
+    });
+    
+    if (!finalResponse.competitors || finalResponse.competitors.length === 0) {
+      console.error('⚠️ WARNING: competitors array is missing or empty!');
+    } else {
+      console.log(`✅ Competitors array confirmed: ${finalResponse.competitors.length} entries`);
+    }
+
     return new Response(
-      JSON.stringify({
-        keyword,
-        analysisType,
-        insights,
-        competitors,
-        searchQuery: keyword,
-        itemsAnalyzed: items.length,
-        timestamp: new Date().toISOString()
-      }),
+      JSON.stringify(finalResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
