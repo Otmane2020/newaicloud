@@ -269,4 +269,7 @@ verify_jwt = false
 [functions.sync-product-images-to-shopify]
 verify_jwt = true
 
+[functions.generate-ai-product-background]
+verify_jwt = true
+
 

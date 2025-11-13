@@ -88,24 +88,6 @@ serve(async (req) => {
               }),
             }
           );
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                model: "google/gemini-2.5-flash-image-preview",
-                messages: [{
-                  role: "user",
-                  content: [
-                    { type: "text", text: variant.prompt },
-                    { 
-                      type: "image_url",
-                      image_url: { url: `data:image/jpeg;base64,${base64Image}` }
-                    }
-                  ]
-                }],
-                modalities: ["image", "text"]
-              }),
-            },
-          );
 
           if (!res.ok) {
             const errText = await res.text();
