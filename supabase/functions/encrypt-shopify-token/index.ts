@@ -114,27 +114,50 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify ENCRYPTION_KEY is configured
+    if (!ENCRYPTION_KEY) {
+      console.error('[ENCRYPT-TOKEN] SHOPIFY_TOKEN_ENCRYPTION_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Encryption key not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('[ENCRYPT-TOKEN] Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Check if this is a service role call (from another edge function)
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const isServiceRole = authHeader.includes(serviceRoleKey || 'INVALID_KEY_THAT_WONT_MATCH');
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    console.log('[ENCRYPT-TOKEN] Authentication type:', isServiceRole ? 'SERVICE_ROLE' : 'USER_JWT');
+
+    // Only validate user JWT if not a service role call
+    if (!isServiceRole) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
       );
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('[ENCRYPT-TOKEN] User JWT validation failed:', authError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized - Invalid user token' }),
+          { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+      console.log('[ENCRYPT-TOKEN] User authenticated:', user.id);
+    } else {
+      console.log('[ENCRYPT-TOKEN] Service role authentication successful');
     }
 
     const { action, token, encrypted, iv } = await req.json();
