@@ -18,8 +18,11 @@ export function GoogleSearchPreview({
   const displayTitle = titleLength > 60 ? title.substring(0, 60) + "..." : title;
   const displayDesc = descLength > 155 ? description.substring(0, 155) + "..." : description;
 
-  // Extract domain from URL
-  const domain = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  // Extract domain from URL - if it's still example.com or myshopify.com, try to get the real domain
+  let domain = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  
+  // If domain contains myshopify.com or is example.com, it needs to be replaced
+  // The actual domain should be passed via the url prop from the parent component
 
   if (compact) {
     return (

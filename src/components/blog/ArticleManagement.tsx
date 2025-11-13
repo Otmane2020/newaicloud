@@ -129,7 +129,7 @@ export function ArticleManagement() {
     
     if (data && !error) {
       let domain = 'example.com';
-      if (data.public_domain) {
+      if (data.public_domain && !data.public_domain.includes('.myshopify.com')) {
         domain = data.public_domain;
       } else if (data.store_url) {
         const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');

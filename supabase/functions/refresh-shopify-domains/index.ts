@@ -1,109 +1,116 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error('Missing authorization header');
+      throw new Error("No authorization header");
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const { createClient } = await import('jsr:@supabase/supabase-js@2');
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authenticate user
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
-    if (authError || !user) {
-      throw new Error('Authentication failed');
+    if (userError || !user) {
+      throw new Error("User not authenticated");
     }
 
-    // Get active Shopify connection
-    const { data: connection, error: connectionError } = await supabaseClient
+    // Get all user's Shopify connections
+    const { data: connections, error: connectionsError } = await supabase
       .from('shopify_connections')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
+      .select('id, store_url, access_token')
+      .eq('user_id', user.id);
 
-    if (connectionError || !connection) {
-      throw new Error('No active Shopify connection found');
+    if (connectionsError) {
+      throw new Error(`Failed to fetch connections: ${connectionsError.message}`);
     }
 
-    console.log('Fetching shop info from Shopify API...');
-
-    // Fetch shop info from Shopify Admin API
-    const shopifyUrl = `https://${connection.store_url}/admin/api/2025-01/shop.json`;
-    const shopifyResponse = await fetch(shopifyUrl, {
-      method: 'GET',
-      headers: {
-        'X-Shopify-Access-Token': connection.access_token,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!shopifyResponse.ok) {
-      const errorText = await shopifyResponse.text();
-      console.error('Shopify API error:', errorText);
-      throw new Error(`Shopify API error: ${shopifyResponse.status}`);
+    if (!connections || connections.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, message: 'No Shopify connections found', updated: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const shopData = await shopifyResponse.json();
-    console.log('Shop data received:', JSON.stringify(shopData, null, 2));
+    let updatedCount = 0;
 
-    // Extract primary domain
-    const primaryDomain = shopData.shop?.primary_domain?.host || null;
-    const myshopifyDomain = shopData.shop?.myshopify_domain || connection.store_url;
+    // For each connection, fetch the primary domain from Shopify
+    for (const connection of connections) {
+      try {
+        // Extract shop name from store_url
+        const shopName = connection.store_url.replace('.myshopify.com', '');
+        
+        // Fetch shop info from Shopify API
+        const shopifyResponse = await fetch(
+          `https://${shopName}.myshopify.com/admin/api/2024-01/shop.json`,
+          {
+            headers: {
+              'X-Shopify-Access-Token': connection.access_token,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-    console.log('Primary domain:', primaryDomain);
-    console.log('MyShopify domain:', myshopifyDomain);
+        if (!shopifyResponse.ok) {
+          console.error(`Failed to fetch shop info for ${connection.store_url}:`, shopifyResponse.status);
+          continue;
+        }
 
-    // Update the connection with the public domain
-    const { error: updateError } = await supabaseClient
-      .from('shopify_connections')
-      .update({
-        public_domain: primaryDomain,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', connection.id);
+        const shopData = await shopifyResponse.json();
+        const primaryDomain = shopData.shop?.domain || shopData.shop?.primary_domain?.host;
 
-    if (updateError) {
-      console.error('Error updating connection:', updateError);
-      throw new Error('Failed to update connection');
+        if (primaryDomain) {
+          // Update the public_domain field
+          const { error: updateError } = await supabase
+            .from('shopify_connections')
+            .update({ public_domain: primaryDomain })
+            .eq('id', connection.id);
+
+          if (!updateError) {
+            console.log(`✅ Updated public_domain for ${connection.store_url}: ${primaryDomain}`);
+            updatedCount++;
+          } else {
+            console.error(`Failed to update public_domain for ${connection.id}:`, updateError);
+          }
+        } else {
+          console.warn(`No primary domain found for ${connection.store_url}`);
+        }
+      } catch (error) {
+        console.error(`Error processing connection ${connection.id}:`, error);
+      }
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        public_domain: primaryDomain,
-        myshopify_domain: myshopifyDomain,
+      JSON.stringify({ 
+        success: true, 
+        message: `Updated ${updatedCount} of ${connections.length} connections`,
+        updated: updatedCount,
+        total: connections.length
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error('Error in refresh-shopify-domains:', error);
+    console.error("Error in refresh-shopify-domains:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: errorMessage }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }

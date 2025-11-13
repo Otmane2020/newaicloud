@@ -150,7 +150,7 @@ export function CollectionOptimization() {
       if (data && !error) {
         // Prioritize public_domain, clean store_url as fallback
         let domain = 'example.com';
-        if (data.public_domain) {
+        if (data.public_domain && !data.public_domain.includes('.myshopify.com')) {
           domain = data.public_domain;
         } else if (data.store_url) {
           const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');

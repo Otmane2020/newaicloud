@@ -448,8 +448,9 @@ Deno.serve(async (req: Request) => {
       }
       
       product = productData; // Assign to outer scope variable
-      userId = product.seller_id;
-      productTitle = product.title;
+      userId = productData.seller_id;
+      productTitle = productData.title;
+      storeId = productData.store_id; // Get store_id from product
 
       // Get variants for this product (for variable products)
       const { data: variants } = await supabaseClient
@@ -488,7 +489,7 @@ Deno.serve(async (req: Request) => {
     // 🌍 Get store localization for SERP analysis
     let storeCountry = 'United States';
     let storeLanguage = 'en';
-    let storeId = null;
+    let storeId: string | null = null;
     
     // Get store_id based on image type
     if (imageType === 'content') {
@@ -498,19 +499,17 @@ Deno.serve(async (req: Request) => {
           .select("store_id")
           .eq("id", image.content_id)
           .maybeSingle();
-        storeId = collection?.store_id;
+        storeId = collection?.store_id || null;
       } else if (image.content_type === 'article') {
         const { data: article } = await supabaseClient
           .from("blog_articles")
           .select("store_id")
           .eq("id", image.content_id)
           .maybeSingle();
-        storeId = article?.store_id;
+        storeId = article?.store_id || null;
       }
-    } else {
-      // For product images, we already have store_id from product query
-      storeId = product?.store_id;
     }
+    // For product images, storeId is already set above in the product block
     
     if (storeId) {
       console.log("🔍 Fetching store localization info...");
