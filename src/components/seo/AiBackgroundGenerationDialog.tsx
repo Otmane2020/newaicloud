@@ -9,290 +9,238 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Palette, Check, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Palette, Sparkles, Check } from "lucide-react";
-import { useState } from "react";
 
-interface ProductImage {
-  id: string;
-  src: string;
-  alt_text?: string | null;
-  variant_id?: string | null;
-  option1?: string | null;
-  option2?: string | null;
-  option3?: string | null;
-}
-
-interface Product {
-  id: string;
-  title: string;
-  image_url: string | null;
-}
-
-interface AiBackgroundGenerationDialogProps {
+interface AiBackgroundConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (config: GenerationConfig) => void;
+  onConfirm: (config: AiBackgroundConfig) => void;
+  productImages?: Map<string, Array<{ id: string; src: string; alt_text?: string | null }>>;
   selectedProducts: string[];
-  products: Product[];
-  productImages?: Map<string, ProductImage[]>;
-  variantImages?: Map<string, ProductImage[]>;
+  products: Array<{ id: string; title: string; image_url: string | null }>;
 }
 
-export interface GenerationConfig {
+export interface AiBackgroundConfig {
   prompt: string;
-  style: "professional" | "lifestyle" | "minimalist" | "creative";
-  format: "square" | "portrait" | "landscape";
-  targetType: "main" | "variants";
-  selectedImages: Map<string, string>; // productId -> imageUrl or variantId
+  format: string;
+  similarity: string;
+  imageType: "primary" | "secondary";
+  selectedGalleryImages: Map<string, string>;
 }
 
-const PRESET_PROMPTS = [
-  {
-    value: "professional_studio",
-    label: "🎬 Studio Professionnel",
-    prompt: "Professional e-commerce product photography with clean studio lighting, neutral gray backdrop, and soft shadows",
-  },
-  {
-    value: "luxury_nature",
-    label: "🌿 Nature Luxueuse",
-    prompt: "Luxurious natural environment with elegant plants, natural wood elements, and soft ambient lighting",
-  },
-  {
-    value: "modern_minimal",
-    label: "⚪ Minimaliste Moderne",
-    prompt: "Modern minimalist setting with clean geometric shapes, neutral tones, and contemporary aesthetics",
-  },
-  {
-    value: "warm_lifestyle",
-    label: "🏠 Lifestyle Chaleureux",
-    prompt: "Warm lifestyle scene with cozy home elements, soft textiles, and inviting ambient lighting",
-  },
-  {
-    value: "urban_industrial",
-    label: "🏙️ Urbain Contemporain",
-    prompt: "Contemporary urban setting with industrial elements, modern materials, and sleek aesthetics",
-  },
-  {
-    value: "elegant_classic",
-    label: "✨ Élégance Classique",
-    prompt: "Elegant classical setting with refined decorative elements, soft warm lighting, and timeless style",
-  },
-];
-
-function getVariantLabel(image: ProductImage): string {
-  const options = [image.option1, image.option2, image.option3].filter(Boolean);
-  return options.length > 0 ? options.join(" - ") : "Variante";
-}
-
-export function AiBackgroundGenerationDialog({
+export function AiBackgroundConfigDialog({
   open,
   onOpenChange,
   onConfirm,
+  productImages = new Map(),
   selectedProducts,
   products,
-  productImages = new Map(),
-  variantImages = new Map(),
-}: AiBackgroundGenerationDialogProps) {
-  const [config, setConfig] = useState<GenerationConfig>({
+}: AiBackgroundConfigDialogProps) {
+  const [config, setConfig] = useState<AiBackgroundConfig>({
     prompt: "",
-    style: "professional",
     format: "square",
-    targetType: "main",
-    selectedImages: new Map(),
+    similarity: "medium",
+    imageType: "primary",
+    selectedGalleryImages: new Map(),
   });
-
-  const hasVariants = selectedProducts.some(
-    (productId) => (variantImages.get(productId)?.length || 0) > 0
-  );
 
   const handleConfirm = () => {
     if (!config.prompt.trim()) {
-      return;
-    }
-    if (config.targetType === "variants" && config.selectedImages.size === 0) {
       return;
     }
     onConfirm(config);
     onOpenChange(false);
   };
 
-  const handlePresetSelect = (presetValue: string) => {
-    const preset = PRESET_PROMPTS.find((p) => p.value === presetValue);
-    if (preset) {
-      setConfig({ ...config, prompt: preset.prompt });
-    }
-  };
-
-  const toggleImageSelection = (productId: string, imageId: string) => {
-    const newMap = new Map(config.selectedImages);
-    if (newMap.get(productId) === imageId) {
-      newMap.delete(productId);
-    } else {
-      newMap.set(productId, imageId);
-    }
-    setConfig({ ...config, selectedImages: newMap });
+  const handlePresetSelect = (value: string) => {
+    setConfig({ ...config, prompt: value });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Palette className="h-5 w-5 text-primary" />
-            Génération d'arrière-plan IA
+            Configuration de l'arrière-plan IA
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Configuration pour {selectedProducts.length} produit(s) sélectionné(s)
+            Personnalisez les paramètres de génération pour {selectedProducts.length} produit(s)
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Style & Format Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Tableau de sélection des options */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">Paramètres de génération</Label>
+
+            {/* Format d'image */}
             <Card className="p-4 space-y-3">
-              <Label htmlFor="style" className="text-sm font-semibold">
-                Style de génération
-              </Label>
-              <Select
-                value={config.style}
-                onValueChange={(value: any) => setConfig({ ...config, style: value })}
-              >
-                <SelectTrigger id="style">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professional">🎬 Professionnel</SelectItem>
-                  <SelectItem value="lifestyle">🌿 Lifestyle</SelectItem>
-                  <SelectItem value="minimalist">⚪ Minimaliste</SelectItem>
-                  <SelectItem value="creative">🎨 Créatif</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="format" className="text-sm font-medium">
+                  Format d'image
+                </Label>
+                <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
+                  <SelectTrigger id="format" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="square">Carré (1:1)</SelectItem>
+                    <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                    <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </Card>
 
+            {/* Type d'image */}
             <Card className="p-4 space-y-3">
-              <Label htmlFor="format" className="text-sm font-semibold">
-                Format d'image
-              </Label>
-              <Select
-                value={config.format}
-                onValueChange={(value: any) => setConfig({ ...config, format: value })}
-              >
-                <SelectTrigger id="format">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="square">Carré (1:1)</SelectItem>
-                  <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                  <SelectItem value="landscape">Paysage (4:3)</SelectItem>
-                </SelectContent>
-              </Select>
-            </Card>
-          </div>
-
-          {/* Target Selection */}
-          <Card className="p-4 space-y-3">
-            <Label className="text-sm font-semibold">Cible de génération</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Card
-                className={`p-3 cursor-pointer transition-all ${
-                  config.targetType === "main"
-                    ? "border-primary bg-primary/5 ring-2 ring-primary"
-                    : "hover:border-primary/50"
-                }`}
-                onClick={() => setConfig({ ...config, targetType: "main", selectedImages: new Map() })}
-              >
-                <div className="flex items-start gap-2">
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.targetType === "main" ? "border-primary bg-primary" : "border-muted-foreground"
-                    }`}
-                  >
-                    {config.targetType === "main" && <Check className="h-2.5 w-2.5 text-white" />}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
-                    <p className="text-xs text-muted-foreground">Génération sur l'image principale du produit</p>
-                  </div>
-                </div>
-              </Card>
-
-              {hasVariants && (
+              <Label className="text-sm font-medium">Type d'image</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.targetType === "variants"
+                    config.imageType === "primary"
                       ? "border-primary bg-primary/5 ring-2 ring-primary"
                       : "hover:border-primary/50"
                   }`}
-                  onClick={() => setConfig({ ...config, targetType: "variants", selectedImages: new Map() })}
+                  onClick={() => setConfig({ ...config, imageType: "primary" })}
                 >
                   <div className="flex items-start gap-2">
                     <div
                       className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                        config.targetType === "variants" ? "border-primary bg-primary" : "border-muted-foreground"
+                        config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
                       }`}
                     >
-                      {config.targetType === "variants" && <Check className="h-2.5 w-2.5 text-white" />}
+                      {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-xs sm:text-sm">Variantes Spécifiques</h4>
-                      <p className="text-xs text-muted-foreground">Sélection d'images de variantes</p>
+                      <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Produit <strong>centré</strong> et bien visible
+                      </p>
                     </div>
                   </div>
                 </Card>
-              )}
-            </div>
-          </Card>
+                <Card
+                  className={`p-3 cursor-pointer transition-all ${
+                    config.imageType === "secondary"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary"
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => setConfig({ ...config, imageType: "secondary" })}
+                >
+                  <div className="flex items-start gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                        config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}
+                    >
+                      {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Photo d'ambiance lifestyle</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </Card>
 
-          {/* Variant Selection Grid */}
-          {config.targetType === "variants" && selectedProducts.length > 0 && (
+            {/* Ressemblance */}
+            <Card className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="similarity" className="text-sm font-medium">
+                  Ressemblance à l'original
+                </Label>
+                <Select
+                  value={config.similarity}
+                  onValueChange={(value) => setConfig({ ...config, similarity: value })}
+                >
+                  <SelectTrigger id="similarity" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="very-close">🎯 Très proche (90%)</SelectItem>
+                    <SelectItem value="close">✓ Proche (70%)</SelectItem>
+                    <SelectItem value="medium">⚖️ Équilibré (50%)</SelectItem>
+                    <SelectItem value="creative">🎨 Créatif (30%)</SelectItem>
+                    <SelectItem value="very-creative">✨ Très créatif (10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </Card>
+          </div>
+
+          {/* Sélection d'images de galerie */}
+          {selectedProducts.length > 0 && (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Sélection des variantes</Label>
+              <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
               {selectedProducts.map((productId) => {
                 const product = products.find((p) => p.id === productId);
-                const variants = variantImages.get(productId) || [];
+                const images = productImages.get(productId) || [];
 
-                if (!product || variants.length === 0) return null;
+                if (!product) return null;
 
                 return (
                   <Card key={productId} className="p-3 sm:p-4">
                     <h4 className="font-semibold mb-3 text-xs sm:text-sm line-clamp-1">{product.title}</h4>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                      {variants.map((variant, idx) => {
-                        const isSelected = config.selectedImages.get(productId) === variant.id;
-                        return (
-                          <div
-                            key={variant.id}
-                            className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                              isSelected
-                                ? "border-primary ring-2 ring-primary"
-                                : "border-muted hover:border-primary/50"
-                            }`}
-                            onClick={() => toggleImageSelection(productId, variant.id)}
-                          >
-                            <div className="aspect-square bg-muted rounded overflow-hidden">
-                              <img
-                                src={variant.src}
-                                alt={variant.alt_text || getVariantLabel(variant)}
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                            {isSelected && (
-                              <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                <Check className="h-3 w-3" />
-                              </div>
-                            )}
-                            <Badge
-                              variant="secondary"
-                              className="absolute bottom-1 left-1 text-[9px] px-1 py-0 h-4"
-                            >
-                              {getVariantLabel(variant)}
-                            </Badge>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Image principale */}
+                      <div
+                        className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                          !config.selectedGalleryImages.get(productId) ||
+                          config.selectedGalleryImages.get(productId) === product.image_url
+                            ? "border-primary ring-2 ring-primary"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                        onClick={() => {
+                          const newMap = new Map(config.selectedGalleryImages);
+                          newMap.set(productId, product.image_url!);
+                          setConfig({ ...config, selectedGalleryImages: newMap });
+                        }}
+                      >
+                        <div className="aspect-square bg-muted rounded overflow-hidden">
+                          <img
+                            src={product.image_url || ""}
+                            alt="Image principale"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
+                          Principal
+                        </div>
+                      </div>
+
+                      {/* Images de galerie */}
+                      {images.slice(0, 2).map((img, idx) => (
+                        <div
+                          key={img.id}
+                          className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                            config.selectedGalleryImages.get(productId) === img.src
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-muted hover:border-primary/50"
+                          }`}
+                          onClick={() => {
+                            const newMap = new Map(config.selectedGalleryImages);
+                            newMap.set(productId, img.src);
+                            setConfig({ ...config, selectedGalleryImages: newMap });
+                          }}
+                        >
+                          <div className="aspect-square bg-muted rounded overflow-hidden">
+                            <img
+                              src={img.src}
+                              alt={img.alt_text || `Galerie ${idx + 1}`}
+                              className="w-full h-full object-contain"
+                            />
                           </div>
-                        );
-                      })}
+                          <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded">
+                            #{idx + 1}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </Card>
                 );
@@ -300,40 +248,49 @@ export function AiBackgroundGenerationDialog({
             </div>
           )}
 
-          {/* Preset Selection */}
+          {/* Style Selection */}
           <div className="space-y-2">
-            <Label htmlFor="preset-select" className="text-sm font-semibold">
-              Style prédéfini
-            </Label>
-            <Select value="" onValueChange={handlePresetSelect}>
+            <Label htmlFor="preset-select">Style prédéfini</Label>
+            <Select value={config.prompt} onValueChange={handlePresetSelect}>
               <SelectTrigger id="preset-select">
-                <SelectValue placeholder="Choisir un style prédéfini..." />
+                <SelectValue placeholder="Choisir un style..." />
               </SelectTrigger>
               <SelectContent>
-                {PRESET_PROMPTS.map((preset) => (
-                  <SelectItem key={preset.value} value={preset.value}>
-                    {preset.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="Place this product in a professional studio setting with soft lighting and neutral gray backdrop">
+                  🎬 Studio professionnel
+                </SelectItem>
+                <SelectItem value="Place this product in a luxurious natural environment with elegant plants and soft natural lighting">
+                  🌿 Nature luxueuse
+                </SelectItem>
+                <SelectItem value="Place this product in a modern minimalist setting with clean lines and geometric shapes">
+                  ⚪ Minimaliste moderne
+                </SelectItem>
+                <SelectItem value="Place this product in a warm lifestyle scene with cozy home elements and soft ambient lighting">
+                  🏠 Lifestyle chaleureux
+                </SelectItem>
+                <SelectItem value="Place this product in a contemporary urban setting with industrial elements and modern aesthetics">
+                  🏙️ Urbain contemporain
+                </SelectItem>
+                <SelectItem value="Place this product in an elegant classical setting with refined decorative elements and soft warm lighting">
+                  ✨ Élégance classique
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Custom Prompt */}
           <div className="space-y-2">
-            <Label htmlFor="custom-prompt" className="text-sm font-semibold">
-              Prompt personnalisé (en anglais)
-            </Label>
+            <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
             <Textarea
               id="custom-prompt"
-              placeholder="Ex: Professional studio setting with soft lighting and neutral backdrop..."
+              placeholder="Ex: Place this product on a wooden table with natural sunlight..."
               value={config.prompt}
               onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
               rows={4}
               className="resize-none text-xs sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              💡 Décrivez l'environnement, l'éclairage et l'ambiance souhaités
+              💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
             </p>
           </div>
         </div>
@@ -344,16 +301,11 @@ export function AiBackgroundGenerationDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={
-              !config.prompt.trim() ||
-              (config.targetType === "variants" && config.selectedImages.size === 0)
-            }
+            disabled={!config.prompt.trim()}
             className="gap-2 w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Sparkles className="h-4 w-4" />
-            {config.targetType === "variants" && config.selectedImages.size > 0
-              ? `Générer (${config.selectedImages.size} variante${config.selectedImages.size > 1 ? "s" : ""})`
-              : "Générer les arrière-plans"}
+            Générer les arrière-plans
           </Button>
         </DialogFooter>
       </DialogContent>
