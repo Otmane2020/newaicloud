@@ -182,6 +182,7 @@ export function LandingPagePreviewDialog({
                   <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                   <p className="font-medium">Aucune landing page disponible</p>
                   <p className="text-sm mt-2">Générez une landing page pour voir l'aperçu</p>
+                  <p className="text-xs mt-1 text-muted-foreground/70">La landing page sera créée automatiquement si elle n'existe pas encore</p>
                 </div>
               </div>
             )}
