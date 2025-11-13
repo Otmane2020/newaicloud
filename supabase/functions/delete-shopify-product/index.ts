@@ -46,10 +46,19 @@ serve(async (req) => {
       throw new Error("Product not found or unauthorized");
     }
 
-    const { data: connection, error: connectionError } = await supabaseAdmin
+    // Get Shopify connection, filtering by store_id if available
+    let connectionQuery = supabaseAdmin
       .from("shopify_connections")
       .select("store_url, access_token")
       .eq("user_id", user.id)
+      .eq("is_active", true);
+    
+    if (product.store_id) {
+      connectionQuery = connectionQuery.eq("id", product.store_id);
+    }
+    
+    const { data: connection, error: connectionError } = await connectionQuery
+      .limit(1)
       .single();
 
     if (connectionError || !connection) {
