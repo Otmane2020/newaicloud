@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ProductImage {
@@ -121,23 +121,9 @@ export function ImageSelectionDialog({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Prompt IA si nécessaire */}
-          {isAiBackground && (
-            <div className="space-y-2">
-              <Label htmlFor="ai-prompt" className="text-sm font-medium">Description du fond souhaité</Label>
-              <Textarea
-                id="ai-prompt"
-                placeholder="Ex: fond de studio professionnel, ambiance minimaliste avec lumière naturelle..."
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-          )}
-
-          {/* Étape 1: Image source */}
+          {/* 1. Sélection de l'image source EN PREMIER */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">1. Sélectionner l'image source</Label>
+            <Label className="text-sm font-medium">Sélectionner l'image source</Label>
             <ScrollArea className="h-[300px] pr-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {allImages.map((img, index) => (
@@ -169,46 +155,61 @@ export function ImageSelectionDialog({
             </ScrollArea>
           </div>
 
-          {/* Étape 2: Application */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">2. Appliquer le résultat à</Label>
-            {!hasVariants ? (
-              <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary')}>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="main" id="main" />
-                  <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
-                    <div className="font-medium">Photo principale</div>
-                    <div className="text-xs text-muted-foreground">Remplace l'image principale du produit</div>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="secondary" id="secondary" />
-                  <Label htmlFor="secondary" className="flex-1 cursor-pointer text-sm">
-                    <div className="font-medium">Photo secondaire</div>
-                    <div className="text-xs text-muted-foreground">Ajoute comme nouvelle image secondaire</div>
-                  </Label>
-                </div>
-              </RadioGroup>
-            ) : (
-              <RadioGroup value={selectedVariantId} onValueChange={setSelectedVariantId}>
-                <ScrollArea className="h-[200px]">
-                  {variants.map((variant) => {
-                    const variantLabel = [variant.option1, variant.option2, variant.option3]
-                      .filter(Boolean)
-                      .join(' / ') || variant.title;
-                    
-                    return (
-                      <div key={variant.id} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors mb-2">
-                        <RadioGroupItem value={variant.id} id={`variant-${variant.id}`} />
-                        <Label htmlFor={`variant-${variant.id}`} className="flex-1 cursor-pointer text-sm">
-                          {variantLabel}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </ScrollArea>
-              </RadioGroup>
+          {/* 2. Configuration (prompt IA + application) */}
+          <div className="space-y-4 border-t pt-4">
+            {isAiBackground && (
+              <div className="space-y-2">
+                <Label htmlFor="ai-prompt" className="text-sm font-medium">Description du fond souhaité</Label>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="Ex: fond de studio professionnel, ambiance minimaliste avec lumière naturelle..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
             )}
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Appliquer le résultat à</Label>
+              {!hasVariants ? (
+                <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary')}>
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="main" id="main" />
+                    <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
+                      <div className="font-medium">Photo principale</div>
+                      <div className="text-xs text-muted-foreground">Remplace l'image principale du produit</div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="secondary" id="secondary" />
+                    <Label htmlFor="secondary" className="flex-1 cursor-pointer text-sm">
+                      <div className="font-medium">Photo secondaire</div>
+                      <div className="text-xs text-muted-foreground">Ajoute comme nouvelle image secondaire</div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              ) : (
+                <RadioGroup value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                  <ScrollArea className="h-[200px]">
+                    {variants.map((variant) => {
+                      const variantLabel = [variant.option1, variant.option2, variant.option3]
+                        .filter(Boolean)
+                        .join(' / ') || variant.title;
+                      
+                      return (
+                        <div key={variant.id} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors mb-2">
+                          <RadioGroupItem value={variant.id} id={`variant-${variant.id}`} />
+                          <Label htmlFor={`variant-${variant.id}`} className="flex-1 cursor-pointer text-sm">
+                            {variantLabel}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </ScrollArea>
+                </RadioGroup>
+              )}
+            </div>
           </div>
         </div>
 
