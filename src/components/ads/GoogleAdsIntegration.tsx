@@ -196,6 +196,21 @@ export function GoogleAdsIntegration() {
               {t.googleAds.integration.description}
             </p>
           </div>
+          
+          {/* Important notice for users */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-left max-w-md mx-auto">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">Connexion de votre compte Google</p>
+                <p className="text-muted-foreground">
+                  Vous allez autoriser l'accès à votre compte Google Ads existant. 
+                  Assurez-vous d'être connecté au bon compte Google avant de continuer.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <Button
               onClick={connectWithGoogle}
@@ -203,7 +218,7 @@ export function GoogleAdsIntegration() {
               className="gap-2"
             >
               <Megaphone className="h-5 w-5" />
-              {t.googleAds.integration.connect}
+              Connecter mon compte Google Ads
             </Button>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>✓ {t.googleAds.campaigns.createNew}</p>

@@ -118,9 +118,28 @@ serve(async (req) => {
     }
 
     const accountsData = await accountsResponse.json();
-    console.log('Merchant accounts response:', accountsData);
+    console.log('✅ Full Merchant accounts response:', JSON.stringify(accountsData, null, 2));
+    console.log('📋 accountIdentifiers:', accountsData.accountIdentifiers);
 
     const accounts = accountsData.accountIdentifiers || [];
+
+    // Log if no accounts found
+    if (accounts.length === 0) {
+      console.warn('⚠️ No merchant accounts found in response');
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          accounts: [],
+          message: 'No merchant accounts found. Please create a Merchant Center account first.',
+          createAccountUrl: 'https://merchants.google.com'
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    console.log(`✅ Found ${accounts.length} merchant account(s)`);
 
     return new Response(
       JSON.stringify({ 

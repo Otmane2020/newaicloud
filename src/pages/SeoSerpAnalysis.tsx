@@ -170,6 +170,7 @@ export default function SeoSerpAnalysis() {
     
     try {
       setAnalyzing(true);
+      console.log('🔍 Starting SERP analysis for:', product.title);
       
       const { data, error } = await supabase.functions.invoke('analyze-serp-competitors', {
         body: {
@@ -179,12 +180,30 @@ export default function SeoSerpAnalysis() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ SERP analysis error:', error);
+        throw error;
+      }
       
+      console.log('✅ SERP analysis response:', data);
+      console.log('📊 Insights structure:', data?.insights);
+      
+      // Validate insights structure
+      if (!data?.insights) {
+        console.error('❌ No insights in response');
+        toast.error('Aucune donnée d\'analyse reçue');
+        return;
+      }
+
       setSerpInsights(data.insights);
-      toast.success('Analyse SERP complétée avec succès');
+      
+      if (data.fallback) {
+        toast.info('Analyse basée sur les meilleures pratiques SEO');
+      } else {
+        toast.success('Analyse SERP complétée avec succès');
+      }
     } catch (error: any) {
-      console.error('Error analyzing SERP:', error);
+      console.error('❌ Error analyzing SERP:', error);
       toast.error('Erreur lors de l\'analyse SERP');
     } finally {
       setAnalyzing(false);
@@ -350,61 +369,128 @@ export default function SeoSerpAnalysis() {
 
         {/* SERP Analysis Tab */}
         <TabsContent value="serp" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analyse des concurrents SERP</CardTitle>
-              <CardDescription>
-                Insights basés sur l'analyse des résultats de recherche pour des mots-clés similaires
-              </CardDescription>
+          <Card className="border-2">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="h-5 w-5 text-primary" />
+                    Analyse des concurrents SERP
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Insights basés sur l'analyse des résultats de recherche pour des mots-clés similaires
+                  </CardDescription>
+                </div>
+                {serpInsights && (
+                  <Badge variant="outline" className="gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Analysé
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {serpInsights ? (
-                <div className="space-y-6">
+                <div className="space-y-8">
+                  {/* Keywords Section */}
                   {serpInsights.commonKeywords && serpInsights.commonKeywords.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" />
-                        Mots-clés fréquents chez les concurrents
-                      </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold text-lg">Mots-clés fréquents chez les concurrents</h4>
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {serpInsights.commonKeywords.map((keyword, idx) => (
-                          <Badge key={idx} variant="secondary">{keyword}</Badge>
+                          <Badge 
+                            key={idx} 
+                            variant="secondary"
+                            className="px-3 py-1.5 text-sm font-medium bg-primary/10 hover:bg-primary/20 transition-colors"
+                          >
+                            {keyword}
+                          </Badge>
                         ))}
                       </div>
                     </div>
                   )}
 
+                  {/* Features Section */}
                   {serpInsights.topFeatures && serpInsights.topFeatures.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Caractéristiques mises en avant</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <h4 className="font-semibold text-lg">Caractéristiques mises en avant</h4>
+                      </div>
+                      <div className="grid gap-3">
                         {serpInsights.topFeatures.map((feature, idx) => (
-                          <li key={idx}>{feature}</li>
+                          <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <span className="text-xs font-semibold text-primary">{idx + 1}</span>
+                            </div>
+                            <p className="text-sm leading-relaxed">{feature}</p>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
 
-                  {serpInsights.avgTitleLength && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Longueur moyenne titre</p>
-                        <p className="text-2xl font-bold">{serpInsights.avgTitleLength} car.</p>
+                  {/* Stats Grid */}
+                  {(serpInsights.avgTitleLength || serpInsights.avgDescriptionLength) && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <BarChart3 className="h-5 w-5 text-blue-500" />
+                        <h4 className="font-semibold text-lg">Statistiques moyennes</h4>
                       </div>
-                      {serpInsights.avgDescriptionLength && (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Longueur moyenne description</p>
-                          <p className="text-2xl font-bold">{serpInsights.avgDescriptionLength} car.</p>
-                        </div>
-                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {serpInsights.avgTitleLength && (
+                          <Card className="p-6 border-2 bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">Longueur moyenne titre</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-4xl font-bold text-blue-600">{serpInsights.avgTitleLength}</p>
+                                <span className="text-lg text-muted-foreground">caractères</span>
+                              </div>
+                              <Progress value={(serpInsights.avgTitleLength / 60) * 100} className="h-2" />
+                            </div>
+                          </Card>
+                        )}
+                        {serpInsights.avgDescriptionLength && (
+                          <Card className="p-6 border-2 bg-gradient-to-br from-green-500/5 to-green-500/10">
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">Longueur moyenne description</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-4xl font-bold text-green-600">{serpInsights.avgDescriptionLength}</p>
+                                <span className="text-lg text-muted-foreground">caractères</span>
+                              </div>
+                              <Progress value={(serpInsights.avgDescriptionLength / 160) * 100} className="h-2" />
+                            </div>
+                          </Card>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Aucune analyse SERP disponible</p>
-                  <p className="text-sm mt-2">Cliquez sur "Analyser SERP" pour lancer l'analyse</p>
+                <div className="text-center py-16">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-6">
+                    <Search className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-medium mb-2">Aucune analyse SERP disponible</p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Cliquez sur "Analyser SERP" pour lancer l'analyse des concurrents
+                  </p>
+                  <Button onClick={analyzeSerpCompetitors} disabled={analyzing} size="lg">
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyse en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4 mr-2" />
+                        Analyser maintenant
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </CardContent>

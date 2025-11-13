@@ -444,11 +444,39 @@ export function GoogleMerchantIntegration() {
                 ))}
               </div>
             ) : (
-              <div className="p-4 border-2 border-dashed rounded-lg text-center">
-                <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {isLoadingAccounts ? t.common.loading : t.googleMerchant.integration.noAccounts}
-                </p>
+              <div className="p-6 border-2 border-dashed rounded-lg text-center space-y-3">
+                <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto" />
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">
+                    {isLoadingAccounts ? t.common.loading : 'Aucun compte trouvé'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Créez un compte Google Merchant Center pour continuer
+                  </p>
+                </div>
+                {!isLoadingAccounts && (
+                  <div className="pt-2 space-y-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={fetchMerchantAccounts}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Réessayer
+                    </Button>
+                    <div>
+                      <a 
+                        href="https://merchants.google.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Créer un compte Merchant Center →
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -34,8 +34,15 @@ serve(async (req) => {
     googleAuthUrl.searchParams.set('response_type', 'code');
     googleAuthUrl.searchParams.set('scope', scopeToUse);
     googleAuthUrl.searchParams.set('access_type', 'offline');
+    // Force consent screen for proper connection UX
     googleAuthUrl.searchParams.set('prompt', 'consent');
     googleAuthUrl.searchParams.set('state', stateToUse);
+    
+    console.log('📝 OAuth URL params:', {
+      redirectUri,
+      scopes: scopeToUse,
+      state: stateToUse
+    });
 
     return new Response(
       JSON.stringify({ 
