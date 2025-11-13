@@ -67,22 +67,7 @@ Deno.serve(async (req) => {
       throw new Error("Shopify connection not found");
     }
 
-    // Decrypt access token
-    const { data: decryptData, error: decryptError } = await supabaseClient.functions.invoke(
-      "encrypt-shopify-token",
-      {
-        body: {
-          token: connection.access_token,
-          action: "decrypt",
-        },
-      }
-    );
-
-    if (decryptError || !decryptData?.token) {
-      throw new Error("Failed to decrypt Shopify token");
-    }
-
-    const accessToken = decryptData.token;
+    console.log('Using direct access token, length:', connection.access_token?.length);
 
     // Prepare images data for Shopify
     const images = (product.images || [])
@@ -103,7 +88,7 @@ Deno.serve(async (req) => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "X-Shopify-Access-Token": accessToken,
+          "X-Shopify-Access-Token": connection.access_token,
         },
         body: JSON.stringify({
           product: {

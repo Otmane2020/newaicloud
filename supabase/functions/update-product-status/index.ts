@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
       throw new Error('Store connection not found. Please verify your Shopify connection.');
     }
 
-    console.log('Store connection found:', connection.store_url);
-    console.log('Access token length:', connection.access_token?.length);
+    console.log('[UPDATE-STATUS] Store connection found:', connection.store_url);
+    console.log('[UPDATE-STATUS] Using direct access token, length:', connection.access_token?.length);
 
     // Update product status in Shopify
     const shopifyResponse = await fetch(
