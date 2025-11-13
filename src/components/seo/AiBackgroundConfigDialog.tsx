@@ -8,13 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Palette, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +25,7 @@ interface AiBackgroundConfigDialogProps {
 
 export interface AiBackgroundConfig {
   prompt: string;
-  format: string;
+  format: string; // ratio, NOT image format
   similarity: string;
   imageType: "primary" | "secondary";
   selectedGalleryImages: Map<string, string>;
@@ -43,20 +37,18 @@ export function AiBackgroundConfigDialog({
   onConfirm,
   productImages = new Map(),
   selectedProducts,
-  products
+  products,
 }: AiBackgroundConfigDialogProps) {
   const [config, setConfig] = useState<AiBackgroundConfig>({
-    prompt: '',
-    format: 'square',
-    similarity: 'very-close',
-    imageType: 'primary',
-    selectedGalleryImages: new Map()
+    prompt: "",
+    format: "square", // Only square / portrait / landscape
+    similarity: "very-close",
+    imageType: "primary",
+    selectedGalleryImages: new Map(),
   });
 
   const handleConfirm = () => {
-    if (!config.prompt.trim()) {
-      return;
-    }
+    if (!config.prompt.trim()) return;
     onConfirm(config);
     onOpenChange(false);
   };
@@ -79,126 +71,123 @@ export function AiBackgroundConfigDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Tableau de sélection des options */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">Paramètres de génération</Label>
-            
-            {/* Format d'image */}
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="format" className="text-sm font-medium">Format d'image</Label>
-                <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
-                  <SelectTrigger id="format" className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="square">Carré (1:1)</SelectItem>
-                    <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                    <SelectItem value="landscape">Paysage (4:3)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </Card>
+          {/* Format d'image (ratio uniquement) */}
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="format" className="text-sm font-medium">
+                Format d'image
+              </Label>
+              <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
+                <SelectTrigger id="format" className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="square">Carré (1:1)</SelectItem>
+                  <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                  <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
 
-            {/* Type d'image */}
-            <Card className="p-4 space-y-3">
-              <Label className="text-sm font-medium">Type d'image</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Card 
-                  className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "primary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setConfig({ ...config, imageType: "primary" })}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === "primary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {config.imageType === "primary" && (
-                        <Check className="h-2.5 w-2.5 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Produit <strong>centré</strong> et bien visible
-                      </p>
-                    </div>
+          {/* Type d'image */}
+          <Card className="p-4 space-y-3">
+            <Label className="text-sm font-medium">Type d'image</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Image principale */}
+              <Card
+                className={`p-3 cursor-pointer transition-all ${
+                  config.imageType === "primary"
+                    ? "border-primary bg-primary/5 ring-2 ring-primary"
+                    : "hover:border-primary/50"
+                }`}
+                onClick={() => setConfig({ ...config, imageType: "primary" })}
+              >
+                <div className="flex items-start gap-2">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}
+                  >
+                    {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
                   </div>
-                </Card>
-                <Card 
-                  className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "secondary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setConfig({ ...config, imageType: "secondary" })}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === "secondary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {config.imageType === "secondary" && (
-                        <Check className="h-2.5 w-2.5 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Photo d'ambiance lifestyle
-                      </p>
-                    </div>
+                  <div className="flex-1 space-y-1">
+                    <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Produit <strong>centré</strong> et bien visible
+                    </p>
                   </div>
-                </Card>
-              </div>
-            </Card>
+                </div>
+              </Card>
 
-            {/* Ressemblance */}
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="similarity" className="text-sm font-medium">Ressemblance à l'original</Label>
-                <Select value={config.similarity} onValueChange={(value) => setConfig({ ...config, similarity: value })}>
-                  <SelectTrigger id="similarity" className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="very-close">🎯 Très proche (90%)</SelectItem>
-                    <SelectItem value="close">✓ Proche (70%)</SelectItem>
-                    <SelectItem value="medium">⚖️ Équilibré (50%)</SelectItem>
-                    <SelectItem value="creative">🎨 Créatif (30%)</SelectItem>
-                    <SelectItem value="very-creative">✨ Très créatif (10%)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </Card>
-          </div>
+              {/* Image secondaire */}
+              <Card
+                className={`p-3 cursor-pointer transition-all ${
+                  config.imageType === "secondary"
+                    ? "border-primary bg-primary/5 ring-2 ring-primary"
+                    : "hover:border-primary/50"
+                }`}
+                onClick={() => setConfig({ ...config, imageType: "secondary" })}
+              >
+                <div className="flex items-start gap-2">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}
+                  >
+                    {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">Photo d'ambiance lifestyle</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </Card>
 
-          {/* Sélection d'images de galerie */}
+          {/* Ressemblance */}
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="similarity" className="text-sm font-medium">
+                Ressemblance à l'original
+              </Label>
+              <Select value={config.similarity} onValueChange={(value) => setConfig({ ...config, similarity: value })}>
+                <SelectTrigger id="similarity" className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="very-close">🎯 Très proche (90%)</SelectItem>
+                  <SelectItem value="close">✓ Proche (70%)</SelectItem>
+                  <SelectItem value="medium">⚖️ Équilibré (50%)</SelectItem>
+                  <SelectItem value="creative">🎨 Créatif (30%)</SelectItem>
+                  <SelectItem value="very-creative">✨ Très créatif (10%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+
+          {/* Galerie */}
           {selectedProducts.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
               {selectedProducts.map((productId) => {
-                const product = products.find(p => p.id === productId);
+                const product = products.find((p) => p.id === productId);
                 const images = productImages.get(productId) || [];
-                
                 if (!product) return null;
-                
+
                 return (
                   <Card key={productId} className="p-3 sm:p-4">
                     <h4 className="font-semibold mb-3 text-xs sm:text-sm line-clamp-1">{product.title}</h4>
+
                     <div className="grid grid-cols-3 gap-2">
                       {/* Image principale */}
                       <div
                         className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                          (!config.selectedGalleryImages.get(productId) || config.selectedGalleryImages.get(productId) === product.image_url)
-                            ? 'border-primary ring-2 ring-primary'
-                            : 'border-muted hover:border-primary/50'
+                          !config.selectedGalleryImages.get(productId) ||
+                          config.selectedGalleryImages.get(productId) === product.image_url
+                            ? "border-primary ring-2 ring-primary"
+                            : "border-muted hover:border-primary/50"
                         }`}
                         onClick={() => {
                           const newMap = new Map(config.selectedGalleryImages);
@@ -208,7 +197,7 @@ export function AiBackgroundConfigDialog({
                       >
                         <div className="aspect-square bg-muted rounded overflow-hidden">
                           <img
-                            src={product.image_url || ''}
+                            src={product.image_url || ""}
                             alt="Image principale"
                             className="w-full h-full object-contain"
                           />
@@ -217,15 +206,15 @@ export function AiBackgroundConfigDialog({
                           Principal
                         </div>
                       </div>
-                      
-                      {/* Images de galerie */}
+
+                      {/* Images galerie */}
                       {images.slice(0, 2).map((img, idx) => (
                         <div
                           key={img.id}
                           className={`relative cursor-pointer rounded-lg border-2 transition-all ${
                             config.selectedGalleryImages.get(productId) === img.src
-                              ? 'border-primary ring-2 ring-primary'
-                              : 'border-muted hover:border-primary/50'
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-muted hover:border-primary/50"
                           }`}
                           onClick={() => {
                             const newMap = new Map(config.selectedGalleryImages);
@@ -252,7 +241,7 @@ export function AiBackgroundConfigDialog({
             </div>
           )}
 
-          {/* Style Selection */}
+          {/* Style prédéfini */}
           <div className="space-y-2">
             <Label htmlFor="preset-select">Style prédéfini</Label>
             <Select value={config.prompt} onValueChange={handlePresetSelect}>
@@ -282,20 +271,17 @@ export function AiBackgroundConfigDialog({
             </Select>
           </div>
 
-          {/* Custom Prompt */}
+          {/* Custom prompt */}
           <div className="space-y-2">
             <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
             <Textarea
               id="custom-prompt"
-              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting, elegant backdrop, and attractive staging that drives customer engagement and conversion. Create a visually appealing environment optimized for online sales and Google Shopping."
+              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting and elegant backdrop."
               value={config.prompt}
               onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
               rows={4}
               className="resize-none text-xs sm:text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              💡 Conseil : Décrivez un environnement premium qui valorise le produit et incite à l'achat
-            </p>
           </div>
         </div>
 
