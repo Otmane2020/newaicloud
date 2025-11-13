@@ -34,13 +34,25 @@ Deno.serve(async (req: Request) => {
 
     console.log(`👤 [IMPORT-PAGES] User: ${user.id}`);
 
+    // Parse request body for optional store_id
+    const { store_id } = await req.json().catch(() => ({}));
+    console.log(`🏪 [IMPORT-PAGES] Store ID from request: ${store_id || 'none (using first active)'}`);
+
     // Get user's Shopify connection
-    const { data: connection, error: connectionError } = await supabase
+    let connectionQuery = supabase
       .from("shopify_connections")
       .select("*")
       .eq("user_id", user.id)
-      .eq("is_active", true)
-      .maybeSingle();
+      .eq("is_active", true);
+    
+    // Filter by store_id if provided, otherwise get first active store
+    if (store_id) {
+      connectionQuery = connectionQuery.eq("id", store_id);
+    }
+    
+    const { data: connection, error: connectionError } = await connectionQuery
+      .limit(1)
+      .single();
 
     if (connectionError) {
       console.error(`❌ [IMPORT-PAGES] Connection error:`, connectionError);
