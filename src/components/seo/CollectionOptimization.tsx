@@ -129,43 +129,18 @@ export function CollectionOptimization() {
   const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
   const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [pendingOptimizationCollections, setPendingOptimizationCollections] = useState<Collection[]>([]);
-  const [storeDomain, setStoreDomain] = useState<string>('example.com');
   const [previewCollectionId, setPreviewCollectionId] = useState<string | null>(null);
+
+  // Get store domain with automatic fetching and caching
+  const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
+    ? selectedStore.public_domain
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
+    ? 'example.com'
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
     fetchCollections();
   }, []);
-
-  // Fetch store domain with fallback
-  useEffect(() => {
-    const fetchStoreDomain = async () => {
-      if (!selectedStore?.id) return;
-      
-      const { data, error } = await supabase
-        .from('shopify_connections')
-        .select('public_domain, store_url')
-        .eq('id', selectedStore.id)
-        .single();
-      
-      if (data && !error) {
-        // Prioritize public_domain, clean store_url as fallback
-        let domain = 'example.com';
-        if (data.public_domain && !data.public_domain.includes('.myshopify.com')) {
-          domain = data.public_domain;
-        } else if (data.store_url) {
-          const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-          // Only use store_url if it's NOT a myshopify.com domain
-          if (!cleanUrl.includes('.myshopify.com')) {
-            domain = cleanUrl;
-          }
-        }
-        console.log('Store domain fetched:', domain);
-        setStoreDomain(domain);
-      }
-    };
-    
-    fetchStoreDomain();
-  }, [selectedStore?.id]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {

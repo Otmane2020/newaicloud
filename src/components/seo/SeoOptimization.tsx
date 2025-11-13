@@ -90,32 +90,11 @@ type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 // Helper component for Google Search Preview in table
 function GoogleSearchPreviewCell({ product }: { product: Product }) {
   const { selectedStore } = useStore();
-  const [domain, setDomain] = useState<string>("example.com");
-
-  useEffect(() => {
-    const fetchDomain = async () => {
-      if (!selectedStore?.id) return;
-
-      const { data } = await supabase
-        .from("shopify_connections")
-        .select("public_domain, store_url")
-        .eq("id", selectedStore.id)
-        .single();
-
-      if (data?.public_domain && !data.public_domain.includes('.myshopify.com')) {
-        // Use public_domain if it exists and is not a myshopify domain
-        setDomain(data.public_domain);
-      } else if (data?.store_url && !data.store_url.includes('.myshopify.com')) {
-        // Fallback to store_url if it's not a myshopify domain
-        setDomain(data.store_url.replace(/^https?:\/\//, ''));
-      } else {
-        // If no valid domain found, use placeholder
-        setDomain("example.com");
-      }
-    };
-
-    fetchDomain();
-  }, [selectedStore?.id]);
+  const domain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
+    ? selectedStore.public_domain
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
+    ? 'example.com'
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   if (!product.seo_title || !product.seo_description) {
     return (

@@ -96,63 +96,16 @@ export function PageOptimization() {
   const [showOptimizeAllConfirmDialog, setShowOptimizeAllConfirmDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
-  const [storeDomain, setStoreDomain] = useState<string>('example.com');
   const [previewPageId, setPreviewPageId] = useState<string | null>(null);
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
-  // Fetch store domain
-  useEffect(() => {
-    const fetchStoreDomain = async () => {
-      if (!selectedStore?.id) return;
-      
-      const { data, error } = await supabase
-        .from('shopify_connections')
-        .select('public_domain, store_url, access_token')
-        .eq('id', selectedStore.id)
-        .single();
-      
-      if (data && !error) {
-        // If we have a public_domain, use it
-        if (data.public_domain) {
-          setStoreDomain(data.public_domain);
-        } else if (data.access_token && data.store_url) {
-          // Try to fetch the domain from Shopify API
-          try {
-            const response = await fetch(`https://${data.store_url}/admin/api/2025-10/shop.json`, {
-              headers: {
-                'X-Shopify-Access-Token': data.access_token,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (response.ok) {
-              const shopData = await response.json();
-              const shopifyDomain = shopData.shop?.domain || data.store_url.replace(/^https?:\/\//, '');
-              setStoreDomain(shopifyDomain);
-              
-              // Update the public_domain in the database for future use
-              if (shopData.shop?.domain) {
-                await supabase
-                  .from('shopify_connections')
-                  .update({ public_domain: shopData.shop.domain })
-                  .eq('id', selectedStore.id);
-              }
-            } else {
-              setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
-            }
-          } catch (err) {
-            console.error('Error fetching Shopify domain:', err);
-            setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
-          }
-        } else {
-          setStoreDomain(data.store_url.replace(/^https?:\/\//, ''));
-        }
-      }
-    };
-    
-    fetchStoreDomain();
-  }, [selectedStore?.id]);
+  // Get store domain with automatic fetching and caching
+  const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
+    ? selectedStore.public_domain
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
+    ? 'example.com'
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
     fetchPages();

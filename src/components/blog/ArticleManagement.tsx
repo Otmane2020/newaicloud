@@ -101,13 +101,18 @@ export function ArticleManagement() {
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedArticle, setOptimizedArticle] = useState<Article | null>(null);
-  const [storeDomain, setStoreDomain] = useState<string>('example.com');
+
+  // Get store domain with automatic fetching and caching
+  const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
+    ? selectedStore.public_domain
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
+    ? 'example.com'
+    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (selectedStore?.id) {
         fetchArticles();
-        fetchStoreDomain();
       } else {
         setArticles([]);
         setLoading(false);
@@ -116,30 +121,6 @@ export function ArticleManagement() {
 
     return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
-
-  // Fetch store domain
-  const fetchStoreDomain = async () => {
-    if (!selectedStore?.id) return;
-    
-    const { data, error } = await supabase
-      .from('shopify_connections')
-      .select('public_domain, store_url')
-      .eq('id', selectedStore.id)
-      .single();
-    
-    if (data && !error) {
-      let domain = 'example.com';
-      if (data.public_domain && !data.public_domain.includes('.myshopify.com')) {
-        domain = data.public_domain;
-      } else if (data.store_url) {
-        const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        if (!cleanUrl.includes('.myshopify.com')) {
-          domain = cleanUrl;
-        }
-      }
-      setStoreDomain(domain);
-    }
-  };
 
   // Auto-refresh toutes les 30 secondes UNIQUEMENT si store sélectionné
   useEffect(() => {
