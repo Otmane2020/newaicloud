@@ -2,25 +2,16 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNotifications } from './useNotifications';
-import { BrowserNotificationService } from '@/lib/notificationService';
-
-interface QuotaStatus {
-  type: string;
-  current: number;
-  limit: number;
-  percentage: number;
-}
 
 /**
- * Hook to monitor quota usage and send automatic notifications
- * - Checks quotas every 2 minutes
- * - Sends notifications at 90%, 95%, and 100% usage
- * - Handles browser notifications with permissions
+ * Hook to monitor business opportunities and send actionable notifications
+ * - Checks SEO opportunities every 5 minutes
+ * - Sends business-oriented notifications about optimization opportunities
+ * - Prevents duplicate notifications using database tracking
  */
 export function useQuotaMonitoring() {
   const { user } = useAuth();
-  const { sendQuotaWarning, sendQuotaExceeded } = useNotifications();
-  const notifiedQuotas = useRef<Set<string>>(new Set());
+  const { sendNotification } = useNotifications();
   const checkInterval = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -31,148 +22,132 @@ export function useQuotaMonitoring() {
       return;
     }
 
-    // Request browser notification permission on first load
-    if (BrowserNotificationService.isSupported() && BrowserNotificationService.getPermission() === 'default') {
-      BrowserNotificationService.requestPermission();
-    }
-
-    const checkQuotas = async () => {
+    const checkBusinessOpportunities = async () => {
       try {
-        // Get user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_status, current_plan_id')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile) return;
-
-        // Get subscription plan limits
-        const planId = profile.subscription_status === 'trialing' ? 'trial' : profile.current_plan_id;
-        const { data: plan } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('id', planId)
-          .single();
-
-        if (!plan) return;
-
-        // Get current usage
-        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
-        const { data: usage } = await supabase
-          .from('usage_tracking')
-          .select('*')
-          .eq('seller_id', user.id)
-          .eq('month', currentMonth)
-          .maybeSingle();
-
-        if (!usage) return;
-
-        // Detect language from browser or default to French
         const language = (navigator.language.startsWith('en') ? 'en' : 'fr') as 'fr' | 'en';
 
-        // Check all quotas
-        const quotas: QuotaStatus[] = [
-          {
-            type: 'optimizations',
-            current: usage.optimizations_count || 0,
-            limit: profile.subscription_status === 'trialing' 
-              ? (plan.trial_max_optimizations || plan.max_optimizations_monthly)
-              : plan.max_optimizations_monthly,
-            percentage: 0
-          },
-          {
-            type: 'articles',
-            current: usage.articles_count || 0,
-            limit: profile.subscription_status === 'trialing'
-              ? (plan.trial_max_articles || plan.max_articles_monthly)
-              : plan.max_articles_monthly,
-            percentage: 0
-          },
-          {
-            type: 'chat',
-            current: usage.chat_responses_count || 0,
-            limit: plan.max_chat_responses_monthly || 100,
-            percentage: 0
-          },
-          {
-            type: 'shopify_requests',
-            current: usage.shopify_requests_count || 0,
-            limit: plan.max_shopify_requests_monthly || 20,
-            percentage: 0
-          },
-          {
-            type: 'products',
-            current: usage.products_count || 0,
-            limit: profile.subscription_status === 'trialing'
-              ? (plan.trial_max_products || plan.max_products)
-              : plan.max_products,
-            percentage: 0
-          }
-        ];
+        // Check for products needing optimization
+        // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+        const { data: productsWithoutTitle } = await supabase
+          .from('shopify_products')
+          .select('id')
+          .eq('seller_id', user.id)
+          .is('seo_title', null)
+          .limit(50);
 
-        // Calculate percentages and send notifications
-        for (const quota of quotas) {
-          quota.percentage = (quota.current / quota.limit) * 100;
-          const notifKey = `${quota.type}_${Math.floor(quota.percentage / 5) * 5}`;
+        // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+        const { data: productsWithoutDesc } = await supabase
+          .from('shopify_products')
+          .select('id')
+          .eq('seller_id', user.id)
+          .is('seo_description', null)
+          .limit(50);
 
-          // Send notification at 90%, 95%, and 100%
-          if (quota.percentage >= 90 && !notifiedQuotas.current.has(notifKey)) {
-            notifiedQuotas.current.add(notifKey);
+        const unoptimizedProducts = Math.max(
+          productsWithoutTitle?.length || 0,
+          productsWithoutDesc?.length || 0
+        );
 
-            if (quota.percentage >= 100) {
-              // 100% - Quota exceeded
-              await sendQuotaExceeded(user.id, language as 'fr' | 'en');
-              
-              // Browser notification for critical alert
-              if (BrowserNotificationService.isEnabled()) {
-                BrowserNotificationService.showNotification(
-                  language === 'fr' ? '🚨 Quota dépassé!' : '🚨 Quota exceeded!',
-                  {
-                    body: language === 'fr' 
-                      ? `Votre quota de ${quota.type} est atteint. Passez à un plan supérieur.`
-                      : `Your ${quota.type} quota is reached. Upgrade to a higher plan.`,
-                    requireInteraction: true,
-                    tag: `quota-exceeded-${quota.type}`
-                  }
-                );
-              }
-            } else if (quota.percentage >= 95) {
-              // 95% - Critical warning
-              await sendQuotaWarning(user.id, quota.percentage, language as 'fr' | 'en');
-              
-              if (BrowserNotificationService.isEnabled()) {
-                BrowserNotificationService.showNotification(
-                  language === 'fr' ? '⚠️ Quota presque atteint' : '⚠️ Quota almost reached',
-                  {
-                    body: language === 'fr'
-                      ? `Vous avez utilisé ${Math.round(quota.percentage)}% de votre quota de ${quota.type}.`
-                      : `You have used ${Math.round(quota.percentage)}% of your ${quota.type} quota.`,
-                    tag: `quota-warning-${quota.type}`
-                  }
-                );
-              }
-            } else {
-              // 90% - Warning
-              await sendQuotaWarning(user.id, quota.percentage, language as 'fr' | 'en');
-            }
-          }
+        // Check for images needing alt text
+        // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+        const { data: imagesWithoutAltData } = await supabase
+          .from('product_images')
+          .select('id')
+          .eq('seller_id', user.id)
+          .is('alt_text', null)
+          .limit(100);
+
+        const imagesWithoutAlt = imagesWithoutAltData?.length || 0;
+
+        // Check for collections needing optimization
+        // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+        const { data: collectionsWithoutTitle } = await supabase
+          .from('shopify_collections')
+          .select('id')
+          .eq('seller_id', user.id)
+          .is('seo_title', null)
+          .limit(25);
+
+        // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+        const { data: collectionsWithoutDesc } = await supabase
+          .from('shopify_collections')
+          .select('id')
+          .eq('seller_id', user.id)
+          .is('seo_description', null)
+          .limit(25);
+
+        const unoptimizedCollections = Math.max(
+          collectionsWithoutTitle?.length || 0,
+          collectionsWithoutDesc?.length || 0
+        );
+
+        // Send business-oriented notifications only if significant opportunities exist
+        if (unoptimizedProducts >= 5) {
+          await sendNotification({
+            user_id: user.id,
+            title: language === 'fr' 
+              ? '🎯 Opportunités SEO détectées' 
+              : '🎯 SEO Opportunities Detected',
+            message: language === 'fr'
+              ? `${unoptimizedProducts}+ produits peuvent être optimisés pour améliorer votre visibilité Google.`
+              : `${unoptimizedProducts}+ products can be optimized to improve your Google visibility.`,
+            category: 'seo_task',
+            priority: 'medium',
+            action_url: '/seo',
+            action_label: language === 'fr' ? 'Optimiser maintenant' : 'Optimize now',
+            language,
+          });
+        }
+
+        if (imagesWithoutAlt >= 10) {
+          await sendNotification({
+            user_id: user.id,
+            title: language === 'fr' 
+              ? '📸 Images à optimiser' 
+              : '📸 Images to Optimize',
+            message: language === 'fr'
+              ? `${imagesWithoutAlt}+ images n'ont pas de texte alternatif. Améliorez votre référencement image.`
+              : `${imagesWithoutAlt}+ images are missing alt text. Improve your image SEO.`,
+            category: 'seo_task',
+            priority: 'low',
+            action_url: '/seo?tab=images',
+            action_label: language === 'fr' ? 'Voir les images' : 'View images',
+            language,
+          });
+        }
+
+        if (unoptimizedCollections >= 3) {
+          await sendNotification({
+            user_id: user.id,
+            title: language === 'fr' 
+              ? '📂 Collections à optimiser' 
+              : '📂 Collections to Optimize',
+            message: language === 'fr'
+              ? `${unoptimizedCollections}+ collections nécessitent une optimisation SEO.`
+              : `${unoptimizedCollections}+ collections need SEO optimization.`,
+            category: 'seo_task',
+            priority: 'medium',
+            action_url: '/collections',
+            action_label: language === 'fr' ? 'Optimiser' : 'Optimize',
+            language,
+          });
         }
       } catch (error) {
-        console.error('Error checking quotas:', error);
+        console.error('Error checking business opportunities:', error);
       }
     };
 
-    // Check immediately and then every 2 minutes
-    checkQuotas();
-    checkInterval.current = setInterval(checkQuotas, 2 * 60 * 1000);
+    // Check after 30 seconds then every 5 minutes
+    const initialTimer = setTimeout(checkBusinessOpportunities, 30000);
+    checkInterval.current = setInterval(checkBusinessOpportunities, 5 * 60 * 1000);
 
     return () => {
+      clearTimeout(initialTimer);
       if (checkInterval.current) {
         clearInterval(checkInterval.current);
       }
     };
-  }, [user, sendQuotaWarning, sendQuotaExceeded]);
+  }, [user, sendNotification]);
 
   return {
     // Hook runs automatically, no return needed
