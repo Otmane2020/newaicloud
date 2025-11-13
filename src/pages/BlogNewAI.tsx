@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/lib/language";
+import { DemoBookingDialog } from "@/components/DemoBookingDialog";
 
 interface BlogArticle {
   id: string;
@@ -34,6 +35,7 @@ const BlogNewAI = () => {
   const [selectedArticle, setSelectedArticle] = useState<BlogArticle | null>(null);
   const [blogArticles, setBlogArticles] = useState<BlogArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -207,6 +209,14 @@ const BlogNewAI = () => {
             <p className="text-xl text-muted-foreground mb-8">
               {t.blogPage.subtitle}
             </p>
+
+            <Button
+              onClick={() => setIsDemoDialogOpen(true)}
+              size="lg"
+              className="mb-8 bg-primary hover:bg-primary/90"
+            >
+              Book Demo
+            </Button>
             
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -333,6 +343,11 @@ const BlogNewAI = () => {
       </main>
 
       <Footer />
+
+      <DemoBookingDialog 
+        open={isDemoDialogOpen} 
+        onOpenChange={setIsDemoDialogOpen}
+      />
     </div>
   );
 };
