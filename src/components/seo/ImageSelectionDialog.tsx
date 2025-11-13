@@ -128,7 +128,7 @@ export function ImageSelectionDialog({
                     </Badge>
                   </button>
                 )}
-                {variantImages.map((img) => (
+                {variantImages.map((img, index) => (
                   <button
                     key={img.id}
                     onClick={() => setSelectedImageUrl(img.src)}
@@ -140,7 +140,7 @@ export function ImageSelectionDialog({
                   >
                     <img
                       src={img.src}
-                      alt={img.alt_text || `Variante ${img.position}`}
+                      alt={img.alt_text || `Image ${index + 2}`}
                       className="w-full h-full object-cover"
                     />
                     {selectedImageUrl === img.src && (
@@ -149,7 +149,7 @@ export function ImageSelectionDialog({
                       </div>
                     )}
                     <Badge className="absolute bottom-2 left-2 text-xs">
-                      Variante {img.position}
+                      Image {index + 2}
                     </Badge>
                   </button>
                 ))}

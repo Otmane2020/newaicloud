@@ -2117,10 +2117,17 @@ export default function ProductTitleDescription() {
       {/* Image Selection Dialog */}
       <ImageSelectionDialog
         open={showImageSelectionDialog}
-        onOpenChange={setShowImageSelectionDialog}
+        onOpenChange={(open) => {
+          setShowImageSelectionDialog(open);
+          if (!open) {
+            setPendingProduct(null);
+            setPendingProductImages([]);
+            setPendingProductVariants([]);
+          }
+        }}
         productTitle={pendingProduct?.title || ''}
         mainImageUrl={pendingProduct?.image_url || null}
-        variantImages={pendingProductImages}
+        variantImages={pendingProductVariants.length > 1 ? pendingProductImages.slice(1) : []}
         hasVariants={pendingProductVariants.length > 1}
         variants={pendingProductVariants}
         onConfirm={handleImageSelectionConfirm}
