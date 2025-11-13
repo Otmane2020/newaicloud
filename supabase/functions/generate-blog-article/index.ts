@@ -336,19 +336,21 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     console.log(`Génération article : ${articleTitle} pour user ${user_id}`);
 
-    // Récupération de l'URL du store pour les liens produits
+    // Récupération de l'URL du store et store_id pour les liens produits
     let storeUrl = "";
+    let store_id: string | null = null;
     try {
       const { data: storeData } = await supabaseClient
         .from("shopify_connections")
-        .select("store_url")
+        .select("store_url, id")
         .eq("user_id", user_id)
         .single();
       
       if (storeData?.store_url) {
         storeUrl = storeData.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
         storeUrl = `https://${storeUrl}`;
-        console.log(`✅ Store URL: ${storeUrl}`);
+        store_id = storeData.id;
+        console.log(`✅ Store URL: ${storeUrl}, Store ID: ${store_id}`);
       }
     } catch (err) {
       console.log("⚠️ Erreur récupération store URL:", err);
@@ -408,9 +410,6 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         products = data;
       }
     }
-
-    // Extract store_id from products
-    const store_id = products.length > 0 ? products[0].store_id : null;
 
     // Enrichir les produits avec les URLs complètes
     if (storeUrl && products.length > 0) {
