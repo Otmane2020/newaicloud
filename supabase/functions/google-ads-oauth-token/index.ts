@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[google-ads-oauth-token] Function invoked");
     const { code, redirectUri } = await req.json();
+    console.log("[google-ads-oauth-token] Received code and redirectUri");
 
     if (!code || !redirectUri) {
       throw new Error("Code and redirectUri are required");

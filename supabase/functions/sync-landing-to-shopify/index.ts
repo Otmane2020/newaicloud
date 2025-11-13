@@ -62,7 +62,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Trying to fetch connection by store_id:", product.store_id);
       const { data, error: connectionError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, access_token")
+        .select("id, store_url, encrypted_token, token_iv")
         .eq("id", product.store_id)
         .maybeSingle();
 
@@ -93,7 +93,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Fetching user's most recent Shopify connection");
       const { data, error: fallbackError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, access_token")
+        .select("id, store_url, encrypted_token, token_iv")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -113,13 +113,31 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Using most recent connection:", connection.id);
     }
 
-    // Use access_token directly (OAuth tokens are already in plain text)
-    if (!connection.access_token) {
-      console.error("[sync-landing-to-shopify] No access token found");
+    // Decrypt the token using encrypt-shopify-token function
+    if (!connection.encrypted_token || !connection.token_iv) {
+      console.error("[sync-landing-to-shopify] No encrypted token found");
       throw new Error("No Shopify access token found");
     }
 
-    const accessToken = connection.access_token;
+    console.log("[sync-landing-to-shopify] Decrypting token...");
+    const { data: decryptData, error: decryptError } = await supabase.functions.invoke(
+      'encrypt-shopify-token',
+      {
+        body: { 
+          action: 'decrypt',
+          encryptedToken: connection.encrypted_token,
+          iv: connection.token_iv
+        }
+      }
+    );
+
+    if (decryptError || !decryptData?.token) {
+      console.error("[sync-landing-to-shopify] Error decrypting token:", decryptError);
+      throw new Error("Failed to decrypt Shopify access token");
+    }
+
+    const accessToken = decryptData.token;
+    console.log("[sync-landing-to-shopify] Token decrypted successfully");
     const storeUrl = (connection.store_url || "").replace(/\/$/, "").replace(/^https?:\/\//, "");
     const fullStoreUrl = storeUrl.startsWith("http") ? storeUrl : `https://${storeUrl}`;
 

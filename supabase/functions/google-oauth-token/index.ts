@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[google-oauth-token] Function invoked");
     const { code, state } = await req.json();
+    console.log("[google-oauth-token] Received code and state");
 
     if (!code) {
       throw new Error("Authorization code is required");
