@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check } from 'lucide-react';
+import { Check, Sparkles, Eraser } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ProductImage {
   id: string;
@@ -27,6 +28,7 @@ interface ProductVariant {
   option1?: string;
   option2?: string;
   option3?: string;
+  image_url?: string;
 }
 
 interface ImageSelectionDialogProps {
@@ -38,9 +40,11 @@ interface ImageSelectionDialogProps {
   hasVariants?: boolean;
   variants?: ProductVariant[];
   onConfirm: (
+    format: 'white-background' | 'ai-background',
     selectedImageUrl: string, 
-    applyTo: 'main' | 'secondary' | 'variants',
-    selectedVariantIds?: string[]
+    applyTo: 'main' | 'secondary' | 'variant',
+    selectedVariantId?: string,
+    aiPrompt?: string
   ) => void;
 }
 
@@ -54,83 +58,116 @@ export function ImageSelectionDialog({
   variants = [],
   onConfirm,
 }: ImageSelectionDialogProps) {
+  const [format, setFormat] = useState<'white-background' | 'ai-background'>('white-background');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>(mainImageUrl || '');
-  const [applyTo, setApplyTo] = useState<'main' | 'secondary' | 'variants'>('main');
-  const [selectedVariants, setSelectedVariants] = useState<Set<string>>(new Set());
+  const [applyTo, setApplyTo] = useState<'main' | 'secondary' | 'variant'>('main');
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+
+  // Collecter toutes les images (principale + secondaires + variantes)
+  const allImages: Array<{ src: string; label: string; type: 'main' | 'secondary' | 'variant'; variantId?: string }> = [];
+  
+  if (mainImageUrl) {
+    allImages.push({ src: mainImageUrl, label: 'Photo principale', type: 'main' });
+  }
+  
+  variantImages.forEach((img, index) => {
+    allImages.push({ src: img.src, label: `Image ${index + 2}`, type: 'secondary' });
+  });
+  
+  if (hasVariants) {
+    variants.forEach((variant) => {
+      if (variant.image_url) {
+        const variantLabel = variant.option1 || variant.title;
+        allImages.push({ 
+          src: variant.image_url, 
+          label: `Variante: ${variantLabel}`, 
+          type: 'variant',
+          variantId: variant.id
+        });
+      }
+    });
+  }
 
   const handleConfirm = () => {
     if (!selectedImageUrl) return;
-    if (applyTo === 'variants' && selectedVariants.size === 0) return;
+    if (applyTo === 'variant' && !selectedVariantId) return;
+    if (format === 'ai-background' && !aiPrompt.trim()) return;
     
     onConfirm(
+      format,
       selectedImageUrl, 
       applyTo,
-      applyTo === 'variants' ? Array.from(selectedVariants) : undefined
+      selectedVariantId || undefined,
+      aiPrompt || undefined
     );
     onOpenChange(false);
   };
 
-  const toggleVariant = (variantId: string) => {
-    const newSelected = new Set(selectedVariants);
-    if (newSelected.has(variantId)) {
-      newSelected.delete(variantId);
-    } else {
-      newSelected.add(variantId);
-    }
-    setSelectedVariants(newSelected);
-  };
-
-  const toggleAllVariants = () => {
-    if (selectedVariants.size === variants.length) {
-      setSelectedVariants(new Set());
-    } else {
-      setSelectedVariants(new Set(variants.map(v => v.id)));
-    }
-  };
+  const isConfirmDisabled = 
+    !selectedImageUrl || 
+    (applyTo === 'variant' && !selectedVariantId) ||
+    (format === 'ai-background' && !aiPrompt.trim());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">Sélectionner l'image à traiter</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">Générer une image optimisée</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Choisissez l'image source et où appliquer le résultat pour "{productTitle}"
+            Configuration complète pour "{productTitle}"
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Source Image Selection */}
+          {/* Étape 1: Format */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Image source</Label>
+            <Label className="text-sm font-medium">1. Format de génération</Label>
+            <RadioGroup value={format} onValueChange={(v) => setFormat(v as 'white-background' | 'ai-background')}>
+              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="white-background" id="white-bg" />
+                <Label htmlFor="white-bg" className="flex-1 cursor-pointer text-sm flex items-center gap-2">
+                  <Eraser className="w-4 h-4" />
+                  <div>
+                    <div className="font-medium">Fond blanc</div>
+                    <div className="text-xs text-muted-foreground">Supprime l'arrière-plan et ajoute un fond blanc</div>
+                  </div>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="ai-background" id="ai-bg" />
+                <Label htmlFor="ai-bg" className="flex-1 cursor-pointer text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <div>
+                    <div className="font-medium">Fond IA personnalisé</div>
+                    <div className="text-xs text-muted-foreground">Génère un arrière-plan avec l'IA</div>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            {format === 'ai-background' && (
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="ai-prompt" className="text-sm">Description du fond souhaité</Label>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="Ex: fond de studio professionnel, ambiance minimaliste avec lumière naturelle..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Étape 2: Image source */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">2. Sélectionner l'image source</Label>
             <ScrollArea className="h-[300px] pr-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {mainImageUrl && (
+                {allImages.map((img, index) => (
                   <button
-                    onClick={() => setSelectedImageUrl(mainImageUrl)}
-                    className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                      selectedImageUrl === mainImageUrl
-                        ? 'border-primary ring-2 ring-primary ring-offset-2'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <img
-                      src={mainImageUrl}
-                      alt="Image principale"
-                      className="w-full h-full object-cover"
-                    />
-                    {selectedImageUrl === mainImageUrl && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                    <Badge className="absolute bottom-2 left-2 text-xs">
-                      Principale
-                    </Badge>
-                  </button>
-                )}
-                {variantImages.map((img, index) => (
-                  <button
-                    key={img.id}
+                    key={`${img.type}-${index}`}
                     onClick={() => setSelectedImageUrl(img.src)}
                     className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                       selectedImageUrl === img.src
@@ -140,7 +177,7 @@ export function ImageSelectionDialog({
                   >
                     <img
                       src={img.src}
-                      alt={img.alt_text || `Image ${index + 2}`}
+                      alt={img.label}
                       className="w-full h-full object-cover"
                     />
                     {selectedImageUrl === img.src && (
@@ -149,7 +186,7 @@ export function ImageSelectionDialog({
                       </div>
                     )}
                     <Badge className="absolute bottom-2 left-2 text-xs">
-                      Image {index + 2}
+                      {img.label}
                     </Badge>
                   </button>
                 ))}
@@ -157,81 +194,46 @@ export function ImageSelectionDialog({
             </ScrollArea>
           </div>
 
-          {/* Application Target */}
+          {/* Étape 3: Application */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Appliquer le résultat à</Label>
-            <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary' | 'variants')}>
-              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="main" id="main" />
-                <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
-                  <div className="font-medium">Photo principale</div>
-                  <div className="text-xs text-muted-foreground">
-                    Remplace l'image principale du produit
-                  </div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="secondary" id="secondary" />
-                <Label htmlFor="secondary" className="flex-1 cursor-pointer text-sm">
-                  <div className="font-medium">Photo secondaire</div>
-                  <div className="text-xs text-muted-foreground">
-                    Ajoute une nouvelle image secondaire
-                  </div>
-                </Label>
-              </div>
-              {hasVariants && variants.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                    <RadioGroupItem value="variants" id="variants" />
-                    <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
-                      <div className="font-medium">Photo de variations</div>
-                      <div className="text-xs text-muted-foreground">
-                        Applique aux variantes sélectionnées
-                      </div>
-                    </Label>
-                  </div>
-                  {applyTo === 'variants' && (
-                    <div className="ml-6 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-xs">
-                          {selectedVariants.size} / {variants.length} sélectionnée(s)
-                        </Badge>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={toggleAllVariants}
-                          className="text-xs h-7"
-                        >
-                          {selectedVariants.size === variants.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-[200px] border rounded-md p-3">
-                        <div className="space-y-2">
-                          {variants.map((variant) => (
-                            <div key={variant.id} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`variant-${variant.id}`}
-                                checked={selectedVariants.has(variant.id)}
-                                onChange={() => toggleVariant(variant.id)}
-                                className="rounded border-border"
-                              />
-                              <Label
-                                htmlFor={`variant-${variant.id}`}
-                                className="text-sm font-normal cursor-pointer flex-1"
-                              >
-                                {variant.title || [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' / ')}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  )}
+            <Label className="text-sm font-medium">3. Appliquer le résultat à</Label>
+            {!hasVariants ? (
+              <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary')}>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="main" id="main" />
+                  <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
+                    <div className="font-medium">Photo principale</div>
+                    <div className="text-xs text-muted-foreground">Remplace l'image principale du produit</div>
+                  </Label>
                 </div>
-              )}
-            </RadioGroup>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="secondary" id="secondary" />
+                  <Label htmlFor="secondary" className="flex-1 cursor-pointer text-sm">
+                    <div className="font-medium">Photo secondaire</div>
+                    <div className="text-xs text-muted-foreground">Ajoute comme nouvelle image secondaire</div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            ) : (
+              <RadioGroup value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                <ScrollArea className="h-[200px]">
+                  {variants.map((variant) => {
+                    const variantLabel = [variant.option1, variant.option2, variant.option3]
+                      .filter(Boolean)
+                      .join(' / ') || variant.title;
+                    
+                    return (
+                      <div key={variant.id} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors mb-2">
+                        <RadioGroupItem value={variant.id} id={`variant-${variant.id}`} />
+                        <Label htmlFor={`variant-${variant.id}`} className="flex-1 cursor-pointer text-sm">
+                          {variantLabel}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </ScrollArea>
+              </RadioGroup>
+            )}
           </div>
         </div>
 
@@ -245,7 +247,7 @@ export function ImageSelectionDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedImageUrl}
+            disabled={isConfirmDisabled}
             className="w-full sm:w-auto text-xs sm:text-sm"
           >
             Confirmer et générer
