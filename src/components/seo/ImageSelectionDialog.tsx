@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles, Eraser } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ProductImage {
@@ -39,8 +39,8 @@ interface ImageSelectionDialogProps {
   variantImages: ProductImage[];
   hasVariants?: boolean;
   variants?: ProductVariant[];
+  isAiBackground?: boolean;
   onConfirm: (
-    format: 'white-background' | 'ai-background',
     selectedImageUrl: string, 
     applyTo: 'main' | 'secondary' | 'variant',
     selectedVariantId?: string,
@@ -56,9 +56,9 @@ export function ImageSelectionDialog({
   variantImages,
   hasVariants = false,
   variants = [],
+  isAiBackground = false,
   onConfirm,
 }: ImageSelectionDialogProps) {
-  const [format, setFormat] = useState<'white-background' | 'ai-background'>('white-background');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>(mainImageUrl || '');
   const [applyTo, setApplyTo] = useState<'main' | 'secondary' | 'variant'>('main');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
@@ -92,10 +92,9 @@ export function ImageSelectionDialog({
   const handleConfirm = () => {
     if (!selectedImageUrl) return;
     if (applyTo === 'variant' && !selectedVariantId) return;
-    if (format === 'ai-background' && !aiPrompt.trim()) return;
+    if (isAiBackground && !aiPrompt.trim()) return;
     
     onConfirm(
-      format,
       selectedImageUrl, 
       applyTo,
       selectedVariantId || undefined,
@@ -107,62 +106,38 @@ export function ImageSelectionDialog({
   const isConfirmDisabled = 
     !selectedImageUrl || 
     (applyTo === 'variant' && !selectedVariantId) ||
-    (format === 'ai-background' && !aiPrompt.trim());
+    (isAiBackground && !aiPrompt.trim());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">Générer une image optimisée</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
+            {isAiBackground ? 'Générer un fond IA' : 'Générer un fond blanc'}
+          </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Configuration complète pour "{productTitle}"
+            Configuration pour "{productTitle}"
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Étape 1: Format */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">1. Format de génération</Label>
-            <RadioGroup value={format} onValueChange={(v) => setFormat(v as 'white-background' | 'ai-background')}>
-              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="white-background" id="white-bg" />
-                <Label htmlFor="white-bg" className="flex-1 cursor-pointer text-sm flex items-center gap-2">
-                  <Eraser className="w-4 h-4" />
-                  <div>
-                    <div className="font-medium">Fond blanc</div>
-                    <div className="text-xs text-muted-foreground">Supprime l'arrière-plan et ajoute un fond blanc</div>
-                  </div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="ai-background" id="ai-bg" />
-                <Label htmlFor="ai-bg" className="flex-1 cursor-pointer text-sm flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  <div>
-                    <div className="font-medium">Fond IA personnalisé</div>
-                    <div className="text-xs text-muted-foreground">Génère un arrière-plan avec l'IA</div>
-                  </div>
-                </Label>
-              </div>
-            </RadioGroup>
-            
-            {format === 'ai-background' && (
-              <div className="mt-3 space-y-2">
-                <Label htmlFor="ai-prompt" className="text-sm">Description du fond souhaité</Label>
-                <Textarea
-                  id="ai-prompt"
-                  placeholder="Ex: fond de studio professionnel, ambiance minimaliste avec lumière naturelle..."
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  className="min-h-[80px]"
-                />
-              </div>
-            )}
-          </div>
+          {/* Prompt IA si nécessaire */}
+          {isAiBackground && (
+            <div className="space-y-2">
+              <Label htmlFor="ai-prompt" className="text-sm font-medium">Description du fond souhaité</Label>
+              <Textarea
+                id="ai-prompt"
+                placeholder="Ex: fond de studio professionnel, ambiance minimaliste avec lumière naturelle..."
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+          )}
 
-          {/* Étape 2: Image source */}
+          {/* Étape 1: Image source */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">2. Sélectionner l'image source</Label>
+            <Label className="text-sm font-medium">1. Sélectionner l'image source</Label>
             <ScrollArea className="h-[300px] pr-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {allImages.map((img, index) => (
@@ -194,9 +169,9 @@ export function ImageSelectionDialog({
             </ScrollArea>
           </div>
 
-          {/* Étape 3: Application */}
+          {/* Étape 2: Application */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">3. Appliquer le résultat à</Label>
+            <Label className="text-sm font-medium">2. Appliquer le résultat à</Label>
             {!hasVariants ? (
               <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary')}>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
