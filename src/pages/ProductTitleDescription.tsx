@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   Trash2,
   Power,
   PowerOff,
+  BarChart3,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -125,6 +127,7 @@ interface PreviewImage {
 }
 
 export default function ProductTitleDescription() {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
@@ -1644,6 +1647,25 @@ export default function ProductTitleDescription() {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{t.contentOptimization.tooltips.generateLanding}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/product/${product.id}/seo-analysis`);
+                              }}
+                              className="hover:bg-blue-50 dark:hover:bg-blue-950"
+                            >
+                              <BarChart3 className="h-4 w-4 text-blue-600" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Voir l'analyse SERP</p>
                           </TooltipContent>
                         </Tooltip>
                         
