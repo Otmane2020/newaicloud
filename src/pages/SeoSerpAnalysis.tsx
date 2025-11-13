@@ -206,6 +206,8 @@ export default function SeoSerpAnalysis() {
       
       console.log('✅ SERP analysis response:', data);
       console.log('📊 Data structure:', data);
+      console.log('🏆 Competitors data:', data?.competitors);
+      console.log('🔢 Competitors length:', data?.competitors?.length);
       
       // Validate data structure
       if (!data?.insights) {
@@ -437,14 +439,14 @@ export default function SeoSerpAnalysis() {
                   )}
 
                   {/* Competitors Section */}
-                  {serpData.competitors && serpData.competitors.length > 0 && (
+                  {serpData.competitors && serpData.competitors.length > 0 ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <BarChart3 className="h-5 w-5 text-orange-500" />
-                        <h4 className="font-semibold text-lg">Concurrents analysés</h4>
+                        <h4 className="font-semibold text-lg">Concurrents analysés ({serpData.competitors.length})</h4>
                       </div>
                       <div className="space-y-3">
-                        {serpData.competitors.slice(0, 10).map((competitor) => (
+                        {serpData.competitors.map((competitor) => (
                           <div 
                             key={competitor.rank} 
                             className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
@@ -476,6 +478,25 @@ export default function SeoSerpAnalysis() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <BarChart3 className="h-5 w-5 text-muted-foreground" />
+                        <h4 className="font-semibold text-lg">Concurrents analysés</h4>
+                      </div>
+                      <div className="p-8 text-center border rounded-lg bg-muted/20">
+                        <p className="text-muted-foreground">
+                          Aucun concurrent trouvé dans les résultats SERP
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Debug: {JSON.stringify({ 
+                            hasCompetitors: !!serpData.competitors, 
+                            length: serpData.competitors?.length || 0,
+                            itemsAnalyzed: serpData.itemsAnalyzed 
+                          })}
+                        </p>
                       </div>
                     </div>
                   )}
