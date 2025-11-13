@@ -571,28 +571,7 @@ export default function ProductTitleDescription() {
       const productId = Array.from(selectedProducts)[0];
       const product = products.find(p => p.id === productId);
       if (product) {
-        setPendingProduct(product);
-        setImageSelectionMode('whitebg');
-        
-        // Charger les images des variantes
-        const { data: images } = await supabase
-          .from('product_images')
-          .select('id, src, alt_text, position')
-          .eq('product_id', productId)
-          .order('position', { ascending: true });
-        
-        setPendingProductImages(images || []);
-        
-        // Charger les variantes du produit
-        const { data: variants } = await supabase
-          .from('product_variants')
-          .select('id, title, option1, option2, option3')
-          .eq('product_id', productId)
-          .order('position', { ascending: true });
-        
-        setPendingProductVariants(variants || []);
-        setShowImageSelectionDialog(true);
-        setShowWhiteBgConfigDialog(false);
+        handleGenerateWhiteBackground(product);
         return;
       }
     }
@@ -606,7 +585,6 @@ export default function ProductTitleDescription() {
       return;
     }
 
-    // Close config dialog and start generation
     setShowWhiteBgConfigDialog(false);
     setGeneratingWhiteBg(true);
     
@@ -670,6 +648,42 @@ export default function ProductTitleDescription() {
 
     setGeneratingWhiteBg(false);
     await refreshLimits();
+  };
+
+  const handleGenerateWhiteBackground = async (product: any) => {
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('position');
+
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id, title, option1, option2, option3, image_url')
+      .eq('product_id', product.id);
+
+    setPendingProduct(product);
+    setPendingProductImages(images || []);
+    setPendingProductVariants(variants || []);
+    setShowImageSelectionDialog(true);
+  };
+
+  const handleGenerateAiBackground = async (product: any) => {
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('position');
+
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id, title, option1, option2, option3, image_url')
+      .eq('product_id', product.id);
+
+    setPendingProduct(product);
+    setPendingProductImages(images || []);
+    setPendingProductVariants(variants || []);
+    setShowImageSelectionDialog(true);
   };
 
   const handleImageSelectionConfirm = async (
@@ -2114,7 +2128,7 @@ export default function ProductTitleDescription() {
         }}
       />
 
-      {/* Image Selection Dialog */}
+      {/* Image Selection Dialog unifié */}
       <ImageSelectionDialog
         open={showImageSelectionDialog}
         onOpenChange={(open) => {
@@ -2127,7 +2141,7 @@ export default function ProductTitleDescription() {
         }}
         productTitle={pendingProduct?.title || ''}
         mainImageUrl={pendingProduct?.image_url || null}
-        variantImages={pendingProductVariants.length > 1 ? pendingProductImages.slice(1) : []}
+        variantImages={pendingProductImages.slice(1) || []}
         hasVariants={pendingProductVariants.length > 1}
         variants={pendingProductVariants}
         onConfirm={handleImageSelectionConfirm}
