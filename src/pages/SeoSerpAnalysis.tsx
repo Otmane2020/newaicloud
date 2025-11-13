@@ -50,6 +50,13 @@ export default function SeoSerpAnalysis() {
     }
   }, [productId]);
 
+  // Auto-analyze SERP when product is loaded
+  useEffect(() => {
+    if (product && !serpInsights && !analyzing) {
+      analyzeSerpCompetitors();
+    }
+  }, [product]);
+
   // Fetch store domain
   useEffect(() => {
     const fetchStoreDomain = async () => {

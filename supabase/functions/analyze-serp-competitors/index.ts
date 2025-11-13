@@ -295,10 +295,14 @@ serve(async (req) => {
     let fallbackInsights: any;
     switch (analysisType) {
       case 'product':
+        const keywords = extractKeywords(keyword);
         fallbackInsights = {
+          commonKeywords: keywords,
+          topFeatures: keywords.map(k => `${k} de qualité`),
+          avgTitleLength: 60,
+          avgDescriptionLength: 155,
           priceRange: { min: 0, max: 0, avg: 0 },
-          commonFeatures: extractKeywords(keyword),
-          titleStructure: ['Produit', 'Caractéristique principale', 'Bénéfice'],
+          titleStructure: ['Produit', 'Caractéristique', 'Bénéfice'],
           descriptionLength: { min: 150, max: 300, avg: 200 },
         };
         break;
