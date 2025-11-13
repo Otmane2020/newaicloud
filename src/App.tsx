@@ -28,6 +28,7 @@ import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
 import MediaHistory from "./pages/MediaHistory";
 import Collections from "./pages/Collections";
+import TestGlobale from "./pages/TestGlobale";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
@@ -140,6 +141,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <MediaHistory />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/testglobale"
+              element={
+                <ProtectedLayout>
+                  <TestGlobale />
                 </ProtectedLayout>
               }
             />
