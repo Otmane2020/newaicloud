@@ -1236,24 +1236,8 @@ UTILISATION DES ICÔNES :
 
     console.log("✅ HTML generated and sanitized successfully");
 
-    // 🔗 Add SERP Analysis button before closing body tag
-    let finalHtml = html;
-    if (product_id) {
-      const serpButton = `
-    <!-- SERP Analysis Button -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-0 py-12">
-      <div class="text-center">
-        <a href="/seo-serp-analysis/${product_id}" class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent}))">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-          ${detectedLanguage === "en" ? "View SERP Analysis" : "Voir l'Analyse SERP"}
-        </a>
-      </div>
-    </div>
-  </body>`;
-      finalHtml = finalHtml.replace("</body>", serpButton);
-    }
+    // Simple assign HTML without SERP button
+    const finalHtml = html;
 
     // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
