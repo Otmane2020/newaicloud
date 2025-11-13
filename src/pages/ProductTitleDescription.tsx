@@ -52,6 +52,7 @@ import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/O
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundConfigDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundConfigDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
+import { ImageSelectionDialog } from "@/components/seo/ImageSelectionDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -182,7 +183,6 @@ export default function ProductTitleDescription() {
     option1?: string;
     option2?: string;
     option3?: string;
-    image_url?: string;
   }>>([]);
 
   useEffect(() => {
@@ -2009,37 +2009,15 @@ export default function ProductTitleDescription() {
         open={showAiConfigDialog}
         onOpenChange={setShowAiConfigDialog}
         onConfirm={(config: AiBackgroundConfig) => {
+          setSelectedImageType(config.imageType);
+          setSelectedImageFormat(config.format);
           setSelectedSimilarity(config.similarity);
-          setCustomPrompt(config.prompt);
-          handleStartAiBackground(config.prompt, 'webp', config.similarity);
+          setSelectedGalleryImages(config.selectedGalleryImages);
+          handleStartAiBackground(config.prompt, config.format, config.similarity);
         }}
-        productData={pendingProduct ? {
-          id: pendingProduct.id,
-          title: pendingProduct.title,
-          image_url: pendingProduct.image_url,
-          productType: pendingProductVariants.length > 1 ? 'variable' : 'simple',
-          sourceImages: [
-            ...(pendingProduct.image_url ? [{
-              id: 'main',
-              url: pendingProduct.image_url,
-              variant_id: null,
-              label: 'Principal'
-            }] : []),
-            ...pendingProductImages.map((img, idx) => ({
-              id: img.id,
-              url: img.src,
-              variant_id: null,
-              label: `#${idx + 1}`
-            })),
-            ...pendingProductVariants.filter(v => v.image_url).map((v, idx) => ({
-              id: v.id,
-              url: v.image_url!,
-              variant_id: v.id,
-              label: v.option1 || v.title
-            }))
-          ],
-          variants: pendingProductVariants
-        } : undefined}
+        productImages={galleryImages}
+        selectedProducts={Array.from(selectedProducts)}
+        products={products}
       />
 
       <BackgroundDialog
@@ -2150,6 +2128,24 @@ export default function ProductTitleDescription() {
         }}
       />
 
+      {/* Image Selection Dialog unifié */}
+      <ImageSelectionDialog
+        open={showImageSelectionDialog}
+        onOpenChange={(open) => {
+          setShowImageSelectionDialog(open);
+          if (!open) {
+            setPendingProduct(null);
+            setPendingProductImages([]);
+            setPendingProductVariants([]);
+          }
+        }}
+        productTitle={pendingProduct?.title || ''}
+        mainImageUrl={pendingProduct?.image_url || null}
+        variantImages={pendingProductImages.slice(1) || []}
+        hasVariants={pendingProductVariants.length > 1}
+        variants={pendingProductVariants}
+        onConfirm={handleImageSelectionConfirm}
+      />
 
       <LandingPagePreviewDialog
         open={showPreviewDialog}
