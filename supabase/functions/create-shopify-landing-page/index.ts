@@ -61,22 +61,7 @@ serve(async (req) => {
     
     if (connectionError) throw new Error("No active Shopify connection found");
 
-    // Decrypt API token
-    const { data: decryptData, error: decryptError } = await supabase.functions.invoke(
-      "encrypt-shopify-token",
-      {
-        body: { 
-          encryptedToken: connection.encrypted_api_token,
-          action: "decrypt"
-        }
-      }
-    );
-
-    if (decryptError || !decryptData?.token) {
-      throw new Error("Failed to decrypt Shopify token");
-    }
-
-    const accessToken = decryptData.token;
+    console.log('Using direct access token, length:', connection.access_token?.length);
     const shopDomain = connection.shop_domain;
 
     // Create page in Shopify
@@ -119,7 +104,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Shopify-Access-Token": accessToken,
+          "X-Shopify-Access-Token": connection.access_token,
         },
         body: JSON.stringify(shopifyPageData),
       }
