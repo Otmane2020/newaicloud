@@ -65,6 +65,24 @@ Deno.serve(async (req) => {
 
     console.log('Store connection found:', connection.store_url);
 
+    // Decrypt the access token
+    const { data: decryptData, error: decryptError } = await supabaseAdmin.functions.invoke(
+      'encrypt-shopify-token',
+      {
+        body: { 
+          token: connection.access_token,
+          action: 'decrypt'
+        }
+      }
+    );
+
+    if (decryptError || !decryptData?.token) {
+      console.error('Token decryption error:', decryptError);
+      throw new Error('Failed to decrypt access token');
+    }
+
+    const decryptedToken = decryptData.token;
+
     // Update product status in Shopify
     const shopifyResponse = await fetch(
       `https://${connection.store_url}/admin/api/2024-01/products/${shopifyId}.json`,
@@ -72,7 +90,7 @@ Deno.serve(async (req) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': connection.access_token,
+          'X-Shopify-Access-Token': decryptedToken,
         },
         body: JSON.stringify({
           product: { status: newStatus },
