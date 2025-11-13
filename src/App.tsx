@@ -71,6 +71,7 @@ import SetupPlans from "./pages/SetupPlans";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import TestLandingGeneration from "./pages/TestLandingGeneration";
+import TestRedirection from "./pages/TestRedirection";
 
 const queryClient = new QueryClient();
 
@@ -152,6 +153,7 @@ const App = () => (
                 </ProtectedLayout>
               }
             />
+            <Route path="/testredirection" element={<TestRedirection />} />
             <Route
               path="/collections"
               element={

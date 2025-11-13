@@ -204,8 +204,12 @@ PAGE STRUCTURE REQUIREMENTS (NO BUTTONS)
 MANDATORY SECTIONS:
   • HERO SECTION:
     - Full-width hero image (first image)
-    - Bold headline (H1) with text-gray-900 (NEVER text-white on light bg)
-    - 1–2 sentence benefit statement
+    - Bold headline (H1): 
+      * Use text-gray-900 ONLY on light backgrounds (bg-white, bg-gray-50, bg-gray-100)
+      * Use text-white ONLY on dark backgrounds (bg-gray-900, bg-slate-900, bg-gray-800)
+      * NEVER mix dark text (text-gray-900, text-black) on dark bg (bg-gray-800/900)
+      * NEVER mix light text (text-white, text-gray-100) on light bg (bg-white, bg-gray-50/100)
+    - 1–2 sentence benefit statement with proper contrast
   
   • FEATURE SECTIONS:
     - 4–6 cards with icons/images
@@ -318,11 +322,22 @@ Do NOT wrap output in code blocks or markdown.
     console.log("[VALIDATION] Checking color accessibility...");
     const colorValidation = {
       forbiddenCombos: [
+        // Light text on light background (existing checks)
         { pattern: /text-white[^"]*bg-white|bg-white[^"]*text-white/g, issue: "text-white on bg-white" },
         { pattern: /text-white[^"]*bg-gray-50|bg-gray-50[^"]*text-white/g, issue: "text-white on bg-gray-50" },
         { pattern: /text-white[^"]*bg-gray-100|bg-gray-100[^"]*text-white/g, issue: "text-white on bg-gray-100" },
         { pattern: /text-gray-300[^"]*bg-white|bg-white[^"]*text-gray-300/g, issue: "text-gray-300 on bg-white (low contrast)" },
         { pattern: /text-gray-400[^"]*bg-gray-100|bg-gray-100[^"]*text-gray-400/g, issue: "text-gray-400 on bg-gray-100 (low contrast)" },
+        
+        // NEW: Dark text on dark background checks
+        { pattern: /text-gray-900[^"]*bg-gray-900|bg-gray-900[^"]*text-gray-900/g, issue: "text-gray-900 on bg-gray-900" },
+        { pattern: /text-gray-900[^"]*bg-gray-800|bg-gray-800[^"]*text-gray-900/g, issue: "text-gray-900 on bg-gray-800" },
+        { pattern: /text-gray-900[^"]*bg-slate-900|bg-slate-900[^"]*text-gray-900/g, issue: "text-gray-900 on bg-slate-900" },
+        { pattern: /text-gray-800[^"]*bg-gray-900|bg-gray-900[^"]*text-gray-800/g, issue: "text-gray-800 on bg-gray-900" },
+        { pattern: /text-gray-800[^"]*bg-slate-900|bg-slate-900[^"]*text-gray-800/g, issue: "text-gray-800 on bg-slate-900" },
+        { pattern: /text-black[^"]*bg-gray-900|bg-gray-900[^"]*text-black/g, issue: "text-black on bg-gray-900" },
+        { pattern: /text-black[^"]*bg-slate-900|bg-slate-900[^"]*text-black/g, issue: "text-black on bg-slate-900" },
+        { pattern: /text-black[^"]*bg-gray-800|bg-gray-800[^"]*text-black/g, issue: "text-black on bg-gray-800" },
       ],
       violations: [] as string[],
     };
