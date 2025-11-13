@@ -279,9 +279,29 @@ serve(async (req) => {
         insights = analyzeTitleMeta(items);
     }
 
-    // Extract competitor URLs and data
+    // Extract and filter competitor URLs and data
     console.log(`🔍 Processing ${items.length} items for competitors`);
-    const competitors = items.slice(0, 10).map((item, index) => {
+    
+    // Filter out non-relevant results
+    const filteredItems = items.filter(item => {
+      // Must have a URL
+      if (!item.url) return false;
+      
+      // Must have both title and description
+      if (!item.title || !item.description) return false;
+      
+      // Exclude image search results
+      if (item.url.includes('google.com') || item.url.includes('google.fr')) return false;
+      
+      // Exclude non-product results (PAA, carousels, etc.)
+      if (item.type && !['organic', 'shopping'].includes(item.type)) return false;
+      
+      return true;
+    });
+    
+    console.log(`✅ Filtered to ${filteredItems.length} relevant competitors from ${items.length} total items`);
+    
+    const competitors = filteredItems.slice(0, 10).map((item, index) => {
       const competitor = {
         rank: index + 1,
         url: item.url || '',
@@ -296,7 +316,7 @@ serve(async (req) => {
       }
       return competitor;
     });
-    console.log(`✅ Created ${competitors.length} competitor entries`);
+    console.log(`📊 Created ${competitors.length} competitor entries`);
 
     // CRITICAL: Build final response with explicit competitors array
     const finalResponse = {
