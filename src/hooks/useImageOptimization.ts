@@ -170,44 +170,123 @@ export const useImageOptimization = () => {
 
   const applyOptimizedImage = useMutation({
     mutationFn: async ({
-      imageId,
       productId,
       optimizedUrl,
       originalUrl,
+      applyTo,
+      variantIds,
       optimizationType,
       aiModel,
       aiPrompt,
       resolution,
       qualityScore
-    }: SaveHistoryParams & { imageId: string }) => {
-      // Update product image
-      const { error: updateError } = await supabase
-        .from('product_images')
-        .update({ 
-          src: optimizedUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', imageId);
+    }: {
+      productId: string;
+      optimizedUrl: string;
+      originalUrl: string;
+      applyTo: 'main' | 'secondary' | 'variants';
+      variantIds?: string[];
+      optimizationType: 'white_background' | 'ai_background' | 'title_description';
+      aiModel?: string;
+      aiPrompt?: string;
+      resolution?: string;
+      qualityScore?: number;
+    }) => {
+      if (applyTo === 'main') {
+        // REPLACE main image (position 1)
+        const { data: mainImage } = await supabase
+          .from('product_images')
+          .select('id')
+          .eq('product_id', productId)
+          .order('position', { ascending: true })
+          .limit(1)
+          .single();
 
-      if (updateError) throw updateError;
+        if (mainImage) {
+          const { error: updateError } = await supabase
+            .from('product_images')
+            .update({ 
+              src: optimizedUrl,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', mainImage.id);
 
-      // Save to history
-      await saveToHistory({
-        productId,
-        imageId,
-        optimizationType,
-        originalUrl,
-        optimizedUrl,
-        aiModel,
-        aiPrompt,
-        resolution,
-        qualityScore
-      });
+          if (updateError) throw updateError;
+
+          await saveToHistory({
+            productId,
+            imageId: mainImage.id,
+            optimizationType,
+            originalUrl,
+            optimizedUrl,
+            aiModel,
+            aiPrompt,
+            resolution,
+            qualityScore
+          });
+        }
+      } else if (applyTo === 'secondary') {
+        // ADD as new secondary image
+        const { data: maxPosition } = await supabase
+          .from('product_images')
+          .select('position')
+          .eq('product_id', productId)
+          .order('position', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const newPosition = (maxPosition?.position || 0) + 1;
+
+        const { data: newImage, error: insertError } = await supabase
+          .from('product_images')
+          .insert({
+            product_id: productId,
+            src: optimizedUrl,
+            position: newPosition,
+            alt_text: `Image secondaire ${newPosition}`
+          })
+          .select('id')
+          .single();
+
+        if (insertError) throw insertError;
+
+        if (newImage) {
+          await saveToHistory({
+            productId,
+            imageId: newImage.id,
+            optimizationType,
+            originalUrl,
+            optimizedUrl,
+            aiModel,
+            aiPrompt,
+            resolution,
+            qualityScore
+          });
+        }
+      } else if (applyTo === 'variants' && variantIds && variantIds.length > 0) {
+        // APPLY to selected variants
+        const { error: updateError } = await supabase
+          .from('product_variants')
+          .update({ 
+            image_url: optimizedUrl,
+            updated_at: new Date().toISOString()
+          })
+          .in('id', variantIds);
+
+        if (updateError) throw updateError;
+      }
     },
-    onSuccess: () => {
-      toast.success('Image appliquée avec succès');
+    onSuccess: (_, variables) => {
+      if (variables.applyTo === 'main') {
+        toast.success('Photo principale remplacée avec succès');
+      } else if (variables.applyTo === 'secondary') {
+        toast.success('Photo secondaire ajoutée avec succès');
+      } else if (variables.applyTo === 'variants') {
+        toast.success(`Image appliquée à ${variables.variantIds?.length || 0} variante(s)`);
+      }
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
       queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+      queryClient.invalidateQueries({ queryKey: ['product-variants'] });
       queryClient.invalidateQueries({ queryKey: ['image-history'] });
     },
     onError: (error) => {

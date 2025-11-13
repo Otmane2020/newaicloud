@@ -21,13 +21,27 @@ interface ProductImage {
   position: number;
 }
 
+interface ProductVariant {
+  id: string;
+  title: string;
+  option1?: string;
+  option2?: string;
+  option3?: string;
+}
+
 interface ImageSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   productTitle: string;
   mainImageUrl: string | null;
   variantImages: ProductImage[];
-  onConfirm: (selectedImageUrl: string, applyTo: 'main' | 'all') => void;
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
+  onConfirm: (
+    selectedImageUrl: string, 
+    applyTo: 'main' | 'secondary' | 'variants',
+    selectedVariantIds?: string[]
+  ) => void;
 }
 
 export function ImageSelectionDialog({
@@ -36,15 +50,42 @@ export function ImageSelectionDialog({
   productTitle,
   mainImageUrl,
   variantImages,
+  hasVariants = false,
+  variants = [],
   onConfirm,
 }: ImageSelectionDialogProps) {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>(mainImageUrl || '');
-  const [applyTo, setApplyTo] = useState<'main' | 'all'>('main');
+  const [applyTo, setApplyTo] = useState<'main' | 'secondary' | 'variants'>('main');
+  const [selectedVariants, setSelectedVariants] = useState<Set<string>>(new Set());
 
   const handleConfirm = () => {
     if (!selectedImageUrl) return;
-    onConfirm(selectedImageUrl, applyTo);
+    if (applyTo === 'variants' && selectedVariants.size === 0) return;
+    
+    onConfirm(
+      selectedImageUrl, 
+      applyTo,
+      applyTo === 'variants' ? Array.from(selectedVariants) : undefined
+    );
     onOpenChange(false);
+  };
+
+  const toggleVariant = (variantId: string) => {
+    const newSelected = new Set(selectedVariants);
+    if (newSelected.has(variantId)) {
+      newSelected.delete(variantId);
+    } else {
+      newSelected.add(variantId);
+    }
+    setSelectedVariants(newSelected);
+  };
+
+  const toggleAllVariants = () => {
+    if (selectedVariants.size === variants.length) {
+      setSelectedVariants(new Set());
+    } else {
+      setSelectedVariants(new Set(variants.map(v => v.id)));
+    }
   };
 
   return (
@@ -119,25 +160,77 @@ export function ImageSelectionDialog({
           {/* Application Target */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Appliquer le résultat à</Label>
-            <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'all')}>
+            <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary' | 'variants')}>
               <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="main" id="main" />
                 <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
-                  Image principale uniquement
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Remplace uniquement l'image principale du produit
-                  </p>
+                  <div className="font-medium">Photo principale</div>
+                  <div className="text-xs text-muted-foreground">
+                    Remplace l'image principale du produit
+                  </div>
                 </Label>
               </div>
               <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="all" id="all" />
-                <Label htmlFor="all" className="flex-1 cursor-pointer text-sm">
-                  Toutes les images
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Remplace l'image principale et toutes les variantes
-                  </p>
+                <RadioGroupItem value="secondary" id="secondary" />
+                <Label htmlFor="secondary" className="flex-1 cursor-pointer text-sm">
+                  <div className="font-medium">Photo secondaire</div>
+                  <div className="text-xs text-muted-foreground">
+                    Ajoute une nouvelle image secondaire
+                  </div>
                 </Label>
               </div>
+              {hasVariants && variants.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="variants" id="variants" />
+                    <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
+                      <div className="font-medium">Photo de variations</div>
+                      <div className="text-xs text-muted-foreground">
+                        Applique aux variantes sélectionnées
+                      </div>
+                    </Label>
+                  </div>
+                  {applyTo === 'variants' && (
+                    <div className="ml-6 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedVariants.size} / {variants.length} sélectionnée(s)
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleAllVariants}
+                          className="text-xs h-7"
+                        >
+                          {selectedVariants.size === variants.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-[200px] border rounded-md p-3">
+                        <div className="space-y-2">
+                          {variants.map((variant) => (
+                            <div key={variant.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`variant-${variant.id}`}
+                                checked={selectedVariants.has(variant.id)}
+                                onChange={() => toggleVariant(variant.id)}
+                                className="rounded border-border"
+                              />
+                              <Label
+                                htmlFor={`variant-${variant.id}`}
+                                className="text-sm font-normal cursor-pointer flex-1"
+                              >
+                                {variant.title || [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' / ')}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+                </div>
+              )}
             </RadioGroup>
           </div>
         </div>
