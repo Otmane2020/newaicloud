@@ -377,6 +377,7 @@ Deno.serve(async (req: Request) => {
     let productContext = "";
     let userId = image.user_id;
     let productTitle = "";
+    let product: any = null; // Declare product outside conditional blocks
     
     if (imageType === 'content') {
       // Get content context
@@ -425,13 +426,13 @@ Deno.serve(async (req: Request) => {
       }
     } else {
       // Get product info (including title for keyword mixing and store_id for localization)
-      const { data: product, error: productError } = await supabaseClient
+      const { data: productData, error: productError } = await supabaseClient
         .from("shopify_products")
         .select("title, description, category, ai_color, ai_material, seller_id, store_id")
         .eq("id", image.product_id)
         .maybeSingle();
 
-      if (productError || !product) {
+      if (productError || !productData) {
         console.error('Product not found for image:', imageId, 'product_id:', image.product_id, 'error:', productError);
         return new Response(
           JSON.stringify({ 
@@ -446,6 +447,7 @@ Deno.serve(async (req: Request) => {
         );
       }
       
+      product = productData; // Assign to outer scope variable
       userId = product.seller_id;
       productTitle = product.title;
 
