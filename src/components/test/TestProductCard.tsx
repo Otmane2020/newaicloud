@@ -17,7 +17,11 @@ export function TestProductCard({ product }: TestProductCardProps) {
     setLoading('seo');
     try {
       const { error } = await supabase.functions.invoke('generate-title-description', {
-        body: { productId: product.id }
+        body: { 
+          currentTitle: product.title || 'Produit sans titre',
+          imageUrl: product.image_url || product.images?.[0]?.src,
+          vendor: product.vendor
+        }
       });
       if (error) throw error;
       toast.success('SEO généré avec succès');
@@ -33,7 +37,12 @@ export function TestProductCard({ product }: TestProductCardProps) {
     setLoading('tags');
     try {
       const { error } = await supabase.functions.invoke('generate-tags', {
-        body: { productIds: [product.id] }
+        body: { 
+          title: product.title,
+          description: product.description,
+          productType: product.product_type,
+          vendor: product.vendor
+        }
       });
       if (error) throw error;
       toast.success('Tags générés avec succès');
@@ -49,7 +58,11 @@ export function TestProductCard({ product }: TestProductCardProps) {
     setLoading('landing');
     try {
       const { error } = await supabase.functions.invoke('generate-landing-ai', {
-        body: { productId: product.id }
+        body: { 
+          productId: product.id,
+          title: product.title,
+          images: product.images || []
+        }
       });
       if (error) throw error;
       toast.success('Landing page générée avec succès');
@@ -65,7 +78,11 @@ export function TestProductCard({ product }: TestProductCardProps) {
     setLoading('alt');
     try {
       const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
-        body: { productId: product.id }
+        body: { 
+          productId: product.id,
+          images: product.images || [],
+          title: product.title
+        }
       });
       if (error) throw error;
       toast.success('Alt texts générés avec succès');
