@@ -1,15 +1,8 @@
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   LineChart,
   Line,
@@ -21,16 +14,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+} from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   TrendingUp,
   TrendingDown,
@@ -41,11 +28,11 @@ import {
   Calendar,
   AlertCircle,
   Settings,
-} from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { useState, useEffect } from 'react';
-import { GSCArticleOpportunities } from './GSCArticleOpportunities';
-import { useTranslation } from '@/lib/language';
+} from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useState, useEffect } from "react";
+import { GSCArticleOpportunities } from "./GSCArticleOpportunities";
+import { useTranslation } from "@/lib/language";
 
 interface SearchConsoleData {
   date: string;
@@ -76,19 +63,19 @@ interface MetricCardProps {
   value: string | number;
   change: number;
   icon: React.ReactNode;
-  trend?: 'up' | 'down' | 'neutral';
+  trend?: "up" | "down" | "neutral";
 }
 
-const MetricCard = ({ title, value, change, icon, trend = 'neutral' }: MetricCardProps) => {
+const MetricCard = ({ title, value, change, icon, trend = "neutral" }: MetricCardProps) => {
   const getTrendColor = () => {
-    if (trend === 'up') return 'text-green-600';
-    if (trend === 'down') return 'text-red-600';
-    return 'text-muted-foreground';
+    if (trend === "up") return "text-green-600";
+    if (trend === "down") return "text-red-600";
+    return "text-muted-foreground";
   };
 
   const getTrendIcon = () => {
-    if (trend === 'up') return <TrendingUp className="h-4 w-4" />;
-    if (trend === 'down') return <TrendingDown className="h-4 w-4" />;
+    if (trend === "up") return <TrendingUp className="h-4 w-4" />;
+    if (trend === "down") return <TrendingDown className="h-4 w-4" />;
     return null;
   };
 
@@ -98,7 +85,10 @@ const MetricCard = ({ title, value, change, icon, trend = 'neutral' }: MetricCar
         <div className="p-2 bg-primary/10 rounded-lg">{icon}</div>
         <div className={`flex items-center gap-1 text-sm font-medium ${getTrendColor()}`}>
           {getTrendIcon()}
-          <span>{change > 0 ? '+' : ''}{change}%</span>
+          <span>
+            {change > 0 ? "+" : ""}
+            {change}%
+          </span>
         </div>
       </div>
       <div>
@@ -114,7 +104,7 @@ interface GoogleSearchConsoleInsightsProps {
 }
 
 export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchConsoleInsightsProps) {
-  const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
+  const [dateRange, setDateRange] = useState<"7" | "30" | "90">("30");
   const [data, setData] = useState<SearchConsoleData[]>([]);
   const [topPages, setTopPages] = useState<TopPage[]>([]);
   const [topQueries, setTopQueries] = useState<TopQuery[]>([]);
@@ -136,19 +126,21 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         setLoading(false);
       }
     }, 300);
-    
+
     return () => clearTimeout(timeoutId);
   }, [selectedDomain, dateRange]);
 
   const loadCachedData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Always fetch from API to get both charts data and tables data
       loadSearchConsoleData();
     } catch (error) {
-      console.error('Error loading cached data:', error);
+      console.error("Error loading cached data:", error);
       loadSearchConsoleData();
     }
   };
@@ -161,7 +153,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         setAlerts([]);
       }
     }, 300);
-    
+
     return () => clearTimeout(timeoutId);
   }, [selectedDomain]);
 
@@ -174,8 +166,8 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke('get-search-console-data', {
+
+      const { data, error } = await supabase.functions.invoke("get-search-console-data", {
         body: {
           domain: selectedDomain,
           days: parseInt(dateRange),
@@ -184,14 +176,14 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      if (!data?.data) throw new Error('Aucune donnée reçue');
+      if (!data?.data) throw new Error("Aucune donnée reçue");
 
       const formattedData = data.data.map((item: SearchConsoleData) => ({
-        date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+        date: new Date(item.date).toLocaleDateString("fr-FR", { month: "short", day: "numeric" }),
         clicks: item.clicks,
         impressions: item.impressions,
         ctr: parseFloat(item.ctr.toString()),
-        position: parseFloat(item.position.toString())
+        position: parseFloat(item.position.toString()),
       }));
 
       setData(formattedData);
@@ -199,7 +191,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       setTopQueries(data.topQueries || []);
       toast.success(t.googleConsole.insightsData.success);
     } catch (error: any) {
-      console.error('Error loading Search Console data:', error);
+      console.error("Error loading Search Console data:", error);
       toast.error(error?.message || t.googleConsole.insightsData.error);
       setData([]);
     } finally {
@@ -209,49 +201,49 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
   const loadAlerts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('gsc_alerts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('domain', selectedDomain)
-        .eq('is_resolved', false)
-        .order('detection_date', { ascending: false })
+        .from("gsc_alerts")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("domain", selectedDomain)
+        .eq("is_resolved", false)
+        .order("detection_date", { ascending: false })
         .limit(10);
 
       if (error) throw error;
       setAlerts(data || []);
     } catch (error) {
-      console.error('Error loading alerts:', error);
+      console.error("Error loading alerts:", error);
     }
   };
 
   const loadSyncConfig = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('gsc_sync_config')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      const { data, error } = await supabase.from("gsc_sync_config").select("*").eq("user_id", user.id).single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== "PGRST116") throw error;
       setSyncConfig(data);
     } catch (error) {
-      console.error('Error loading sync config:', error);
+      console.error("Error loading sync config:", error);
     }
   };
 
   const analyzeAnomalies = async () => {
     if (!selectedDomain) return;
-    
+
     try {
       setAnalyzingAnomalies(true);
-      const { data, error } = await supabase.functions.invoke('analyze-gsc-anomalies', {
+      const { data, error } = await supabase.functions.invoke("analyze-gsc-anomalies", {
         body: { domain: selectedDomain, days: parseInt(dateRange) },
       });
 
@@ -264,7 +256,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         toast.success(t.googleConsole.insightsData.noData);
       }
     } catch (error: any) {
-      console.error('Error analyzing anomalies:', error);
+      console.error("Error analyzing anomalies:", error);
       toast.error(t.googleConsole.insightsData.error);
     } finally {
       setAnalyzingAnomalies(false);
@@ -273,52 +265,49 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
   const updateSyncConfig = async (field: string, value: any) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from('gsc_sync_config')
-        .upsert({
-          user_id: user.id,
-          [field]: value,
-        });
+      const { error } = await supabase.from("gsc_sync_config").upsert({
+        user_id: user.id,
+        [field]: value,
+      });
 
       if (error) throw error;
 
       setSyncConfig((prev: any) => ({ ...prev, [field]: value }));
       toast.success(t.googleConsole.insightsData.syncSettings.updated);
     } catch (error) {
-      console.error('Error updating sync config:', error);
+      console.error("Error updating sync config:", error);
       toast.error(t.googleConsole.insightsData.syncSettings.updateError);
     }
   };
 
   const markAlertAsRead = async (alertId: string) => {
     try {
-      const { error } = await supabase
-        .from('gsc_alerts')
-        .update({ is_read: true })
-        .eq('id', alertId);
+      const { error } = await supabase.from("gsc_alerts").update({ is_read: true }).eq("id", alertId);
 
       if (error) throw error;
       await loadAlerts();
     } catch (error) {
-      console.error('Error marking alert as read:', error);
+      console.error("Error marking alert as read:", error);
     }
   };
 
   const resolveAlert = async (alertId: string) => {
     try {
       const { error } = await supabase
-        .from('gsc_alerts')
+        .from("gsc_alerts")
         .update({ is_resolved: true, resolved_at: new Date().toISOString() })
-        .eq('id', alertId);
+        .eq("id", alertId);
 
       if (error) throw error;
       toast.success(t.googleConsole.insightsData.alertResolved);
       await loadAlerts();
     } catch (error) {
-      console.error('Error resolving alert:', error);
+      console.error("Error resolving alert:", error);
       toast.error(t.googleConsole.insightsData.syncSettings.updateError);
     }
   };
@@ -384,37 +373,37 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={
-                          alert.severity === 'critical' ? 'destructive' :
-                          alert.severity === 'high' ? 'default' :
-                          'secondary'
-                        }>
-                          {alert.severity === 'critical' ? t.googleConsole.insightsData.severity.critical :
-                           alert.severity === 'high' ? t.googleConsole.insightsData.severity.high :
-                           alert.severity === 'medium' ? t.googleConsole.insightsData.severity.medium : t.googleConsole.insightsData.severity.low}
+                        <Badge
+                          variant={
+                            alert.severity === "critical"
+                              ? "destructive"
+                              : alert.severity === "high"
+                                ? "default"
+                                : "secondary"
+                          }
+                        >
+                          {alert.severity === "critical"
+                            ? t.googleConsole.insightsData.severity.critical
+                            : alert.severity === "high"
+                              ? t.googleConsole.insightsData.severity.high
+                              : alert.severity === "medium"
+                                ? t.googleConsole.insightsData.severity.medium
+                                : t.googleConsole.insightsData.severity.low}
                         </Badge>
                         <span className="font-medium text-sm">{alert.metric_name}</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Baisse de {Math.abs(alert.change_percentage).toFixed(1)}% 
-                        ({alert.previous_value.toLocaleString()} → {alert.current_value.toLocaleString()})
+                        Baisse de {Math.abs(alert.change_percentage).toFixed(1)}% (
+                        {alert.previous_value.toLocaleString()} → {alert.current_value.toLocaleString()})
                       </p>
                     </div>
                     <div className="flex gap-2">
                       {!alert.is_read && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => markAlertAsRead(alert.id)}
-                        >
+                        <Button size="sm" variant="ghost" onClick={() => markAlertAsRead(alert.id)}>
                           {t.googleConsole.insightsData.markRead}
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => resolveAlert(alert.id)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}>
                         {t.googleConsole.insightsData.resolve}
                       </Button>
                     </div>
@@ -457,12 +446,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
               {t.googleConsole.insightsData.analyzeAnomalies}
             </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-            className="gap-2"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setShowSettings(!showSettings)} className="gap-2">
             <Settings className="h-4 w-4" />
             {t.googleConsole.insightsData.settings}
           </Button>
@@ -472,7 +456,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         {showSettings && (
           <div className="mt-6 pt-6 border-t space-y-4">
             <h4 className="font-semibold mb-4">{t.googleConsole.insightsData.syncSettings.title}</h4>
-            
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>{t.googleConsole.insightsData.syncSettings.autoSync}</Label>
@@ -482,7 +466,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
               </div>
               <Switch
                 checked={syncConfig?.auto_sync_enabled ?? true}
-                onCheckedChange={(checked) => updateSyncConfig('auto_sync_enabled', checked)}
+                onCheckedChange={(checked) => updateSyncConfig("auto_sync_enabled", checked)}
               />
             </div>
 
@@ -495,13 +479,14 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
               </div>
               <Switch
                 checked={syncConfig?.notification_enabled ?? true}
-                onCheckedChange={(checked) => updateSyncConfig('notification_enabled', checked)}
+                onCheckedChange={(checked) => updateSyncConfig("notification_enabled", checked)}
               />
             </div>
 
             {syncConfig?.last_sync_at && (
               <div className="text-sm text-muted-foreground">
-                {t.googleConsole.insightsData.syncSettings.lastSync} : {new Date(syncConfig.last_sync_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}
+                {t.googleConsole.insightsData.syncSettings.lastSync} :{" "}
+                {new Date(syncConfig.last_sync_at).toLocaleString(language === "fr" ? "fr-FR" : "en-US")}
               </div>
             )}
           </div>
@@ -516,28 +501,28 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
             value={metrics.totalClicks.toLocaleString()}
             change={metrics.clicksChange}
             icon={<MousePointer className="h-5 w-5 text-primary" />}
-            trend={metrics.clicksChange > 0 ? 'up' : metrics.clicksChange < 0 ? 'down' : 'neutral'}
+            trend={metrics.clicksChange > 0 ? "up" : metrics.clicksChange < 0 ? "down" : "neutral"}
           />
           <MetricCard
             title={t.googleConsole.insightsData.metrics.totalImpressions}
             value={metrics.totalImpressions.toLocaleString()}
             change={metrics.impressionsChange}
             icon={<Users className="h-5 w-5 text-primary" />}
-            trend={metrics.impressionsChange > 0 ? 'up' : metrics.impressionsChange < 0 ? 'down' : 'neutral'}
+            trend={metrics.impressionsChange > 0 ? "up" : metrics.impressionsChange < 0 ? "down" : "neutral"}
           />
           <MetricCard
             title={t.googleConsole.insightsData.metrics.avgCtr}
             value={`${metrics.avgCTR}%`}
             change={metrics.ctrChange}
             icon={<BarChart3 className="h-5 w-5 text-primary" />}
-            trend={metrics.ctrChange > 0 ? 'up' : metrics.ctrChange < 0 ? 'down' : 'neutral'}
+            trend={metrics.ctrChange > 0 ? "up" : metrics.ctrChange < 0 ? "down" : "neutral"}
           />
           <MetricCard
             title={t.googleConsole.insightsData.metrics.avgPosition}
             value={metrics.avgPosition}
             change={metrics.positionChange}
             icon={<TrendingUp className="h-5 w-5 text-primary" />}
-            trend={metrics.positionChange > 0 ? 'up' : metrics.positionChange < 0 ? 'down' : 'neutral'}
+            trend={metrics.positionChange > 0 ? "up" : metrics.positionChange < 0 ? "down" : "neutral"}
           />
         </div>
       )}
@@ -564,63 +549,70 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Area type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} name={t.googleConsole.insightsData.tables.clicks} />
-                <Area type="monotone" dataKey="impressions" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2))" fillOpacity={0.6} name={t.googleConsole.insightsData.tables.impressions} />
+                <Area
+                  type="monotone"
+                  dataKey="clicks"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.6}
+                  name={t.googleConsole.insightsData.tables.clicks}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="impressions"
+                  stroke="hsl(var(--chart-2))"
+                  fill="hsl(var(--chart-2))"
+                  fillOpacity={0.6}
+                  name={t.googleConsole.insightsData.tables.impressions}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </Card>
 
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">{t.googleConsole.insightsData.charts.position} {language === 'fr' ? 'et' : 'and'} {t.googleConsole.insightsData.charts.ctr}</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {t.googleConsole.insightsData.charts.position} {language === "fr" ? "et" : "and"}{" "}
+              {t.googleConsole.insightsData.charts.ctr}
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data}>
                 <defs>
                   <linearGradient id="colorPosition" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorCTR" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="date" 
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
-                  yAxisId="left"
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right"
-                  style={{ fontSize: '12px' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                <XAxis dataKey="date" style={{ fontSize: "12px" }} />
+                <YAxis yAxisId="left" style={{ fontSize: "12px" }} />
+                <YAxis yAxisId="right" orientation="right" style={{ fontSize: "12px" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
                   }}
                 />
                 <Legend />
-                <Line 
-                  yAxisId="left" 
-                  type="monotone" 
-                  dataKey="position" 
-                  stroke="hsl(var(--chart-3))" 
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="position"
+                  stroke="hsl(var(--chart-3))"
                   strokeWidth={3}
                   dot={false}
                   activeDot={{ r: 6, strokeWidth: 2 }}
                   name="Position"
                 />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="ctr" 
-                  stroke="hsl(var(--chart-4))" 
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="ctr"
+                  stroke="hsl(var(--chart-4))"
                   strokeWidth={3}
                   dot={false}
                   activeDot={{ r: 6, strokeWidth: 2 }}
@@ -653,7 +645,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                   {topPages.map((page, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium max-w-xs truncate" title={page.page}>
-                        {page.page.replace(/^https?:\/\//, '').replace(/^[^/]+/, '')}
+                        {page.page.replace(/^https?:\/\//, "").replace(/^[^/]+/, "")}
                       </TableCell>
                       <TableCell className="text-right">{page.clicks}</TableCell>
                       <TableCell className="text-right">{page.impressions}</TableCell>
@@ -664,9 +656,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {t.googleConsole.insightsData.noData}
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t.googleConsole.insightsData.noData}</p>
             )}
           </Card>
 
@@ -697,9 +687,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {t.googleConsole.insightsData.noData}
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t.googleConsole.insightsData.noData}</p>
             )}
           </Card>
         </div>
@@ -712,7 +700,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
             <div className="space-y-2">
               <h3 className="text-xl font-semibold">{t.googleConsole.insightsData.noData}</h3>
               <p className="text-muted-foreground">
-                {language === 'fr' 
+                {language === "fr"
                   ? "Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine."
                   : "Google Search Console data has not yet been synced for this domain."}
               </p>
@@ -727,10 +715,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
       {/* Article Opportunities */}
       {!loading && topQueries.length > 0 && (
-        <GSCArticleOpportunities 
-          selectedDomain={selectedDomain} 
-          topQueries={topQueries}
-        />
+        <GSCArticleOpportunities selectedDomain={selectedDomain} topQueries={topQueries} />
       )}
     </div>
   );
