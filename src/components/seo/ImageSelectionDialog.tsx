@@ -158,9 +158,59 @@ export function ImageSelectionDialog({
             )}
           </div>
 
-          {/* Étape 2: Photo à retravailler */}
+          {/* Produit avec variantes: Section variantes d'abord */}
+          {hasVariants && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">2. Choisir la variante à optimiser</Label>
+              <ScrollArea className="h-[200px] pr-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {variants.map((variant) => {
+                    const variantLabel = [variant.option1, variant.option2, variant.option3]
+                      .filter(Boolean)
+                      .join(' / ') || variant.title;
+                    
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                          selectedVariantId === variant.id
+                            ? 'border-primary ring-2 ring-primary'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {variant.image_url ? (
+                          <img
+                            src={variant.image_url}
+                            alt={variantLabel}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground p-2 text-center">
+                            {variantLabel}
+                          </div>
+                        )}
+                        {selectedVariantId === variant.id && (
+                          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                            <div className="bg-primary text-primary-foreground rounded-full p-2">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          </div>
+                        )}
+                        <Badge className="absolute bottom-2 left-2 text-xs">
+                          {variantLabel}
+                        </Badge>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Étape suivante: Photo à retravailler */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">2. Photo à retravailler</Label>
+            <Label className="text-sm font-medium">{hasVariants ? '3' : '2'}. Photo à retravailler</Label>
             <ScrollArea className="h-[300px] pr-4">
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {allImages.map((img, index) => (
@@ -191,10 +241,10 @@ export function ImageSelectionDialog({
             </ScrollArea>
           </div>
 
-          {/* Étape 3: Application */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">3. Appliquer le résultat à</Label>
-            {!hasVariants ? (
+          {/* Pour produit simple: choix d'application */}
+          {!hasVariants && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">3. Appliquer le résultat à</Label>
               <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'secondary')}>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <RadioGroupItem value="main" id="main" />
@@ -211,27 +261,8 @@ export function ImageSelectionDialog({
                   </Label>
                 </div>
               </RadioGroup>
-            ) : (
-              <RadioGroup value={selectedVariantId} onValueChange={setSelectedVariantId}>
-                <ScrollArea className="h-[200px]">
-                  {variants.map((variant) => {
-                    const variantLabel = [variant.option1, variant.option2, variant.option3]
-                      .filter(Boolean)
-                      .join(' / ') || variant.title;
-                    
-                    return (
-                      <div key={variant.id} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors mb-2">
-                        <RadioGroupItem value={variant.id} id={`variant-${variant.id}`} />
-                        <Label htmlFor={`variant-${variant.id}`} className="flex-1 cursor-pointer text-sm">
-                          {variantLabel}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </ScrollArea>
-              </RadioGroup>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
