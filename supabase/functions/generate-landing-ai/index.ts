@@ -937,7 +937,7 @@ STRUCTURE:
 - Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
 - <script src="https://cdn.tailwindcss.com"></script> in <head>
 - Mobile-first (sm:, md:, lg:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0 (margins on mobile, none on desktop)
 - Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
 
 📱 RESPONSIVE TABLES (CRITICAL):
@@ -962,9 +962,9 @@ STRUCTURE:
 - 📋 MANDATORY SVG ICON TEMPLATE FOR LISTS:
   ${selectedIcon}
   
-- 🎯 EXAMPLE FOR EACH LIST ITEM:
-  <div class="flex items-start gap-3 mb-4">
-    <svg class="w-6 h-6 flex-shrink-0 mt-1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ - 🎯 EXAMPLE FOR EACH LIST ITEM:
+  <div class="flex items-center gap-3 mb-4">
+    <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
@@ -1236,6 +1236,25 @@ UTILISATION DES ICÔNES :
 
     console.log("✅ HTML generated and sanitized successfully");
 
+    // 🔗 Add SERP Analysis button before closing body tag
+    let finalHtml = html;
+    if (product_id) {
+      const serpButton = `
+    <!-- SERP Analysis Button -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-0 py-12">
+      <div class="text-center">
+        <a href="/seo-serp-analysis/${product_id}" class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent}))">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          ${detectedLanguage === "en" ? "View SERP Analysis" : "Voir l'Analyse SERP"}
+        </a>
+      </div>
+    </div>
+  </body>`;
+      finalHtml = finalHtml.replace("</body>", serpButton);
+    }
+
     // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
       console.log("💾 Updating landing_page field in shopify_products...");
@@ -1243,7 +1262,7 @@ UTILISATION DES ICÔNES :
       const { error: updateError } = await supabaseAdmin
         .from("shopify_products")
         .update({
-          landing_page: html,
+          landing_page: finalHtml,
           updated_at: new Date().toISOString(),
         })
         .eq("id", product_id)
@@ -1261,7 +1280,7 @@ UTILISATION DES ICÔNES :
     console.log("✅ Landing page generation successful!");
     return new Response(
       JSON.stringify({
-        html,
+        html: finalHtml,
         enrichment_status: enrichmentStatus,
         attributes_count: attributesCount,
       }),
