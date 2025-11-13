@@ -8,13 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Palette, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +28,7 @@ export interface AiBackgroundConfig {
   format: string;
   similarity: string;
   imageType: "primary" | "secondary";
+  selectedGalleryImages: Map<string, string>;
 }
 
 export function AiBackgroundConfigDialog({
@@ -42,13 +37,14 @@ export function AiBackgroundConfigDialog({
   onConfirm,
   productImages = new Map(),
   selectedProducts,
-  products
+  products,
 }: AiBackgroundConfigDialogProps) {
   const [config, setConfig] = useState<AiBackgroundConfig>({
-    prompt: '',
-    format: 'square',
-    similarity: 'very-close',
-    imageType: 'primary'
+    prompt: "",
+    format: "square",
+    similarity: "medium",
+    imageType: "primary",
+    selectedGalleryImages: new Map(),
   });
 
   const handleConfirm = () => {
@@ -80,11 +76,13 @@ export function AiBackgroundConfigDialog({
           {/* Tableau de sélection des options */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Paramètres de génération</Label>
-            
+
             {/* Format d'image */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="format" className="text-sm font-medium">Format d'image</Label>
+                <Label htmlFor="format" className="text-sm font-medium">
+                  Format d'image
+                </Label>
                 <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
                   <SelectTrigger id="format" className="w-[180px]">
                     <SelectValue />
@@ -102,23 +100,21 @@ export function AiBackgroundConfigDialog({
             <Card className="p-4 space-y-3">
               <Label className="text-sm font-medium">Type d'image</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Card 
+                <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "primary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                    config.imageType === "primary"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary"
                       : "hover:border-primary/50"
                   }`}
                   onClick={() => setConfig({ ...config, imageType: "primary" })}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === "primary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {config.imageType === "primary" && (
-                        <Check className="h-2.5 w-2.5 text-white" />
-                      )}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                        config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}
+                    >
+                      {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
                       <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
@@ -128,29 +124,25 @@ export function AiBackgroundConfigDialog({
                     </div>
                   </div>
                 </Card>
-                <Card 
+                <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "secondary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                    config.imageType === "secondary"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary"
                       : "hover:border-primary/50"
                   }`}
                   onClick={() => setConfig({ ...config, imageType: "secondary" })}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === "secondary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {config.imageType === "secondary" && (
-                        <Check className="h-2.5 w-2.5 text-white" />
-                      )}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                        config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}
+                    >
+                      {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
                       <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Photo d'ambiance lifestyle
-                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Photo d'ambiance lifestyle</p>
                     </div>
                   </div>
                 </Card>
@@ -160,8 +152,13 @@ export function AiBackgroundConfigDialog({
             {/* Ressemblance */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="similarity" className="text-sm font-medium">Ressemblance à l'original</Label>
-                <Select value={config.similarity} onValueChange={(value) => setConfig({ ...config, similarity: value })}>
+                <Label htmlFor="similarity" className="text-sm font-medium">
+                  Ressemblance à l'original
+                </Label>
+                <Select
+                  value={config.similarity}
+                  onValueChange={(value) => setConfig({ ...config, similarity: value })}
+                >
                   <SelectTrigger id="similarity" className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -177,6 +174,79 @@ export function AiBackgroundConfigDialog({
             </Card>
           </div>
 
+          {/* Sélection d'images de galerie */}
+          {selectedProducts.length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
+              {selectedProducts.map((productId) => {
+                const product = products.find((p) => p.id === productId);
+                const images = productImages.get(productId) || [];
+
+                if (!product) return null;
+
+                return (
+                  <Card key={productId} className="p-3 sm:p-4">
+                    <h4 className="font-semibold mb-3 text-xs sm:text-sm line-clamp-1">{product.title}</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Image principale */}
+                      <div
+                        className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                          !config.selectedGalleryImages.get(productId) ||
+                          config.selectedGalleryImages.get(productId) === product.image_url
+                            ? "border-primary ring-2 ring-primary"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                        onClick={() => {
+                          const newMap = new Map(config.selectedGalleryImages);
+                          newMap.set(productId, product.image_url!);
+                          setConfig({ ...config, selectedGalleryImages: newMap });
+                        }}
+                      >
+                        <div className="aspect-square bg-muted rounded overflow-hidden">
+                          <img
+                            src={product.image_url || ""}
+                            alt="Image principale"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
+                          Principal
+                        </div>
+                      </div>
+
+                      {/* Images de galerie */}
+                      {images.slice(0, 2).map((img, idx) => (
+                        <div
+                          key={img.id}
+                          className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                            config.selectedGalleryImages.get(productId) === img.src
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-muted hover:border-primary/50"
+                          }`}
+                          onClick={() => {
+                            const newMap = new Map(config.selectedGalleryImages);
+                            newMap.set(productId, img.src);
+                            setConfig({ ...config, selectedGalleryImages: newMap });
+                          }}
+                        >
+                          <div className="aspect-square bg-muted rounded overflow-hidden">
+                            <img
+                              src={img.src}
+                              alt={img.alt_text || `Galerie ${idx + 1}`}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded">
+                            #{idx + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           {/* Style Selection */}
           <div className="space-y-2">
@@ -213,14 +283,14 @@ export function AiBackgroundConfigDialog({
             <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
             <Textarea
               id="custom-prompt"
-              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting, elegant backdrop, and attractive staging that drives customer engagement and conversion. Create a visually appealing environment optimized for online sales and Google Shopping."
+              placeholder="Ex: Place this product on a wooden table with natural sunlight..."
               value={config.prompt}
               onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
               rows={4}
               className="resize-none text-xs sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              💡 Conseil : Décrivez un environnement premium qui valorise le produit et incite à l'achat
+              💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
             </p>
           </div>
         </div>
