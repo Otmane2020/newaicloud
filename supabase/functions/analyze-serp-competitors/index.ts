@@ -287,14 +287,20 @@ serve(async (req) => {
       // Must have a URL
       if (!item.url) return false;
       
-      // Must have both title and description
-      if (!item.title || !item.description) return false;
+      // Must have BOTH title AND description (not empty strings)
+      if (!item.title || !item.description || item.title.trim() === '' || item.description.trim() === '') return false;
       
-      // Exclude image search results
-      if (item.url.includes('google.com') || item.url.includes('google.fr')) return false;
+      // Exclude Google domains (Images, Shopping carousel, etc.)
+      const domain = item.domain || (item.url ? new URL(item.url).hostname : '');
+      if (domain.includes('google.com') || domain.includes('google.fr')) return false;
       
-      // Exclude non-product results (PAA, carousels, etc.)
-      if (item.type && !['organic', 'shopping'].includes(item.type)) return false;
+      // Exclude sweet-deco.fr (user's own site)
+      if (domain.includes('sweet-deco.fr')) return false;
+      
+      // Exclude generic titles like "Images", "Sites de produits", etc.
+      const genericTitles = ['images', 'sites de produits', 'produits', 'shopping'];
+      const lowerTitle = item.title.toLowerCase();
+      if (genericTitles.some(generic => lowerTitle === generic || lowerTitle.startsWith(generic + ' '))) return false;
       
       return true;
     });
