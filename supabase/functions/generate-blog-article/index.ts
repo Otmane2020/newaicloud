@@ -409,6 +409,9 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
+    // Extract store_id from products
+    const store_id = products.length > 0 ? products[0].store_id : null;
+
     // Enrichir les produits avec les URLs complètes
     if (storeUrl && products.length > 0) {
       products = products.map(p => {
