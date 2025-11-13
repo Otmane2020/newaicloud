@@ -687,15 +687,17 @@ export default function ProductTitleDescription() {
   };
 
   const handleImageSelectionConfirm = async (
+    format: 'white-background' | 'ai-background',
     selectedImageUrl: string, 
-    applyTo: 'main' | 'secondary' | 'variants',
-    selectedVariantIds?: string[]
+    applyTo: 'main' | 'secondary' | 'variant',
+    selectedVariantId?: string,
+    aiPrompt?: string
   ) => {
     if (!pendingProduct) return;
     
     setShowImageSelectionDialog(false);
     
-    if (imageSelectionMode === 'whitebg') {
+    if (format === 'white-background') {
       // Start white background generation with selected image
       setGeneratingWhiteBg(true);
       
@@ -721,7 +723,7 @@ export default function ProductTitleDescription() {
             productTitle: pendingProduct.title,
             imageType: selectedImageType,
             applyTo: applyTo,
-            variantIds: selectedVariantIds
+            variantId: selectedVariantId
           }
         });
 
@@ -743,7 +745,7 @@ export default function ProductTitleDescription() {
 
       setGeneratingWhiteBg(false);
       await refreshLimits();
-    } else if (imageSelectionMode === 'aibg') {
+    } else if (format === 'ai-background') {
       // Start AI background generation with selected image
       setGeneratingAiBg(true);
       
@@ -767,10 +769,11 @@ export default function ProductTitleDescription() {
           body: {
             imageUrl: selectedImageUrl,
             productTitle: pendingProduct.title,
-            prompt: customPrompt,
+            prompt: aiPrompt || customPrompt,
             format: selectedImageFormat,
             similarity: selectedSimilarity,
-            applyTo: applyTo
+            applyTo: applyTo,
+            variantId: selectedVariantId
           }
         });
 
