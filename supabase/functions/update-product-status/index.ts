@@ -64,38 +64,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Store connection found:', connection.store_url);
-    console.log('Encrypted token length:', connection.access_token?.length);
-
-    // Decrypt the access token
-    console.log('[UPDATE-STATUS] Calling encrypt-shopify-token for decryption...');
-    const { data: decryptData, error: decryptError } = await supabaseAdmin.functions.invoke(
-      'encrypt-shopify-token',
-      {
-        body: { 
-          token: connection.access_token,
-          action: 'decrypt'
-        }
-      }
-    );
-
-    console.log('[UPDATE-STATUS] Decryption response:', { 
-      hasData: !!decryptData, 
-      hasError: !!decryptError,
-      decryptedTokenLength: decryptData?.token?.length 
-    });
-
-    if (decryptError) {
-      console.error('[UPDATE-STATUS] Decryption error details:', JSON.stringify(decryptError));
-      throw new Error(`Failed to decrypt access token: ${JSON.stringify(decryptError)}`);
-    }
-
-    if (!decryptData?.token) {
-      console.error('[UPDATE-STATUS] No token in decrypt response');
-      throw new Error('No decrypted token returned');
-    }
-
-    const decryptedToken = decryptData.token;
-    console.log('[UPDATE-STATUS] Successfully decrypted token, length:', decryptedToken.length);
+    console.log('Access token length:', connection.access_token?.length);
 
     // Update product status in Shopify
     const shopifyResponse = await fetch(
@@ -104,7 +73,7 @@ Deno.serve(async (req) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': decryptedToken,
+          'X-Shopify-Access-Token': connection.access_token,
         },
         body: JSON.stringify({
           product: { status: newStatus },
