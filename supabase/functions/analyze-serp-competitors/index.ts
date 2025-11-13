@@ -221,6 +221,16 @@ function analyzeLanding(items: any[]): LandingInsights {
   };
 }
 
+// Helper function to extract keywords from a search query
+function extractKeywords(text: string): string[] {
+  const stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'avec', 'pour', 'dans', 'sur'];
+  return text
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter(word => word.length > 3 && !stopWords.includes(word))
+    .slice(0, 8);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -275,9 +285,68 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in analyze-serp-competitors:', error);
+    
+    // FALLBACK: Provide insights based on keyword analysis when API fails
+    console.log('⚠️ DataForSEO unavailable, using fallback analysis');
+    
+    const { keyword, analysisType } = await req.json();
+    
+    // Generate fallback insights based on analysis type
+    let fallbackInsights: any;
+    switch (analysisType) {
+      case 'product':
+        fallbackInsights = {
+          priceRange: { min: 0, max: 0, avg: 0 },
+          commonFeatures: extractKeywords(keyword),
+          titleStructure: ['Produit', 'Caractéristique principale', 'Bénéfice'],
+          descriptionLength: { min: 150, max: 300, avg: 200 },
+        };
+        break;
+      case 'images':
+        fallbackInsights = {
+          dominantStyles: ['fond blanc professionnel', 'mise en contexte lifestyle', 'angle 45°'],
+          commonAngles: ['vue de face', 'angle 3/4', 'vue détail'],
+          colorSchemes: ['tons neutres', 'couleurs naturelles', 'contraste doux'],
+          aspectRatios: ['1:1 (carré)', '4:3 (standard)', '16:9 (panoramique)'],
+        };
+        break;
+      case 'article':
+        fallbackInsights = {
+          commonH2: ['Guide d\'achat', 'Comparatif', 'Avantages', 'Utilisation', 'Prix'],
+          topicCoverage: extractKeywords(keyword),
+          structurePatterns: ['Introduction', 'Corps détaillé', 'Conclusion', 'FAQ'],
+          avgWordCount: 1500,
+        };
+        break;
+      case 'landing':
+        fallbackInsights = {
+          commonSections: ['Hero accrocheur', 'Bénéfices clés', 'Preuves sociales', 'FAQ', 'CTA'],
+          ctaPatterns: ['Découvrir', 'Commander maintenant', 'En savoir plus'],
+          structuralElements: ['titre H1 fort', 'sous-titres H2/H3', 'bullet points', 'visuels'],
+          contentDensity: 'équilibré',
+        };
+        break;
+      default:
+        fallbackInsights = {
+          topTitles: [],
+          commonKeywords: extractKeywords(keyword),
+          titlePatterns: ['Descriptif', 'Bénéfice', 'Appel à l\'action'],
+          avgTitleLength: 60,
+          topDescriptions: [],
+          avgDescLength: 155,
+        };
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        keyword,
+        analysisType,
+        insights: fallbackInsights,
+        itemsAnalyzed: 0,
+        fallback: true,
+        message: 'Analyse basée sur les meilleures pratiques SEO (DataForSEO temporairement indisponible)',
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
