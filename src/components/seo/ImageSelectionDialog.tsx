@@ -65,23 +65,21 @@ export function ImageSelectionDialog({
   const [aiPrompt, setAiPrompt] = useState<string>('');
 
   // Collecter toutes les images (principale + secondaires + variantes)
-  const allImages: Array<{ src: string; label: string; type: 'main' | 'secondary' | 'variant'; variantId?: string }> = [];
+  const allImages: Array<{ src: string; type: 'main' | 'secondary' | 'variant'; variantId?: string }> = [];
   
   if (mainImageUrl) {
-    allImages.push({ src: mainImageUrl, label: 'Photo principale', type: 'main' });
+    allImages.push({ src: mainImageUrl, type: 'main' });
   }
   
-  variantImages.forEach((img, index) => {
-    allImages.push({ src: img.src, label: `Image ${index + 2}`, type: 'secondary' });
+  variantImages.forEach((img) => {
+    allImages.push({ src: img.src, type: 'secondary' });
   });
   
   if (hasVariants) {
     variants.forEach((variant) => {
       if (variant.image_url) {
-        const variantLabel = variant.option1 || variant.title;
         allImages.push({ 
           src: variant.image_url, 
-          label: `Variante: ${variantLabel}`, 
           type: 'variant',
           variantId: variant.id
         });
@@ -160,34 +158,33 @@ export function ImageSelectionDialog({
             )}
           </div>
 
-          {/* Étape 2: Image source */}
+          {/* Étape 2: Photo à retravailler */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">2. Sélectionner l'image source</Label>
+            <Label className="text-sm font-medium">2. Photo à retravailler</Label>
             <ScrollArea className="h-[300px] pr-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {allImages.map((img, index) => (
                   <button
                     key={`${img.type}-${index}`}
                     onClick={() => setSelectedImageUrl(img.src)}
                     className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                       selectedImageUrl === img.src
-                        ? 'border-primary ring-2 ring-primary ring-offset-2'
+                        ? 'border-primary ring-2 ring-primary'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
                     <img
                       src={img.src}
-                      alt={img.label}
+                      alt={`Photo ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                     {selectedImageUrl === img.src && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="w-3 h-3" />
+                      <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                        <div className="bg-primary text-primary-foreground rounded-full p-2">
+                          <Check className="w-4 h-4" />
+                        </div>
                       </div>
                     )}
-                    <Badge className="absolute bottom-2 left-2 text-xs">
-                      {img.label}
-                    </Badge>
                   </button>
                 ))}
               </div>
