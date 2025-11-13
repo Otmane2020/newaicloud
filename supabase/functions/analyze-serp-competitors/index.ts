@@ -99,7 +99,12 @@ async function callDataForSEO(keyword: string, type: 'organic' | 'images', maxRe
   console.log('DataForSEO response:', JSON.stringify(data).substring(0, 500));
 
   if (data.tasks && data.tasks[0]?.status_code === 20000) {
-    return data.tasks[0].result[0].items || [];
+    const items = data.tasks[0].result[0].items || [];
+    console.log(`📦 Retrieved ${items.length} items from DataForSEO`);
+    if (items.length > 0) {
+      console.log('📋 First item structure:', JSON.stringify(items[0], null, 2).substring(0, 800));
+    }
+    return items;
   } else {
     throw new Error(`DataForSEO API returned error: ${data.tasks?.[0]?.status_message || 'Unknown error'}`);
   }
@@ -275,15 +280,23 @@ serve(async (req) => {
     }
 
     // Extract competitor URLs and data
-    const competitors = items.slice(0, 10).map((item, index) => ({
-      rank: index + 1,
-      url: item.url || '',
-      domain: item.domain || (item.url ? new URL(item.url).hostname : ''),
-      title: item.title || '',
-      description: item.description || '',
-      titleLength: (item.title || '').length,
-      descriptionLength: (item.description || '').length
-    }));
+    console.log(`🔍 Processing ${items.length} items for competitors`);
+    const competitors = items.slice(0, 10).map((item, index) => {
+      const competitor = {
+        rank: index + 1,
+        url: item.url || '',
+        domain: item.domain || (item.url ? new URL(item.url).hostname : ''),
+        title: item.title || '',
+        description: item.description || '',
+        titleLength: (item.title || '').length,
+        descriptionLength: (item.description || '').length
+      };
+      if (index === 0) {
+        console.log('🏆 First competitor object:', JSON.stringify(competitor, null, 2));
+      }
+      return competitor;
+    });
+    console.log(`✅ Created ${competitors.length} competitor entries`);
 
     return new Response(
       JSON.stringify({
