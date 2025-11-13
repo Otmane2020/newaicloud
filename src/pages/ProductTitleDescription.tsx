@@ -651,51 +651,152 @@ export default function ProductTitleDescription() {
   };
 
   const handleGenerateWhiteBackground = async (product: any) => {
-    try {
-      const { data: images } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', product.id)
-        .order('position');
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('position');
 
-      const { data: variants } = await supabase
-        .from('product_variants')
-        .select('*')
-        .eq('product_id', product.id);
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id, title, option1, option2, option3, image_url')
+      .eq('product_id', product.id);
 
-      setPendingProduct(product);
-      setPendingProductImages(images || []);
-      setPendingProductVariants(variants || []);
-      setImageSelectionMode('whitebg');
-      setShowImageSelectionDialog(true);
-    } catch (error) {
-      console.error('Error loading product data:', error);
-      toast.error('Erreur lors du chargement des données du produit');
-    }
+    setPendingProduct(product);
+    setPendingProductImages(images || []);
+    setPendingProductVariants(variants || []);
+    setShowImageSelectionDialog(true);
   };
 
   const handleGenerateAiBackground = async (product: any) => {
-    try {
-      const { data: images } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', product.id)
-        .order('position');
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('position');
 
-      const { data: variants } = await supabase
-        .from('product_variants')
-        .select('*')
-        .eq('product_id', product.id);
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id, title, option1, option2, option3, image_url')
+      .eq('product_id', product.id);
 
-      setPendingProduct(product);
-      setPendingProductImages(images || []);
-      setPendingProductVariants(variants || []);
-      setImageSelectionMode('aibg');
-      setShowImageSelectionDialog(true);
-    } catch (error) {
-      console.error('Error loading product data:', error);
-      toast.error('Erreur lors du chargement des données du produit');
+    setPendingProduct(product);
+    setPendingProductImages(images || []);
+    setPendingProductVariants(variants || []);
+    setShowImageSelectionDialog(true);
+  };
+
+  const handleImageSelectionConfirm = async (
+    selectedImageUrl: string, 
+    applyTo: 'main' | 'secondary' | 'variants',
+    selectedVariantIds?: string[]
+  ) => {
+    if (!pendingProduct) return;
+    
+    setShowImageSelectionDialog(false);
+    
+    if (imageSelectionMode === 'whitebg') {
+      // Start white background generation with selected image
+      setGeneratingWhiteBg(true);
+      
+      const previews: PreviewImage[] = [{
+        productId: pendingProduct.id,
+        productTitle: pendingProduct.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      }];
+
+      setWhiteBgPreviews(previews);
+      setShowWhiteBgDialog(true);
+
+      setWhiteBgPreviews((prev) =>
+        prev.map((p) => ({ ...p, status: 'generating' }))
+      );
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: { 
+            imageUrl: selectedImageUrl,
+            productTitle: pendingProduct.title,
+            imageType: selectedImageType,
+            applyTo: applyTo,
+            variantIds: selectedVariantIds
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success && data.imageUrl) {
+          setWhiteBgPreviews((prev) =>
+            prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.imageUrl }))
+          );
+        } else {
+          throw new Error(data.error || 'Échec de la génération');
+        }
+      } catch (error: any) {
+        console.error('Error generating white background:', error);
+        setWhiteBgPreviews((prev) =>
+          prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
+        );
+      }
+
+      setGeneratingWhiteBg(false);
+      await refreshLimits();
+    } else if (imageSelectionMode === 'aibg') {
+      // Start AI background generation with selected image
+      setGeneratingAiBg(true);
+      
+      const previews: PreviewImage[] = [{
+        productId: pendingProduct.id,
+        productTitle: pendingProduct.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      }];
+
+      setAiBgPreviews(previews);
+      setShowAiBgDialog(true);
+
+      setAiBgPreviews((prev) =>
+        prev.map((p) => ({ ...p, status: 'generating' }))
+      );
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
+          body: {
+            imageUrl: selectedImageUrl,
+            productTitle: pendingProduct.title,
+            prompt: customPrompt,
+            format: selectedImageFormat,
+            similarity: selectedSimilarity,
+            applyTo: applyTo
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.variants && data.variants.length > 0) {
+          setAiBgPreviews((prev) =>
+            prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.variants[0] }))
+          );
+        } else {
+          throw new Error('Aucune image générée');
+        }
+      } catch (error: any) {
+        console.error('Error generating AI background:', error);
+        setAiBgPreviews((prev) =>
+          prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
+        );
+      }
+
+      setGeneratingAiBg(false);
+      await refreshLimits();
     }
+    
+    setPendingProduct(null);
+    setPendingProductImages([]);
+    setPendingProductVariants([]);
   };
 
   const handleStartAiBackground = async (prompt: string, format: string, similarity: string) => {
@@ -2043,113 +2144,7 @@ export default function ProductTitleDescription() {
         variantImages={pendingProductImages.slice(1) || []}
         hasVariants={pendingProductVariants.length > 1}
         variants={pendingProductVariants}
-        isAiBackground={imageSelectionMode === 'aibg'}
-        onConfirm={async (selectedImageUrl, applyTo, selectedVariantId, aiPrompt) => {
-          if (!pendingProduct) return;
-          
-          setShowImageSelectionDialog(false);
-          
-          if (imageSelectionMode === 'whitebg') {
-            // White background generation
-            setGeneratingWhiteBg(true);
-            
-            const previews: PreviewImage[] = [{
-              productId: pendingProduct.id,
-              productTitle: pendingProduct.title,
-              originalUrl: selectedImageUrl,
-              generatedUrl: null,
-              status: 'pending' as const,
-            }];
-
-            setWhiteBgPreviews(previews);
-            setShowWhiteBgDialog(true);
-
-            setWhiteBgPreviews((prev) =>
-              prev.map((p) => ({ ...p, status: 'generating' }))
-            );
-
-            try {
-              const { data, error } = await supabase.functions.invoke('generate-white-background', {
-                body: { 
-                  imageUrl: selectedImageUrl,
-                  productTitle: pendingProduct.title,
-                  applyTo: applyTo,
-                  variantId: selectedVariantId
-                }
-              });
-
-              if (error) throw error;
-
-              if (data.success && data.imageUrl) {
-                setWhiteBgPreviews((prev) =>
-                  prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.imageUrl }))
-                );
-              } else {
-                throw new Error(data.error || 'Échec de la génération');
-              }
-            } catch (error: any) {
-              console.error('Error generating white background:', error);
-              setWhiteBgPreviews((prev) =>
-                prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
-              );
-            }
-
-            setGeneratingWhiteBg(false);
-            await refreshLimits();
-          } else {
-            // AI background generation
-            setGeneratingAiBg(true);
-            
-            const previews: PreviewImage[] = [{
-              productId: pendingProduct.id,
-              productTitle: pendingProduct.title,
-              originalUrl: selectedImageUrl,
-              generatedUrl: null,
-              status: 'pending' as const,
-            }];
-
-            setAiBgPreviews(previews);
-            setShowAiBgDialog(true);
-
-            setAiBgPreviews((prev) =>
-              prev.map((p) => ({ ...p, status: 'generating' }))
-            );
-
-            try {
-              const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
-                body: {
-                  imageUrl: selectedImageUrl,
-                  productTitle: pendingProduct.title,
-                  prompt: aiPrompt,
-                  applyTo: applyTo,
-                  variantId: selectedVariantId
-                }
-              });
-
-              if (error) throw error;
-
-              if (data.variants && data.variants.length > 0) {
-                setAiBgPreviews((prev) =>
-                  prev.map((p) => ({ ...p, status: 'success', generatedUrl: data.variants[0] }))
-                );
-              } else {
-                throw new Error('Aucune image générée');
-              }
-            } catch (error: any) {
-              console.error('Error generating AI background:', error);
-              setAiBgPreviews((prev) =>
-                prev.map((p) => ({ ...p, status: 'error', error: error.message || 'Erreur de génération' }))
-              );
-            }
-
-            setGeneratingAiBg(false);
-            await refreshLimits();
-          }
-          
-          setPendingProduct(null);
-          setPendingProductImages([]);
-          setPendingProductVariants([]);
-        }}
+        onConfirm={handleImageSelectionConfirm}
       />
 
       <LandingPagePreviewDialog
