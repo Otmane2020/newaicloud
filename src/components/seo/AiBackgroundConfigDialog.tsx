@@ -19,6 +19,7 @@ import { Palette, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AiBackgroundConfigDialogProps {
   open: boolean;
@@ -67,7 +68,7 @@ export function AiBackgroundConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[800px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Palette className="h-5 w-5 text-primary" />
@@ -78,7 +79,8 @@ export function AiBackgroundConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <ScrollArea className="max-h-[60vh] px-1">
+          <div className="space-y-6 py-4">
           {/* Tableau de sélection des options */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Paramètres de génération</Label>
@@ -294,10 +296,11 @@ export function AiBackgroundConfigDialog({
               className="resize-none text-xs sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              💡 Conseil : Décrivez un environnement premium qui valorise le produit et incite à l'achat
+            💡 Conseil : Décrivez un environnement premium qui valorise le produit et incite à l'achat
             </p>
           </div>
-        </div>
+          </div>
+        </ScrollArea>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
