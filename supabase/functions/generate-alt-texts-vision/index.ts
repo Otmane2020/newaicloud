@@ -378,6 +378,7 @@ Deno.serve(async (req: Request) => {
     let userId = image.user_id;
     let productTitle = "";
     let product: any = null; // Declare product outside conditional blocks
+    let storeId: string | null = null; // Declare storeId early
     
     if (imageType === 'content') {
       // Get content context
@@ -489,7 +490,6 @@ Deno.serve(async (req: Request) => {
     // 🌍 Get store localization for SERP analysis
     let storeCountry = 'United States';
     let storeLanguage = 'en';
-    let storeId: string | null = null;
     
     // Get store_id based on image type
     if (imageType === 'content') {
