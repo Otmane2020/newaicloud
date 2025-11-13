@@ -1,419 +1,818 @@
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Footer } from "@/components/Footer";
-import { PublicHeader } from "@/components/PublicHeader";
-import PricingComparison from "@/components/PricingComparison";
-
-import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
-import { ContactForm } from "@/components/ContactForm";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol } from "@/lib/formatUtils";
-import { useEffect, useState } from "react";
-import { AIAssistant } from "@/components/AIAssistant";
-import { 
-  Zap, 
-  ShoppingBag, 
-  BarChart3, 
-  FileText, 
-  MessageSquare, 
-  Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  Globe,
-  CreditCard,
-  Star,
-  ImageIcon,
-  Search,
-  Tags,
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
   TrendingUp,
-  Play
+  TrendingDown,
+  Users,
+  MousePointer,
+  BarChart3,
+  RefreshCw,
+  Calendar,
+  AlertCircle,
+  Settings,
+  CheckCircle2,
+  Eye,
+  Target,
+  Zap,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useState, useEffect } from "react";
+import { GSCArticleOpportunities } from "./GSCArticleOpportunities";
+import { useTranslation } from "@/lib/language";
 
-const Index = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const { language, t } = useTranslation();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+interface SearchConsoleData {
+  date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
 
+interface TopPage {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+interface TopQuery {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface InsightProps {
+  title: string;
+  value: string | number;
+  change: number;
+  icon: React.ReactNode;
+  trend?: "up" | "down" | "neutral";
+  description?: string;
+  alert?: boolean;
+  size?: "default" | "large";
+}
+
+const Insight = ({
+  title,
+  value,
+  change,
+  icon,
+  trend = "neutral",
+  description,
+  alert = false,
+  size = "default",
+}: InsightProps) => {
+  const getTrendColor = () => {
+    if (trend === "up") return "text-green-600";
+    if (trend === "down") return "text-red-600";
+    return "text-muted-foreground";
+  };
+
+  const getTrendIcon = () => {
+    if (trend === "up") return <TrendingUp className="h-4 w-4" />;
+    if (trend === "down") return <TrendingDown className="h-4 w-4" />;
+    return null;
+  };
+
+  const getValueSize = () => {
+    return size === "large" ? "text-3xl" : "text-2xl";
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <PublicHeader />
-      
-      {/* Hero Section */}
-      <section id="hero" className="relative overflow-hidden pt-16">
-        <div className="absolute inset-0 bg-gradient-dark opacity-95" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMzYjgyZjYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00em0wLTEwYzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHptMC0xMGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-        
-        <div className="container relative mx-auto px-4 py-24">
-          <div className="flex flex-col items-center text-center space-y-8 animate-fade-in">
-            <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
-              <Sparkles className="w-4 h-4 mr-2" />
-              {t.landing.hero.badge}
+    <Card className={`p-6 ${alert ? "border-orange-200 bg-orange-50/50" : ""} hover:shadow-md transition-shadow`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${alert ? "bg-orange-100" : "bg-primary/10"}`}>{icon}</div>
+          {alert && (
+            <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Alerte
             </Badge>
-            
-            <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
-              {t.landing.hero.title}{" "}
-              <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
-                {t.landing.hero.titleHighlight}
-              </span>{" "}
-              {t.landing.hero.titleEnd}
-            </h1>
-            
-            <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
-              {t.landing.hero.subtitle}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group bg-primary hover:bg-primary/90 shadow-glow" onClick={() => navigate('/auth?mode=signup')}>
-                {t.landing.hero.ctaPrimary}
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
-                <Play className="mr-2 w-5 h-5" />
-                {t.landing.hero.ctaSecondary}
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm text-gray-300 pt-2">
-              <CheckCircle2 className="w-4 h-4 text-success" />
-              <span>{t.landing.hero.setupTime}</span>
-            </div>
+          )}
+        </div>
+        <div className={`flex items-center gap-1 text-sm font-medium ${getTrendColor()}`}>
+          {getTrendIcon()}
+          <span>
+            {change > 0 ? "+" : ""}
+            {change}%
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground font-medium">{title}</p>
+        <p className={`font-bold ${getValueSize()} ${alert ? "text-orange-900" : ""}`}>{value}</p>
+
+        {description && <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{description}</p>}
+
+        {!alert && change !== 0 && (
+          <div className="flex items-center gap-1 text-xs mt-2">
+            {trend === "up" ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                <span className="text-green-600 font-medium">Performance positive</span>
+              </>
+            ) : trend === "down" ? (
+              <>
+                <AlertCircle className="h-3 w-3 text-red-500" />
+                <span className="text-red-600 font-medium">Attention nécessaire</span>
+              </>
+            ) : null}
           </div>
-        </div>
-
-        {/* Floating gradient orbs */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
-      </section>
-
-      {/* Referral Section - Only for authenticated users */}
-      {user && (
-        <section className="container mx-auto px-4 py-12">
-          <ReferralSystem />
-        </section>
-      )}
-
-      {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">{t.landing.howItWorks.badge}</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.howItWorks.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {t.landing.howItWorks.subtitle}
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-          {t.landing.howItWorks.steps.map((step: any, index: number) => (
-            <div key={index} className="relative">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
-                  {index === 0 && <ShoppingBag className="w-8 h-8 text-white" />}
-                  {index === 1 && <Search className="w-8 h-8 text-white" />}
-                  {index === 2 && <Sparkles className="w-8 h-8 text-white" />}
-                  {index === 3 && <TrendingUp className="w-8 h-8 text-white" />}
-                </div>
-                <div className="relative">
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <h3 className="text-xl font-bold">{step.title}</h3>
-                </div>
-                <p className="text-muted-foreground text-sm">{step.description}</p>
-              </div>
-              {index < 3 && (
-                <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-transparent" />
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Key Features Section */}
-      <section id="features" className="container mx-auto px-4 py-24 bg-gradient-subtle">
-          <div className="text-center mb-16 space-y-4">
-            <Badge variant="outline" className="border-primary text-primary">{t.landing.features.badge}</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">{t.landing.features.title}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              {t.landing.features.subtitle}
-            </p>
-          </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {t.landing.features.items.map((feature: any, index: number) => {
-            const icons = [Search, ImageIcon, FileText, Tags, BarChart3, Sparkles];
-            const FeatureIcon = icons[index];
-            return (
-              <Card 
-                key={index}
-                className="p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow">
-                  <FeatureIcon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground mb-4">{feature.description}</p>
-                <div className="flex flex-wrap gap-2">
-                  {feature.tags.map((tag: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-success text-success">{t.landing.testimonials.badge}</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.testimonials.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {t.landing.testimonials.subtitle}
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {t.landing.testimonials.items.map((testimonial: any, index: number) => (
-            <Card key={index} className="p-6 space-y-4 border-2 hover:border-primary/30 transition-colors">
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                ))}
-              </div>
-              <p className="text-muted-foreground italic">"{testimonial.quote}"</p>
-              <div className="flex items-center gap-3 pt-4 border-t">
-                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
-                  {testimonial.author[0]}
-                </div>
-                <div>
-                  <p className="font-semibold">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section id="benefits" className="container mx-auto px-4 py-24 bg-gradient-subtle">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <Badge variant="outline" className="border-success text-success">{t.landing.benefits.badge}</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">
-              {t.landing.benefits.title}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t.landing.benefits.subtitle}
-            </p>
-            
-            <div className="space-y-4 pt-4">
-              {t.landing.benefits.items.map((benefit: any, index: number) => (
-                <div key={index} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0 mt-1" />
-                  <div>
-                    <p className="font-semibold">{benefit.title}</p>
-                    <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Button size="lg" className="mt-6" onClick={() => navigate('/auth?mode=signup')}>
-              {t.landing.benefits.cta}
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20" />
-            <Card className="relative p-8 space-y-6 border-2 border-primary/20">
-              <div className="grid grid-cols-2 gap-6">
-                {t.landing.benefits.stats.map((stat: any, index: number) => (
-                  <div key={index} className="space-y-2">
-                    <p className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      {stat.value}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">
-            <Globe className="w-4 h-4 mr-2" />
-            {t.landing.pricing.badge}
-          </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.pricing.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {t.landing.pricing.subtitle}
-          </p>
-          
-          {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t.landing.pricing.monthly}
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t.landing.pricing.yearly}
-              <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.yearlyDiscount}</Badge>
-            </button>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-          {[
-            { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false },
-            { key: 'pro', priceMonthly: 49, priceYearly: 39, yearlyTotal: 468, icon: "🟠", featured: true },
-            { key: 'enterprise', priceMonthly: 199, priceYearly: 159, yearlyTotal: 1908, icon: "🔵", featured: false }
-          ].map((planConfig, index) => {
-            const plan = t.landing.pricing.plans[planConfig.key as 'starter' | 'pro' | 'enterprise'];
-            const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
-            
-            return (
-              <Card 
-                key={index}
-                className={`p-8 relative ${planConfig.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
-              >
-                {plan.badge && (
-                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${planConfig.featured ? 'bg-primary' : 'bg-gradient-primary'}`}>
-                    {plan.badge}
-                  </Badge>
-                )}
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold">{planConfig.icon} {plan.name}</h3>
-                    </div>
-                    <p className="text-muted-foreground text-sm">{plan.description}</p>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
-                      <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                    </div>
-                    {billingCycle === 'yearly' && (
-                      <p className="text-sm text-success mt-1">
-                        {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
-                      </p>
-                    )}
-                    {planConfig.key === 'starter' && 'trial' in plan && plan.trial && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {plan.trial}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button 
-                    className="w-full" 
-                    variant={planConfig.featured ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => navigate('/auth?mode=signup')}
-                  >
-                    {plan.cta}
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-
-                  {plan.highlight && (
-                    <p className="text-sm text-muted-foreground italic">
-                      💡 {plan.highlight}
-                    </p>
-                  )}
-
-                  <div className="space-y-3 pt-6 border-t">
-                    <p className="font-semibold text-sm">Included in the plan:</p>
-                    {plan.features.map((feature: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Detailed Pricing Comparison */}
-        <div className="container mx-auto px-4 pb-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold mb-4">{t.landing.pricing.comparisonTitle || "Compare Plans in Detail"}</h3>
-            <p className="text-muted-foreground">{t.landing.pricing.comparisonSubtitle || "See all features side by side"}</p>
-          </div>
-          <PricingComparison />
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="container mx-auto px-4 py-24">
-        <ContactForm />
-      </section>
-
-      {/* Referral Section - Before Footer */}
-      <section className="container mx-auto px-4 py-16">
-        <ReferralSystem />
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-dark" />
-        <div className="container relative mx-auto px-4 py-24">
-          <div className="max-w-3xl mx-auto text-center space-y-8">
-            <h2 className="text-4xl md:text-5xl font-bold text-white">
-              {t.landing.cta.title}
-            </h2>
-            <p className="text-xl text-gray-300">
-              {t.landing.cta.subtitle}
-            </p>
-            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth?mode=signup')}>
-              {t.landing.cta.button}
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-      <Footer />
-      
-      {/* AI Assistant - Floating button */}
-      <AIAssistant />
-    </div>
+        )}
+      </div>
+    </Card>
   );
 };
 
-// All content is now sourced from translations
+interface GoogleSearchConsoleInsightsProps {
+  selectedDomain: string;
+}
 
-export default Index;
+export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchConsoleInsightsProps) {
+  const [dateRange, setDateRange] = useState<"7" | "30" | "90">("30");
+  const [data, setData] = useState<SearchConsoleData[]>([]);
+  const [topPages, setTopPages] = useState<TopPage[]>([]);
+  const [topQueries, setTopQueries] = useState<TopQuery[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [syncConfig, setSyncConfig] = useState<any>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [analyzingAnomalies, setAnalyzingAnomalies] = useState(false);
+  const { t, language } = useTranslation();
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (selectedDomain) {
+        loadCachedData();
+      } else {
+        setData([]);
+        setTopPages([]);
+        setTopQueries([]);
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedDomain, dateRange]);
+
+  const loadCachedData = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      loadSearchConsoleData();
+    } catch (error) {
+      console.error("Error loading cached data:", error);
+      loadSearchConsoleData();
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (selectedDomain) {
+        loadAlerts();
+      } else {
+        setAlerts([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedDomain]);
+
+  useEffect(() => {
+    loadSyncConfig();
+  }, []);
+
+  const loadSearchConsoleData = async () => {
+    if (!selectedDomain) return;
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.functions.invoke("get-search-console-data", {
+        body: {
+          domain: selectedDomain,
+          days: parseInt(dateRange),
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.data) throw new Error("Aucune donnée reçue");
+
+      const formattedData = data.data.map((item: SearchConsoleData) => ({
+        date: new Date(item.date).toLocaleDateString("fr-FR", { month: "short", day: "numeric" }),
+        clicks: item.clicks,
+        impressions: item.impressions,
+        ctr: parseFloat(item.ctr.toString()),
+        position: parseFloat(item.position.toString()),
+      }));
+
+      setData(formattedData);
+      setTopPages(data.topPages || []);
+      setTopQueries(data.topQueries || []);
+      toast.success(t.googleConsole.insightsData.success);
+    } catch (error: any) {
+      console.error("Error loading Search Console data:", error);
+      toast.error(error?.message || t.googleConsole.insightsData.error);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAlerts = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("gsc_alerts")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("domain", selectedDomain)
+        .eq("is_resolved", false)
+        .order("detection_date", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setAlerts(data || []);
+    } catch (error) {
+      console.error("Error loading alerts:", error);
+    }
+  };
+
+  const loadSyncConfig = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase.from("gsc_sync_config").select("*").eq("user_id", user.id).single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      setSyncConfig(data);
+    } catch (error) {
+      console.error("Error loading sync config:", error);
+    }
+  };
+
+  const analyzeAnomalies = async () => {
+    if (!selectedDomain) return;
+
+    try {
+      setAnalyzingAnomalies(true);
+      const { data, error } = await supabase.functions.invoke("analyze-gsc-anomalies", {
+        body: { domain: selectedDomain, days: parseInt(dateRange) },
+      });
+
+      if (error) throw error;
+
+      if (data?.summary?.total_alerts > 0) {
+        toast.success(`${data.summary.total_alerts} ${t.googleConsole.insightsData.alerts}`);
+        await loadAlerts();
+      } else {
+        toast.success(t.googleConsole.insightsData.noData);
+      }
+    } catch (error: any) {
+      console.error("Error analyzing anomalies:", error);
+      toast.error(t.googleConsole.insightsData.error);
+    } finally {
+      setAnalyzingAnomalies(false);
+    }
+  };
+
+  const updateSyncConfig = async (field: string, value: any) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from("gsc_sync_config").upsert({
+        user_id: user.id,
+        [field]: value,
+      });
+
+      if (error) throw error;
+
+      setSyncConfig((prev: any) => ({ ...prev, [field]: value }));
+      toast.success(t.googleConsole.insightsData.syncSettings.updated);
+    } catch (error) {
+      console.error("Error updating sync config:", error);
+      toast.error(t.googleConsole.insightsData.syncSettings.updateError);
+    }
+  };
+
+  const markAlertAsRead = async (alertId: string) => {
+    try {
+      const { error } = await supabase.from("gsc_alerts").update({ is_read: true }).eq("id", alertId);
+
+      if (error) throw error;
+      await loadAlerts();
+    } catch (error) {
+      console.error("Error marking alert as read:", error);
+    }
+  };
+
+  const resolveAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from("gsc_alerts")
+        .update({ is_resolved: true, resolved_at: new Date().toISOString() })
+        .eq("id", alertId);
+
+      if (error) throw error;
+      toast.success(t.googleConsole.insightsData.alertResolved);
+      await loadAlerts();
+    } catch (error) {
+      console.error("Error resolving alert:", error);
+      toast.error(t.googleConsole.insightsData.syncSettings.updateError);
+    }
+  };
+
+  const calculateMetrics = () => {
+    if (data.length === 0) return null;
+
+    const totalClicks = data.reduce((sum, d) => sum + d.clicks, 0);
+    const totalImpressions = data.reduce((sum, d) => sum + d.impressions, 0);
+    const avgCTR = data.reduce((sum, d) => sum + d.ctr, 0) / data.length;
+    const avgPosition = data.reduce((sum, d) => sum + d.position, 0) / data.length;
+
+    // Calculate performance insights
+    const highCTRPages = topPages.filter((page) => page.ctr > 5).length;
+    const lowPositionQueries = topQueries.filter((query) => query.position <= 10).length;
+    const highPotentialQueries = topQueries.filter(
+      (query) => query.impressions > 100 && query.position > 10 && query.position <= 20,
+    ).length;
+
+    const halfLength = Math.floor(data.length / 2);
+    const recentData = data.slice(halfLength);
+    const oldData = data.slice(0, halfLength);
+
+    const recentClicks = recentData.reduce((sum, d) => sum + d.clicks, 0);
+    const oldClicks = oldData.reduce((sum, d) => sum + d.clicks, 0);
+    const clicksChange = oldClicks > 0 ? ((recentClicks - oldClicks) / oldClicks) * 100 : 0;
+
+    const recentImpressions = recentData.reduce((sum, d) => sum + d.impressions, 0);
+    const oldImpressions = oldData.reduce((sum, d) => sum + d.impressions, 0);
+    const impressionsChange = oldImpressions > 0 ? ((recentImpressions - oldImpressions) / oldImpressions) * 100 : 0;
+
+    const recentCTR = recentData.reduce((sum, d) => sum + d.ctr, 0) / recentData.length;
+    const oldCTR = oldData.reduce((sum, d) => sum + d.ctr, 0) / oldData.length;
+    const ctrChange = oldCTR > 0 ? ((recentCTR - oldCTR) / oldCTR) * 100 : 0;
+
+    const recentPosition = recentData.reduce((sum, d) => sum + d.position, 0) / recentData.length;
+    const oldPosition = oldData.reduce((sum, d) => sum + d.position, 0) / oldData.length;
+    const positionChange = oldPosition > 0 ? ((oldPosition - recentPosition) / oldPosition) * 100 : 0;
+
+    return {
+      totalClicks,
+      totalImpressions,
+      avgCTR: avgCTR.toFixed(2),
+      avgPosition: avgPosition.toFixed(1),
+      clicksChange: Math.round(clicksChange),
+      impressionsChange: Math.round(impressionsChange),
+      ctrChange: Math.round(ctrChange),
+      positionChange: Math.round(positionChange),
+      highCTRPages,
+      lowPositionQueries,
+      highPotentialQueries,
+    };
+  };
+
+  const metrics = calculateMetrics();
+
+  return (
+    <div className="space-y-6">
+      {/* Alerts panel */}
+      {alerts.length > 0 && (
+        <Card className="p-6 border-orange-200 bg-orange-50/50">
+          <div className="flex items-start gap-4">
+            <AlertCircle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-2 text-orange-900">
+                {t.googleConsole.insightsData.alerts} ({alerts.length})
+              </h3>
+              <div className="space-y-3">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start justify-between gap-4 p-3 bg-white rounded-lg border border-orange-200"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge
+                          variant={
+                            alert.severity === "critical"
+                              ? "destructive"
+                              : alert.severity === "high"
+                                ? "default"
+                                : "secondary"
+                          }
+                        >
+                          {alert.severity === "critical"
+                            ? t.googleConsole.insightsData.severity.critical
+                            : alert.severity === "high"
+                              ? t.googleConsole.insightsData.severity.high
+                              : alert.severity === "medium"
+                                ? t.googleConsole.insightsData.severity.medium
+                                : t.googleConsole.insightsData.severity.low}
+                        </Badge>
+                        <span className="font-medium text-sm">{alert.metric_name}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Baisse de {Math.abs(alert.change_percentage).toFixed(1)}% (
+                        {alert.previous_value.toLocaleString()} → {alert.current_value.toLocaleString()})
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {!alert.is_read && (
+                        <Button size="sm" variant="ghost" onClick={() => markAlertAsRead(alert.id)}>
+                          {t.googleConsole.insightsData.markRead}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}>
+                        {t.googleConsole.insightsData.resolve}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Date range selector with settings */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Calendar className="h-5 w-5 text-primary" />
+            <Label>{t.googleConsole.insightsData.period}</Label>
+            <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{t.googleConsole.insightsData.days7}</SelectItem>
+                <SelectItem value="30">{t.googleConsole.insightsData.days30}</SelectItem>
+                <SelectItem value="90">{t.googleConsole.insightsData.days90}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={analyzeAnomalies}
+              disabled={analyzingAnomalies}
+              className="gap-2"
+            >
+              {analyzingAnomalies ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              {t.googleConsole.insightsData.analyzeAnomalies}
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowSettings(!showSettings)} className="gap-2">
+            <Settings className="h-4 w-4" />
+            {t.googleConsole.insightsData.settings}
+          </Button>
+        </div>
+
+        {/* Settings panel */}
+        {showSettings && (
+          <div className="mt-6 pt-6 border-t space-y-4">
+            <h4 className="font-semibold mb-4">{t.googleConsole.insightsData.syncSettings.title}</h4>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>{t.googleConsole.insightsData.syncSettings.autoSync}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t.googleConsole.insightsData.syncSettings.autoSyncDesc}
+                </p>
+              </div>
+              <Switch
+                checked={syncConfig?.auto_sync_enabled ?? true}
+                onCheckedChange={(checked) => updateSyncConfig("auto_sync_enabled", checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>{t.googleConsole.insightsData.syncSettings.notifications}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t.googleConsole.insightsData.syncSettings.notificationsDesc}
+                </p>
+              </div>
+              <Switch
+                checked={syncConfig?.notification_enabled ?? true}
+                onCheckedChange={(checked) => updateSyncConfig("notification_enabled", checked)}
+              />
+            </div>
+
+            {syncConfig?.last_sync_at && (
+              <div className="text-sm text-muted-foreground">
+                {t.googleConsole.insightsData.syncSettings.lastSync} :{" "}
+                {new Date(syncConfig.last_sync_at).toLocaleString(language === "fr" ? "fr-FR" : "en-US")}
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Metrics cards with improved Insight component */}
+      {metrics && (
+        <div className="space-y-6">
+          {/* Performance principale */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Insight
+              title={t.googleConsole.insightsData.metrics.totalClicks}
+              value={metrics.totalClicks.toLocaleString()}
+              change={metrics.clicksChange}
+              icon={<MousePointer className="h-5 w-5 text-primary" />}
+              trend={metrics.clicksChange > 0 ? "up" : metrics.clicksChange < 0 ? "down" : "neutral"}
+              description="Total des clics sur la période"
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.totalImpressions}
+              value={metrics.totalImpressions.toLocaleString()}
+              change={metrics.impressionsChange}
+              icon={<Eye className="h-5 w-5 text-primary" />}
+              trend={metrics.impressionsChange > 0 ? "up" : metrics.impressionsChange < 0 ? "down" : "neutral"}
+              description="Total des impressions dans les résultats"
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.avgCtr}
+              value={`${metrics.avgCTR}%`}
+              change={metrics.ctrChange}
+              icon={<BarChart3 className="h-5 w-5 text-primary" />}
+              trend={metrics.ctrChange > 0 ? "up" : metrics.ctrChange < 0 ? "down" : "neutral"}
+              description="Taux de clic moyen"
+              alert={metrics.ctrChange < -5}
+              size="large"
+            />
+            <Insight
+              title={t.googleConsole.insightsData.metrics.avgPosition}
+              value={metrics.avgPosition}
+              change={metrics.positionChange}
+              icon={<Target className="h-5 w-5 text-primary" />}
+              trend={metrics.positionChange > 0 ? "up" : metrics.positionChange < 0 ? "down" : "neutral"}
+              description="Position moyenne dans les résultats"
+              size="large"
+            />
+          </div>
+
+          {/* Insights avancés */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Insight
+              title="Pages performantes"
+              value={metrics.highCTRPages}
+              change={0}
+              icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+              description="Pages avec CTR > 5%"
+              trend="neutral"
+            />
+            <Insight
+              title="Mots-clés bien classés"
+              value={metrics.lowPositionQueries}
+              change={0}
+              icon={<CheckCircle2 className="h-5 w-5 text-blue-600" />}
+              description="Requêtes en top 10"
+              trend="neutral"
+            />
+            <Insight
+              title="Opportunités SEO"
+              value={metrics.highPotentialQueries}
+              change={0}
+              icon={<Zap className="h-5 w-5 text-orange-600" />}
+              description="Requêtes avec fort potentiel"
+              trend="neutral"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <Card className="p-8">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Chargement des données de Google Search Console...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Charts */}
+      {!loading && data.length > 0 && (
+        <>
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">{t.googleConsole.insightsData.charts.clicksImpressions}</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="clicks"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.6}
+                  name={t.googleConsole.insightsData.tables.clicks}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="impressions"
+                  stroke="hsl(var(--chart-2))"
+                  fill="hsl(var(--chart-2))"
+                  fillOpacity={0.6}
+                  name={t.googleConsole.insightsData.tables.impressions}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">
+              {t.googleConsole.insightsData.charts.position} {language === "fr" ? "et" : "and"}{" "}
+              {t.googleConsole.insightsData.charts.ctr}
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data}>
+                <defs>
+                  <linearGradient id="colorPosition" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorCTR" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="date" style={{ fontSize: "12px" }} />
+                <YAxis yAxisId="left" style={{ fontSize: "12px" }} />
+                <YAxis yAxisId="right" orientation="right" style={{ fontSize: "12px" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="position"
+                  stroke="hsl(var(--chart-3))"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
+                  name="Position"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="ctr"
+                  stroke="hsl(var(--chart-4))"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
+                  name={t.googleConsole.insightsData.tables.ctr}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+        </>
+      )}
+
+      {/* Top Pages and Queries Tables */}
+      {!loading && (topPages.length > 0 || topQueries.length > 0) && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Top Pages */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">{t.googleConsole.insightsData.tables.topPages}</h3>
+            {topPages.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.googleConsole.insightsData.tables.page}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.clicks}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.impressions}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.ctr}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.position}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topPages.map((page, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium max-w-xs truncate" title={page.page}>
+                        {page.page.replace(/^https?:\/\//, "").replace(/^[^/]+/, "")}
+                      </TableCell>
+                      <TableCell className="text-right">{page.clicks}</TableCell>
+                      <TableCell className="text-right">{page.impressions}</TableCell>
+                      <TableCell className="text-right">{page.ctr.toFixed(1)}%</TableCell>
+                      <TableCell className="text-right">{page.position.toFixed(1)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">{t.googleConsole.insightsData.noData}</p>
+            )}
+          </Card>
+
+          {/* Top Queries */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">{t.googleConsole.insightsData.tables.topQueries}</h3>
+            {topQueries.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.googleConsole.insightsData.tables.query}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.clicks}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.impressions}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.ctr}</TableHead>
+                    <TableHead className="text-right">{t.googleConsole.insightsData.tables.position}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topQueries.map((query, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{query.query}</TableCell>
+                      <TableCell className="text-right">{query.clicks}</TableCell>
+                      <TableCell className="text-right">{query.impressions}</TableCell>
+                      <TableCell className="text-right">{query.ctr.toFixed(1)}%</TableCell>
+                      <TableCell className="text-right">{query.position.toFixed(1)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">{t.googleConsole.insightsData.noData}</p>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* No data state */}
+      {!loading && data.length === 0 && (
+        <Card className="p-8">
+          <div className="text-center space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold">{t.googleConsole.insightsData.noData}</h3>
+              <p className="text-muted-foreground">
+                {language === "fr"
+                  ? "Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine."
+                  : "Google Search Console data has not yet been synced for this domain."}
+              </p>
+            </div>
+            <Button onClick={loadSearchConsoleData} className="gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Charger les données depuis Google Search Console
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Article Opportunities */}
+      {!loading && topQueries.length > 0 && (
+        <GSCArticleOpportunities selectedDomain={selectedDomain} topQueries={topQueries} />
+      )}
+    </div>
+  );
+}
