@@ -40,13 +40,19 @@ Deno.serve(async (req) => {
     console.log("📝 Syncing article:", article.title);
     console.log("👤 Article user_id:", article.user_id);
 
-    const { data: store, error: storeError } = await supabase
+    // Build query conditionally based on whether store_id exists
+    let storeQuery = supabase
       .from("shopify_connections")
       .select("*")
       .eq("user_id", article.user_id)
-      .eq("is_active", true)
-      .eq("id", article.store_id)
-      .maybeSingle();
+      .eq("is_active", true);
+    
+    // Only filter by store_id if it exists and is not null
+    if (article.store_id && article.store_id !== 'null') {
+      storeQuery = storeQuery.eq("id", article.store_id);
+    }
+    
+    const { data: store, error: storeError } = await storeQuery.maybeSingle();
 
     if (storeError) {
       console.error("❌ Error fetching Shopify connection:", storeError);
