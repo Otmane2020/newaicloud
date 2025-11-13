@@ -54,6 +54,14 @@ async function callDataForSEO(keyword: string, type: 'organic' | 'images', maxRe
   const login = Deno.env.get('DATAFORSEO_LOGIN');
   const password = Deno.env.get('DATAFORSEO_PASSWORD');
   
+  console.log('🔐 DataForSEO credentials check:', {
+    hasLogin: !!login,
+    loginLength: login?.length || 0,
+    loginPreview: login ? `${login.substring(0, 3)}***` : 'missing',
+    hasPassword: !!password,
+    passwordLength: password?.length || 0
+  });
+  
   if (!login || !password) {
     throw new Error('DataForSEO credentials not configured');
   }
