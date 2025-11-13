@@ -125,12 +125,11 @@ export function LandingPagePreviewDialog({
               </div>
             )}
           </DialogTitle>
-          <DialogDescription>
-            {currentLandingPage
-              ? "Prévisualisez et synchronisez votre landing page avec Shopify"
-              : "Aucune landing page générée pour ce produit"
-            }
-          </DialogDescription>
+          {currentLandingPage && (
+            <DialogDescription>
+              Prévisualisez et synchronisez votre landing page avec Shopify
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
