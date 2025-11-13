@@ -250,23 +250,24 @@ export function SeoAltImageList() {
     setShowResultsDialog(true);
   };
 
-  // Helper: Invoke with timeout and retry
-  const invokeWithTimeout = async (imageId: string, timeoutMs = 30000, retries = 1): Promise<any> => {
+  // Helper: Sync product images to Shopify with timeout and retry
+  const syncProductToShopify = async (productId: string, timeoutMs = 30000, retries = 1): Promise<any> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+          setTimeout(() => reject(new Error('Timeout de synchronisation - Shopify ne répond pas')), timeoutMs)
         );
 
-        const invokePromise = supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { imageId }
+        const invokePromise = supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: { productId }
         });
 
         const result = await Promise.race([invokePromise, timeoutPromise]);
         return result;
       } catch (error: any) {
         if (attempt < retries && (error.message === 'Timeout' || error.message?.includes('network'))) {
-          console.log(`⚠️ Retry ${attempt + 1}/${retries} for image ${imageId}`);
+          console.log(`⚠️ Tentative ${attempt + 1}/${retries} pour le produit ${productId}`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
           continue;
         }
         throw error;
@@ -278,12 +279,12 @@ export function SeoAltImageList() {
     if (imagesToSync.length === 0) return;
 
     // CRITICAL: Filter out images without Shopify ID before syncing
-    const syncableImages = imagesToSync.filter(img => img.shopify_image_id);
+    const syncableImages = imagesToSync.filter(img => img.shopify_image_id && img.product_id !== 'homepage');
     const filteredCount = imagesToSync.length - syncableImages.length;
     
     if (syncableImages.length === 0) {
-      toast.error(t.seo.altImage.noSyncable, {
-        description: t.seo.altImage.homepageCannotSync
+      toast.error('Aucune image synchronisable', {
+        description: 'Les images homepage ne peuvent pas être synchronisées avec Shopify. Utilisez l\'export CSV pour les intégrer manuellement.'
       });
       setShowResultsDialog(false);
       setShowSyncDialog(false);
@@ -291,56 +292,81 @@ export function SeoAltImageList() {
     }
     
     if (filteredCount > 0) {
-      toast.info(tf('seo.altImage.homepageIgnored', { count: filteredCount }), {
-        description: t.seo.altImage.onlyProducts
+      toast.info(`${filteredCount} image${filteredCount > 1 ? 's' : ''} ignorée${filteredCount > 1 ? 's' : ''}`, {
+        description: 'Les images homepage doivent être intégrées manuellement dans votre thème Shopify'
       });
     }
+
+    // Group images by product_id
+    const imagesByProduct = new Map<string, ProductImage[]>();
+    syncableImages.forEach(img => {
+      if (!imagesByProduct.has(img.product_id)) {
+        imagesByProduct.set(img.product_id, []);
+      }
+      imagesByProduct.get(img.product_id)!.push(img);
+    });
+
+    const productIds = Array.from(imagesByProduct.keys());
+    console.log(`🔄 Synchronisation de ${syncableImages.length} images pour ${productIds.length} produit(s)`);
 
     setShowResultsDialog(false);
     setShowSyncDialog(false);
     setCurrentOperation('syncing');
     setShowProgressDialog(true);
-    setProgress({ current: 0, total: syncableImages.length });
+    setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
     let errorCount = 0;
-    const failedImages: string[] = [];
+    const failedProducts: string[] = [];
     const successfulImages: ProductImage[] = [];
 
     try {
-      for (let i = 0; i < syncableImages.length; i++) {
-        const image = syncableImages[i];
-        console.log(`🔄 [${i + 1}/${syncableImages.length}] Syncing image:`, image.id, 'Shopify ID:', image.shopify_image_id);
+      for (let i = 0; i < productIds.length; i++) {
+        const productId = productIds[i];
+        const productImages = imagesByProduct.get(productId)!;
+        const productTitle = productImages[0]?.product_title || 'Produit inconnu';
+        
+        console.log(`🔄 [${i + 1}/${productIds.length}] Synchronisation de ${productImages.length} image(s) pour "${productTitle}"`);
         
         try {
-          const { data, error } = await invokeWithTimeout(image.id);
+          const { data, error } = await syncProductToShopify(productId);
 
           if (error) {
-            console.error(`❌ [${i + 1}/${imagesToSync.length}] Function error:`, error);
+            console.error(`❌ [${i + 1}/${productIds.length}] Erreur fonction:`, error);
             errorCount++;
-            failedImages.push(image.product_title || image.id);
+            failedProducts.push(productTitle);
+            toast.error(`Échec pour ${productTitle}`, {
+              description: error.message || 'Erreur de connexion à Shopify',
+              duration: 4000
+            });
             continue;
           }
 
           if (!data?.success) {
-            console.error(`❌ [${i + 1}/${imagesToSync.length}] API error:`, data?.error || data?.message);
+            const errorMsg = data?.error || data?.message || 'Erreur inconnue';
+            console.error(`❌ [${i + 1}/${productIds.length}] Erreur API:`, errorMsg);
             errorCount++;
-            failedImages.push(image.product_title || image.id);
-            if (data?.message) {
-              toast.error(data.message, { duration: 3000 });
-            }
+            failedProducts.push(productTitle);
+            toast.error(`Échec pour ${productTitle}`, {
+              description: errorMsg,
+              duration: 4000
+            });
             continue;
           }
 
-          console.log(`✅ [${i + 1}/${imagesToSync.length}] Synced successfully`);
+          console.log(`✅ [${i + 1}/${productIds.length}] Synchronisé avec succès`);
           successCount++;
-          successfulImages.push(image);
+          successfulImages.push(...productImages);
         } catch (error: any) {
-          console.error(`❌ [${i + 1}/${imagesToSync.length}] Unexpected error:`, error.message);
+          console.error(`❌ [${i + 1}/${productIds.length}] Erreur inattendue:`, error.message);
           errorCount++;
-          failedImages.push(image.product_title || image.id);
+          failedProducts.push(productTitle);
+          toast.error(`Erreur pour ${productTitle}`, {
+            description: error.message || 'Une erreur inattendue s\'est produite',
+            duration: 4000
+          });
         } finally {
-          setProgress({ current: i + 1, total: imagesToSync.length });
+          setProgress({ current: i + 1, total: productIds.length });
         }
       }
     } finally {
@@ -371,9 +397,11 @@ export function SeoAltImageList() {
       }
       
       if (errorCount > 0) {
-        toast.warning(`${errorCount} image(s) échouée(s)`, {
-          description: failedImages.length > 0 ? `Produits: ${failedImages.slice(0, 3).join(', ')}${failedImages.length > 3 ? '...' : ''}` : undefined,
-          duration: 5000
+        toast.warning(`${errorCount} produit${errorCount > 1 ? 's' : ''} échoué${errorCount > 1 ? 's' : ''}`, {
+          description: failedProducts.length > 0 
+            ? `Vérifiez votre connexion Shopify. Produits: ${failedProducts.slice(0, 3).join(', ')}${failedProducts.length > 3 ? '...' : ''}` 
+            : 'Vérifiez votre connexion Shopify et réessayez',
+          duration: 6000
         });
       }
       
@@ -385,8 +413,9 @@ export function SeoAltImageList() {
   const handleCloseSuccess = () => {
     setShowSuccessDialog(false);
     setOptimizedItems([]);
+    const imageCount = optimizedItems.length;
     toast.success('Synchronisation terminée !', {
-      description: `${progress.current} image${progress.current > 1 ? 's synchronisées' : ' synchronisée'} avec succès`
+      description: `${imageCount} image${imageCount > 1 ? 's ont été synchronisées' : ' a été synchronisée'} avec Shopify avec succès`
     });
   };
 
