@@ -27,7 +27,7 @@ interface ImageSelectionDialogProps {
   productTitle: string;
   mainImageUrl: string | null;
   variantImages: ProductImage[];
-  onConfirm: (selectedImageUrl: string, applyTo: 'main' | 'all') => void;
+  onConfirm: (selectedImageUrl: string, applyTo: 'main' | 'all' | 'variants', selectedVariantIds?: string[]) => void;
 }
 
 export function ImageSelectionDialog({
@@ -39,12 +39,22 @@ export function ImageSelectionDialog({
   onConfirm,
 }: ImageSelectionDialogProps) {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>(mainImageUrl || '');
-  const [applyTo, setApplyTo] = useState<'main' | 'all'>('main');
+  const [applyTo, setApplyTo] = useState<'main' | 'all' | 'variants'>('main');
+  const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([]);
 
   const handleConfirm = () => {
     if (!selectedImageUrl) return;
-    onConfirm(selectedImageUrl, applyTo);
+    if (applyTo === 'variants' && selectedVariantIds.length === 0) return;
+    onConfirm(selectedImageUrl, applyTo, selectedVariantIds);
     onOpenChange(false);
+  };
+
+  const toggleVariantSelection = (variantId: string) => {
+    setSelectedVariantIds(prev => 
+      prev.includes(variantId) 
+        ? prev.filter(id => id !== variantId)
+        : [...prev, variantId]
+    );
   };
 
   return (
@@ -119,7 +129,12 @@ export function ImageSelectionDialog({
           {/* Application Target */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Appliquer le résultat à</Label>
-            <RadioGroup value={applyTo} onValueChange={(v) => setApplyTo(v as 'main' | 'all')}>
+            <RadioGroup value={applyTo} onValueChange={(v) => {
+              setApplyTo(v as 'main' | 'all' | 'variants');
+              if (v !== 'variants') {
+                setSelectedVariantIds([]);
+              }
+            }}>
               <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="main" id="main" />
                 <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
@@ -129,6 +144,54 @@ export function ImageSelectionDialog({
                   </p>
                 </Label>
               </div>
+              
+              {variantImages.length > 0 && (
+                <div className="p-3 rounded-lg border space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <RadioGroupItem value="variants" id="variants" className="mt-1" />
+                    <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
+                      Variantes spécifiques
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sélectionnez les variantes à modifier
+                      </p>
+                    </Label>
+                  </div>
+                  
+                  {applyTo === 'variants' && (
+                    <div className="pl-6 grid grid-cols-3 gap-2">
+                      {variantImages.map((variant) => (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          onClick={() => toggleVariantSelection(variant.id)}
+                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                            selectedVariantIds.includes(variant.id)
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <img
+                            src={variant.src}
+                            alt={variant.alt_text || `Variante ${variant.position}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {selectedVariantIds.includes(variant.id) && (
+                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                              <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                <Check className="w-4 h-4" />
+                              </div>
+                            </div>
+                          )}
+                          <Badge className="absolute bottom-1 left-1 text-[10px]">
+                            #{variant.position}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="all" id="all" />
                 <Label htmlFor="all" className="flex-1 cursor-pointer text-sm">
@@ -152,10 +215,13 @@ export function ImageSelectionDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedImageUrl}
+            disabled={!selectedImageUrl || (applyTo === 'variants' && selectedVariantIds.length === 0)}
             className="w-full sm:w-auto text-xs sm:text-sm"
           >
             Confirmer et générer
+            {applyTo === 'variants' && selectedVariantIds.length > 0 && (
+              <span className="ml-2">({selectedVariantIds.length})</span>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
