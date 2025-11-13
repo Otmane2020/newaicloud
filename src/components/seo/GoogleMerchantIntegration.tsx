@@ -100,38 +100,40 @@ export function GoogleMerchantIntegration() {
       
       const { data, error } = await supabase.functions.invoke('list-merchant-accounts');
       
+      console.log('[GoogleMerchant] 🔵 Response:', { data, error });
+
+      // Handle API not enabled error (403 from edge function)
+      if (data?.error === 'API_NOT_ENABLED') {
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">Google Content API not enabled</p>
+            <p className="text-sm text-muted-foreground">{data.message}</p>
+            {data.activationUrl && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(data.activationUrl, '_blank')}
+                className="mt-2"
+              >
+                Enable API in Google Cloud Console
+              </Button>
+            )}
+          </div>,
+          { duration: 15000 }
+        );
+        return;
+      }
+
+      // Handle network/auth errors
       if (error) {
         console.error('[GoogleMerchant] ❌ Error fetching accounts:', error);
         toast.error(t.googleMerchant.integration.errors.loadAccounts + ': ' + (error.message || 'Unknown error'));
         return;
       }
-      
-      console.log('[GoogleMerchant] 🔵 Accounts response:', data);
 
-      // Handle API not enabled error
-      if (!data?.success && data?.error === 'API_NOT_ENABLED') {
-        toast.error(
-          <div className="space-y-2">
-            <p className="font-semibold">Content API for Shopping not enabled</p>
-            <p className="text-sm">{data.message}</p>
-            {data.activationUrl && (
-              <a 
-                href={data.activationUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm underline hover:no-underline inline-flex items-center gap-1"
-              >
-                Enable API in Google Cloud Console →
-              </a>
-            )}
-          </div>,
-          { duration: 10000 }
-        );
-        return;
-      }
-
+      // Handle other API errors
       if (!data?.success) {
-        console.error('API returned error:', data?.error);
+        console.error('[GoogleMerchant] ❌ API returned error:', data?.error);
         toast.error(data?.error || t.googleMerchant.integration.errors.loadAccounts);
         return;
       }
