@@ -91,6 +91,10 @@ interface ProductImage {
   src: string;
   alt_text: string | null;
   position: number | null;
+  variant_id?: string;
+  option1?: string | null;
+  option2?: string | null;
+  option3?: string | null;
 }
 
 // Check if product has rich HTML description or landing page
@@ -574,7 +578,28 @@ export default function ProductTitleDescription() {
           .eq('product_id', productId)
           .order('position', { ascending: true });
         
-        setPendingProductImages(images || []);
+        // Charger les variantes pour obtenir leurs options
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select('id, image_url, option1, option2, option3')
+          .eq('product_id', productId);
+        
+        // Associer les images aux variantes par image_url
+        const transformedImages = images?.map((img: any) => {
+          const matchingVariant = variants?.find(v => v.image_url === img.src);
+          return {
+            id: img.id,
+            src: img.src,
+            alt_text: img.alt_text,
+            position: img.position,
+            variant_id: matchingVariant?.id,
+            option1: matchingVariant?.option1,
+            option2: matchingVariant?.option2,
+            option3: matchingVariant?.option3
+          };
+        }) || [];
+        
+        setPendingProductImages(transformedImages);
         setShowImageSelectionDialog(true);
         setShowWhiteBgConfigDialog(false);
         return;
@@ -797,7 +822,28 @@ export default function ProductTitleDescription() {
           .eq('product_id', productId)
           .order('position', { ascending: true });
         
-        setPendingProductImages(images || []);
+        // Charger les variantes pour obtenir leurs options
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select('id, image_url, option1, option2, option3')
+          .eq('product_id', productId);
+        
+        // Associer les images aux variantes par image_url
+        const transformedImages = images?.map((img: any) => {
+          const matchingVariant = variants?.find(v => v.image_url === img.src);
+          return {
+            id: img.id,
+            src: img.src,
+            alt_text: img.alt_text,
+            position: img.position,
+            variant_id: matchingVariant?.id,
+            option1: matchingVariant?.option1,
+            option2: matchingVariant?.option2,
+            option3: matchingVariant?.option3
+          };
+        }) || [];
+        
+        setPendingProductImages(transformedImages);
         setShowImageSelectionDialog(true);
         setShowPromptDialog(false);
         setShowAiConfigDialog(false);
