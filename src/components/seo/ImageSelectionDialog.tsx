@@ -120,12 +120,12 @@ export function ImageSelectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* 1. Sélection de l'image source EN PREMIER */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Colonne gauche: Sélection de l'image source */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Sélectionner l'image source</Label>
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <ScrollArea className="h-[250px] pr-4">
+              <div className="grid grid-cols-2 gap-3">
                 {allImages.map((img, index) => (
                   <button
                     key={`${img.type}-${index}`}
@@ -155,8 +155,8 @@ export function ImageSelectionDialog({
             </ScrollArea>
           </div>
 
-          {/* 2. Configuration (prompt IA + application) */}
-          <div className="space-y-4 border-t pt-4">
+          {/* Colonne droite: Configuration (prompt IA + application) */}
+          <div className="space-y-4">
             {isAiBackground && (
               <div className="space-y-2">
                 <Label htmlFor="ai-prompt" className="text-sm font-medium">Description du fond souhaité</Label>
@@ -191,7 +191,7 @@ export function ImageSelectionDialog({
                 </RadioGroup>
               ) : (
                 <RadioGroup value={selectedVariantId} onValueChange={setSelectedVariantId}>
-                  <ScrollArea className="h-[200px]">
+                  <ScrollArea className="h-[150px]">
                     {variants.map((variant) => {
                       const variantLabel = [variant.option1, variant.option2, variant.option3]
                         .filter(Boolean)
