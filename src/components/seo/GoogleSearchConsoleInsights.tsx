@@ -174,9 +174,34 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (!data?.data) throw new Error("Aucune donnée reçue");
+      if (error) {
+        console.error("Edge function error:", error);
+        toast.error("Erreur de connexion au serveur");
+        return;
+      }
+
+      if (data?.error) {
+        if (data.error === 'NO_GOOGLE_AUTH') {
+          toast.error("Google Search Console non connecté");
+        } else if (data.error.includes('403')) {
+          toast.error("Accès refusé. Vérifiez les permissions du domaine");
+        } else {
+          toast.error(data.error);
+        }
+        setData([]);
+        setTopPages([]);
+        setTopQueries([]);
+        return;
+      }
+
+      if (!data?.data || data.data.length === 0) {
+        console.log("No data available for this period");
+        setData([]);
+        setTopPages([]);
+        setTopQueries([]);
+        toast.info("Aucune donnée disponible pour cette période");
+        return;
+      }
 
       const formattedData = data.data.map((item: SearchConsoleData) => ({
         date: new Date(item.date).toLocaleDateString("fr-FR", { month: "short", day: "numeric" }),
@@ -189,11 +214,16 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       setData(formattedData);
       setTopPages(data.topPages || []);
       setTopQueries(data.topQueries || []);
-      toast.success(t.googleConsole.insightsData.success);
+      
+      if (formattedData.length > 0) {
+        toast.success(`Données chargées (${formattedData.length} jours)`);
+      }
     } catch (error: any) {
       console.error("Error loading Search Console data:", error);
-      toast.error(error?.message || t.googleConsole.insightsData.error);
+      toast.error("Erreur lors du chargement des données");
       setData([]);
+      setTopPages([]);
+      setTopQueries([]);
     } finally {
       setLoading(false);
     }
@@ -693,27 +723,50 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
         </div>
       )}
 
-      {/* No data state */}
+      {/* Empty state with helpful guidance */}
       {!loading && data.length === 0 && (
-        <Card className="p-8">
+        <Card className="p-12">
           <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="p-4 bg-muted rounded-full">
+                <BarChart3 className="h-12 w-12 text-muted-foreground" />
+              </div>
+            </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold">{t.googleConsole.insightsData.noData}</h3>
-              <p className="text-muted-foreground">
-                {language === "fr"
-                  ? "Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine."
-                  : "Google Search Console data has not yet been synced for this domain."}
+              <h3 className="text-xl font-semibold">Aucune donnée disponible</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Aucune donnée trouvée pour ce domaine sur la période sélectionnée.
               </p>
             </div>
-            <Button onClick={loadSearchConsoleData} className="gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Charger les données depuis Google Search Console
+            <div className="flex flex-col gap-3 max-w-md mx-auto text-left bg-accent/50 p-4 rounded-lg">
+              <div className="flex items-start gap-2 text-sm">
+                <AlertCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Vérifiez la connexion Google Search Console</p>
+                  <p className="text-muted-foreground text-xs">
+                    Assurez-vous que le domaine est vérifié et que les permissions sont correctes.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 text-sm">
+                <AlertCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">Délai d'indexation</p>
+                  <p className="text-muted-foreground text-xs">
+                    Les données peuvent prendre 24-48h après la vérification pour apparaître.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button onClick={loadSearchConsoleData} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Recharger les données
             </Button>
           </div>
         </Card>
       )}
 
-      {/* Article Opportunities */}
+      {/* GSC Article Opportunities */}
       {!loading && topQueries.length > 0 && (
         <GSCArticleOpportunities selectedDomain={selectedDomain} topQueries={topQueries} />
       )}

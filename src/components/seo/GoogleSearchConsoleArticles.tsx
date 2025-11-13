@@ -63,10 +63,39 @@ export function GoogleSearchConsoleArticles({ selectedDomain }: GoogleSearchCons
     try {
       setIndexingStatus(prev => ({ ...prev, [article.id]: 'pending' }));
       
-      // This would call an edge function to request indexing via Google Search Console API
-      // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      if (!selectedStore?.store_url) {
+        toast.error('URL de la boutique non trouvée');
+        setIndexingStatus(prev => ({ ...prev, [article.id]: 'error' }));
+        return;
+      }
+
+      // Construct article URL
+      const cleanUrl = selectedStore.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const articleUrl = `https://${cleanUrl}/blogs/news/${article.id}`;
+
+      // Call edge function to request indexing
+      const { data, error } = await supabase.functions.invoke('request-gsc-indexing', {
+        body: {
+          articleId: article.id,
+          url: articleUrl,
+        },
+      });
+
+      if (error || !data?.success) {
+        console.error('Error requesting indexing:', error || data?.error);
+        
+        if (data?.status === 'quota_exceeded') {
+          toast.error('Quota journalier dépassé (200 requêtes/jour)');
+        } else if (data?.error === 'NO_GOOGLE_AUTH') {
+          toast.error('Google Search Console non connecté');
+        } else {
+          toast.error(data?.message || 'Erreur lors de la demande d\'indexation');
+        }
+        
+        setIndexingStatus(prev => ({ ...prev, [article.id]: 'error' }));
+        return;
+      }
+
       setIndexingStatus(prev => ({ ...prev, [article.id]: 'indexed' }));
       toast.success(`Indexation demandée pour "${article.title}"`);
     } catch (error) {
