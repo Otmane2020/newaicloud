@@ -19,6 +19,7 @@ interface LandingPagePreviewDialogProps {
   seoTitle?: string;
   seoDescription?: string;
   storeUrl?: string;
+  onGenerateClick?: () => void;
 }
 
 export function LandingPagePreviewDialog({
@@ -31,6 +32,7 @@ export function LandingPagePreviewDialog({
   seoTitle,
   seoDescription,
   storeUrl,
+  onGenerateClick,
 }: LandingPagePreviewDialogProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
@@ -150,15 +152,21 @@ export function LandingPagePreviewDialog({
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center p-8">
+                <div className="text-center p-8 max-w-md">
                   <div className="relative mb-6">
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl" />
                     <FileText className="h-20 w-20 mx-auto text-muted-foreground/50 relative" />
                   </div>
+                  <p className="font-semibold text-lg mb-2">Aucune landing page disponible</p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Créez une landing page optimisée pour ce produit et visualisez-la instantanément
+                  </p>
                   <Button 
                     onClick={() => {
-                      toast.info("Fermez cette fenêtre et utilisez le bouton 'Générer Landing Page' pour créer votre page");
                       onOpenChange(false);
+                      if (onGenerateClick) {
+                        onGenerateClick();
+                      }
                     }}
                     className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
                     size="lg"
@@ -166,6 +174,9 @@ export function LandingPagePreviewDialog({
                     <Sparkles className="mr-2 h-5 w-5" />
                     Générer ma Landing Page
                   </Button>
+                  <p className="text-xs mt-4 text-muted-foreground/70">
+                    La génération prend quelques secondes
+                  </p>
                 </div>
               </div>
             )}

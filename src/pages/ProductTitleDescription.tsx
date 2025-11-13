@@ -2098,6 +2098,12 @@ export default function ProductTitleDescription() {
         productTitle={previewProduct?.title || ""}
         productHandle={previewProduct?.handle || ""}
         currentLandingPage={previewProduct?.landing_page}
+        onGenerateClick={() => {
+          if (previewProduct) {
+            setSelectedLandingProduct(previewProduct);
+            setShowLandingConfigDialog(true);
+          }
+        }}
       />
 
       {/* Delete Confirmation Dialog */}
