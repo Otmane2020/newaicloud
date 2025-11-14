@@ -56,6 +56,20 @@ serve(async (req) => {
       );
     }
 
+    // ✅ Check if image is already on Shopify CDN
+    if (collection.image_url?.includes('cdn.shopify.com')) {
+      console.log('✅ [SYNC-IMAGE] Image already on Shopify CDN - no sync needed');
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          skipped: true,
+          message: 'Image déjà sur Shopify',
+          note: 'L\'image est déjà hébergée sur le CDN Shopify'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!collection.shopify_collection_id) {
       console.log('⚠️ [SYNC-IMAGE] Collection not synced to Shopify yet');
       return new Response(
