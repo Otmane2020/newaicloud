@@ -230,20 +230,7 @@ export const useShopifySync = () => {
         }
       }
 
-      // ✅ CRITICAL FIX: Auto-sync product-collection links after successful import
-      if ((importResults.products > 0 || importResults.collections > 0) && errorMessages.length === 0) {
-        console.log('🔗 [SYNC LINKS] Auto-syncing product-collection links...');
-        try {
-          const syncLinksResult = await supabase.functions.invoke('sync-product-collections');
-          if (syncLinksResult.error) {
-            console.error('❌ [SYNC LINKS ERROR]', syncLinksResult.error);
-          } else {
-            console.log('✅ [SYNC LINKS] Product-collection links synced:', syncLinksResult.data);
-          }
-        } catch (syncError) {
-          console.error('❌ [SYNC LINKS EXCEPTION]', syncError);
-        }
-      }
+      // Note: product-collection links are now synced automatically by import-products edge function
 
       if (errorMessages.length > 0) {
         toast.warning(`Synchronisation terminée avec des erreurs: ${totalImported} éléments importés`);
