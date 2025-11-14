@@ -1780,20 +1780,25 @@ export default function ProductTitleDescription() {
                   style: config.similarity,
                   format: config.format,
                   targetType: config.applyTo === 'main' ? 'main' : 'variants',
-                  variantOptions: config.selectedVariantIds?.length ? {
-                    variantIds: config.selectedVariantIds
+                  variantOptions: config.selectedVariants.get(product.id)?.length ? {
+                    variantIds: config.selectedVariants.get(product.id)
                   } : undefined
                 }
               });
 
               if (error) {
-                if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+                console.error('AI Background generation error:', error);
+                if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT')) {
                   throw new Error('Limite de taux dépassée. Veuillez réessayer plus tard.');
                 }
-                if (error.message?.includes('402') || error.message?.includes('Payment required')) {
-                  throw new Error('Crédits insuffisants. Veuillez ajouter des crédits à votre espace de travail Lovable AI.');
+                if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
+                  throw new Error('Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.');
                 }
                 throw error;
+              }
+              
+              if (!data?.success) {
+                throw new Error(data?.message || 'Erreur lors de la génération');
               }
 
               if (data.imageUrl) {
