@@ -166,6 +166,20 @@ serve(async (req) => {
       console.error(`❌ [SYNC-IMAGE] Shopify API error: ${shopifyResponse.status}`);
       console.error(`Response: ${errorText}`);
       
+      // Check if it's a 404 image error (image URL no longer valid on Shopify)
+      if (shopifyResponse.status === 422 && errorText.includes('failed to download')) {
+        console.log('⚠️ [SYNC-IMAGE] Image URL is stale - suggesting re-import');
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Image URL obsolète',
+            message: 'L\'URL de l\'image n\'est plus valide sur Shopify. Veuillez réimporter cette collection depuis Shopify pour obtenir l\'URL correcte.',
+            action_needed: 'reimport_collection'
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false,
