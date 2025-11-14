@@ -46,11 +46,12 @@ Deno.serve(async (req) => {
       throw new Error('Page does not have a Shopify ID');
     }
 
-    // Récupérer la connexion Shopify
+    // Récupérer la connexion Shopify pour ce store spécifique
     const { data: connection, error: connError } = await supabaseClient
       .from('shopify_connections')
       .select('*')
       .eq('user_id', user.id)
+      .eq('store_id', page.store_id)
       .eq('is_active', true)
       .single();
 
