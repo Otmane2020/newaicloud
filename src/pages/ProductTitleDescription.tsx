@@ -964,6 +964,7 @@ export default function ProductTitleDescription() {
       try {
         let syncSuccessCount = 0;
         let syncErrorCount = 0;
+        let notSyncedToShopify: string[] = [];
 
         // Récupérer les IDs de produits uniques à synchroniser
         const uniqueProductIds = [...new Set(whiteBgApplyTo === "simple" 
@@ -973,13 +974,17 @@ export default function ProductTitleDescription() {
 
         for (const productId of uniqueProductIds) {
           try {
-            const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
               body: { productId }
             });
 
             if (syncError) {
               console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
               syncErrorCount++;
+            } else if (syncData?.skipped) {
+              // Produit pas encore synchronisé avec Shopify
+              notSyncedToShopify.push(productId);
+              console.log(`Produit ${productId} pas encore sur Shopify - sync passée`);
             } else {
               syncSuccessCount++;
             }
@@ -989,16 +994,32 @@ export default function ProductTitleDescription() {
           }
         }
 
-        if (syncSuccessCount > 0 && syncErrorCount === 0) {
-          toast.success(`✅ ${syncSuccessCount} produit${syncSuccessCount > 1 ? 's' : ''} synchronisé${syncSuccessCount > 1 ? 's' : ''} avec Shopify`, { id: toastId });
-        } else if (syncSuccessCount > 0 && syncErrorCount > 0) {
-          toast.warning(`⚠️ ${syncSuccessCount} synchronisé${syncSuccessCount > 1 ? 's' : ''}, ${syncErrorCount} erreur${syncErrorCount > 1 ? 's' : ''}`, { id: toastId });
+        // Messages de résultat détaillés
+        if (syncSuccessCount > 0 && syncErrorCount === 0 && notSyncedToShopify.length === 0) {
+          toast.success(
+            `✅ ${syncSuccessCount} produit${syncSuccessCount > 1 ? 's' : ''} synchronisé${syncSuccessCount > 1 ? 's' : ''} avec Shopify`,
+            { id: toastId, duration: 4000 }
+          );
+        } else if (syncSuccessCount > 0) {
+          let msg = `✅ ${syncSuccessCount} synchronisé${syncSuccessCount > 1 ? 's' : ''}`;
+          if (notSyncedToShopify.length > 0) {
+            msg += ` • ℹ️ ${notSyncedToShopify.length} pas encore sur Shopify`;
+          }
+          if (syncErrorCount > 0) {
+            msg += ` • ❌ ${syncErrorCount} erreur${syncErrorCount > 1 ? 's' : ''}`;
+          }
+          toast.success(msg, { id: toastId, duration: 5000 });
+        } else if (notSyncedToShopify.length > 0) {
+          toast.info(
+            `ℹ️ Images sauvegardées ! ${notSyncedToShopify.length} produit${notSyncedToShopify.length > 1 ? 's' : ''} pas encore sur Shopify. Synchronisez-les d'abord pour voir les images.`,
+            { id: toastId, duration: 6000 }
+          );
         } else {
           toast.error(`❌ Erreur lors de la synchronisation avec Shopify`, { id: toastId });
         }
       } catch (syncError) {
         console.error('Erreur globale sync Shopify:', syncError);
-        toast.warning('Images appliquées mais erreur lors de la synchronisation avec Shopify', { id: toastId });
+        toast.warning('Images appliquées localement mais erreur de synchronisation Shopify', { id: toastId });
       }
 
       await fetchProducts();
