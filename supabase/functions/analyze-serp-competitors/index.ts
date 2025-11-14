@@ -210,9 +210,9 @@ function analyzeProduct(items: any[]): ProductInsights {
 
 function analyzeImages(items: any[]): ImageInsights {
   return {
-    dominantStyles: ['fond blanc', 'mise en scène', 'angle 45°'],
+    dominantStyles: ['mise en scène lifestyle', 'fond élégant', 'décor tendance', 'angle professionnel'],
     commonAngles: ['vue de face', 'angle 3/4', 'vue de dessus'],
-    colorSchemes: ['tons neutres', 'couleurs vives', 'monochrome'],
+    colorSchemes: ['tons neutres chic', 'couleurs sophistiquées', 'palette harmonieuse'],
     aspectRatios: ['16:9', '4:3', '1:1'],
   };
 }

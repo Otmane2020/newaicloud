@@ -72,19 +72,14 @@ ${isMainImage ? `
    - Preserve product details but focus on atmosphere
 `}
 
-2. BACKGROUND STYLE (${style}):
-   ${style === "white" ? `
-   - Pure white background (RGB 255,255,255)
-   - Soft studio lighting
-   - Minimal shadow beneath product
-   - Clean, professional e-commerce look
-   ` : `
-   - Create a beautiful, themed background that relates to "${productTitle}"
-   - Use complementary colors and professional lighting
-   - Add depth with subtle bokeh or gradient effects
-   - Background should enhance, not distract from the product
-   - Think lifestyle/editorial photography style
-   `}
+2. BACKGROUND STYLE - ELEGANT & TRENDY (NEVER WHITE):
+   - Create a beautiful, elegant, and trendy background that relates to "${productTitle}"
+   - Use sophisticated color palettes (jewel tones, earth tones, pastels, etc.)
+   - Add depth with subtle bokeh, gradient effects, or premium textures
+   - Background should enhance product luxury and appeal
+   - Think high-end editorial photography style
+   - NEVER use plain white background (there's a separate function for that)
+   - Examples: marble textures, velvet surfaces, wooden aesthetics, soft gradients
 
 3. TECHNICAL SPECS:
    - Square format (1024×1024)
@@ -94,13 +89,13 @@ ${isMainImage ? `
    - Ready for ${isMainImage ? "main product listing (Shopify/Amazon)" : "lifestyle/gallery display"}
 
 4. CREATIVE DIRECTION:
-   - If product is food: warm, appetizing environment
-   - If product is tech: modern, sleek setting
-   - If product is fashion: elegant, stylish backdrop
-   - If product is home decor: cozy, lifestyle scene
-   - Match the mood to the product category
+   - If product is food: warm, appetizing environment with elegant plating
+   - If product is tech: modern, sleek setting with premium materials
+   - If product is fashion: elegant, stylish backdrop with luxury feel
+   - If product is home decor: cozy, sophisticated lifestyle scene
+   - Match the mood to the product category with upscale aesthetic
 
-RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer.
+RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer for a luxury brand.
     `.trim();
 
     // Call Lovable AI
