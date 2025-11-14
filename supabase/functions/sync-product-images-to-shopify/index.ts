@@ -49,7 +49,20 @@ Deno.serve(async (req) => {
       .single();
 
     if (productError || !product) {
-      throw new Error(`Product not found: ${productId}`);
+      // Check if product exists but doesn't belong to user
+      const { data: anyProduct } = await supabaseClient
+        .from("shopify_products")
+        .select("id, seller_id")
+        .eq("id", productId)
+        .single();
+      
+      if (anyProduct) {
+        console.error(`❌ Product ${productId} belongs to another user`);
+        throw new Error(`Product access denied`);
+      }
+      
+      console.error(`❌ Product ${productId} not found in database`);
+      throw new Error(`Product not found or has been deleted`);
     }
 
     // If product not synced to Shopify, just return success without syncing
