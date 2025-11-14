@@ -64,6 +64,7 @@ import { VisionAIBanner } from "./VisionAIBanner";
 import { GoogleSearchPreview } from "./GoogleSearchPreview";
 import { useStore } from "@/contexts/StoreContext";
 import { useStoreDomain } from "@/hooks/useStoreDomain";
+import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 
 interface Product {
   id: string;
@@ -156,18 +157,28 @@ export function SeoOptimization() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Charger les produits avec filtre store_id
+      const { data: rawData, error } = await supabase
         .from("shopify_products")
         .select(`
           *, 
           optimization_count,
-          product_variants(sku)
+          product_variants(sku),
+          store_id
         `)
         .eq('store_id', selectedStore.id)
         .order("imported_at", { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+
+      // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
+      const data = guardStoreData(rawData, selectedStore.id, 'product');
+
+      setProducts(data);
+      
+      // ✅ Vérifier la cohérence après setState
+      verifyStateCoherence(data, selectedStore.id, 'SeoOptimization', 'product');
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error(t.seo.optimization.loadError);

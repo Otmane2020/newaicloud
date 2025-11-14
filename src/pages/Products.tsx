@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useShopifySync } from "@/hooks/useShopifySync";
 import { useStore } from "@/contexts/StoreContext";
+import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 import { SimpleSyncProgress } from "@/components/integration/SyncProgressDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,11 +100,11 @@ export default function Products() {
       
       setTotalCount(count || 0);
       
-      // Load products with pagination
+      // Charger les produits avec pagination et filtre store_id
       console.log('📊 [PRODUCTS] Executing products query with store_id:', selectedStore.id);
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from("shopify_products")
-        .select("*")
+        .select("*, store_id")
         .eq("seller_id", user?.id)
         .eq("store_id", selectedStore.id)
         .order("created_at", { ascending: false })
@@ -111,8 +112,15 @@ export default function Products() {
 
       if (error) throw error;
 
-      setProducts(data || []);
-      console.log(`✅ [PRODUCTS] Loaded ${data?.length || 0} products for store ${selectedStore.store_name} (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
+      // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
+      const data = guardStoreData(rawData, selectedStore.id, 'product');
+
+      setProducts(data);
+      
+      // ✅ Vérifier la cohérence après setState
+      verifyStateCoherence(data, selectedStore.id, 'Products', 'product');
+      
+      console.log(`✅ [PRODUCTS] Loaded ${data.length} products for store ${selectedStore.store_name} (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
     } catch (error) {
       console.error("❌ [PRODUCTS] Error loading products:", error);
       toast.error(t.products.loadError);

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useStore } from "@/contexts/StoreContext";
+import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import {
   Sparkles,
@@ -231,15 +232,18 @@ export default function ProductTitleDescription() {
 
       console.log('📦 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
 
-      // Charger les produits
-      const { data: productsData, error: productsError } = await supabase
+      // Charger les produits avec filtre store_id
+      const { data: rawProductsData, error: productsError } = await supabase
         .from("shopify_products")
-        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
+        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
       
       if (productsError) throw productsError;
+
+      // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
+      const productsData = guardStoreData(rawProductsData, selectedStore.id, 'product');
 
       // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
       if (productsData && productsData.length > 0) {
@@ -279,6 +283,9 @@ export default function ProductTitleDescription() {
 
         console.log('📊 [PRODUCT_TITLE] Fetched products with variants:', productsWithVariants.length);
         setProducts(productsWithVariants as Product[]);
+        
+        // ✅ Vérifier la cohérence après setState
+        verifyStateCoherence(productsWithVariants, selectedStore.id, 'ProductTitleDescription', 'product');
       } else {
         setProducts([]);
       }
