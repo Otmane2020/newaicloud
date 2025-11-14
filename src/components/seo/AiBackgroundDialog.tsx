@@ -231,8 +231,8 @@ export function AiBackgroundDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
             Configuration de l'arrière-plan IA
@@ -242,7 +242,8 @@ export function AiBackgroundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 pb-4">
           {/* Format d'application - EN PREMIER */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">Format d'application</Label>
@@ -562,78 +563,102 @@ export function AiBackgroundDialog({
           </div>
 
           {/* Style et Prompt */}
-          <div className="space-y-3">
-            <Label htmlFor="preset-select">Style prédéfini</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Card
-                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
-                onClick={() => handlePresetSelect("modern minimalist white studio with soft shadows")}
-              >
-                <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-300 rounded-lg mb-2 flex items-center justify-center">
-                  <span className="text-2xl">🏢</span>
-                </div>
-                <Label className="text-sm font-medium cursor-pointer">Studio minimaliste blanc</Label>
-              </Card>
-              <Card
-                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
-                onClick={() => handlePresetSelect("natural wood surface with plants and soft daylight")}
-              >
-                <div className="aspect-video bg-gradient-to-br from-amber-100 to-amber-300 rounded-lg mb-2 flex items-center justify-center">
-                  <span className="text-2xl">🌿</span>
-                </div>
-                <Label className="text-sm font-medium cursor-pointer">Ambiance naturelle bois</Label>
-              </Card>
-              <Card
-                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
-                onClick={() => handlePresetSelect("luxurious marble surface with gold accents")}
-              >
-                <div className="aspect-video bg-gradient-to-br from-gray-200 to-yellow-100 rounded-lg mb-2 flex items-center justify-center">
-                  <span className="text-2xl">✨</span>
-                </div>
-                <Label className="text-sm font-medium cursor-pointer">Luxe marbre et or</Label>
-              </Card>
-              <Card
-                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
-                onClick={() => handlePresetSelect("cozy living room with warm lighting")}
-              >
-                <div className="aspect-video bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg mb-2 flex items-center justify-center">
-                  <span className="text-2xl">🏠</span>
-                </div>
-                <Label className="text-sm font-medium cursor-pointer">Salon cosy chaleureux</Label>
-              </Card>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Style d'arrière-plan</Label>
+              <div className="grid grid-cols-4 gap-2">
+                <Card
+                  className={`p-3 cursor-pointer border-2 transition-all ${
+                    config.prompt === "modern minimalist white studio with soft shadows"
+                      ? "border-primary ring-2 ring-primary bg-primary/5"
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => handlePresetSelect("modern minimalist white studio with soft shadows")}
+                >
+                  <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-md mb-2 flex items-center justify-center">
+                    <span className="text-xl">🏢</span>
+                  </div>
+                  <p className="text-xs font-medium text-center">Studio blanc</p>
+                </Card>
+                <Card
+                  className={`p-3 cursor-pointer border-2 transition-all ${
+                    config.prompt === "natural wood surface with plants and soft daylight"
+                      ? "border-primary ring-2 ring-primary bg-primary/5"
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => handlePresetSelect("natural wood surface with plants and soft daylight")}
+                >
+                  <div className="aspect-square bg-gradient-to-br from-amber-100 to-amber-200 rounded-md mb-2 flex items-center justify-center">
+                    <span className="text-xl">🌿</span>
+                  </div>
+                  <p className="text-xs font-medium text-center">Naturel bois</p>
+                </Card>
+                <Card
+                  className={`p-3 cursor-pointer border-2 transition-all ${
+                    config.prompt === "luxurious marble surface with gold accents"
+                      ? "border-primary ring-2 ring-primary bg-primary/5"
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => handlePresetSelect("luxurious marble surface with gold accents")}
+                >
+                  <div className="aspect-square bg-gradient-to-br from-gray-200 to-yellow-100 rounded-md mb-2 flex items-center justify-center">
+                    <span className="text-xl">✨</span>
+                  </div>
+                  <p className="text-xs font-medium text-center">Luxe marbre</p>
+                </Card>
+                <Card
+                  className={`p-3 cursor-pointer border-2 transition-all ${
+                    config.prompt === "cozy living room with warm lighting"
+                      ? "border-primary ring-2 ring-primary bg-primary/5"
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => handlePresetSelect("cozy living room with warm lighting")}
+                >
+                  <div className="aspect-square bg-gradient-to-br from-orange-100 to-orange-200 rounded-md mb-2 flex items-center justify-center">
+                    <span className="text-xl">🏠</span>
+                  </div>
+                  <p className="text-xs font-medium text-center">Salon cosy</p>
+                </Card>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="custom-prompt">Ou créez votre propre prompt</Label>
+              <Label htmlFor="custom-prompt">Prompt personnalisé</Label>
               <Textarea
                 id="custom-prompt"
-                placeholder="Décrivez l'environnement souhaité, l'éclairage et l'ambiance"
+                placeholder="Décrivez l'environnement, l'éclairage et l'ambiance..."
                 value={config.prompt}
                 onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
-                className="min-h-[80px]"
+                className="min-h-[100px] resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
+                💡 Décrivez précisément l'environnement souhaité pour un meilleur résultat
               </p>
             </div>
           </div>
-        </div>
+          </div>
+        </ScrollArea>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            Générer les arrière-plans
-            {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
-              <span>({getSelectedVariantsCount()})</span>
-            )}
-          </Button>
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+          <div className="flex items-center justify-between w-full">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
+              className="gap-2"
+              size="lg"
+            >
+              <Sparkles className="h-5 w-5" />
+              Générer les arrière-plans
+              {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {getSelectedVariantsCount()}
+                </Badge>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
