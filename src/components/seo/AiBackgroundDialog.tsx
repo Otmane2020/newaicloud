@@ -15,7 +15,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Check, Sparkles, Images, Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Palette, Check, Sparkles, Images, Package, Loader2, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ImageInsights {
+  dominantStyles: string[];
+  commonAngles: string[];
+  colorSchemes: string[];
+  aspectRatios: string[];
+}
 
 interface ProductImage {
   id: string;
@@ -83,8 +92,64 @@ export function AiBackgroundDialog({
     selectedVariants: new Map(),
   });
 
+  // SERP Analysis states
+  const [serpInsights, setSerpInsights] = useState<ImageInsights | null>(null);
+  const [loadingSerpAnalysis, setLoadingSerpAnalysis] = useState(false);
+  const [serpError, setSerpError] = useState<string | null>(null);
+
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
   const hasVariants = selectedProducts.some((product) => product.variants && product.variants.length > 0);
+
+  // Analyze SERP for product trends
+  const analyzeSerpForProduct = async (productTitle: string) => {
+    setLoadingSerpAnalysis(true);
+    setSerpError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-serp-competitors', {
+        body: {
+          keyword: productTitle,
+          analysisType: 'images',
+          maxResults: 20
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.insights) {
+        setSerpInsights(data.insights);
+        console.log('📊 SERP insights loaded:', data.insights);
+        return data.insights;
+      }
+      return null;
+    } catch (error) {
+      console.error('SERP analysis error:', error);
+      setSerpError('Impossible d\'analyser les tendances SERP');
+      return null;
+    } finally {
+      setLoadingSerpAnalysis(false);
+    }
+  };
+
+  // Generate enriched prompt with SERP insights
+  const generateEnrichedPrompt = (basePrompt: string, insights: ImageInsights | null) => {
+    if (!insights || insights.dominantStyles.length === 0) return basePrompt;
+
+    const styleContext = insights.dominantStyles.slice(0, 3).join(', ');
+    const angleContext = insights.commonAngles.slice(0, 3).join(', ');
+    const colorContext = insights.colorSchemes.slice(0, 3).join(', ');
+    const formatContext = insights.aspectRatios[0] || 'square';
+
+    return `${basePrompt}
+
+Optimisé selon les tendances SERP des concurrents :
+- Styles dominants : ${styleContext}
+- Angles de vue : ${angleContext}
+- Palette de couleurs : ${colorContext}
+- Format optimal : ${formatContext}
+
+Créer une image qui suit ces tendances tout en restant unique et professionnelle.`;
+  };
 
   // Générer un prompt par défaut basé sur les produits sélectionnés
   useEffect(() => {
@@ -92,6 +157,10 @@ export function AiBackgroundDialog({
       const productTitles = selectedProducts.map(p => p.title).join(", ");
       const defaultPrompt = `Professional product photography for ${productTitles} with clean modern background and perfect studio lighting`;
       setConfig(prev => ({ ...prev, prompt: defaultPrompt }));
+      
+      // Launch SERP analysis for the first product
+      const mainProduct = selectedProducts[0];
+      analyzeSerpForProduct(mainProduct.title);
     }
   }, [open, selectedProducts]);
 
@@ -159,7 +228,7 @@ export function AiBackgroundDialog({
       });
     }
 
-    // Enrichir le prompt
+    // Enrichir le prompt avec le contexte produit
     const productContext = selectedProducts
       .map((product) => {
         const parts = [];
@@ -172,9 +241,20 @@ export function AiBackgroundDialog({
       .filter(Boolean)
       .join("\n");
 
-    finalConfig.enrichedPrompt = productContext
-      ? `${config.prompt}\n\nProduct Context:\n${productContext}`
-      : config.prompt;
+    // Enrichir le prompt avec les insights SERP
+    let enrichedPrompt = config.prompt;
+    
+    if (productContext) {
+      enrichedPrompt = `${enrichedPrompt}\n\nProduct Context:\n${productContext}`;
+    }
+    
+    if (serpInsights && serpInsights.dominantStyles.length > 0) {
+      const serpContext = generateEnrichedPrompt(enrichedPrompt, serpInsights);
+      enrichedPrompt = serpContext;
+      console.log('✨ Using SERP-enriched prompt:', { serpInsights });
+    }
+
+    finalConfig.enrichedPrompt = enrichedPrompt !== config.prompt ? enrichedPrompt : undefined;
 
     onConfirm(finalConfig);
     onOpenChange(false);
@@ -510,6 +590,66 @@ export function AiBackgroundDialog({
               )}
             </RadioGroup>
           </div>
+
+          {/* SERP Insights Display */}
+          {loadingSerpAnalysis && (
+            <Card className="p-3 bg-blue-50 border-blue-200">
+              <div className="flex items-center gap-2 text-xs text-blue-900">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Analyse des tendances SERP en cours...</span>
+              </div>
+            </Card>
+          )}
+
+          {serpInsights && !loadingSerpAnalysis && (
+            <Card className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <div className="flex items-start gap-2">
+                <Sparkles className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 space-y-2 min-w-0">
+                  <p className="text-xs font-semibold text-blue-900">
+                    📊 Insights SERP - Tendances des concurrents
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                    <div>
+                      <span className="font-medium text-blue-800">Styles dominants :</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {serpInsights.dominantStyles.slice(0, 3).map((style, i) => (
+                          <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 bg-white/80">
+                            {style}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-800">Angles de vue :</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {serpInsights.commonAngles.slice(0, 3).map((angle, i) => (
+                          <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 bg-white/80">
+                            {angle}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {serpInsights.colorSchemes.length > 0 && (
+                    <div className="text-[10px]">
+                      <span className="font-medium text-blue-800">Palettes : </span>
+                      <span className="text-blue-700">{serpInsights.colorSchemes.slice(0, 2).join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {serpError && (
+            <Alert className="py-2">
+              <AlertCircle className="h-3 w-3" />
+              <AlertDescription className="text-xs">
+                {serpError} - Génération possible sans insights SERP
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Paramètres de génération */}
           <div className="space-y-4">
