@@ -243,26 +243,36 @@ export default function ProductTitleDescription() {
       
       if (productsError) throw productsError;
 
-      // Charger les variantes pour ces produits
+      // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
       if (productsData && productsData.length > 0) {
         const productIds = productsData.map(p => p.id);
         console.log('🔍 [PRODUCT_TITLE] Loading variants for products:', productIds.length);
         
-        const { data: variantsData, error: variantsError } = await supabase
-          .from("product_variants")
-          .select("id, product_id, title, option1, option2, option3")
-          .in("product_id", productIds);
+        let allVariants: any[] = [];
+        const batchSize = 50; // Traiter par batch de 50 produits max
+        
+        for (let i = 0; i < productIds.length; i += batchSize) {
+          const batch = productIds.slice(i, i + batchSize);
+          const { data: variantsData, error: variantsError } = await supabase
+            .from("product_variants")
+            .select("id, product_id, title, option1, option2, option3")
+            .in("product_id", batch);
 
-        if (variantsError) {
-          console.error('❌ [PRODUCT_TITLE] Error loading variants:', variantsError);
-        } else {
-          console.log('✅ [PRODUCT_TITLE] Loaded variants:', variantsData?.length || 0);
+          if (variantsError) {
+            console.error('❌ [PRODUCT_TITLE] Error loading variants batch:', variantsError);
+          } else if (variantsData) {
+            allVariants = [...allVariants, ...variantsData];
+          }
         }
+
+        console.log('✅ [PRODUCT_TITLE] Loaded total variants:', allVariants.length);
 
         // Associer les variantes aux produits
         const productsWithVariants = productsData.map(product => {
-          const productVariants = variantsData?.filter(v => v.product_id === product.id) || [];
-          console.log(`🔍 [PRODUCT_TITLE] Product ${product.title} has ${productVariants.length} variants`);
+          const productVariants = allVariants.filter(v => v.product_id === product.id);
+          if (productVariants.length > 0) {
+            console.log(`🔍 [PRODUCT_TITLE] Product "${product.title}" has ${productVariants.length} variants:`, productVariants.map(v => v.title));
+          }
           return {
             ...product,
             variants: productVariants
