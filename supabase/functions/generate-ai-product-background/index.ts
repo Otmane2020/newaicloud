@@ -265,10 +265,9 @@ RESULT: A stunning, professional product photo that looks like it was created by
     function arrayBufferToBase64(buffer: ArrayBuffer): string {
       const bytes = new Uint8Array(buffer);
       let binary = '';
-      const chunkSize = 0x8000; // 32KB chunks
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-        binary += String.fromCharCode.apply(null, Array.from(chunk));
+      // Process byte by byte to avoid any stack issues
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
       }
       return btoa(binary);
     }
