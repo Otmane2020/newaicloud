@@ -1154,14 +1154,74 @@ export default function ProductTitleDescription() {
     const toastId = toast.loading("Application des images...");
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       for (const productId of productIds) {
         const preview = aiBgPreviews.find((p) => p.productId === productId);
         if (!preview?.generatedUrl) continue;
 
+        // Update product image
         await supabase
           .from("shopify_products")
           .update({ image_url: preview.generatedUrl })
           .eq("id", productId);
+
+        // Save to history if user is authenticated
+        if (user) {
+          // Find or create the product image entry
+          const { data: existingImages } = await supabase
+            .from('product_images')
+            .select('id')
+            .eq('product_id', productId)
+            .eq('src', preview.originalUrl)
+            .single();
+
+          let imageId = existingImages?.id;
+
+          // If no image exists, create one (this is the main product image)
+          if (!imageId) {
+            const { data: newImage } = await supabase
+              .from('product_images')
+              .insert({
+                product_id: productId,
+                src: preview.originalUrl,
+                position: 1,
+                seller_id: user.id
+              })
+              .select('id')
+              .single();
+            
+            imageId = newImage?.id;
+          }
+
+          if (imageId) {
+            // Get next version number
+            const { data: versionData } = await supabase.rpc('get_next_image_version', {
+              p_image_id: imageId
+            });
+
+            // Insert into history
+            await supabase.from('product_image_history').insert({
+              product_id: productId,
+              image_id: imageId,
+              user_id: user.id,
+              version_number: versionData || 1,
+              optimization_type: 'ai_background',
+              original_url: preview.originalUrl,
+              optimized_url: preview.generatedUrl,
+              ai_prompt: pendingAiConfig?.prompt || 'AI background generation',
+              ai_model: 'Lovable AI',
+              is_current: true
+            });
+
+            // Mark previous versions as not current
+            await supabase
+              .from('product_image_history')
+              .update({ is_current: false })
+              .eq('image_id', imageId)
+              .neq('version_number', versionData || 1);
+          }
+        }
       }
 
       toast.success("Images appliquées avec succès", { id: toastId });
