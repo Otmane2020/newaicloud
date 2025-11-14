@@ -148,9 +148,10 @@ Deno.serve(async (req: Request) => {
         }
       };
 
-      // Update meta tags using metafields
+      // Collect all metafields to update
       const metafields: any[] = [];
 
+      // Add SEO metafields
       if (product.seo_title) {
         metafields.push({
           namespace: "global",
@@ -190,9 +191,12 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      // Set metafields if we have any
       if (metafields.length > 0) {
         updateData.product.metafields = metafields;
       }
+
+      console.log(`[SYNC-SEO] Update data for product ${product.shopify_id}:`, JSON.stringify(updateData, null, 2));
 
       // Sync tags if requested - Shopify expects comma-separated string
       if (syncTags && product.tags) {

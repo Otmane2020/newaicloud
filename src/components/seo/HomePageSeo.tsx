@@ -32,10 +32,24 @@ export function HomePageSeo() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get selected store from context
+      const { data: stores } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const storeId = stores?.id;
+      if (!storeId) return;
+
       const { data, error } = await supabase
         .from('homepage_seo')
         .select('seo_title, seo_description')
         .eq('user_id', user.id)
+        .eq('store_id', storeId)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;

@@ -146,14 +146,18 @@ export default function Dashboard() {
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
-      // Use selected store filter (default to all if none selected)
-      const storeFilter = selectedStore?.id ? [selectedStore.id] : [];
-
-      const { data: products, error: productsError } = await supabase
+      // Build query with optional store filter
+      let productsQuery = supabase
         .from('shopify_products')
-        .select('id, price, seo_title, seo_description, image_url, optimization_count')
-        .eq('seller_id', user?.id)
-        .in('store_id', storeFilter.length > 0 ? storeFilter : ['']);
+        .select('id, price, seo_title, seo_description, image_url, optimization_count, store_id')
+        .eq('seller_id', user?.id);
+
+      // Apply store filter only if a store is selected
+      if (selectedStore?.id) {
+        productsQuery = productsQuery.eq('store_id', selectedStore.id);
+      }
+
+      const { data: products, error: productsError } = await productsQuery;
 
       if (productsError) throw productsError;
 
