@@ -98,6 +98,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const cleanShopName = shopName.replace('.myshopify.com', '');
+    console.log(`📰 [IMPORT-ARTICLES] Starting import for shop: ${cleanShopName}, storeId: ${storeId}`);
     
     // Use service role client for database operations
     const supabaseServiceClient = createClient(
@@ -134,13 +135,16 @@ Deno.serve(async (req: Request) => {
 
     const { blogs }: { blogs: ShopifyBlog[] } = await blogsResponse.json();
     
+    console.log(`📰 [IMPORT-ARTICLES] Found ${blogs?.length || 0} blogs in Shopify`);
+    
     if (!blogs || blogs.length === 0) {
-      console.log('⚠️ No blogs found in Shopify');
+      console.log('⚠️ [IMPORT-ARTICLES] No blogs found in Shopify store');
       return new Response(
         JSON.stringify({ 
           success: true, 
           count: 0, 
-          message: 'No blogs found' 
+          imported: 0,
+          message: 'No blogs found in Shopify' 
         }),
         {
           status: 200,
@@ -188,12 +192,14 @@ Deno.serve(async (req: Request) => {
     }
 
     if (allArticles.length === 0) {
-      console.log('⚠️ No articles found in any blog');
+      console.log('⚠️ [IMPORT-ARTICLES] No articles found in any blog');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          count: 0, 
-          message: 'No articles found' 
+          count: 0,
+          imported: 0,
+          totalImported: 0,
+          message: 'No articles found in any blog' 
         }),
         {
           status: 200,
@@ -202,7 +208,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`📝 Total articles to import: ${allArticles.length}`);
+    console.log(`✅ [IMPORT-ARTICLES] Total articles to import: ${allArticles.length}`);
 
     console.log(`📝 Preparing ${allArticles.length} articles for database insertion...`);
 
@@ -367,6 +373,8 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         count: importedCount,
+        imported: importedCount,
+        totalImported: importedCount,
         images: totalImagesImported,
         message: `Successfully imported ${importedCount} blog articles and ${totalImagesImported} images`,
       }),
