@@ -70,7 +70,7 @@ export interface AiBackgroundConfig {
   similarity: string;
   imageType: "primary" | "secondary";
   selectedImages: Map<string, string>;
-  applyTo: "simple" | "variants";
+  applyTo: "simple" | "gallery" | "variants";
   selectedVariants: Map<string, string[]>;
   enrichedPrompt?: string;
 }
@@ -103,6 +103,33 @@ export function AiBackgroundDialog({
 
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
   const hasVariants = selectedProducts.some((product) => product.variants && product.variants.length > 0);
+
+  // Détection automatique du format d'application
+  const detectApplyTo = (products: Product[]): "simple" | "gallery" | "variants" => {
+    // Si un seul produit sélectionné
+    if (products.length === 1) {
+      const product = products[0];
+      // Si le produit a des variantes, proposer le format Variantes par défaut
+      if (product.variants && product.variants.length > 1) {
+        return "variants";
+      }
+      // Si le produit a plusieurs images, proposer la Gallerie
+      const allImages = getAllProductImages(product);
+      if (allImages.length > 1) {
+        return "gallery";
+      }
+    }
+    // Sinon, format Simple par défaut
+    return "simple";
+  };
+
+  // Auto-détection au montage du dialogue
+  useEffect(() => {
+    if (open && selectedProducts.length > 0) {
+      const detectedFormat = detectApplyTo(selectedProducts);
+      setConfig(prev => ({ ...prev, applyTo: detectedFormat }));
+    }
+  }, [open, selectedProducts]);
 
   // Précharger toutes les images de la galerie
   useEffect(() => {
@@ -306,9 +333,11 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
   const toggleVariantSelection = (productId: string, variantId: string) => {
     setConfig((prev) => {
       const newSelectedVariants = new Map(prev.selectedVariants);
+      const newSelectedImages = new Map(prev.selectedImages);
       const productVariants = newSelectedVariants.get(productId) || [];
 
       if (productVariants.includes(variantId)) {
+        // Désélection
         const updated = productVariants.filter((id) => id !== variantId);
         if (updated.length === 0) {
           newSelectedVariants.delete(productId);
@@ -316,12 +345,33 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
           newSelectedVariants.set(productId, updated);
         }
       } else {
+        // Sélection - Auto-sélectionner l'image de la variante
+        const product = selectedProducts.find(p => p.id === productId);
+        if (product) {
+          const variant = product.variants?.find(v => v.id === variantId);
+          
+          if (variant) {
+            const variantImage = productImages.get(productId)?.find(
+              img => img.variant_id === variantId
+            );
+            
+            // Auto-sélectionner l'image de la variante si disponible
+            if (variantImage) {
+              newSelectedImages.set(productId, variantImage.src);
+            } else if (product.image_url) {
+              // Fallback sur l'image principale
+              newSelectedImages.set(productId, product.image_url);
+            }
+          }
+        }
+        
         newSelectedVariants.set(productId, [...productVariants, variantId]);
       }
 
       return {
         ...prev,
         selectedVariants: newSelectedVariants,
+        selectedImages: newSelectedImages,
       };
     });
   };
@@ -423,7 +473,7 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
               onValueChange={(v) => {
                 setConfig({
                   ...config,
-                  applyTo: v as "simple" | "variants",
+                  applyTo: v as "simple" | "gallery" | "variants",
                   selectedVariants: v !== "variants" ? new Map() : config.selectedVariants,
                 });
               }}
@@ -440,10 +490,10 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                     <div className="flex items-center gap-2">
                       <Images className="h-5 w-5" />
                       <Label htmlFor="simple" className="text-base font-medium cursor-pointer">
-                        Format Simple
+                        Image Principale
                       </Label>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">Gallerie</p>
+                    <p className="text-sm text-muted-foreground mt-1">Appliquer à l'image principale uniquement</p>
 
                     {config.applyTo === "simple" && (
                       <div className="mt-4 space-y-4">
@@ -499,6 +549,75 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                 </div>
               </Card>
 
+              {/* Option Gallerie */}
+              {singleProduct && getAllProductImages(singleProduct).length > 1 && (
+                <Card
+                  className={`p-4 cursor-pointer transition-all ${
+                    config.applyTo === "gallery" ? "border-primary bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value="gallery" id="gallery" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Palette className="h-5 w-5" />
+                        <Label htmlFor="gallery" className="text-base font-medium cursor-pointer">
+                          Toute la Gallerie
+                        </Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Appliquer à toutes les images du produit
+                      </p>
+
+                      {config.applyTo === "gallery" && singleProduct && (
+                        <div className="mt-4 space-y-4">
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium">Sélectionner les images à traiter</Label>
+                            <div className="w-full max-h-[200px] overflow-y-auto">
+                              <div className="grid grid-cols-4 gap-2 pr-2">
+                                {getAllProductImages(singleProduct).map((img, idx) => {
+                                  const isSelected = config.selectedImages.get(singleProduct.id) === img.src;
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={img.id}
+                                      onClick={() => {
+                                        const newMap = new Map(config.selectedImages);
+                                        newMap.set(singleProduct.id, img.src);
+                                        setConfig({ ...config, selectedImages: newMap });
+                                      }}
+                                      className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                                        isSelected
+                                          ? "border-primary ring-2 ring-primary"
+                                          : "border-border hover:border-primary/50"
+                                      }`}
+                                    >
+                                      <img
+                                        src={img.src}
+                                        alt={img.alt_text || `Image ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      {isSelected && (
+                                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                          <Check className="h-6 w-6 text-primary" />
+                                        </div>
+                                      )}
+                                      <Badge className="absolute top-2 left-2 text-xs">
+                                        {img.position === 0 ? "Principale" : `#${img.position + 1}`}
+                                      </Badge>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
               {/* Option Variantes */}
               {hasVariants && (
                 <Card
@@ -547,34 +666,34 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                   </div>
 
                                   <div className="w-full max-h-[200px] overflow-y-auto">
-                                    <div className="grid grid-cols-4 gap-2 pr-2">
+                                    <div className="grid grid-cols-6 gap-2 pr-2">
                                       {variantsWithImages.map(({ variant, image }) => (
-                                        <button
-                                          type="button"
-                                          key={variant.id}
-                                          onClick={() => toggleVariantSelection(product.id, variant.id)}
-                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                            productSelectedVariants.includes(variant.id)
-                                              ? "border-primary ring-2 ring-primary"
-                                              : "border-border hover:border-primary/50"
-                                          }`}
-                                        >
-                                          <img
-                                            src={image!.src}
-                                            alt={getVariantLabel(variant)}
-                                            className="w-full h-full object-cover"
-                                          />
-                                          {productSelectedVariants.includes(variant.id) && (
-                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                              <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                                <Check className="w-4 h-4" />
+                                        <div key={variant.id} className="flex flex-col items-center gap-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => toggleVariantSelection(product.id, variant.id)}
+                                            className={`relative rounded-md border-2 overflow-hidden transition-all ${
+                                              productSelectedVariants.includes(variant.id)
+                                                ? "border-primary ring-2 ring-primary"
+                                                : "border-border hover:border-primary/50"
+                                            }`}
+                                            style={{ width: '80px', height: '80px' }}
+                                          >
+                                            <img
+                                              src={typeof image === 'string' ? image : image?.src || "/placeholder.svg"}
+                                              alt={getVariantLabel(variant)}
+                                              className="w-full h-full object-cover"
+                                            />
+                                            {productSelectedVariants.includes(variant.id) && (
+                                              <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                                <Check className="h-4 w-4 text-primary" />
                                               </div>
-                                            </div>
-                                          )}
-                                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1 bg-black/80 text-white">
+                                            )}
+                                          </button>
+                                          <span className="text-xs text-muted-foreground truncate w-full text-center">
                                             {getVariantLabel(variant)}
-                                          </Badge>
-                                        </button>
+                                          </span>
+                                        </div>
                                       ))}
                                     </div>
                                   </div>
