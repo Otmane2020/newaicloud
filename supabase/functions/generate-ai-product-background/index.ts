@@ -272,7 +272,7 @@ RESULT: A stunning, professional product photo that looks like it was created by
       return btoa(binary);
     }
 
-    // Helper function to try Gemini
+    // Helper function to try Gemini Imagen 3
     async function tryGemini(): Promise<{ imageUrl: string; model: string } | null> {
       const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
       if (!GEMINI_API_KEY) {
@@ -281,57 +281,53 @@ RESULT: A stunning, professional product photo that looks like it was created by
       }
 
       try {
-        console.log("📝 Trying Gemini directly...");
+        console.log("📝 Trying Gemini Imagen 3...");
         
-        // Convert image to base64
-        let base64Data: string;
-        if (imageUrl.includes("base64")) {
-          base64Data = imageUrl.split(",")[1];
-        } else {
-          const imageResponse = await fetch(imageUrl);
-          const arrayBuffer = await imageResponse.arrayBuffer();
-          base64Data = arrayBufferToBase64(arrayBuffer);
-        }
+        // Use Imagen 3 for image generation
+        const imagenPrompt = `${comprehensivePrompt}\n\nReference image URL: ${imageUrl}\nCreate a professional product image with an enhanced contextual background based on this product.`;
         
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: comprehensivePrompt },
-                    {
-                      inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64Data
-                      }
-                    }
-                  ]
-                }
-              ],
-              generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
+              instances: [{
+                prompt: imagenPrompt
+              }],
+              parameters: {
+                sampleCount: 1,
+                aspectRatio: "1:1",
+                personGeneration: "allow_all",
+                safetySetting: "block_only_high",
+                outputFormat: "jpeg"
               }
             }),
           }
         );
 
         if (!response.ok) {
-          console.error(`❌ Gemini error (${response.status})`);
+          const errorText = await response.text();
+          console.error(`❌ Imagen 3 error (${response.status}):`, errorText);
           return null;
         }
 
         const data = await response.json();
-        // Gemini doesn't directly support image generation in this way
-        console.log("⚠️ Gemini API doesn't support image generation in this format");
+        
+        // Imagen 3 returns base64 encoded images in predictions array
+        if (data.predictions && data.predictions.length > 0) {
+          const imageData = data.predictions[0].bytesBase64Encoded || data.predictions[0].image;
+          if (imageData) {
+            const imageUrl = `data:image/jpeg;base64,${imageData}`;
+            console.log("✅ Imagen 3 succeeded");
+            return { imageUrl, model: "imagen-3.0-generate-001 (Gemini)" };
+          }
+        }
+        
+        console.log("⚠️ No image returned from Imagen 3");
         return null;
       } catch (error) {
-        console.error("❌ Gemini exception:", error);
+        console.error("❌ Imagen 3 exception:", error);
         return null;
       }
     }
@@ -438,7 +434,7 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
     
     if (!result) {
-      failures.push("Gemini: Ne supporte pas la génération d'images");
+      failures.push("Gemini Imagen 3: Échec de génération");
       console.log("🔄 Gemini failed, trying OpenAI...");
       result = await tryOpenAI();
     }
