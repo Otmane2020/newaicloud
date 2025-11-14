@@ -107,66 +107,91 @@ Deno.serve(async (req) => {
 
     console.log('Using direct access token, length:', connection.access_token?.length);
 
-    // Prepare images data for Shopify
-    const images = (product.images || [])
-      .sort((a: any, b: any) => a.position - b.position)
-      .map((img: any) => ({
-        id: img.shopify_image_id || undefined,
-        src: img.src,
-        alt: img.alt_text || "",
-        position: img.position + 1, // Shopify uses 1-indexed positions
-      }));
-
-    console.log(`📤 Updating ${images.length} images for Shopify product ${product.shopify_product_id}`);
-
-    // Update product images in Shopify
-    const shopifyResponse = await fetch(
+    // Get existing images from Shopify first
+    console.log(`🔍 Fetching existing images from Shopify product ${product.shopify_product_id}`);
+    const getResponse = await fetch(
       `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}.json`,
       {
-        method: "PUT",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": connection.access_token,
         },
-        body: JSON.stringify({
-          product: {
-            id: product.shopify_product_id,
-            images: images,
-          },
-        }),
       }
     );
 
-    if (!shopifyResponse.ok) {
-      const errorText = await shopifyResponse.text();
-      console.error("Shopify API error:", shopifyResponse.status, errorText);
-      throw new Error(`Shopify API error: ${shopifyResponse.status}`);
+    if (!getResponse.ok) {
+      const errorText = await getResponse.text();
+      console.error("Shopify GET error:", getResponse.status, errorText);
+      throw new Error(`Failed to fetch Shopify product: ${getResponse.status}`);
     }
 
-    const result = await shopifyResponse.json();
+    const existingProduct = await getResponse.json();
+    const existingImages = existingProduct.product?.images || [];
     
-    // Update shopify_image_id for new images
-    if (result.product?.images) {
-      for (let i = 0; i < result.product.images.length; i++) {
-        const shopifyImg = result.product.images[i];
-        const localImg = product.images[i];
-        
-        if (localImg && !localImg.shopify_image_id) {
-          await supabaseClient
-            .from("product_images")
-            .update({ shopify_image_id: shopifyImg.id })
-            .eq("id", localImg.id);
+    console.log(`📸 Found ${existingImages.length} existing images in Shopify`);
+
+    // Prepare new images to add (only those without shopify_image_id)
+    const newImages = (product.images || [])
+      .filter((img: any) => !img.shopify_image_id) // Only new images
+      .map((img: any) => ({
+        src: img.src,
+        alt: img.alt_text || "",
+        variant_ids: img.variant_id ? [img.variant_id] : undefined,
+      }));
+
+    console.log(`➕ Adding ${newImages.length} new images to Shopify`);
+
+    // Add new images one by one to preserve existing ones
+    const addedImages = [];
+    for (const newImage of newImages) {
+      const addResponse = await fetch(
+        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": connection.access_token,
+          },
+          body: JSON.stringify({ image: newImage }),
         }
+      );
+
+      if (addResponse.ok) {
+        const result = await addResponse.json();
+        addedImages.push(result.image);
+        console.log(`✅ Added image: ${result.image.id}`);
+      } else {
+        const errorText = await addResponse.text();
+        console.error("Failed to add image:", errorText);
       }
     }
 
-    console.log(`✅ Successfully synced ${images.length} images to Shopify`);
+    // Update shopify_image_id for newly added images
+    for (const addedImage of addedImages) {
+      // Find the local image by matching the src URL
+      const localImg = product.images.find((img: any) => 
+        !img.shopify_image_id && img.src === addedImage.src
+      );
+      
+      if (localImg) {
+        await supabaseClient
+          .from("product_images")
+          .update({ shopify_image_id: addedImage.id })
+          .eq("id", localImg.id);
+        
+        console.log(`🔗 Linked local image ${localImg.id} to Shopify image ${addedImage.id}`);
+      }
+    }
+
+    console.log(`✅ Successfully added ${addedImages.length} new images to Shopify`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Images synchronized successfully",
-        imageCount: images.length,
+        imageCount: addedImages.length,
+        totalImages: existingImages.length + addedImages.length,
       }),
       {
         status: 200,
