@@ -139,17 +139,21 @@ export function CollectionOptimization() {
     : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
-    fetchCollections();
-  }, []);
+    if (selectedStore) {
+      fetchCollections();
+    }
+  }, [selectedStore]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {
+    if (!selectedStore) return;
+    
     const interval = setInterval(() => {
       fetchCollections();
     }, 30000); // 30 secondes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStore]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {
