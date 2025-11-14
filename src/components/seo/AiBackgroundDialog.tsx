@@ -470,7 +470,7 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                         Appliquer aux variantes spécifiques sélectionnées
                       </p>
 
-                      {config.applyTo === "variants" && (
+                      {config.applyTo === "variants" && selectedProducts.some(p => p.variants && p.variants.length > 0) && (
                         <div className="mt-4 space-y-6">
                           {/* Sélection des variantes */}
                           <div className="space-y-4">
