@@ -108,17 +108,29 @@ export function PageOptimization() {
     : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
-    fetchPages();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      if (selectedStore?.id) {
+        fetchPages();
+        setSelectedPages(new Set()); // Clear selections on store change
+      } else {
+        setPages([]);
+        setLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedStore?.id]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {
+    if (!selectedStore?.id) return;
+    
     const interval = setInterval(() => {
       fetchPages();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStore?.id]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {

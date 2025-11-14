@@ -30,6 +30,7 @@ import {
   Palette,
 } from "lucide-react";
 import { ArticleConfigDialog, ArticleConfig } from "./ArticleConfigDialog";
+import { useStore } from '@/contexts/StoreContext';
 
 interface WizardStep {
   id: number;
@@ -63,6 +64,7 @@ interface Collection {
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
@@ -167,23 +169,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   }, [products]);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchProducts();
-      fetchCollections();
-    }
-  }, [user?.id]);
+    const timeoutId = setTimeout(() => {
+      if (user?.id && selectedStore?.id) {
+        fetchProducts();
+        fetchCollections();
+        setSelectedProducts([]); // Clear selections on store change
+      } else {
+        setProducts([]);
+        setCollections([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [user?.id, selectedStore?.id]);
 
   const fetchCollections = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !selectedStore?.id) return;
 
     try {
-      console.log("🔍 Chargement des collections pour user:", user.id);
+      console.log("🔍 Chargement des collections pour user:", user.id, "store:", selectedStore.id);
       
       // Fetch collections
       const { data: collectionsData, error: collError } = await supabase
         .from("shopify_collections")
         .select("id, title, store_id")
         .eq("user_id", user.id)
+        .eq("store_id", selectedStore.id)
         .order("title", { ascending: true });
 
       if (collError) {
@@ -204,7 +215,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const { data: productsData, error: prodError } = await supabase
         .from("shopify_products")
         .select("id, collection_ids")
-        .eq("seller_id", user.id);
+        .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id);
 
       if (prodError) {
         console.error("❌ Erreur fetch produits:", prodError);
@@ -242,15 +254,16 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const fetchProducts = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !selectedStore?.id) return;
 
     try {
-      console.log("🔍 Chargement des produits pour user:", user.id);
+      console.log("🔍 Chargement des produits pour user:", user.id, "store:", selectedStore.id);
       
       const { data, error } = await supabase
         .from("shopify_products")
         .select("id, title, description, category, image_url, price, product_type, collection_ids, store_id")
         .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id)
         .order("created_at", { ascending: false })
         .limit(200);
 
