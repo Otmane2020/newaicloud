@@ -2086,6 +2086,24 @@ export default function ProductTitleDescription() {
                                       }`}>
                                         {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                                       </div>
+                                      
+                                      {/* Image de la variante */}
+                                      {(() => {
+                                        const productImages = galleryImages.get(product.id) || [];
+                                        const variantImage = productImages.find(img => img.variant_id === variant.id);
+                                        const imageUrl = variantImage?.src || product.image_url;
+                                        
+                                        return imageUrl ? (
+                                          <div className="relative w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0 border">
+                                            <img
+                                              src={imageUrl}
+                                              alt={variant.title}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        ) : null;
+                                      })()}
+                                      
                                       <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>
                                         {variant.title}
                                       </span>
