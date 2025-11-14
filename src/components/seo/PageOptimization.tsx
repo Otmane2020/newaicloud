@@ -10,6 +10,11 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
+import { 
+  ProgressDialog, 
+  ResultsDialog, 
+  SyncConfirmationDialog 
+} from './SeoWorkflowDialogs';
 import {
   Search,
   RefreshCw,
@@ -97,6 +102,11 @@ export function PageOptimization() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
   const [previewPageId, setPreviewPageId] = useState<string | null>(null);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [optimizedPages, setOptimizedPages] = useState<ShopifyPage[]>([]);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
@@ -463,7 +473,72 @@ export function PageOptimization() {
   };
 
   const handleOptimizePage = async (pageId: string, forceReoptimize = false) => {
-    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
+    try {
+      setOptimizing(true);
+      setShowProgressDialog(true);
+      setProgress({ current: 0, total: 1 });
+
+      const { data, error } = await supabase.functions.invoke('generate-page-seo', {
+        body: { pageId, force: forceReoptimize }
+      });
+      
+      if (error) throw error;
+
+      setProgress({ current: 1, total: 1 });
+      await fetchPages();
+      await refreshLimits();
+
+      const page = pages.find(p => p.id === pageId);
+      setOptimizedPages(page ? [page] : []);
+      
+      setShowProgressDialog(false);
+      setShowResultsDialog(true);
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de l\'optimisation');
+      setShowProgressDialog(false);
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleOpenSyncDialog = () => {
+    setShowResultsDialog(false);
+    setShowSyncDialog(true);
+  };
+
+  const handleConfirmSync = async () => {
+    if (optimizedPages.length === 0) return;
+    
+    try {
+      setSyncing(true);
+      setShowSyncDialog(false);
+      
+      for (const page of optimizedPages) {
+        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
+          body: { pageId: page.id }
+        });
+        
+        if (error) throw error;
+      }
+      
+      toast.success(`${optimizedPages.length} page(s) synchronisée(s)`);
+      await fetchPages();
+      setOptimizedPages([]);
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSyncPage = async (pageId: string) => {
+    // Check limits BEFORE syncing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
         toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
@@ -1145,7 +1220,40 @@ export function PageOptimization() {
         </Card>
       )}
       
-      {/* Optimize All Confirmation Dialog */}
+      <ProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        type="seo"
+        operation={optimizing ? 'optimizing' : 'syncing'}
+        current={progress.current}
+        total={progress.total}
+      />
+
+      <ResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={optimizedPages.map(p => ({
+          id: p.id,
+          title: p.title,
+          handle: p.handle,
+          seo_title: p.seo_title || undefined,
+          seo_description: p.seo_description || undefined,
+          body_html: p.body_html
+        }))}
+        onSyncClick={handleOpenSyncDialog}
+        onClose={() => setShowResultsDialog(false)}
+      />
+
+      <SyncConfirmationDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        onConfirm={handleConfirmSync}
+        itemCount={optimizedPages.length}
+        type="seo"
+        loading={syncing}
+      />
+      
       <OptimizationConfirmDialog
         open={showOptimizeAllConfirmDialog}
         onOpenChange={setShowOptimizeAllConfirmDialog}

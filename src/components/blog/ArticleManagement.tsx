@@ -45,6 +45,11 @@ import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useStore } from '@/contexts/StoreContext';
+import { 
+  ProgressDialog, 
+  ResultsDialog, 
+  SyncConfirmationDialog 
+} from '../seo/SeoWorkflowDialogs';
 import {
   Select,
   SelectContent,
@@ -101,6 +106,10 @@ export function ArticleManagement() {
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedArticle, setOptimizedArticle] = useState<Article | null>(null);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [optimizedArticles, setOptimizedArticles] = useState<Article[]>([]);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -207,7 +216,6 @@ export function ArticleManagement() {
   };
 
 const handleOptimizeArticle = async (articleId: string) => {
-    // Check limits BEFORE optimizing
     if (!canDoAction('optimizations')) {
       toast.error('Limite d\'optimisations atteinte', {
         description: limits?.isTrialing 
@@ -220,17 +228,18 @@ const handleOptimizeArticle = async (articleId: string) => {
 
     try {
       setOptimizing(true);
-      const toastId = toast.loading('Optimisation en cours...');
+      setShowProgressDialog(true);
+      setProgress({ current: 0, total: 1 });
 
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: [articleId] }
       });
 
       if (error) {
-        // Gérer erreur 403 limite atteinte
         if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
-          toast.error('Limite d\'optimisations atteinte', { id: toastId });
+          toast.error('Limite d\'optimisations atteinte');
           setShowUpgradeDialog(true);
+          setShowProgressDialog(false);
           return;
         }
         throw error;
@@ -238,12 +247,12 @@ const handleOptimizeArticle = async (articleId: string) => {
 
       if (data?.success_count > 0) {
         const article = articles.find(a => a.id === articleId);
-        setOptimizedArticle(article || null);
-        toast.success('Article optimisé avec succès', { id: toastId });
+        setOptimizedArticles(article ? [article] : []);
+        setProgress({ current: 1, total: 1 });
         await fetchArticles();
         await refreshLimits();
         
-        // Afficher le dialogue de résultats
+        setShowProgressDialog(false);
         setShowResultsDialog(true);
       } else {
         throw new Error(data?.results?.[0]?.error || 'Erreur d\'optimisation');
@@ -251,8 +260,40 @@ const handleOptimizeArticle = async (articleId: string) => {
     } catch (error: any) {
       console.error('Error optimizing article:', error);
       toast.error(error.message || 'Erreur lors de l\'optimisation');
+      setShowProgressDialog(false);
     } finally {
       setOptimizing(false);
+    }
+  };
+
+  const handleOpenSyncDialog = () => {
+    setShowResultsDialog(false);
+    setShowSyncDialog(true);
+  };
+
+  const handleConfirmSync = async () => {
+    if (optimizedArticles.length === 0) return;
+    
+    try {
+      setSyncing(true);
+      setShowSyncDialog(false);
+      
+      for (const article of optimizedArticles) {
+        const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+          body: { articleId: article.id }
+        });
+        
+        if (error) throw error;
+      }
+      
+      toast.success(`${optimizedArticles.length} article(s) synchronisé(s)`);
+      await fetchArticles();
+      setOptimizedArticles([]);
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -1025,66 +1066,41 @@ const handleOptimizeArticle = async (articleId: string) => {
         />
       )}
       
-      {/* Results Dialog */}
-      {optimizedArticle && (
-        <div className={`fixed inset-0 z-50 ${showResultsDialog ? 'block' : 'hidden'}`}>
-          <div className="fixed inset-0 bg-black/50" onClick={() => setShowResultsDialog(false)} />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                  <CheckCircle className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Optimisation Réussie !</h2>
-                  <p className="text-muted-foreground">Votre article a été optimisé avec succès</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div>
-                  <h3 className="font-semibold mb-1">Titre</h3>
-                  <p className="text-sm">{optimizedArticle.title}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold mb-1">Meta Description</h3>
-                  <p className="text-sm text-muted-foreground">{optimizedArticle.meta_description}</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowResultsDialog(false);
-                    setOptimizedArticle(null);
-                  }}
-                >
-                  Fermer
-                </Button>
-                <Button
-                  onClick={handleSyncOptimizedArticle}
-                  disabled={syncing}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Synchronisation...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Synchroniser avec Shopify
-                    </>
-                  )}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
+      {/* Workflow Dialogs */}
+      <ProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        type="seo"
+        operation={optimizing ? 'optimizing' : 'syncing'}
+        current={progress.current}
+        total={progress.total}
+      />
+
+      <ResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={optimizedArticles.map(a => ({
+          id: a.id,
+          title: a.title,
+          handle: a.handle || undefined,
+          seo_title: a.seo_title || undefined,
+          seo_description: a.meta_description,
+          content: a.content,
+          featured_image: a.featured_image || undefined
+        }))}
+        onSyncClick={handleOpenSyncDialog}
+        onClose={() => setShowResultsDialog(false)}
+      />
+
+      <SyncConfirmationDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        onConfirm={handleConfirmSync}
+        itemCount={optimizedArticles.length}
+        type="seo"
+        loading={syncing}
+      />
 
       <UpgradeDialog
         open={showUpgradeDialog}
