@@ -122,11 +122,27 @@ export default function Collections() {
     }
 
     setSyncing(true);
-    toast.info("Synchronisation en cours, cela peut prendre plusieurs minutes pour de nombreux produits...");
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
+
+      // Get total product count for estimated time
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const { count: totalProducts } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user.id);
+
+      // Estimate time: ~0.5s per batch of 50 products
+      const estimatedTime = Math.ceil((totalProducts || 0) / 50 * 0.5);
+      
+      toast.info(
+        `⏱️ Synchronisation de ${totalProducts || 0} produits (environ ${estimatedTime}s)...`,
+        { duration: 3000 }
+      );
 
       const { data, error: syncError } = await supabase.functions.invoke('sync-product-collections', {
         headers: {
@@ -138,16 +154,16 @@ export default function Collections() {
 
       const updatedCount = data?.updated_count || 0;
       const errorCount = data?.error_count || 0;
-      const totalProducts = data?.total_products || 0;
+      const totalProcessed = data?.total_products || 0;
       
       if (errorCount > 0) {
         toast.warning(
-          `⚠️ Synchronisation terminée avec erreurs: ${updatedCount} produits mis à jour, ${errorCount} erreurs sur ${totalProducts}`,
+          `⚠️ Synchronisation terminée avec erreurs: ${updatedCount} produits mis à jour, ${errorCount} erreurs sur ${totalProcessed}`,
           { duration: 6000 }
         );
       } else {
         toast.success(
-          `✅ Synchronisation terminée: ${updatedCount} produits mis à jour sur ${totalProducts}`,
+          `✅ Synchronisation terminée: ${updatedCount} produits mis à jour sur ${totalProcessed}`,
           { duration: 5000 }
         );
       }
