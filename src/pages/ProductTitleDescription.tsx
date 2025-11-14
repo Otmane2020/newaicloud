@@ -864,17 +864,24 @@ export default function ProductTitleDescription() {
 
         if (error) {
           console.error('AI Background generation error:', error);
-          if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT')) {
-            throw new Error('Limite de taux dépassée. Veuillez réessayer plus tard.');
+          let errorMessage = 'Erreur lors de la génération';
+          
+          if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT') || error.message?.includes('rate limit')) {
+            errorMessage = 'Limite de taux dépassée. Veuillez réessayer plus tard.';
+          } else if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED') || error.message?.includes('Payment required')) {
+            errorMessage = 'Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.';
+          } else if (error.message?.includes('LIMIT_REACHED')) {
+            errorMessage = 'Limite d\'optimisations atteinte. Passez à un plan supérieur.';
+          } else {
+            errorMessage = error.message || 'Erreur lors de la génération';
           }
-          if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
-            throw new Error('Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.');
-          }
-          throw error;
+          
+          throw new Error(errorMessage);
         }
         
         if (!data?.success) {
-          throw new Error(data?.message || 'Erreur lors de la génération');
+          console.error('AI Background generation failed:', data);
+          throw new Error(data?.error || data?.message || 'Erreur lors de la génération');
         }
 
         if (data.imageUrl) {
@@ -886,6 +893,7 @@ export default function ProductTitleDescription() {
             )
           );
         } else {
+          console.error('No image URL in response:', data);
           throw new Error('Aucune image générée');
         }
       } catch (error: any) {

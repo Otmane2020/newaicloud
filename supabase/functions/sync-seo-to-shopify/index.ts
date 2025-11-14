@@ -19,7 +19,7 @@ interface SyncRequest {
 // Helper function to make GraphQL requests to Shopify
 async function shopifyGraphQL(storeUrl: string, accessToken: string, query: string, variables: any = {}) {
   const response = await fetch(
-    `https://${storeUrl}/admin/api/2024-01/graphql.json`,
+    `https://${storeUrl}/admin/api/2025-01/graphql.json`,
     {
       method: "POST",
       headers: {
@@ -31,13 +31,19 @@ async function shopifyGraphQL(storeUrl: string, accessToken: string, query: stri
   );
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[SYNC-SEO] ❌ Shopify GraphQL HTTP error: ${response.status} ${response.statusText}`, errorText);
     throw new Error(`Shopify GraphQL error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
   
+  // Log the full response for debugging
+  console.log(`[SYNC-SEO] 📋 GraphQL Response:`, JSON.stringify(data, null, 2));
+  
   // Check for GraphQL errors
   if (data.errors) {
+    console.error(`[SYNC-SEO] ❌ GraphQL errors:`, JSON.stringify(data.errors, null, 2));
     throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
   }
 
@@ -45,6 +51,7 @@ async function shopifyGraphQL(storeUrl: string, accessToken: string, query: stri
   if (data.data) {
     const operationName = Object.keys(data.data)[0];
     if (data.data[operationName]?.userErrors?.length > 0) {
+      console.error(`[SYNC-SEO] ❌ User errors:`, JSON.stringify(data.data[operationName].userErrors, null, 2));
       throw new Error(`User errors: ${JSON.stringify(data.data[operationName].userErrors)}`);
     }
   }
@@ -179,12 +186,15 @@ Deno.serve(async (req: Request) => {
       
       // PHASE 1: Update SEO title and description using GraphQL (proper native SEO)
       console.log(`[SYNC-SEO] Updating product ${product.shopify_id} SEO via GraphQL...`);
+      console.log(`[SYNC-SEO] SEO Title: "${product.seo_title || product.title || ""}"`);
+      console.log(`[SYNC-SEO] SEO Description: "${(product.seo_description || "").substring(0, 100)}..."`);
       
       const productUpdateMutation = `
         mutation productUpdate($input: ProductInput!) {
           productUpdate(input: $input) {
             product {
               id
+              title
               seo {
                 title
                 description
@@ -209,11 +219,12 @@ Deno.serve(async (req: Request) => {
       };
 
       try {
-        await shopifyGraphQL(shopUrl, shopifyAccessToken, productUpdateMutation, graphqlVariables);
+        const graphqlResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, productUpdateMutation, graphqlVariables);
         console.log("[SYNC-SEO] ✅ SEO updated successfully via GraphQL");
-      } catch (error) {
+        console.log("[SYNC-SEO] Updated product SEO:", JSON.stringify(graphqlResponse.data?.productUpdate?.product?.seo, null, 2));
+      } catch (error: any) {
         console.error("[SYNC-SEO] ❌ GraphQL SEO update failed:", error);
-        throw error;
+        throw new Error(`Failed to update SEO in Shopify: ${error.message}`);
       }
       
       // PHASE 2: Update tags, product_type, and Google Shopping metafields using REST API
