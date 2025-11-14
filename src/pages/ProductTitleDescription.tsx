@@ -1990,73 +1990,150 @@ export default function ProductTitleDescription() {
                 // Si le produit a des variantes, afficher directement la sélection des variantes
                 return (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-primary" />
-                      <Label className="text-base font-semibold">Sélection des variantes</Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Ce produit possède des variantes. Sélectionnez celles pour lesquelles générer un fond blanc.
-                    </p>
-                    <div className="space-y-4">
-                      {selectedProductsList.map((product) => {
-                        if (!product?.variants || product.variants.length === 0) return null;
+                    {selectedProductsList.map((product) => {
+                      if (!product || !product.variants || product.variants.length === 0) return null;
+                      
+                      return (
+                        <Card key={product.id} className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                          {/* Product Header avec Image */}
+                          <div className="flex items-start gap-4 mb-4 pb-4 border-b">
+                            {product.image_url && (
+                              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
+                                <img
+                                  src={product.image_url}
+                                  alt={product.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Package className="h-4 w-4 text-primary" />
+                                <h3 className="font-semibold text-base line-clamp-2">{product.title}</h3>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                  {product.variants.length} variante{product.variants.length > 1 ? 's' : ''}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {whiteBgSelectedVariants.get(product.id)?.length || 0} sélectionnée{(whiteBgSelectedVariants.get(product.id)?.length || 0) > 1 ? 's' : ''}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
 
-                        const productSelectedVariants = whiteBgSelectedVariants.get(product.id) || [];
+                          {/* Selection Actions */}
+                          <div className="flex gap-2 mb-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const allVariantIds = product.variants?.map(v => v.id) || [];
+                                const newMap = new Map(whiteBgSelectedVariants);
+                                newMap.set(product.id, allVariantIds);
+                                setWhiteBgSelectedVariants(newMap);
+                              }}
+                              className="flex-1"
+                            >
+                              <Check className="mr-2 h-3.5 w-3.5" />
+                              Tout sélectionner
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newMap = new Map(whiteBgSelectedVariants);
+                                newMap.set(product.id, []);
+                                setWhiteBgSelectedVariants(newMap);
+                              }}
+                              className="flex-1"
+                            >
+                              Tout désélectionner
+                            </Button>
+                          </div>
 
-                        return (
-                          <Card key={product.id} className="p-4">
-                            <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
-                            <div className="space-y-2">
-                              {product.variants.map((variant) => (
-                                <div
-                                  key={variant.id}
-                                  className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50"
-                                >
-                                  <Checkbox
-                                    id={`variant-${variant.id}`}
-                                    checked={productSelectedVariants.includes(variant.id)}
-                                    onCheckedChange={(checked) => {
+                          {/* Variants Grid */}
+                          <ScrollArea className="max-h-[250px]">
+                            <div className="grid gap-2 pr-3">
+                              {product.variants.map((variant) => {
+                                const isSelected = whiteBgSelectedVariants.get(product.id)?.includes(variant.id) || false;
+                                
+                                return (
+                                  <Card
+                                    key={variant.id}
+                                    className={`p-3 cursor-pointer transition-all ${
+                                      isSelected 
+                                        ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary/30' 
+                                        : 'hover:bg-accent/50 hover:border-primary/40'
+                                    }`}
+                                    onClick={() => {
+                                      const currentVariants = whiteBgSelectedVariants.get(product.id) || [];
+                                      const newVariants = isSelected
+                                        ? currentVariants.filter(id => id !== variant.id)
+                                        : [...currentVariants, variant.id];
                                       const newMap = new Map(whiteBgSelectedVariants);
-                                      const current = newMap.get(product.id) || [];
-                                      if (checked) {
-                                        newMap.set(product.id, [...current, variant.id]);
-                                        setWhiteBgApplyTo("variants");
-                                      } else {
-                                        newMap.set(
-                                          product.id,
-                                          current.filter((id) => id !== variant.id)
-                                        );
-                                      }
+                                      newMap.set(product.id, newVariants);
                                       setWhiteBgSelectedVariants(newMap);
                                     }}
-                                  />
-                                  <Label
-                                    htmlFor={`variant-${variant.id}`}
-                                    className="text-sm font-normal cursor-pointer flex-1"
                                   >
-                                    {variant.title}
-                                  </Label>
-                                </div>
-                              ))}
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                        isSelected 
+                                          ? 'bg-primary border-primary' 
+                                          : 'border-muted-foreground/30'
+                                      }`}>
+                                        {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                                      </div>
+                                      <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>
+                                        {variant.title}
+                                      </span>
+                                    </div>
+                                  </Card>
+                                );
+                              })}
                             </div>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                          </ScrollArea>
+                        </Card>
+                      );
+                    })}
                   </div>
                 );
               } else {
                 // Si le produit n'a pas de variantes, c'est un produit simple
                 return (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Images className="h-5 w-5 text-primary" />
-                      <Label className="text-base font-semibold">Produit simple détecté</Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      L'image générée sera disponible pour application en tant qu'image principale ou secondaire.
-                    </p>
-                  </div>
+                  <Card className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                    {selectedProductsList.map((product) => {
+                      if (!product) return null;
+                      
+                      return (
+                        <div key={product.id} className="flex items-start gap-4">
+                          {product.image_url && (
+                            <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
+                              <img
+                                src={product.image_url}
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Images className="h-4 w-4 text-primary" />
+                              <h3 className="font-semibold text-base">{product.title}</h3>
+                            </div>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                              Produit simple
+                            </Badge>
+                            <p className="text-sm text-muted-foreground">
+                              L'image générée sera disponible pour application en tant qu'image principale ou secondaire.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Card>
                 );
               }
             })()}
