@@ -201,6 +201,12 @@ export default function ProductTitleDescription() {
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
+    console.log('🚨🚨🚨 [STORE_CHANGE] Store changed, resetting filters and fetching products');
+    // Reset filters when store changes
+    setSearchTerm('');
+    setStatusFilter('all');
+    setCurrentPage(1);
+    setSelectedProducts(new Set());
     fetchProducts();
   }, [selectedStore]);
 
@@ -374,6 +380,20 @@ export default function ProductTitleDescription() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentPage]);
+
+  // 🚨 DEBUG LOGS - Ultra visible debugging
+  useEffect(() => {
+    console.log('🚨🚨🚨 ============= PRODUCT DEBUG INFO =============');
+    console.log('🚨🚨🚨 [PRODUCTS_RAW] Total products loaded:', products.length);
+    console.log('🚨🚨🚨 [FILTER_ACTIVE]', { statusFilter, searchTerm });
+    console.log('🚨🚨🚨 [PRODUCTS_FILTERED] After filters:', filteredProducts.length);
+    console.log('🚨🚨🚨 [PRODUCTS_PAGINATED] Page', currentPage, '/', totalPages, '- Showing:', paginatedProducts.length);
+    console.log('🚨🚨🚨 [STORE_SELECTED]', selectedStore?.store_name, 'ID:', selectedStore?.id);
+    if (paginatedProducts.length > 0) {
+      console.log('🚨🚨🚨 [SAMPLE_PRODUCTS] First 3:', paginatedProducts.slice(0, 3).map(p => ({ id: p.id, title: p.title, store_id: (p as any).store_id })));
+    }
+    console.log('🚨🚨🚨 ============================================');
+  }, [products, filteredProducts, paginatedProducts, currentPage, totalPages, statusFilter, searchTerm, selectedStore]);
 
   const handleSelectAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
@@ -1514,6 +1534,16 @@ export default function ProductTitleDescription() {
               <p className="text-muted-foreground text-sm sm:text-base">
                 {t.contentOptimization.hero.description}
               </p>
+              {/* 🚨 DEBUG INFO INDICATOR */}
+              <div className="flex items-center gap-2 text-xs font-mono bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded px-2 py-1 mt-2">
+                <span>🏪 {selectedStore?.store_name || 'Aucune boutique'}</span>
+                <span>|</span>
+                <span>📦 Chargés: {products.length}</span>
+                <span>|</span>
+                <span>🔍 Filtrés: {filteredProducts.length}</span>
+                <span>|</span>
+                <span>📄 Page {currentPage}/{totalPages} ({paginatedProducts.length})</span>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -1707,6 +1737,32 @@ export default function ProductTitleDescription() {
         {/* Actions Bar */}
         <Card className="p-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const debugInfo = {
+                    store: selectedStore?.store_name,
+                    store_id: selectedStore?.id,
+                    products_loaded: products.length,
+                    products_filtered: filteredProducts.length,
+                    products_paginated: paginatedProducts.length,
+                    current_page: currentPage,
+                    total_pages: totalPages,
+                    active_filter: statusFilter,
+                    search_term: searchTerm,
+                    sample_products: paginatedProducts.slice(0, 3).map(p => ({ id: p.id, title: p.title }))
+                  };
+                  console.log('🚨🚨🚨 [DEBUG_BUTTON]', debugInfo);
+                  toast.info('Debug info logged to console', {
+                    description: `${products.length} chargés, ${filteredProducts.length} filtrés, ${paginatedProducts.length} affichés`
+                  });
+                }}
+              >
+                🔍 Debug Info
+              </Button>
+            </div>
             <div className="flex-1 w-full lg:max-w-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
