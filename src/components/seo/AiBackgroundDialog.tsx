@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -85,6 +85,15 @@ export function AiBackgroundDialog({
 
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
   const hasVariants = selectedProducts.some((product) => product.variants && product.variants.length > 0);
+
+  // Générer un prompt par défaut basé sur les produits sélectionnés
+  useEffect(() => {
+    if (open && selectedProducts.length > 0 && !config.prompt) {
+      const productTitles = selectedProducts.map(p => p.title).join(", ");
+      const defaultPrompt = `Professional product photography for ${productTitles} with clean modern background and perfect studio lighting`;
+      setConfig(prev => ({ ...prev, prompt: defaultPrompt }));
+    }
+  }, [open, selectedProducts]);
 
   // Récupérer toutes les images d'un produit (principale + galerie)
   const getAllProductImages = (product: Product) => {
@@ -318,8 +327,8 @@ export function AiBackgroundDialog({
                               <div>
                                 <Label className="text-sm font-medium">{product.title}</Label>
                               </div>
-                              <ScrollArea className="w-full max-h-[200px]">
-                                <div className="grid grid-cols-4 gap-2">
+                              <div className="w-full max-h-[200px] overflow-y-auto">
+                                <div className="grid grid-cols-4 gap-2 pr-2">
                                   {allImages.map((img, idx) => (
                                     <button
                                       type="button"
@@ -351,7 +360,7 @@ export function AiBackgroundDialog({
                                     </button>
                                   ))}
                                 </div>
-                              </ScrollArea>
+                              </div>
                             </div>
                           );
                         })}
@@ -408,8 +417,8 @@ export function AiBackgroundDialog({
                                     </Button>
                                   </div>
 
-                                  <ScrollArea className="w-full max-h-[200px]">
-                                    <div className="grid grid-cols-4 gap-2">
+                                  <div className="w-full max-h-[200px] overflow-y-auto">
+                                    <div className="grid grid-cols-4 gap-2 pr-2">
                                       {variantsWithImages.map(({ variant, image }) => (
                                         <button
                                           type="button"
@@ -439,7 +448,7 @@ export function AiBackgroundDialog({
                                         </button>
                                       ))}
                                     </div>
-                                  </ScrollArea>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -455,8 +464,8 @@ export function AiBackgroundDialog({
                               return (
                                 <div key={product.id} className="space-y-2">
                                   <Label className="text-sm font-medium">{product.title}</Label>
-                                  <ScrollArea className="w-full max-h-[200px]">
-                                    <div className="grid grid-cols-4 gap-2">
+                                  <div className="w-full max-h-[200px] overflow-y-auto">
+                                    <div className="grid grid-cols-4 gap-2 pr-2">
                                       {allImages.map((img, idx) => (
                                         <button
                                           type="button"
@@ -488,7 +497,7 @@ export function AiBackgroundDialog({
                                         </button>
                                       ))}
                                     </div>
-                                  </ScrollArea>
+                                  </div>
                                 </div>
                               );
                             })}
