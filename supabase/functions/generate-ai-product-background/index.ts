@@ -423,29 +423,43 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
 
     // Try providers in order: Lovable AI → DeepSeek → Gemini → OpenAI
+    const failures: string[] = [];
     let result = await tryLovableAI();
     
     if (!result) {
+      failures.push("Lovable AI: Pas de crédits (402) - Ajoutez des crédits à votre workspace Lovable");
       console.log("🔄 Lovable AI failed, trying DeepSeek...");
       result = await tryDeepSeek();
     }
     
     if (!result) {
+      failures.push("DeepSeek: Ne supporte pas la génération d'images");
       console.log("🔄 DeepSeek failed, trying Gemini...");
       result = await tryGemini();
     }
     
     if (!result) {
+      failures.push("Gemini: Ne supporte pas la génération d'images");
       console.log("🔄 Gemini failed, trying OpenAI...");
       result = await tryOpenAI();
     }
 
     if (!result) {
+      failures.push("OpenAI: Limite de taux atteinte (429) - Attendez quelques minutes ou vérifiez vos crédits OpenAI");
+      
+      console.error("❌ ALL PROVIDERS FAILED:", failures);
+      
       return new Response(
         JSON.stringify({
           success: false,
           error: "ALL_PROVIDERS_FAILED",
-          message: "Tous les fournisseurs d'IA ont échoué. Veuillez réessayer plus tard ou vérifier vos clés API.",
+          message: "Tous les fournisseurs d'IA ont échoué.",
+          details: failures.join(" | "),
+          suggestions: [
+            "Ajoutez des crédits à votre workspace Lovable AI",
+            "Attendez quelques minutes pour que la limite OpenAI se réinitialise",
+            "Vérifiez que votre clé API OpenAI est valide et a des crédits"
+          ]
         }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
