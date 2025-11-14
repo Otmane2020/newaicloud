@@ -65,7 +65,7 @@ export default function SEO() {
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
-        .eq('store_id', selectedStore.id);
+        .or(`store_id.eq.${selectedStore.id},store_id.is.null`);
 
       if (error) throw error;
 

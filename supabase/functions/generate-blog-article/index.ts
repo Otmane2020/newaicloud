@@ -167,27 +167,36 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     // ✅ AUTO-DETECT SHOP LANGUAGE FROM DATABASE
     console.log("🌍 Détection automatique de la langue de la boutique...");
     let detectedLanguage = "fr"; // Default
+    let storeId = null; // Store the store_id for later use
     
     try {
-      // First, try to detect from store URL
+      // First, try to detect from store URL and get store_id
       const { data: storeData } = await supabaseClient
         .from("shopify_connections")
-        .select("store_url")
+        .select("id, store_url")
         .eq("user_id", user_id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
         .single();
       
-      if (storeData?.store_url) {
-        const domain = storeData.store_url.toLowerCase();
-        if (domain.includes(".com") && !domain.includes(".fr")) {
-          detectedLanguage = "en";
-        } else if (domain.includes(".es")) {
-          detectedLanguage = "es";
-        } else if (domain.includes(".de")) {
-          detectedLanguage = "de";
-        } else if (domain.includes(".it")) {
-          detectedLanguage = "it";
+      if (storeData) {
+        storeId = storeData.id; // Save store_id for article insertion
+        console.log(`✅ Store ID détecté: ${storeId}`);
+      
+        if (storeData.store_url) {
+          const domain = storeData.store_url.toLowerCase();
+          if (domain.includes(".com") && !domain.includes(".fr")) {
+            detectedLanguage = "en";
+          } else if (domain.includes(".es")) {
+            detectedLanguage = "es";
+          } else if (domain.includes(".de")) {
+            detectedLanguage = "de";
+          } else if (domain.includes(".it")) {
+            detectedLanguage = "it";
+          }
+          console.log(`✅ Langue détectée depuis l'URL: ${detectedLanguage}`);
         }
-        console.log(`✅ Langue détectée depuis l'URL: ${detectedLanguage}`);
       }
 
       // Fallback: detect from products titles
@@ -906,6 +915,7 @@ RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`
       .insert([
         {
           user_id,
+          store_id: storeId, // Include store_id
           title: optimizedTitle.substring(0, 200), // ULTRA réduit: 200 caractères
           content,
           featured_image: featuredImage,
