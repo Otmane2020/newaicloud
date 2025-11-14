@@ -182,11 +182,11 @@ export function BackgroundDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] w-[95vw] sm:w-full overflow-y-auto">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            Prévisualisation des arrière-plans IA
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[95vw] sm:max-w-6xl h-[90vh] max-h-[90vh] flex flex-col p-3 sm:p-6 gap-0">
+        <DialogHeader className="space-y-2 flex-shrink-0 pb-3 sm:pb-4">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+            <span className="line-clamp-1">Prévisualisation des arrière-plans IA</span>
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
             Sélectionnez les images à appliquer à vos produits
@@ -195,12 +195,12 @@ export function BackgroundDialog({
 
         {/* Prompt Section (optional regenerate) */}
         {onCustomPromptChange && (
-          <div className="space-y-2 border-b pb-4">
-            <Label className="text-xs sm:text-sm">Prompt personnalisé (pour régénérer)</Label>
-            <div className="flex flex-col sm:flex-row gap-2">
+          <div className="space-y-2 border-b pb-3 sm:pb-4 flex-shrink-0">
+            <Label className="text-xs sm:text-sm font-medium">Prompt personnalisé</Label>
+            <div className="flex flex-col gap-2">
               <Select value={selectedPreset} onValueChange={handlePresetChange}>
-                <SelectTrigger className="w-full sm:w-[280px] text-xs sm:text-sm">
-                  <SelectValue placeholder="Choisir un style prédéfini..." />
+                <SelectTrigger className="w-full text-xs sm:text-sm h-9">
+                  <SelectValue placeholder="Style prédéfini..." />
                 </SelectTrigger>
                 <SelectContent>
                   {PRESET_PROMPTS.map((preset) => (
@@ -210,46 +210,48 @@ export function BackgroundDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedPreset('');
-                  handlePromptChange('');
-                }}
-                className="text-xs sm:text-sm whitespace-nowrap"
-              >
-                Effacer
-              </Button>
+              <div className="flex gap-2">
+                <Textarea
+                  value={localPrompt}
+                  onChange={(e) => handlePromptChange(e.target.value)}
+                  placeholder="Décrivez l'environnement souhaité..."
+                  className="min-h-[50px] sm:min-h-[60px] text-xs sm:text-sm resize-none flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPreset('');
+                    handlePromptChange('');
+                  }}
+                  className="text-xs whitespace-nowrap h-9 px-3"
+                >
+                  Effacer
+                </Button>
+              </div>
             </div>
-            <Textarea
-              value={localPrompt}
-              onChange={(e) => handlePromptChange(e.target.value)}
-              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting, elegant backdrop, and attractive staging that drives customer engagement and conversion. Create a visually appealing environment optimized for online sales and Google Shopping."
-              className="min-h-[60px] sm:min-h-[80px] text-xs sm:text-sm"
-            />
           </div>
         )}
 
-        <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-4 sm:space-y-6">
+        <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-3 sm:space-y-4 min-h-0">
           {previews.map((preview) => (
             <div
               key={preview.productId}
-              className="border rounded-lg p-3 sm:p-4 space-y-3"
+              className="border rounded-lg p-2 sm:p-3 space-y-2 sm:space-y-3"
             >
               <div className="flex items-start justify-between flex-col sm:flex-row gap-2">
-                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                   {!isSingleImage && (
                     <input
                       type="checkbox"
                       checked={selectedIds.has(preview.productId)}
                       onChange={() => handleToggleSelect(preview.productId)}
                       disabled={preview.status !== 'success'}
-                      className="w-4 h-4 flex-shrink-0"
+                      className="w-4 h-4 flex-shrink-0 mt-0.5"
                     />
                   )}
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-medium text-sm sm:text-base line-clamp-2">{preview.productTitle}</h4>
+                    <h4 className="font-medium text-xs sm:text-sm line-clamp-2 break-words">{preview.productTitle}</h4>
                     {preview.status === 'generating' && (
                       <Badge variant="outline" className="gap-1 text-xs mt-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -277,19 +279,18 @@ export function BackgroundDialog({
                     size="sm"
                     variant="outline"
                     onClick={() => onRegenerate(preview.productId, localPrompt)}
-                    className="gap-2 text-xs whitespace-nowrap w-full sm:w-auto"
+                    className="gap-1 text-[10px] sm:text-xs whitespace-nowrap w-full sm:w-auto h-7 sm:h-8 px-2 sm:px-3"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span className="hidden sm:inline">Régénérer</span>
-                    <span className="sm:hidden">Régén.</span>
+                    Régénérer
                   </Button>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Image originale</p>
-                  <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="space-y-1 sm:space-y-2">
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">Original</p>
+                  <div className="aspect-square bg-muted rounded-md overflow-hidden border">
                     <img
                       src={preview.originalUrl}
                       alt="Original"
@@ -298,11 +299,11 @@ export function BackgroundDialog({
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                    Arrière-plan IA
+                <div className="space-y-1 sm:space-y-2">
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
+                    IA
                   </p>
-                  <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
+                  <div className="aspect-square bg-muted rounded-md overflow-hidden border">
                     {preview.status === 'generating' && (
                       <div className="w-full h-full flex items-center justify-center">
                         <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-muted-foreground" />
@@ -330,7 +331,7 @@ export function BackgroundDialog({
           ))}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 sm:pt-4 border-t flex-shrink-0">
           {!isSingleImage && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {successfulPreviews.length > 0 && (
@@ -339,15 +340,13 @@ export function BackgroundDialog({
                   size="sm"
                   onClick={handleSelectAll}
                   disabled={isGenerating}
-                  className="text-xs sm:text-sm w-full sm:w-auto whitespace-nowrap"
+                  className="text-[10px] sm:text-xs w-full sm:w-auto whitespace-nowrap h-8"
                 >
-                  {selectedIds.size === successfulPreviews.length
-                    ? 'Tout désélectionner'
-                    : 'Tout sélectionner'}
+                  {selectedIds.size === successfulPreviews.length ? 'Désélectionner' : 'Sélectionner tout'}
                 </Button>
               )}
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                {selectedIds.size} / {successfulPreviews.length} sélectionné(s)
+              <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+                {selectedIds.size}/{successfulPreviews.length}
               </span>
             </div>
           )}
@@ -358,7 +357,7 @@ export function BackgroundDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={applying || isGenerating || syncing}
-              className="w-full sm:w-auto text-xs sm:text-sm"
+              className="w-full sm:w-auto text-xs h-8 sm:h-9"
             >
               Annuler
             </Button>
@@ -367,17 +366,17 @@ export function BackgroundDialog({
                 variant="outline"
                 onClick={handleSyncToShopify}
                 disabled={syncing || selectedIds.size === 0 || isGenerating || applying}
-                className="w-full sm:w-auto text-xs sm:text-sm gap-2"
+                className="w-full sm:w-auto text-[10px] sm:text-xs gap-1 sm:gap-2 h-8 sm:h-9"
               >
                 {syncing ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="hidden sm:inline">Sync...</span>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Sync...</span>
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4" />
-                    <span>Sync Shopify {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                    <Upload className="w-3 h-3" />
+                    <span>Sync{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}</span>
                   </>
                 )}
               </Button>
@@ -385,16 +384,15 @@ export function BackgroundDialog({
             <Button
               onClick={handleApply}
               disabled={applying || selectedIds.size === 0 || isGenerating || syncing}
-              className="w-full sm:w-auto text-xs sm:text-sm"
+              className="w-full sm:w-auto text-xs h-8 sm:h-9"
             >
               {applying ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  <span className="hidden sm:inline">Application...</span>
-                  <span className="sm:hidden">...</span>
+                  <Loader2 className="w-3 h-3 mr-1 sm:mr-2 animate-spin" />
+                  <span>{selectedIds.size > 0 ? `${selectedIds.size}` : '...'}</span>
                 </>
               ) : (
-                `Appliquer ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`
+                `Appliquer${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`
               )}
             </Button>
           </div>
