@@ -30,7 +30,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const loadStores = useCallback(async () => {
     if (!user?.id) {
-      console.log('🏪 [STORE_CONTEXT] No user, clearing stores');
+      console.log('🚨🚨🚨 [STORE_CONTEXT] No user, clearing stores');
       setStores([]);
       setSelectedStore(null);
       setLoading(false);
@@ -38,7 +38,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log('🏪 [STORE_CONTEXT] Loading stores for user:', user.id);
+      console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
       const { data, error } = await supabase
         .from('shopify_connections')
         .select('id, store_name, store_url, store_label, is_active, public_domain, access_token')
@@ -48,7 +48,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      console.log('🏪 [STORE_CONTEXT] Loaded stores:', data?.length, data);
+      console.log('🚨🚨🚨 [STORE_CONTEXT] Loaded stores:', data?.length, data);
       setStores(data || []);
       
       // Only auto-select if no stores were loaded before
@@ -56,17 +56,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSelectedStore(prev => {
           if (!prev) {
             // Auto-select first store only if no store is selected
-            console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
+            console.log('🚨🚨🚨 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name, 'ID:', data[0].id);
             return data[0];
           }
           // Find the current store in the new data to get a fresh reference
           const currentStore = data.find(s => s.id === prev.id);
           if (currentStore) {
-            console.log('🏪 [STORE_CONTEXT] Updating store reference:', currentStore.store_name);
+            console.log('🚨🚨🚨 [STORE_CONTEXT] Updating store reference:', currentStore.store_name, 'ID:', currentStore.id);
             return currentStore;
           }
           // If current store no longer exists, select first one
-          console.log('🏪 [STORE_CONTEXT] Current store not found, selecting first:', data[0].store_name);
+          console.log('🚨🚨🚨 [STORE_CONTEXT] Current store not found, selecting first:', data[0].store_name, 'ID:', data[0].id);
           return data[0];
         });
       }

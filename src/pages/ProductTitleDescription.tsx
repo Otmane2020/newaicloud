@@ -216,10 +216,10 @@ export default function ProductTitleDescription() {
   }, [refreshLimits]);
 
   const fetchProducts = async () => {
-    console.log('🏪 [PRODUCT_TITLE] selectedStore:', selectedStore);
+    console.log('🚨🚨🚨 [PRODUCT_TITLE] selectedStore:', selectedStore);
     
     if (!selectedStore) {
-      console.log('⚠️ [PRODUCT_TITLE] No store selected, clearing products');
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] No store selected, clearing products');
       setProducts([]);
       setLoading(false);
       return;
@@ -230,9 +230,11 @@ export default function ProductTitleDescription() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log('📦 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] About to query with store_id filter:', selectedStore.id);
 
       // Charger les produits avec filtre store_id
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] EXECUTING QUERY with store_id:', selectedStore.id);
       const { data: rawProductsData, error: productsError } = await supabase
         .from("shopify_products")
         .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
@@ -240,10 +242,12 @@ export default function ProductTitleDescription() {
         .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
       
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] Query result:', rawProductsData?.length, 'products');
       if (productsError) throw productsError;
 
       // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
       const productsData = guardStoreData(rawProductsData, selectedStore.id, 'product');
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] After guard filter:', productsData.length, 'valid products');
 
       // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
       if (productsData && productsData.length > 0) {
