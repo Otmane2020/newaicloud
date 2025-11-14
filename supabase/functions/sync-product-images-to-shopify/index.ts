@@ -52,16 +52,41 @@ Deno.serve(async (req) => {
       throw new Error(`Product not found: ${productId}`);
     }
 
-    if (!product.shopify_product_id || !product.store_id) {
-      throw new Error("Product not connected to Shopify");
+    if (!product.shopify_product_id) {
+      throw new Error("Product not synced to Shopify yet. Please sync the product first.");
     }
 
-    // Get Shopify connection
-    const { data: connection, error: connError } = await supabaseClient
-      .from("shopify_connections")
-      .select("shop_domain, access_token")
-      .eq("id", product.store_id)
-      .single();
+    // Get Shopify connection - try by store_id first, then get active connection
+    let connection = null;
+    let connError = null;
+
+    if (product.store_id) {
+      const result = await supabaseClient
+        .from("shopify_connections")
+        .select("shop_domain, access_token")
+        .eq("id", product.store_id)
+        .eq("is_active", true)
+        .single();
+      
+      connection = result.data;
+      connError = result.error;
+    }
+
+    // If no connection found by store_id, get the user's active connection
+    if (!connection) {
+      console.log("No store_id on product or connection not found, fetching user's active connection");
+      const result = await supabaseClient
+        .from("shopify_connections")
+        .select("shop_domain, access_token")
+        .eq("seller_id", user.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      connection = result.data;
+      connError = result.error;
+    }
 
     if (connError || !connection) {
       throw new Error("Shopify connection not found");
