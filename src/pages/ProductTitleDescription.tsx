@@ -830,7 +830,15 @@ export default function ProductTitleDescription() {
       try {
         // Determine the image ID to use from gallery images
         const images = galleryImages.get(product.id) || [];
-        const imageId = images.find(img => img.src === preview.originalUrl)?.id || product.id;
+        // Find the image in gallery that matches the preview URL
+        const matchingImage = images.find(img => img.src === preview.originalUrl);
+        const imageId = matchingImage?.id || '';
+        
+        if (!imageId) {
+          console.warn(`⚠️ No imageId found for product ${product.id}, URL: ${preview.originalUrl}`);
+        } else {
+          console.log(`✅ Using imageId: ${imageId} for product ${product.id}`);
+        }
 
         const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
           body: {
@@ -841,7 +849,7 @@ export default function ProductTitleDescription() {
             seoDescription: product.seo_description,
             visionAiData: product.vision_ai_data,
             productId: product.id,
-            imageId: imageId,
+            imageId: imageId || product.id, // Fallback to productId if no imageId
             prompt: config.prompt,
             enrichedPrompt: config.enrichedPrompt,
             style: actualStyle,

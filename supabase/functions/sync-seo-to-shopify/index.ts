@@ -16,6 +16,42 @@ interface SyncRequest {
   force?: boolean; // Bypass throttling check (for post-optimization sync)
 }
 
+// Helper function to make GraphQL requests to Shopify
+async function shopifyGraphQL(storeUrl: string, accessToken: string, query: string, variables: any = {}) {
+  const response = await fetch(
+    `https://${storeUrl}/admin/api/2024-01/graphql.json`,
+    {
+      method: "POST",
+      headers: {
+        "X-Shopify-Access-Token": accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, variables }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Shopify GraphQL error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Check for GraphQL errors
+  if (data.errors) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
+  }
+
+  // Check for user errors in the response
+  if (data.data) {
+    const operationName = Object.keys(data.data)[0];
+    if (data.data[operationName]?.userErrors?.length > 0) {
+      throw new Error(`User errors: ${JSON.stringify(data.data[operationName].userErrors)}`);
+    }
+  }
+
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -66,7 +102,7 @@ Deno.serve(async (req: Request) => {
       // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data")
+        .select("shopify_id, title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data")
         .eq("id", productId)
         .eq("seller_id", user.id)
         .maybeSingle();
@@ -141,34 +177,57 @@ Deno.serve(async (req: Request) => {
       const shopUrl = storeConnection.store_url;
       const shopifyAccessToken = storeConnection.access_token;
       
-      // Build product update data
+      // PHASE 1: Update SEO title and description using GraphQL (proper native SEO)
+      console.log(`[SYNC-SEO] Updating product ${product.shopify_id} SEO via GraphQL...`);
+      
+      const productUpdateMutation = `
+        mutation productUpdate($input: ProductInput!) {
+          productUpdate(input: $input) {
+            product {
+              id
+              seo {
+                title
+                description
+              }
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const graphqlVariables = {
+        input: {
+          id: `gid://shopify/Product/${product.shopify_id}`,
+          seo: {
+            title: product.seo_title || product.title || "",
+            description: product.seo_description || ""
+          }
+        }
+      };
+
+      try {
+        await shopifyGraphQL(shopUrl, shopifyAccessToken, productUpdateMutation, graphqlVariables);
+        console.log("[SYNC-SEO] ✅ SEO updated successfully via GraphQL");
+      } catch (error) {
+        console.error("[SYNC-SEO] ❌ GraphQL SEO update failed:", error);
+        throw error;
+      }
+      
+      // PHASE 2: Update tags, product_type, and Google Shopping metafields using REST API
+      console.log("[SYNC-SEO] Updating tags, product_type, and Google Shopping data via REST...");
+      
+      // Build product update data for REST (tags + product_type + metafields)
       const updateData: any = {
         product: {
           id: product.shopify_id,
         }
       };
 
-      // Collect all metafields to update
+      // Collect all metafields to update (Google Shopping only - not SEO)
       const metafields: any[] = [];
-
-      // Add SEO metafields
-      if (product.seo_title) {
-        metafields.push({
-          namespace: "global",
-          key: "title_tag",
-          value: product.seo_title,
-          type: "single_line_text_field"
-        });
-      }
-
-      if (product.seo_description) {
-        metafields.push({
-          namespace: "global",
-          key: "description_tag",
-          value: product.seo_description,
-          type: "multi_line_text_field"
-        });
-      }
 
       // Add Google Shopping data if enabled
       if (syncGoogleShopping) {
@@ -209,22 +268,29 @@ Deno.serve(async (req: Request) => {
         updateData.product.product_type = product.category;
       }
 
-      const shopifyResponse = await fetch(
-        `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            "X-Shopify-Access-Token": shopifyAccessToken,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
+      // Only make REST call if we have something to update (tags, product_type, or metafields)
+      if (updateData.product.tags || updateData.product.product_type || updateData.product.metafields) {
+        const shopifyResponse = await fetch(
+          `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}.json`,
+          {
+            method: "PUT",
+            headers: {
+              "X-Shopify-Access-Token": shopifyAccessToken,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updateData),
+          }
+        );
 
-      if (!shopifyResponse.ok) {
-        const errorText = await shopifyResponse.text();
-        console.error(`Shopify API error for product ${product.shopify_id}:`, errorText);
-        throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+        if (!shopifyResponse.ok) {
+          const errorText = await shopifyResponse.text();
+          console.error(`Shopify API error for product ${product.shopify_id}:`, errorText);
+          throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+        }
+        
+        console.log("[SYNC-SEO] ✅ Tags, product_type, and metafields updated successfully via REST");
+      } else {
+        console.log("[SYNC-SEO] No tags, product_type, or metafields to update via REST");
       }
 
       // Store snapshot of synced data
