@@ -1779,7 +1779,7 @@ export default function ProductTitleDescription() {
                   enrichedPrompt: config.enrichedPrompt,
                   style: config.similarity,
                   format: config.format,
-                  targetType: config.applyTo === 'main' ? 'main' : 'variants',
+                  targetType: targetType,
                   variantOptions: config.selectedVariants.get(product.id)?.length ? {
                     variantIds: config.selectedVariants.get(product.id)
                   } : undefined
