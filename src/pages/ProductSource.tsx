@@ -105,10 +105,42 @@ const ProductSource = () => {
   const applyFilters = () => {
     let filtered = [...products];
 
+    // Recherche intelligente
     if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
+      const normalizeText = (text: string | null | undefined): string => {
+        if (!text) return '';
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+          .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
+          .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+          .trim();
+      };
+
+      // Normaliser le terme de recherche et le diviser en mots-clés
+      const searchKeywords = normalizeText(searchTerm).split(' ').filter(k => k.length > 0);
+      
+      if (searchKeywords.length > 0) {
+        filtered = filtered.filter(p => {
+          // Construire une chaîne de recherche avec tous les champs du produit
+          const searchableText = normalizeText([
+            p.title,
+            p.category,
+            p.sub_category,
+            p.style,
+            p.room,
+            p.functionality,
+            p.characteristics,
+            p.enrichment_status,
+            p.chat_text
+          ].filter(Boolean).join(' '));
+
+          // Vérifier que tous les mots-clés sont présents
+          return searchKeywords.every(keyword => searchableText.includes(keyword));
+        });
+      }
     }
 
     if (statusFilter !== "all") {

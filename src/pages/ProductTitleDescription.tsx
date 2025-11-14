@@ -294,11 +294,50 @@ export default function ProductTitleDescription() {
   };
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.vendor?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
+    const normalizeText = (text: string | null | undefined): string => {
+      if (!text) return '';
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+        .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
+        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+        .trim();
+    };
+
+    // Normaliser le terme de recherche et le diviser en mots-clés
+    const searchKeywords = normalizeText(searchTerm).split(' ').filter(k => k.length > 0);
+    
+    if (searchKeywords.length === 0) {
+      // Pas de recherche, appliquer seulement le filtre de statut
+      if (statusFilter === 'optimized') return hasRichHtmlDescription(product);
+      if (statusFilter === 'notOptimized') return !hasRichHtmlDescription(product);
+      if (statusFilter === 'toSync') return hasRichHtmlDescription(product);
+      return true;
+    }
+
+    // Construire une chaîne de recherche avec tous les champs du produit
+    const searchableText = normalizeText([
+      product.title,
+      product.vendor,
+      product.description,
+      product.seo_title,
+      product.seo_description,
+      product.handle,
+      product.status,
+      // Ajouter les variantes si disponibles
+      ...(product.variants?.map(v => [v.title, v.option1, v.option2, v.option3].filter(Boolean).join(' ')) || [])
+    ].filter(Boolean).join(' '));
+
+    // Vérifier que tous les mots-clés sont présents dans le texte
+    const matchesSearch = searchKeywords.every(keyword => 
+      searchableText.includes(keyword)
+    );
     
     if (!matchesSearch) return false;
     
+    // Appliquer les filtres de statut
     if (statusFilter === 'optimized') return hasRichHtmlDescription(product);
     if (statusFilter === 'notOptimized') return !hasRichHtmlDescription(product);
     if (statusFilter === 'toSync') return hasRichHtmlDescription(product);

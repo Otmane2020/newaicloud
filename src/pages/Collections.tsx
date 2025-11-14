@@ -290,11 +290,33 @@ export default function Collections() {
 
   const filteredCollections = collections.filter((col) => {
     if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      col.title.toLowerCase().includes(term) ||
-      col.handle?.toLowerCase().includes(term)
-    );
+    
+    // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
+    const normalizeText = (text: string | null | undefined): string => {
+      if (!text) return '';
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+        .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
+        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+        .trim();
+    };
+
+    // Normaliser le terme de recherche et le diviser en mots-clés
+    const searchKeywords = normalizeText(searchTerm).split(' ').filter(k => k.length > 0);
+    
+    if (searchKeywords.length === 0) return true;
+
+    // Construire une chaîne de recherche avec tous les champs de la collection
+    const searchableText = normalizeText([
+      col.title,
+      col.handle,
+      col.body_html
+    ].filter(Boolean).join(' '));
+
+    // Vérifier que tous les mots-clés sont présents
+    return searchKeywords.every(keyword => searchableText.includes(keyword));
   });
 
   if (loading) {

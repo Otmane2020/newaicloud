@@ -149,13 +149,38 @@ export default function Products() {
   const filterAndSortProducts = () => {
     let filtered = [...products];
 
-    // Search filter
+    // Search filter - Recherche intelligente
     if (searchQuery) {
-      filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+      // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
+      const normalizeText = (text: string | null | undefined): string => {
+        if (!text) return '';
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+          .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
+          .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+          .trim();
+      };
+
+      // Normaliser le terme de recherche et le diviser en mots-clés
+      const searchKeywords = normalizeText(searchQuery).split(' ').filter(k => k.length > 0);
+      
+      if (searchKeywords.length > 0) {
+        filtered = filtered.filter(p => {
+          // Construire une chaîne de recherche avec tous les champs du produit
+          const searchableText = normalizeText([
+            p.title,
+            p.description,
+            p.vendor,
+            p.product_type,
+            p.status
+          ].filter(Boolean).join(' '));
+
+          // Vérifier que tous les mots-clés sont présents
+          return searchKeywords.every(keyword => searchableText.includes(keyword));
+        });
+      }
     }
 
     // Status filter
