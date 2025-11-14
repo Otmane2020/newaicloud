@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    console.log(`🔄 Starting product-collection sync for user ${user.id}`);
+    console.log(`🚀 [SYNC-COLLECTIONS] Function invoked for user ${user.id}`);
 
     // Get user's Shopify connection
     const { data: connection, error: connectionError } = await supabase
@@ -40,8 +40,11 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (connectionError || !connection) {
+      console.error(`❌ [SYNC-COLLECTIONS] No active Shopify connection found for user ${user.id}`);
       throw new Error("No active Shopify connection found");
     }
+
+    console.log(`✅ [SYNC-COLLECTIONS] Found active connection: ${connection.store_url}`);
 
     // Get all collections
     const { data: collections, error: collectionsError } = await supabase
@@ -49,13 +52,16 @@ Deno.serve(async (req: Request) => {
       .select("id, shopify_collection_id")
       .eq("user_id", user.id);
 
-    if (collectionsError) throw collectionsError;
+    if (collectionsError) {
+      console.error(`❌ [SYNC-COLLECTIONS] Error fetching collections:`, collectionsError);
+      throw collectionsError;
+    }
 
     const collectionMap = new Map(
       collections?.map(c => [String(c.shopify_collection_id), c.id]) || []
     );
 
-    console.log(`📦 Found ${collections?.length || 0} collections`);
+    console.log(`📦 [SYNC-COLLECTIONS] Found ${collections?.length || 0} collections in database`);
 
     // Get all products
     const { data: products, error: productsError } = await supabase
@@ -63,9 +69,13 @@ Deno.serve(async (req: Request) => {
       .select("id, shopify_id")
       .eq("seller_id", user.id);
 
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error(`❌ [SYNC-COLLECTIONS] Error fetching products:`, productsError);
+      throw productsError;
+    }
 
-    console.log(`📦 Processing ${products?.length || 0} products`);
+    console.log(`📦 [SYNC-COLLECTIONS] Processing ${products?.length || 0} products`);
+    console.log(`🔧 [SYNC-COLLECTIONS] Shopify store URL: ${connection.store_url}`);
 
     let updatedCount = 0;
     let errorCount = 0;
@@ -86,10 +96,13 @@ Deno.serve(async (req: Request) => {
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
-      console.log(`🔄 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} products)`);
+      console.log(`🔄 [SYNC-COLLECTIONS] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} products)`);
       
       const batchPromises = batch.map(async (product) => {
-        if (!product.shopify_id) return null;
+        if (!product.shopify_id) {
+          console.log(`⚠️ [SYNC-COLLECTIONS] Skipping product ${product.id} - no shopify_id`);
+          return null;
+        }
 
         try {
           const graphqlQuery = `
@@ -119,14 +132,14 @@ Deno.serve(async (req: Request) => {
           );
 
           if (!graphqlResponse.ok) {
-            console.error(`❌ GraphQL failed for product ${product.shopify_id}`);
+            console.error(`❌ [SYNC-COLLECTIONS] GraphQL failed for product ${product.shopify_id} - Status: ${graphqlResponse.status}`);
             return { success: false };
           }
 
           const graphqlData = await graphqlResponse.json();
           
           if (graphqlData.errors) {
-            console.error(`❌ GraphQL errors for product ${product.shopify_id}`);
+            console.error(`❌ [SYNC-COLLECTIONS] GraphQL errors for product ${product.shopify_id}:`, graphqlData.errors);
             return { success: false };
           }
 
@@ -136,6 +149,8 @@ Deno.serve(async (req: Request) => {
           const internalCollectionIds = productCollections
             .map((edge: any) => collectionMap.get(String(edge.node.legacyResourceId)))
             .filter(Boolean);
+
+          console.log(`📋 [SYNC-COLLECTIONS] Product ${product.shopify_id} belongs to ${internalCollectionIds.length} collections`);
 
           // Always update, even if empty array (to ensure consistency)
           const { error: updateError } = await supabase
@@ -147,7 +162,7 @@ Deno.serve(async (req: Request) => {
             .eq("id", product.id);
 
           if (updateError) {
-            console.error(`❌ Error updating product ${product.id}:`, updateError);
+            console.error(`❌ [SYNC-COLLECTIONS] Error updating product ${product.id}:`, updateError);
             return { success: false };
           }
           
@@ -156,7 +171,7 @@ Deno.serve(async (req: Request) => {
             collectionCount: internalCollectionIds.length 
           };
         } catch (error) {
-          console.error(`❌ Error processing product ${product.id}:`, error);
+          console.error(`❌ [SYNC-COLLECTIONS] Error processing product ${product.id}:`, error);
           return { success: false };
         }
       });
@@ -169,7 +184,7 @@ Deno.serve(async (req: Request) => {
       updatedCount += successCount;
       errorCount += failCount;
       
-      console.log(`✅ Batch ${batchIndex + 1} complete: ${successCount} updated, ${failCount} errors`);
+      console.log(`✅ [SYNC-COLLECTIONS] Batch ${batchIndex + 1}/${batches.length} complete: ${successCount} updated, ${failCount} errors`);
       
       // Small delay between batches to respect Shopify rate limits
       if (batchIndex < batches.length - 1) {
@@ -177,7 +192,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`✨ Sync complete: ${updatedCount} products updated, ${errorCount} errors`);
+    console.log(`✨ [SYNC-COLLECTIONS] Sync complete: ${updatedCount} products updated, ${errorCount} errors out of ${products?.length || 0} total`);
 
     return new Response(JSON.stringify({
       success: true,
