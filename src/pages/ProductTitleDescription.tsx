@@ -779,138 +779,183 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
-  // Fonction pour générer les arrière-plans IA
+  // Fonction pour générer les arrière-plans IA avec timeout et meilleure gestion d'erreur
   const generateAiBackgrounds = async (config: AiBackgroundConfig) => {
+    const startTime = Date.now();
+    console.log('🎨 [AI BG] Starting generation with config:', {
+      prompt: config.prompt,
+      format: config.format,
+      similarity: config.similarity,
+      imageType: config.imageType,
+      productsCount: selectedProducts.size
+    });
+    
     setGeneratingAiBg(true);
     
-    // Conserver la config pour l'utiliser lors de l'application
-    setPendingAiConfig(config);
-    
-    const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
-    
-    const previews: PreviewImage[] = selectedProductsList.flatMap((p) => {
-      const selectedImages = config.selectedImages.get(p.id) || [];
-      const imagesToProcess = selectedImages.length > 0 ? selectedImages : [p.image_url!];
+    try {
+      // Conserver la config pour l'utiliser lors de l'application
+      setPendingAiConfig(config);
       
-      return imagesToProcess.map((imageUrl) => ({
-        productId: p.id,
-        productTitle: p.title,
-        originalUrl: imageUrl,
-        generatedUrl: null,
-        status: 'pending' as const,
-      }));
-    });
-
-    setAiBgPreviews(previews);
-    setShowAiBgDialog(true);
-
-    // Map imageType to targetType (FIXED: singular 'variant')
-    const targetType = config.imageType === 'primary' ? 'main' : 'variant';
-    
-    // Map similarity to actual style
-    const styleMap: Record<string, "professional" | "lifestyle" | "minimalist" | "creative"> = {
-      'very-close': 'professional',
-      'close': 'professional',
-      'medium': 'lifestyle',
-      'creative': 'creative',
-      'very-creative': 'creative'
-    };
-    const actualStyle = styleMap[config.similarity] || 'professional';
-
-    for (let i = 0; i < previews.length; i++) {
-      const preview = previews[i];
-      const product = selectedProductsList.find(p => p.id === preview.productId)!;
+      const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
       
-      setAiBgPreviews((prev) =>
-        prev.map((p) =>
-          p === preview ? { ...p, status: 'generating' } : p
-        )
-      );
-
-      try {
-        // Determine the image ID to use from gallery images
-        const images = galleryImages.get(product.id) || [];
-        // Find the image in gallery that matches the preview URL
-        const matchingImage = images.find(img => img.src === preview.originalUrl);
-        const imageId = matchingImage?.id || '';
+      const previews: PreviewImage[] = selectedProductsList.flatMap((p) => {
+        const selectedImages = config.selectedImages.get(p.id) || [];
+        const imagesToProcess = selectedImages.length > 0 ? selectedImages : [p.image_url!];
         
-        if (!imageId) {
-          console.warn(`⚠️ No imageId found for product ${product.id}, URL: ${preview.originalUrl}`);
-        } else {
-          console.log(`✅ Using imageId: ${imageId} for product ${product.id}`);
-        }
+        return imagesToProcess.map((imageUrl) => ({
+          productId: p.id,
+          productTitle: p.title,
+          originalUrl: imageUrl,
+          generatedUrl: null,
+          status: 'pending' as const,
+        }));
+      });
 
-        const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
-          body: {
-            imageUrl: preview.originalUrl,
-            productTitle: product.title,
-            productDescription: product.description,
-            seoTitle: product.seo_title,
-            seoDescription: product.seo_description,
-            visionAiData: product.vision_ai_data,
-            productId: product.id,
-            imageId: imageId || product.id, // Fallback to productId if no imageId
-            prompt: config.prompt,
-            enrichedPrompt: config.enrichedPrompt,
-            style: actualStyle,
-            format: config.format,
-            targetType: targetType,
-            variantOptions: config.selectedVariants.get(product.id)?.map(vId => {
-              const variant = product.variants?.find(v => v.id === vId);
-              return variant ? [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' - ') : '';
-            }).join(', ')
-          }
-        });
+      console.log(`🎨 [AI BG] Created ${previews.length} preview items for ${selectedProductsList.length} products`);
+      
+      setAiBgPreviews(previews);
+      setShowAiBgDialog(true);
 
-        if (error) {
-          console.error('AI Background generation error:', error);
-          let errorMessage = 'Erreur lors de la génération';
-          
-          if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT') || error.message?.includes('rate limit')) {
-            errorMessage = 'Limite de taux dépassée. Veuillez réessayer plus tard.';
-          } else if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED') || error.message?.includes('Payment required')) {
-            errorMessage = 'Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.';
-          } else if (error.message?.includes('LIMIT_REACHED')) {
-            errorMessage = 'Limite d\'optimisations atteinte. Passez à un plan supérieur.';
-          } else {
-            errorMessage = error.message || 'Erreur lors de la génération';
-          }
-          
-          throw new Error(errorMessage);
-        }
+      // Map imageType to targetType (FIXED: singular 'variant')
+      const targetType = config.imageType === 'primary' ? 'main' : 'variant';
+      
+      // Map similarity to actual style
+      const styleMap: Record<string, "professional" | "lifestyle" | "minimalist" | "creative"> = {
+        'very-close': 'professional',
+        'close': 'professional',
+        'medium': 'lifestyle',
+        'creative': 'creative',
+        'very-creative': 'creative'
+      };
+      const actualStyle = styleMap[config.similarity] || 'professional';
+
+      for (let i = 0; i < previews.length; i++) {
+        const preview = previews[i];
+        const product = selectedProductsList.find(p => p.id === preview.productId)!;
+        const itemStartTime = Date.now();
         
-        if (!data?.success) {
-          console.error('AI Background generation failed:', data);
-          throw new Error(data?.error || data?.message || 'Erreur lors de la génération');
-        }
-
-        if (data.imageUrl) {
-          setAiBgPreviews((prev) =>
-            prev.map((p) =>
-              p === preview
-                ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-                : p
-            )
-          );
-        } else {
-          console.error('No image URL in response:', data);
-          throw new Error('Aucune image générée');
-        }
-      } catch (error: any) {
-        console.error('Error generating AI background:', error);
+        console.log(`🎨 [AI BG] [${i + 1}/${previews.length}] Processing product: ${product.title.substring(0, 50)}...`);
+        
         setAiBgPreviews((prev) =>
           prev.map((p) =>
-            p === preview ? { ...p, status: 'error', error: error.message } : p
+            p === preview ? { ...p, status: 'generating' } : p
           )
         );
-        if (error.message?.includes('Limite de taux') || error.message?.includes('Crédits insuffisants')) {
-          toast.error(error.message);
+
+        try {
+          // Determine the image ID to use from gallery images
+          const images = galleryImages.get(product.id) || [];
+          const matchingImage = images.find(img => img.src === preview.originalUrl);
+          const imageId = matchingImage?.id || '';
+          
+          if (!imageId) {
+            console.warn(`⚠️ [AI BG] No imageId found for product ${product.id}, URL: ${preview.originalUrl}`);
+          } else {
+            console.log(`✅ [AI BG] Using imageId: ${imageId} for product ${product.id}`);
+          }
+
+          // Créer une promesse avec timeout de 2 minutes
+          const generatePromise = supabase.functions.invoke('generate-ai-product-background', {
+            body: {
+              imageUrl: preview.originalUrl,
+              productTitle: product.title,
+              productDescription: product.description,
+              seoTitle: product.seo_title,
+              seoDescription: product.seo_description,
+              visionAiData: product.vision_ai_data,
+              productId: product.id,
+              imageId: imageId || product.id,
+              prompt: config.prompt,
+              enrichedPrompt: config.enrichedPrompt,
+              style: actualStyle,
+              format: config.format,
+              targetType: targetType,
+              variantOptions: config.selectedVariants.get(product.id)?.map(vId => {
+                const variant = product.variants?.find(v => v.id === vId);
+                return variant ? [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' - ') : '';
+              }).join(', ')
+            }
+          });
+
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT: La génération a pris plus de 2 minutes')), 120000)
+          );
+
+          const { data, error } = await Promise.race([generatePromise, timeoutPromise]) as any;
+          
+          const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
+          console.log(`⏱️ [AI BG] Request completed in ${elapsedTime}s`);
+
+          if (error) {
+            console.error('❌ [AI BG] Generation error:', error);
+            let errorMessage = 'Erreur lors de la génération';
+            
+            if (error.message?.includes('TIMEOUT')) {
+              errorMessage = 'Délai d\'attente dépassé (2 min). Veuillez réessayer.';
+            } else if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT') || error.message?.includes('rate limit')) {
+              errorMessage = 'Limite de taux dépassée. Veuillez réessayer dans 60 secondes.';
+            } else if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED') || error.message?.includes('Payment required')) {
+              errorMessage = 'Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage.';
+            } else if (error.message?.includes('LIMIT_REACHED')) {
+              errorMessage = 'Limite d\'optimisations atteinte. Passez à un plan supérieur.';
+            } else {
+              errorMessage = error.message || 'Erreur lors de la génération';
+            }
+            
+            throw new Error(errorMessage);
+          }
+          
+          if (!data?.success) {
+            console.error('❌ [AI BG] Generation failed:', data);
+            throw new Error(data?.error || data?.message || 'Erreur lors de la génération');
+          }
+
+          if (data.imageUrl) {
+            console.log(`✅ [AI BG] Successfully generated image for ${product.title.substring(0, 50)}...`);
+            setAiBgPreviews((prev) =>
+              prev.map((p) =>
+                p === preview
+                  ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+                  : p
+              )
+            );
+          } else {
+            console.error('❌ [AI BG] No image URL in response:', data);
+            throw new Error('Aucune image générée');
+          }
+        } catch (error: any) {
+          const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
+          console.error(`❌ [AI BG] Error after ${elapsedTime}s:`, error.message);
+          
+          setAiBgPreviews((prev) =>
+            prev.map((p) =>
+              p === preview ? { ...p, status: 'error', error: error.message } : p
+            )
+          );
+          
+          // Toast seulement pour les erreurs critiques
+          if (error.message?.includes('Limite') || error.message?.includes('Crédits') || error.message?.includes('Délai')) {
+            toast.error(error.message, {
+              duration: 5000,
+            });
+          }
         }
       }
-    }
 
-    setGeneratingAiBg(false);
-    await refreshLimits();
+      const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`🎉 [AI BG] All generations completed in ${totalElapsed}s`);
+      
+    } catch (error: any) {
+      console.error('❌ [AI BG] Fatal error in generateAiBackgrounds:', error);
+      toast.error('Erreur lors de la génération des arrière-plans', {
+        description: error.message,
+      });
+    } finally {
+      // CRITICAL: Toujours réinitialiser le spinner
+      setGeneratingAiBg(false);
+      await refreshLimits();
+      console.log('✅ [AI BG] Generation process completed, spinner stopped');
+    }
   };
 
   // Removed obsolete functions - now integrated in unified AiBackgroundDialog
