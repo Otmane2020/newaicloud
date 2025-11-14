@@ -63,6 +63,7 @@ import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
 import { VisionAIBanner } from "./VisionAIBanner";
 import { GoogleSearchPreview } from "./GoogleSearchPreview";
 import { useStore } from "@/contexts/StoreContext";
+import { useStoreDomain } from "@/hooks/useStoreDomain";
 
 interface Product {
   id: string;
@@ -89,12 +90,7 @@ type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 
 // Helper component for Google Search Preview in table
 function GoogleSearchPreviewCell({ product }: { product: Product }) {
-  const { selectedStore } = useStore();
-  const domain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
-    ? selectedStore.public_domain
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
-    ? 'example.com'
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
+  const { domain } = useStoreDomain();
 
   if (!product.seo_title || !product.seo_description) {
     return (

@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useStoreDomain } from '@/hooks/useStoreDomain';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -179,39 +180,8 @@ export function ResultsDialog({
 }: ResultsDialogProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
-  const [storeDomain, setStoreDomain] = useState<string>('example.com');
+  const { domain: storeDomain } = useStoreDomain();
   const { selectedStore } = useStore();
-
-  // Fetch store domain with fallback
-  useEffect(() => {
-    const fetchStoreDomain = async () => {
-      if (!selectedStore?.id) return;
-      
-      const { data, error } = await supabase
-        .from('shopify_connections')
-        .select('public_domain, store_url')
-        .eq('id', selectedStore.id)
-        .single();
-      
-      if (data && !error) {
-        // Prioritize public_domain, clean store_url as fallback
-        let domain = 'example.com';
-        if (data.public_domain && !data.public_domain.includes('.myshopify.com')) {
-          domain = data.public_domain;
-        } else if (data.store_url) {
-          const cleanUrl = data.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-          // Only use store_url if it's NOT a myshopify.com domain
-          if (!cleanUrl.includes('.myshopify.com')) {
-            domain = cleanUrl;
-          }
-        }
-        console.log('Store domain fetched:', domain);
-        setStoreDomain(domain);
-      }
-    };
-    
-    fetchStoreDomain();
-  }, [selectedStore?.id]);
 
   const getTitle = () => {
     switch (type) {
