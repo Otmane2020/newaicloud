@@ -166,6 +166,7 @@ export const useShopifySync = () => {
               );
               break;
             case 'articles':
+              console.log('📰 [SYNC ARTICLES] Starting article import...');
               result = await executeWithTimeout(
                 supabase.functions.invoke('import-shopify-articles', {
                   body: { 
@@ -175,6 +176,7 @@ export const useShopifySync = () => {
                   }
                 })
               );
+              console.log('📰 [SYNC ARTICLES] Article import result:', result);
               break;
             case 'images':
               result = await executeWithTimeout(
@@ -225,6 +227,21 @@ export const useShopifySync = () => {
             .eq('id', historyId);
         } catch (historyUpdateError) {
           console.error('❌ [SYNC HISTORY UPDATE EXCEPTION]', historyUpdateError);
+        }
+      }
+
+      // ✅ CRITICAL FIX: Auto-sync product-collection links after successful import
+      if ((importResults.products > 0 || importResults.collections > 0) && errorMessages.length === 0) {
+        console.log('🔗 [SYNC LINKS] Auto-syncing product-collection links...');
+        try {
+          const syncLinksResult = await supabase.functions.invoke('sync-product-collections');
+          if (syncLinksResult.error) {
+            console.error('❌ [SYNC LINKS ERROR]', syncLinksResult.error);
+          } else {
+            console.log('✅ [SYNC LINKS] Product-collection links synced:', syncLinksResult.data);
+          }
+        } catch (syncError) {
+          console.error('❌ [SYNC LINKS EXCEPTION]', syncError);
         }
       }
 
