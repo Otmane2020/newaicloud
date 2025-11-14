@@ -1765,11 +1765,18 @@ export default function ProductTitleDescription() {
             );
 
             try {
+              // Determine the image ID to use from gallery images
+              const images = galleryImages.get(product.id) || [];
+              const imageId = images[0]?.id || product.id; // Fallback to product ID if no images
+
               const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
                 body: {
                   imageUrl: selectedImageUrl,
                   productTitle: product.title,
+                  productId: product.id,
+                  imageId: imageId,
                   prompt: config.prompt,
+                  enrichedPrompt: config.enrichedPrompt,
                   style: config.similarity,
                   format: config.format,
                   targetType: config.applyTo === 'main' ? 'main' : 'variants',

@@ -279,7 +279,7 @@ export default function MediaHistory() {
     return (
       <div
         key={item.id}
-        className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+        className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
       >
         <div className="relative w-20 h-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
           <img
@@ -289,8 +289,8 @@ export default function MediaHistory() {
           />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <Badge className={getOptimizationTypeColor(item.optimization_type)}>
               {getOptimizationTypeLabel(item.optimization_type)}
             </Badge>
@@ -306,7 +306,7 @@ export default function MediaHistory() {
 
           <p className="font-medium mb-1 truncate">{title}</p>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatDistanceToNow(new Date(item.created_at), {
@@ -333,7 +333,7 @@ export default function MediaHistory() {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button
             variant="ghost"
             size="sm"
@@ -341,11 +341,14 @@ export default function MediaHistory() {
               item.optimized_url, 
               `${title}-v${item.version_number}.png`
             )}
+            className="w-full sm:w-auto"
           >
             <Download className="w-4 h-4" />
           </Button>
 
-          {onApply}
+          <div className="w-full sm:w-auto">
+            {onApply}
+          </div>
         </div>
       </div>
     );
@@ -396,20 +399,28 @@ export default function MediaHistory() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="products" className="flex items-center gap-2">
-            <Package className="w-4 h-4" />
-            Produits ({(productHistory as any[])?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="collections" className="flex items-center gap-2">
-            <FolderOpen className="w-4 h-4" />
-            Collections ({(collectionHistory as any[])?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="articles" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Articles ({(articleHistory as any[])?.length || 0})
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-3 min-w-[400px]">
+            <TabsTrigger value="products" className="flex items-center gap-2 text-sm md:text-base">
+              <Package className="w-4 h-4" />
+              <span className="hidden sm:inline">Produits</span>
+              <span className="sm:hidden">Prod.</span>
+              <span className="text-xs">({(productHistory as any[])?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="collections" className="flex items-center gap-2 text-sm md:text-base">
+              <FolderOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Collections</span>
+              <span className="sm:hidden">Coll.</span>
+              <span className="text-xs">({(collectionHistory as any[])?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="articles" className="flex items-center gap-2 text-sm md:text-base">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Articles</span>
+              <span className="sm:hidden">Art.</span>
+              <span className="text-xs">({(articleHistory as any[])?.length || 0})</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="products" className="space-y-4">
           {(() => {
