@@ -318,8 +318,8 @@ export function AiBackgroundDialog({
                               <div>
                                 <Label className="text-sm font-medium">{product.title}</Label>
                               </div>
-                              <ScrollArea className="w-full">
-                                <div className="flex gap-2 pb-4" style={{ minHeight: "100px" }}>
+                              <ScrollArea className="w-full max-h-[200px]">
+                                <div className="grid grid-cols-4 gap-2">
                                   {allImages.map((img, idx) => (
                                     <button
                                       type="button"
@@ -329,7 +329,7 @@ export function AiBackgroundDialog({
                                         newMap.set(product.id, img.src);
                                         setConfig({ ...config, selectedImages: newMap });
                                       }}
-                                      className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                      className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                                         selectedImageUrl === img.src
                                           ? "border-primary ring-2 ring-primary"
                                           : "border-border hover:border-primary/50"
@@ -408,14 +408,14 @@ export function AiBackgroundDialog({
                                     </Button>
                                   </div>
 
-                                  <ScrollArea className="w-full">
-                                    <div className="flex gap-3 pb-4" style={{ minHeight: "100px" }}>
+                                  <ScrollArea className="w-full max-h-[200px]">
+                                    <div className="grid grid-cols-4 gap-2">
                                       {variantsWithImages.map(({ variant, image }) => (
                                         <button
                                           type="button"
                                           key={variant.id}
                                           onClick={() => toggleVariantSelection(product.id, variant.id)}
-                                          className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                                             productSelectedVariants.includes(variant.id)
                                               ? "border-primary ring-2 ring-primary"
                                               : "border-border hover:border-primary/50"
@@ -455,8 +455,8 @@ export function AiBackgroundDialog({
                               return (
                                 <div key={product.id} className="space-y-2">
                                   <Label className="text-sm font-medium">{product.title}</Label>
-                                  <ScrollArea className="w-full">
-                                    <div className="flex gap-2 pb-4" style={{ minHeight: "100px" }}>
+                                  <ScrollArea className="w-full max-h-[200px]">
+                                    <div className="grid grid-cols-4 gap-2">
                                       {allImages.map((img, idx) => (
                                         <button
                                           type="button"
@@ -466,7 +466,7 @@ export function AiBackgroundDialog({
                                             newMap.set(product.id, img.src);
                                             setConfig({ ...config, selectedImages: newMap });
                                           }}
-                                          className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                                             selectedImageUrl === img.src
                                               ? "border-primary ring-2 ring-primary"
                                               : "border-border hover:border-primary/50"
