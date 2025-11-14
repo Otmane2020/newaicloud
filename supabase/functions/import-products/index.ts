@@ -544,34 +544,67 @@ Deno.serve(async (req: Request) => {
       };
     });
 
-    const { data: upsertedProducts, error: insertError } = await supabaseServiceClient
-      .from("shopify_products")
-      .upsert(productsToInsert, {
-        onConflict: "shopify_id,seller_id",
-        ignoreDuplicates: false,
-      })
-      .select();
-
-    if (insertError) {
-      console.error("Database insert error:", insertError);
-      return new Response(
-        JSON.stringify({ error: `Failed to save products: ${insertError.message}` }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
+    // Insert products in batches to avoid timeout
+    const BATCH_SIZE = 100;
     const productIdMap = new Map<number, string>();
-    if (upsertedProducts) {
-      upsertedProducts.forEach((p: any) => {
-        productIdMap.set(p.shopify_id, p.id);
-      });
+    const totalBatches = Math.ceil(productsToInsert.length / BATCH_SIZE);
+    
+    console.log(`📦 Inserting ${productsToInsert.length} products in ${totalBatches} batches of ${BATCH_SIZE}`);
+    
+    for (let i = 0; i < productsToInsert.length; i += BATCH_SIZE) {
+      const batch = productsToInsert.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      
+      console.log(`🔄 Processing product batch ${batchNumber}/${totalBatches} (${batch.length} products)`);
+      
+      const { data: upsertedProducts, error: insertError } = await supabaseServiceClient
+        .from("shopify_products")
+        .upsert(batch, {
+          onConflict: "shopify_id,seller_id",
+          ignoreDuplicates: false,
+        })
+        .select();
+
+      if (insertError) {
+        console.error(`❌ Database insert error in batch ${batchNumber}:`, insertError);
+        return new Response(
+          JSON.stringify({ error: `Failed to save products (batch ${batchNumber}): ${insertError.message}` }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Map product IDs from this batch
+      if (upsertedProducts) {
+        upsertedProducts.forEach((p: any) => {
+          productIdMap.set(p.shopify_id, p.id);
+        });
+      }
+      
+      // Update import job progress
+      await supabaseServiceClient
+        .from('import_jobs')
+        .update({
+          products_processed: Math.min(i + BATCH_SIZE, productsToInsert.length)
+        })
+        .eq('id', importJob.id);
+      
+      console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
+      
+      // Small delay between batches to avoid overwhelming the database
+      if (i + BATCH_SIZE < productsToInsert.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
     let totalVariants = 0;
     let totalImages = 0;
+
+    // Collect all variants and images first
+    const allVariants: any[] = [];
+    const allImages: any[] = [];
 
     for (const product of products) {
       const productId = productIdMap.get(product.id);
@@ -610,20 +643,7 @@ Deno.serve(async (req: Request) => {
           };
         });
 
-        if (variantsToInsert.length > 0) {
-          const { error: variantError } = await supabaseServiceClient
-            .from("product_variants")
-            .upsert(variantsToInsert, {
-              onConflict: "shopify_variant_id",
-              ignoreDuplicates: false,
-            });
-
-          if (variantError) {
-            console.error("Variant insert error:", variantError);
-          } else {
-            totalVariants += variantsToInsert.length;
-          }
-        }
+        allVariants.push(...variantsToInsert);
       }
 
       if (product.images && product.images.length > 0) {
@@ -637,21 +657,83 @@ Deno.serve(async (req: Request) => {
           height: (image as any).height || null,
         }));
 
+        allImages.push(...imagesToInsert);
+      }
+    }
+
+    // Insert variants in batches
+    if (allVariants.length > 0) {
+      const VARIANT_BATCH_SIZE = 500;
+      const variantBatches = Math.ceil(allVariants.length / VARIANT_BATCH_SIZE);
+      
+      console.log(`📦 Inserting ${allVariants.length} variants in ${variantBatches} batches`);
+      
+      for (let i = 0; i < allVariants.length; i += VARIANT_BATCH_SIZE) {
+        const batch = allVariants.slice(i, i + VARIANT_BATCH_SIZE);
+        const batchNumber = Math.floor(i / VARIANT_BATCH_SIZE) + 1;
+        
+        console.log(`🔄 Processing variant batch ${batchNumber}/${variantBatches}`);
+        
+        const { error: variantError } = await supabaseServiceClient
+          .from("product_variants")
+          .upsert(batch, {
+            onConflict: "shopify_variant_id",
+            ignoreDuplicates: false,
+          });
+
+        if (variantError) {
+          console.error(`❌ Variant insert error in batch ${batchNumber}:`, variantError);
+        } else {
+          totalVariants += batch.length;
+          console.log(`✅ Variant batch ${batchNumber}/${variantBatches} completed`);
+        }
+        
+        if (i + VARIANT_BATCH_SIZE < allVariants.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+
+    // Insert images in batches
+    if (allImages.length > 0) {
+      const IMAGE_BATCH_SIZE = 500;
+      const imageBatches = Math.ceil(allImages.length / IMAGE_BATCH_SIZE);
+      
+      console.log(`📦 Inserting ${allImages.length} images in ${imageBatches} batches`);
+      
+      for (let i = 0; i < allImages.length; i += IMAGE_BATCH_SIZE) {
+        const batch = allImages.slice(i, i + IMAGE_BATCH_SIZE);
+        const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
+        
+        console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches}`);
+        
         const { error: imageError } = await supabaseServiceClient
           .from("product_images")
-          .upsert(imagesToInsert, {
+          .upsert(batch, {
             onConflict: "shopify_image_id",
             ignoreDuplicates: false,
           });
 
         if (imageError) {
-          console.error("Image insert error:", imageError);
+          console.error(`❌ Image insert error in batch ${batchNumber}:`, imageError);
         } else {
-          totalImages += imagesToInsert.length;
+          totalImages += batch.length;
+          console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed`);
+        }
+        
+        if (i + IMAGE_BATCH_SIZE < allImages.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
     }
 
+    
+    console.log(`📊 Import Summary:`);
+    console.log(`   - Products inserted: ${productsToInsert.length}`);
+    console.log(`   - Variants inserted: ${totalVariants}`);
+    console.log(`   - Images inserted: ${totalImages}`);
+    console.log(`   - Total batches: ${totalBatches} (products) + ${Math.ceil(allVariants.length / 500)} (variants) + ${Math.ceil(allImages.length / 500)} (images)`);
+    
     const completedAt = new Date().toISOString();
 
     const { error: logError } = await supabaseServiceClient
