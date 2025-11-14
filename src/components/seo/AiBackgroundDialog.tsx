@@ -333,7 +333,7 @@ export function AiBackgroundDialog({
             })}
           </div>
 
-          {/* Cible d'application */}
+          {/* Cible d'application - uniquement pour les produits avec variantes */}
           {singleProduct && uniqueVariantImages.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Appliquer le résultat à</Label>
@@ -353,9 +353,9 @@ export function AiBackgroundDialog({
                   </Label>
                 </div>
                 
-                {/* Variantes */}
+                {/* Variantes spécifiques */}
                 <div className="p-3 rounded-lg border space-y-3">
-                <div className="flex items-start space-x-2">
+                  <div className="flex items-start space-x-2">
                     <RadioGroupItem value="variants" id="variants" className="mt-1" />
                     <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
                       Variantes spécifiques
