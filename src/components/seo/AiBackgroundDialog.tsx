@@ -229,10 +229,44 @@ export function AiBackgroundDialog({
     return count;
   };
 
+  // Styles prédéfinis avec les nouveaux noms
+  const presetStyles = [
+    {
+      name: "Studio professionnel",
+      prompt: "professional studio photography with clean white background and perfect lighting",
+      icon: "📸",
+    },
+    {
+      name: "Nature luxueuse",
+      prompt: "luxurious natural setting with plants, wood textures and soft daylight",
+      icon: "🌿",
+    },
+    {
+      name: "Minimaliste moderne",
+      prompt: "modern minimalist interior with clean lines and neutral colors",
+      icon: "⬜",
+    },
+    {
+      name: "Lifestyle chaleureux",
+      prompt: "cozy lifestyle setting with warm lighting and comfortable interior",
+      icon: "🏠",
+    },
+    {
+      name: "Urbain contemporain",
+      prompt: "contemporary urban background with industrial elements and modern architecture",
+      icon: "🏙️",
+    },
+    {
+      name: "Élégance classique",
+      prompt: "classic elegant setting with luxurious materials and sophisticated lighting",
+      icon: "🎩",
+    },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
             Configuration de l'arrière-plan IA
@@ -242,10 +276,9 @@ export function AiBackgroundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6 pb-4">
+        <div className="space-y-6 py-4">
           {/* Format d'application - EN PREMIER */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="text-base font-semibold">Format d'application</Label>
             <RadioGroup
               value={config.applyTo}
@@ -260,16 +293,18 @@ export function AiBackgroundDialog({
               {/* Option Simple */}
               <Card
                 className={`p-4 cursor-pointer transition-all ${
-                  config.applyTo === "simple" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
+                  config.applyTo === "simple" ? "border-primary bg-primary/5" : ""
                 }`}
               >
                 <div className="flex items-start space-x-3">
                   <RadioGroupItem value="simple" id="simple" className="mt-1" />
                   <div className="flex-1">
-                    <Label htmlFor="simple" className="flex items-center gap-2 text-base cursor-pointer">
+                    <div className="flex items-center gap-2">
                       <Images className="h-5 w-5" />
-                      Format Simple
-                    </Label>
+                      <Label htmlFor="simple" className="text-base font-medium cursor-pointer">
+                        Format Simple
+                      </Label>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">Gallerie</p>
 
                     {config.applyTo === "simple" && (
@@ -280,9 +315,11 @@ export function AiBackgroundDialog({
 
                           return (
                             <div key={product.id} className="space-y-3">
-                              <Label className="text-sm font-medium">{product.title}</Label>
-                              <ScrollArea className="w-full h-32">
-                                <div className="flex gap-3 pb-4">
+                              <div>
+                                <Label className="text-sm font-medium">{product.title}</Label>
+                              </div>
+                              <ScrollArea className="w-full">
+                                <div className="flex gap-2 pb-4" style={{ minHeight: "100px" }}>
                                   {allImages.map((img, idx) => (
                                     <button
                                       type="button"
@@ -292,23 +329,23 @@ export function AiBackgroundDialog({
                                         newMap.set(product.id, img.src);
                                         setConfig({ ...config, selectedImages: newMap });
                                       }}
-                                      className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                      className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                         selectedImageUrl === img.src
-                                          ? "border-primary ring-2 ring-primary shadow-lg"
+                                          ? "border-primary ring-2 ring-primary"
                                           : "border-border hover:border-primary/50"
                                       }`}
                                     >
                                       <img
                                         src={img.src}
                                         alt={img.alt_text || `Image ${idx + 1}`}
-                                        className="w-full h-full object-contain bg-muted"
+                                        className="w-full h-full object-cover"
                                       />
                                       {selectedImageUrl === img.src && (
-                                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-md">
-                                          <Check className="w-4 h-4" />
+                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                          <Check className="w-3 h-3" />
                                         </div>
                                       )}
-                                      <Badge className="absolute bottom-2 left-2 text-xs bg-background/90 backdrop-blur-sm border">
+                                      <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
                                         {img.id === "main" ? "Principale" : `#${idx + 1}`}
                                       </Badge>
                                     </button>
@@ -328,16 +365,18 @@ export function AiBackgroundDialog({
               {hasVariants && (
                 <Card
                   className={`p-4 cursor-pointer transition-all ${
-                    config.applyTo === "variants" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
+                    config.applyTo === "variants" ? "border-primary bg-primary/5" : ""
                   }`}
                 >
                   <div className="flex items-start space-x-3">
                     <RadioGroupItem value="variants" id="variants" className="mt-1" />
                     <div className="flex-1">
-                      <Label htmlFor="variants" className="flex items-center gap-2 text-base cursor-pointer">
+                      <div className="flex items-center gap-2">
                         <Package className="h-5 w-5" />
-                        Format Variantes
-                      </Label>
+                        <Label htmlFor="variants" className="text-base font-medium cursor-pointer">
+                          Format Variantes
+                        </Label>
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Appliquer aux variantes spécifiques sélectionnées
                       </p>
@@ -369,32 +408,32 @@ export function AiBackgroundDialog({
                                     </Button>
                                   </div>
 
-                                  <ScrollArea className="w-full h-32">
-                                    <div className="flex gap-3 pb-4">
+                                  <ScrollArea className="w-full">
+                                    <div className="flex gap-3 pb-4" style={{ minHeight: "100px" }}>
                                       {variantsWithImages.map(({ variant, image }) => (
                                         <button
                                           type="button"
                                           key={variant.id}
                                           onClick={() => toggleVariantSelection(product.id, variant.id)}
-                                          className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                             productSelectedVariants.includes(variant.id)
-                                              ? "border-primary ring-2 ring-primary shadow-lg"
+                                              ? "border-primary ring-2 ring-primary"
                                               : "border-border hover:border-primary/50"
                                           }`}
                                         >
                                           <img
                                             src={image!.src}
                                             alt={getVariantLabel(variant)}
-                                            className="w-full h-full object-contain bg-muted"
+                                            className="w-full h-full object-cover"
                                           />
                                           {productSelectedVariants.includes(variant.id) && (
                                             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                              <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-md">
-                                                <Check className="w-5 h-5" />
+                                              <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                                <Check className="w-4 h-4" />
                                               </div>
                                             </div>
                                           )}
-                                          <Badge className="absolute bottom-2 left-2 right-2 text-[10px] text-center truncate px-1 bg-background/90 backdrop-blur-sm border">
+                                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1 bg-black/80 text-white">
                                             {getVariantLabel(variant)}
                                           </Badge>
                                         </button>
@@ -414,10 +453,10 @@ export function AiBackgroundDialog({
                               const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
 
                               return (
-                                <div key={product.id} className="space-y-3">
+                                <div key={product.id} className="space-y-2">
                                   <Label className="text-sm font-medium">{product.title}</Label>
-                                  <ScrollArea className="w-full h-32">
-                                    <div className="flex gap-3 pb-4">
+                                  <ScrollArea className="w-full">
+                                    <div className="flex gap-2 pb-4" style={{ minHeight: "100px" }}>
                                       {allImages.map((img, idx) => (
                                         <button
                                           type="button"
@@ -427,23 +466,23 @@ export function AiBackgroundDialog({
                                             newMap.set(product.id, img.src);
                                             setConfig({ ...config, selectedImages: newMap });
                                           }}
-                                          className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative aspect-square h-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                             selectedImageUrl === img.src
-                                              ? "border-primary ring-2 ring-primary shadow-lg"
+                                              ? "border-primary ring-2 ring-primary"
                                               : "border-border hover:border-primary/50"
                                           }`}
                                         >
                                           <img
                                             src={img.src}
                                             alt={img.alt_text || `Image ${idx + 1}`}
-                                            className="w-full h-full object-contain bg-muted"
+                                            className="w-full h-full object-cover"
                                           />
                                           {selectedImageUrl === img.src && (
-                                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-md">
-                                              <Check className="w-4 h-4" />
+                                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                              <Check className="w-3 h-3" />
                                             </div>
                                           )}
-                                          <Badge className="absolute bottom-2 left-2 text-xs bg-background/90 backdrop-blur-sm border">
+                                          <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
                                             {img.id === "main" ? "Principale" : `#${idx + 1}`}
                                           </Badge>
                                         </button>
@@ -467,14 +506,14 @@ export function AiBackgroundDialog({
           <div className="space-y-4">
             <Label className="text-base font-semibold">Paramètres de génération</Label>
 
-            {/* Format */}
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="format" className="text-sm font-medium">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Format d'image */}
+              <Card className="p-4">
+                <Label htmlFor="format" className="text-sm font-medium mb-3 block">
                   Format d'image
                 </Label>
                 <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
-                  <SelectTrigger id="format" className="w-[180px]">
+                  <SelectTrigger id="format">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -483,62 +522,42 @@ export function AiBackgroundDialog({
                     <SelectItem value="landscape">Paysage (4:3)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </Card>
+              </Card>
 
-            {/* Type d'image */}
-            <Card className="p-4 space-y-3">
-              <Label className="text-sm font-medium">Type d'image</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Card
-                  className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "primary"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setConfig({ ...config, imageType: "primary" })}
-                >
-                  <div className="flex items-start gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                        config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
-                      }`}
-                    >
-                      {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm">Image Principale</h4>
-                      <p className="text-xs text-muted-foreground">Produit centré et bien visible</p>
-                    </div>
+              {/* Type d'image */}
+              <Card className="p-4">
+                <Label className="text-sm font-medium mb-3 block">Type d'image</Label>
+                <div className="space-y-3">
+                  <div
+                    className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                      config.imageType === "primary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setConfig({ ...config, imageType: "primary" })}
+                  >
+                    <RadioGroupItem value="primary" id="primary" checked={config.imageType === "primary"} />
+                    <Label htmlFor="primary" className="cursor-pointer flex-1">
+                      <div className="font-medium">Image Principale</div>
+                      <div className="text-xs text-muted-foreground">Produit centré et bien visible</div>
+                    </Label>
                   </div>
-                </Card>
-                <Card
-                  className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "secondary"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setConfig({ ...config, imageType: "secondary" })}
-                >
-                  <div className="flex items-start gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                        config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
-                      }`}
-                    >
-                      {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm">Image Secondaire</h4>
-                      <p className="text-xs text-muted-foreground">Photo d'ambiance lifestyle</p>
-                    </div>
+                  <div
+                    className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                      config.imageType === "secondary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setConfig({ ...config, imageType: "secondary" })}
+                  >
+                    <RadioGroupItem value="secondary" id="secondary" checked={config.imageType === "secondary"} />
+                    <Label htmlFor="secondary" className="cursor-pointer flex-1">
+                      <div className="font-medium">Image Secondaire</div>
+                      <div className="text-xs text-muted-foreground">Photo d'ambiance lifestyle</div>
+                    </Label>
                   </div>
-                </Card>
-              </div>
-            </Card>
+                </div>
+              </Card>
+            </div>
 
             {/* Ressemblance */}
-            <Card className="p-4 space-y-3">
+            <Card className="p-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="similarity" className="text-sm font-medium">
                   Ressemblance à l'original
@@ -547,7 +566,7 @@ export function AiBackgroundDialog({
                   value={config.similarity}
                   onValueChange={(value) => setConfig({ ...config, similarity: value })}
                 >
-                  <SelectTrigger id="similarity" className="w-[180px]">
+                  <SelectTrigger id="similarity" className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -562,103 +581,55 @@ export function AiBackgroundDialog({
             </Card>
           </div>
 
-          {/* Style et Prompt */}
+          {/* Style prédéfini */}
           <div className="space-y-4">
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Style d'arrière-plan</Label>
-              <div className="grid grid-cols-4 gap-2">
-                <Card
-                  className={`p-3 cursor-pointer border-2 transition-all ${
-                    config.prompt === "modern minimalist white studio with soft shadows"
-                      ? "border-primary ring-2 ring-primary bg-primary/5"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => handlePresetSelect("modern minimalist white studio with soft shadows")}
-                >
-                  <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-md mb-2 flex items-center justify-center">
-                    <span className="text-xl">🏢</span>
-                  </div>
-                  <p className="text-xs font-medium text-center">Studio blanc</p>
-                </Card>
-                <Card
-                  className={`p-3 cursor-pointer border-2 transition-all ${
-                    config.prompt === "natural wood surface with plants and soft daylight"
-                      ? "border-primary ring-2 ring-primary bg-primary/5"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => handlePresetSelect("natural wood surface with plants and soft daylight")}
-                >
-                  <div className="aspect-square bg-gradient-to-br from-amber-100 to-amber-200 rounded-md mb-2 flex items-center justify-center">
-                    <span className="text-xl">🌿</span>
-                  </div>
-                  <p className="text-xs font-medium text-center">Naturel bois</p>
-                </Card>
-                <Card
-                  className={`p-3 cursor-pointer border-2 transition-all ${
-                    config.prompt === "luxurious marble surface with gold accents"
-                      ? "border-primary ring-2 ring-primary bg-primary/5"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => handlePresetSelect("luxurious marble surface with gold accents")}
-                >
-                  <div className="aspect-square bg-gradient-to-br from-gray-200 to-yellow-100 rounded-md mb-2 flex items-center justify-center">
-                    <span className="text-xl">✨</span>
-                  </div>
-                  <p className="text-xs font-medium text-center">Luxe marbre</p>
-                </Card>
-                <Card
-                  className={`p-3 cursor-pointer border-2 transition-all ${
-                    config.prompt === "cozy living room with warm lighting"
-                      ? "border-primary ring-2 ring-primary bg-primary/5"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => handlePresetSelect("cozy living room with warm lighting")}
-                >
-                  <div className="aspect-square bg-gradient-to-br from-orange-100 to-orange-200 rounded-md mb-2 flex items-center justify-center">
-                    <span className="text-xl">🏠</span>
-                  </div>
-                  <p className="text-xs font-medium text-center">Salon cosy</p>
-                </Card>
+            <Label className="text-base font-semibold">Style prédéfini</Label>
+            <Card className="p-4">
+              <Select onValueChange={handlePresetSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un style prédéfini..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetStyles.map((style) => (
+                    <SelectItem key={style.name} value={style.prompt}>
+                      {style.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="custom-prompt">Ou créez votre propre prompt</Label>
+                <Textarea
+                  id="custom-prompt"
+                  placeholder="Décrivez l'environnement souhaité, l'éclairage et l'ambiance"
+                  value={config.prompt}
+                  onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
+                  className="min-h-[80px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
+                </p>
               </div>
-            </div>
+            </Card>
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="custom-prompt">Prompt personnalisé</Label>
-              <Textarea
-                id="custom-prompt"
-                placeholder="Décrivez l'environnement, l'éclairage et l'ambiance..."
-                value={config.prompt}
-                onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
-                className="min-h-[100px] resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                💡 Décrivez précisément l'environnement souhaité pour un meilleur résultat
-              </p>
-            </div>
-          </div>
-          </div>
-        </ScrollArea>
-
-        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
-          <div className="flex items-center justify-between w-full">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
-              className="gap-2"
-              size="lg"
-            >
-              <Sparkles className="h-5 w-5" />
-              Générer les arrière-plans
-              {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {getSelectedVariantsCount()}
-                </Badge>
-              )}
-            </Button>
-          </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            Générer les arrière-plans
+            {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
+              <span>({getSelectedVariantsCount()})</span>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
