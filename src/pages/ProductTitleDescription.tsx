@@ -84,6 +84,16 @@ interface Product {
   vendor: string | null;
   handle: string | null;
   status: string | null;
+  variants?: ProductVariant[];
+}
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  option1?: string | null;
+  option2?: string | null;
+  option3?: string | null;
+  image_id?: string | null;
 }
 
 interface ProductImage {
@@ -179,6 +189,7 @@ export default function ProductTitleDescription() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [showVariantConfirmDialog, setShowVariantConfirmDialog] = useState(false);
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
+  const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -213,17 +224,35 @@ export default function ProductTitleDescription() {
 
       console.log('📦 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
 
-      const { data, error } = await supabase
+      // Charger les produits
+      const { data: productsData, error: productsError } = await supabase
         .from("shopify_products")
         .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
       
-      console.log('📊 [PRODUCT_TITLE] Fetched products:', data?.length);
+      if (productsError) throw productsError;
 
-      if (error) throw error;
-      setProducts(data || []);
+      // Charger les variantes pour ces produits
+      if (productsData && productsData.length > 0) {
+        const productIds = productsData.map(p => p.id);
+        const { data: variantsData } = await supabase
+          .from("product_variants")
+          .select("id, product_id, title, option1, option2, option3")
+          .in("product_id", productIds);
+
+        // Associer les variantes aux produits
+        const productsWithVariants = productsData.map(product => ({
+          ...product,
+          variants: variantsData?.filter(v => v.product_id === product.id) || []
+        }));
+
+        console.log('📊 [PRODUCT_TITLE] Fetched products with variants:', productsWithVariants.length);
+        setProducts(productsWithVariants as Product[]);
+      } else {
+        setProducts([]);
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("Erreur lors du chargement des produits");
@@ -641,6 +670,9 @@ export default function ProductTitleDescription() {
   const generateAiBackgrounds = async (config: AiBackgroundConfig) => {
     setGeneratingAiBg(true);
     
+    // Conserver la config pour l'utiliser lors de l'application
+    setPendingAiConfig(config);
+    
     const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
     
     const previews: PreviewImage[] = selectedProductsList.map((p) => {
@@ -762,6 +794,30 @@ export default function ProductTitleDescription() {
   };
 
   const handleApplyAiBackground = async (productIds: string[]) => {
+    // Vérifier si des produits avec variantes sont concernés
+    const productsWithVariants = products.filter(p => 
+      productIds.includes(p.id) && 
+      p.variants && 
+      p.variants.length > 0
+    );
+
+    // Si on a un config avec des variantes sélectionnées, afficher la popup de confirmation
+    if (pendingAiConfig && pendingAiConfig.applyTo === "variants" && pendingAiConfig.selectedVariants.size > 0) {
+      setPendingApplyProductIds(productIds);
+      setShowAiBgDialog(false);
+      setShowVariantConfirmDialog(true);
+      return;
+    }
+
+    // Si des produits ont des variantes mais qu'on n'a pas de config, afficher la popup
+    if (productsWithVariants.length > 0 && !pendingAiConfig) {
+      toast.info("Ce produit possède des variantes. La configuration sera appliquée à l'image principale.");
+    }
+
+    await applyAiBackgroundImages(productIds);
+  };
+
+  const applyAiBackgroundImages = async (productIds: string[]) => {
     const toastId = toast.loading("Application des images...");
 
     try {
@@ -778,6 +834,8 @@ export default function ProductTitleDescription() {
       toast.success("Images appliquées avec succès", { id: toastId });
       await fetchProducts();
       setAiBgPreviews([]);
+      setPendingAiConfig(null);
+      setPendingApplyProductIds([]);
 
       // Synchronisation automatique avec Shopify après l'application réussie
       toast.loading("Synchronisation avec Shopify...", { id: toastId });
@@ -1894,8 +1952,13 @@ export default function ProductTitleDescription() {
         onConfirm={async () => {
           setShowVariantConfirmDialog(false);
           if (pendingAiConfig) {
+            // Si on vient du dialogue de config (avant génération)
             await generateAiBackgrounds(pendingAiConfig);
             setPendingAiConfig(null);
+          } else if (pendingApplyProductIds.length > 0) {
+            // Si on vient du dialogue de prévisualisation (après génération)
+            setShowVariantConfirmDialog(false);
+            await applyAiBackgroundImages(pendingApplyProductIds);
           }
         }}
       />
