@@ -72,20 +72,20 @@ export const BackgroundVariantSelector = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center px-2">
+        <h3 className="text-base sm:text-lg font-semibold mb-2">
           Sélectionnez votre arrière-plan préféré
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           4 variantes générées par IA - Cliquez pour sélectionner
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-0">
         {/* Variants Grid (2x2) */}
         <div className="lg:col-span-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {variants.map((variant) => (
               <Card
                 key={variant.variantId}
@@ -169,9 +169,9 @@ export const BackgroundVariantSelector = ({
         {/* Original Image Reference */}
         <div className="lg:col-span-1">
           <Card className="overflow-hidden h-full">
-            <div className="p-4 bg-muted/50">
-              <h4 className="font-semibold text-sm mb-2">Image Originale</h4>
-              <p className="text-xs text-muted-foreground">
+            <div className="p-3 sm:p-4 bg-muted/50">
+              <h4 className="font-semibold text-xs sm:text-sm mb-2">Image Originale</h4>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Référence pour comparaison
               </p>
             </div>
@@ -187,22 +187,22 @@ export const BackgroundVariantSelector = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 px-2 sm:px-0">
         <Button
           size="lg"
           onClick={handleApply}
           disabled={!selectedVariant || isApplying}
-          className="min-w-[200px]"
+          className="min-w-[200px] h-10 sm:h-11 text-sm sm:text-base"
         >
           {isApplying ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Application...
+              <span className="text-xs sm:text-base">Application...</span>
             </>
           ) : (
             <>
               <Check className="h-4 w-4 mr-2" />
-              Appliquer
+              <span className="text-xs sm:text-base">Appliquer</span>
             </>
           )}
         </Button>
@@ -215,9 +215,10 @@ export const BackgroundVariantSelector = ({
               const variant = variants.find(v => v.variantId === selectedVariant);
               if (variant) handleDownload(variant.variantId, variant.imageUrl);
             }}
+            className="min-w-[150px] h-10 sm:h-11 text-sm sm:text-base"
           >
             <Download className="h-4 w-4 mr-2" />
-            Télécharger HD
+            <span className="text-xs sm:text-base">Télécharger HD</span>
           </Button>
         )}
       </div>
