@@ -527,32 +527,37 @@ export function AiBackgroundDialog({
               {/* Type d'image */}
               <Card className="p-4">
                 <Label className="text-sm font-medium mb-3 block">Type d'image</Label>
-                <div className="space-y-3">
-                  <div
-                    className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                      config.imageType === "primary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => setConfig({ ...config, imageType: "primary" })}
-                  >
-                    <RadioGroupItem value="primary" id="primary" checked={config.imageType === "primary"} />
-                    <Label htmlFor="primary" className="cursor-pointer flex-1">
-                      <div className="font-medium">Image Principale</div>
-                      <div className="text-xs text-muted-foreground">Produit centré et bien visible</div>
-                    </Label>
+                <RadioGroup
+                  value={config.imageType}
+                  onValueChange={(value) => setConfig({ ...config, imageType: value as "primary" | "secondary" })}
+                >
+                  <div className="space-y-3">
+                    <div
+                      className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                        config.imageType === "primary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setConfig({ ...config, imageType: "primary" })}
+                    >
+                      <RadioGroupItem value="primary" id="primary" />
+                      <Label htmlFor="primary" className="cursor-pointer flex-1">
+                        <div className="font-medium">Image Principale</div>
+                        <div className="text-xs text-muted-foreground">Produit centré et bien visible</div>
+                      </Label>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                        config.imageType === "secondary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setConfig({ ...config, imageType: "secondary" })}
+                    >
+                      <RadioGroupItem value="secondary" id="secondary" />
+                      <Label htmlFor="secondary" className="cursor-pointer flex-1">
+                        <div className="font-medium">Image Secondaire</div>
+                        <div className="text-xs text-muted-foreground">Photo d'ambiance lifestyle</div>
+                      </Label>
+                    </div>
                   </div>
-                  <div
-                    className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                      config.imageType === "secondary" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => setConfig({ ...config, imageType: "secondary" })}
-                  >
-                    <RadioGroupItem value="secondary" id="secondary" checked={config.imageType === "secondary"} />
-                    <Label htmlFor="secondary" className="cursor-pointer flex-1">
-                      <div className="font-medium">Image Secondaire</div>
-                      <div className="text-xs text-muted-foreground">Photo d'ambiance lifestyle</div>
-                    </Label>
-                  </div>
-                </div>
+                </RadioGroup>
               </Card>
             </div>
 
