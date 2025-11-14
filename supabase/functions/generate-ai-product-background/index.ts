@@ -135,7 +135,8 @@ serve(async (req) => {
       landscape: "1024x768 landscape orientation (4:3)",
     };
 
-    const comprehensivePrompt = `
+    // Use enriched prompt if available (includes SERP insights), otherwise build comprehensive prompt
+    const finalPrompt = enrichedPrompt || `
 You are a professional e-commerce product photographer creating a stunning product image.
 
 PRODUCT: ${productTitle}${variantInfo}
@@ -190,6 +191,10 @@ ${
 RESULT: A stunning, professional product photo that looks like it was created by a top e-commerce photographer.
     `.trim();
 
+    if (enrichedPrompt) {
+      console.log("✨ Using SERP-enriched prompt for generation");
+    }
+
     // Helper function to try Lovable AI
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
       try {
@@ -205,8 +210,8 @@ RESULT: A stunning, professional product photo that looks like it was created by
             messages: [
               {
                 role: "user",
-                content: [
-                  { type: "text", text: comprehensivePrompt },
+                 content: [
+                  { type: "text", text: finalPrompt },
                   { type: "image_url", image_url: { url: imageUrl } },
                 ],
               },
