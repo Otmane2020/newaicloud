@@ -69,7 +69,7 @@ export interface AiBackgroundConfig {
   format: string;
   similarity: string;
   imageType: "primary" | "secondary";
-  selectedImages: Map<string, string>;
+  selectedImages: Map<string, string[]>; // Changed to string[] for multiple images per product
   applyTo: "simple" | "gallery" | "variants";
   selectedVariants: Map<string, string[]>;
   enrichedPrompt?: string;
@@ -113,11 +113,8 @@ export function AiBackgroundDialog({
       if (product.variants && product.variants.length > 1) {
         return "variants";
       }
-      // Si le produit a plusieurs images, proposer la Gallerie
-      const allImages = getAllProductImages(product);
-      if (allImages.length > 1) {
-        return "gallery";
-      }
+      // Pour produit simple sans variantes, toujours mode galerie pour afficher toutes les images
+      return "gallery";
     }
     // Sinon, format Simple par défaut
     return "simple";
@@ -289,7 +286,7 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
       selectedProducts.forEach((product) => {
         const images = getAllProductImages(product);
         if (images.length > 0) {
-          finalConfig.selectedImages.set(product.id, images[0].src);
+          finalConfig.selectedImages.set(product.id, [images[0].src]);
         }
       });
     }
@@ -354,10 +351,10 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
             
             // Auto-sélectionner l'image de la variante si disponible
             if (variantImage) {
-              newSelectedImages.set(productId, variantImage.src);
+              newSelectedImages.set(productId, [variantImage.src]);
             } else if (product.image_url) {
               // Fallback sur l'image principale
-              newSelectedImages.set(productId, product.image_url);
+              newSelectedImages.set(productId, [product.image_url]);
             }
           }
         }
@@ -500,7 +497,8 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                           <div className="mt-4 space-y-4">
                             {selectedProducts.map((product) => {
                               const allImages = getAllProductImages(product);
-                              const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+                              const selectedImages = config.selectedImages.get(product.id) || [];
+                              const selectedImageUrl = selectedImages.length > 0 ? selectedImages[0] : allImages[0]?.src;
 
                               return (
                                 <div key={product.id} className="space-y-3">
@@ -515,7 +513,7 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                           key={img.id}
                                           onClick={() => {
                                             const newMap = new Map(config.selectedImages);
-                                            newMap.set(product.id, img.src);
+                                            newMap.set(product.id, [img.src]);
                                             setConfig({ ...config, selectedImages: newMap });
                                           }}
                                           className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
@@ -649,46 +647,75 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
 
                           {/* Sélection des photos à travailler */}
                           <div className="space-y-4">
-                            <Label className="text-sm font-medium">Sélection des photos à travailler</Label>
+                            <Label className="text-sm font-medium">
+                              Sélection des photos à travailler (cochez plusieurs images)
+                            </Label>
                             {selectedProducts.map((product) => {
                               const allImages = getAllProductImages(product);
-                              const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+                              const selectedImages = config.selectedImages.get(product.id) || [];
 
                               return (
                                 <div key={product.id} className="space-y-2">
-                                  <Label className="text-sm font-medium">{product.title}</Label>
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium">{product.title}</Label>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newMap = new Map(config.selectedImages);
+                                        if (selectedImages.length === allImages.length) {
+                                          newMap.set(product.id, []);
+                                        } else {
+                                          newMap.set(product.id, allImages.map(img => img.src));
+                                        }
+                                        setConfig({ ...config, selectedImages: newMap });
+                                      }}
+                                      className="h-7 text-xs"
+                                    >
+                                      {selectedImages.length === allImages.length ? "Tout désélectionner" : "Tout sélectionner"}
+                                    </Button>
+                                  </div>
                                   <div className="w-full max-h-[200px] overflow-y-auto">
                                     <div className="grid grid-cols-4 gap-2 pr-2">
-                                      {allImages.map((img, idx) => (
-                                        <button
-                                          type="button"
-                                          key={img.id}
-                                          onClick={() => {
-                                            const newMap = new Map(config.selectedImages);
-                                            newMap.set(product.id, img.src);
-                                            setConfig({ ...config, selectedImages: newMap });
-                                          }}
-                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                            selectedImageUrl === img.src
-                                              ? "border-primary ring-2 ring-primary"
-                                              : "border-border hover:border-primary/50"
-                                          }`}
-                                        >
-                                          <img
-                                            src={img.src}
-                                            alt={img.alt_text || `Image ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                          />
-                                          {selectedImageUrl === img.src && (
-                                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                              <Check className="w-3 h-3" />
-                                            </div>
-                                          )}
-                                          <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
-                                            {img.id === "main" ? "Principale" : `#${idx + 1}`}
-                                          </Badge>
-                                        </button>
-                                      ))}
+                                      {allImages.map((img, idx) => {
+                                        const isSelected = selectedImages.includes(img.src);
+                                        return (
+                                          <button
+                                            type="button"
+                                            key={img.id}
+                                            onClick={() => {
+                                              const newMap = new Map(config.selectedImages);
+                                              const current = newMap.get(product.id) || [];
+                                              if (isSelected) {
+                                                newMap.set(product.id, current.filter(src => src !== img.src));
+                                              } else {
+                                                newMap.set(product.id, [...current, img.src]);
+                                              }
+                                              setConfig({ ...config, selectedImages: newMap });
+                                            }}
+                                            className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                                              isSelected
+                                                ? "border-primary ring-2 ring-primary"
+                                                : "border-border hover:border-primary/50"
+                                            }`}
+                                          >
+                                            <img
+                                              src={img.src}
+                                              alt={img.alt_text || `Image ${idx + 1}`}
+                                              className="w-full h-full object-cover"
+                                            />
+                                            {isSelected && (
+                                              <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                                <Check className="w-3 h-3" />
+                                              </div>
+                                            )}
+                                            <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
+                                              {img.id === "main" ? "Principale" : `#${idx + 1}`}
+                                            </Badge>
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 </div>

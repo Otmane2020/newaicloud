@@ -788,15 +788,17 @@ export default function ProductTitleDescription() {
     
     const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
     
-    const previews: PreviewImage[] = selectedProductsList.map((p) => {
-      const selectedImageUrl = config.selectedImages.get(p.id) || p.image_url!;
-      return {
+    const previews: PreviewImage[] = selectedProductsList.flatMap((p) => {
+      const selectedImages = config.selectedImages.get(p.id) || [];
+      const imagesToProcess = selectedImages.length > 0 ? selectedImages : [p.image_url!];
+      
+      return imagesToProcess.map((imageUrl) => ({
         productId: p.id,
         productTitle: p.title,
-        originalUrl: selectedImageUrl,
+        originalUrl: imageUrl,
         generatedUrl: null,
         status: 'pending' as const,
-      };
+      }));
     });
 
     setAiBgPreviews(previews);
@@ -815,24 +817,24 @@ export default function ProductTitleDescription() {
     };
     const actualStyle = styleMap[config.similarity] || 'professional';
 
-    for (let i = 0; i < selectedProductsList.length; i++) {
-      const product = selectedProductsList[i];
-      const selectedImageUrl = config.selectedImages.get(product.id) || product.image_url!;
+    for (let i = 0; i < previews.length; i++) {
+      const preview = previews[i];
+      const product = selectedProductsList.find(p => p.id === preview.productId)!;
       
       setAiBgPreviews((prev) =>
         prev.map((p) =>
-          p.productId === product.id ? { ...p, status: 'generating' } : p
+          p === preview ? { ...p, status: 'generating' } : p
         )
       );
 
       try {
         // Determine the image ID to use from gallery images
         const images = galleryImages.get(product.id) || [];
-        const imageId = images[0]?.id || product.id; // Fallback to product ID if no images
+        const imageId = images.find(img => img.src === preview.originalUrl)?.id || product.id;
 
         const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
           body: {
-            imageUrl: selectedImageUrl,
+            imageUrl: preview.originalUrl,
             productTitle: product.title,
             productDescription: product.description,
             seoTitle: product.seo_title,
@@ -870,7 +872,7 @@ export default function ProductTitleDescription() {
         if (data.imageUrl) {
           setAiBgPreviews((prev) =>
             prev.map((p) =>
-              p.productId === product.id
+              p === preview
                 ? { ...p, status: 'success', generatedUrl: data.imageUrl }
                 : p
             )
@@ -882,7 +884,7 @@ export default function ProductTitleDescription() {
         console.error('Error generating AI background:', error);
         setAiBgPreviews((prev) =>
           prev.map((p) =>
-            p.productId === product.id ? { ...p, status: 'error', error: error.message } : p
+            p === preview ? { ...p, status: 'error', error: error.message } : p
           )
         );
         if (error.message?.includes('Limite de taux') || error.message?.includes('Crédits insuffisants')) {
