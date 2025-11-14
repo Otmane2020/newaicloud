@@ -114,12 +114,20 @@ You are a professional e-commerce product photographer.
 
 PRODUCT: ${productTitle || "Product"}
 
-YOUR MISSION:
-Remove the current background and replace it with a pure white background (#FFFFFF).
+🎯 YOUR CRITICAL MISSION:
+**COMPLETELY REMOVE AND REPLACE the existing background** with a pure white background (#FFFFFF).
+
+⚠️ IMPORTANT: The image already has a background - you MUST:
+- Identify and isolate the main product (${productTitle || "the item"})
+- DELETE/REMOVE the entire existing background
+- REPLACE it with a NEW pure white (#FFFFFF) background
+- DO NOT keep or copy any part of the old background
 
 REQUIREMENTS:
 ${isMainImage ? `
 1. MAIN IMAGE REQUIREMENTS (CRITICAL):
+   - **EXTRACT the product from its current background**
+   - **PLACE the extracted product on pure white (#FFFFFF)**
    - Product MUST be perfectly centered in the frame
    - Product must be clear, sharp, and prominent (70-80% of frame)
    - Product should face the camera directly
@@ -127,21 +135,28 @@ ${isMainImage ? `
    - Clean, professional look suitable for e-commerce
    - Square format (1024x1024)
    
-2. BACKGROUND:
-   - Pure white background (#FFFFFF)
+2. BACKGROUND REPLACEMENT:
+   - **Step 1: REMOVE the existing background completely**
+   - **Step 2: CREATE a new pure white background (#FFFFFF)**
+   - **Step 3: Place the product cleanly on the new white background**
    - Professional lighting to highlight product
    - Clean product cutout with smooth edges
    - No shadows unless essential for depth
+   - NO traces of the original background
 ` : `
 1. SECONDARY IMAGE:
+   - **EXTRACT the product from its current environment**
+   - **PLACE it on pure white (#FFFFFF) background**
    - Product can be positioned artistically
    - Creative composition (centering not required)
    - Square format (1024x1024)
    
-2. BACKGROUND:
-   - Pure white background (#FFFFFF)
+2. BACKGROUND REPLACEMENT:
+   - **COMPLETELY REMOVE the existing background**
+   - **REPLACE with pure white (#FFFFFF)**
    - Clean product cutout
    - Professional lighting
+   - NO remnants of original background
 `}
 
 3. TECHNICAL SPECS:
@@ -151,7 +166,9 @@ ${isMainImage ? `
    - No watermarks, text, or logos
    - Ready for e-commerce use
 
-RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "product photo"} on pure white background.
+🎨 FINAL CHECK: Ensure the product (${productTitle || "item"}) is isolated on a COMPLETELY NEW pure white background, with ZERO traces of the original setting.
+
+RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "product photo"} on a NEWLY CREATED pure white background.
     `.trim();
 
     // Helper function to try Lovable AI
