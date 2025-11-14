@@ -914,6 +914,49 @@ export default function ProductTitleDescription() {
         ? "Images principales mises à jour avec succès" 
         : "Images ajoutées avec succès";
       toast.success(message, { id: toastId });
+
+      // Synchronisation automatique avec Shopify après l'application réussie
+      toast.loading("Synchronisation avec Shopify...", { id: toastId });
+      try {
+        let syncSuccessCount = 0;
+        let syncErrorCount = 0;
+
+        // Récupérer les IDs de produits uniques à synchroniser
+        const uniqueProductIds = [...new Set(whiteBgApplyTo === "simple" 
+          ? productIds 
+          : whiteBgPreviews.filter(p => p.variantId).map(p => p.productId)
+        )];
+
+        for (const productId of uniqueProductIds) {
+          try {
+            const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+              body: { productId }
+            });
+
+            if (syncError) {
+              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
+              syncErrorCount++;
+            } else {
+              syncSuccessCount++;
+            }
+          } catch (syncErr) {
+            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
+            syncErrorCount++;
+          }
+        }
+
+        if (syncSuccessCount > 0 && syncErrorCount === 0) {
+          toast.success(`✅ ${syncSuccessCount} produit${syncSuccessCount > 1 ? 's' : ''} synchronisé${syncSuccessCount > 1 ? 's' : ''} avec Shopify`, { id: toastId });
+        } else if (syncSuccessCount > 0 && syncErrorCount > 0) {
+          toast.warning(`⚠️ ${syncSuccessCount} synchronisé${syncSuccessCount > 1 ? 's' : ''}, ${syncErrorCount} erreur${syncErrorCount > 1 ? 's' : ''}`, { id: toastId });
+        } else {
+          toast.error(`❌ Erreur lors de la synchronisation avec Shopify`, { id: toastId });
+        }
+      } catch (syncError) {
+        console.error('Erreur globale sync Shopify:', syncError);
+        toast.warning('Images appliquées mais erreur lors de la synchronisation avec Shopify', { id: toastId });
+      }
+
       await fetchProducts();
       setWhiteBgPreviews([]);
       setWhiteBgApplyTo("simple");
