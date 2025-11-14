@@ -252,11 +252,17 @@ export default function Dashboard() {
         };
       }
 
-      const { count: articlesCount } = await supabase
+      // Build articles query with optional store filter
+      let articlesQuery = supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id)
-        .in('store_id', storeFilter.length > 0 ? storeFilter : ['']);
+        .eq('user_id', user?.id);
+
+      if (selectedStore?.id) {
+        articlesQuery = articlesQuery.eq('store_id', selectedStore.id);
+      }
+
+      const { count: articlesCount } = await articlesQuery;
 
       // Count products with/without alt texts
       const productsWithImages = products?.filter(p => p.image_url)?.length || 0;
@@ -271,12 +277,18 @@ export default function Dashboard() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { data: oldProducts } = await supabase
+      // Build old products query with optional store filter
+      let oldProductsQuery = supabase
         .from('shopify_products')
         .select('id, seo_title, seo_description, optimization_count')
         .eq('seller_id', user?.id)
-        .in('store_id', storeFilter.length > 0 ? storeFilter : [''])
         .lt('created_at', thirtyDaysAgo.toISOString());
+
+      if (selectedStore?.id) {
+        oldProductsQuery = oldProductsQuery.eq('store_id', selectedStore.id);
+      }
+
+      const { data: oldProducts } = await oldProductsQuery;
       
       const oldTotalProducts = oldProducts?.length || 0;
       const oldOptimizedProducts = oldProducts?.filter(p => p.seo_title && p.seo_description).length || 0;

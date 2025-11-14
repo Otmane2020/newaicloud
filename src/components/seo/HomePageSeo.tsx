@@ -45,11 +45,11 @@ export function HomePageSeo() {
       const storeId = stores?.id;
       if (!storeId) return;
 
+      // Fetch homepage SEO data with simpler query structure
       const { data, error } = await supabase
         .from('homepage_seo')
         .select('seo_title, seo_description')
-        .eq('user_id', user.id)
-        .eq('store_id', storeId)
+        .match({ user_id: user.id, store_id: storeId })
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
