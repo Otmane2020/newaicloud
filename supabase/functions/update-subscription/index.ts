@@ -374,7 +374,7 @@ serve(async (req) => {
           proration_behavior: 'none',
         }
       );
-      throw new Error(`Échec du paiement lors de l'upgrade: ${error.message}`);
+      throw new Error(`Échec du paiement lors de l'upgrade: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // Update profile with new plan

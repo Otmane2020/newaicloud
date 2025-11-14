@@ -47,7 +47,7 @@ serve(async (req) => {
     // 4. Adapter les text sizes pour mobile
     mobileHtml = mobileHtml.replace(
       /text-(\d+xl)/g,
-      (match, size) => {
+      (match: string, size: string) => {
         const mobileMap: { [key: string]: string } = {
           '5xl': 'text-3xl sm:text-4xl md:text-5xl',
           '4xl': 'text-2xl sm:text-3xl md:text-4xl',
@@ -62,7 +62,7 @@ serve(async (req) => {
     // 5. Adapter les paddings/margins pour mobile
     mobileHtml = mobileHtml.replace(
       /py-(\d{2,})/g,
-      (match, size) => {
+      (match: string, size: string) => {
         const numSize = parseInt(size);
         if (numSize > 12) {
           return `py-${Math.max(6, Math.floor(numSize / 2))} sm:py-${size}`;
@@ -91,7 +91,7 @@ serve(async (req) => {
     // 8. Améliorer les gaps pour mobile
     mobileHtml = mobileHtml.replace(
       /gap-(\d+)/g,
-      (match, size) => {
+      (match: string, size: string) => {
         const numSize = parseInt(size);
         if (numSize > 6) {
           return `gap-4 sm:gap-${size}`;

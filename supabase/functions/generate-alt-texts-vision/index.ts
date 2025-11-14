@@ -252,7 +252,7 @@ Réponds UNIQUEMENT avec ce JSON valide :
       await sleep(retryDelaySeconds * 1000);
       
       // Retry with incremented count
-      return callVisionAI(imageUrl, productContext, retryCount + 1);
+      return callVisionAI(imageUrl, productContext, [], retryCount + 1);
     }
     
     throw new Error(`Google Gemini API error: ${response.status} - ${errorText}`);

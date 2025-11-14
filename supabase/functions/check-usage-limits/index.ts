@@ -112,34 +112,48 @@ serve(async (req) => {
     );
 
     // Fetch profile AND usage data in parallel with timeout
-    const [profileResult, usageResult] = await Promise.race([
-      Promise.all([
-        supabaseAdmin
+    type QueryResult = { data: any; error: any };
+    
+    const profileQuery = (async (): Promise<QueryResult> => {
+      try {
+        const res = await supabaseAdmin
           .from('profiles')
           .select('subscription_status, current_plan_id, trial_ends_at')
           .eq('id', user.id)
-          .single()
-          .then(res => ({ data: res.data, error: res.error }))
-          .catch(err => ({ data: null, error: err })),
-        
-        supabaseAdmin
+          .single();
+        return { data: res.data, error: res.error };
+      } catch (err) {
+        return { data: null, error: err };
+      }
+    })();
+    
+    const usageQuery = (async (): Promise<QueryResult> => {
+      try {
+        const res = await supabaseAdmin
           .from('usage_tracking')
           .select('*')
           .eq('seller_id', user.id)
           .eq('month', monthKey)
-          .maybeSingle()
-          .then(res => ({ data: res.data, error: res.error }))
-          .catch(err => ({ data: null, error: err }))
-      ]),
+          .maybeSingle();
+        return { data: res.data, error: res.error };
+      } catch (err) {
+        return { data: null, error: err };
+      }
+    })();
+    
+    const results = await Promise.race([
+      Promise.all([profileQuery, usageQuery]),
       timeoutPromise
-    ]).catch((err) => {
+    ]).catch(() => {
       // Timeout occurred - return safe defaults
       console.error('[LIMITS] Query timeout - returning safe defaults');
       return [
         { data: { subscription_status: 'trialing', current_plan_id: null, trial_ends_at: null }, error: null },
         { data: null, error: null }
       ];
-    });
+    }) as [QueryResult, QueryResult];
+    
+    const [profileResult, usageResult] = results;
 
     const profile = profileResult.data;
     const profileError = profileResult.error;

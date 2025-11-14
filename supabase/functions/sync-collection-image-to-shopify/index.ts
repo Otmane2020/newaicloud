@@ -142,14 +142,15 @@ serve(async (req) => {
         };
         
         console.log(`✅ [SYNC-IMAGE] Image downloaded successfully (${(imageBuffer.byteLength / 1024).toFixed(2)} KB)`);
-      } catch (downloadError) {
-        console.error(`❌ [SYNC-IMAGE] Failed to download image:`, downloadError);
+      } catch (downloadError: unknown) {
+        const err = downloadError instanceof Error ? downloadError : new Error(String(downloadError));
+        console.error(`❌ [SYNC-IMAGE] Failed to download image:`, err);
         return new Response(
           JSON.stringify({ 
             success: false,
             error: 'Image download failed',
             message: 'Impossible de télécharger l\'image. Vérifiez que l\'URL est accessible.',
-            details: downloadError.message
+            details: err.message
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

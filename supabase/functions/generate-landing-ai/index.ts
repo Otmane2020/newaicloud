@@ -450,11 +450,12 @@ serve(async (req) => {
 
           console.log(`✅ Enrichment attempt ${attemptNumber} completed successfully`);
           return true;
-        } catch (err) {
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err : new Error(String(err));
           console.error(`❌ Enrichment attempt ${attemptNumber} exception:`, {
-            message: err.message,
-            name: err.name,
-            stack: err.stack?.substring(0, 200),
+            message: error.message,
+            name: error.name,
+            stack: error.stack?.substring(0, 200),
           });
           return false;
         }
@@ -610,8 +611,9 @@ serve(async (req) => {
           visualAnalysis = buildVisionSummary(visionData.attributes, detectedLanguage);
           console.log("✅ Vision AI analysis completed");
         }
-      } catch (err) {
-        console.log("⚠️ Vision AI timeout or error (continuing without it):", err.message);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        console.log("⚠️ Vision AI timeout or error (continuing without it):", error.message);
       }
     } else {
       console.log("⏭️ No image URL provided, skipping Vision AI");
@@ -1272,9 +1274,10 @@ UTILISATION DES ICÔNES :
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  } catch (err) {
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
     console.error("💥 ERROR:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -56,8 +56,8 @@ serve(async (req) => {
     let imageResponse;
     try {
       imageResponse = await fetch(imageUrl, { signal: controller.signal });
-    } catch (error) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Image download timeout after 30 seconds');
       }
       throw error;
@@ -168,8 +168,8 @@ Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
           }),
         }
       );
-    } catch (error) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Lovable AI timeout after 45 seconds');
       }
       throw error;

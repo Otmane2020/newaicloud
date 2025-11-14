@@ -311,8 +311,9 @@ serve(async (req) => {
         
         // Rate limiting between users
         await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        const errorMsg = `Error processing user ${connection.user_id}: ${error.message}`;
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        const errorMsg = `Error processing user ${connection.user_id}: ${err.message}`;
         console.error(`❌ ${errorMsg}`);
         results.errors.push(errorMsg);
       }
@@ -328,10 +329,11 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    console.error("❌ Fatal error:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("❌ Fatal error:", err);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
