@@ -54,13 +54,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // Only auto-select if no stores were loaded before
       if (data && data.length > 0) {
         setSelectedStore(prev => {
-          // Keep current selection if it still exists
-          if (prev && data.find(s => s.id === prev.id)) {
-            console.log('🏪 [STORE_CONTEXT] Keeping current store:', prev.store_name);
-            return prev;
+          if (!prev) {
+            // Auto-select first store only if no store is selected
+            console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
+            return data[0];
           }
-          // Otherwise select first store
-          console.log('🏪 [STORE_CONTEXT] Auto-selecting first store:', data[0].store_name);
+          // Find the current store in the new data to get a fresh reference
+          const currentStore = data.find(s => s.id === prev.id);
+          if (currentStore) {
+            console.log('🏪 [STORE_CONTEXT] Updating store reference:', currentStore.store_name);
+            return currentStore;
+          }
+          // If current store no longer exists, select first one
+          console.log('🏪 [STORE_CONTEXT] Current store not found, selecting first:', data[0].store_name);
           return data[0];
         });
       }
