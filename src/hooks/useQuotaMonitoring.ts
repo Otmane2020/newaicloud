@@ -53,7 +53,7 @@ export function useQuotaMonitoring() {
         const { data: imagesWithoutAltData } = await supabase
           .from('product_images')
           .select('id')
-          .eq('seller_id', user.id)
+          .eq('user_id', user.id)
           .is('alt_text', null)
           .limit(100);
 
@@ -64,7 +64,7 @@ export function useQuotaMonitoring() {
         const { data: collectionsWithoutTitle } = await supabase
           .from('shopify_collections')
           .select('id')
-          .eq('seller_id', user.id)
+          .eq('user_id', user.id)
           .is('seo_title', null)
           .limit(25);
 
@@ -72,7 +72,7 @@ export function useQuotaMonitoring() {
         const { data: collectionsWithoutDesc } = await supabase
           .from('shopify_collections')
           .select('id')
-          .eq('seller_id', user.id)
+          .eq('user_id', user.id)
           .is('seo_description', null)
           .limit(25);
 
