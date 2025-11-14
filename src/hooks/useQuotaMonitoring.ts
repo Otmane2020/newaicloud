@@ -3,16 +3,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNotifications } from './useNotifications';
 
+const NOTIFICATION_COOLDOWN = 4 * 60 * 60 * 1000; // 4 hours
+
 /**
  * Hook to monitor business opportunities and send actionable notifications
  * - Checks SEO opportunities every 5 minutes
- * - Sends business-oriented notifications about optimization opportunities
- * - Prevents duplicate notifications using database tracking
+ * - Sends regular push notifications to encourage SEO optimization
+ * - Uses cooldown period to avoid spamming (4 hours between notifications of same type)
  */
 export function useQuotaMonitoring() {
   const { user } = useAuth();
   const { sendNotification } = useNotifications();
   const checkInterval = useRef<NodeJS.Timeout>();
+
+  const canSendNotification = (type: string): boolean => {
+    const lastSent = localStorage.getItem(`last_seo_notification_${type}`);
+    if (!lastSent) return true;
+    
+    const timeSince = Date.now() - parseInt(lastSent);
+    return timeSince >= NOTIFICATION_COOLDOWN;
+  };
+
+  const markNotificationSent = (type: string) => {
+    localStorage.setItem(`last_seo_notification_${type}`, Date.now().toString());
+  };
 
   useEffect(() => {
     if (!user) {
@@ -86,64 +100,70 @@ export function useQuotaMonitoring() {
         );
         console.log('📂 [QuotaMonitoring] Unoptimized collections:', unoptimizedCollections);
 
-        // Send business-oriented notifications only if significant opportunities exist
+        // Send regular SEO optimization reminders with cooldown to avoid spam
         console.log('🎯 [QuotaMonitoring] Checking thresholds - Products:', unoptimizedProducts, 'Images:', imagesWithoutAlt, 'Collections:', unoptimizedCollections);
         
-        if (unoptimizedProducts >= 5) {
+        // Products notification - sent if ANY unoptimized products exist (with cooldown)
+        if (unoptimizedProducts > 0 && canSendNotification('products')) {
           console.log('✉️ [QuotaMonitoring] Sending products notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
-              ? '🎯 Opportunités SEO détectées' 
-              : '🎯 SEO Opportunities Detected',
+              ? '🎯 Améliorez votre score SEO' 
+              : '🎯 Improve Your SEO Score',
             message: language === 'fr'
-              ? `${unoptimizedProducts}+ produits peuvent être optimisés pour améliorer votre visibilité Google.`
-              : `${unoptimizedProducts}+ products can be optimized to improve your Google visibility.`,
+              ? `${unoptimizedProducts} produit${unoptimizedProducts > 1 ? 's' : ''} ${unoptimizedProducts > 1 ? 'peuvent' : 'peut'} être optimisé${unoptimizedProducts > 1 ? 's' : ''} pour améliorer votre visibilité Google.`
+              : `${unoptimizedProducts} product${unoptimizedProducts > 1 ? 's' : ''} can be optimized to improve your Google visibility.`,
             category: 'seo_task',
-            priority: 'medium',
+            priority: unoptimizedProducts >= 10 ? 'high' : 'medium',
             action_url: '/seo',
             action_label: language === 'fr' ? 'Optimiser maintenant' : 'Optimize now',
             language,
             force_browser: true,
           });
+          markNotificationSent('products');
         }
 
-        if (imagesWithoutAlt >= 10) {
+        // Images notification - sent if ANY images without alt text exist (with cooldown)
+        if (imagesWithoutAlt > 0 && canSendNotification('images')) {
           console.log('✉️ [QuotaMonitoring] Sending images notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
-              ? '📸 Images à optimiser' 
-              : '📸 Images to Optimize',
+              ? '📸 Optimisez vos images' 
+              : '📸 Optimize Your Images',
             message: language === 'fr'
-              ? `${imagesWithoutAlt}+ images n'ont pas de texte alternatif. Améliorez votre référencement image.`
-              : `${imagesWithoutAlt}+ images are missing alt text. Improve your image SEO.`,
+              ? `${imagesWithoutAlt} image${imagesWithoutAlt > 1 ? 's' : ''} ${imagesWithoutAlt > 1 ? 'nécessitent' : 'nécessite'} un texte alternatif pour le SEO.`
+              : `${imagesWithoutAlt} image${imagesWithoutAlt > 1 ? 's need' : ' needs'} alt text for SEO.`,
             category: 'seo_task',
-            priority: 'low',
+            priority: imagesWithoutAlt >= 20 ? 'medium' : 'low',
             action_url: '/seo?tab=images',
             action_label: language === 'fr' ? 'Voir les images' : 'View images',
             language,
             force_browser: true,
           });
+          markNotificationSent('images');
         }
 
-        if (unoptimizedCollections >= 3) {
+        // Collections notification - sent if ANY unoptimized collections exist (with cooldown)
+        if (unoptimizedCollections > 0 && canSendNotification('collections')) {
           console.log('✉️ [QuotaMonitoring] Sending collections notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
-              ? '📂 Collections à optimiser' 
-              : '📂 Collections to Optimize',
+              ? '📂 Boostez vos collections' 
+              : '📂 Boost Your Collections',
             message: language === 'fr'
-              ? `${unoptimizedCollections}+ collections nécessitent une optimisation SEO.`
-              : `${unoptimizedCollections}+ collections need SEO optimization.`,
+              ? `${unoptimizedCollections} collection${unoptimizedCollections > 1 ? 's' : ''} ${unoptimizedCollections > 1 ? 'peuvent' : 'peut'} être optimisée${unoptimizedCollections > 1 ? 's' : ''} pour plus de visibilité.`
+              : `${unoptimizedCollections} collection${unoptimizedCollections > 1 ? 's can' : ' can'} be optimized for more visibility.`,
             category: 'seo_task',
-            priority: 'medium',
+            priority: unoptimizedCollections >= 5 ? 'high' : 'medium',
             action_url: '/collections',
             action_label: language === 'fr' ? 'Optimiser' : 'Optimize',
             language,
             force_browser: true,
           });
+          markNotificationSent('collections');
         }
       } catch (error) {
         console.error('❌ [QuotaMonitoring] Error checking business opportunities:', error);
