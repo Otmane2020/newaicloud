@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, RefreshCw, Loader2, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ImageGenerationPreviewDialogProps {
   open: boolean;
@@ -37,6 +37,8 @@ export function ImageGenerationPreviewDialog({
 }: ImageGenerationPreviewDialogProps) {
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const handleRegenerate = async () => {
     if (!regeneratePrompt.trim()) {
@@ -47,6 +49,12 @@ export function ImageGenerationPreviewDialog({
     setRegeneratePrompt('');
     setShowRegenerateInput(false);
   };
+
+  // Reset image states when generatedImage changes
+  useEffect(() => {
+    setImageLoading(true);
+    setImageError(false);
+  }, [generatedImage]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,11 +113,30 @@ export function ImageGenerationPreviewDialog({
                 Nouveau
               </Badge>
             </div>
-            <img 
-              src={generatedImage} 
-              alt="Générée" 
-              className="w-full h-auto border rounded-lg object-cover aspect-square bg-white" 
-            />
+            <div className="relative w-full aspect-square border rounded-lg overflow-hidden bg-white">
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {imageError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
+                  <p className="text-sm">Erreur de chargement</p>
+                </div>
+              )}
+              {generatedImage && (
+                <img 
+                  src={generatedImage} 
+                  alt="Générée" 
+                  className="w-full h-full object-cover"
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageLoading(false);
+                    setImageError(true);
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
 

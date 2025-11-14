@@ -564,19 +564,21 @@ export function CollectionImageDialog({
       </DialogContent>
     </Dialog>
 
-    {/* Preview Dialog */}
-    <ImageGenerationPreviewDialog
-      open={showPreviewDialog}
-      onOpenChange={setShowPreviewDialog}
-      currentImage={collection.image_url}
-      generatedImage={previewImageUrl}
-      title={collection.title}
-      isApplying={isApplying}
-      isRegenerating={isRegenerating}
-      onApply={handleApplyGenerated}
-      onRegenerate={handleRegenerateImage}
-      imageMetadata={{ model: 'Lovable AI' }}
-    />
+    {/* Preview Dialog - Only render when previewImageUrl is available */}
+    {previewImageUrl && (
+      <ImageGenerationPreviewDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        currentImage={collection.image_url}
+        generatedImage={previewImageUrl}
+        title={collection.title}
+        isApplying={isApplying}
+        isRegenerating={isRegenerating}
+        onApply={handleApplyGenerated}
+        onRegenerate={handleRegenerateImage}
+        imageMetadata={{ model: 'Lovable AI' }}
+      />
+    )}
 
     {/* Success Dialog with Export Options */}
     <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
