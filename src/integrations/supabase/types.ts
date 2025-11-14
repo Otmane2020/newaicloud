@@ -1347,6 +1347,83 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_data_cache: {
+        Row: {
+          cache_type: string
+          cached_at: string
+          data: Json
+          date_range: string
+          domain: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          cache_type: string
+          cached_at?: string
+          data: Json
+          date_range: string
+          domain: string
+          expires_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          cache_type?: string
+          cached_at?: string
+          data?: Json
+          date_range?: string
+          domain?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gsc_indexing_requests: {
+        Row: {
+          article_id: string | null
+          error_message: string | null
+          id: string
+          requested_at: string
+          response_data: Json | null
+          status: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          error_message?: string | null
+          id?: string
+          requested_at?: string
+          response_data?: Json | null
+          status?: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          error_message?: string | null
+          id?: string
+          requested_at?: string
+          response_data?: Json | null
+          status?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_indexing_requests_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gsc_keyword_history: {
         Row: {
           clicks: number
@@ -4047,6 +4124,7 @@ export type Database = {
         Args: { p_email: string; p_ip: unknown }
         Returns: Json
       }
+      cleanup_expired_gsc_cache: { Args: never; Returns: undefined }
       cleanup_old_vision_cache: { Args: never; Returns: undefined }
       cleanup_orphaned_data: {
         Args: never
