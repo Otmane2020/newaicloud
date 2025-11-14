@@ -29,6 +29,9 @@ import {
   Trash2,
   Power,
   PowerOff,
+  Package,
+  Images,
+  Check,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -71,6 +74,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Product {
   id: string;
@@ -137,6 +141,8 @@ interface PreviewImage {
   generatedUrl: string | null;
   status: 'pending' | 'generating' | 'success' | 'error';
   error?: string;
+  variantId?: string;
+  variantTitle?: string;
 }
 
 export default function ProductTitleDescription() {
@@ -190,6 +196,9 @@ export default function ProductTitleDescription() {
   const [showVariantConfirmDialog, setShowVariantConfirmDialog] = useState(false);
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
+  // White background variant states
+  const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
+  const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -600,39 +609,79 @@ export default function ProductTitleDescription() {
       return;
     }
 
+    // Validation des variantes si le mode variantes est activé
+    if (whiteBgApplyTo === "variants" && whiteBgSelectedVariants.size === 0) {
+      toast.error("Veuillez sélectionner au moins une variante");
+      return;
+    }
+
     // Close config dialog and start generation
     setShowWhiteBgConfigDialog(false);
     setGeneratingWhiteBg(true);
     
-    const previews: PreviewImage[] = selectedProductsList.map((p) => {
-      const selectedImageUrl = selectedGalleryImages.get(p.id) || p.image_url!;
-      return {
-        productId: p.id,
-        productTitle: p.title,
-        originalUrl: selectedImageUrl,
-        generatedUrl: null,
-        status: 'pending' as const,
-      };
-    });
+    let previews: PreviewImage[] = [];
+
+    if (whiteBgApplyTo === "simple") {
+      // Mode simple: une image par produit
+      previews = selectedProductsList.map((p) => {
+        const selectedImageUrl = selectedGalleryImages.get(p.id) || p.image_url!;
+        return {
+          productId: p.id,
+          productTitle: p.title,
+          originalUrl: selectedImageUrl,
+          generatedUrl: null,
+          status: 'pending' as const,
+        };
+      });
+    } else {
+      // Mode variantes: une image par variante sélectionnée
+      for (const product of selectedProductsList) {
+        const variantIds = whiteBgSelectedVariants.get(product.id) || [];
+        if (variantIds.length === 0) continue;
+
+        for (const variantId of variantIds) {
+          const variant = product.variants?.find(v => v.id === variantId);
+          if (!variant) continue;
+
+          // Trouver l'image de la variante
+          const images = galleryImages.get(product.id) || [];
+          const variantImage = images.find(img => img.variant_id === variantId);
+          const imageUrl = variantImage?.src || product.image_url!;
+
+          previews.push({
+            productId: product.id,
+            productTitle: product.title,
+            originalUrl: imageUrl,
+            generatedUrl: null,
+            status: 'pending' as const,
+            variantId: variant.id,
+            variantTitle: variant.title
+          });
+        }
+      }
+    }
 
     setWhiteBgPreviews(previews);
     setShowWhiteBgDialog(true);
 
-    for (let i = 0; i < selectedProductsList.length; i++) {
-      const product = selectedProductsList[i];
-      const selectedImageUrl = selectedGalleryImages.get(product.id) || product.image_url!;
+    // Générer les images
+    for (const preview of previews) {
+      const previewKey = preview.variantId 
+        ? `${preview.productId}-${preview.variantId}` 
+        : preview.productId;
       
       setWhiteBgPreviews((prev) =>
-        prev.map((p) =>
-          p.productId === product.id ? { ...p, status: 'generating' } : p
-        )
+        prev.map((p) => {
+          const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
+          return pKey === previewKey ? { ...p, status: 'generating' } : p;
+        })
       );
 
       try {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
           body: { 
-            imageUrl: selectedImageUrl,
-            productTitle: product.title,
+            imageUrl: preview.originalUrl,
+            productTitle: preview.productTitle,
             imageType: selectedImageType
           }
         });
@@ -641,11 +690,12 @@ export default function ProductTitleDescription() {
 
         if (data.success && data.imageUrl) {
           setWhiteBgPreviews((prev) =>
-            prev.map((p) =>
-              p.productId === product.id
+            prev.map((p) => {
+              const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
+              return pKey === previewKey
                 ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-                : p
-            )
+                : p;
+            })
           );
         } else {
           throw new Error(data.error || 'Échec de la génération');
@@ -653,11 +703,12 @@ export default function ProductTitleDescription() {
       } catch (error: any) {
         console.error('Error generating white background:', error);
         setWhiteBgPreviews((prev) =>
-          prev.map((p) =>
-            p.productId === product.id
+          prev.map((p) => {
+            const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
+            return pKey === previewKey
               ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
-              : p
-          )
+              : p;
+          })
         );
       }
     }
@@ -771,48 +822,80 @@ export default function ProductTitleDescription() {
 
   const handleApplyWhiteBackground = async (productIds: string[], format: string, imageType: 'primary' | 'secondary') => {
     const toastId = toast.loading("Application des images...");
-    console.log('Applying white background with format:', format, 'imageType:', imageType);
+    console.log('Applying white background with format:', format, 'imageType:', imageType, 'applyTo:', whiteBgApplyTo);
 
     try {
-      for (const productId of productIds) {
-        const preview = whiteBgPreviews.find((p) => p.productId === productId);
-        if (!preview?.generatedUrl) continue;
+      if (whiteBgApplyTo === "simple") {
+        // Mode simple: appliquer à l'image principale ou secondaire
+        for (const productId of productIds) {
+          const preview = whiteBgPreviews.find((p) => p.productId === productId && !p.variantId);
+          if (!preview?.generatedUrl) continue;
 
-        if (imageType === 'primary') {
-          // Remplacer l'image principale
-          await supabase
-            .from("shopify_products")
-            .update({ image_url: preview.generatedUrl })
-            .eq("id", productId);
-        } else {
-          // Ajouter comme image secondaire dans la galerie
-          const maxPosition = await supabase
+          if (imageType === 'primary') {
+            await supabase
+              .from("shopify_products")
+              .update({ image_url: preview.generatedUrl })
+              .eq("id", productId);
+          } else {
+            const maxPosition = await supabase
+              .from("product_images")
+              .select("position")
+              .eq("product_id", productId)
+              .order("position", { ascending: false })
+              .limit(1)
+              .single();
+
+            const nextPosition = (maxPosition?.data?.position || 0) + 1;
+
+            await supabase
+              .from("product_images")
+              .insert({
+                product_id: productId,
+                src: preview.generatedUrl,
+                alt_text: `${preview.productTitle} - Fond blanc IA`,
+                position: nextPosition
+              });
+          }
+        }
+      } else {
+        // Mode variantes: créer de nouvelles images pour chaque variante
+        const variantPreviews = whiteBgPreviews.filter(p => p.variantId);
+        
+        for (const preview of variantPreviews) {
+          if (!preview.generatedUrl || !preview.variantId) continue;
+
+          // Obtenir la position maximale pour ce produit
+          const { data: maxPosData } = await supabase
             .from("product_images")
             .select("position")
-            .eq("product_id", productId)
+            .eq("product_id", preview.productId)
             .order("position", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
-          const nextPosition = (maxPosition?.data?.position || 0) + 1;
+          const nextPosition = (maxPosData?.position || 0) + 1;
 
+          // Créer une nouvelle image pour cette variante
           await supabase
             .from("product_images")
             .insert({
-              product_id: productId,
+              product_id: preview.productId,
+              variant_id: preview.variantId,
               src: preview.generatedUrl,
-              alt_text: `${preview.productTitle} - Fond blanc IA`,
+              alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
               position: nextPosition
             });
         }
       }
 
-      const message = imageType === 'primary' 
+      const message = whiteBgApplyTo === "simple" && imageType === 'primary' 
         ? "Images principales mises à jour avec succès" 
-        : "Images ajoutées à la galerie avec succès";
+        : "Images ajoutées avec succès";
       toast.success(message, { id: toastId });
       await fetchProducts();
       setWhiteBgPreviews([]);
+      setWhiteBgApplyTo("simple");
+      setWhiteBgSelectedVariants(new Map());
     } catch (error) {
       console.error("Error applying images:", error);
       toast.error("Erreur lors de l'application", { id: toastId });
@@ -1861,6 +1944,118 @@ export default function ProductTitleDescription() {
                 })}
               </div>
             )}
+
+            {/* Type d'application: Simple ou Variantes */}
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Format d'application</Label>
+              <RadioGroup
+                value={whiteBgApplyTo}
+                onValueChange={(v) => {
+                  setWhiteBgApplyTo(v as "simple" | "variants");
+                  if (v !== "variants") {
+                    setWhiteBgSelectedVariants(new Map());
+                  }
+                }}
+              >
+                {/* Option Simple */}
+                <Card
+                  className={`p-4 cursor-pointer transition-all ${
+                    whiteBgApplyTo === "simple" ? "border-primary bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value="simple" id="white-simple" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Images className="h-5 w-5" />
+                        <Label htmlFor="white-simple" className="text-base font-medium cursor-pointer">
+                          Format Simple
+                        </Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Appliquer l'image générée au produit (image principale ou galerie)
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Option Variantes */}
+                {Array.from(selectedProducts).some(id => {
+                  const product = products.find(p => p.id === id);
+                  return product?.variants && product.variants.length > 0;
+                }) && (
+                  <Card
+                    className={`p-4 cursor-pointer transition-all ${
+                      whiteBgApplyTo === "variants" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem value="variants" id="white-variants" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-5 w-5" />
+                          <Label htmlFor="white-variants" className="text-base font-medium cursor-pointer">
+                            Format Variantes
+                          </Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Appliquer aux variantes spécifiques sélectionnées
+                        </p>
+
+                        {whiteBgApplyTo === "variants" && (
+                          <div className="mt-4 space-y-4">
+                            {Array.from(selectedProducts).map((productId) => {
+                              const product = products.find(p => p.id === productId);
+                              if (!product?.variants || product.variants.length === 0) return null;
+
+                              const productSelectedVariants = whiteBgSelectedVariants.get(productId) || [];
+
+                              return (
+                                <Card key={productId} className="p-3">
+                                  <h4 className="font-semibold mb-2 text-sm">{product.title}</h4>
+                                  <div className="space-y-2">
+                                    {product.variants.map((variant) => (
+                                      <div
+                                        key={variant.id}
+                                        className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50"
+                                      >
+                                        <Checkbox
+                                          id={`variant-${variant.id}`}
+                                          checked={productSelectedVariants.includes(variant.id)}
+                                          onCheckedChange={(checked) => {
+                                            const newMap = new Map(whiteBgSelectedVariants);
+                                            const current = newMap.get(productId) || [];
+                                            if (checked) {
+                                              newMap.set(productId, [...current, variant.id]);
+                                            } else {
+                                              newMap.set(
+                                                productId,
+                                                current.filter((id) => id !== variant.id)
+                                              );
+                                            }
+                                            setWhiteBgSelectedVariants(newMap);
+                                          }}
+                                        />
+                                        <Label
+                                          htmlFor={`variant-${variant.id}`}
+                                          className="text-sm font-normal cursor-pointer flex-1"
+                                        >
+                                          {variant.title}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </RadioGroup>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -1871,6 +2066,7 @@ export default function ProductTitleDescription() {
             </Button>
             <Button
               onClick={handleWhiteBackground}
+              disabled={whiteBgApplyTo === "variants" && whiteBgSelectedVariants.size === 0}
               className="gap-2"
             >
               <Square className="h-4 w-4" />
