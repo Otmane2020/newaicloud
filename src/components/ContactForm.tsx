@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,9 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
 
 export function ContactForm() {
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
+  const [storeName, setStoreName] = useState<string>("votre boutique");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,6 +23,20 @@ export function ContactForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Récupérer le nom de la boutique
+  useEffect(() => {
+    if (selectedStore?.store_name) {
+      setStoreName(selectedStore.store_name);
+    } else if (selectedStore?.store_url) {
+      // Extraire le nom depuis l'URL si disponible
+      const name = selectedStore.store_url
+        .replace(/^https?:\/\//, '')
+        .replace('.myshopify.com', '')
+        .replace(/\/$/, '');
+      setStoreName(name);
+    }
+  }, [selectedStore]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +100,7 @@ export function ContactForm() {
           {t.landing.contact.title}
         </h2>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          {t.landing.contact.subtitle}
+          {t.landing.contact.subtitle.replace(/nom boutique|votre boutique/gi, storeName)}
         </p>
       </div>
 
