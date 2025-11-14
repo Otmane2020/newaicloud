@@ -168,6 +168,7 @@ export function SeoOptimization() {
           store_id
         `)
         .eq('store_id', selectedStore.id)
+        .limit(5000)
         .order("imported_at", { ascending: false });
 
       if (error) throw error;
