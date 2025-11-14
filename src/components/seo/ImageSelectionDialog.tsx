@@ -68,6 +68,14 @@ export function ImageSelectionDialog({
     return options || `Variante ${variant.position}`;
   };
 
+  // Filter unique images by URL to avoid duplicates
+  const uniqueVariantImages = variantImages.reduce((acc: ProductImage[], current) => {
+    if (!acc.find(img => img.src === current.src)) {
+      acc.push(current);
+    }
+    return acc;
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -170,7 +178,7 @@ export function ImageSelectionDialog({
                   
                   {applyTo === 'variants' && (
                     <div className="pl-6 grid grid-cols-3 gap-2">
-                      {variantImages.map((variant) => (
+                      {uniqueVariantImages.map((variant) => (
                         <button
                           key={variant.id}
                           type="button"
