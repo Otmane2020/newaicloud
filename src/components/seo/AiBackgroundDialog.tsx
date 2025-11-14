@@ -258,56 +258,58 @@ export function AiBackgroundDialog({
               return (
                 <Card key={product.id} className="p-4">
                   <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Image principale */}
-                    {product.image_url && (
-                      <button
-                        onClick={() => {
-                          const newMap = new Map(config.selectedImages);
-                          newMap.set(product.id, product.image_url!);
-                          setConfig({ ...config, selectedImages: newMap });
-                        }}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                          selectedImageUrl === product.image_url
-                            ? 'border-primary ring-2 ring-primary'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <img src={product.image_url} alt="Principale" className="w-full h-full object-cover" />
-                        {selectedImageUrl === product.image_url && (
-                          <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        )}
-                        <Badge className="absolute bottom-1 left-1 text-xs">Principale</Badge>
-                      </button>
-                    )}
-                    
-                    {/* Images de galerie */}
-                    {images.slice(0, 2).map((img, idx) => (
-                      <button
-                        key={img.id}
-                        onClick={() => {
-                          const newMap = new Map(config.selectedImages);
-                          newMap.set(product.id, img.src);
-                          setConfig({ ...config, selectedImages: newMap });
-                        }}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                          selectedImageUrl === img.src
-                            ? 'border-primary ring-2 ring-primary'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <img src={img.src} alt={img.alt_text || `#${idx + 1}`} className="w-full h-full object-cover" />
-                        {selectedImageUrl === img.src && (
-                          <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        )}
-                        <Badge className="absolute bottom-1 left-1 text-xs">#{idx + 1}</Badge>
-                      </button>
-                    ))}
-                  </div>
+                  <ScrollArea className="max-h-[300px]">
+                    <div className="grid grid-cols-4 gap-2 pr-4">
+                      {/* Image principale */}
+                      {product.image_url && (
+                        <button
+                          onClick={() => {
+                            const newMap = new Map(config.selectedImages);
+                            newMap.set(product.id, product.image_url!);
+                            setConfig({ ...config, selectedImages: newMap });
+                          }}
+                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                            selectedImageUrl === product.image_url
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <img src={product.image_url} alt="Principale" className="w-full h-full object-cover" />
+                          {selectedImageUrl === product.image_url && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
+                          <Badge className="absolute bottom-1 left-1 text-xs">Principale</Badge>
+                        </button>
+                      )}
+                      
+                      {/* Toutes les images de galerie */}
+                      {images.map((img, idx) => (
+                        <button
+                          key={img.id}
+                          onClick={() => {
+                            const newMap = new Map(config.selectedImages);
+                            newMap.set(product.id, img.src);
+                            setConfig({ ...config, selectedImages: newMap });
+                          }}
+                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                            selectedImageUrl === img.src
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <img src={img.src} alt={img.alt_text || `#${idx + 1}`} className="w-full h-full object-cover" />
+                          {selectedImageUrl === img.src && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
+                          <Badge className="absolute bottom-1 left-1 text-xs">#{idx + 1}</Badge>
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </Card>
               );
             })}
