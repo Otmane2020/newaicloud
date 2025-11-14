@@ -835,6 +835,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 🔗 Sync product-collection relationships after import (async, don't block)
+    console.log('🔗 Starting async product-collection sync...');
+    supabaseClient.functions.invoke('sync-product-collections', {
+      headers: { Authorization: authHeader }
+    }).then((syncResult) => {
+      if (syncResult.error) {
+        console.error('⚠️ Product-collection sync failed:', syncResult.error);
+      } else {
+        console.log('✅ Product-collection relationships synced:', syncResult.data);
+      }
+    }).catch((err) => console.error('⚠️ Sync error:', err));
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -847,7 +859,7 @@ Deno.serve(async (req: Request) => {
         articlesImported: articlesImported,
         pagesProcessed: pageCount,
         jobId: importJob.id,
-        message: `Successfully imported ${products.length} products (${stats.new} new, ${stats.updated} updated, ${stats.protected} protected) out of ${totalShopifyProducts} total products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
+        message: `Successfully imported ${products.length} products (${stats.new} new, ${stats.updated} updated, ${stats.protected} protected) out of ${totalShopifyProducts} total products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles. Syncing collections in background...`,
       }),
       {
         status: 200,
