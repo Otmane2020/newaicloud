@@ -122,14 +122,20 @@ Réponds UNIQUEMENT avec un objet JSON valide contenant :
 Instructions :
 - primaryColor : la couleur la plus dominante et visible
 - secondaryColors : 2-3 couleurs complémentaires/secondaires
-- materials : matériaux visibles (bois, métal, tissu, verre, cuir, plastique, etc.)
+- materials : matériaux visibles - SOIS TRÈS PRÉCIS :
+  * Bois (chêne, noyer, teck, pin, hêtre, acajou)
+  * Métaux (acier, laiton, fer forgé, aluminium, cuivre, bronze)
+  * Tissus (lin, coton, velours, polyester, cuir)
+  * Pierres naturelles (marbre, travertin, granit, ardoise, onyx, quartz, terrazzo)
+  * Autres (verre, plastique, béton, résine, céramique, rotin)
+  * NOTE : Distingue bien travertin (nervures horizontales) vs marbre (veinage aléatoire) vs granit (grains fins)
 - style : style de design global
 - room : pièce/contexte si identifiable
 - mood : ambiance/feeling général
-- technicalDetails : détails visibles (pieds en bois, coussins amovibles, finition mate, etc.)
+- technicalDetails : détails visibles précis (pieds en bois massif, nervures du travertin, veinage du marbre, coussins amovibles, finition mate/brillante, texture rugueuse/lisse, etc.)
 - confidence : score de confiance entre 0 et 1
 
-Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
+Sois TRÈS précis et descriptif sur les matériaux et textures. N'invente pas, base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image.`;
 
     // Call Lovable AI with Vision support (higher quota limits)
     const lovableController = new AbortController();

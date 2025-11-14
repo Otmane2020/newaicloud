@@ -538,35 +538,6 @@ export function PageOptimization() {
   };
 
   const handleSyncPage = async (pageId: string) => {
-    // Check limits BEFORE syncing
-    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-      if (limits?.isTrialing) {
-        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
-      } else if (limits?.isPaid) {
-        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
-      }
-      setShowUpgradeDialog(true);
-      return;
-    }
-    
-    try {
-      setOptimizing(true);
-      const { error } = await supabase.functions.invoke('generate-page-seo', {
-        body: { pageId, force: forceReoptimize }
-      });
-      
-      if (error) throw error;
-      toast.success('Page optimized!');
-      await fetchPages();
-      await refreshLimits();
-    } catch (error: any) {
-      toast.error(error.message || 'Error');
-    } finally {
-      setOptimizing(false);
-    }
-  };
-
-  const handleSyncPage = async (pageId: string) => {
     const page = pages.find(p => p.id === pageId);
     if (!page || !page.optimized || (page.optimization_count || 0) === 0) {
       toast.error('Seules les pages AI-optimisées peuvent être synchronisées');
