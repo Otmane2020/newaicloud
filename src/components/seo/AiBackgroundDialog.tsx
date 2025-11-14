@@ -478,28 +478,101 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                 });
               }}
             >
-              {/* Option Simple */}
-              <Card
-                className={`p-4 cursor-pointer transition-all ${
-                  config.applyTo === "simple" ? "border-primary bg-primary/5" : ""
-                }`}
-              >
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="simple" id="simple" className="mt-1" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Images className="h-5 w-5" />
-                      <Label htmlFor="simple" className="text-base font-medium cursor-pointer">
-                        Image Principale
-                      </Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">Appliquer à l'image principale uniquement</p>
+              {/* Pour produits SANS variants : afficher Image Principale et Toute la Gallerie */}
+              {!hasVariants && (
+                <>
+                  {/* Option Simple */}
+                  <Card
+                    className={`p-4 cursor-pointer transition-all ${
+                      config.applyTo === "simple" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem value="simple" id="simple" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Images className="h-5 w-5" />
+                          <Label htmlFor="simple" className="text-base font-medium cursor-pointer">
+                            Image Principale
+                          </Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">Appliquer à l'image principale uniquement</p>
 
-                    {config.applyTo === "simple" && (
-                      <div className="mt-4 space-y-4">
-                        {selectedProducts.map((product) => {
-                          const allImages = getAllProductImages(product);
-                          const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+                        {config.applyTo === "simple" && (
+                          <div className="mt-4 space-y-4">
+                            {selectedProducts.map((product) => {
+                              const allImages = getAllProductImages(product);
+                              const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+
+                              return (
+                                <div key={product.id} className="space-y-3">
+                                  <div>
+                                    <Label className="text-sm font-medium">{product.title}</Label>
+                                  </div>
+                                  <div className="w-full max-h-[200px] overflow-y-auto">
+                                    <div className="grid grid-cols-4 gap-2 pr-2">
+                                      {allImages.map((img, idx) => (
+                                        <button
+                                          type="button"
+                                          key={img.id}
+                                          onClick={() => {
+                                            const newMap = new Map(config.selectedImages);
+                                            newMap.set(product.id, img.src);
+                                            setConfig({ ...config, selectedImages: newMap });
+                                          }}
+                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                                            selectedImageUrl === img.src
+                                              ? "border-primary ring-2 ring-primary"
+                                              : "border-border hover:border-primary/50"
+                                          }`}
+                                        >
+                                          <img
+                                            src={img.src}
+                                            alt={img.alt_text || `Image ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          {selectedImageUrl === img.src && (
+                                            <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                              <Check className="h-6 w-6 text-primary" />
+                                            </div>
+                                          )}
+                                          <Badge className="absolute top-2 left-2 text-xs">
+                                            {img.position === 0 ? "Principale" : `#${img.position + 1}`}
+                                          </Badge>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Option Gallerie (seulement pour produits sans variants) */}
+                  <Card
+                    className={`p-4 cursor-pointer transition-all ${
+                      config.applyTo === "gallery" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem value="gallery" id="gallery" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-5 w-5" />
+                          <Label htmlFor="gallery" className="text-base font-medium cursor-pointer">
+                            Toute la Gallerie
+                          </Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">Appliquer à toutes les images du produit</p>
+                      </div>
+                    </div>
+                  </Card>
+                </>
+              )}
 
                           return (
                             <div key={product.id} className="space-y-3">
