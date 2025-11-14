@@ -280,8 +280,8 @@ export function AiBackgroundDialog({
                           return (
                             <div key={product.id} className="space-y-3">
                               <Label className="text-sm font-medium">{product.title}</Label>
-                              <ScrollArea className="w-full">
-                                <div className="flex gap-2 pb-4 min-h-[120px]">
+                              <ScrollArea className="w-full h-32">
+                                <div className="flex gap-3 pb-4">
                                   {allImages.map((img, idx) => (
                                     <button
                                       type="button"
@@ -291,23 +291,23 @@ export function AiBackgroundDialog({
                                         newMap.set(product.id, img.src);
                                         setConfig({ ...config, selectedImages: newMap });
                                       }}
-                                      className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                      className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                         selectedImageUrl === img.src
-                                          ? "border-primary ring-2 ring-primary"
+                                          ? "border-primary ring-2 ring-primary shadow-lg"
                                           : "border-border hover:border-primary/50"
                                       }`}
                                     >
                                       <img
                                         src={img.src}
                                         alt={img.alt_text || `Image ${idx + 1}`}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain bg-muted"
                                       />
                                       {selectedImageUrl === img.src && (
-                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                          <Check className="w-3 h-3" />
+                                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-md">
+                                          <Check className="w-4 h-4" />
                                         </div>
                                       )}
-                                      <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
+                                      <Badge className="absolute bottom-2 left-2 text-xs bg-background/90 backdrop-blur-sm border">
                                         {img.id === "main" ? "Principale" : `#${idx + 1}`}
                                       </Badge>
                                     </button>
@@ -368,32 +368,32 @@ export function AiBackgroundDialog({
                                     </Button>
                                   </div>
 
-                                  <ScrollArea className="w-full">
-                                    <div className="flex gap-3 pb-4 min-h-[120px]">
+                                  <ScrollArea className="w-full h-32">
+                                    <div className="flex gap-3 pb-4">
                                       {variantsWithImages.map(({ variant, image }) => (
                                         <button
                                           type="button"
                                           key={variant.id}
                                           onClick={() => toggleVariantSelection(product.id, variant.id)}
-                                          className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                             productSelectedVariants.includes(variant.id)
-                                              ? "border-primary ring-2 ring-primary"
+                                              ? "border-primary ring-2 ring-primary shadow-lg"
                                               : "border-border hover:border-primary/50"
                                           }`}
                                         >
                                           <img
                                             src={image!.src}
                                             alt={getVariantLabel(variant)}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain bg-muted"
                                           />
                                           {productSelectedVariants.includes(variant.id) && (
                                             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                              <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                                <Check className="w-4 h-4" />
+                                              <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-md">
+                                                <Check className="w-5 h-5" />
                                               </div>
                                             </div>
                                           )}
-                                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1 bg-black/80 text-white">
+                                          <Badge className="absolute bottom-2 left-2 right-2 text-[10px] text-center truncate px-1 bg-background/90 backdrop-blur-sm border">
                                             {getVariantLabel(variant)}
                                           </Badge>
                                         </button>
@@ -413,10 +413,10 @@ export function AiBackgroundDialog({
                               const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
 
                               return (
-                                <div key={product.id} className="space-y-2">
+                                <div key={product.id} className="space-y-3">
                                   <Label className="text-sm font-medium">{product.title}</Label>
-                                  <ScrollArea className="w-full">
-                                    <div className="flex gap-2 pb-4 min-h-[120px]">
+                                  <ScrollArea className="w-full h-32">
+                                    <div className="flex gap-3 pb-4">
                                       {allImages.map((img, idx) => (
                                         <button
                                           type="button"
@@ -426,23 +426,23 @@ export function AiBackgroundDialog({
                                             newMap.set(product.id, img.src);
                                             setConfig({ ...config, selectedImages: newMap });
                                           }}
-                                          className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                          className={`relative w-28 h-28 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
                                             selectedImageUrl === img.src
-                                              ? "border-primary ring-2 ring-primary"
+                                              ? "border-primary ring-2 ring-primary shadow-lg"
                                               : "border-border hover:border-primary/50"
                                           }`}
                                         >
                                           <img
                                             src={img.src}
                                             alt={img.alt_text || `Image ${idx + 1}`}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain bg-muted"
                                           />
                                           {selectedImageUrl === img.src && (
-                                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                              <Check className="w-3 h-3" />
+                                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-md">
+                                              <Check className="w-4 h-4" />
                                             </div>
                                           )}
-                                          <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
+                                          <Badge className="absolute bottom-2 left-2 text-xs bg-background/90 backdrop-blur-sm border">
                                             {img.id === "main" ? "Principale" : `#${idx + 1}`}
                                           </Badge>
                                         </button>
