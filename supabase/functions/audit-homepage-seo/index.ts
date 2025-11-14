@@ -48,6 +48,8 @@ serve(async (req) => {
       .select('store_url, access_token')
       .eq('user_id', user.id)
       .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     console.log('Connection query result:', { hasConnection: !!connection, hasError: !!connError, errorDetails: connError });
