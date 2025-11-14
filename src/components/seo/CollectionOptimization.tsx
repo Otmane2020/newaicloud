@@ -139,21 +139,29 @@ export function CollectionOptimization() {
     : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
-    if (selectedStore) {
-      fetchCollections();
-    }
-  }, [selectedStore]);
+    const timeoutId = setTimeout(() => {
+      if (selectedStore?.id) {
+        fetchCollections();
+        setSelectedCollections(new Set()); // Clear selections on store change
+      } else {
+        setCollections([]);
+        setLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedStore?.id]);
 
   // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
   useEffect(() => {
-    if (!selectedStore) return;
+    if (!selectedStore?.id) return;
     
     const interval = setInterval(() => {
       fetchCollections();
     }, 30000); // 30 secondes
 
     return () => clearInterval(interval);
-  }, [selectedStore]);
+  }, [selectedStore?.id]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {

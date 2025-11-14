@@ -113,6 +113,7 @@ export function ArticleManagement() {
     const timeoutId = setTimeout(() => {
       if (selectedStore?.id) {
         fetchArticles();
+        setSelectedArticles(new Set()); // Clear selections on store change
       } else {
         setArticles([]);
         setLoading(false);
