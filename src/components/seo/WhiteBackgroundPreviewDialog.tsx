@@ -86,8 +86,8 @@ export function WhiteBackgroundPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] w-[95vw] sm:max-h-[90vh] sm:w-full p-4 sm:p-6">
-        <DialogHeader className="space-y-2">
+      <DialogContent className="max-w-6xl h-[100dvh] sm:h-auto sm:max-h-[90vh] w-full p-0 sm:p-6 flex flex-col">
+        <DialogHeader className="space-y-2 px-4 pt-4 sm:px-0 sm:pt-0 shrink-0">
           <DialogTitle className="text-base sm:text-lg">Prévisualisation des images avec fond blanc IA</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
             {isSingleImage 
@@ -97,7 +97,7 @@ export function WhiteBackgroundPreviewDialog({
         </DialogHeader>
 
         {/* Format Selector */}
-        <div className="space-y-3 sm:space-y-4 px-1 sm:px-2 pb-3 sm:pb-4 border-b">
+        <div className="space-y-3 sm:space-y-4 px-4 sm:px-2 pb-3 sm:pb-4 border-b shrink-0">
           <div className="space-y-2">
             <Label htmlFor="white-bg-format" className="text-xs sm:text-sm">Format d'image</Label>
             <Select value={format} onValueChange={setFormat}>
@@ -176,7 +176,7 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </div>
 
-        <ScrollArea className="h-[35vh] sm:h-[50vh] md:h-[60vh] px-1 sm:px-2">
+        <ScrollArea className="flex-1 min-h-0 px-4 sm:px-2">
           <div className="space-y-3 sm:space-y-4 md:space-y-6 pr-2 sm:pr-4">
             {previews.map((preview) => (
               <div
@@ -281,7 +281,7 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 px-4 py-3 sm:px-0 sm:py-0 sm:mt-4 sm:pt-4 border-t bg-background shrink-0 sticky bottom-0 sm:static">
           {!isSingleImage && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {successfulPreviews.length > 0 && (
@@ -290,7 +290,7 @@ export function WhiteBackgroundPreviewDialog({
                   size="sm"
                   onClick={handleSelectAll}
                   disabled={isGenerating}
-                  className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
+                  className="text-xs sm:text-sm h-9 w-full sm:w-auto"
                 >
                   {selectedIds.size === successfulPreviews.length
                     ? 'Tout désélectionner'
@@ -309,25 +309,25 @@ export function WhiteBackgroundPreviewDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={applying || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm h-9"
+              className="flex-1 sm:flex-none text-sm h-11 sm:h-10"
             >
               Annuler
             </Button>
             <Button
               onClick={handleApply}
               disabled={applying || selectedIds.size === 0 || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm h-9 bg-primary hover:bg-primary/90"
+              className="flex-1 sm:flex-none text-sm h-11 sm:h-10 bg-primary hover:bg-primary/90 font-medium"
             >
               {applying ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   <span className="hidden sm:inline">Application...</span>
-                  <span className="sm:hidden">...</span>
+                  <span className="sm:hidden">Application...</span>
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" />
-                  {`Appliquer ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
+                  Appliquer {selectedIds.size > 0 && `(${selectedIds.size})`}
                 </>
               )}
             </Button>
