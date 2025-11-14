@@ -769,36 +769,56 @@ export function PageOptimization() {
                     onClick={() => handleOptimizeSelected()}
                     disabled={selectedPages.size === 0 || optimizing}
                     size="sm"
+                    className="gap-2"
                   >
-                    <Sparkles className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Optimiser</span>
+                    {optimizing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    <span>Optimiser sélectionnés</span>
                   </Button>
                   <Button
                     onClick={handleOptimizeAll}
                     disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
                     variant="outline"
                     size="sm"
+                    className="gap-2"
                   >
-                    <Sparkles className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Optimiser tout</span>
+                    {optimizing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    <span>Optimiser tout</span>
                   </Button>
                   <Button
                     onClick={handleSyncSelected}
                     disabled={selectedPages.size === 0 || syncing}
                     variant="outline"
                     size="sm"
+                    className="gap-2"
                   >
-                    <Upload className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Synchroniser</span>
+                    {syncing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    <span>Synchroniser</span>
                   </Button>
                   <Button
                     onClick={handleSyncAll}
                     disabled={syncing || pages.filter(p => p.optimized).length === 0}
                     variant="outline"
                     size="sm"
+                    className="gap-2"
                   >
-                    <Upload className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Synchroniser tout</span>
+                    {syncing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    <span>Synchroniser tout</span>
                   </Button>
                   <Button
                     onClick={fetchPages}
