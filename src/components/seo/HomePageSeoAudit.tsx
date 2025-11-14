@@ -34,6 +34,7 @@ import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { SeoTasksList } from './SeoTasksList';
 import { Link } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 
 interface SeoElements {
   title: string;
@@ -72,6 +73,7 @@ interface AuditResult {
 export function HomePageSeoAudit() {
   const navigate = useNavigate();
   const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [hasConnection, setHasConnection] = useState(false);
@@ -84,11 +86,28 @@ export function HomePageSeoAudit() {
   const { toast } = useToast();
 
   useEffect(() => {
-    checkShopifyConnection();
-    loadLastAudit();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      if (selectedStore?.id) {
+        checkShopifyConnection();
+        loadLastAudit();
+      } else {
+        setResult(null);
+        setSeoTitle('');
+        setSeoDescription('');
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedStore?.id]);
 
   const loadLastAudit = async () => {
+    if (!selectedStore?.id) {
+      setResult(null);
+      setSeoTitle('');
+      setSeoDescription('');
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -123,10 +142,20 @@ export function HomePageSeoAudit() {
   };
 
   const checkShopifyConnection = async () => {
+    if (!selectedStore?.id) {
+      setHasConnection(false);
+      return;
+    }
+
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('shopify_connections')
         .select('id')
+        .eq('user_id', user.id)
+        .eq('id', selectedStore.id)
         .eq('is_active', true)
         .maybeSingle();
 
