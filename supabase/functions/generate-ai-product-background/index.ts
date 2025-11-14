@@ -9,6 +9,10 @@ const corsHeaders = {
 interface GenerationRequest {
   imageUrl: string;
   productTitle: string;
+  productDescription?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  visionAiData?: any;
   productId: string;
   imageId: string;
   prompt: string;
@@ -91,6 +95,10 @@ serve(async (req) => {
     const {
       imageUrl,
       productTitle,
+      productDescription,
+      seoTitle,
+      seoDescription,
+      visionAiData,
       productId,
       imageId,
       prompt,
@@ -108,7 +116,25 @@ serve(async (req) => {
       );
     }
 
+    // Construire un contexte produit enrichi
+    let productContext = productTitle;
+    
+    if (seoTitle && seoTitle !== productTitle) {
+      productContext += `. ${seoTitle}`;
+    }
+    
+    if (productDescription) {
+      productContext += `. ${productDescription.slice(0, 200)}`;
+    } else if (seoDescription) {
+      productContext += `. ${seoDescription.slice(0, 200)}`;
+    }
+    
+    if (visionAiData?.description) {
+      productContext += `. Visual analysis: ${visionAiData.description.slice(0, 150)}`;
+    }
+
     console.log(`🎨 Generating AI background for: ${productTitle} (${targetType})`);
+    console.log(`📝 Enriched context: ${productContext.slice(0, 100)}...`);
     if (variantOptions) {
       console.log(`   Variant: ${variantOptions}`);
     }
@@ -139,7 +165,7 @@ serve(async (req) => {
     const finalPrompt = enrichedPrompt || `
 You are a professional e-commerce product photographer creating a stunning product image.
 
-PRODUCT: ${productTitle}${variantInfo}
+PRODUCT: ${productContext}${variantInfo}
 IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "VARIANT IMAGE"}
 STYLE: ${styleDescriptions[style]}
 FORMAT: ${formatSpecs[format]}

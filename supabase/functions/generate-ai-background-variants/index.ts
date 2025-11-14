@@ -18,7 +18,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { basePrompt = '', productTitle, style = 'professional', format = 'square' } = await req.json();
+    const { 
+      basePrompt = '', 
+      productTitle, 
+      productDescription,
+      seoTitle,
+      seoDescription,
+      visionAiData,
+      serpData,
+      style = 'professional', 
+      format = 'square' 
+    } = await req.json();
     
     if (!productTitle) {
       return new Response(
@@ -26,6 +36,29 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Construire un prompt enrichi avec toutes les données produit
+    let enrichedContext = productTitle;
+    
+    if (seoTitle && seoTitle !== productTitle) {
+      enrichedContext += `. ${seoTitle}`;
+    }
+    
+    if (productDescription) {
+      enrichedContext += `. ${productDescription.slice(0, 200)}`;
+    } else if (seoDescription) {
+      enrichedContext += `. ${seoDescription.slice(0, 200)}`;
+    }
+    
+    if (visionAiData?.description) {
+      enrichedContext += `. Visual analysis: ${visionAiData.description.slice(0, 150)}`;
+    }
+    
+    if (serpData?.dominantStyles?.length > 0) {
+      enrichedContext += `. Trending styles: ${serpData.dominantStyles.slice(0, 3).join(', ')}`;
+    }
+
+    console.log('🎨 Enriched product context:', enrichedContext);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -38,27 +71,27 @@ serve(async (req) => {
 
     console.log('🎨 Creating 4 background variants from text prompt for:', productTitle);
 
-    // ---------- Variants ----------
+    // ---------- Variants avec contexte enrichi ----------
     const variants = [
       {
         style: "professional" as const,
         description: "Studio professionnel élégant",
-        prompt: `Professional e-commerce product photography of ${productTitle}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
+        prompt: `Professional e-commerce product photography of ${enrichedContext}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
       },
       {
         style: "lifestyle" as const,
         description: "Scène de vie naturelle",
-        prompt: `Lifestyle product photography of ${productTitle}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
+        prompt: `Lifestyle product photography of ${enrichedContext}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
       },
       {
         style: "artistic" as const,
         description: "Design artistique et créatif",
-        prompt: `Artistic product photography of ${productTitle}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
+        prompt: `Artistic product photography of ${enrichedContext}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
       },
       {
         style: "minimalist" as const,
         description: "Minimaliste épuré",
-        prompt: `Minimalist product photography of ${productTitle}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
+        prompt: `Minimalist product photography of ${enrichedContext}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
       },
     ];
 
