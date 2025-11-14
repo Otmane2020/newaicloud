@@ -1945,117 +1945,88 @@ export default function ProductTitleDescription() {
               </div>
             )}
 
-            {/* Type d'application: Simple ou Variantes */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold">Format d'application</Label>
-              <RadioGroup
-                value={whiteBgApplyTo}
-                onValueChange={(v) => {
-                  setWhiteBgApplyTo(v as "simple" | "variants");
-                  if (v !== "variants") {
-                    setWhiteBgSelectedVariants(new Map());
-                  }
-                }}
-              >
-                {/* Option Simple */}
-                <Card
-                  className={`p-4 cursor-pointer transition-all ${
-                    whiteBgApplyTo === "simple" ? "border-primary bg-primary/5" : ""
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="simple" id="white-simple" className="mt-1" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Images className="h-5 w-5" />
-                        <Label htmlFor="white-simple" className="text-base font-medium cursor-pointer">
-                          Format Simple
-                        </Label>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Appliquer l'image générée au produit (image principale ou galerie)
-                      </p>
+            {/* Détection automatique: Variantes ou Simple */}
+            {(() => {
+              const hasVariants = Array.from(selectedProducts).some(id => {
+                const product = products.find(p => p.id === id);
+                return product?.variants && product.variants.length > 0;
+              });
+
+              if (hasVariants) {
+                // Si le produit a des variantes, afficher directement la sélection des variantes
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-primary" />
+                      <Label className="text-base font-semibold">Sélection des variantes</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Ce produit possède des variantes. Sélectionnez celles pour lesquelles générer un fond blanc.
+                    </p>
+                    <div className="space-y-4">
+                      {Array.from(selectedProducts).map((productId) => {
+                        const product = products.find(p => p.id === productId);
+                        if (!product?.variants || product.variants.length === 0) return null;
+
+                        const productSelectedVariants = whiteBgSelectedVariants.get(productId) || [];
+
+                        return (
+                          <Card key={productId} className="p-4">
+                            <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
+                            <div className="space-y-2">
+                              {product.variants.map((variant) => (
+                                <div
+                                  key={variant.id}
+                                  className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50"
+                                >
+                                  <Checkbox
+                                    id={`variant-${variant.id}`}
+                                    checked={productSelectedVariants.includes(variant.id)}
+                                    onCheckedChange={(checked) => {
+                                      const newMap = new Map(whiteBgSelectedVariants);
+                                      const current = newMap.get(productId) || [];
+                                      if (checked) {
+                                        newMap.set(productId, [...current, variant.id]);
+                                        setWhiteBgApplyTo("variants");
+                                      } else {
+                                        newMap.set(
+                                          productId,
+                                          current.filter((id) => id !== variant.id)
+                                        );
+                                      }
+                                      setWhiteBgSelectedVariants(newMap);
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`variant-${variant.id}`}
+                                    className="text-sm font-normal cursor-pointer flex-1"
+                                  >
+                                    {variant.title}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
-                </Card>
-
-                {/* Option Variantes */}
-                {Array.from(selectedProducts).some(id => {
-                  const product = products.find(p => p.id === id);
-                  return product?.variants && product.variants.length > 0;
-                }) && (
-                  <Card
-                    className={`p-4 cursor-pointer transition-all ${
-                      whiteBgApplyTo === "variants" ? "border-primary bg-primary/5" : ""
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <RadioGroupItem value="variants" id="white-variants" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-5 w-5" />
-                          <Label htmlFor="white-variants" className="text-base font-medium cursor-pointer">
-                            Format Variantes
-                          </Label>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Appliquer aux variantes spécifiques sélectionnées
-                        </p>
-
-                        {whiteBgApplyTo === "variants" && (
-                          <div className="mt-4 space-y-4">
-                            {Array.from(selectedProducts).map((productId) => {
-                              const product = products.find(p => p.id === productId);
-                              if (!product?.variants || product.variants.length === 0) return null;
-
-                              const productSelectedVariants = whiteBgSelectedVariants.get(productId) || [];
-
-                              return (
-                                <Card key={productId} className="p-3">
-                                  <h4 className="font-semibold mb-2 text-sm">{product.title}</h4>
-                                  <div className="space-y-2">
-                                    {product.variants.map((variant) => (
-                                      <div
-                                        key={variant.id}
-                                        className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50"
-                                      >
-                                        <Checkbox
-                                          id={`variant-${variant.id}`}
-                                          checked={productSelectedVariants.includes(variant.id)}
-                                          onCheckedChange={(checked) => {
-                                            const newMap = new Map(whiteBgSelectedVariants);
-                                            const current = newMap.get(productId) || [];
-                                            if (checked) {
-                                              newMap.set(productId, [...current, variant.id]);
-                                            } else {
-                                              newMap.set(
-                                                productId,
-                                                current.filter((id) => id !== variant.id)
-                                              );
-                                            }
-                                            setWhiteBgSelectedVariants(newMap);
-                                          }}
-                                        />
-                                        <Label
-                                          htmlFor={`variant-${variant.id}`}
-                                          className="text-sm font-normal cursor-pointer flex-1"
-                                        >
-                                          {variant.title}
-                                        </Label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                );
+              } else {
+                // Si le produit n'a pas de variantes, c'est un produit simple
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Images className="h-5 w-5 text-primary" />
+                      <Label className="text-base font-semibold">Produit simple détecté</Label>
                     </div>
-                  </Card>
-                )}
-              </RadioGroup>
-            </div>
+                    <p className="text-sm text-muted-foreground">
+                      L'image générée sera disponible pour application en tant qu'image principale ou secondaire.
+                    </p>
+                  </div>
+                );
+              }
+            })()}
           </div>
           <DialogFooter>
             <Button
