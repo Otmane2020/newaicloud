@@ -9,7 +9,10 @@ const corsHeaders = {
 interface GenerationRequest {
   imageUrl: string;
   productTitle: string;
+  productId: string;
+  imageId: string;
   prompt: string;
+  enrichedPrompt?: string;
   style: "professional" | "lifestyle" | "minimalist" | "creative";
   format: "square" | "portrait" | "landscape";
   targetType: "main" | "variant";
@@ -88,14 +91,17 @@ serve(async (req) => {
     const {
       imageUrl,
       productTitle,
+      productId,
+      imageId,
       prompt,
+      enrichedPrompt,
       style,
       format,
       targetType,
       variantOptions,
     } = (await req.json()) as GenerationRequest;
 
-    if (!imageUrl || !productTitle || !prompt) {
+    if (!imageUrl || !productTitle || !prompt || !productId || !imageId) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required parameters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -246,6 +252,60 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
 
     console.log("✅ Successfully generated AI background");
+
+    // Save to product_image_history if user is authenticated
+    if (authHeader) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+
+      if (user) {
+        try {
+          // Get next version number
+          const { data: versionData } = await supabaseAdmin
+            .rpc('get_next_image_version', { p_image_id: imageId });
+          
+          const versionNumber = versionData || 1;
+
+          // Mark all previous versions as not current
+          await supabaseAdmin
+            .from('product_image_history')
+            .update({ is_current: false })
+            .eq('image_id', imageId);
+
+          // Insert new history entry
+          await supabaseAdmin
+            .from('product_image_history')
+            .insert({
+              product_id: productId,
+              image_id: imageId,
+              user_id: user.id,
+              optimization_type: 'ai_background',
+              original_url: imageUrl,
+              optimized_url: generatedImageUrl,
+              version_number: versionNumber,
+              is_current: true,
+              ai_model: 'google/gemini-2.5-flash-image-preview',
+              ai_prompt: enrichedPrompt || prompt,
+              metadata: {
+                style,
+                format,
+                targetType,
+                variantOptions,
+              }
+            });
+
+          console.log("✅ Saved to product_image_history");
+        } catch (error) {
+          console.error("⚠️ Failed to save to history:", error);
+          // Continue even if history save fails
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({
