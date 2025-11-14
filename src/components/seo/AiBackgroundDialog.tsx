@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,16 +6,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Palette, Check, Sparkles } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Palette, Check, Sparkles } from "lucide-react";
 
 interface ProductImage {
   id: string;
@@ -35,6 +35,16 @@ interface Product {
   seo_title?: string | null;
   seo_description?: string | null;
   vision_ai_data?: any;
+  variants?: ProductVariant[]; // Ajout des variantes au produit
+}
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  option1?: string | null;
+  option2?: string | null;
+  option3?: string | null;
+  image_id?: string | null;
 }
 
 interface AiBackgroundDialogProps {
@@ -49,11 +59,11 @@ export interface AiBackgroundConfig {
   prompt: string;
   format: string;
   similarity: string;
-  imageType: 'primary' | 'secondary';
+  imageType: "primary" | "secondary";
   selectedImages: Map<string, string>; // productId -> imageUrl
-  applyTo: 'main' | 'variants';
-  selectedVariantIds?: string[];
-  enrichedPrompt?: string; // Prompt enrichi avec titre, description et vision IA
+  applyTo: "main" | "variants";
+  selectedVariants: Map<string, string[]>; // productId -> variantIds[]
+  enrichedPrompt?: string;
 }
 
 export function AiBackgroundDialog({
@@ -64,50 +74,69 @@ export function AiBackgroundDialog({
   onConfirm,
 }: AiBackgroundDialogProps) {
   const [config, setConfig] = useState<AiBackgroundConfig>({
-    prompt: '',
-    format: 'square',
-    similarity: 'medium',
-    imageType: 'primary',
+    prompt: "",
+    format: "square",
+    similarity: "medium",
+    imageType: "primary",
     selectedImages: new Map(),
-    applyTo: 'main',
-    selectedVariantIds: [],
+    applyTo: "main",
+    selectedVariants: new Map(),
   });
 
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
-  const variantImages = singleProduct ? productImages.get(singleProduct.id) || [] : [];
-  const uniqueVariantImages = variantImages.reduce((acc: ProductImage[], current) => {
-    if (!acc.find(img => img.src === current.src)) {
-      acc.push(current);
-    }
-    return acc;
-  }, []);
+
+  // Récupérer les variantes uniques avec leurs images
+  const getUniqueVariantsWithImages = (product: Product) => {
+    if (!product.variants || product.variants.length === 0) return [];
+
+    const variantMap = new Map();
+
+    product.variants.forEach((variant) => {
+      if (!variantMap.has(variant.id)) {
+        // Trouver l'image associée à cette variante
+        const variantImage = productImages.get(product.id)?.find((img) => img.variant_id === variant.id);
+
+        variantMap.set(variant.id, {
+          variant,
+          image: variantImage || null,
+        });
+      }
+    });
+
+    return Array.from(variantMap.values());
+  };
+
+  const productVariants = singleProduct ? getUniqueVariantsWithImages(singleProduct) : [];
 
   const handleConfirm = () => {
     if (!config.prompt.trim()) return;
-    if (config.applyTo === 'variants' && (!config.selectedVariantIds || config.selectedVariantIds.length === 0)) return;
-    
+    if (config.applyTo === "variants" && config.selectedVariants.size === 0) return;
+
     // Set default selected image if none selected
     const finalConfig = { ...config };
     if (finalConfig.selectedImages.size === 0) {
-      selectedProducts.forEach(product => {
-        finalConfig.selectedImages.set(product.id, product.image_url || '');
+      selectedProducts.forEach((product) => {
+        finalConfig.selectedImages.set(product.id, product.image_url || "");
       });
     }
-    
+
     // Enrichir le prompt avec les données du produit
-    const productContext = selectedProducts.map(product => {
-      const parts = [];
-      if (product.title) parts.push(`Product: ${product.title}`);
-      if (product.seo_title) parts.push(`SEO Title: ${product.seo_title}`);
-      if (product.seo_description) parts.push(`Description: ${product.seo_description}`);
-      if (product.vision_ai_data?.description) parts.push(`Vision AI: ${product.vision_ai_data.description}`);
-      return parts.join('. ');
-    }).filter(Boolean).join('\n');
-    
-    finalConfig.enrichedPrompt = productContext 
+    const productContext = selectedProducts
+      .map((product) => {
+        const parts = [];
+        if (product.title) parts.push(`Product: ${product.title}`);
+        if (product.seo_title) parts.push(`SEO Title: ${product.seo_title}`);
+        if (product.seo_description) parts.push(`Description: ${product.seo_description}`);
+        if (product.vision_ai_data?.description) parts.push(`Vision AI: ${product.vision_ai_data.description}`);
+        return parts.join(". ");
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    finalConfig.enrichedPrompt = productContext
       ? `${config.prompt}\n\nProduct Context:\n${productContext}`
       : config.prompt;
-    
+
     onConfirm(finalConfig);
     onOpenChange(false);
   };
@@ -116,20 +145,62 @@ export function AiBackgroundDialog({
     setConfig({ ...config, prompt: value });
   };
 
-  const toggleVariantSelection = (variantId: string) => {
-    setConfig(prev => ({
-      ...prev,
-      selectedVariantIds: prev.selectedVariantIds?.includes(variantId)
-        ? prev.selectedVariantIds.filter(id => id !== variantId)
-        : [...(prev.selectedVariantIds || []), variantId]
-    }));
+  const toggleVariantSelection = (productId: string, variantId: string) => {
+    setConfig((prev) => {
+      const newSelectedVariants = new Map(prev.selectedVariants);
+      const productVariants = newSelectedVariants.get(productId) || [];
+
+      if (productVariants.includes(variantId)) {
+        // Retirer la variante
+        const updated = productVariants.filter((id) => id !== variantId);
+        if (updated.length === 0) {
+          newSelectedVariants.delete(productId);
+        } else {
+          newSelectedVariants.set(productId, updated);
+        }
+      } else {
+        // Ajouter la variante
+        newSelectedVariants.set(productId, [...productVariants, variantId]);
+      }
+
+      return {
+        ...prev,
+        selectedVariants: newSelectedVariants,
+      };
+    });
   };
 
-  const getVariantLabel = (variant: ProductImage): string => {
-    const options = [variant.option1, variant.option2, variant.option3]
-      .filter(Boolean)
-      .join(' - ');
-    return options || `Variante ${variant.position}`;
+  const toggleAllVariantsForProduct = (productId: string, variantIds: string[]) => {
+    setConfig((prev) => {
+      const newSelectedVariants = new Map(prev.selectedVariants);
+      const currentSelected = newSelectedVariants.get(productId) || [];
+
+      // Si toutes les variantes sont déjà sélectionnées, on les désélectionne toutes
+      if (currentSelected.length === variantIds.length) {
+        newSelectedVariants.delete(productId);
+      } else {
+        // Sinon on sélectionne toutes les variantes
+        newSelectedVariants.set(productId, [...variantIds]);
+      }
+
+      return {
+        ...prev,
+        selectedVariants: newSelectedVariants,
+      };
+    });
+  };
+
+  const getVariantLabel = (variant: ProductVariant): string => {
+    const options = [variant.option1, variant.option2, variant.option3].filter(Boolean).join(" - ");
+    return options || variant.title || `Variante ${variant.id.slice(-4)}`;
+  };
+
+  const getSelectedVariantsCount = (): number => {
+    let count = 0;
+    config.selectedVariants.forEach((variantIds) => {
+      count += variantIds.length;
+    });
+    return count;
   };
 
   return (
@@ -153,7 +224,9 @@ export function AiBackgroundDialog({
             {/* Format */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="format" className="text-sm font-medium">Format d'image</Label>
+                <Label htmlFor="format" className="text-sm font-medium">
+                  Format d'image
+                </Label>
                 <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
                   <SelectTrigger id="format" className="w-[180px]">
                     <SelectValue />
@@ -173,17 +246,19 @@ export function AiBackgroundDialog({
               <div className="grid grid-cols-2 gap-3">
                 <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === 'primary'
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                      : 'hover:border-primary/50'
+                    config.imageType === "primary"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary"
+                      : "hover:border-primary/50"
                   }`}
-                  onClick={() => setConfig({ ...config, imageType: 'primary' })}
+                  onClick={() => setConfig({ ...config, imageType: "primary" })}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === 'primary' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                    }`}>
-                      {config.imageType === 'primary' && <Check className="h-2.5 w-2.5 text-white" />}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                        config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}
+                    >
+                      {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
                       <h4 className="font-semibold text-sm">Image Principale</h4>
@@ -193,17 +268,19 @@ export function AiBackgroundDialog({
                 </Card>
                 <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === 'secondary'
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                      : 'hover:border-primary/50'
+                    config.imageType === "secondary"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary"
+                      : "hover:border-primary/50"
                   }`}
-                  onClick={() => setConfig({ ...config, imageType: 'secondary' })}
+                  onClick={() => setConfig({ ...config, imageType: "secondary" })}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      config.imageType === 'secondary' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                    }`}>
-                      {config.imageType === 'secondary' && <Check className="h-2.5 w-2.5 text-white" />}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                        config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}
+                    >
+                      {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
                       <h4 className="font-semibold text-sm">Image Secondaire</h4>
@@ -217,8 +294,13 @@ export function AiBackgroundDialog({
             {/* Ressemblance */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="similarity" className="text-sm font-medium">Ressemblance à l'original</Label>
-                <Select value={config.similarity} onValueChange={(value) => setConfig({ ...config, similarity: value })}>
+                <Label htmlFor="similarity" className="text-sm font-medium">
+                  Ressemblance à l'original
+                </Label>
+                <Select
+                  value={config.similarity}
+                  onValueChange={(value) => setConfig({ ...config, similarity: value })}
+                >
                   <SelectTrigger id="similarity" className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -242,8 +324,12 @@ export function AiBackgroundDialog({
                 <SelectValue placeholder="Choisir un style..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="modern minimalist white studio with soft shadows">🏢 Studio minimaliste blanc</SelectItem>
-                <SelectItem value="natural wood surface with plants and soft daylight">🌿 Ambiance naturelle bois</SelectItem>
+                <SelectItem value="modern minimalist white studio with soft shadows">
+                  🏢 Studio minimaliste blanc
+                </SelectItem>
+                <SelectItem value="natural wood surface with plants and soft daylight">
+                  🌿 Ambiance naturelle bois
+                </SelectItem>
                 <SelectItem value="luxurious marble surface with gold accents">✨ Luxe marbre et or</SelectItem>
                 <SelectItem value="cozy living room with warm lighting">🏠 Salon cosy chaleureux</SelectItem>
                 <SelectItem value="industrial concrete background with metal elements">🏭 Industriel béton</SelectItem>
@@ -281,6 +367,7 @@ export function AiBackgroundDialog({
                       {/* Image principale */}
                       {product.image_url && (
                         <button
+                          type="button"
                           onClick={() => {
                             const newMap = new Map(config.selectedImages);
                             newMap.set(product.id, product.image_url!);
@@ -288,8 +375,8 @@ export function AiBackgroundDialog({
                           }}
                           className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                             selectedImageUrl === product.image_url
-                              ? 'border-primary ring-2 ring-primary'
-                              : 'border-border hover:border-primary/50'
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-border hover:border-primary/50"
                           }`}
                         >
                           <img src={product.image_url} alt="Principale" className="w-full h-full object-cover" />
@@ -301,10 +388,11 @@ export function AiBackgroundDialog({
                           <Badge className="absolute bottom-1 left-1 text-xs">Principale</Badge>
                         </button>
                       )}
-                      
+
                       {/* Toutes les images de galerie */}
                       {images.map((img, idx) => (
                         <button
+                          type="button"
                           key={img.id}
                           onClick={() => {
                             const newMap = new Map(config.selectedImages);
@@ -313,11 +401,15 @@ export function AiBackgroundDialog({
                           }}
                           className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
                             selectedImageUrl === img.src
-                              ? 'border-primary ring-2 ring-primary'
-                              : 'border-border hover:border-primary/50'
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-border hover:border-primary/50"
                           }`}
                         >
-                          <img src={img.src} alt={img.alt_text || `#${idx + 1}`} className="w-full h-full object-cover" />
+                          <img
+                            src={img.src}
+                            alt={img.alt_text || `#${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                           {selectedImageUrl === img.src && (
                             <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
                               <Check className="w-3 h-3" />
@@ -334,25 +426,30 @@ export function AiBackgroundDialog({
           </div>
 
           {/* Cible d'application - uniquement pour les produits avec variantes */}
-          {singleProduct && uniqueVariantImages.length > 0 && (
+          {selectedProducts.some((product) => product.variants && product.variants.length > 0) && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Appliquer le résultat à</Label>
-              <RadioGroup value={config.applyTo} onValueChange={(v) => {
-                setConfig({
-                  ...config,
-                  applyTo: v as 'main' | 'variants',
-                  selectedVariantIds: v !== 'variants' ? [] : config.selectedVariantIds
-                });
-              }}>
+              <RadioGroup
+                value={config.applyTo}
+                onValueChange={(v) => {
+                  setConfig({
+                    ...config,
+                    applyTo: v as "main" | "variants",
+                    selectedVariants: v !== "variants" ? new Map() : config.selectedVariants,
+                  });
+                }}
+              >
                 {/* Image principale */}
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <RadioGroupItem value="main" id="main" />
                   <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
                     Image principale uniquement
-                    <p className="text-xs text-muted-foreground mt-1">Remplace uniquement l'image principale du produit</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Remplace uniquement l'image principale du produit
+                    </p>
                   </Label>
                 </div>
-                
+
                 {/* Variantes spécifiques */}
                 <div className="p-3 rounded-lg border space-y-3">
                   <div className="flex items-start space-x-2">
@@ -362,40 +459,67 @@ export function AiBackgroundDialog({
                       <p className="text-xs text-muted-foreground mt-1">Sélectionnez les variantes à modifier</p>
                     </Label>
                   </div>
-                  
-                  {config.applyTo === 'variants' && (
-                    <ScrollArea className="max-h-[200px]">
-                      <div className="pl-6 grid grid-cols-3 gap-2">
-                        {uniqueVariantImages.map((variant) => (
-                          <button
-                            key={variant.id}
-                            type="button"
-                            onClick={() => toggleVariantSelection(variant.id)}
-                            className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                              config.selectedVariantIds?.includes(variant.id)
-                                ? 'border-primary ring-2 ring-primary'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            <img
-                              src={variant.src}
-                              alt={variant.alt_text || getVariantLabel(variant)}
-                              className="w-full h-full object-cover"
-                            />
-                            {config.selectedVariantIds?.includes(variant.id) && (
-                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                  <Check className="w-4 h-4" />
-                                </div>
+
+                  {config.applyTo === "variants" && (
+                    <div className="pl-6 space-y-4">
+                      {selectedProducts.map((product) => {
+                        const productVariants = getUniqueVariantsWithImages(product);
+                        if (productVariants.length === 0) return null;
+
+                        const productSelectedVariants = config.selectedVariants.get(product.id) || [];
+                        const allVariantIds = productVariants.map((v) => v.variant.id);
+                        const allSelected = productSelectedVariants.length === allVariantIds.length;
+
+                        return (
+                          <div key={product.id} className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium">{product.title}</Label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleAllVariantsForProduct(product.id, allVariantIds)}
+                              >
+                                {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
+                              </Button>
+                            </div>
+
+                            <ScrollArea className="max-h-[200px]">
+                              <div className="grid grid-cols-3 gap-2 pr-4">
+                                {productVariants.map(({ variant, image }) => (
+                                  <button
+                                    type="button"
+                                    key={variant.id}
+                                    onClick={() => toggleVariantSelection(product.id, variant.id)}
+                                    className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                                      productSelectedVariants.includes(variant.id)
+                                        ? "border-primary ring-2 ring-primary"
+                                        : "border-border hover:border-primary/50"
+                                    }`}
+                                  >
+                                    <img
+                                      src={image?.src || product.image_url || ""}
+                                      alt={getVariantLabel(variant)}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {productSelectedVariants.includes(variant.id) && (
+                                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                        <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                          <Check className="w-4 h-4" />
+                                        </div>
+                                      </div>
+                                    )}
+                                    <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1">
+                                      {getVariantLabel(variant)}
+                                    </Badge>
+                                  </button>
+                                ))}
                               </div>
-                            )}
-                            <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
-                              {getVariantLabel(variant)}
-                            </Badge>
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                            </ScrollArea>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </RadioGroup>
@@ -409,16 +533,13 @@ export function AiBackgroundDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={
-              !config.prompt.trim() ||
-              (config.applyTo === 'variants' && (!config.selectedVariantIds || config.selectedVariantIds.length === 0))
-            }
+            disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
             Générer les arrière-plans
-            {config.applyTo === 'variants' && config.selectedVariantIds && config.selectedVariantIds.length > 0 && (
-              <span>({config.selectedVariantIds.length})</span>
+            {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
+              <span>({getSelectedVariantsCount()})</span>
             )}
           </Button>
         </DialogFooter>
