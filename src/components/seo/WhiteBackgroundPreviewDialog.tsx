@@ -281,7 +281,7 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mt-3 sm:mt-4">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
           {!isSingleImage && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {successfulPreviews.length > 0 && (
@@ -309,14 +309,14 @@ export function WhiteBackgroundPreviewDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={applying || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-9"
             >
               Annuler
             </Button>
             <Button
               onClick={handleApply}
               disabled={applying || selectedIds.size === 0 || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-9 bg-primary hover:bg-primary/90"
             >
               {applying ? (
                 <>
@@ -325,7 +325,10 @@ export function WhiteBackgroundPreviewDialog({
                   <span className="sm:hidden">...</span>
                 </>
               ) : (
-                `Appliquer ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  {`Appliquer ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
+                </>
               )}
             </Button>
           </div>
