@@ -6,6 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info, AlertCircle } from 'lucide-react';
 import {
   Search, 
   Grid3x3, 
@@ -38,23 +41,37 @@ export default function Collections() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
   const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
 
   const fetchCollections = async () => {
+    if (!selectedStore?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Count total collections
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error(t.sync.notAuthenticated);
+      
+      // Count total collections for this store
       const { count } = await supabase
         .from('shopify_collections')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id);
       
       // Fetch collections with pagination
       const { data, error } = await supabase
         .from('shopify_collections')
         .select('*')
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('title', { ascending: true })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
@@ -66,13 +83,15 @@ export default function Collections() {
           const { count: productCount } = await supabase
             .from('shopify_products')
             .select('*', { count: 'exact', head: true })
+            .eq('store_id', selectedStore.id)
             .contains('collection_ids', [collection.id]);
 
           const { count: imageCount } = await supabase
             .from('content_images')
             .select('*', { count: 'exact', head: true })
             .eq('content_type', 'collection')
-            .eq('content_id', collection.id);
+            .eq('content_id', collection.id)
+            .eq('store_id', selectedStore.id);
 
           return {
             ...collection,
@@ -91,25 +110,49 @@ export default function Collections() {
     }
   };
 
+  // Reload collections when store changes
+  useEffect(() => {
+    fetchCollections();
+  }, [selectedStore?.id, currentPage]);
+
+  const handleSyncProductCollections = async () => {
+    if (!selectedStore?.id) {
+      toast.error("Aucune boutique sélectionnée");
+      return;
+    }
+
+    setSyncing(true);
+    const toastId = toast.loading("Synchronisation des produits avec les collections...");
+    
+    try {
+      const { error: syncError } = await supabase.functions.invoke('sync-product-collections');
+      
+      if (syncError) throw syncError;
+
+      toast.success("Synchronisation terminée avec succès", { id: toastId });
+      
+      // Reload collections to show updated product counts
+      await fetchCollections();
+    } catch (error) {
+      console.error('Error syncing product collections:', error);
+      toast.error("Erreur lors de la synchronisation", { id: toastId });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleImportCollections = async () => {
+    if (!selectedStore?.id) {
+      toast.error("Aucune boutique sélectionnée");
+      return;
+    }
+
     setImporting(true);
     const toastId = toast.loading(t.sync.importingCollections);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error(t.sync.notAuthenticated);
-
-      const { data: storeData } = await supabase
-        .from('shopify_connections')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (!storeData) {
-        toast.error(t.sync.noActiveConnection, { id: toastId });
-        return;
-      }
 
       // Import collections from Shopify
       toast.loading(t.sync.importingFromShopify, { id: toastId });
@@ -119,10 +162,19 @@ export default function Collections() {
 
       const importedCount = collectionsData?.imported || 0;
 
+      // Synchronize products with collections
+      toast.loading("Synchronisation des produits avec les collections...", { id: toastId });
+      const { error: syncError } = await supabase.functions.invoke('sync-product-collections');
+      
+      if (syncError) {
+        console.error("Erreur sync:", syncError);
+        // Continue même en cas d'erreur de sync
+      }
+
       // Import collection images
       toast.loading(t.sync.importingCollectionImages, { id: toastId });
       const { data: imagesData, error: imagesError } = await supabase.functions.invoke('import-content-images', {
-        body: { storeId: storeData.id, types: ['collections'] }
+        body: { storeId: selectedStore.id, types: ['collections'] }
       });
 
       if (imagesError) throw imagesError;
@@ -339,7 +391,7 @@ export default function Collections() {
         <div className="flex gap-2">
           <Button
             onClick={handleImportCollections}
-            disabled={importing}
+            disabled={importing || syncing}
             variant="outline"
           >
             {importing ? (
@@ -355,8 +407,25 @@ export default function Collections() {
             )}
           </Button>
           <Button
+            onClick={handleSyncProductCollections}
+            disabled={importing || syncing}
+            variant="outline"
+          >
+            {syncing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Synchronisation...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Synchroniser
+              </>
+            )}
+          </Button>
+          <Button
             onClick={handleFullImport}
-            disabled={importing}
+            disabled={importing || syncing}
           >
             {importing ? (
               <>
@@ -415,6 +484,26 @@ export default function Collections() {
           </div>
         </Card>
       </div>
+
+      {/* Alert if no products in collections */}
+      {collections.length > 0 && collections.every(c => (c.product_count || 0) === 0) && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Aucun produit n'est associé aux collections. Cliquez sur "Synchroniser" pour connecter vos produits aux collections.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alert if no store selected */}
+      {!selectedStore && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Veuillez sélectionner une boutique pour voir vos collections.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
