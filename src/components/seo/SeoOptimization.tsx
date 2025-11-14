@@ -176,16 +176,23 @@ export function SeoOptimization() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   // Recharger les produits quand la boutique change
   useEffect(() => {
+    console.log('🔄 [SEO_OPTIMIZATION] selectedStore changed:', {
+      hasStore: !!selectedStore,
+      storeId: selectedStore?.id,
+      storeName: selectedStore?.store_name
+    });
+    
     if (selectedStore) {
-      console.log('🔄 [SEO_OPTIMIZATION] Store changed, reloading products for:', selectedStore.store_name);
+      console.log('📦 [SEO_OPTIMIZATION] Loading products for store:', selectedStore.store_name);
       setSelectedProducts(new Set()); // Vider les sélections
       fetchProducts();
+    } else {
+      // Cas où il n'y a pas de store sélectionné
+      console.log('⚠️ [SEO_OPTIMIZATION] No store selected, clearing products');
+      setProducts([]);
+      setLoading(false);
     }
   }, [selectedStore]);
 
