@@ -76,13 +76,37 @@ Deno.serve(async (req: Request) => {
         throw new Error("Product not found or unauthorized");
       }
 
-      // Get Shopify connection for this product's store
-      const { data: storeConnection, error: storeError } = await supabaseClient
-        .from("shopify_connections")
-        .select("store_url, access_token")
-        .eq("id", product.store_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Get Shopify connection - handle NULL store_id
+      let storeConnection = null;
+      let storeError = null;
+
+      if (product.store_id) {
+        const result = await supabaseClient
+          .from("shopify_connections")
+          .select("store_url, access_token")
+          .eq("id", product.store_id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        storeConnection = result.data;
+        storeError = result.error;
+      }
+
+      // Fallback: if no store_id or connection not found, use user's active connection
+      if (!storeConnection) {
+        console.log('[SYNC-SEO] No store_id or connection not found, using user\'s active connection');
+        const result = await supabaseClient
+          .from("shopify_connections")
+          .select("store_url, access_token")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        storeConnection = result.data;
+        storeError = result.error;
+      }
 
       if (storeError || !storeConnection) {
         console.error('Store connection error:', storeError);

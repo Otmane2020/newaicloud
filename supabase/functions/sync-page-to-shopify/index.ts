@@ -46,14 +46,38 @@ Deno.serve(async (req) => {
       throw new Error('Page does not have a Shopify ID');
     }
 
-    // Récupérer la connexion Shopify pour ce store spécifique
-    const { data: connection, error: connError } = await supabaseClient
-      .from('shopify_connections')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('store_id', page.store_id)
-      .eq('is_active', true)
-      .single();
+    // Récupérer la connexion Shopify - gérer le cas où store_id est NULL
+    let connection = null;
+    let connError = null;
+
+    if (page.store_id) {
+      // Si le store_id existe, on l'utilise
+      const result = await supabaseClient
+        .from('shopify_connections')
+        .select('*')
+        .eq('id', page.store_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      connection = result.data;
+      connError = result.error;
+    }
+
+    // Fallback: si pas de store_id ou connexion non trouvée, prendre la connexion active de l'utilisateur
+    if (!connection) {
+      console.log('[SYNC-PAGE] No store_id or connection not found, using user\'s active connection');
+      const result = await supabaseClient
+        .from('shopify_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      connection = result.data;
+      connError = result.error;
+    }
 
     if (connError || !connection) {
       console.error('[SYNC-PAGE] No active Shopify connection found');
