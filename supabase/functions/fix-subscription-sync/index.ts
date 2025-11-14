@@ -93,11 +93,11 @@ serve(async (req) => {
 
     logStep('Subscriptions found', { 
       count: subscriptions.data.length,
-      statuses: subscriptions.data.map(s => s.status)
+      statuses: subscriptions.data.map((s: any) => s.status)
     });
 
     // Find an active subscription
-    const activeSubscription = subscriptions.data.find(s => 
+    const activeSubscription = subscriptions.data.find((s: any) =>
       ['active', 'trialing', 'past_due'].includes(s.status)
     );
 

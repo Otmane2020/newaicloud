@@ -113,7 +113,7 @@ export function cleanForbiddenCSS(html: string): string {
   // Remove forbidden custom classes
   cleaned = cleaned.replace(/class="([^"]*)"/g, (match, classes) => {
     const classList = classes.split(/\s+/);
-    const forbiddenClasses = classList.filter(cls =>
+    const forbiddenClasses = classList.filter((cls: string) =>
       cls.match(/^(text-primary|bg-primary|border-primary|hover:bg-primary-dark)$/)
     );
 
@@ -122,7 +122,7 @@ export function cleanForbiddenCSS(html: string): string {
     }
 
     const cleanedClasses = classList
-      .filter(cls => !cls.match(/^(text-primary|bg-primary|border-primary|hover:bg-primary-dark)$/))
+      .filter((cls: string) => !cls.match(/^(text-primary|bg-primary|border-primary|hover:bg-primary-dark)$/))
       .join(" ");
 
     return cleanedClasses ? `class="${cleanedClasses}"` : "";
@@ -168,7 +168,7 @@ export function removeDuplicateResponsiveClasses(html: string): string {
     const classArray = classes.trim().split(/\s+/);
     const seen = new Map<string, string>();
     
-    const deduplicated = classArray.filter(cls => {
+    const deduplicated = classArray.filter((cls: string) => {
       const responsiveMatch = cls.match(/^(sm|md|lg|xl|2xl):(.+)$/);
       if (responsiveMatch) {
         const [, breakpoint, property] = responsiveMatch;

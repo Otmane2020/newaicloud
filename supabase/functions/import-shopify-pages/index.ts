@@ -222,7 +222,7 @@ Deno.serve(async (req: Request) => {
       .from('shopify_pages')
       .select('id, shopify_page_id, title')
       .eq('user_id', user.id)
-      .eq('store_id', storeId);
+      .eq('store_id', store_id);
     
     if (fetchError) {
       console.error(`⚠️ [IMPORT-PAGES] Error fetching existing pages:`, fetchError);

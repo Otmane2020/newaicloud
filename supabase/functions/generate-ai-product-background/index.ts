@@ -281,18 +281,12 @@ RESULT: A stunning, professional product photo that looks like it was created by
       return null;
     }
 
-    // Try providers in order: Lovable AI → OpenAI
+    // Try providers in order: Lovable AI only (OpenAI removed)
     const failures: string[] = [];
-    let result = await tryLovableAI();
+    const result = await tryLovableAI();
     
     if (!result) {
       failures.push("Lovable AI: Pas de crédits (402) - Ajoutez des crédits à votre workspace Lovable");
-      console.log("🔄 Lovable AI failed, trying OpenAI...");
-      result = await tryOpenAI();
-    }
-
-    if (!result) {
-      failures.push("OpenAI: Limite de taux atteinte (429) - Attendez quelques minutes ou vérifiez vos crédits OpenAI");
       
       console.error("❌ ALL PROVIDERS FAILED:", failures);
       

@@ -91,7 +91,7 @@ serve(async (req) => {
             userId: profile.id,
             email: profile.email,
             customerId,
-            subscriptions: subscriptions.data.map(sub => ({
+            subscriptions: subscriptions.data.map((sub: any) => ({
               id: sub.id,
               status: sub.status,
               currentPeriodEnd: sub.current_period_end,
@@ -106,12 +106,13 @@ serve(async (req) => {
           };
         } catch (error) {
           console.error(`Error fetching Stripe data for ${profile.email}:`, error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return {
             userId: profile.id,
             email: profile.email,
             subscriptions: [],
             hasStripeData: false,
-            error: error.message
+            error: errorMessage
           };
         }
       })
@@ -123,8 +124,9 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error in admin-get-user-subscriptions:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

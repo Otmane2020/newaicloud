@@ -124,7 +124,7 @@ function analyzeTitleMeta(items: any[]): TitleMetaInsights {
 
   // Extract common keywords from titles
   const allWords = titles.flatMap(t => 
-    t.title.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+    t.title.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3)
   );
   const wordFreq = allWords.reduce((acc, word) => {
     acc[word] = (acc[word] || 0) + 1;
@@ -132,8 +132,8 @@ function analyzeTitleMeta(items: any[]): TitleMetaInsights {
   }, {} as Record<string, number>);
 
   const commonKeywords = Object.entries(wordFreq)
-    .filter(([_, count]) => count >= 2)
-    .sort((a, b) => b[1] - a[1])
+    .filter(([_, count]) => (count as number) >= 2)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
     .slice(0, 10)
     .map(([word]) => word);
 
@@ -145,8 +145,8 @@ function analyzeTitleMeta(items: any[]): TitleMetaInsights {
   }, {} as Record<string, number>);
 
   const titlePatterns = Object.entries(patternFreq)
-    .filter(([_, count]) => count >= 2)
-    .sort((a, b) => b[1] - a[1])
+    .filter(([_, count]) => (count as number) >= 2)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
     .map(([word]) => word);
 
   return {
@@ -186,7 +186,7 @@ function analyzeProduct(items: any[]): ProductInsights {
   // Extract features from titles
   const features = titles.flatMap(title => {
     const words = title.toLowerCase().split(/[\s,]+/);
-    return words.filter(w => w.length > 4);
+    return words.filter((w: string) => w.length > 4);
   });
 
   const featureFreq = features.reduce((acc, word) => {
@@ -195,8 +195,8 @@ function analyzeProduct(items: any[]): ProductInsights {
   }, {} as Record<string, number>);
 
   const commonFeatures = Object.entries(featureFreq)
-    .filter(([_, count]) => count >= 2)
-    .sort((a, b) => b[1] - a[1])
+    .filter(([_, count]) => (count as number) >= 2)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
     .slice(0, 8)
     .map(([word]) => word);
 
@@ -283,7 +283,7 @@ serve(async (req) => {
     console.log(`🔍 Processing ${items.length} items for competitors`);
     
     // Filter out non-relevant results
-    const filteredItems = items.filter(item => {
+    const filteredItems = items.filter((item: any) => {
       // Must have a URL
       if (!item.url) return false;
       
@@ -307,7 +307,7 @@ serve(async (req) => {
     
     console.log(`✅ Filtered to ${filteredItems.length} relevant competitors from ${items.length} total items`);
     
-    const competitors = filteredItems.slice(0, 10).map((item, index) => {
+    const competitors = filteredItems.slice(0, 10).map((item: any, index: number) => {
       const competitor = {
         rank: index + 1,
         url: item.url || '',
