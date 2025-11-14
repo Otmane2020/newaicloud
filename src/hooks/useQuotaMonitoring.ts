@@ -96,6 +96,7 @@ export function useQuotaMonitoring() {
             action_url: '/seo',
             action_label: language === 'fr' ? 'Optimiser maintenant' : 'Optimize now',
             language,
+            force_browser: true,
           });
         }
 
@@ -113,6 +114,7 @@ export function useQuotaMonitoring() {
             action_url: '/seo?tab=images',
             action_label: language === 'fr' ? 'Voir les images' : 'View images',
             language,
+            force_browser: true,
           });
         }
 
@@ -130,6 +132,7 @@ export function useQuotaMonitoring() {
             action_url: '/collections',
             action_label: language === 'fr' ? 'Optimiser' : 'Optimize',
             language,
+            force_browser: true,
           });
         }
       } catch (error) {
