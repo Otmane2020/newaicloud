@@ -349,6 +349,11 @@ export default function ProductTitleDescription() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Reset pagination when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
   // Scroll to top when page changes
   useEffect(() => {
     const scrollContainer = document.querySelector('[data-radix-scroll-area-viewport]');
@@ -897,10 +902,23 @@ export default function ProductTitleDescription() {
           });
 
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT: La génération a pris plus de 2 minutes')), 120000)
+            setTimeout(() => reject(new Error('TIMEOUT')), 120000)
           );
 
-          const { data, error } = await Promise.race([generatePromise, timeoutPromise]) as any;
+          // ✅ CORRECTION: Envelopper Promise.race dans try-catch pour gérer le timeout
+          let result;
+          try {
+            result = await Promise.race([generatePromise, timeoutPromise]);
+          } catch (raceError: any) {
+            // Si c'est le timeout qui a gagné
+            if (raceError.message === 'TIMEOUT') {
+              throw new Error('TIMEOUT: La génération a pris plus de 2 minutes');
+            }
+            // Sinon, c'est une autre erreur
+            throw raceError;
+          }
+          
+          const { data, error } = result as any;
           
           const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
           console.log(`⏱️ [AI BG] Request completed in ${elapsedTime}s`);
@@ -1613,24 +1631,35 @@ export default function ProductTitleDescription() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card 
-            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'optimized' ? 'border-primary bg-primary/5' : ''}`}
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+              statusFilter === 'optimized' 
+                ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                : 'hover:border-primary/30'
+            }`}
             onClick={() => setStatusFilter(statusFilter === 'optimized' ? 'all' : 'optimized')}
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <Sparkles className="h-5 w-5 text-green-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.optimized}</p>
                 <p className="text-2xl font-bold">
                   {products.filter((p) => hasRichHtmlDescription(p)).length}
                 </p>
               </div>
             </div>
+            {statusFilter === 'optimized' && (
+              <Badge variant="default" className="mt-2">Filtre actif</Badge>
+            )}
           </Card>
 
           <Card 
-            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'notOptimized' ? 'border-primary bg-primary/5' : ''}`}
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+              statusFilter === 'notOptimized' 
+                ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                : 'hover:border-primary/30'
+            }`}
             onClick={() => setStatusFilter(statusFilter === 'notOptimized' ? 'all' : 'notOptimized')}
           >
             <div className="flex items-center gap-3">
