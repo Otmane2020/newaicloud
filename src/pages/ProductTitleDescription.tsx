@@ -931,6 +931,28 @@ export default function ProductTitleDescription() {
 
           if (data.imageUrl) {
             console.log(`✅ [AI BG] Successfully generated image for ${product.title.substring(0, 50)}...`);
+            
+            // 🔥 Save to history immediately after generation
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && imageId) {
+              const { data: versionData } = await supabase.rpc('get_next_image_version', {
+                p_image_id: imageId
+              });
+              
+              await supabase.from('product_image_history').insert({
+                product_id: product.id,
+                image_id: imageId,
+                user_id: user.id,
+                version_number: versionData || 1,
+                optimization_type: 'ai_background',
+                original_url: preview.originalUrl,
+                optimized_url: data.imageUrl,
+                ai_prompt: config.enrichedPrompt || config.prompt,
+                ai_model: 'Lovable AI',
+                is_current: false // Not applied yet
+              });
+            }
+            
             setAiBgPreviews((prev) =>
               prev.map((p) =>
                 p === preview
@@ -1195,31 +1217,18 @@ export default function ProductTitleDescription() {
           }
 
           if (imageId) {
-            // Get next version number
-            const { data: versionData } = await supabase.rpc('get_next_image_version', {
-              p_image_id: imageId
-            });
-
-            // Insert into history
-            await supabase.from('product_image_history').insert({
-              product_id: productId,
-              image_id: imageId,
-              user_id: user.id,
-              version_number: versionData || 1,
-              optimization_type: 'ai_background',
-              original_url: preview.originalUrl,
-              optimized_url: preview.generatedUrl,
-              ai_prompt: pendingAiConfig?.prompt || 'AI background generation',
-              ai_model: 'Lovable AI',
-              is_current: true
-            });
-
-            // Mark previous versions as not current
+            // Mark all versions as not current first
             await supabase
               .from('product_image_history')
               .update({ is_current: false })
+              .eq('image_id', imageId);
+            
+            // Mark the generated image as current
+            await supabase
+              .from('product_image_history')
+              .update({ is_current: true })
               .eq('image_id', imageId)
-              .neq('version_number', versionData || 1);
+              .eq('optimized_url', preview.generatedUrl);
           }
         }
       }

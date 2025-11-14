@@ -161,6 +161,26 @@ export function CollectionImageDialog({
           console.log('✅ Image uploaded to storage:', publicUrl);
         }
         
+        // 🔥 Save to history immediately after generation
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: versionData } = await supabase.rpc('get_next_collection_image_version', {
+            p_collection_id: collection.id
+          });
+          
+          await supabase.from('collection_image_history').insert({
+            collection_id: collection.id,
+            user_id: user.id,
+            version_number: versionData || 1,
+            optimization_type: 'ai_generation',
+            original_url: collection.image_url,
+            optimized_url: imageUrl,
+            ai_prompt: enrichedPrompt,
+            ai_model: 'Lovable AI',
+            is_current: false // Not applied yet
+          });
+        }
+        
         // Store for preview instead of applying immediately
         setPreviewImageUrl(imageUrl);
         
@@ -193,31 +213,20 @@ export function CollectionImageDialog({
     try {
       setIsApplying(true);
       
-      // Save to history before applying
+      // Mark all versions as not current first
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: versionData } = await supabase.rpc('get_next_collection_image_version', {
-          p_collection_id: collection.id
-        });
-        
-        await supabase.from('collection_image_history').insert({
-          collection_id: collection.id,
-          user_id: user.id,
-          version_number: versionData || 1,
-          optimization_type: 'ai_generated',
-          original_url: collection.image_url,
-          optimized_url: previewImageUrl,
-          ai_prompt: aiPrompt || `Auto-generated for ${collection.title}`,
-          ai_model: 'Lovable AI',
-          is_current: true
-        });
-        
-        // Mark previous versions as not current
         await supabase
           .from('collection_image_history')
           .update({ is_current: false })
+          .eq('collection_id', collection.id);
+        
+        // Mark the generated image as current
+        await supabase
+          .from('collection_image_history')
+          .update({ is_current: true })
           .eq('collection_id', collection.id)
-          .neq('version_number', versionData || 1);
+          .eq('optimized_url', previewImageUrl);
       }
       
       await updateCollectionImage(previewImageUrl, true);
