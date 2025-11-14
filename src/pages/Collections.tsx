@@ -122,20 +122,33 @@ export default function Collections() {
     }
 
     setSyncing(true);
-    const toastId = toast.loading("Synchronisation des produits avec les collections...");
+    toast.info("Synchronisation en cours, cela peut prendre plusieurs minutes pour de nombreux produits...");
     
     try {
-      const { error: syncError } = await supabase.functions.invoke('sync-product-collections');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+
+      const { data, error: syncError } = await supabase.functions.invoke('sync-product-collections', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (syncError) throw syncError;
 
-      toast.success("Synchronisation terminée avec succès", { id: toastId });
+      const updatedCount = data?.updated_count || 0;
+      const totalProducts = data?.total_products || 0;
+      
+      toast.success(
+        `✅ Synchronisation terminée: ${updatedCount} produits mis à jour sur ${totalProducts}`,
+        { duration: 5000 }
+      );
       
       // Reload collections to show updated product counts
       await fetchCollections();
     } catch (error) {
       console.error('Error syncing product collections:', error);
-      toast.error("Erreur lors de la synchronisation", { id: toastId });
+      toast.error("Erreur lors de la synchronisation");
     } finally {
       setSyncing(false);
     }
