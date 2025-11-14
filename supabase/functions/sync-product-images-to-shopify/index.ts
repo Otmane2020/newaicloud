@@ -52,8 +52,21 @@ Deno.serve(async (req) => {
       throw new Error(`Product not found: ${productId}`);
     }
 
+    // If product not synced to Shopify, just return success without syncing
     if (!product.shopify_product_id) {
-      throw new Error("Product not synced to Shopify yet. Please sync the product first.");
+      console.log(`⏭️ Product ${productId} not synced to Shopify yet - skipping image sync`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Images updated locally. Product will sync to Shopify when product is synced.",
+          imageCount: product.images?.length || 0,
+          skipped: true,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Get Shopify connection - try by store_id first, then get active connection
