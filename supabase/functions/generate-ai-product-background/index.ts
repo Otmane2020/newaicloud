@@ -196,6 +196,7 @@ ${
 }
 
 2. BACKGROUND & LIGHTING:
+   - CRITICAL: Remove and replace the existing background completely with a new one
    - ${prompt}
    - ${styleDescriptions[style]}
    - Professional color grading
