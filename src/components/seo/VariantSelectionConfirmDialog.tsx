@@ -32,7 +32,7 @@ interface VariantSelectionConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedProducts: Product[];
   selectedVariants: Map<string, string[]>;
-  applyTo: "simple" | "variants";
+  applyTo: "simple" | "gallery" | "variants";
   onConfirm: () => void;
 }
 
