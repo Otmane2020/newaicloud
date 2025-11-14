@@ -181,11 +181,17 @@ async function callVisionAI(imageUrl: string, productContext: string, titleKeywo
 
 📊 ANALYSE VISUELLE DÉTAILLÉE (ce que tu VOIS dans l'image) :
    - Couleurs dominantes et secondaires précises
-   - Matériaux visibles (bois, métal, tissu, cuir, plastique, verre)
+   - Matériaux visibles - SOIS PRÉCIS :
+     * Bois (chêne, noyer, teck, pin, hêtre, etc.)
+     * Métaux (acier, laiton, fer, aluminium, cuivre)
+     * Tissus (lin, coton, velours, polyester)
+     * Pierres naturelles (marbre, travertin, granit, ardoise, onyx, quartz)
+     * Autres (cuir, plastique, verre, béton, résine, céramique)
+   - Type d'objet EXACT (plateau, table complète, dessus de table, meuble monobloc, etc.)
    - Formes, dimensions apparentes, proportions
-   - Textures (lisse, rugueux, brillant, mat, structuré)
-   - Style visuel (moderne, vintage, minimaliste, classique, industriel)
-   - Détails importants (pieds, poignées, motifs, finitions, ornements)
+   - Textures (lisse, rugueux, brillant, mat, structuré, veiné, poli, brut)
+   - Style visuel (moderne, vintage, minimaliste, classique, industriel, scandinave)
+   - Détails importants (pieds, poignées, motifs, finitions, ornements, nervures)
    - Environnement et contexte visuel
 
 🔑 MOTS-CLÉS SEO DU TITRE À INTÉGRER :${keywordsContext}
@@ -194,11 +200,13 @@ async function callVisionAI(imageUrl: string, productContext: string, titleKeywo
 ${productContext}
 
 ✨ FUSION INTELLIGENTE - Crée un résumé IMPACTANT :
-   1. Valide que les mots-clés du titre correspondent à ce que tu vois
-   2. Enrichis avec tes observations visuelles précises
-   3. Crée une description fluide, naturelle et SEO-optimisée
-   4. Mets en avant les points forts visuels + mots-clés importants
-   5. 15-25 mots maximum, percutants et descriptifs
+   1. Identifie d'abord LE MATÉRIAU EXACT visible dans l'image (travertin, marbre, bois, métal...)
+   2. Détermine le TYPE D'OBJET précis (plateau seul, table complète avec pieds, dessus, meuble...)
+   3. Valide que les mots-clés du titre correspondent EXACTEMENT à ce que tu vois
+   4. Enrichis avec tes observations visuelles précises (nervures du travertin, veinage du marbre, grain du bois...)
+   5. Crée une description fluide, naturelle et SEO-optimisée
+   6. Mets en avant les points forts visuels + mots-clés importants
+   7. 15-25 mots maximum, percutants et descriptifs
 
 💎 EXEMPLES DE RÉSULTATS IMPACTANTS :
 Titre: "Canapé d'angle Scandinave OSLO 5 Places Tissu Beige"
@@ -208,6 +216,15 @@ Vision: Canapé angle, tissu beige clair texturé, pieds bois clair épuré
 Titre: "Lampe Design Industriel Edison - Métal Noir Mat"
 Vision: Lampe suspension métal noir mat, ampoule Edison visible, câble tressé
 ✅ ALT: "Lampe suspension industrielle Edison, structure métal noir mat, ampoule apparente, câble textile tressé noir"
+
+Titre: "Plateau Table à Manger en Travertin"
+Vision: Plateau rectangulaire en pierre travertin beige avec nervures naturelles visibles, surface polie
+✅ ALT: "Plateau de table en travertin beige naturel, surface polie avec nervures caractéristiques, pierre naturelle italienne"
+
+⚠️ ATTENTION - Distingue bien :
+- "Plateau" = dessus seul, sans pieds
+- "Table" = meuble complet avec pieds/structure
+- Matériaux : travertin ≠ marbre ≠ béton (observe les nervures, veinage, texture)
 
 Réponds UNIQUEMENT avec ce JSON valide :
 {
