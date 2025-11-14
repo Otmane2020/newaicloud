@@ -31,10 +31,6 @@ interface ProductImage {
   src: string;
   alt_text?: string | null;
   position: number;
-  variant_id?: string;
-  option1?: string | null;
-  option2?: string | null;
-  option3?: string | null;
 }
 
 interface Product {
@@ -120,13 +116,31 @@ export function AiBackgroundDialog({
     return "simple";
   };
 
-  // Auto-détection au montage du dialogue
+  // Auto-détection au montage du dialogue et auto-sélection pour produits simples
   useEffect(() => {
-    if (open && selectedProducts.length > 0) {
-      const detectedFormat = detectApplyTo(selectedProducts);
-      setConfig(prev => ({ ...prev, applyTo: detectedFormat }));
+    if (!open || selectedProducts.length === 0) return;
+    
+    const detectedMode = detectApplyTo(selectedProducts);
+    console.log('🎯 [AI BG Dialog] Detected mode:', detectedMode, 'for', selectedProducts.length, 'products');
+    
+    if (detectedMode !== config.applyTo) {
+      setConfig(prev => ({ ...prev, applyTo: detectedMode }));
     }
-  }, [open, selectedProducts]);
+    
+    // Auto-select all gallery images for simple products
+    if (detectedMode === "gallery" && selectedProducts.length === 1) {
+      const product = selectedProducts[0];
+      const allImages = getAllProductImages(product);
+      console.log('📸 [AI BG Dialog] Gallery images for auto-selection:', allImages.length, 'images');
+      
+      if (allImages.length > 0) {
+        const newSelectedImages = new Map<string, string[]>();
+        newSelectedImages.set(product.id, allImages.map(img => img.src));
+        setConfig(prev => ({ ...prev, selectedImages: newSelectedImages }));
+        console.log('✅ [AI BG Dialog] Auto-selected', allImages.length, 'images for product', product.title.substring(0, 30));
+      }
+    }
+  }, [open, selectedProducts, productImages]);
 
   // Précharger toutes les images de la galerie
   useEffect(() => {
@@ -252,13 +266,24 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
   const getVariantsWithImages = (product: Product) => {
     if (!product.variants) return [];
 
-    return product.variants
+    const result = product.variants
       .map((variant) => {
-        // Trouver l'image spécifique à la variante
-        const variantImage = productImages.get(product.id)?.find((img) => img.variant_id === variant.id);
+        // Les images de variantes viennent de product_variants.image_url dans la plupart des cas
+        // On cherche d'abord une correspondance dans product_images par image_id
+        let variantImage: ProductImage | undefined;
+        
+        if (variant.image_id) {
+          variantImage = productImages.get(product.id)?.find((img) => img.id === variant.image_id);
+        }
 
-        // Si pas d'image spécifique, utiliser l'image principale du produit
         const imageSrc = variantImage?.src || product.image_url;
+
+        console.log(`🔍 [AI BG Dialog] Variant ${variant.title}:`, {
+          variantId: variant.id,
+          imageId: variant.image_id,
+          hasVariantImage: !!variantImage,
+          imageUrl: imageSrc?.substring(0, 50)
+        });
 
         return {
           variant,
@@ -274,6 +299,9 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
         };
       })
       .filter((item) => item.image !== null);
+    
+    console.log(`📊 [AI BG Dialog] Variants with images for ${product.title.substring(0, 30)}:`, result.length, 'variants');
+    return result;
   };
 
   const handleConfirm = () => {
@@ -345,9 +373,10 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
           const variant = product.variants?.find(v => v.id === variantId);
           
           if (variant) {
-            const variantImage = productImages.get(productId)?.find(
-              img => img.variant_id === variantId
-            );
+            // Chercher l'image par image_id de la variante
+            const variantImage = variant.image_id 
+              ? productImages.get(productId)?.find(img => img.id === variant.image_id)
+              : undefined;
             
             // Auto-sélectionner l'image de la variante si disponible
             if (variantImage) {

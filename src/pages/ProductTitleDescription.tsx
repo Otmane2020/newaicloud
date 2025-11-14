@@ -106,10 +106,6 @@ interface ProductImage {
   src: string;
   alt_text: string | null;
   position: number | null;
-  variant_id?: string;
-  option1?: string | null;
-  option2?: string | null;
-  option3?: string | null;
 }
 
 // Check if product has rich HTML description or landing page
@@ -161,6 +157,7 @@ export default function ProductTitleDescription() {
   const ITEMS_PER_PAGE = 50;
   const [generatingWhiteBg, setGeneratingWhiteBg] = useState(false);
   const [generatingAiBg, setGeneratingAiBg] = useState(false);
+  const [loadingGallery, setLoadingGallery] = useState(false);
   const [showWhiteBgDialog, setShowWhiteBgDialog] = useState(false);
   const [showAiBgDialog, setShowAiBgDialog] = useState(false);
   const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
@@ -633,21 +630,29 @@ export default function ProductTitleDescription() {
   };
 
   const loadGalleryImages = async (productIds: string[]) => {
+    setLoadingGallery(true);
     const imagesMap = new Map<string, ProductImage[]>();
     
-    for (const productId of productIds) {
-      const { data, error } = await supabase
-        .from('product_images')
-        .select('id, src, alt_text, position')
-        .eq('product_id', productId)
-        .order('position', { ascending: true });
-      
-      if (!error && data) {
-        imagesMap.set(productId, data);
+    try {
+      for (const productId of productIds) {
+        const { data, error } = await supabase
+          .from('product_images')
+          .select('id, src, alt_text, position')
+          .eq('product_id', productId)
+          .order('position', { ascending: true });
+        
+        if (!error && data) {
+          console.log(`📸 [Gallery] Loaded ${data.length} images for product ${productId}`);
+          imagesMap.set(productId, data);
+        } else if (error) {
+          console.error(`❌ [Gallery] Error loading images for product ${productId}:`, error);
+        }
       }
+      
+      setGalleryImages(imagesMap);
+    } finally {
+      setLoadingGallery(false);
     }
-    
-    setGalleryImages(imagesMap);
   };
 
   const handleWhiteBackground = async () => {
@@ -705,9 +710,11 @@ export default function ProductTitleDescription() {
           const variant = product.variants?.find(v => v.id === variantId);
           if (!variant) continue;
 
-          // Trouver l'image de la variante
+          // Trouver l'image de la variante par image_id
           const images = galleryImages.get(product.id) || [];
-          const variantImage = images.find(img => img.variant_id === variantId);
+          const variantImage = variant.image_id 
+            ? images.find(img => img.id === variant.image_id)
+            : undefined;
           const imageUrl = variantImage?.src || product.image_url!;
 
           previews.push({
@@ -832,8 +839,15 @@ export default function ProductTitleDescription() {
       for (let i = 0; i < previews.length; i++) {
         const preview = previews[i];
         const product = selectedProductsList.find(p => p.id === preview.productId);
+        
         if (!product) {
-          console.error(`❌ Product not found for preview: ${preview.productId}`);
+          console.error(`❌ [AI BG] Product not found for preview: ${preview.productId}`);
+          // Marquer comme erreur au lieu de continue
+          setAiBgPreviews((prev) =>
+            prev.map((p) =>
+              p === preview ? { ...p, status: 'error', error: 'Produit introuvable' } : p
+            )
+          );
           continue;
         }
         
@@ -848,11 +862,6 @@ export default function ProductTitleDescription() {
         );
 
         try {
-          const product = selectedProductsList.find(p => p.id === preview.productId);
-          if (!product) {
-            throw new Error('Product not found');
-          }
-
           // Determine the image ID to use from gallery images
           const images = galleryImages.get(product.id) || [];
           const matchingImage = images.find(img => img.src === preview.originalUrl);
@@ -961,6 +970,7 @@ export default function ProductTitleDescription() {
         description: error.message,
       });
     } finally {
+      console.log('🔄 [AI BG] Stopping spinner...');
       // CRITICAL: Toujours réinitialiser le spinner
       setGeneratingAiBg(false);
       await refreshLimits();
@@ -1643,14 +1653,15 @@ export default function ProductTitleDescription() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (!canDoAction('optimizations')) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
+                  // Charger les images AVANT d'ouvrir le dialogue
+                  await loadGalleryImages(Array.from(selectedProducts));
                   setShowAiConfigDialog(true);
-                  loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
                 }}
                 disabled={generatingAiBg || selectedProducts.size === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
@@ -1881,7 +1892,7 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
@@ -1890,8 +1901,9 @@ export default function ProductTitleDescription() {
                                   return;
                                 }
                                 setSelectedProducts(new Set([product.id]));
+                                // Charger les images AVANT d'ouvrir le dialogue
+                                await loadGalleryImages([product.id]);
                                 setShowAiConfigDialog(true);
-                                loadGalleryImages([product.id]); // Chargement en arrière-plan
                               }}
                               disabled={generatingAiBg}
                               className="hover:bg-purple-50 dark:hover:bg-purple-950"
@@ -2334,7 +2346,10 @@ export default function ProductTitleDescription() {
                                     {/* Image de la variante */}
                                     {(() => {
                                       const productImages = galleryImages.get(product.id) || [];
-                                      const variantImage = productImages.find(img => img.variant_id === variant.id);
+                                      // Chercher l'image par image_id de la variante
+                                      const variantImage = variant.image_id
+                                        ? productImages.find(img => img.id === variant.image_id)
+                                        : undefined;
                                       const imageUrl = variantImage?.src || product.image_url;
                                       
                                       return imageUrl ? (
