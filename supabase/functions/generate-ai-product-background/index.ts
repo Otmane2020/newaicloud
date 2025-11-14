@@ -272,7 +272,7 @@ RESULT: A stunning, professional product photo that looks like it was created by
       return btoa(binary);
     }
 
-    // Helper function to try Gemini Imagen 3
+    // Helper function to try Gemini (image generation not supported via standard API)
     async function tryGemini(): Promise<{ imageUrl: string; model: string } | null> {
       const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
       if (!GEMINI_API_KEY) {
@@ -281,26 +281,38 @@ RESULT: A stunning, professional product photo that looks like it was created by
       }
 
       try {
-        console.log("📝 Trying Gemini Imagen 3...");
+        console.log("📝 Trying Gemini 2.0 Flash for image editing...");
         
-        // Use Imagen 3 for image generation
-        const imagenPrompt = `${comprehensivePrompt}\n\nReference image URL: ${imageUrl}\nCreate a professional product image with an enhanced contextual background based on this product.`;
-        
+        // Gemini 2.0 Flash Experimental supports image generation
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              instances: [{
-                prompt: imagenPrompt
+              contents: [{
+                parts: [
+                  { text: comprehensivePrompt },
+                  {
+                    inline_data: {
+                      mime_type: "image/jpeg",
+                      data: imageUrl.startsWith('data:') 
+                        ? imageUrl.split(',')[1] 
+                        : await (async () => {
+                            const imgResp = await fetch(imageUrl);
+                            const imgBlob = await imgResp.arrayBuffer();
+                            return arrayBufferToBase64(imgBlob);
+                          })()
+                    }
+                  }
+                ]
               }],
-              parameters: {
-                sampleCount: 1,
-                aspectRatio: "1:1",
-                personGeneration: "allow_all",
-                safetySetting: "block_only_high",
-                outputFormat: "jpeg"
+              generationConfig: {
+                temperature: 1,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 8192,
+                responseMimeType: "image/jpeg"
               }
             }),
           }
@@ -308,26 +320,24 @@ RESULT: A stunning, professional product photo that looks like it was created by
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`❌ Imagen 3 error (${response.status}):`, errorText);
+          console.error(`❌ Gemini error (${response.status}):`, errorText);
           return null;
         }
 
         const data = await response.json();
         
-        // Imagen 3 returns base64 encoded images in predictions array
-        if (data.predictions && data.predictions.length > 0) {
-          const imageData = data.predictions[0].bytesBase64Encoded || data.predictions[0].image;
-          if (imageData) {
-            const imageUrl = `data:image/jpeg;base64,${imageData}`;
-            console.log("✅ Imagen 3 succeeded");
-            return { imageUrl, model: "imagen-3.0-generate-001 (Gemini)" };
-          }
+        // Gemini returns base64 in the response
+        const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inline_data;
+        if (inlineData?.data) {
+          const imageUrl = `data:${inlineData.mime_type};base64,${inlineData.data}`;
+          console.log("✅ Gemini 2.0 Flash succeeded");
+          return { imageUrl, model: "gemini-2.0-flash-exp (Gemini)" };
         }
         
-        console.log("⚠️ No image returned from Imagen 3");
+        console.log("⚠️ No image returned from Gemini");
         return null;
       } catch (error) {
-        console.error("❌ Imagen 3 exception:", error);
+        console.error("❌ Gemini exception:", error);
         return null;
       }
     }
@@ -434,7 +444,7 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
     
     if (!result) {
-      failures.push("Gemini Imagen 3: Échec de génération");
+      failures.push("Gemini: Échec de génération d'image");
       console.log("🔄 Gemini failed, trying OpenAI...");
       result = await tryOpenAI();
     }
