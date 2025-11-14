@@ -51,6 +51,7 @@ export const useNotifications = () => {
       template_code: 'bulk_optimization_complete',
       metadata: { count },
       language,
+      force_browser: true,
     });
   };
 
@@ -68,6 +69,7 @@ export const useNotifications = () => {
       metadata: { usage },
       language,
       force_email: true,
+      force_browser: true,
     });
   };
 
@@ -83,6 +85,7 @@ export const useNotifications = () => {
       template_code: 'quota_exceeded',
       language,
       force_email: true,
+      force_browser: true,
     });
   };
 
@@ -99,6 +102,7 @@ export const useNotifications = () => {
       template_code: 'sync_complete',
       metadata: { count },
       language,
+      force_browser: true,
     });
   };
 
@@ -113,6 +117,7 @@ export const useNotifications = () => {
       user_id,
       template_code: 'seo_audit_ready',
       language,
+      force_browser: true,
     });
   };
 
@@ -129,6 +134,7 @@ export const useNotifications = () => {
       template_code: 'article_generated',
       metadata: { title },
       language,
+      force_browser: true,
     });
   };
 
