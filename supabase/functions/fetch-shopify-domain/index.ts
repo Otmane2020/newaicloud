@@ -56,15 +56,46 @@ serve(async (req) => {
 
     console.log('🔄 Fetching domain from Shopify API:', shopifyUrl);
 
-    const response = await fetch(`${shopifyUrl}/admin/api/2025-10/shop.json`, {
-      headers: {
-        'X-Shopify-Access-Token': store.access_token,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Retry logic with exponential backoff for rate limiting
+    let lastError: Error | null = null;
+    let response: Response | null = null;
+    
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        response = await fetch(`${shopifyUrl}/admin/api/2025-10/shop.json`, {
+          headers: {
+            'X-Shopify-Access-Token': store.access_token,
+            'Content-Type': 'application/json',
+          },
+        });
 
-    if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+        if (response.ok) {
+          break; // Success, exit retry loop
+        }
+
+        // If rate limited (429), wait before retrying
+        if (response.status === 429) {
+          const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+          console.log(`⏳ Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/3`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          lastError = new Error(`Rate limited (429), attempt ${attempt + 1}/3`);
+          continue;
+        }
+
+        // For other errors, throw immediately
+        throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt === 2) break; // Last attempt, don't wait
+        
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.log(`⏳ Request failed, waiting ${waitTime}ms before retry ${attempt + 1}/3`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw lastError || new Error('Failed to fetch from Shopify after retries');
     }
 
     const shopData = await response.json();
