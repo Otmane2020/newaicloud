@@ -831,7 +831,12 @@ export default function ProductTitleDescription() {
 
       for (let i = 0; i < previews.length; i++) {
         const preview = previews[i];
-        const product = selectedProductsList.find(p => p.id === preview.productId)!;
+        const product = selectedProductsList.find(p => p.id === preview.productId);
+        if (!product) {
+          console.error(`❌ Product not found for preview: ${preview.productId}`);
+          continue;
+        }
+        
         const itemStartTime = Date.now();
         
         console.log(`🎨 [AI BG] [${i + 1}/${previews.length}] Processing product: ${product.title.substring(0, 50)}...`);
@@ -843,6 +848,11 @@ export default function ProductTitleDescription() {
         );
 
         try {
+          const product = selectedProductsList.find(p => p.id === preview.productId);
+          if (!product) {
+            throw new Error('Product not found');
+          }
+
           // Determine the image ID to use from gallery images
           const images = galleryImages.get(product.id) || [];
           const matchingImage = images.find(img => img.src === preview.originalUrl);
@@ -2168,16 +2178,64 @@ export default function ProductTitleDescription() {
 
               console.log('🔍 [WHITE_BG] Has variants:', hasVariants);
 
-              // Ne rien afficher si produit simple (pas de variantes)
-              if (!hasVariants) {
-                return null;
-              }
-
-              // Afficher la sélection des variantes uniquement si le produit a des variantes
+              // Pour produits simples: afficher la galerie, pour produits à variantes: afficher les variantes
               return (
                 <div className="space-y-4">
                   {selectedProductsList.map((product) => {
-                    if (!product || !product.variants || product.variants.length === 0) return null;
+                    if (!product) return null;
+                    
+                    // Pour produits simples (sans variantes), afficher directement la galerie
+                    if (!product.variants || product.variants.length === 0) {
+                      const images = galleryImages.get(product.id) || [];
+                      if (images.length === 0) return null;
+                      
+                      return (
+                        <Card key={product.id} className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                          <div className="flex items-start gap-4 mb-4 pb-4 border-b">
+                            {product.image_url && (
+                              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
+                                <img
+                                  src={product.image_url}
+                                  alt={product.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Package className="h-4 w-4 text-primary" />
+                                <h3 className="font-semibold text-base line-clamp-2">{product.title}</h3>
+                              </div>
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                {images.length} image{images.length > 1 ? 's' : ''} galerie
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-3">
+                            {images.map((image) => (
+                              <div
+                                key={image.id}
+                                className="relative aspect-square rounded-md overflow-hidden bg-secondary ring-1 ring-border hover:ring-primary transition-all cursor-pointer group"
+                              >
+                                <img
+                                  src={image.src}
+                                  alt={image.alt_text || product.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Badge variant="secondary" className="text-xs">
+                                    #{image.position + 1}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </Card>
+                      );
+                    }
+                    
+                    // Pour produits avec variantes, afficher les variantes
                     
                     return (
                       <Card key={product.id} className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
