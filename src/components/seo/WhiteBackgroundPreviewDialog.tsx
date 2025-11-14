@@ -27,7 +27,7 @@ interface WhiteBackgroundPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previews: PreviewImage[];
-  onApply: (productIds: string[], format: string) => Promise<void>;
+  onApply: (productIds: string[], format: string, imageType: 'primary' | 'secondary') => Promise<void>;
   onRegenerate: (productId: string) => Promise<void>;
 }
 
@@ -41,6 +41,7 @@ export function WhiteBackgroundPreviewDialog({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
   const [format, setFormat] = useState<string>('square');
+  const [imageType, setImageType] = useState<'primary' | 'secondary'>('primary');
 
   const successfulPreviews = previews.filter(p => p.status === 'success');
   const isGenerating = previews.some(p => p.status === 'generating');
@@ -76,7 +77,7 @@ export function WhiteBackgroundPreviewDialog({
     
     setApplying(true);
     try {
-      await onApply(Array.from(selectedIds), format);
+      await onApply(Array.from(selectedIds), format, imageType);
       onOpenChange(false);
     } finally {
       setApplying(false);
@@ -96,18 +97,83 @@ export function WhiteBackgroundPreviewDialog({
         </DialogHeader>
 
         {/* Format Selector */}
-        <div className="space-y-2 px-3 sm:px-6 pb-4 border-b">
-          <Label htmlFor="white-bg-format" className="text-xs sm:text-sm">Format d'image</Label>
-          <Select value={format} onValueChange={setFormat}>
-            <SelectTrigger id="white-bg-format" className="text-xs sm:text-sm">
-              <SelectValue placeholder="Sélectionner un format" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="square">Carré (1:1)</SelectItem>
-              <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-              <SelectItem value="landscape">Paysage (4:3)</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="space-y-4 px-3 sm:px-6 pb-4 border-b">
+          <div className="space-y-2">
+            <Label htmlFor="white-bg-format" className="text-xs sm:text-sm">Format d'image</Label>
+            <Select value={format} onValueChange={setFormat}>
+              <SelectTrigger id="white-bg-format" className="text-xs sm:text-sm">
+                <SelectValue placeholder="Sélectionner un format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="square">Carré (1:1)</SelectItem>
+                <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Image Type Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="image-type" className="text-xs sm:text-sm">
+              Type d'image après application
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setImageType('primary')}
+                className={`p-3 rounded-lg border-2 transition-all text-left ${
+                  imageType === 'primary'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                    imageType === 'primary'
+                      ? 'border-primary bg-primary'
+                      : 'border-muted-foreground'
+                  }`}>
+                    {imageType === 'primary' && (
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-xs">Image Principale</h4>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Remplace l'image principale du produit
+                    </p>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageType('secondary')}
+                className={`p-3 rounded-lg border-2 transition-all text-left ${
+                  imageType === 'secondary'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                    imageType === 'secondary'
+                      ? 'border-primary bg-primary'
+                      : 'border-muted-foreground'
+                  }`}>
+                    {imageType === 'secondary' && (
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-xs">Image Secondaire</h4>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Ajoute à la galerie d'images
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         <ScrollArea className="h-[40vh] sm:h-[60vh] pr-2 sm:pr-4">
