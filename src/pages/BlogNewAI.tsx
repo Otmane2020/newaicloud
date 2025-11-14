@@ -134,8 +134,34 @@ const BlogNewAI = () => {
   const categories = Array.from(new Set(blogArticles.map(article => article.category)));
 
   const filteredArticles = blogArticles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
+    const normalizeText = (text: string | null | undefined): string => {
+      if (!text) return '';
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+        .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
+        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+        .trim();
+    };
+
+    // Normaliser le terme de recherche et le diviser en mots-clés
+    const searchKeywords = normalizeText(searchTerm).split(' ').filter(k => k.length > 0);
+    
+    let matchesSearch = true;
+    if (searchKeywords.length > 0) {
+      // Construire une chaîne de recherche avec tous les champs de l'article
+      const searchableText = normalizeText([
+        article.title,
+        article.excerpt,
+        article.category
+      ].filter(Boolean).join(' '));
+
+      // Vérifier que tous les mots-clés sont présents
+      matchesSearch = searchKeywords.every(keyword => searchableText.includes(keyword));
+    }
+    
     const matchesCategory = !selectedCategory || article.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
