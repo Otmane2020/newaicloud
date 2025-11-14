@@ -246,6 +246,7 @@ export default function ProductTitleDescription() {
         .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
+        .limit(5000)
         .order("imported_at", { ascending: false });
       
       console.log('🚨🚨🚨 [PRODUCT_TITLE] Query result:', rawProductsData?.length, 'products');
