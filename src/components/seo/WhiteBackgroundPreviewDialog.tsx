@@ -86,8 +86,8 @@ export function WhiteBackgroundPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] w-[95vw] sm:w-full">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl max-h-[95vh] w-[95vw] sm:max-h-[90vh] sm:w-full p-4 sm:p-6">
+        <DialogHeader className="space-y-2">
           <DialogTitle className="text-base sm:text-lg">Prévisualisation des images avec fond blanc IA</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
             {isSingleImage 
@@ -97,17 +97,17 @@ export function WhiteBackgroundPreviewDialog({
         </DialogHeader>
 
         {/* Format Selector */}
-        <div className="space-y-4 px-3 sm:px-6 pb-4 border-b">
+        <div className="space-y-3 sm:space-y-4 px-1 sm:px-2 pb-3 sm:pb-4 border-b">
           <div className="space-y-2">
             <Label htmlFor="white-bg-format" className="text-xs sm:text-sm">Format d'image</Label>
             <Select value={format} onValueChange={setFormat}>
-              <SelectTrigger id="white-bg-format" className="text-xs sm:text-sm">
+              <SelectTrigger id="white-bg-format" className="h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Sélectionner un format" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="square">Carré (1:1)</SelectItem>
-                <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                <SelectItem value="square" className="text-xs sm:text-sm">Carré (1:1)</SelectItem>
+                <SelectItem value="portrait" className="text-xs sm:text-sm">Portrait (3:4)</SelectItem>
+                <SelectItem value="landscape" className="text-xs sm:text-sm">Paysage (4:3)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -117,11 +117,11 @@ export function WhiteBackgroundPreviewDialog({
             <Label htmlFor="image-type" className="text-xs sm:text-sm">
               Type d'image après application
             </Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setImageType('primary')}
-                className={`p-3 rounded-lg border-2 transition-all text-left ${
+                className={`p-2 sm:p-3 rounded-lg border-2 transition-all text-left ${
                   imageType === 'primary'
                     ? 'border-primary bg-primary/5 ring-2 ring-primary'
                     : 'border-border hover:border-primary/50'
@@ -138,8 +138,8 @@ export function WhiteBackgroundPreviewDialog({
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-xs">Image Principale</h4>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                       Remplace l'image principale du produit
                     </p>
                   </div>
@@ -148,7 +148,7 @@ export function WhiteBackgroundPreviewDialog({
               <button
                 type="button"
                 onClick={() => setImageType('secondary')}
-                className={`p-3 rounded-lg border-2 transition-all text-left ${
+                className={`p-2 sm:p-3 rounded-lg border-2 transition-all text-left ${
                   imageType === 'secondary'
                     ? 'border-primary bg-primary/5 ring-2 ring-primary'
                     : 'border-border hover:border-primary/50'
@@ -165,8 +165,8 @@ export function WhiteBackgroundPreviewDialog({
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-xs">Image Secondaire</h4>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                       Ajoute à la galerie d'images
                     </p>
                   </div>
@@ -176,12 +176,12 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </div>
 
-        <ScrollArea className="h-[40vh] sm:h-[60vh] pr-2 sm:pr-4">
-          <div className="space-y-4 sm:space-y-6">
+        <ScrollArea className="h-[35vh] sm:h-[50vh] md:h-[60vh] px-1 sm:px-2">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6 pr-2 sm:pr-4">
             {previews.map((preview) => (
               <div
                 key={preview.productId}
-                className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3"
+                className="border rounded-lg p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-3"
               >
                 {/* Header */}
                 <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2">
@@ -196,22 +196,22 @@ export function WhiteBackgroundPreviewDialog({
                       />
                     )}
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-sm sm:text-base truncate">{preview.productTitle}</h4>
+                      <h4 className="font-medium text-xs sm:text-sm md:text-base truncate">{preview.productTitle}</h4>
                       {preview.status === 'generating' && (
-                        <Badge variant="outline" className="gap-1 text-xs">
+                        <Badge variant="outline" className="gap-1 text-[10px] sm:text-xs mt-1">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           <span className="hidden sm:inline">Génération en cours...</span>
                           <span className="sm:hidden">En cours...</span>
                         </Badge>
                       )}
                       {preview.status === 'success' && (
-                        <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 text-xs">
+                        <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 text-[10px] sm:text-xs mt-1">
                           <Check className="w-3 h-3" />
                           Généré
                         </Badge>
                       )}
                       {preview.status === 'error' && (
-                        <Badge variant="outline" className="gap-1 bg-red-50 text-red-700 text-xs">
+                        <Badge variant="outline" className="gap-1 bg-red-50 text-red-700 text-[10px] sm:text-xs mt-1">
                           <X className="w-3 h-3" />
                           Erreur
                         </Badge>
@@ -224,7 +224,7 @@ export function WhiteBackgroundPreviewDialog({
                       size="sm"
                       variant="outline"
                       onClick={() => onRegenerate(preview.productId)}
-                      className="gap-2 text-xs"
+                      className="gap-2 text-xs h-8 w-full sm:w-auto"
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span className="hidden sm:inline">Régénérer</span>
@@ -281,7 +281,7 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mt-3 sm:mt-4">
           {!isSingleImage && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {successfulPreviews.length > 0 && (
@@ -290,14 +290,14 @@ export function WhiteBackgroundPreviewDialog({
                   size="sm"
                   onClick={handleSelectAll}
                   disabled={isGenerating}
-                  className="text-xs sm:text-sm w-full sm:w-auto"
+                  className="text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
                 >
                   {selectedIds.size === successfulPreviews.length
                     ? 'Tout désélectionner'
                     : 'Tout sélectionner'}
                 </Button>
               )}
-              <span className="text-xs sm:text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground px-2 sm:px-0">
                 {selectedIds.size} sélectionné(s) sur {successfulPreviews.length}
               </span>
             </div>
@@ -309,14 +309,14 @@ export function WhiteBackgroundPreviewDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={applying || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm"
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
             >
               Annuler
             </Button>
             <Button
               onClick={handleApply}
               disabled={applying || selectedIds.size === 0 || isGenerating}
-              className="flex-1 sm:flex-none text-xs sm:text-sm"
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
             >
               {applying ? (
                 <>
