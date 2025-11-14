@@ -21,9 +21,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { calculateDescriptionScore, calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 
 export default function SEO() {
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
   const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
@@ -43,19 +45,27 @@ export default function SEO() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (activeTab === 'articles') {
-      calculateArticlesSeoScore();
-    } else if (activeTab === 'pages') {
-      calculatePagesSeoScore();
+    if (selectedStore) {
+      if (activeTab === 'articles') {
+        calculateArticlesSeoScore();
+      } else if (activeTab === 'pages') {
+        calculatePagesSeoScore();
+      }
     }
-  }, [activeTab]);
+  }, [activeTab, selectedStore]);
 
   const calculateArticlesSeoScore = async () => {
+    if (!selectedStore) {
+      setArticlesSeoScore(0);
+      return;
+    }
+
     try {
       setLoadingScores(true);
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('*');
+        .select('*')
+        .eq('store_id', selectedStore.id);
 
       if (error) throw error;
 
@@ -94,6 +104,11 @@ export default function SEO() {
   };
 
   const calculatePagesSeoScore = async () => {
+    if (!selectedStore) {
+      setPagesSeoScore(0);
+      return;
+    }
+
     try {
       setLoadingScores(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -102,7 +117,8 @@ export default function SEO() {
       const { data, error } = await supabase
         .from('shopify_pages')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id);
 
       if (error) throw error;
 
