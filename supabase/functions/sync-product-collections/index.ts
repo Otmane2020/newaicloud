@@ -44,13 +44,15 @@ Deno.serve(async (req: Request) => {
       throw new Error("No active Shopify connection found");
     }
 
-    console.log(`✅ [SYNC-COLLECTIONS] Found active connection: ${connection.store_url}`);
+    const storeId = connection.id; // UUID du store
+    console.log(`✅ [SYNC-COLLECTIONS] Found active connection: ${connection.store_url} (store_id: ${storeId})`);
 
-    // Get all collections
+    // Get all collections for this store
     const { data: collections, error: collectionsError } = await supabase
       .from("shopify_collections")
       .select("id, shopify_collection_id")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("store_id", storeId);
 
     if (collectionsError) {
       console.error(`❌ [SYNC-COLLECTIONS] Error fetching collections:`, collectionsError);
@@ -61,13 +63,14 @@ Deno.serve(async (req: Request) => {
       collections?.map(c => [String(c.shopify_collection_id), c.id]) || []
     );
 
-    console.log(`📦 [SYNC-COLLECTIONS] Found ${collections?.length || 0} collections in database`);
+    console.log(`📦 [SYNC-COLLECTIONS] Found ${collections?.length || 0} collections in database for store ${storeId}`);
 
-    // Get all products
+    // Get all products for this store
     const { data: products, error: productsError } = await supabase
       .from("shopify_products")
       .select("id, shopify_id")
-      .eq("seller_id", user.id);
+      .eq("seller_id", user.id)
+      .eq("store_id", storeId);
 
     if (productsError) {
       console.error(`❌ [SYNC-COLLECTIONS] Error fetching products:`, productsError);
