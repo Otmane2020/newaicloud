@@ -96,9 +96,48 @@ export function AiBackgroundDialog({
   const [serpInsights, setSerpInsights] = useState<ImageInsights | null>(null);
   const [loadingSerpAnalysis, setLoadingSerpAnalysis] = useState(false);
   const [serpError, setSerpError] = useState<string | null>(null);
+  
+  // Gallery loading state
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [loadingImages, setLoadingImages] = useState(true);
 
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
   const hasVariants = selectedProducts.some((product) => product.variants && product.variants.length > 0);
+
+  // Précharger toutes les images de la galerie
+  useEffect(() => {
+    if (!open) return;
+    
+    setLoadingImages(true);
+    const allImageUrls: string[] = [];
+    
+    selectedProducts.forEach(product => {
+      const images = productImages.get(product.id) || [];
+      images.forEach(img => allImageUrls.push(img.src));
+      if (product.image_url) allImageUrls.push(product.image_url);
+    });
+
+    if (allImageUrls.length === 0) {
+      setLoadingImages(false);
+      setImagesLoaded(true);
+      return;
+    }
+
+    let loadedCount = 0;
+    const totalImages = allImageUrls.length;
+
+    allImageUrls.forEach(url => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          setLoadingImages(false);
+          setImagesLoaded(true);
+        }
+      };
+      img.src = url;
+    });
+  }, [open, selectedProducts, productImages]);
 
   // Analyze SERP for product trends
   const analyzeSerpForProduct = async (productTitle: string) => {
@@ -364,6 +403,16 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
             Personnalisez les paramètres de génération pour {selectedProducts.length} produit(s)
           </DialogDescription>
         </DialogHeader>
+
+        {/* Indicateur de chargement des images */}
+        {loadingImages && (
+          <Alert className="mb-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              Chargement de la galerie d'images...
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="space-y-6 py-4">
           {/* Format d'application - EN PREMIER */}
@@ -775,13 +824,26 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!config.prompt.trim() || (config.applyTo === "variants" && config.selectedVariants.size === 0)}
+            disabled={
+              loadingImages || 
+              !config.prompt.trim() || 
+              (config.applyTo === "variants" && config.selectedVariants.size === 0)
+            }
             className="gap-2"
           >
-            <Sparkles className="h-4 w-4" />
-            Générer les arrière-plans
-            {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
-              <span>({getSelectedVariantsCount()})</span>
+            {loadingImages ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Générer les arrière-plans
+                {config.applyTo === "variants" && getSelectedVariantsCount() > 0 && (
+                  <span>({getSelectedVariantsCount()})</span>
+                )}
+              </>
             )}
           </Button>
         </DialogFooter>

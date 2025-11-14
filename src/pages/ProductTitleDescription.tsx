@@ -88,6 +88,7 @@ interface Product {
   vendor: string | null;
   handle: string | null;
   status: string | null;
+  vision_ai_data?: any;
   variants?: ProductVariant[];
 }
 
@@ -784,6 +785,10 @@ export default function ProductTitleDescription() {
           body: {
             imageUrl: selectedImageUrl,
             productTitle: product.title,
+            productDescription: product.description,
+            seoTitle: product.seo_title,
+            seoDescription: product.seo_description,
+            visionAiData: product.vision_ai_data,
             productId: product.id,
             imageId: imageId,
             prompt: config.prompt,
