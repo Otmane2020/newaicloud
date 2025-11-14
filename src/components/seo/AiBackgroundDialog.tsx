@@ -76,7 +76,7 @@ export function AiBackgroundDialog({
   const [config, setConfig] = useState<AiBackgroundConfig>({
     prompt: "",
     format: "square",
-    similarity: "medium",
+    similarity: "very-close",
     imageType: "primary",
     selectedImages: new Map(),
     applyTo: "simple",
@@ -243,6 +243,225 @@ export function AiBackgroundDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Format d'application - EN PREMIER */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Format d'application</Label>
+            <RadioGroup
+              value={config.applyTo}
+              onValueChange={(v) => {
+                setConfig({
+                  ...config,
+                  applyTo: v as "simple" | "variants",
+                  selectedVariants: v !== "variants" ? new Map() : config.selectedVariants,
+                });
+              }}
+            >
+              {/* Option Simple */}
+              <Card
+                className={`p-4 cursor-pointer transition-all ${
+                  config.applyTo === "simple" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="simple" id="simple" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="simple" className="flex items-center gap-2 text-base cursor-pointer">
+                      <Images className="h-5 w-5" />
+                      Format Simple
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">Gallerie</p>
+
+                    {config.applyTo === "simple" && (
+                      <div className="mt-4 space-y-4">
+                        {selectedProducts.map((product) => {
+                          const allImages = getAllProductImages(product);
+                          const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+
+                          return (
+                            <div key={product.id} className="space-y-3">
+                              <Label className="text-sm font-medium">{product.title}</Label>
+                              <ScrollArea className="w-full">
+                                <div className="flex gap-2 pb-4 min-h-[120px]">
+                                  {allImages.map((img, idx) => (
+                                    <button
+                                      type="button"
+                                      key={img.id}
+                                      onClick={() => {
+                                        const newMap = new Map(config.selectedImages);
+                                        newMap.set(product.id, img.src);
+                                        setConfig({ ...config, selectedImages: newMap });
+                                      }}
+                                      className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                        selectedImageUrl === img.src
+                                          ? "border-primary ring-2 ring-primary"
+                                          : "border-border hover:border-primary/50"
+                                      }`}
+                                    >
+                                      <img
+                                        src={img.src}
+                                        alt={img.alt_text || `Image ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      {selectedImageUrl === img.src && (
+                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                          <Check className="w-3 h-3" />
+                                        </div>
+                                      )}
+                                      <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
+                                        {img.id === "main" ? "Principale" : `#${idx + 1}`}
+                                      </Badge>
+                                    </button>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Option Variantes */}
+              {hasVariants && (
+                <Card
+                  className={`p-4 cursor-pointer transition-all ${
+                    config.applyTo === "variants" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value="variants" id="variants" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="variants" className="flex items-center gap-2 text-base cursor-pointer">
+                        <Package className="h-5 w-5" />
+                        Format Variantes
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Appliquer aux variantes spécifiques sélectionnées
+                      </p>
+
+                      {config.applyTo === "variants" && (
+                        <div className="mt-4 space-y-6">
+                          {/* Sélection des variantes */}
+                          <div className="space-y-4">
+                            <Label className="text-sm font-medium">Sélection des variantes</Label>
+                            {selectedProducts.map((product) => {
+                              const variantsWithImages = getVariantsWithImages(product);
+                              if (variantsWithImages.length === 0) return null;
+
+                              const productSelectedVariants = config.selectedVariants.get(product.id) || [];
+                              const allVariantIds = variantsWithImages.map((v) => v.variant.id);
+                              const allSelected = productSelectedVariants.length === allVariantIds.length;
+
+                              return (
+                                <div key={product.id} className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium">{product.title}</Label>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => toggleAllVariantsForProduct(product.id, allVariantIds)}
+                                    >
+                                      {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
+                                    </Button>
+                                  </div>
+
+                                  <ScrollArea className="w-full">
+                                    <div className="flex gap-3 pb-4 min-h-[120px]">
+                                      {variantsWithImages.map(({ variant, image }) => (
+                                        <button
+                                          type="button"
+                                          key={variant.id}
+                                          onClick={() => toggleVariantSelection(product.id, variant.id)}
+                                          className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                            productSelectedVariants.includes(variant.id)
+                                              ? "border-primary ring-2 ring-primary"
+                                              : "border-border hover:border-primary/50"
+                                          }`}
+                                        >
+                                          <img
+                                            src={image!.src}
+                                            alt={getVariantLabel(variant)}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          {productSelectedVariants.includes(variant.id) && (
+                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                              <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                                <Check className="w-4 h-4" />
+                                              </div>
+                                            </div>
+                                          )}
+                                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1 bg-black/80 text-white">
+                                            {getVariantLabel(variant)}
+                                          </Badge>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </ScrollArea>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Sélection des photos à travailler */}
+                          <div className="space-y-4">
+                            <Label className="text-sm font-medium">Sélection des photos à travailler</Label>
+                            {selectedProducts.map((product) => {
+                              const allImages = getAllProductImages(product);
+                              const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
+
+                              return (
+                                <div key={product.id} className="space-y-2">
+                                  <Label className="text-sm font-medium">{product.title}</Label>
+                                  <ScrollArea className="w-full">
+                                    <div className="flex gap-2 pb-4 min-h-[120px]">
+                                      {allImages.map((img, idx) => (
+                                        <button
+                                          type="button"
+                                          key={img.id}
+                                          onClick={() => {
+                                            const newMap = new Map(config.selectedImages);
+                                            newMap.set(product.id, img.src);
+                                            setConfig({ ...config, selectedImages: newMap });
+                                          }}
+                                          className={`relative aspect-square h-24 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                                            selectedImageUrl === img.src
+                                              ? "border-primary ring-2 ring-primary"
+                                              : "border-border hover:border-primary/50"
+                                          }`}
+                                        >
+                                          <img
+                                            src={img.src}
+                                            alt={img.alt_text || `Image ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          {selectedImageUrl === img.src && (
+                                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                              <Check className="w-3 h-3" />
+                                            </div>
+                                          )}
+                                          <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
+                                            {img.id === "main" ? "Principale" : `#${idx + 1}`}
+                                          </Badge>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </ScrollArea>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </RadioGroup>
+          </div>
+
           {/* Paramètres de génération */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Paramètres de génération</Label>
@@ -345,29 +564,50 @@ export function AiBackgroundDialog({
           {/* Style et Prompt */}
           <div className="space-y-3">
             <Label htmlFor="preset-select">Style prédéfini</Label>
-            <Select value={config.prompt} onValueChange={handlePresetSelect}>
-              <SelectTrigger id="preset-select">
-                <SelectValue placeholder="Choisir un style..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="modern minimalist white studio with soft shadows">
-                  🏢 Studio minimaliste blanc
-                </SelectItem>
-                <SelectItem value="natural wood surface with plants and soft daylight">
-                  🌿 Ambiance naturelle bois
-                </SelectItem>
-                <SelectItem value="luxurious marble surface with gold accents">✨ Luxe marbre et or</SelectItem>
-                <SelectItem value="cozy living room with warm lighting">🏠 Salon cosy chaleureux</SelectItem>
-                <SelectItem value="industrial concrete background with metal elements">🏭 Industriel béton</SelectItem>
-                <SelectItem value="scandinavian interior with neutral tones">🇸🇪 Design scandinave</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <Card
+                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
+                onClick={() => handlePresetSelect("modern minimalist white studio with soft shadows")}
+              >
+                <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-300 rounded-lg mb-2 flex items-center justify-center">
+                  <span className="text-2xl">🏢</span>
+                </div>
+                <Label className="text-sm font-medium cursor-pointer">Studio minimaliste blanc</Label>
+              </Card>
+              <Card
+                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
+                onClick={() => handlePresetSelect("natural wood surface with plants and soft daylight")}
+              >
+                <div className="aspect-video bg-gradient-to-br from-amber-100 to-amber-300 rounded-lg mb-2 flex items-center justify-center">
+                  <span className="text-2xl">🌿</span>
+                </div>
+                <Label className="text-sm font-medium cursor-pointer">Ambiance naturelle bois</Label>
+              </Card>
+              <Card
+                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
+                onClick={() => handlePresetSelect("luxurious marble surface with gold accents")}
+              >
+                <div className="aspect-video bg-gradient-to-br from-gray-200 to-yellow-100 rounded-lg mb-2 flex items-center justify-center">
+                  <span className="text-2xl">✨</span>
+                </div>
+                <Label className="text-sm font-medium cursor-pointer">Luxe marbre et or</Label>
+              </Card>
+              <Card
+                className="p-4 cursor-pointer border-2 hover:border-primary/50 transition-all"
+                onClick={() => handlePresetSelect("cozy living room with warm lighting")}
+              >
+                <div className="aspect-video bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg mb-2 flex items-center justify-center">
+                  <span className="text-2xl">🏠</span>
+                </div>
+                <Label className="text-sm font-medium cursor-pointer">Salon cosy chaleureux</Label>
+              </Card>
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
+              <Label htmlFor="custom-prompt">Ou créez votre propre prompt</Label>
               <Textarea
                 id="custom-prompt"
-                placeholder="vitrine dans un salon scandinave"
+                placeholder="Décrivez l'environnement souhaité, l'éclairage et l'ambiance"
                 value={config.prompt}
                 onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
                 className="min-h-[80px]"
@@ -376,225 +616,6 @@ export function AiBackgroundDialog({
                 💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
               </p>
             </div>
-          </div>
-
-          {/* Format d'application */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Format d'application</Label>
-            <RadioGroup
-              value={config.applyTo}
-              onValueChange={(v) => {
-                setConfig({
-                  ...config,
-                  applyTo: v as "simple" | "variants",
-                  selectedVariants: v !== "variants" ? new Map() : config.selectedVariants,
-                });
-              }}
-            >
-              {/* Option Simple */}
-              <Card
-                className={`p-4 cursor-pointer transition-all ${
-                  config.applyTo === "simple" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
-                }`}
-              >
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="simple" id="simple" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="simple" className="flex items-center gap-2 text-base cursor-pointer">
-                      <Images className="h-5 w-5" />
-                      Format Simple
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">Appliquer à toutes les images de la galerie</p>
-
-                    {config.applyTo === "simple" && (
-                      <div className="mt-4 space-y-4">
-                        {selectedProducts.map((product) => {
-                          const allImages = getAllProductImages(product);
-                          const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
-
-                          return (
-                            <div key={product.id} className="space-y-2">
-                              <Label className="text-sm font-medium">{product.title}</Label>
-                              <ScrollArea className="max-h-[200px]">
-                                <div className="grid grid-cols-6 gap-2 pr-4">
-                                  {allImages.map((img, idx) => (
-                                    <button
-                                      type="button"
-                                      key={img.id}
-                                      onClick={() => {
-                                        const newMap = new Map(config.selectedImages);
-                                        newMap.set(product.id, img.src);
-                                        setConfig({ ...config, selectedImages: newMap });
-                                      }}
-                                      className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                        selectedImageUrl === img.src
-                                          ? "border-primary ring-2 ring-primary"
-                                          : "border-border hover:border-primary/50"
-                                      }`}
-                                    >
-                                      <img
-                                        src={img.src}
-                                        alt={img.alt_text || `Image ${idx + 1}`}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      {selectedImageUrl === img.src && (
-                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                          <Check className="w-3 h-3" />
-                                        </div>
-                                      )}
-                                      <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
-                                        {img.id === "main" ? "Principale" : `#${idx}`}
-                                      </Badge>
-                                    </button>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              {/* Option Variantes */}
-              {hasVariants && (
-                <Card
-                  className={`p-4 cursor-pointer transition-all ${
-                    config.applyTo === "variants" ? "border-primary bg-primary/5 ring-2 ring-primary" : ""
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="variants" id="variants" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="variants" className="flex items-center gap-2 text-base cursor-pointer">
-                        <Package className="h-5 w-5" />
-                        Format Variantes
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Appliquer aux variantes spécifiques sélectionnées
-                      </p>
-
-                      {config.applyTo === "variants" && (
-                        <div className="mt-4 space-y-6">
-                          {/* Sélection des variantes */}
-                          <div className="space-y-4">
-                            <Label className="text-sm font-medium">Sélection des variantes</Label>
-                            {selectedProducts.map((product) => {
-                              const variantsWithImages = getVariantsWithImages(product);
-                              if (variantsWithImages.length === 0) return null;
-
-                              const productSelectedVariants = config.selectedVariants.get(product.id) || [];
-                              const allVariantIds = variantsWithImages.map((v) => v.variant.id);
-                              const allSelected = productSelectedVariants.length === allVariantIds.length;
-
-                              return (
-                                <div key={product.id} className="space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-medium">{product.title}</Label>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => toggleAllVariantsForProduct(product.id, allVariantIds)}
-                                    >
-                                      {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
-                                    </Button>
-                                  </div>
-
-                                  <ScrollArea className="max-h-[200px]">
-                                    <div className="grid grid-cols-4 gap-3 pr-4">
-                                      {variantsWithImages.map(({ variant, image }) => (
-                                        <button
-                                          type="button"
-                                          key={variant.id}
-                                          onClick={() => toggleVariantSelection(product.id, variant.id)}
-                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                            productSelectedVariants.includes(variant.id)
-                                              ? "border-primary ring-2 ring-primary"
-                                              : "border-border hover:border-primary/50"
-                                          }`}
-                                        >
-                                          <img
-                                            src={image!.src}
-                                            alt={getVariantLabel(variant)}
-                                            className="w-full h-full object-cover"
-                                          />
-                                          {productSelectedVariants.includes(variant.id) && (
-                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                              <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                                <Check className="w-4 h-4" />
-                                              </div>
-                                            </div>
-                                          )}
-                                          <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate px-1 bg-black/80 text-white">
-                                            {getVariantLabel(variant)}
-                                          </Badge>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </ScrollArea>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Sélection des photos à travailler */}
-                          <div className="space-y-4">
-                            <Label className="text-sm font-medium">Sélection des photos à travailler</Label>
-                            {selectedProducts.map((product) => {
-                              const allImages = getAllProductImages(product);
-                              const selectedImageUrl = config.selectedImages.get(product.id) || allImages[0]?.src;
-
-                              return (
-                                <div key={product.id} className="space-y-2">
-                                  <Label className="text-sm font-medium">{product.title}</Label>
-                                  <ScrollArea className="max-h-[150px]">
-                                    <div className="grid grid-cols-6 gap-2 pr-4">
-                                      {allImages.map((img, idx) => (
-                                        <button
-                                          type="button"
-                                          key={img.id}
-                                          onClick={() => {
-                                            const newMap = new Map(config.selectedImages);
-                                            newMap.set(product.id, img.src);
-                                            setConfig({ ...config, selectedImages: newMap });
-                                          }}
-                                          className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                            selectedImageUrl === img.src
-                                              ? "border-primary ring-2 ring-primary"
-                                              : "border-border hover:border-primary/50"
-                                          }`}
-                                        >
-                                          <img
-                                            src={img.src}
-                                            alt={img.alt_text || `Image ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                          />
-                                          {selectedImageUrl === img.src && (
-                                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                              <Check className="w-3 h-3" />
-                                            </div>
-                                          )}
-                                          <Badge className="absolute bottom-1 left-1 text-xs bg-black/80 text-white">
-                                            {img.id === "main" ? "Principale" : `#${idx}`}
-                                          </Badge>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </ScrollArea>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </RadioGroup>
           </div>
         </div>
 
