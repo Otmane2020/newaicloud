@@ -769,22 +769,48 @@ export default function ProductTitleDescription() {
 
   // Removed obsolete functions - now integrated in unified AiBackgroundDialog
 
-  const handleApplyWhiteBackground = async (productIds: string[], format: string) => {
+  const handleApplyWhiteBackground = async (productIds: string[], format: string, imageType: 'primary' | 'secondary') => {
     const toastId = toast.loading("Application des images...");
-    console.log('Applying white background with format:', format);
+    console.log('Applying white background with format:', format, 'imageType:', imageType);
 
     try {
       for (const productId of productIds) {
         const preview = whiteBgPreviews.find((p) => p.productId === productId);
         if (!preview?.generatedUrl) continue;
 
-        await supabase
-          .from("shopify_products")
-          .update({ image_url: preview.generatedUrl })
-          .eq("id", productId);
+        if (imageType === 'primary') {
+          // Remplacer l'image principale
+          await supabase
+            .from("shopify_products")
+            .update({ image_url: preview.generatedUrl })
+            .eq("id", productId);
+        } else {
+          // Ajouter comme image secondaire dans la galerie
+          const maxPosition = await supabase
+            .from("product_images")
+            .select("position")
+            .eq("product_id", productId)
+            .order("position", { ascending: false })
+            .limit(1)
+            .single();
+
+          const nextPosition = (maxPosition?.data?.position || 0) + 1;
+
+          await supabase
+            .from("product_images")
+            .insert({
+              product_id: productId,
+              src: preview.generatedUrl,
+              alt_text: `${preview.productTitle} - Fond blanc IA`,
+              position: nextPosition
+            });
+        }
       }
 
-      toast.success("Images appliquées avec succès", { id: toastId });
+      const message = imageType === 'primary' 
+        ? "Images principales mises à jour avec succès" 
+        : "Images ajoutées à la galerie avec succès";
+      toast.success(message, { id: toastId });
       await fetchProducts();
       setWhiteBgPreviews([]);
     } catch (error) {
@@ -1835,65 +1861,6 @@ export default function ProductTitleDescription() {
                 })}
               </div>
             )}
-            
-            {/* Type d'image */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Type d'image (obligatoire) *</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Card 
-                  className={`p-4 cursor-pointer transition-all ${
-                    selectedImageType === "primary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setSelectedImageType("primary")}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      selectedImageType === "primary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {selectedImageType === "primary" && (
-                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm">Image Principale</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Produit <strong>centré</strong> et bien visible sur fond blanc. Format carré professionnel.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-                <Card 
-                  className={`p-4 cursor-pointer transition-all ${
-                    selectedImageType === "secondary" 
-                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => setSelectedImageType("secondary")}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                      selectedImageType === "secondary" 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    }`}>
-                      {selectedImageType === "secondary" && (
-                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm">Image Secondaire</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Photo d'ambiance sur fond blanc. Composition créative, centrage non obligatoire.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
           </div>
           <DialogFooter>
             <Button
