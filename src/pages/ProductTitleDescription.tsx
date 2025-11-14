@@ -52,6 +52,7 @@ import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/O
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
+import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -176,6 +177,8 @@ export default function ProductTitleDescription() {
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [showVariantConfirmDialog, setShowVariantConfirmDialog] = useState(false);
+  const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -559,9 +562,6 @@ export default function ProductTitleDescription() {
       return;
     }
 
-    // Removed image selection dialog - now integrated in unified dialog
-    // The AiBackgroundDialog component now handles all image selection
-
     const selectedProductsList = products.filter((p) =>
       selectedProducts.has(p.id) && p.image_url
     );
@@ -637,6 +637,104 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
+  // Fonction pour générer les arrière-plans IA
+  const generateAiBackgrounds = async (config: AiBackgroundConfig) => {
+    setGeneratingAiBg(true);
+    
+    const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
+    
+    const previews: PreviewImage[] = selectedProductsList.map((p) => {
+      const selectedImageUrl = config.selectedImages.get(p.id) || p.image_url!;
+      return {
+        productId: p.id,
+        productTitle: p.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      };
+    });
+
+    setAiBgPreviews(previews);
+    setShowAiBgDialog(true);
+
+    // Map imageType to targetType
+    const targetType = config.imageType === 'primary' ? 'main' : 'variants';
+
+    for (let i = 0; i < selectedProductsList.length; i++) {
+      const product = selectedProductsList[i];
+      const selectedImageUrl = config.selectedImages.get(product.id) || product.image_url!;
+      
+      setAiBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === product.id ? { ...p, status: 'generating' } : p
+        )
+      );
+
+      try {
+        // Determine the image ID to use from gallery images
+        const images = galleryImages.get(product.id) || [];
+        const imageId = images[0]?.id || product.id; // Fallback to product ID if no images
+
+        const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
+          body: {
+            imageUrl: selectedImageUrl,
+            productTitle: product.title,
+            productId: product.id,
+            imageId: imageId,
+            prompt: config.prompt,
+            enrichedPrompt: config.enrichedPrompt,
+            style: config.similarity,
+            format: config.format,
+            targetType: targetType,
+            variantOptions: config.selectedVariants.get(product.id)?.length ? {
+              variantIds: config.selectedVariants.get(product.id)
+            } : undefined
+          }
+        });
+
+        if (error) {
+          console.error('AI Background generation error:', error);
+          if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT')) {
+            throw new Error('Limite de taux dépassée. Veuillez réessayer plus tard.');
+          }
+          if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
+            throw new Error('Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.');
+          }
+          throw error;
+        }
+        
+        if (!data?.success) {
+          throw new Error(data?.message || 'Erreur lors de la génération');
+        }
+
+        if (data.imageUrl) {
+          setAiBgPreviews((prev) =>
+            prev.map((p) =>
+              p.productId === product.id
+                ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+                : p
+            )
+          );
+        } else {
+          throw new Error('Aucune image générée');
+        }
+      } catch (error: any) {
+        console.error('Error generating AI background:', error);
+        setAiBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === product.id ? { ...p, status: 'error', error: error.message } : p
+          )
+        );
+        if (error.message?.includes('Limite de taux') || error.message?.includes('Crédits insuffisants')) {
+          toast.error(error.message);
+        }
+      }
+    }
+
+    setGeneratingAiBg(false);
+    await refreshLimits();
+  };
+
   // Removed obsolete functions - now integrated in unified AiBackgroundDialog
 
   const handleApplyWhiteBackground = async (productIds: string[], format: string) => {
@@ -680,6 +778,46 @@ export default function ProductTitleDescription() {
       toast.success("Images appliquées avec succès", { id: toastId });
       await fetchProducts();
       setAiBgPreviews([]);
+
+      // Synchronisation automatique avec Shopify après l'application réussie
+      toast.loading("Synchronisation avec Shopify...", { id: toastId });
+      try {
+        let syncSuccessCount = 0;
+        let syncErrorCount = 0;
+
+        for (const productId of productIds) {
+          try {
+            const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+              body: { productId }
+            });
+
+            if (syncError) {
+              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
+              syncErrorCount++;
+            } else {
+              syncSuccessCount++;
+            }
+          } catch (syncErr) {
+            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
+            syncErrorCount++;
+          }
+        }
+
+        if (syncSuccessCount > 0) {
+          toast.success(
+            `Images synchronisées avec Shopify (${syncSuccessCount}/${productIds.length})`,
+            { id: toastId }
+          );
+        } else if (syncErrorCount > 0) {
+          toast.warning(
+            `Images appliquées mais synchronisation Shopify échouée pour ${syncErrorCount} produit(s)`,
+            { id: toastId }
+          );
+        }
+      } catch (syncError) {
+        console.error("Error syncing to Shopify:", syncError);
+        toast.warning("Images appliquées mais erreur lors de la synchronisation Shopify", { id: toastId });
+      }
     } catch (error) {
       console.error("Error applying images:", error);
       toast.error("Erreur lors de l'application", { id: toastId });
@@ -1732,101 +1870,33 @@ export default function ProductTitleDescription() {
         selectedProducts={products.filter(p => selectedProducts.has(p.id))}
         productImages={galleryImages}
         onConfirm={async (config: AiBackgroundConfig) => {
-          setShowAiConfigDialog(false);
-          setGeneratingAiBg(true);
-          
-          const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
-          
-          const previews: PreviewImage[] = selectedProductsList.map((p) => {
-            const selectedImageUrl = config.selectedImages.get(p.id) || p.image_url!;
-            return {
-              productId: p.id,
-              productTitle: p.title,
-              originalUrl: selectedImageUrl,
-              generatedUrl: null,
-              status: 'pending' as const,
-            };
-          });
-
-          setAiBgPreviews(previews);
-          setShowAiBgDialog(true);
-
-          // Map imageType to targetType
-          const targetType = config.imageType === 'primary' ? 'main' : 'variants';
-
-          for (let i = 0; i < selectedProductsList.length; i++) {
-            const product = selectedProductsList[i];
-            const selectedImageUrl = config.selectedImages.get(product.id) || product.image_url!;
-            
-            setAiBgPreviews((prev) =>
-              prev.map((p) =>
-                p.productId === product.id ? { ...p, status: 'generating' } : p
-              )
-            );
-
-            try {
-              // Determine the image ID to use from gallery images
-              const images = galleryImages.get(product.id) || [];
-              const imageId = images[0]?.id || product.id; // Fallback to product ID if no images
-
-              const { data, error } = await supabase.functions.invoke('generate-ai-product-background', {
-                body: {
-                  imageUrl: selectedImageUrl,
-                  productTitle: product.title,
-                  productId: product.id,
-                  imageId: imageId,
-                  prompt: config.prompt,
-                  enrichedPrompt: config.enrichedPrompt,
-                  style: config.similarity,
-                  format: config.format,
-                  targetType: targetType,
-                  variantOptions: config.selectedVariants.get(product.id)?.length ? {
-                    variantIds: config.selectedVariants.get(product.id)
-                  } : undefined
-                }
-              });
-
-              if (error) {
-                console.error('AI Background generation error:', error);
-                if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT')) {
-                  throw new Error('Limite de taux dépassée. Veuillez réessayer plus tard.');
-                }
-                if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
-                  throw new Error('Crédits Lovable AI épuisés. Veuillez ajouter des crédits à votre workspace Lovable.');
-                }
-                throw error;
-              }
-              
-              if (!data?.success) {
-                throw new Error(data?.message || 'Erreur lors de la génération');
-              }
-
-              if (data.imageUrl) {
-                setAiBgPreviews((prev) =>
-                  prev.map((p) =>
-                    p.productId === product.id
-                      ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-                      : p
-                  )
-                );
-              } else {
-                throw new Error('Aucune image générée');
-              }
-            } catch (error: any) {
-              console.error('Error generating AI background:', error);
-              setAiBgPreviews((prev) =>
-                prev.map((p) =>
-                  p.productId === product.id ? { ...p, status: 'error', error: error.message } : p
-                )
-              );
-              if (error.message?.includes('Limite de taux') || error.message?.includes('Crédits insuffisants')) {
-                toast.error(error.message);
-              }
-            }
+          // Si des variantes sont sélectionnées, afficher la confirmation
+          if (config.applyTo === "variants" && config.selectedVariants.size > 0) {
+            setPendingAiConfig(config);
+            setShowAiConfigDialog(false);
+            setShowVariantConfirmDialog(true);
+            return;
           }
 
-          setGeneratingAiBg(false);
-          await refreshLimits();
+          // Sinon, continuer directement
+          setShowAiConfigDialog(false);
+          await generateAiBackgrounds(config);
+        }}
+      />
+
+      {/* Dialogue de confirmation des variantes */}
+      <VariantSelectionConfirmDialog
+        open={showVariantConfirmDialog}
+        onOpenChange={setShowVariantConfirmDialog}
+        selectedProducts={products.filter(p => selectedProducts.has(p.id))}
+        selectedVariants={pendingAiConfig?.selectedVariants || new Map()}
+        applyTo={pendingAiConfig?.applyTo || "simple"}
+        onConfirm={async () => {
+          setShowVariantConfirmDialog(false);
+          if (pendingAiConfig) {
+            await generateAiBackgrounds(pendingAiConfig);
+            setPendingAiConfig(null);
+          }
         }}
       />
 
