@@ -31,58 +31,38 @@ export function useStoreDomain() {
           return;
         }
 
-        // If no public_domain or it's a myshopify domain, try to fetch from Shopify
-        if (selectedStore.access_token && selectedStore.store_url) {
-          console.log('🔄 Fetching domain from Shopify API...');
-          
-          try {
-            const shopifyUrl = selectedStore.store_url.includes('https://') 
-              ? selectedStore.store_url 
-              : `https://${selectedStore.store_url}`;
+        // Use the edge function to fetch the domain
+        console.log('🔄 Fetching domain using edge function...');
+        try {
+          const { data: domainData, error: domainError } = await supabase.functions.invoke('fetch-shopify-domain', {
+            body: { storeId: selectedStore.id }
+          });
+
+          if (!domainError && domainData?.domain) {
+            const fetchedDomain = domainData.domain;
             
-            const response = await fetch(`${shopifyUrl}/admin/api/2025-10/shop.json`, {
-              headers: {
-                'X-Shopify-Access-Token': selectedStore.access_token,
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (response.ok) {
-              const shopData = await response.json();
-              const shopifyDomain = shopData.shop?.domain;
-
-              if (shopifyDomain && !shopifyDomain.includes('.myshopify.com')) {
-                console.log('✅ Fetched domain from Shopify:', shopifyDomain);
-                setDomain(shopifyDomain);
-
-                // Update the database for future use
-                await supabase
-                  .from('shopify_connections')
-                  .update({ public_domain: shopifyDomain })
-                  .eq('id', selectedStore.id);
-
-                console.log('✅ Updated public_domain in database');
-                setLoading(false);
-                return;
-              }
+            // Only use if it's not a myshopify domain
+            if (!fetchedDomain.includes('.myshopify.com')) {
+              console.log('✅ Fetched valid domain:', fetchedDomain);
+              setDomain(fetchedDomain);
+              setLoading(false);
+              return;
             }
-          } catch (err) {
-            console.error('❌ Error fetching from Shopify API:', err);
           }
+        } catch (err) {
+          console.error('❌ Error fetching domain via edge function:', err);
         }
 
-        // Fallback: use store_url if available and not a myshopify domain
+        // Fallback: use store_url if available
         if (selectedStore.store_url) {
           const cleanUrl = selectedStore.store_url
             .replace(/^https?:\/\//, '')
             .replace(/\/$/, '');
           
-          if (!cleanUrl.includes('.myshopify.com')) {
-            console.log('⚠️ Using store_url as fallback:', cleanUrl);
-            setDomain(cleanUrl);
-            setLoading(false);
-            return;
-          }
+          console.log('⚠️ Using store_url as fallback:', cleanUrl);
+          setDomain(cleanUrl);
+          setLoading(false);
+          return;
         }
 
         // Last resort: use placeholder
@@ -97,7 +77,7 @@ export function useStoreDomain() {
     };
 
     fetchAndUpdateDomain();
-  }, [selectedStore?.id, selectedStore?.public_domain, selectedStore?.access_token, selectedStore?.store_url]);
+  }, [selectedStore?.id, selectedStore?.public_domain, selectedStore?.store_url]);
 
   return { domain, loading };
 }
