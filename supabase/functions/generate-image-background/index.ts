@@ -192,58 +192,166 @@ ${isMainImage ? `
 RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background at EXACTLY ${aspectRatio} resolution in ${format} format.
     `.trim();
 
-    // Call Lovable AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: photographyPrompt },
-              { type: "image_url", image_url: { url: imageUrl } }
-            ]
-          }
-        ],
-        modalities: ["image", "text"]
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Lovable AI error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Rate limit exceeded. Please try again in a few moments.",
-            rateLimited: true
+    // Helper function to try Lovable AI
+    async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
+      try {
+        console.log("📝 Trying Lovable AI...");
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: photographyPrompt },
+                  { type: "image_url", image_url: { url: imageUrl } }
+                ]
+              }
+            ],
+            modalities: ["image", "text"]
           }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        });
+
+        if (response.status === 402 || response.status === 429) {
+          console.log(`⚠️ Lovable AI unavailable (${response.status}), trying fallback...`);
+          return null;
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Lovable AI error (${response.status}):`, errorText);
+          return null;
+        }
+
+        const data = await response.json();
+        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+        if (!generatedImageUrl) {
+          console.error("⚠️ No image in Lovable AI response");
+          return null;
+        }
+
+        console.log("✅ Lovable AI succeeded");
+        return { imageUrl: generatedImageUrl, model: "google/gemini-2.5-flash-image-preview (Lovable AI)" };
+      } catch (error) {
+        console.error("❌ Lovable AI exception:", error);
+        return null;
       }
-      
-      throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log("✅ Lovable AI response received");
+    // Helper function to try OpenAI DALL-E
+    async function tryOpenAI(): Promise<{ imageUrl: string; model: string } | null> {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) {
+        console.log("⚠️ OpenAI API key not configured");
+        return null;
+      }
 
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      try {
+        console.log("📝 Trying OpenAI DALL-E...");
+        
+        // Use GPT-4o Vision to analyze the image
+        const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `Analyze this product image and create a detailed description for DALL-E to recreate it with a custom background. Background style: ${prompt}. Focus on: product details, positioning, colors, textures. Keep it concise (max 1000 chars).`
+                  },
+                  {
+                    type: "image_url",
+                    image_url: { url: imageUrl }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 500
+          })
+        });
 
-    if (!generatedImageUrl) {
-      console.error("⚠️ No image returned:", JSON.stringify(data, null, 2));
-      throw new Error("No image generated - unexpected response format");
+        if (!visionResponse.ok) {
+          console.error(`❌ GPT Vision error (${visionResponse.status})`);
+          return null;
+        }
+
+        const visionData = await visionResponse.json();
+        const enhancedPrompt = visionData.choices?.[0]?.message?.content || photographyPrompt;
+
+        // Use DALL-E to generate the image
+        const targetSize = format === "square" ? "1024x1024" : format === "portrait" ? "1024x1536" : "1536x1024";
+        const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-image-1",
+            prompt: enhancedPrompt.substring(0, 4000),
+            n: 1,
+            size: targetSize,
+            quality: "high",
+            response_format: "url"
+          }),
+        });
+
+        if (!dalleResponse.ok) {
+          const errorText = await dalleResponse.text();
+          console.error(`❌ DALL-E error (${dalleResponse.status}):`, errorText);
+          return null;
+        }
+
+        const dalleData = await dalleResponse.json();
+        const generatedImageUrl = dalleData.data?.[0]?.url;
+
+        if (!generatedImageUrl) {
+          console.error("⚠️ No image in DALL-E response");
+          return null;
+        }
+
+        console.log("✅ OpenAI DALL-E succeeded");
+        return { imageUrl: generatedImageUrl, model: "gpt-image-1 (OpenAI)" };
+      } catch (error) {
+        console.error("❌ OpenAI exception:", error);
+        return null;
+      }
     }
 
-    console.log("🎨 AI background generated successfully");
-    // Usage déjà tracké AVANT la génération (ligne 69-75)
+    // Try providers in order: Lovable AI → OpenAI
+    let result = await tryLovableAI();
+    
+    if (!result) {
+      console.log("🔄 Lovable AI failed, trying OpenAI...");
+      result = await tryOpenAI();
+    }
+
+    if (!result) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "ALL_PROVIDERS_FAILED",
+          message: "Tous les fournisseurs d'IA ont échoué. Veuillez vérifier votre clé API OpenAI ou réessayer plus tard.",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { imageUrl: generatedImageUrl, model: usedModel } = result;
+    console.log(`✅ AI background generated successfully using ${usedModel}`);
 
     // Decode the base64 image to resize it to exact format
     let finalImageUrl = generatedImageUrl;
@@ -277,6 +385,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
       JSON.stringify({
         success: true,
         imageUrl: finalImageUrl,
+        usedProvider: usedModel,
         metadata: {
           prompt,
           imageType,
@@ -284,7 +393,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
           format,
           similarity,
           requestedDimensions: aspectRatio,
-          model: "google/gemini-2.5-flash-image-preview",
+          model: usedModel,
           generatedAt: new Date().toISOString(),
         },
       }),
@@ -296,7 +405,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        suggestion: "Try with a higher-quality product photo or check your Lovable AI credits.",
+        suggestion: "Try with a higher-quality product photo or check your OpenAI API credentials.",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
