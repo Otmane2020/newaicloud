@@ -76,22 +76,22 @@ serve(async (req) => {
       {
         style: "professional" as const,
         description: "Studio professionnel élégant",
-        prompt: `Professional e-commerce product photography of ${enrichedContext}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Professional e-commerce product photography of ${enrichedContext}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
       },
       {
         style: "lifestyle" as const,
         description: "Scène de vie naturelle",
-        prompt: `Lifestyle product photography of ${enrichedContext}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Lifestyle product photography of ${enrichedContext}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
       },
       {
         style: "artistic" as const,
         description: "Design artistique et créatif",
-        prompt: `Artistic product photography of ${enrichedContext}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Artistic product photography of ${enrichedContext}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
       },
       {
         style: "minimalist" as const,
         description: "Minimaliste épuré",
-        prompt: `Minimalist product photography of ${enrichedContext}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Minimalist product photography of ${enrichedContext}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
       },
     ];
 
