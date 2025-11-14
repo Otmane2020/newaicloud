@@ -92,8 +92,9 @@ export function CollectionImageDialog({
   };
 
   const handleGenerateWithAI = async (customPrompt?: string) => {
+    const isRegeneration = !!customPrompt;
+    
     try {
-      const isRegeneration = !!customPrompt;
       if (isRegeneration) {
         setIsRegenerating(true);
       } else {
@@ -162,19 +163,29 @@ export function CollectionImageDialog({
         
         // Store for preview instead of applying immediately
         setPreviewImageUrl(imageUrl);
-        setShowPreviewDialog(true);
         
-        // Close main dialog
-        onOpenChange(false);
+        // Only open dialog on initial generation, keep it open during regeneration
+        if (!isRegeneration) {
+          setShowPreviewDialog(true);
+          // Close main dialog only on initial generation
+          onOpenChange(false);
+        }
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
     } catch (error: any) {
       console.error('Error:', error);
       toast.error(error.message || 'Erreur lors de la génération de l\'image');
+      // Close dialog only on error during regeneration
+      if (isRegeneration) {
+        setShowPreviewDialog(false);
+      }
     } finally {
-      setLoading(false);
-      setIsRegenerating(false);
+      if (isRegeneration) {
+        setIsRegenerating(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -565,10 +576,17 @@ export function CollectionImageDialog({
     </Dialog>
 
     {/* Preview Dialog - Only render when previewImageUrl is available */}
-    {previewImageUrl && (
+    {showPreviewDialog && previewImageUrl && (
       <ImageGenerationPreviewDialog
         open={showPreviewDialog}
-        onOpenChange={setShowPreviewDialog}
+        onOpenChange={(open) => {
+          setShowPreviewDialog(open);
+          if (!open) {
+            // Reset only when manually closing
+            setPreviewImageUrl('');
+            setSelectedOption(null);
+          }
+        }}
         currentImage={collection.image_url}
         generatedImage={previewImageUrl}
         title={collection.title}

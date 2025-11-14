@@ -62,7 +62,10 @@ export function ImageGenerationPreviewDialog({
         <DialogHeader>
           <DialogTitle>Prévisualisation - {title}</DialogTitle>
           <DialogDescription>
-            Comparez et validez l'image générée par IA avant de l'appliquer
+            {currentImage 
+              ? "Comparez et validez l'image générée par IA avant de l'appliquer"
+              : "Prévisualisez et validez l'image générée par IA avant de l'appliquer"
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -83,34 +86,29 @@ export function ImageGenerationPreviewDialog({
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Current Image */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">Image actuelle</p>
-              {!currentImage && (
-                <Badge variant="secondary" className="text-xs">Aucune image</Badge>
-              )}
-            </div>
-            {currentImage ? (
+        <div className={currentImage ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
+          {/* Current Image - Only shown if exists */}
+          {currentImage && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium">Image actuelle</p>
+              </div>
               <img 
                 src={currentImage} 
                 alt="Actuelle" 
                 className="w-full h-auto border rounded-lg object-cover aspect-square bg-muted" 
               />
-            ) : (
-              <div className="w-full aspect-square border rounded-lg flex items-center justify-center bg-muted text-muted-foreground">
-                <p className="text-sm">Aucune image existante</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Generated Image */}
-          <div>
+          {/* Generated Image - Full width if no current image */}
+          <div className={!currentImage ? "max-w-2xl mx-auto" : ""}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">Image générée par IA</p>
+              <p className="text-sm font-medium">
+                {currentImage ? "Image générée par IA" : "Image IA générée"}
+              </p>
               <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs">
-                Nouveau
+                {currentImage ? "Nouveau" : "Nouvelle image"}
               </Badge>
             </div>
             <div className="relative w-full aspect-square border rounded-lg overflow-hidden bg-white">
