@@ -958,9 +958,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // 🔗 Sync product-collection relationships after import (async, don't block)
-    console.log('🔗 Starting async product-collection sync...');
+    console.log(`🔗 Starting async product-collection sync for storeId: ${storeId}...`);
     supabaseClient.functions.invoke('sync-product-collections', {
-      headers: { Authorization: authHeader }
+      headers: { Authorization: authHeader },
+      body: { storeId: storeId }
     }).then((syncResult) => {
       if (syncResult.error) {
         console.error('⚠️ Product-collection sync failed:', syncResult.error);

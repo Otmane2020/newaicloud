@@ -31,21 +31,52 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 [SYNC-COLLECTIONS] Function invoked for user ${user.id}`);
 
-    // Get user's Shopify connection
-    const { data: connection, error: connectionError } = await supabase
-      .from("shopify_connections")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .single();
+    // Récupérer le storeId depuis le body de la requête
+    const requestBody = await req.json().catch(() => ({}));
+    let storeId = requestBody.storeId;
 
-    if (connectionError || !connection) {
-      console.error(`❌ [SYNC-COLLECTIONS] No active Shopify connection found for user ${user.id}`);
-      throw new Error("No active Shopify connection found");
+    if (!storeId) {
+      // Fallback: chercher la connexion active si storeId non fourni (backward compatibility)
+      console.log(`⚠️ [SYNC-COLLECTIONS] No storeId provided, falling back to active connection`);
+      const { data: connection, error: connectionError } = await supabase
+        .from("shopify_connections")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+        
+      if (connectionError || !connection) {
+        console.error(`❌ [SYNC-COLLECTIONS] No storeId provided and no active connection found for user ${user.id}`);
+        throw new Error("No storeId provided and no active Shopify connection found");
+      }
+      storeId = connection.id;
+    } else {
+      // Vérifier que le store appartient bien à l'utilisateur
+      const { data: connection, error: connectionError } = await supabase
+        .from("shopify_connections")
+        .select("*")
+        .eq("id", storeId)
+        .eq("user_id", user.id)
+        .single();
+        
+      if (connectionError || !connection) {
+        console.error(`❌ [SYNC-COLLECTIONS] Store ${storeId} not found or unauthorized for user ${user.id}`);
+        throw new Error("Store not found or unauthorized");
+      }
+      console.log(`✅ [SYNC-COLLECTIONS] Using specified store: ${connection.store_url} (store_id: ${storeId})`);
     }
 
-    const storeId = connection.id; // UUID du store
-    console.log(`✅ [SYNC-COLLECTIONS] Found active connection: ${connection.store_url} (store_id: ${storeId})`);
+    // Get connection details for API calls
+    const { data: storeConnection, error: storeError } = await supabase
+      .from("shopify_connections")
+      .select("store_url, access_token")
+      .eq("id", storeId)
+      .single();
+
+    if (storeError || !storeConnection) {
+      console.error(`❌ [SYNC-COLLECTIONS] Failed to fetch store connection details`);
+      throw new Error("Failed to fetch store connection");
+    }
 
     // Get all collections for this store
     const { data: collections, error: collectionsError } = await supabase
@@ -78,12 +109,12 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`📦 [SYNC-COLLECTIONS] Processing ${products?.length || 0} products`);
-    console.log(`🔧 [SYNC-COLLECTIONS] Shopify store URL: ${connection.store_url}`);
+    console.log(`🔧 [SYNC-COLLECTIONS] Shopify store URL: ${storeConnection.store_url}`);
 
     let updatedCount = 0;
     let errorCount = 0;
-    const shopifyUrl = connection.store_url.replace(/\/$/, "").replace(/^https?:\/\//, "");
-    const accessToken = connection.access_token;
+    const shopifyUrl = storeConnection.store_url.replace(/\/$/, "").replace(/^https?:\/\//, "");
+    const accessToken = storeConnection.access_token;
 
     console.log(`🔄 Processing ${products?.length || 0} products in batches of 50...`);
     
