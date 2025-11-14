@@ -163,7 +163,7 @@ export function ArticleManagement() {
         .from('blog_articles')
         .select('*')
         .eq('user_id', user.id)
-        .eq('store_id', selectedStore.id)
+        .or(`store_id.eq.${selectedStore.id},store_id.is.null`)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
