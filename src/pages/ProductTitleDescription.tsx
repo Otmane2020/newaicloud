@@ -1947,10 +1947,22 @@ export default function ProductTitleDescription() {
 
             {/* Détection automatique: Variantes ou Simple */}
             {(() => {
-              const hasVariants = Array.from(selectedProducts).some(id => {
-                const product = products.find(p => p.id === id);
-                return product?.variants && product.variants.length > 0;
-              });
+              const selectedProductsList = Array.from(selectedProducts)
+                .map(id => products.find(p => p.id === id))
+                .filter(Boolean);
+              
+              console.log('🔍 [WHITE_BG] Checking products for variants:', selectedProductsList.map(p => ({
+                id: p?.id,
+                title: p?.title,
+                hasVariants: p?.variants && p.variants.length > 0,
+                variantsCount: p?.variants?.length || 0
+              })));
+
+              const hasVariants = selectedProductsList.some(product => 
+                product?.variants && product.variants.length > 0
+              );
+
+              console.log('🔍 [WHITE_BG] Has variants:', hasVariants);
 
               if (hasVariants) {
                 // Si le produit a des variantes, afficher directement la sélection des variantes
@@ -1964,14 +1976,13 @@ export default function ProductTitleDescription() {
                       Ce produit possède des variantes. Sélectionnez celles pour lesquelles générer un fond blanc.
                     </p>
                     <div className="space-y-4">
-                      {Array.from(selectedProducts).map((productId) => {
-                        const product = products.find(p => p.id === productId);
+                      {selectedProductsList.map((product) => {
                         if (!product?.variants || product.variants.length === 0) return null;
 
-                        const productSelectedVariants = whiteBgSelectedVariants.get(productId) || [];
+                        const productSelectedVariants = whiteBgSelectedVariants.get(product.id) || [];
 
                         return (
-                          <Card key={productId} className="p-4">
+                          <Card key={product.id} className="p-4">
                             <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
                             <div className="space-y-2">
                               {product.variants.map((variant) => (
@@ -1984,13 +1995,13 @@ export default function ProductTitleDescription() {
                                     checked={productSelectedVariants.includes(variant.id)}
                                     onCheckedChange={(checked) => {
                                       const newMap = new Map(whiteBgSelectedVariants);
-                                      const current = newMap.get(productId) || [];
+                                      const current = newMap.get(product.id) || [];
                                       if (checked) {
-                                        newMap.set(productId, [...current, variant.id]);
+                                        newMap.set(product.id, [...current, variant.id]);
                                         setWhiteBgApplyTo("variants");
                                       } else {
                                         newMap.set(
-                                          productId,
+                                          product.id,
                                           current.filter((id) => id !== variant.id)
                                         );
                                       }
