@@ -115,8 +115,57 @@ serve(async (req) => {
 
     console.log(`🏪 [SYNC-IMAGE] Store: ${storeData.store_url}`);
 
+    // Download the image from our storage to upload to Shopify
+    let imageAttachment = null;
+    
+    if (!collection.image_url?.includes('cdn.shopify.com')) {
+      console.log(`📥 [SYNC-IMAGE] Downloading image from: ${collection.image_url?.substring(0, 80)}...`);
+      
+      try {
+        const imageResponse = await fetch(collection.image_url);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.status}`);
+        }
+        
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64Image = btoa(
+          new Uint8Array(imageBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        
+        // Detect image format
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        const extension = contentType.split('/')[1] || 'jpg';
+        
+        imageAttachment = {
+          attachment: base64Image,
+          filename: `collection-${collection.id}.${extension}`
+        };
+        
+        console.log(`✅ [SYNC-IMAGE] Image downloaded successfully (${(imageBuffer.byteLength / 1024).toFixed(2)} KB)`);
+      } catch (downloadError) {
+        console.error(`❌ [SYNC-IMAGE] Failed to download image:`, downloadError);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Image download failed',
+            message: 'Impossible de télécharger l\'image. Vérifiez que l\'URL est accessible.',
+            details: downloadError.message
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Try custom collection first
     console.log(`🔄 [SYNC-IMAGE] Attempting sync as custom_collection...`);
+    const imagePayload = imageAttachment ? {
+      attachment: imageAttachment.attachment,
+      alt: collection.image_alt || ''
+    } : {
+      src: collection.image_url,
+      alt: collection.image_alt || ''
+    };
+
     let shopifyResponse = await fetch(
       `https://${storeData.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
       {
@@ -128,10 +177,7 @@ serve(async (req) => {
         body: JSON.stringify({
           custom_collection: {
             id: collection.shopify_collection_id,
-            image: {
-              src: collection.image_url,
-              alt: collection.image_alt || ''
-            }
+            image: imagePayload
           }
         })
       }
@@ -151,10 +197,7 @@ serve(async (req) => {
           body: JSON.stringify({
             smart_collection: {
               id: collection.shopify_collection_id,
-              image: {
-                src: collection.image_url,
-                alt: collection.image_alt || ''
-              }
+              image: imagePayload
             }
           })
         }
