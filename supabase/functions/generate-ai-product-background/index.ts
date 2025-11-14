@@ -261,6 +261,18 @@ RESULT: A stunning, professional product photo that looks like it was created by
       }
     }
 
+    // Helper to convert ArrayBuffer to base64 without stack overflow
+    function arrayBufferToBase64(buffer: ArrayBuffer): string {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      const chunkSize = 0x8000; // 32KB chunks
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        binary += String.fromCharCode.apply(null, Array.from(chunk));
+      }
+      return btoa(binary);
+    }
+
     // Helper function to try Gemini
     async function tryGemini(): Promise<{ imageUrl: string; model: string } | null> {
       const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
@@ -271,6 +283,17 @@ RESULT: A stunning, professional product photo that looks like it was created by
 
       try {
         console.log("📝 Trying Gemini directly...");
+        
+        // Convert image to base64
+        let base64Data: string;
+        if (imageUrl.includes("base64")) {
+          base64Data = imageUrl.split(",")[1];
+        } else {
+          const imageResponse = await fetch(imageUrl);
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          base64Data = arrayBufferToBase64(arrayBuffer);
+        }
+        
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
           {
@@ -284,9 +307,7 @@ RESULT: A stunning, professional product photo that looks like it was created by
                     {
                       inline_data: {
                         mime_type: "image/jpeg",
-                        data: imageUrl.includes("base64")
-                          ? imageUrl.split(",")[1]
-                          : await fetch(imageUrl).then(r => r.arrayBuffer()).then(b => btoa(String.fromCharCode(...new Uint8Array(b))))
+                        data: base64Data
                       }
                     }
                   ]
