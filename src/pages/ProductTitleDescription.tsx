@@ -802,8 +802,18 @@ export default function ProductTitleDescription() {
     setAiBgPreviews(previews);
     setShowAiBgDialog(true);
 
-    // Map imageType to targetType
-    const targetType = config.imageType === 'primary' ? 'main' : 'variants';
+    // Map imageType to targetType (FIXED: singular 'variant')
+    const targetType = config.imageType === 'primary' ? 'main' : 'variant';
+    
+    // Map similarity to actual style
+    const styleMap: Record<string, "professional" | "lifestyle" | "minimalist" | "creative"> = {
+      'very-close': 'professional',
+      'close': 'professional',
+      'medium': 'lifestyle',
+      'creative': 'creative',
+      'very-creative': 'creative'
+    };
+    const actualStyle = styleMap[config.similarity] || 'professional';
 
     for (let i = 0; i < selectedProductsList.length; i++) {
       const product = selectedProductsList[i];
@@ -832,12 +842,13 @@ export default function ProductTitleDescription() {
             imageId: imageId,
             prompt: config.prompt,
             enrichedPrompt: config.enrichedPrompt,
-            style: config.similarity,
+            style: actualStyle,
             format: config.format,
             targetType: targetType,
-            variantOptions: config.selectedVariants.get(product.id)?.length ? {
-              variantIds: config.selectedVariants.get(product.id)
-            } : undefined
+            variantOptions: config.selectedVariants.get(product.id)?.map(vId => {
+              const variant = product.variants?.find(v => v.id === vId);
+              return variant ? [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' - ') : '';
+            }).join(', ')
           }
         });
 
