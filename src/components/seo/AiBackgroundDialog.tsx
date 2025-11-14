@@ -48,7 +48,7 @@ export interface AiBackgroundConfig {
   similarity: string;
   imageType: 'primary' | 'secondary';
   selectedImages: Map<string, string>; // productId -> imageUrl
-  applyTo: 'main' | 'all' | 'variants';
+  applyTo: 'main' | 'variants';
   selectedVariantIds?: string[];
 }
 
@@ -313,17 +313,18 @@ export function AiBackgroundDialog({
             })}
           </div>
 
-          {/* Cible d'application (uniquement pour un seul produit avec variantes) */}
-          {singleProduct && uniqueVariantImages.length > 0 && (
+          {/* Cible d'application */}
+          {singleProduct && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Appliquer le résultat à</Label>
               <RadioGroup value={config.applyTo} onValueChange={(v) => {
                 setConfig({
                   ...config,
-                  applyTo: v as 'main' | 'all' | 'variants',
+                  applyTo: v as 'main' | 'variants',
                   selectedVariantIds: v !== 'variants' ? [] : config.selectedVariantIds
                 });
               }}>
+                {/* Image principale - toujours affichée */}
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <RadioGroupItem value="main" id="main" />
                   <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
@@ -332,58 +333,53 @@ export function AiBackgroundDialog({
                   </Label>
                 </div>
                 
-                <div className="p-3 rounded-lg border space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="variants" id="variants" className="mt-1" />
-                    <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
-                      Variantes spécifiques
-                      <p className="text-xs text-muted-foreground mt-1">Sélectionnez les variantes à modifier</p>
-                    </Label>
-                  </div>
-                  
-                  {config.applyTo === 'variants' && (
-                    <ScrollArea className="max-h-[200px]">
-                      <div className="pl-6 grid grid-cols-3 gap-2">
-                        {uniqueVariantImages.map((variant) => (
-                          <button
-                            key={variant.id}
-                            type="button"
-                            onClick={() => toggleVariantSelection(variant.id)}
-                            className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                              config.selectedVariantIds?.includes(variant.id)
-                                ? 'border-primary ring-2 ring-primary'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            <img
-                              src={variant.src}
-                              alt={variant.alt_text || getVariantLabel(variant)}
-                              className="w-full h-full object-cover"
-                            />
-                            {config.selectedVariantIds?.includes(variant.id) && (
-                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                  <Check className="w-4 h-4" />
+                {/* Variantes - uniquement si le produit a des variantes */}
+                {uniqueVariantImages.length > 0 && (
+                  <div className="p-3 rounded-lg border space-y-3">
+                    <div className="flex items-start space-x-2">
+                      <RadioGroupItem value="variants" id="variants" className="mt-1" />
+                      <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
+                        Variantes spécifiques
+                        <p className="text-xs text-muted-foreground mt-1">Sélectionnez les variantes à modifier</p>
+                      </Label>
+                    </div>
+                    
+                    {config.applyTo === 'variants' && (
+                      <ScrollArea className="max-h-[200px]">
+                        <div className="pl-6 grid grid-cols-3 gap-2">
+                          {uniqueVariantImages.map((variant) => (
+                            <button
+                              key={variant.id}
+                              type="button"
+                              onClick={() => toggleVariantSelection(variant.id)}
+                              className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                                config.selectedVariantIds?.includes(variant.id)
+                                  ? 'border-primary ring-2 ring-primary'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <img
+                                src={variant.src}
+                                alt={variant.alt_text || getVariantLabel(variant)}
+                                className="w-full h-full object-cover"
+                              />
+                              {config.selectedVariantIds?.includes(variant.id) && (
+                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                  <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                    <Check className="w-4 h-4" />
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
-                              {getVariantLabel(variant)}
-                            </Badge>
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="all" id="all" />
-                  <Label htmlFor="all" className="flex-1 cursor-pointer text-sm">
-                    Toutes les images
-                    <p className="text-xs text-muted-foreground mt-1">Remplace l'image principale et toutes les variantes</p>
-                  </Label>
-                </div>
+                              )}
+                              <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
+                                {getVariantLabel(variant)}
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                )}
               </RadioGroup>
             </div>
           )}
