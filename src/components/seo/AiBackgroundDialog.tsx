@@ -96,6 +96,7 @@ export function AiBackgroundDialog({
   // Gallery loading state
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [loadingImages, setLoadingImages] = useState(true);
+  const [imageLoadStates, setImageLoadStates] = useState<Map<string, boolean>>(new Map());
 
   const singleProduct = selectedProducts.length === 1 ? selectedProducts[0] : null;
   const hasVariants = selectedProducts.some((product) => product.variants && product.variants.length > 0);
@@ -144,16 +145,31 @@ export function AiBackgroundDialog({
 
   // Précharger toutes les images de la galerie
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      // Reset states when dialog closes
+      setLoadingImages(true);
+      setImagesLoaded(false);
+      setImageLoadStates(new Map());
+      return;
+    }
     
     setLoadingImages(true);
     const allImageUrls: string[] = [];
+    const newLoadStates = new Map<string, boolean>();
     
     selectedProducts.forEach(product => {
       const images = productImages.get(product.id) || [];
-      images.forEach(img => allImageUrls.push(img.src));
-      if (product.image_url) allImageUrls.push(product.image_url);
+      images.forEach(img => {
+        allImageUrls.push(img.src);
+        newLoadStates.set(img.src, false);
+      });
+      if (product.image_url) {
+        allImageUrls.push(product.image_url);
+        newLoadStates.set(product.image_url, false);
+      }
     });
+
+    setImageLoadStates(newLoadStates);
 
     if (allImageUrls.length === 0) {
       setLoadingImages(false);
@@ -163,18 +179,42 @@ export function AiBackgroundDialog({
 
     let loadedCount = 0;
     const totalImages = allImageUrls.length;
+    
+    // Set a timeout to ensure loading state doesn't hang forever
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ Image loading timeout - forcing loaded state');
+      setLoadingImages(false);
+      setImagesLoaded(true);
+    }, 10000); // 10 seconds timeout
 
     allImageUrls.forEach(url => {
       const img = new Image();
-      img.onload = img.onerror = () => {
+      
+      img.onload = () => {
         loadedCount++;
+        setImageLoadStates(prev => new Map(prev).set(url, true));
         if (loadedCount === totalImages) {
+          clearTimeout(timeoutId);
           setLoadingImages(false);
           setImagesLoaded(true);
         }
       };
+      
+      img.onerror = () => {
+        console.warn('❌ Failed to load image:', url);
+        loadedCount++;
+        setImageLoadStates(prev => new Map(prev).set(url, true)); // Mark as "loaded" even on error
+        if (loadedCount === totalImages) {
+          clearTimeout(timeoutId);
+          setLoadingImages(false);
+          setImagesLoaded(true);
+        }
+      };
+      
       img.src = url;
     });
+
+    return () => clearTimeout(timeoutId);
   }, [open, selectedProducts, productImages]);
 
   // Analyze SERP for product trends
@@ -637,9 +677,12 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                     <Label className="text-sm font-medium">{product.title}</Label>
                                   </div>
 
-                                  <div className="w-full max-h-[200px] overflow-y-auto">
-                                    <div className="grid grid-cols-6 gap-2 pr-2">
-                                      {variantsWithImages.map(({ variant, image }) => (
+                                   <div className="w-full max-h-[200px] overflow-y-auto">
+                                     <div className="grid grid-cols-6 gap-2 pr-2">
+                                      {variantsWithImages.map(({ variant, image }) => {
+                                        const imageSrc = typeof image === 'string' ? image : image?.src || "/placeholder.svg";
+                                        const isImageLoaded = imageLoadStates.get(imageSrc);
+                                        return (
                                         <div key={variant.id} className="flex flex-col items-center gap-1">
                                           <button
                                             type="button"
@@ -651,10 +694,17 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                             }`}
                                             style={{ width: '80px', height: '80px' }}
                                           >
+                                            {!isImageLoaded && (
+                                              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                              </div>
+                                            )}
                                             <img
-                                              src={typeof image === 'string' ? image : image?.src || "/placeholder.svg"}
+                                              src={imageSrc}
                                               alt={getVariantLabel(variant)}
-                                              className="w-full h-full object-cover"
+                                              className={`w-full h-full object-cover transition-opacity ${
+                                                isImageLoaded ? 'opacity-100' : 'opacity-0'
+                                              }`}
                                             />
                                             {productSelectedVariants.includes(variant.id) && (
                                               <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
@@ -666,7 +716,7 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                             {getVariantLabel(variant)}
                                           </span>
                                         </div>
-                                      ))}
+                                      );})}
                                     </div>
                                   </div>
                                 </div>
@@ -705,10 +755,11 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                       {selectedImages.length === allImages.length ? "Tout désélectionner" : "Tout sélectionner"}
                                     </Button>
                                   </div>
-                                  <div className="w-full max-h-[200px] overflow-y-auto">
+                                   <div className="w-full max-h-[200px] overflow-y-auto">
                                     <div className="grid grid-cols-4 gap-2 pr-2">
                                       {allImages.map((img, idx) => {
                                         const isSelected = selectedImages.includes(img.src);
+                                        const isImageLoaded = imageLoadStates.get(img.src);
                                         return (
                                           <button
                                             type="button"
@@ -729,10 +780,17 @@ Créer une image qui suit ces tendances tout en restant unique et professionnell
                                                 : "border-border hover:border-primary/50"
                                             }`}
                                           >
+                                            {!isImageLoaded && (
+                                              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                                                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                              </div>
+                                            )}
                                             <img
                                               src={img.src}
                                               alt={img.alt_text || `Image ${idx + 1}`}
-                                              className="w-full h-full object-cover"
+                                              className={`w-full h-full object-cover transition-opacity ${
+                                                isImageLoaded ? 'opacity-100' : 'opacity-0'
+                                              }`}
                                             />
                                             {isSelected && (
                                               <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
