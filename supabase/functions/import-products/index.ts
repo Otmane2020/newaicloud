@@ -482,15 +482,40 @@ Deno.serve(async (req: Request) => {
     
     products = validProducts; // Update products to only include valid ones
     
-    const { data: existingProducts } = await supabaseServiceClient
-      .from('shopify_products')
-      .select('shopify_id, optimization_count, title, description, seo_title, seo_description')
-      .in('shopify_id', existingProductIds)
-      .eq('seller_id', user.id);
+    // Fetch existing products in batches to avoid timeout
+    const FETCH_BATCH_SIZE = 100;
+    const existingProducts: any[] = [];
+    const fetchBatches = Math.ceil(existingProductIds.length / FETCH_BATCH_SIZE);
     
-    const existingMap = new Map(existingProducts?.map(p => [p.shopify_id, p]) || []);
+    console.log(`🔍 Fetching existing products in ${fetchBatches} batches...`);
     
-    console.log(`🔍 Found ${existingProducts?.length || 0} existing products in DB`);
+    for (let i = 0; i < existingProductIds.length; i += FETCH_BATCH_SIZE) {
+      const batchIds = existingProductIds.slice(i, i + FETCH_BATCH_SIZE);
+      const batchNumber = Math.floor(i / FETCH_BATCH_SIZE) + 1;
+      
+      console.log(`🔍 Fetching batch ${batchNumber}/${fetchBatches} (${batchIds.length} products)`);
+      
+      const { data, error } = await supabaseServiceClient
+        .from('shopify_products')
+        .select('shopify_id, optimization_count, title, description, seo_title, seo_description')
+        .in('shopify_id', batchIds)
+        .eq('seller_id', user.id);
+      
+      if (error) {
+        console.error(`❌ Error fetching existing products batch ${batchNumber}:`, error);
+      } else if (data) {
+        existingProducts.push(...data);
+      }
+      
+      // Small delay between fetches
+      if (i + FETCH_BATCH_SIZE < existingProductIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+    
+    const existingMap = new Map(existingProducts.map(p => [p.shopify_id, p]));
+    
+    console.log(`🔍 Found ${existingProducts.length} existing products in DB`);
     console.log(`🤖 Smart mode: ${syncMode === 'smart' ? 'ENABLED' : 'DISABLED'}`);
     
     const productsToInsert = products.map((product) => {
@@ -545,7 +570,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Insert products in batches to avoid timeout
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 50; // Reduced from 100 to 50 for better reliability
     const productIdMap = new Map<number, string>();
     const totalBatches = Math.ceil(productsToInsert.length / BATCH_SIZE);
     
@@ -567,8 +592,23 @@ Deno.serve(async (req: Request) => {
 
       if (insertError) {
         console.error(`❌ Database insert error in batch ${batchNumber}:`, insertError);
+        
+        // Update job status with error
+        await supabaseServiceClient
+          .from('import_jobs')
+          .update({
+            status: 'failed',
+            error_message: `Failed at batch ${batchNumber}/${totalBatches}: ${insertError.message}`,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', importJob.id);
+        
         return new Response(
-          JSON.stringify({ error: `Failed to save products (batch ${batchNumber}): ${insertError.message}` }),
+          JSON.stringify({ 
+            error: `Failed to save products (batch ${batchNumber}/${totalBatches}): ${insertError.message}`,
+            batch: batchNumber,
+            totalBatches
+          }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -593,9 +633,9 @@ Deno.serve(async (req: Request) => {
       
       console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
       
-      // Small delay between batches to avoid overwhelming the database
+      // Increased delay between batches to avoid overwhelming the database
       if (i + BATCH_SIZE < productsToInsert.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
