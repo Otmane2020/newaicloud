@@ -115,6 +115,7 @@ function GoogleSearchPreviewCell({ product }: { product: Product }) {
 export function SeoOptimization() {
   const { t, tf } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -147,6 +148,12 @@ export function SeoOptimization() {
   const [showBulkOptimizeConfirmDialog, setShowBulkOptimizeConfirmDialog] = useState(false);
 
   const fetchProducts = async () => {
+    if (!selectedStore) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -156,6 +163,7 @@ export function SeoOptimization() {
           optimization_count,
           product_variants(sku)
         `)
+        .eq('store_id', selectedStore.id)
         .order("imported_at", { ascending: false });
 
       if (error) throw error;
@@ -171,6 +179,15 @@ export function SeoOptimization() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Recharger les produits quand la boutique change
+  useEffect(() => {
+    if (selectedStore) {
+      console.log('🔄 [SEO_OPTIMIZATION] Store changed, reloading products for:', selectedStore.store_name);
+      setSelectedProducts(new Set()); // Vider les sélections
+      fetchProducts();
+    }
+  }, [selectedStore]);
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {
