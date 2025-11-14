@@ -32,6 +32,9 @@ interface Product {
   id: string;
   title: string;
   image_url: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  vision_ai_data?: any;
 }
 
 interface AiBackgroundDialogProps {
@@ -50,6 +53,7 @@ export interface AiBackgroundConfig {
   selectedImages: Map<string, string>; // productId -> imageUrl
   applyTo: 'main' | 'variants';
   selectedVariantIds?: string[];
+  enrichedPrompt?: string; // Prompt enrichi avec titre, description et vision IA
 }
 
 export function AiBackgroundDialog({
@@ -89,6 +93,20 @@ export function AiBackgroundDialog({
         finalConfig.selectedImages.set(product.id, product.image_url || '');
       });
     }
+    
+    // Enrichir le prompt avec les données du produit
+    const productContext = selectedProducts.map(product => {
+      const parts = [];
+      if (product.title) parts.push(`Product: ${product.title}`);
+      if (product.seo_title) parts.push(`SEO Title: ${product.seo_title}`);
+      if (product.seo_description) parts.push(`Description: ${product.seo_description}`);
+      if (product.vision_ai_data?.description) parts.push(`Vision AI: ${product.vision_ai_data.description}`);
+      return parts.join('. ');
+    }).filter(Boolean).join('\n');
+    
+    finalConfig.enrichedPrompt = productContext 
+      ? `${config.prompt}\n\nProduct Context:\n${productContext}`
+      : config.prompt;
     
     onConfirm(finalConfig);
     onOpenChange(false);
@@ -316,7 +334,7 @@ export function AiBackgroundDialog({
           </div>
 
           {/* Cible d'application */}
-          {singleProduct && (
+          {singleProduct && uniqueVariantImages.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Appliquer le résultat à</Label>
               <RadioGroup value={config.applyTo} onValueChange={(v) => {
@@ -326,7 +344,7 @@ export function AiBackgroundDialog({
                   selectedVariantIds: v !== 'variants' ? [] : config.selectedVariantIds
                 });
               }}>
-                {/* Image principale - toujours affichée */}
+                {/* Image principale */}
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <RadioGroupItem value="main" id="main" />
                   <Label htmlFor="main" className="flex-1 cursor-pointer text-sm">
@@ -335,53 +353,51 @@ export function AiBackgroundDialog({
                   </Label>
                 </div>
                 
-                {/* Variantes - uniquement si le produit a des variantes */}
-                {uniqueVariantImages.length > 0 && (
-                  <div className="p-3 rounded-lg border space-y-3">
-                    <div className="flex items-start space-x-2">
-                      <RadioGroupItem value="variants" id="variants" className="mt-1" />
-                      <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
-                        Variantes spécifiques
-                        <p className="text-xs text-muted-foreground mt-1">Sélectionnez les variantes à modifier</p>
-                      </Label>
-                    </div>
-                    
-                    {config.applyTo === 'variants' && (
-                      <ScrollArea className="max-h-[200px]">
-                        <div className="pl-6 grid grid-cols-3 gap-2">
-                          {uniqueVariantImages.map((variant) => (
-                            <button
-                              key={variant.id}
-                              type="button"
-                              onClick={() => toggleVariantSelection(variant.id)}
-                              className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
-                                config.selectedVariantIds?.includes(variant.id)
-                                  ? 'border-primary ring-2 ring-primary'
-                                  : 'border-border hover:border-primary/50'
-                              }`}
-                            >
-                              <img
-                                src={variant.src}
-                                alt={variant.alt_text || getVariantLabel(variant)}
-                                className="w-full h-full object-cover"
-                              />
-                              {config.selectedVariantIds?.includes(variant.id) && (
-                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                  <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                    <Check className="w-4 h-4" />
-                                  </div>
-                                </div>
-                              )}
-                              <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
-                                {getVariantLabel(variant)}
-                              </Badge>
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    )}
+                {/* Variantes */}
+                <div className="p-3 rounded-lg border space-y-3">
+                <div className="flex items-start space-x-2">
+                    <RadioGroupItem value="variants" id="variants" className="mt-1" />
+                    <Label htmlFor="variants" className="flex-1 cursor-pointer text-sm">
+                      Variantes spécifiques
+                      <p className="text-xs text-muted-foreground mt-1">Sélectionnez les variantes à modifier</p>
+                    </Label>
                   </div>
-                )}
+                  
+                  {config.applyTo === 'variants' && (
+                    <ScrollArea className="max-h-[200px]">
+                      <div className="pl-6 grid grid-cols-3 gap-2">
+                        {uniqueVariantImages.map((variant) => (
+                          <button
+                            key={variant.id}
+                            type="button"
+                            onClick={() => toggleVariantSelection(variant.id)}
+                            className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all ${
+                              config.selectedVariantIds?.includes(variant.id)
+                                ? 'border-primary ring-2 ring-primary'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <img
+                              src={variant.src}
+                              alt={variant.alt_text || getVariantLabel(variant)}
+                              className="w-full h-full object-cover"
+                            />
+                            {config.selectedVariantIds?.includes(variant.id) && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              </div>
+                            )}
+                            <Badge className="absolute bottom-1 left-1 right-1 text-[10px] text-center truncate">
+                              {getVariantLabel(variant)}
+                            </Badge>
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
               </RadioGroup>
             </div>
           )}
