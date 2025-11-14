@@ -45,10 +45,18 @@ export function CollectionImageDialog({
     try {
       setLoading(true);
       
-      // Get most popular product from this collection
+      // Get most popular product from this collection with its images
       const { data: products, error } = await supabase
         .from('shopify_products')
-        .select('image_url, inventory_quantity')
+        .select(`
+          id,
+          image_url,
+          inventory_quantity,
+          product_images (
+            src,
+            position
+          )
+        `)
         .contains('collection_ids', [collection.id])
         .order('inventory_quantity', { ascending: false })
         .limit(1);
@@ -60,7 +68,14 @@ export function CollectionImageDialog({
         return;
       }
 
-      const imageUrl = products[0].image_url;
+      // Try to get image from product_images first, fallback to image_url
+      let imageUrl = products[0].image_url;
+      
+      if (products[0].product_images && products[0].product_images.length > 0) {
+        // Sort by position and get first image
+        const sortedImages = products[0].product_images.sort((a: any, b: any) => a.position - b.position);
+        imageUrl = sortedImages[0].src;
+      }
       
       if (!imageUrl) {
         toast.error('Le produit populaire n\'a pas d\'image');
