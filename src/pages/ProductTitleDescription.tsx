@@ -246,16 +246,28 @@ export default function ProductTitleDescription() {
       // Charger les variantes pour ces produits
       if (productsData && productsData.length > 0) {
         const productIds = productsData.map(p => p.id);
-        const { data: variantsData } = await supabase
+        console.log('🔍 [PRODUCT_TITLE] Loading variants for products:', productIds.length);
+        
+        const { data: variantsData, error: variantsError } = await supabase
           .from("product_variants")
           .select("id, product_id, title, option1, option2, option3")
           .in("product_id", productIds);
 
+        if (variantsError) {
+          console.error('❌ [PRODUCT_TITLE] Error loading variants:', variantsError);
+        } else {
+          console.log('✅ [PRODUCT_TITLE] Loaded variants:', variantsData?.length || 0);
+        }
+
         // Associer les variantes aux produits
-        const productsWithVariants = productsData.map(product => ({
-          ...product,
-          variants: variantsData?.filter(v => v.product_id === product.id) || []
-        }));
+        const productsWithVariants = productsData.map(product => {
+          const productVariants = variantsData?.filter(v => v.product_id === product.id) || [];
+          console.log(`🔍 [PRODUCT_TITLE] Product ${product.title} has ${productVariants.length} variants`);
+          return {
+            ...product,
+            variants: productVariants
+          };
+        });
 
         console.log('📊 [PRODUCT_TITLE] Fetched products with variants:', productsWithVariants.length);
         setProducts(productsWithVariants as Product[]);
