@@ -23,8 +23,10 @@ export function useQuotaMonitoring() {
     }
 
     const checkBusinessOpportunities = async () => {
+      console.log('🔍 [QuotaMonitoring] Checking business opportunities...');
       try {
         const language = (navigator.language.startsWith('en') ? 'en' : 'fr') as 'fr' | 'en';
+        console.log('🌐 [QuotaMonitoring] Language detected:', language);
 
         // Check for products needing optimization
         // @ts-ignore - Complex Supabase type causes TS deep instantiation error
@@ -47,6 +49,7 @@ export function useQuotaMonitoring() {
           productsWithoutTitle?.length || 0,
           productsWithoutDesc?.length || 0
         );
+        console.log('📦 [QuotaMonitoring] Unoptimized products:', unoptimizedProducts);
 
         // Check for images needing alt text
         // @ts-ignore - Complex Supabase type causes TS deep instantiation error
@@ -58,6 +61,7 @@ export function useQuotaMonitoring() {
           .limit(100);
 
         const imagesWithoutAlt = imagesWithoutAltData?.length || 0;
+        console.log('🖼️ [QuotaMonitoring] Images without alt:', imagesWithoutAlt);
 
         // Check for collections needing optimization
         // @ts-ignore - Complex Supabase type causes TS deep instantiation error
@@ -80,9 +84,13 @@ export function useQuotaMonitoring() {
           collectionsWithoutTitle?.length || 0,
           collectionsWithoutDesc?.length || 0
         );
+        console.log('📂 [QuotaMonitoring] Unoptimized collections:', unoptimizedCollections);
 
         // Send business-oriented notifications only if significant opportunities exist
+        console.log('🎯 [QuotaMonitoring] Checking thresholds - Products:', unoptimizedProducts, 'Images:', imagesWithoutAlt, 'Collections:', unoptimizedCollections);
+        
         if (unoptimizedProducts >= 5) {
+          console.log('✉️ [QuotaMonitoring] Sending products notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
@@ -101,6 +109,7 @@ export function useQuotaMonitoring() {
         }
 
         if (imagesWithoutAlt >= 10) {
+          console.log('✉️ [QuotaMonitoring] Sending images notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
@@ -119,6 +128,7 @@ export function useQuotaMonitoring() {
         }
 
         if (unoptimizedCollections >= 3) {
+          console.log('✉️ [QuotaMonitoring] Sending collections notification');
           await sendNotification({
             user_id: user.id,
             title: language === 'fr' 
@@ -136,11 +146,12 @@ export function useQuotaMonitoring() {
           });
         }
       } catch (error) {
-        console.error('Error checking business opportunities:', error);
+        console.error('❌ [QuotaMonitoring] Error checking business opportunities:', error);
       }
     };
 
     // Check after 30 seconds then every 5 minutes
+    console.log('⏰ [QuotaMonitoring] Scheduling initial check in 30 seconds...');
     const initialTimer = setTimeout(checkBusinessOpportunities, 30000);
     checkInterval.current = setInterval(checkBusinessOpportunities, 5 * 60 * 1000);
 
