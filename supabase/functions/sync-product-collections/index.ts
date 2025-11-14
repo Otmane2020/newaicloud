@@ -68,65 +68,76 @@ Deno.serve(async (req: Request) => {
     console.log(`📦 Processing ${products?.length || 0} products`);
 
     let updatedCount = 0;
+    let errorCount = 0;
     const shopifyUrl = connection.store_url.replace(/\/$/, "").replace(/^https?:\/\//, "");
     const accessToken = connection.access_token;
 
-    // Process products using GraphQL (more efficient)
-    console.log(`🔄 Using GraphQL to fetch product collections...`);
+    console.log(`🔄 Processing ${products?.length || 0} products in batches of 50...`);
     
-    for (const product of products || []) {
-      if (!product.shopify_id) continue;
+    // Process products in batches of 50 simultaneously
+    const BATCH_SIZE = 50;
+    const batches = [];
+    
+    for (let i = 0; i < (products || []).length; i += BATCH_SIZE) {
+      batches.push((products || []).slice(i, i + BATCH_SIZE));
+    }
+    
+    console.log(`📦 Created ${batches.length} batches to process`);
 
-      try {
-        // Use GraphQL to get product collections in one call
-        const graphqlQuery = `
-          query {
-            product(id: "gid://shopify/Product/${product.shopify_id}") {
-              collections(first: 100) {
-                edges {
-                  node {
-                    id
-                    legacyResourceId
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`🔄 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} products)`);
+      
+      const batchPromises = batch.map(async (product) => {
+        if (!product.shopify_id) return null;
+
+        try {
+          const graphqlQuery = `
+            query {
+              product(id: "gid://shopify/Product/${product.shopify_id}") {
+                collections(first: 100) {
+                  edges {
+                    node {
+                      legacyResourceId
+                    }
                   }
                 }
               }
             }
+          `;
+
+          const graphqlResponse = await fetch(
+            `https://${shopifyUrl}/admin/api/2025-01/graphql.json`,
+            {
+              method: "POST",
+              headers: {
+                "X-Shopify-Access-Token": accessToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ query: graphqlQuery }),
+            }
+          );
+
+          if (!graphqlResponse.ok) {
+            console.error(`❌ GraphQL failed for product ${product.shopify_id}`);
+            return { success: false };
           }
-        `;
 
-        const graphqlResponse = await fetch(
-          `https://${shopifyUrl}/admin/api/2025-01/graphql.json`,
-          {
-            method: "POST",
-            headers: {
-              "X-Shopify-Access-Token": accessToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query: graphqlQuery }),
+          const graphqlData = await graphqlResponse.json();
+          
+          if (graphqlData.errors) {
+            console.error(`❌ GraphQL errors for product ${product.shopify_id}`);
+            return { success: false };
           }
-        );
 
-        if (!graphqlResponse.ok) {
-          console.error(`❌ GraphQL failed for product ${product.shopify_id}`);
-          continue;
-        }
+          const productCollections = graphqlData.data?.product?.collections?.edges || [];
+          
+          // Map Shopify collection IDs to our internal UUIDs
+          const internalCollectionIds = productCollections
+            .map((edge: any) => collectionMap.get(String(edge.node.legacyResourceId)))
+            .filter(Boolean);
 
-        const graphqlData = await graphqlResponse.json();
-        
-        if (graphqlData.errors) {
-          console.error(`❌ GraphQL errors for product ${product.shopify_id}:`, graphqlData.errors);
-          continue;
-        }
-
-        const productCollections = graphqlData.data?.product?.collections?.edges || [];
-        
-        // Map Shopify collection IDs to our internal UUIDs
-        const internalCollectionIds = productCollections
-          .map((edge: any) => collectionMap.get(String(edge.node.legacyResourceId)))
-          .filter(Boolean);
-
-        if (internalCollectionIds.length > 0) {
-          // Update product with collection_ids
+          // Always update, even if empty array (to ensure consistency)
           const { error: updateError } = await supabase
             .from("shopify_products")
             .update({ 
@@ -137,28 +148,43 @@ Deno.serve(async (req: Request) => {
 
           if (updateError) {
             console.error(`❌ Error updating product ${product.id}:`, updateError);
-          } else {
-            updatedCount++;
-            console.log(`✅ Updated product ${product.id} with ${internalCollectionIds.length} collections`);
+            return { success: false };
           }
-        } else {
-          console.log(`ℹ️ Product ${product.id} has no collections`);
+          
+          return { 
+            success: true, 
+            collectionCount: internalCollectionIds.length 
+          };
+        } catch (error) {
+          console.error(`❌ Error processing product ${product.id}:`, error);
+          return { success: false };
         }
+      });
 
-        // Rate limiting (GraphQL is more efficient, still be respectful)
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (error) {
-        console.error(`❌ Error processing product ${product.id}:`, error);
+      const batchResults = await Promise.all(batchPromises);
+      
+      const successCount = batchResults.filter(r => r?.success).length;
+      const failCount = batchResults.filter(r => !r?.success).length;
+      
+      updatedCount += successCount;
+      errorCount += failCount;
+      
+      console.log(`✅ Batch ${batchIndex + 1} complete: ${successCount} updated, ${failCount} errors`);
+      
+      // Small delay between batches to respect Shopify rate limits
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
-    console.log(`✨ Sync complete: ${updatedCount} products updated`);
+    console.log(`✨ Sync complete: ${updatedCount} products updated, ${errorCount} errors`);
 
     return new Response(JSON.stringify({
       success: true,
       updated_count: updatedCount,
+      error_count: errorCount,
       total_products: products?.length || 0
-    }), { 
+    }), {
       status: 200, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });

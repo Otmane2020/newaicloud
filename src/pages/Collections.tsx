@@ -137,12 +137,20 @@ export default function Collections() {
       if (syncError) throw syncError;
 
       const updatedCount = data?.updated_count || 0;
+      const errorCount = data?.error_count || 0;
       const totalProducts = data?.total_products || 0;
       
-      toast.success(
-        `✅ Synchronisation terminée: ${updatedCount} produits mis à jour sur ${totalProducts}`,
-        { duration: 5000 }
-      );
+      if (errorCount > 0) {
+        toast.warning(
+          `⚠️ Synchronisation terminée avec erreurs: ${updatedCount} produits mis à jour, ${errorCount} erreurs sur ${totalProducts}`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.success(
+          `✅ Synchronisation terminée: ${updatedCount} produits mis à jour sur ${totalProducts}`,
+          { duration: 5000 }
+        );
+      }
       
       // Reload collections to show updated product counts
       await fetchCollections();
