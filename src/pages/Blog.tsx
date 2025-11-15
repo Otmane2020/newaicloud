@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings, Zap } from 'lucide-react';
+import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings, Zap, Share2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
 import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
@@ -36,6 +36,7 @@ export default function Blog() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const { limits } = useUsageLimits();
+  const [indexingArticle, setIndexingArticle] = useState<string | null>(null);
 
   useEffect(() => {
     const subtab = searchParams.get('subtab');
@@ -149,6 +150,62 @@ export default function Blog() {
     } catch (error: any) {
       console.error('Error:', error);
       toast.error(error.message || t.blog.management.messages.syncError);
+    }
+  };
+
+  const handleRequestIndexing = async (articleId: string, articleTitle: string) => {
+    setIndexingArticle(articleId);
+    try {
+      // Get article details to build URL
+      const article = articles.find(a => a.id === articleId);
+      if (!article) {
+        toast.error('Article introuvable');
+        return;
+      }
+
+      // Get store domain
+      const { data: storeData } = await supabase
+        .from('shopify_connections')
+        .select('store_url, public_domain')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!storeData) {
+        toast.error('Boutique introuvable');
+        return;
+      }
+
+      const domain = storeData.public_domain && !storeData.public_domain.includes('.myshopify.com')
+        ? storeData.public_domain
+        : storeData.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+      if (!domain) {
+        toast.error('Domaine de boutique introuvable');
+        return;
+      }
+
+      const articleUrl = `https://${domain}/blogs/news/${article.handle || articleTitle.toLowerCase().replace(/\s+/g, '-')}`;
+
+      const { data, error } = await supabase.functions.invoke('request-gsc-indexing', {
+        body: { articleId, url: articleUrl }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Demande d\'indexation envoyée avec succès');
+      } else if (data?.error === 'NO_GOOGLE_AUTH') {
+        toast.error('Veuillez connecter Google Search Console d\'abord');
+      } else if (data?.error === 'quota_exceeded') {
+        toast.warning('Quota d\'indexation dépassé, réessayez demain');
+      } else {
+        toast.error('Erreur lors de la demande d\'indexation');
+      }
+    } catch (error) {
+      console.error('Error requesting indexing:', error);
+      toast.error('Erreur lors de la demande d\'indexation');
+    } finally {
+      setIndexingArticle(null);
     }
   };
 
@@ -552,6 +609,27 @@ export default function Blog() {
                           Publié
                         </Badge>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRequestIndexing(article.id, article.title);
+                        }}
+                        disabled={indexingArticle === article.id}
+                      >
+                        {indexingArticle === article.id ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Indexation...
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Indexer
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 ))}
