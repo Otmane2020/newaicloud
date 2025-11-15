@@ -308,8 +308,8 @@ export function calculateTagsScore(tags: string | null | undefined): number {
  * Pondération: Title 35% + Description 35% + Tags 15% + Image 6% + URL 6%
  * 
  * NOUVELLE RÈGLE:
- * - Si non-optimisé (optimization_count === 0), le score est divisé par 2 (pénalité de 50%)
  * - Si optimisé (optimization_count > 0), bonus d'optimisation garantit score > 80%
+ * - Pas de pénalité directe pour non-optimisé (la pondération 30/70 s'applique au niveau global)
  * 
  * @param optimizationCount - Number of times content was AI-optimized
  */
@@ -334,7 +334,7 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // NOUVELLE RÈGLE: Pénalité pour produits non-optimisés
+  // NOUVELLE RÈGLE: Bonus uniquement pour produits optimisés
   const isOptimized = optimizationCount && optimizationCount > 0;
   
   let finalScore: number;
@@ -345,8 +345,9 @@ export function calculateDetailedSeoScore(
     const optimizationBonus = Math.max(15, Math.ceil(82 - weightedScore));
     finalScore = Math.min(95, weightedScore + optimizationBonus);
   } else {
-    // ❌ Pour produits NON-OPTIMISÉS: Score divisé par 2 (pénalité 50%)
-    finalScore = Math.round(weightedScore * 0.5);
+    // ❌ Pour produits NON-OPTIMISÉS: Score de base sans pénalité
+    // La pondération 30/70 sera appliquée au niveau du calcul global
+    finalScore = weightedScore;
   }
 
   return {
