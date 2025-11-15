@@ -199,6 +199,14 @@ ${
    - CRITICAL: Remove and replace the existing background completely with a new one
    - ${prompt}
    - ${styleDescriptions[style]}
+   - CREATE A REALISTIC LIFESTYLE SETTING with appropriate decorative elements:
+     * Furniture products → Show in a styled room with complementary furniture (sofas, tables, lighting)
+     * Kitchen items → Display in modern kitchen with countertops, appliances, natural ingredients
+     * Tech products → Modern desk setup with plants, books, ambient lighting
+     * Fashion items → Elegant dressing room or boutique setting with mirrors, texture backgrounds
+     * Food/beverages → Beautiful table setting with complementary dishes, elegant presentation
+     * Home decor → Cozy living space with harmonious decoration elements
+   - Background should tell a story and create emotional connection
    - Professional color grading
    - Balanced exposure and contrast
    - No watermarks, text, or logos

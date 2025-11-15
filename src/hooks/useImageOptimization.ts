@@ -76,21 +76,29 @@ export const useImageOptimization = () => {
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
       
-      const { data, error } = await supabase.functions.invoke('generate-white-background', {
-        body: { imageUrl, productTitle, resolution }
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: { imageUrl, productTitle, resolution }
+        });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to generate white background');
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error || 'Failed to generate white background');
 
-      return {
-        success: true,
-        imageUrl: data.imageUrl
-      };
+        return {
+          success: true,
+          imageUrl: data.imageUrl
+        };
+      } catch (error) {
+        setIsOptimizing(false);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
       queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+    },
+    onError: () => {
+      setIsOptimizing(false);
     },
     onSettled: () => {
       setIsOptimizing(false);
@@ -111,34 +119,39 @@ export const useImageOptimization = () => {
     }) => {
       setIsOptimizing(true);
       
-      console.log('🎨 [AI_BG] Starting generation for:', productTitle);
-      
-      const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
-        body: { productTitle, basePrompt, style, format }
-      });
+      try {
+        console.log('🎨 [AI_BG] Starting generation for:', productTitle);
+        
+        const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
+          body: { productTitle, basePrompt, style, format }
+        });
 
-      if (error) {
-        console.error('🎨 [AI_BG] Edge function error:', error);
+        if (error) {
+          console.error('🎨 [AI_BG] Edge function error:', error);
+          throw error;
+        }
+        
+        if (!data.success) {
+          console.error('🎨 [AI_BG] Generation failed:', data.error);
+          throw new Error(data.error || 'Failed to generate variants');
+        }
+
+        console.log('🎨 [AI_BG] API Response:', {
+          success: data.success,
+          totalGenerated: data.totalGenerated,
+          variantsCount: data.variants?.length,
+          firstVariant: {
+            hasImageUrl: !!data.variants?.[0]?.imageUrl,
+            hasImageBase64: !!data.variants?.[0]?.imageBase64,
+            imageUrlLength: data.variants?.[0]?.imageUrl?.length || 0
+          }
+        });
+
+        return data;
+      } catch (error) {
+        setIsOptimizing(false);
         throw error;
       }
-      
-      if (!data.success) {
-        console.error('🎨 [AI_BG] Generation failed:', data.error);
-        throw new Error(data.error || 'Failed to generate variants');
-      }
-
-      console.log('🎨 [AI_BG] API Response:', {
-        success: data.success,
-        totalGenerated: data.totalGenerated,
-        variantsCount: data.variants?.length,
-        firstVariant: {
-          hasImageUrl: !!data.variants?.[0]?.imageUrl,
-          hasImageBase64: !!data.variants?.[0]?.imageBase64,
-          imageUrlLength: data.variants?.[0]?.imageUrl?.length || 0
-        }
-      });
-
-      return data;
     },
     onSuccess: () => {
       toast.success('4 variantes générées avec succès');
@@ -146,6 +159,7 @@ export const useImageOptimization = () => {
     onError: (error) => {
       console.error('Error generating variants:', error);
       toast.error('Erreur lors de la génération des variantes');
+      setIsOptimizing(false);
     },
     onSettled: () => {
       setIsOptimizing(false);
@@ -168,14 +182,19 @@ export const useImageOptimization = () => {
     }) => {
       setIsOptimizing(true);
       
-      const { data, error } = await supabase.functions.invoke('generate-product-description-html', {
-        body: { title, existingDescription, images, visionAnalysis, template }
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-product-description-html', {
+          body: { title, existingDescription, images, visionAnalysis, template }
+        });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to generate description');
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error || 'Failed to generate description');
 
-      return data;
+        return data;
+      } catch (error) {
+        setIsOptimizing(false);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Description HTML générée avec succès');
@@ -184,6 +203,7 @@ export const useImageOptimization = () => {
     onError: (error) => {
       console.error('Error generating description:', error);
       toast.error('Erreur lors de la génération de la description');
+      setIsOptimizing(false);
     },
     onSettled: () => {
       setIsOptimizing(false);
@@ -202,29 +222,38 @@ export const useImageOptimization = () => {
       resolution,
       qualityScore
     }: SaveHistoryParams & { imageId: string }) => {
-      // Update product image
-      const { error: updateError } = await supabase
-        .from('product_images')
-        .update({ 
-          src: optimizedUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', imageId);
+      setIsOptimizing(true);
+      
+      try {
+        // Update product image
+        const { error: updateError } = await supabase
+          .from('product_images')
+          .update({ 
+            src: optimizedUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', imageId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      // Save to history
-      await saveToHistory({
-        productId,
-        imageId,
-        optimizationType,
-        originalUrl,
-        optimizedUrl,
-        aiModel,
-        aiPrompt,
-        resolution,
-        qualityScore
-      });
+        // Save to history
+        await saveToHistory({
+          productId,
+          imageId,
+          optimizationType,
+          originalUrl,
+          optimizedUrl,
+          aiModel,
+          aiPrompt,
+          resolution,
+          qualityScore
+        });
+        
+        return { success: true };
+      } catch (error) {
+        setIsOptimizing(false);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Image appliquée avec succès');
@@ -235,6 +264,10 @@ export const useImageOptimization = () => {
     onError: (error) => {
       console.error('Error applying image:', error);
       toast.error('Erreur lors de l\'application de l\'image');
+      setIsOptimizing(false);
+    },
+    onSettled: () => {
+      setIsOptimizing(false);
     }
   });
 

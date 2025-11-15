@@ -79,7 +79,14 @@ ${isMainImage ? `
    - Background should enhance product luxury and appeal
    - Think high-end editorial photography style
    - NEVER use plain white background (there's a separate function for that)
-   - Examples: marble textures, velvet surfaces, wooden aesthetics, soft gradients
+   - CREATE CONTEXTUAL LIFESTYLE SCENES with decorative elements:
+     * Furniture → Place in beautifully styled room with complementary pieces (sofa, cushions, plants, art)
+     * Kitchen products → Modern kitchen counter with fresh ingredients, elegant dishware
+     * Tech gadgets → Stylish desk with books, coffee, plants, warm lighting
+     * Fashion → Boutique atmosphere with mirrors, hangers, elegant textures
+     * Food items → Attractive table setting with plates, utensils, mood lighting
+     * Home accessories → Cozy living space with harmonious decor
+   - Examples: marble textures, velvet surfaces, wooden aesthetics, soft gradients, lifestyle settings
 
 3. TECHNICAL SPECS:
    - Square format (1024×1024)
