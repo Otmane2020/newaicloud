@@ -198,6 +198,7 @@ export default function ProductTitleDescription() {
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
+  const [cleaningEurodesign, setCleaningEurodesign] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -450,6 +451,32 @@ export default function ProductTitleDescription() {
       newSelected.add(productId);
     }
     setSelectedProducts(newSelected);
+  };
+
+  const handleCleanupEurodesign = async () => {
+    if (!confirm('⚠️ Cette action va supprimer TOUS les produits EURODESIGN avec backup automatique. Continuer ?')) {
+      return;
+    }
+    
+    setCleaningEurodesign(true);
+    const toastId = toast.loading('Nettoyage des produits EURODESIGN en cours...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('cleanup-eurodesign-products');
+      
+      if (error) throw error;
+      
+      console.log('Cleanup result:', data);
+      toast.success(data.message || `${data.productsDeleted} produits EURODESIGN supprimés`, { id: toastId });
+      
+      // Reload products after cleanup
+      await fetchProducts();
+    } catch (error: any) {
+      console.error('Error cleaning EURODESIGN:', error);
+      toast.error(error.message || 'Erreur lors du nettoyage', { id: toastId });
+    } finally {
+      setCleaningEurodesign(false);
+    }
   };
 
   const handleOptimizeSelected = async (config?: OptimizationConfig) => {
@@ -1800,6 +1827,24 @@ export default function ProductTitleDescription() {
                 }}
               >
                 🔍 Debug Info
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleCleanupEurodesign}
+                disabled={cleaningEurodesign}
+              >
+                {cleaningEurodesign ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Nettoyage...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Nettoyer EURODESIGN
+                  </>
+                )}
               </Button>
             </div>
             <div className="flex-1 w-full lg:max-w-md">
