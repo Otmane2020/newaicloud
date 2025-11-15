@@ -240,7 +240,7 @@ export default function MediaHistory() {
       const productImages = item.shopify_products?.product_images || [];
       const variants = item.shopify_products?.product_variants || [];
       
-      onApply = (productImages.length > 0 || variants.length > 0) ? (
+      onApply = (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -250,7 +250,7 @@ export default function MediaHistory() {
               className="gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Appliquer à une image</span>
+              <span>Appliquer</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
@@ -371,7 +371,7 @@ export default function MediaHistory() {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : null;
+      );
     } else if (type === 'collection') {
       title = item.shopify_collections?.title || 'Collection inconnue';
       onApply = (
