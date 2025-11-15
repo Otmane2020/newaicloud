@@ -87,8 +87,8 @@ Deno.serve(async (req: Request) => {
     // Determine access token - fetch from DB if using OAuth (storeId)
     let accessToken = apiSecret || authToken;
     
-    if (storeId && !accessToken) {
-      console.log('🔍 [ARTICLES] Fetching access token from database for storeId:', storeId);
+    if (storeId) {
+      console.log('🔍 [ARTICLES] Fetching store details from database for storeId:', storeId);
       
       // Use service role client to fetch access token
       const supabaseServiceClient = createClient(
@@ -143,10 +143,16 @@ Deno.serve(async (req: Request) => {
         );
       }
       
-      accessToken = connection.access_token;
       // Extract shop name from store_url (e.g., "my-store.myshopify.com" -> "my-store")
       shopName = connection.store_url?.replace('.myshopify.com', '').replace('https://', '').replace('http://', '');
-      console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ') and shop name:', shopName);
+      
+      // Only use the token from DB if we don't already have one
+      if (!accessToken) {
+        accessToken = connection.access_token;
+        console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
+      }
+      
+      console.log('✅ [ARTICLES] Shop name extracted from database:', shopName);
     }
     
     if (!accessToken) {
