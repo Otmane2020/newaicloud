@@ -148,11 +148,12 @@ export default function Dashboard() {
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
-      // Build query with optional store filter
+      // Build query with optional store filter - fetch ALL products (no 1000 limit)
       let productsQuery = supabase
         .from('shopify_products')
         .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify')
-        .eq('seller_id', user?.id);
+        .eq('seller_id', user?.id)
+        .range(0, 9999); // Increase limit to support up to 10k products
 
       // Apply store filter only if a store is selected
       if (selectedStore?.id) {
@@ -209,7 +210,8 @@ export default function Dashboard() {
         .from('shopify_collections')
         .select('id, seo_title, title, seo_description, body_html, image_url, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '');
+        .eq('store_id', selectedStore?.id || '')
+        .range(0, 9999);
       
       const collectionsScore = collections && collections.length > 0
         ? Math.round(
@@ -232,7 +234,8 @@ export default function Dashboard() {
         .from('shopify_pages')
         .select('seo_title, title, seo_description, body_html, handle, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '');
+        .eq('store_id', selectedStore?.id || '')
+        .range(0, 9999);
 
       const pagesScore = pagesData && pagesData.length > 0
         ? Math.round(
@@ -255,7 +258,8 @@ export default function Dashboard() {
         .from('blog_articles')
         .select('title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
-        .or(selectedStore?.id ? `store_id.eq.${selectedStore.id},store_id.is.null` : 'store_id.is.null');
+        .or(selectedStore?.id ? `store_id.eq.${selectedStore.id},store_id.is.null` : 'store_id.is.null')
+        .range(0, 9999);
 
       const articlesScore = articlesData && articlesData.length > 0
         ? Math.round(
