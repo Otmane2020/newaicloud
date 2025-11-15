@@ -309,13 +309,13 @@ export const useImageOptimization = () => {
   });
 
   const applyAllOptimizedImages = useMutation({
-    mutationFn: async ({ 
+    mutationFn: async ({
       productId,
-    }: { 
+    }: {
       productId: string;
     }) => {
       setIsOptimizing(true);
-      
+
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
@@ -338,7 +338,7 @@ export const useImageOptimization = () => {
           // Update the product_images table with optimized URL
           const { error: updateError } = await supabase
             .from('product_images')
-            .update({ 
+            .update({
               src: history.optimized_url,
               updated_at: new Date().toISOString()
             })
@@ -358,30 +358,36 @@ export const useImageOptimization = () => {
           .eq('id', productId)
           .single();
 
-        const { error: productError } = await supabase
+        await supabase
           .from('shopify_products')
-          .update({ 
+          .update({
             optimization_count: (currentProduct?.optimization_count || 0) + historyData.length,
             last_optimization_at: new Date().toISOString()
           })
           .eq('id', productId);
 
-        if (productError) throw productError;
-
-        // Sync with Shopify
-        const { error: syncError } = await supabase.functions.invoke('shopify-sync-product', {
+        // Sync ALL images with Shopify - invoke the function
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
           body: { productId }
         });
 
-        if (syncError) throw syncError;
+        if (syncError) {
+          console.error('Erreur sync Shopify:', syncError);
+          throw new Error(`Erreur de synchronisation: ${syncError.message}`);
+        }
 
-        toast.success(`${historyData.length} images appliquées et synchronisées avec succès!`);
-        
+        if (!syncData?.success) {
+          throw new Error(syncData?.error || 'Échec de la synchronisation');
+        }
+
+        toast.success(`${historyData.length} images appliquées et synchronisées avec Shopify!`);
+
         await sendOptimizationNotification(historyData.length);
 
         return { success: true, count: historyData.length };
       } catch (error: any) {
         setIsOptimizing(false);
+        console.error('Erreur applyAllOptimizedImages:', error);
         toast.error(error.message || 'Erreur lors de l\'application des images');
         throw error;
       }
