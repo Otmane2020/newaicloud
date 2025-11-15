@@ -62,28 +62,43 @@ export function SeoAuditDashboard() {
       } = await supabase.auth.getUser();
 
       const [products, collections, pages, articles] = await Promise.all([
-        supabase.from("shopify_products").select("id, enrichment_status").eq("seller_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("shopify_collections").select("id, optimization_count").eq("user_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("shopify_pages").select("id, optimized").eq("user_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("blog_articles").select("id, optimization_count").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("shopify_products").select("id, seo_title, seo_description, enrichment_status").eq("seller_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("shopify_collections").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("shopify_pages").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("blog_articles").select("id, meta_description, content").eq("user_id", user?.id).eq("store_id", selectedStore.id),
       ]);
+
+      // Fetch images for image stats
+      const productIds = products.data?.map(p => p.id) || [];
+      const { data: images } = await supabase
+        .from("product_images")
+        .select("id, alt_text")
+        .in("product_id", productIds);
 
       setStats({
         products: {
           total: products.data?.length || 0,
-          optimized: products.data?.filter((p) => p.enrichment_status === "enriched").length || 0,
+          optimized: products.data?.filter((p) => p.seo_title && p.seo_description).length || 0,
         },
         collections: {
           total: collections.data?.length || 0,
-          optimized: collections.data?.filter((c) => c.optimization_count && c.optimization_count > 0).length || 0,
+          optimized: collections.data?.filter((c) => c.seo_title && c.seo_description).length || 0,
         },
         pages: {
           total: pages.data?.length || 0,
-          optimized: pages.data?.filter((p) => p.optimized).length || 0,
+          optimized: pages.data?.filter((p) => p.seo_title && p.seo_description).length || 0,
         },
         articles: {
           total: articles.data?.length || 0,
-          optimized: articles.data?.filter((a) => a.optimization_count && a.optimization_count > 0).length || 0,
+          optimized: articles.data?.filter((a) => a.meta_description && a.content).length || 0,
+        },
+        images: {
+          total: images?.length || 0,
+          optimized: images?.filter((img) => img.alt_text && img.alt_text.length > 0).length || 0,
+        },
+        technical: {
+          total: products.data?.length || 0,
+          optimized: products.data?.filter((p) => p.enrichment_status === 'enriched').length || 0,
         },
       });
     } catch (error) {
@@ -699,13 +714,17 @@ export function SeoAuditDashboard() {
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 const categoryStats =
                   stats?.[
-                    tab === "products"
-                      ? "products"
-                      : tab === "collections"
-                        ? "collections"
-                        : tab === "articles"
-                          ? "articles"
-                          : "pages"
+                    tab === "products" && key === "technical_score"
+                      ? "technical"
+                      : tab === "products"
+                        ? "products"
+                        : tab === "collections"
+                          ? "collections"
+                          : tab === "articles"
+                            ? "articles"
+                            : tab === "alt"
+                              ? "images"
+                              : "pages"
                   ];
                 const optimizedCount = categoryStats?.optimized || 0;
                 const totalCount = categoryStats?.total || 0;
