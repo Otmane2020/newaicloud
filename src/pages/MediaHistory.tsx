@@ -16,12 +16,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ExternalLink, Eye } from "lucide-react";
 
 export default function MediaHistory() {
   const queryClient = useQueryClient();
   const { t, language } = useTranslation();
   const dateLocale = language === 'fr' ? fr : enUS;
   const [activeTab, setActiveTab] = useState('products');
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string; type: string } | null>(null);
 
   // Product images history
   const { data: productHistory, isLoading: productLoading } = useQuery({
@@ -218,12 +227,16 @@ export default function MediaHistory() {
               variant="default"
               size="sm"
               disabled={applyProductImage.isPending}
+              className="gap-2"
             >
-              <CheckCircle2 className="w-4 h-4 mr-1" />
-              Appliquer
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Appliquer à une image</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-64">
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Choisir l'image à remplacer
+            </div>
             {item.shopify_products.product_images
               .sort((a: any, b: any) => a.position - b.position)
               .map((img: any, idx: number) => (
@@ -234,8 +247,27 @@ export default function MediaHistory() {
                     targetImageId: img.id,
                     optimizedUrl: item.optimized_url
                   })}
+                  className="gap-3"
                 >
-                  {idx === 0 ? '📸 Image principale' : `📷 Image ${idx + 1}`}
+                  <div className="flex items-center gap-2 flex-1">
+                    {idx === 0 ? (
+                      <>
+                        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-lg">📸</div>
+                        <div>
+                          <div className="font-medium">Image principale</div>
+                          <div className="text-xs text-muted-foreground">Visible sur la page produit</div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-lg">📷</div>
+                        <div>
+                          <div className="font-medium">Image {idx + 1}</div>
+                          <div className="text-xs text-muted-foreground">Galerie produit</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </DropdownMenuItem>
               ))
             }
@@ -281,12 +313,22 @@ export default function MediaHistory() {
         key={item.id}
         className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
       >
-        <div className="relative w-20 h-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
+        <div 
+          className="relative w-20 h-20 rounded-md overflow-hidden bg-muted flex-shrink-0 cursor-pointer group"
+          onClick={() => setPreviewImage({ 
+            url: item.optimized_url, 
+            title: title,
+            type: getOptimizationTypeLabel(item.optimization_type)
+          })}
+        >
           <img
             src={item.optimized_url}
             alt="Optimized"
             className="w-full h-full object-cover"
           />
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Eye className="w-6 h-6 text-white" />
+          </div>
         </div>
 
         <div className="flex-1 min-w-0 w-full">
@@ -390,13 +432,14 @@ export default function MediaHistory() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Historique des images IA</h1>
-        <p className="text-muted-foreground">
-          Retrouvez toutes vos images générées par IA et restaurez les versions précédentes
-        </p>
-      </div>
+    <>
+      <div className="container mx-auto p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Historique des images IA</h1>
+          <p className="text-muted-foreground">
+            Retrouvez toutes vos images générées par IA et restaurez les versions précédentes
+          </p>
+        </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto">
@@ -519,8 +562,58 @@ export default function MediaHistory() {
               </Card>
             );
           })()}
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              {previewImage?.title}
+            </DialogTitle>
+            <DialogDescription>
+              Type: {previewImage?.type}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative w-full bg-muted rounded-lg overflow-hidden">
+            <img
+              src={previewImage?.url}
+              alt={previewImage?.title}
+              className="w-full h-auto max-h-[70vh] object-contain"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (previewImage?.url) {
+                  window.open(previewImage.url, '_blank');
+                }
+              }}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Ouvrir dans un nouvel onglet
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (previewImage?.url) {
+                  const link = document.createElement('a');
+                  link.href = previewImage.url;
+                  link.download = `optimized-${Date.now()}.jpg`;
+                  link.click();
+                }
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Télécharger
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
