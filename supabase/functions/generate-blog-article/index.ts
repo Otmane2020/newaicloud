@@ -99,63 +99,113 @@ async function generateArticleHTML(
 ) {
   const product = products[0];
 
-  const prompt = `
-LANGUAGE: ${lang.toUpperCase()}
-FORMAT: PURE HTML ONLY
-WORDS: approx ${length}
-KEYWORDS: ${keywords.join(", ")}
+  const prompt = `Tu es un rédacteur SEO expert e-commerce. Génère un article PRODUIT complet en HTML pur pour Shopify Blog.
 
-Create a full SEO PRODUCT ARTICLE for Shopify Blog.
+LANGUE: Français (${lang})
+LONGUEUR: ${length} mots minimum
+MOTS-CLÉS: ${keywords.join(", ")}
 
-STRUCTURE REQUIRED:
+PRODUIT:
+- Titre: ${product.title}
+- Prix: ${product.price}€
+- Type: ${product.product_type}
+- Marque: ${product.vendor}
 
-<h1>Main SEO Title including the main keyword</h1>
+STRUCTURE OBLIGATOIRE (respecte l'ordre exact):
 
-<h2>Introduction</h2>
-<p>100–150 words…</p>
+<h1>Titre SEO optimisé avec mot-clé principal</h1>
 
-<h2>Présentation du Produit</h2>
-<h3>Description générale</h3>
-<p>…</p>
-
-<h3>Galerie Produit</h3>
-<div class="gallery">
-${products
-  .slice(0, 4)
-  .map((p) => `<img src="${p.full_image_url || p.image_url}" alt="${p.title}" />`)
-  .join("\n")}
+<div class="intro">
+<p>Introduction 150-200 mots expliquant le produit et ses bénéfices.</p>
 </div>
 
-<h3>Caractéristiques Techniques</h3>
-<table>
-<tr><td>Marque</td><td>${product.vendor}</td></tr>
-<tr><td>Type</td><td>${product.product_type}</td></tr>
-<tr><td>Prix</td><td>${product.price}€</td></tr>
+<h2>Présentation du Produit ${product.title}</h2>
+
+<h3>Description Détaillée</h3>
+<p>Paragraphe complet décrivant le produit, ses caractéristiques, son usage.</p>
+
+<h3>Galerie Photos</h3>
+<div class="product-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
+${products.slice(0, 4).map((p) => `  <img src="${p.full_image_url || p.image_url}" alt="${p.title}" style="width: 100%; border-radius: 8px;">`).join('\n')}
+</div>
+
+<h3>Fiche Produit</h3>
+<div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+<p><strong>Prix:</strong> ${product.price}€</p>
+<p><strong>Type:</strong> ${product.product_type}</p>
+<p><strong>Marque:</strong> ${product.vendor}</p>
+<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; margin-top: 1rem;">Voir le Produit</a>
+</div>
+
+<h2>Caractéristiques Techniques</h2>
+<table style="width: 100%; border-collapse: collapse; margin: 2rem 0;">
+<tr style="background: #f3f4f6;"><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Caractéristique</th><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Détail</th></tr>
+<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Marque</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.vendor}</td></tr>
+<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Type</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.product_type}</td></tr>
+<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Prix</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.price}€</td></tr>
 </table>
 
-<h2>Avantages</h2>
+<h2>Avantages et Points Forts</h2>
+<h3>Qualité des Matériaux</h3>
+<p>Paragraphe sur la qualité, les matériaux utilisés.</p>
+
+<h3>Design et Esthétique</h3>
+<p>Paragraphe sur le design, le style, l'apparence.</p>
+
+<h3>Pourquoi Choisir Ce Produit?</h3>
 <ul>
-<li>Point fort 1</li>
-<li>Point fort 2</li>
-<li>Point fort 3</li>
+<li>Premier avantage concret</li>
+<li>Deuxième avantage important</li>
+<li>Troisième point fort</li>
 </ul>
+
+<h2>Idées d'Utilisation et Décoration</h2>
+<h3>Style Moderne et Minimaliste</h3>
+<p>Comment intégrer le produit dans un décor moderne.</p>
+
+<h3>Style Industriel</h3>
+<p>Comment l'utiliser dans un style industriel.</p>
+
+<h3>Style Classique</h3>
+<p>Comment l'intégrer dans un intérieur classique.</p>
 
 <h2>Produits Similaires</h2>
-${products
-  .slice(1, 4)
-  .map((p) => `<p><a href="${p.product_url}">${p.title}</a></p>`)
-  .join("\n")}
+<p>Découvrez aussi nos autres produits dans la catégorie <a href="${storeUrl}/collections/${product.product_type || 'all'}" style="color: #1e40af; text-decoration: underline;">${product.product_type}</a>.</p>
 
-<h2>FAQ</h2>
+<h2>Avis Clients</h2>
+<div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
+<p><strong>⭐⭐⭐⭐⭐ Sophie M.</strong></p>
+<p>"Excellent produit, très satisfaite de mon achat!"</p>
+</div>
+
+<h2>Liens Utiles</h2>
 <ul>
-<li>Q1 + réponse</li>
-<li>Q2 + réponse</li>
+<li><a href="${storeUrl}/pages/contact" style="color: #1e40af;">Contactez-nous</a></li>
+<li><a href="${storeUrl}/pages/shipping" style="color: #1e40af;">Livraison</a></li>
+<li><a href="${storeUrl}/pages/returns" style="color: #1e40af;">Retours</a></li>
 </ul>
 
-<h2>Conclusion</h2>
-<p>Résumé + CTA</p>
+<h2>FAQ</h2>
+<h3>Quelle est la livraison?</h3>
+<p>Réponse sur la livraison.</p>
 
-Return ONLY HTML.`;
+<h3>Comment entretenir ce produit?</h3>
+<p>Conseils d'entretien.</p>
+
+<h2>Conclusion</h2>
+<p>Résumé des points clés et rappel des avantages. Invitation à l'achat.</p>
+<div style="text-align: center; margin: 2rem 0;">
+<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 1rem 3rem; border-radius: 6px; text-decoration: none; font-size: 1.125rem; font-weight: 600;">Acheter Maintenant</a>
+</div>
+
+RÈGLES CRITIQUES:
+- Retourne UNIQUEMENT le HTML (pas de balises html, head, body)
+- Français parfait, naturel, sans fautes
+- Intègre les mots-clés naturellement
+- Minimum ${length} mots
+- Liens produits cliquables avec ${products[0].product_url}
+- Structure H1 > H2 > H3 respectée
+`;
 
   const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
     method: "POST",
