@@ -1024,6 +1024,7 @@ export default function ProductTitleDescription() {
 
           if (data.imageUrl) {
             console.log(`✅ [AI BG] Successfully generated image for ${product.title.substring(0, 50)}...`);
+            console.log(`✅ [AI BG] Image URL:`, data.imageUrl.substring(0, 100));
             
             // 🔥 Save to history immediately after generation
             const { data: { user } } = await supabase.auth.getUser();
@@ -1046,13 +1047,16 @@ export default function ProductTitleDescription() {
               });
             }
             
-            setAiBgPreviews((prev) =>
-              prev.map((p) =>
-                p === preview
-                  ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+            // 🔥 FIX: Use productId instead of object comparison
+            setAiBgPreviews((prev) => {
+              const updated = prev.map((p) =>
+                p.productId === product.id
+                  ? { ...p, status: 'success' as const, generatedUrl: data.imageUrl }
                   : p
-              )
-            );
+              );
+              console.log(`✅ [AI BG] Preview updated for ${product.id}`);
+              return updated;
+            });
           } else {
             console.error('❌ [AI BG] No image URL in response:', data);
             throw new Error('Aucune image générée');
@@ -1061,9 +1065,10 @@ export default function ProductTitleDescription() {
           const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
           console.error(`❌ [AI BG] Error after ${elapsedTime}s:`, error.message);
           
+          // 🔥 FIX: Use productId instead of object comparison
           setAiBgPreviews((prev) =>
             prev.map((p) =>
-              p === preview ? { ...p, status: 'error', error: error.message } : p
+              p.productId === preview.productId ? { ...p, status: 'error' as const, error: error.message } : p
             )
           );
           
