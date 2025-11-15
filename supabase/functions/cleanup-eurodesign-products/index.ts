@@ -61,7 +61,9 @@ serve(async (req) => {
     console.log(`📦 Found ${eurodesignProducts.length} EURODESIGN products to delete`);
 
     const productIds = eurodesignProducts.map(p => p.id);
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 20; // Reduced batch size for safety
+    
+    console.log(`📊 Total batches: ${Math.ceil(productIds.length / BATCH_SIZE)}`);
 
     // Step 2: Backup to decora_home_backup_products (in batches)
     for (let i = 0; i < eurodesignProducts.length; i += BATCH_SIZE) {
@@ -90,67 +92,90 @@ serve(async (req) => {
     // Step 3: Delete related data in batches
     for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
       const batch = productIds.slice(i, i + BATCH_SIZE);
-      console.log(`🗑️ Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(productIds.length / BATCH_SIZE)}`);
+      const batchNum = i / BATCH_SIZE + 1;
+      const totalBatches = Math.ceil(productIds.length / BATCH_SIZE);
+      
+      console.log(`🗑️ Processing deletion batch ${batchNum}/${totalBatches} (${batch.length} products)`);
 
       // Delete product_variants
-      const { error: variantsError } = await supabase
-        .from('product_variants')
-        .delete()
-        .in('product_id', batch);
+      try {
+        console.log(`  ⏳ Deleting variants for batch ${batchNum}...`);
+        const { error: variantsError, count } = await supabase
+          .from('product_variants')
+          .delete()
+          .in('product_id', batch);
 
-      if (variantsError) {
-        console.error('❌ Error deleting variants:', variantsError);
-        throw variantsError;
+        if (variantsError) {
+          console.error(`❌ Error deleting variants in batch ${batchNum}:`, JSON.stringify(variantsError));
+          throw new Error(`Variants deletion failed: ${variantsError.message || JSON.stringify(variantsError)}`);
+        }
+        console.log(`  ✅ Variants deleted for batch ${batchNum}`);
+      } catch (err) {
+        console.error(`❌ Exception deleting variants in batch ${batchNum}:`, err);
+        throw err;
       }
 
       // Delete product_images
-      const { error: imagesError } = await supabase
-        .from('product_images')
-        .delete()
-        .in('product_id', batch);
+      try {
+        console.log(`  ⏳ Deleting images for batch ${batchNum}...`);
+        const { error: imagesError } = await supabase
+          .from('product_images')
+          .delete()
+          .in('product_id', batch);
 
-      if (imagesError) {
-        console.error('❌ Error deleting images:', imagesError);
-        throw imagesError;
+        if (imagesError) {
+          console.error(`❌ Error deleting images in batch ${batchNum}:`, JSON.stringify(imagesError));
+          throw new Error(`Images deletion failed: ${imagesError.message || JSON.stringify(imagesError)}`);
+        }
+        console.log(`  ✅ Images deleted for batch ${batchNum}`);
+      } catch (err) {
+        console.error(`❌ Exception deleting images in batch ${batchNum}:`, err);
+        throw err;
       }
 
-      // Delete landing_page_history
-      await supabase
-        .from('landing_page_history')
-        .delete()
-        .in('product_id', batch);
+      // Delete landing_page_history (non-critical)
+      console.log(`  ⏳ Deleting landing page history for batch ${batchNum}...`);
+      await supabase.from('landing_page_history').delete().in('product_id', batch);
 
-      // Delete product_image_history
-      await supabase
-        .from('product_image_history')
-        .delete()
-        .in('product_id', batch);
+      // Delete product_image_history (non-critical)
+      console.log(`  ⏳ Deleting image history for batch ${batchNum}...`);
+      await supabase.from('product_image_history').delete().in('product_id', batch);
 
-      // Delete product_landing_pages
-      await supabase
-        .from('product_landing_pages')
-        .delete()
-        .in('product_id', batch);
+      // Delete product_landing_pages (non-critical)
+      console.log(`  ⏳ Deleting landing pages for batch ${batchNum}...`);
+      await supabase.from('product_landing_pages').delete().in('product_id', batch);
+      
+      console.log(`✅ Batch ${batchNum}/${totalBatches} completed`);
     }
 
-    console.log('✅ Related data deleted');
+    console.log('✅ All related data deleted');
 
     // Step 4: Delete the products themselves (in batches)
+    console.log('🗑️ Starting product deletion...');
     for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
       const batch = productIds.slice(i, i + BATCH_SIZE);
+      const batchNum = i / BATCH_SIZE + 1;
+      const totalBatches = Math.ceil(productIds.length / BATCH_SIZE);
       
-      const { error: deleteError } = await supabase
-        .from('shopify_products')
-        .delete()
-        .in('id', batch);
+      try {
+        console.log(`  ⏳ Deleting products batch ${batchNum}/${totalBatches}...`);
+        const { error: deleteError } = await supabase
+          .from('shopify_products')
+          .delete()
+          .in('id', batch);
 
-      if (deleteError) {
-        console.error('❌ Error deleting products:', deleteError);
-        throw deleteError;
+        if (deleteError) {
+          console.error(`❌ Error deleting products in batch ${batchNum}:`, JSON.stringify(deleteError));
+          throw new Error(`Products deletion failed: ${deleteError.message || JSON.stringify(deleteError)}`);
+        }
+        console.log(`  ✅ Products deleted for batch ${batchNum}/${totalBatches}`);
+      } catch (err) {
+        console.error(`❌ Exception deleting products in batch ${batchNum}:`, err);
+        throw err;
       }
     }
 
-    console.log('✅ Products deleted successfully');
+    console.log('✅ All products deleted successfully');
 
     // Step 9: Update usage tracking
     const { data: currentUsage } = await supabase
@@ -206,11 +231,29 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('❌ Error in cleanup-eurodesign-products function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = error instanceof Error ? error.toString() : String(error);
+    
+    let errorMessage = 'Unknown error';
+    let errorDetails = {};
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n')
+      };
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage = JSON.stringify(error);
+      errorDetails = error;
+    } else {
+      errorMessage = String(error);
+    }
+    
+    console.error('📋 Error details:', JSON.stringify(errorDetails, null, 2));
     
     return new Response(
       JSON.stringify({
+        success: false,
         error: errorMessage,
         details: errorDetails
       }),
