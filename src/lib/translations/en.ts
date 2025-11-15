@@ -1776,7 +1776,7 @@ export const translations = {
     subtitle: "Complete analysis of your online visibility",
     currentScore: "CURRENT SCORE",
     categories: "SEO Categories",
-    excellentCount: "{{count}}/6 Excellent",
+    excellentCount: "{{count}}/7 Excellent",
     priorityRecommendation: "Priority Recommendation",
     potentialImpact: "Potential impact:",
     points: "points",
@@ -1792,7 +1792,7 @@ export const translations = {
       pages: "Pages",
       articles: "Articles",
       images: "Images",
-      technical: "Technical"
+      tags: "Tags"
     },
     categoryDescriptions: {
       homepage: "Title and description of your homepage",
@@ -1801,7 +1801,7 @@ export const translations = {
       pages: "Custom pages",
       articles: "Blog articles",
       images: "Alt texts",
-      technical: "Shopify configuration"
+      tags: "Product tags optimization"
     },
     recommendations: {
       homepage: "Optimize your homepage title and description to attract more qualified visitors. A good homepage SEO can increase your traffic by 20-30%.",
@@ -1810,7 +1810,7 @@ export const translations = {
       pages: "Optimize your custom pages for better visibility. Well-optimized pages strengthen your SEO foundation.",
       articles: "Create optimized content to attract organic traffic. Quality articles reinforce your topical authority.",
       images: "Add descriptive alt texts to all your images. Images can represent up to 20% of organic traffic.",
-      technical: "Check your technical configuration and metadata. A good technical foundation is essential for SEO."
+      tags: "Optimize your product tags to improve categorization. Well-structured tags enhance discoverability and SEO."
     }
   },
 
