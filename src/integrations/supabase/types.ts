@@ -1062,6 +1062,336 @@ export type Database = {
           },
         ]
       }
+      decora_home_backup_metadata: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          operation_date: string
+          operation_status: string | null
+          operation_type: string
+          products_backed_up: number | null
+          products_deleted: number | null
+          store_id: string
+          store_name: string | null
+          variants_backed_up: number | null
+          variants_deleted: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          operation_date?: string
+          operation_status?: string | null
+          operation_type: string
+          products_backed_up?: number | null
+          products_deleted?: number | null
+          store_id: string
+          store_name?: string | null
+          variants_backed_up?: number | null
+          variants_deleted?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          operation_date?: string
+          operation_status?: string | null
+          operation_type?: string
+          products_backed_up?: number | null
+          products_deleted?: number | null
+          store_id?: string
+          store_name?: string | null
+          variants_backed_up?: number | null
+          variants_deleted?: number | null
+        }
+        Relationships: []
+      }
+      decora_home_backup_products: {
+        Row: {
+          adult: boolean | null
+          age_group: string | null
+          backup_date: string
+          backup_id: string
+          backup_reason: string | null
+          body_html: string | null
+          brand: string | null
+          collection_ids: string[] | null
+          color: string | null
+          condition: string | null
+          cost: number | null
+          created_at: string | null
+          currency: string | null
+          energy_efficiency_class: string | null
+          gender: string | null
+          google_category: string | null
+          google_category_id: number | null
+          gtin: string | null
+          handle: string | null
+          has_landing_page: boolean | null
+          is_bundle: boolean | null
+          item_group_id: string | null
+          landing_page_html: string | null
+          landing_page_mobile_html: string | null
+          last_landing_generation_at: string | null
+          last_optimization_at: string | null
+          last_synced_at: string | null
+          margin_percentage: number | null
+          material: string | null
+          max_energy_efficiency_class: string | null
+          min_energy_efficiency_class: string | null
+          mpn: string | null
+          multipack: number | null
+          optimization_count: number | null
+          optimized_at: string | null
+          original_product_id: string
+          pattern: string | null
+          product_type: string | null
+          published_at: string | null
+          seller_id: string | null
+          seo_description: string | null
+          seo_title: string | null
+          shipping_cost: number | null
+          shopify_id: number | null
+          shopping_last_optimized_at: string | null
+          shopping_optimization_score: number | null
+          shopping_optimized: boolean | null
+          size: string | null
+          size_system: string | null
+          size_type: string | null
+          status: string | null
+          store_id: string | null
+          store_name: string | null
+          tags: string | null
+          template_suffix: string | null
+          title: string | null
+          updated_at: string | null
+          vendor: string | null
+          vision_analyzed: boolean | null
+          vision_attributes: Json | null
+          vision_confidence: number | null
+        }
+        Insert: {
+          adult?: boolean | null
+          age_group?: string | null
+          backup_date?: string
+          backup_id?: string
+          backup_reason?: string | null
+          body_html?: string | null
+          brand?: string | null
+          collection_ids?: string[] | null
+          color?: string | null
+          condition?: string | null
+          cost?: number | null
+          created_at?: string | null
+          currency?: string | null
+          energy_efficiency_class?: string | null
+          gender?: string | null
+          google_category?: string | null
+          google_category_id?: number | null
+          gtin?: string | null
+          handle?: string | null
+          has_landing_page?: boolean | null
+          is_bundle?: boolean | null
+          item_group_id?: string | null
+          landing_page_html?: string | null
+          landing_page_mobile_html?: string | null
+          last_landing_generation_at?: string | null
+          last_optimization_at?: string | null
+          last_synced_at?: string | null
+          margin_percentage?: number | null
+          material?: string | null
+          max_energy_efficiency_class?: string | null
+          min_energy_efficiency_class?: string | null
+          mpn?: string | null
+          multipack?: number | null
+          optimization_count?: number | null
+          optimized_at?: string | null
+          original_product_id: string
+          pattern?: string | null
+          product_type?: string | null
+          published_at?: string | null
+          seller_id?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shipping_cost?: number | null
+          shopify_id?: number | null
+          shopping_last_optimized_at?: string | null
+          shopping_optimization_score?: number | null
+          shopping_optimized?: boolean | null
+          size?: string | null
+          size_system?: string | null
+          size_type?: string | null
+          status?: string | null
+          store_id?: string | null
+          store_name?: string | null
+          tags?: string | null
+          template_suffix?: string | null
+          title?: string | null
+          updated_at?: string | null
+          vendor?: string | null
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
+        }
+        Update: {
+          adult?: boolean | null
+          age_group?: string | null
+          backup_date?: string
+          backup_id?: string
+          backup_reason?: string | null
+          body_html?: string | null
+          brand?: string | null
+          collection_ids?: string[] | null
+          color?: string | null
+          condition?: string | null
+          cost?: number | null
+          created_at?: string | null
+          currency?: string | null
+          energy_efficiency_class?: string | null
+          gender?: string | null
+          google_category?: string | null
+          google_category_id?: number | null
+          gtin?: string | null
+          handle?: string | null
+          has_landing_page?: boolean | null
+          is_bundle?: boolean | null
+          item_group_id?: string | null
+          landing_page_html?: string | null
+          landing_page_mobile_html?: string | null
+          last_landing_generation_at?: string | null
+          last_optimization_at?: string | null
+          last_synced_at?: string | null
+          margin_percentage?: number | null
+          material?: string | null
+          max_energy_efficiency_class?: string | null
+          min_energy_efficiency_class?: string | null
+          mpn?: string | null
+          multipack?: number | null
+          optimization_count?: number | null
+          optimized_at?: string | null
+          original_product_id?: string
+          pattern?: string | null
+          product_type?: string | null
+          published_at?: string | null
+          seller_id?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shipping_cost?: number | null
+          shopify_id?: number | null
+          shopping_last_optimized_at?: string | null
+          shopping_optimization_score?: number | null
+          shopping_optimized?: boolean | null
+          size?: string | null
+          size_system?: string | null
+          size_type?: string | null
+          status?: string | null
+          store_id?: string | null
+          store_name?: string | null
+          tags?: string | null
+          template_suffix?: string | null
+          title?: string | null
+          updated_at?: string | null
+          vendor?: string | null
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
+        }
+        Relationships: []
+      }
+      decora_home_backup_variants: {
+        Row: {
+          backup_date: string
+          backup_id: string
+          barcode: string | null
+          compare_at_price: number | null
+          created_at: string | null
+          fulfillment_service: string | null
+          grams: number | null
+          image_id: number | null
+          inventory_management: string | null
+          inventory_policy: string | null
+          inventory_quantity: number | null
+          old_inventory_quantity: number | null
+          option1: string | null
+          option2: string | null
+          option3: string | null
+          original_product_id: string
+          original_variant_id: string
+          position: number | null
+          price: number | null
+          requires_shipping: boolean | null
+          shopify_variant_id: number | null
+          sku: string | null
+          taxable: boolean | null
+          title: string | null
+          updated_at: string | null
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          backup_date?: string
+          backup_id?: string
+          barcode?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          fulfillment_service?: string | null
+          grams?: number | null
+          image_id?: number | null
+          inventory_management?: string | null
+          inventory_policy?: string | null
+          inventory_quantity?: number | null
+          old_inventory_quantity?: number | null
+          option1?: string | null
+          option2?: string | null
+          option3?: string | null
+          original_product_id: string
+          original_variant_id: string
+          position?: number | null
+          price?: number | null
+          requires_shipping?: boolean | null
+          shopify_variant_id?: number | null
+          sku?: string | null
+          taxable?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          backup_date?: string
+          backup_id?: string
+          barcode?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          fulfillment_service?: string | null
+          grams?: number | null
+          image_id?: number | null
+          inventory_management?: string | null
+          inventory_policy?: string | null
+          inventory_quantity?: number | null
+          old_inventory_quantity?: number | null
+          option1?: string | null
+          option2?: string | null
+          option3?: string | null
+          original_product_id?: string
+          original_variant_id?: string
+          position?: number | null
+          price?: number | null
+          requires_shipping?: boolean | null
+          shopify_variant_id?: number | null
+          sku?: string | null
+          taxable?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body: string
