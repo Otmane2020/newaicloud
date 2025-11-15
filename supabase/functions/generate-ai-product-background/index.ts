@@ -223,9 +223,26 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
 
     // Helper function to try Lovable AI
-    async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
+    async function tryLovableAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
       try {
         console.log("📝 Trying Lovable AI...");
+        
+        // First, verify the image is accessible
+        console.log("🔍 Verifying image URL:", imageUrl.substring(0, 100) + "...");
+        try {
+          const imageCheck = await fetch(imageUrl, { method: "HEAD" });
+          if (!imageCheck.ok) {
+            const errorMsg = `Image inaccessible (HTTP ${imageCheck.status})`;
+            console.error("❌", errorMsg);
+            return { imageUrl: "", model: "", error: errorMsg };
+          }
+          console.log("✅ Image accessible");
+        } catch (e) {
+          const errorMsg = `Impossible d'accéder à l'image: ${e instanceof Error ? e.message : 'Erreur inconnue'}`;
+          console.error("❌", errorMsg);
+          return { imageUrl: "", model: "", error: errorMsg };
+        }
+
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -247,30 +264,40 @@ RESULT: A stunning, professional product photo that looks like it was created by
           }),
         });
 
-        if (response.status === 402 || response.status === 429) {
-          console.log(`⚠️ Lovable AI unavailable (${response.status}), trying fallback...`);
-          return null;
+        if (response.status === 402) {
+          const errorMsg = "Pas de crédits Lovable AI disponibles";
+          console.error("❌", errorMsg);
+          return { imageUrl: "", model: "", error: errorMsg };
+        }
+
+        if (response.status === 429) {
+          const errorMsg = "Limite de taux atteinte, réessayez plus tard";
+          console.error("❌", errorMsg);
+          return { imageUrl: "", model: "", error: errorMsg };
         }
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ Lovable AI error (${response.status}):`, errorText);
-          return null;
+          const errorData = await response.json().catch(() => ({ error: { message: "Unknown error" } }));
+          const errorMsg = errorData.error?.message || `Erreur API (${response.status})`;
+          console.error(`❌ Lovable AI error (${response.status}):`, errorMsg);
+          return { imageUrl: "", model: "", error: errorMsg };
         }
 
         const data = await response.json();
         const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
         if (!generatedImageUrl) {
-          console.error("⚠️ No image in Lovable AI response");
-          return null;
+          const errorMsg = "Aucune image générée dans la réponse";
+          console.error("⚠️", errorMsg);
+          return { imageUrl: "", model: "", error: errorMsg };
         }
 
         console.log("✅ Lovable AI succeeded");
         return { imageUrl: generatedImageUrl, model: "google/gemini-2.5-flash-image-preview (Lovable AI)" };
       } catch (error) {
-        console.error("❌ Lovable AI exception:", error);
-        return null;
+        const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
+        console.error("❌ Lovable AI exception:", errorMsg);
+        return { imageUrl: "", model: "", error: errorMsg };
       }
     }
 
@@ -282,25 +309,34 @@ RESULT: A stunning, professional product photo that looks like it was created by
     }
 
     // Try providers in order: Lovable AI only (OpenAI removed)
-    const failures: string[] = [];
     const result = await tryLovableAI();
     
-    if (!result) {
-      failures.push("Lovable AI: Pas de crédits (402) - Ajoutez des crédits à votre workspace Lovable");
-      
-      console.error("❌ ALL PROVIDERS FAILED:", failures);
+    if (!result || !result.imageUrl || result.error) {
+      const errorMsg = result?.error || "Service indisponible";
+      console.error("❌ Generation failed:", errorMsg);
       
       return new Response(
         JSON.stringify({
           success: false,
-          error: "ALL_PROVIDERS_FAILED",
-          message: "Tous les fournisseurs d'IA ont échoué.",
-          details: failures.join(" | "),
-          suggestions: [
-            "Ajoutez des crédits à votre workspace Lovable AI",
-            "Attendez quelques minutes pour que la limite OpenAI se réinitialise",
-            "Vérifiez que votre clé API OpenAI est valide et a des crédits"
-          ]
+          error: "GENERATION_FAILED",
+          message: "La génération d'arrière-plan a échoué.",
+          details: errorMsg,
+          imageUrl: imageUrl,
+          suggestions: errorMsg.includes("inaccessible")
+            ? [
+                "Vérifiez que l'image source est accessible",
+                "Essayez avec une autre image",
+                "Vérifiez que l'URL de l'image est valide et publique"
+              ]
+            : errorMsg.includes("crédits")
+            ? ["Ajoutez des crédits à votre workspace Lovable AI"]
+            : errorMsg.includes("taux")
+            ? ["Attendez quelques minutes avant de réessayer"]
+            : [
+                "Réessayez avec une image différente",
+                "Vérifiez la qualité et le format de l'image source",
+                "Contactez le support si le problème persiste"
+              ]
         }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
