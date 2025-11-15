@@ -587,16 +587,8 @@ export default function Products() {
           />
         </div>
 
-        {/* Quick filters */}
+        {/* Quick filters - Status first */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("all")}
-            className="whitespace-nowrap text-xs h-8 px-3"
-          >
-            {t.common.all}
-          </Button>
           <Button
             variant={statusFilter === "active" ? "default" : "outline"}
             size="sm"
@@ -612,6 +604,14 @@ export default function Products() {
             className="whitespace-nowrap text-xs h-8 px-3"
           >
             {t.common.draft}
+          </Button>
+          <Button
+            variant={statusFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("all")}
+            className="whitespace-nowrap text-xs h-8 px-3"
+          >
+            {t.common.all}
           </Button>
 
           <DropdownMenu>
@@ -686,8 +686,8 @@ export default function Products() {
                           </div>
                         )}
                         
-                        {/* Background actions - visible on hover */}
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Background actions - always visible */}
+                        <div className="absolute top-2 right-2 flex gap-1 transition-opacity">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
