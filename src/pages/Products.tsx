@@ -156,6 +156,28 @@ export default function Products() {
     }
   };
 
+  // Handler pour changer le statut du produit
+  const handleToggleStatus = async (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const newStatus = product.status === 'active' ? 'draft' : 'active';
+    
+    try {
+      const { error } = await supabase
+        .from('shopify_products')
+        .update({ status: newStatus })
+        .eq('id', product.id);
+
+      if (error) throw error;
+
+      toast.success(newStatus === 'active' ? 'Produit activé' : 'Produit en brouillon');
+      loadProducts(); // Recharger les produits
+    } catch (error: any) {
+      console.error('Error updating product status:', error);
+      toast.error("Erreur lors de la mise à jour du statut");
+    }
+  };
+
   const loadProducts = async () => {
     if (!selectedStore?.id) {
       console.log('⚠️ [PRODUCTS] No store ID, clearing products');
@@ -839,7 +861,7 @@ export default function Products() {
                         </div>
 
                         {/* Vendor and stock */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-gray-600 font-medium">{product.vendor || t.products.noVendor}</span>
                           <span
                             className={`text-xs px-1.5 py-0.5 rounded ${
@@ -848,6 +870,20 @@ export default function Products() {
                           >
                             {tf('products.stock', { count: formatNumber(product.inventory_quantity) })}
                           </span>
+                        </div>
+
+                        {/* Status badge - cliquable */}
+                        <div className="flex justify-start">
+                          <Badge
+                            onClick={(e) => handleToggleStatus(product, e)}
+                            className={`cursor-pointer text-xs transition-colors ${
+                              product.status === 'active' 
+                                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                : 'bg-gray-400 hover:bg-gray-500 text-white'
+                            }`}
+                          >
+                            {product.status === 'active' ? 'Active' : 'Draft'}
+                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
