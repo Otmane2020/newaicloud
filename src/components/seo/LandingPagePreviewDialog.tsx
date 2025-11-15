@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText, ExternalLink, Sparkles } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 
 
@@ -36,6 +36,7 @@ export function LandingPagePreviewDialog({
 }: LandingPagePreviewDialogProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
 
   // Sync to Shopify mutation
   const syncMutation = useMutation({
@@ -91,6 +92,26 @@ export function LandingPagePreviewDialog({
                 Landing Page - {productTitle}
               </div>
               <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewMode(viewMode === "desktop" ? "mobile" : "desktop")}
+                      >
+                        {viewMode === "desktop" ? (
+                          <Smartphone className="h-4 w-4" />
+                        ) : (
+                          <Monitor className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   variant="outline"
                   size="sm"
@@ -131,10 +152,12 @@ export function LandingPagePreviewDialog({
 
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
           {currentLandingPage ? (
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full flex items-center justify-center">
                 <iframe
                   srcDoc={currentLandingPage}
-                  className="w-full h-full border-0"
+                  className={`h-full border-0 transition-all duration-300 ${
+                    viewMode === "mobile" ? "w-[375px] border-2 border-border rounded-lg shadow-xl" : "w-full"
+                  }`}
                   sandbox="allow-same-origin allow-scripts"
                   title="Landing Page Preview"
                   onLoad={(e) => {
