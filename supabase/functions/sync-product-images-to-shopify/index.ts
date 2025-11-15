@@ -45,14 +45,14 @@ Deno.serve(async (req) => {
         images:product_images(id, src, alt_text, position, shopify_image_id, variant_id)
       `)
       .eq("id", productId)
-      .eq("user_id", user.id)
+      .eq("seller_id", user.id)
       .single();
 
     if (productError || !product) {
       // Check if product exists but doesn't belong to user
       const { data: anyProduct } = await supabaseClient
         .from("shopify_products")
-        .select("id, user_id")
+        .select("id, seller_id")
         .eq("id", productId)
         .single();
       
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       const result = await supabaseClient
         .from("shopify_connections")
         .select("shop_domain, access_token")
-        .eq("user_id", user.id)
+        .eq("seller_id", user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
