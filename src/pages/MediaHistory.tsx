@@ -293,40 +293,53 @@ export default function MediaHistory() {
                 </div>
                 {variants
                   .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
-                  .filter((variant: any) => variant.image_url)
                   .map((variant: any) => {
-                    // Find matching product_image by variant_id
-                    const matchingImage = productImages.find((img: any) => img.variant_id === variant.id);
-                    
                     return (
                       <DropdownMenuItem
                         key={variant.id}
-                        onClick={() => {
-                          if (matchingImage) {
-                            applyProductImage.mutate({
-                              historyId: item.id,
-                              targetImageId: matchingImage.id,
-                              optimizedUrl: item.optimized_url
-                            });
-                          } else {
-                            toast.error('Image de variante non trouvée dans product_images');
+                        onClick={async () => {
+                          try {
+                            // Update the variant's image_url directly
+                            const { error } = await supabase
+                              .from('product_variants')
+                              .update({ image_url: item.optimized_url })
+                              .eq('id', variant.id);
+
+                            if (error) throw error;
+
+                            // Mark this history version as current
+                            await supabase
+                              .from('product_image_history')
+                              .update({ is_current: true })
+                              .eq('id', item.id);
+
+                            toast.success('Image appliquée à la variante avec succès');
+                            queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+                          } catch (error) {
+                            console.error('Error applying image to variant:', error);
+                            toast.error("Erreur lors de l'application de l'image");
                           }
                         }}
                         className="gap-3 py-3"
-                        disabled={!matchingImage}
                       >
                         <div className="flex items-center gap-3 flex-1">
-                          <img 
-                            src={variant.image_url} 
-                            alt={variant.title}
-                            className="w-12 h-12 rounded object-cover border"
-                          />
+                          {variant.image_url ? (
+                            <img 
+                              src={variant.image_url} 
+                              alt={variant.title}
+                              className="w-12 h-12 rounded object-cover border"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border">
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
                           <div className="flex-1">
                             <div className="font-medium line-clamp-1">
                               {variant.title}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              Variante {matchingImage ? `(Image #${matchingImage.position})` : '(non liée)'}
+                              Variante {variant.image_url ? '' : '(sans image)'}
                             </div>
                           </div>
                         </div>
