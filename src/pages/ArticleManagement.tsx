@@ -119,33 +119,6 @@ export default function ArticleManagement() {
     }
   };
 
-  const importShopifyArticles = async () => {
-    if (!selectedStore) {
-      toast.error('Veuillez sélectionner une boutique');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log('📰 Importing articles from Shopify for store:', selectedStore.id);
-
-      const { data, error } = await supabase.functions.invoke('import-shopify-articles', {
-        body: { storeId: selectedStore.id }
-      });
-
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Import failed');
-
-      toast.success(`${data.imported || 0} article(s) importé(s) depuis Shopify`);
-      await loadArticles();
-    } catch (error: any) {
-      console.error('❌ Error importing articles:', error);
-      toast.error(error.message || 'Erreur lors de l\'importation des articles');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadArticles();
     loadCategories();
@@ -455,15 +428,6 @@ export default function ArticleManagement() {
               <span className="hidden sm:inline">Supprimer</span>
             </Button>
             <Button
-              onClick={importShopifyArticles}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Importer depuis Shopify</span>
-            </Button>
-            <Button
               onClick={loadArticles}
               disabled={loading}
               variant="ghost"
@@ -559,15 +523,6 @@ export default function ArticleManagement() {
           
           {/* Always visible actions */}
           <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-            <Button
-              onClick={importShopifyArticles}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Importer depuis Shopify</span>
-            </Button>
             <Button
               onClick={loadArticles}
               disabled={loading}
