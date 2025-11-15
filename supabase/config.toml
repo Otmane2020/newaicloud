@@ -156,6 +156,12 @@ verify_jwt = true
 [functions.generate-google-category]
 verify_jwt = true
 
+[functions.import-google-taxonomy]
+verify_jwt = true
+
+[functions.classify-product-category]
+verify_jwt = true
+
 [functions.extract-netlinking-from-articles]
 verify_jwt = true
 

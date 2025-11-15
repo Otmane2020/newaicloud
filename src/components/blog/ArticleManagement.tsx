@@ -88,7 +88,7 @@ interface Article {
   handle?: string | null;
 }
 
-type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
+type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced' | 'ai-generated' | 'shopify-import';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
@@ -601,6 +601,12 @@ const handleOptimizeArticle = async (articleId: string) => {
       case 'shopify-synced':
         filtered = filtered.filter(a => a.shopify_blog_id);
         break;
+      case 'ai-generated':
+        filtered = filtered.filter(a => a.source === 'ai_generated');
+        break;
+      case 'shopify-import':
+        filtered = filtered.filter(a => a.source === 'shopify_import' || a.source === 'shopify');
+        break;
     }
 
     // Status filter
@@ -682,6 +688,8 @@ const handleOptimizeArticle = async (articleId: string) => {
     draft: articles.filter(a => a.status === 'draft').length,
     published: articles.filter(a => a.status === 'published').length,
     synced: articles.filter(a => a.shopify_blog_id).length,
+    aiGenerated: articles.filter(a => a.source === 'ai_generated').length,
+    shopifyImport: articles.filter(a => a.source === 'shopify_import' || a.source === 'shopify').length,
     // AI optimization stats
     totalEmpty: articles.filter(a => !a.meta_description || a.meta_description.trim().length === 0).length,
     existingData: articles.filter(a => a.meta_description && a.meta_description.trim().length > 0 && (!a.optimization_count || a.optimization_count === 0)).length,
@@ -695,6 +703,8 @@ const handleOptimizeArticle = async (articleId: string) => {
 
   const quickFilters = [
     { id: 'all' as QuickFilterTab, label: t.blog.management.tabs.all, count: stats.total, icon: FileText },
+    { id: 'ai-generated' as QuickFilterTab, label: 'Articles IA', count: stats.aiGenerated, icon: Sparkles },
+    { id: 'shopify-import' as QuickFilterTab, label: 'Shopify', count: stats.shopifyImport, icon: Upload },
     { id: 'draft' as QuickFilterTab, label: t.blog.management.tabs.draft, count: stats.draft, icon: Clock },
     { id: 'published' as QuickFilterTab, label: t.blog.management.tabs.published, count: stats.published, icon: CheckCircle },
     { id: 'shopify-synced' as QuickFilterTab, label: t.blog.management.tabs.shopifySynced, count: stats.synced, icon: Upload },
