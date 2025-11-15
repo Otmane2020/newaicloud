@@ -260,6 +260,7 @@ export const useImageOptimization = () => {
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
       queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       queryClient.invalidateQueries({ queryKey: ['image-history'] });
+      setIsOptimizing(false);
     },
     onError: (error) => {
       console.error('Error applying image:', error);
