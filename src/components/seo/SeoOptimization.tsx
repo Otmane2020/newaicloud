@@ -300,8 +300,22 @@ export function SeoOptimization() {
         )
       : 0;
 
-  // Apply 30/70 weighting
-  const globalSeoScore = products.length > 0 ? Math.round(0.3 * scoreWithoutAI + 0.7 * scoreWithAI) : 0;
+  // Calculate global score as the average of ALL products (not weighted 30/70)
+  const globalSeoScore = products.length > 0 
+    ? Math.round(
+        products.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title || p.title,
+            p.seo_description || p.vendor,
+            !!p.image_url,
+            true,
+            p.tags,
+            p.optimization_count || 0
+          );
+          return sum + score.score;
+        }, 0) / products.length
+      )
+    : 0;
 
   // Get unique categories
   const uniqueCategories = Array.from(new Set(products.map((p) => p.product_type).filter(Boolean))).sort();
@@ -831,9 +845,6 @@ export function SeoOptimization() {
                 {globalSeoScore}/100
               </div>
               <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                30% {t.seo.optimization.notOptimized} + 70% {t.seo.optimization.aiOptimized}
-              </div>
               <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 {optimizationRate}% {t.seo.optimization.optimized}
               </div>

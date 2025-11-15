@@ -251,8 +251,21 @@ export function CollectionOptimization() {
       )
     : 0;
 
+  // Calculate global score as the average of ALL collections (not weighted 30/70)
   const globalSeoScore = collections.length > 0
-    ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
+    ? Math.round(
+        collections.reduce((sum, c) => {
+          const score = calculateDetailedSeoScore(
+            c.seo_title || c.title,
+            c.seo_description || c.body_html?.substring(0, 160) || '',
+            !!c.image_url,
+            true,
+            undefined,
+            c.optimization_count || 0
+          );
+          return sum + score.score;
+        }, 0) / collections.length
+      )
     : 0;
 
   // Define helper function before using it
@@ -960,9 +973,6 @@ export function CollectionOptimization() {
                 {globalSeoScore}/100
               </div>
               <div className="text-sm text-muted-foreground">{t.collections.optimization.globalScore}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {t.collections.optimization.scoreWeighting}
-              </div>
               <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 {optimizationRate}% {t.collections.optimization.optimized}
               </div>
