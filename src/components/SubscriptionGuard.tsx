@@ -76,6 +76,17 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       
       if (stripeError) {
         console.error('❌ Error checking Stripe subscription:', stripeError);
+        
+        // Handle session expiration - redirect to auth
+        if (stripeError.message?.includes('Session expired') || 
+            stripeError.message?.includes('invalid_session') ||
+            stripeError.message?.includes('Session not found') ||
+            stripeError.message?.includes('401')) {
+          console.log('🔐 Session expired, signing out and redirecting to auth');
+          await supabase.auth.signOut();
+          window.location.href = '/auth';
+          return;
+        }
       } else {
         console.log('✅ Stripe subscription data:', stripeData);
         
