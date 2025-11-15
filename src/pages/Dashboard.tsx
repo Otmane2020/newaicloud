@@ -254,12 +254,18 @@ export default function Dashboard() {
         : 0;
 
       // 4. ARTICLES SCORE (from ArticleManagement.tsx)
-      const { data: articlesData } = await supabase
+      let articlesQuery = supabase
         .from('blog_articles')
         .select('title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
-        .or(selectedStore?.id ? `store_id.eq.${selectedStore.id},store_id.is.null` : 'store_id.is.null')
         .range(0, 9999);
+      
+      // Apply store filter only if a store is selected, otherwise get all articles
+      if (selectedStore?.id) {
+        articlesQuery = articlesQuery.or(`store_id.eq.${selectedStore.id},store_id.is.null`);
+      }
+      
+      const { data: articlesData } = await articlesQuery;
 
       const articlesScore = articlesData && articlesData.length > 0
         ? Math.round(
@@ -308,16 +314,16 @@ export default function Dashboard() {
         : 0;
 
       // Build articles query with optional store filter
-      let articlesQuery = supabase
+      let articlesCountQuery = supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
 
       if (selectedStore?.id) {
-        articlesQuery = articlesQuery.eq('store_id', selectedStore.id);
+        articlesCountQuery = articlesCountQuery.or(`store_id.eq.${selectedStore.id},store_id.is.null`);
       }
 
-      const { count: articlesCount } = await articlesQuery;
+      const { count: articlesCount } = await articlesCountQuery;
 
       // Build SEO categories with real scores from tabs
       const seoCategories = {
