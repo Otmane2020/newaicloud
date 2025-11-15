@@ -1131,34 +1131,28 @@ export function TagOptimization() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold truncate">{product.title}</h3>
                     {(() => {
-                      const calculateTagScore = (tags: string | null): number => {
-                        if (!tags || tags.trim().length === 0) return 0;
-                        let tagArray: string[] = [];
-                        try {
-                          tagArray = JSON.parse(tags);
-                        } catch {
-                          tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                        }
-                        let score = 0;
-                        if (tagArray.length > 0) score += 5;
-                        if (tagArray.length >= 3 && tagArray.length <= 10) {
-                          score += 10;
-                        } else if (tagArray.length > 0) {
-                          score += 5;
-                        }
-                        const qualityTags = tagArray.filter(t => t.length > 3);
-                        if (qualityTags.length >= tagArray.length * 0.7) {
-                          score += 5;
-                        }
-                        return Math.min(score, 20) * 5;
-                      };
-                      const score = calculateTagScore(product.tags);
-                      const scoreColor = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-orange-500' : 'bg-red-500';
-                      return (
-                        <Badge className={`${scoreColor} text-white text-xs`}>
-                          {score}/100
-                        </Badge>
-                      );
+                      const isOptimized = product.optimization_count && product.optimization_count > 0;
+                      const hasTags = product.tags && product.tags.trim().length > 0;
+                      
+                      if (isOptimized) {
+                        return (
+                          <Badge className="bg-green-500 text-white text-xs">
+                            Optimisé
+                          </Badge>
+                        );
+                      } else if (!hasTags) {
+                        return (
+                          <Badge className="bg-red-500 text-white text-xs">
+                            En attente...
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge className="bg-orange-500 text-white text-xs">
+                            En attente...
+                          </Badge>
+                        );
+                      }
                     })()}
                   </div>
                   <p className="text-sm text-muted-foreground">{product.vendor}</p>
@@ -1284,34 +1278,28 @@ export function TagOptimization() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold line-clamp-2">{product.title}</h3>
                     {(() => {
-                      const calculateTagScore = (tags: string | null): number => {
-                        if (!tags || tags.trim().length === 0) return 0;
-                        let tagArray: string[] = [];
-                        try {
-                          tagArray = JSON.parse(tags);
-                        } catch {
-                          tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                        }
-                        let score = 0;
-                        if (tagArray.length > 0) score += 5;
-                        if (tagArray.length >= 3 && tagArray.length <= 10) {
-                          score += 10;
-                        } else if (tagArray.length > 0) {
-                          score += 5;
-                        }
-                        const qualityTags = tagArray.filter(t => t.length > 3);
-                        if (qualityTags.length >= tagArray.length * 0.7) {
-                          score += 5;
-                        }
-                        return Math.min(score, 20) * 5;
-                      };
-                      const score = calculateTagScore(product.tags);
-                      const scoreColor = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-orange-500' : 'bg-red-500';
-                      return (
-                        <Badge className={`${scoreColor} text-white text-xs`}>
-                          {score}/100
-                        </Badge>
-                      );
+                      const isOptimized = product.optimization_count && product.optimization_count > 0;
+                      const hasTags = product.tags && product.tags.trim().length > 0;
+                      
+                      if (isOptimized) {
+                        return (
+                          <Badge className="bg-green-500 text-white text-xs">
+                            Optimisé
+                          </Badge>
+                        );
+                      } else if (!hasTags) {
+                        return (
+                          <Badge className="bg-red-500 text-white text-xs">
+                            En attente...
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge className="bg-orange-500 text-white text-xs">
+                            En attente...
+                          </Badge>
+                        );
+                      }
                     })()}
                   </div>
                   <p className="text-xs text-muted-foreground">{product.vendor}</p>
