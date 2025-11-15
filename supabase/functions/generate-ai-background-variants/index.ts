@@ -71,7 +71,7 @@ serve(async (req) => {
 
     console.log('🎨 Creating 4 background variants from text prompt for:', productTitle);
 
-    // ---------- Variants avec contexte enrichi ----------
+    // ---------- Variants avec contexte enrichi et décoratif ----------
     const variants = [
       {
         style: "professional" as const,
@@ -81,7 +81,11 @@ serve(async (req) => {
       {
         style: "lifestyle" as const,
         description: "Scène de vie naturelle",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Lifestyle product photography of ${enrichedContext}. ${basePrompt}. Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors. 2000x2000px.`,
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Lifestyle product photography of ${enrichedContext}. ${basePrompt}. 
+        🏠 CONTEXTE DÉCORATIF: If furniture (sofa, chair, table, bed): place in a tastefully decorated living room or bedroom with matching decor elements, plants, cushions, and warm lighting.
+        If kitchen item (appliance, utensil, cookware): place in a modern bright kitchen with wooden countertop, fresh ingredients, natural daylight.
+        If decor item (vase, lamp, frame, candle): place in a stylish home interior matching the product aesthetic with complementary furniture and accessories.
+        Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors, inviting atmosphere. 2000x2000px.`,
       },
       {
         style: "artistic" as const,
@@ -153,7 +157,8 @@ serve(async (req) => {
           
           return {
             variantId: crypto.randomUUID(),
-            imageBase64: base64,
+            imageUrl: `data:image/png;base64,${base64}`, // ✅ Format data URL complet pour affichage direct
+            imageBase64: base64, // Garder pour compatibilité
             prompt: variant.prompt,
             style: variant.style,
             description: variant.description,

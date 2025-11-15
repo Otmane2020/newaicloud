@@ -201,13 +201,23 @@ export default function ProductTitleDescription() {
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
-    console.log('🚨🚨🚨 [STORE_CHANGE] Store changed, resetting filters and fetching products');
+    console.log('🔄 [STORE_CHANGE] Store changed to:', selectedStore?.id, selectedStore?.store_name);
+    console.log('🔄 [STORE_CHANGE] Previous products count:', products.length);
+    console.log('🔄 [STORE_CHANGE] Resetting state immediately...');
+    
+    // ✅ RÉINITIALISATION IMMÉDIATE DU STATE pour éviter le mélange visuel
+    setProducts([]);
+    setSelectedProducts(new Set());
+    
     // Reset filters when store changes
     setSearchTerm('');
     setStatusFilter('all');
     setCurrentPage(1);
-    setSelectedProducts(new Set());
-    fetchProducts();
+    
+    if (selectedStore?.id) {
+      console.log('🔄 [STORE_CHANGE] Fetching products for new store...');
+      fetchProducts();
+    }
   }, [selectedStore]);
 
 
