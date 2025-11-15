@@ -1789,7 +1789,8 @@ export const translations = {
       homepage: "Homepage",
       products: "Products",
       collections: "Collections",
-      content: "Content",
+      pages: "Pages",
+      articles: "Articles",
       images: "Images",
       technical: "Technical"
     },
@@ -1797,7 +1798,8 @@ export const translations = {
       homepage: "Title and description of your homepage",
       products: "Product page SEO",
       collections: "Collection pages",
-      content: "Articles and pages",
+      pages: "Custom pages",
+      articles: "Blog articles",
       images: "Alt texts",
       technical: "Shopify configuration"
     },
@@ -1805,7 +1807,8 @@ export const translations = {
       homepage: "Optimize your homepage title and description to attract more qualified visitors. A good homepage SEO can increase your traffic by 20-30%.",
       products: "Enrich your product pages with optimized titles and descriptions. Better product SEO directly increases conversion rates.",
       collections: "Optimize your collections for better ranking on category searches. Collection pages are key entry points.",
-      content: "Create optimized content to attract organic traffic. Quality articles reinforce your topical authority.",
+      pages: "Optimize your custom pages for better visibility. Well-optimized pages strengthen your SEO foundation.",
+      articles: "Create optimized content to attract organic traffic. Quality articles reinforce your topical authority.",
       images: "Add descriptive alt texts to all your images. Images can represent up to 20% of organic traffic.",
       technical: "Check your technical configuration and metadata. A good technical foundation is essential for SEO."
     }

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, calculateDescriptionScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -49,7 +49,8 @@ interface Stats {
     homepage: number;
     products: number;
     collections: number;
-    content: number;
+    pages: number;
+    articles: number;
     images: number;
     technical: number;
   };
@@ -85,7 +86,8 @@ export default function Dashboard() {
       homepage: 0,
       products: 0,
       collections: 0,
-      content: 0,
+      pages: 0,
+      articles: 0,
       images: 0,
       technical: 0
     },
@@ -197,13 +199,61 @@ export default function Dashboard() {
         .limit(1)
         .single();
 
+      // Calculate separate scores for articles and pages
+      const { data: articlesData } = await supabase
+        .from('blog_articles')
+        .select('meta_description, title, featured_image, optimization_count')
+        .or(selectedStore?.id ? `store_id.eq.${selectedStore.id},store_id.is.null` : 'store_id.is.null');
+
+      const articlesScore = articlesData && articlesData.length > 0
+        ? Math.round(
+            articlesData.reduce((sum, article) => {
+              const descScore = calculateDescriptionScore(
+                article.meta_description,
+                undefined,
+                undefined,
+                article.title
+              );
+              let score = descScore.score;
+              if (!article.featured_image) score = Math.round(score * 0.85);
+              if (article.optimization_count && article.optimization_count > 0) {
+                score = Math.min(100, score + 10);
+              }
+              return sum + score;
+            }, 0) / articlesData.length
+          )
+        : 0;
+
+      const { data: pagesData } = await supabase
+        .from('shopify_pages')
+        .select('seo_title, title, seo_description, optimization_count')
+        .eq('user_id', user?.id)
+        .eq('store_id', selectedStore?.id || '');
+
+      const pagesScore = pagesData && pagesData.length > 0
+        ? Math.round(
+            pagesData.reduce((sum, page) => {
+              const pageScore = calculateDetailedSeoScore(
+                page.seo_title || page.title,
+                page.seo_description,
+                false,
+                true,
+                null,
+                page.optimization_count
+              );
+              return sum + pageScore.score;
+            }, 0) / pagesData.length
+          )
+        : 0;
+
       // Use audit scores if available
       let seoScore = 0;
       let seoCategories = {
         homepage: 0,
         products: 0,
         collections: 0,
-        content: 0,
+        pages: pagesScore,
+        articles: articlesScore,
         images: 0,
         technical: 0
       };
@@ -215,7 +265,8 @@ export default function Dashboard() {
           homepage: latestAudit.homepage_score || 0,
           products: latestAudit.products_score || 0,
           collections: latestAudit.collections_score || 0,
-          content: latestAudit.blog_score || 0, // blog_score stores content score
+          pages: pagesScore,
+          articles: articlesScore,
           images: latestAudit.images_score || 0,
           technical: latestAudit.technical_score || 0
         };
@@ -246,7 +297,8 @@ export default function Dashboard() {
           homepage: 50, // Default
           products: seoScore,
           collections: 50, // Default
-          content: 50, // Default
+          pages: pagesScore,
+          articles: articlesScore,
           images: validProducts > 0 ? seoScore : 0,
           technical: 80 // Default
         };

@@ -9,7 +9,8 @@ interface SeoScoreGaugeProps {
     homepage: number;
     products: number;
     collections: number;
-    content: number;
+    pages: number;
+    articles: number;
     images: number;
     technical: number;
   };
@@ -88,14 +89,6 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
 
   const categories = [
     {
-      name: t.seoGauge.categoryNames.homepage,
-      description: t.seoGauge.categoryDescriptions.homepage,
-      value: Math.round(categoryScores.homepage),
-      max: 100,
-      link: "/seo?tab=homepage",
-      key: "homepage" as const
-    },
-    {
       name: t.seoGauge.categoryNames.products,
       description: t.seoGauge.categoryDescriptions.products,
       value: Math.round(categoryScores.products),
@@ -112,20 +105,36 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       key: "collections" as const
     },
     {
-      name: t.seoGauge.categoryNames.content,
-      description: t.seoGauge.categoryDescriptions.content,
-      value: Math.round(categoryScores.content),
-      max: 100,
-      link: "/seo?tab=articles",
-      key: "content" as const
-    },
-    {
       name: t.seoGauge.categoryNames.images,
       description: t.seoGauge.categoryDescriptions.images,
       value: Math.round(categoryScores.images),
       max: 100,
       link: "/seo?tab=alt",
       key: "images" as const
+    },
+    {
+      name: t.seoGauge.categoryNames.pages,
+      description: t.seoGauge.categoryDescriptions.pages,
+      value: Math.round(categoryScores.pages),
+      max: 100,
+      link: "/seo?tab=pages",
+      key: "pages" as const
+    },
+    {
+      name: t.seoGauge.categoryNames.articles,
+      description: t.seoGauge.categoryDescriptions.articles,
+      value: Math.round(categoryScores.articles),
+      max: 100,
+      link: "/seo?tab=articles",
+      key: "articles" as const
+    },
+    {
+      name: t.seoGauge.categoryNames.homepage,
+      description: t.seoGauge.categoryDescriptions.homepage,
+      value: Math.round(categoryScores.homepage),
+      max: 100,
+      link: "/seo?tab=homepage",
+      key: "homepage" as const
     },
   ];
 
@@ -247,7 +256,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         {/* Breakdown des catégories - Cliquables avec design premium */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2 sm:mb-4">
-            <h4 className="text-sm sm:text-base font-bold text-foreground">5 {t.seoGauge.categories}</h4>
+            <h4 className="text-sm sm:text-base font-bold text-foreground">6 {t.seoGauge.categories}</h4>
             <Badge variant="outline" className="text-xs flex-shrink-0">
               {tf('seoGauge.excellentCount', { count: categories.filter((c) => c.value >= 80).length })}
             </Badge>
