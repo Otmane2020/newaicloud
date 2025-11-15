@@ -61,93 +61,93 @@ serve(async (req) => {
     console.log(`📦 Found ${eurodesignProducts.length} EURODESIGN products to delete`);
 
     const productIds = eurodesignProducts.map(p => p.id);
+    const BATCH_SIZE = 100;
 
-    // Step 2: Backup to decora_home_backup_products
-    const { error: backupProductsError } = await supabase
-      .from('decora_home_backup_products')
-      .insert(
-        eurodesignProducts.map(p => ({
-          original_product_id: p.id,
-          backup_reason: 'Vendor EURODESIGN - Manual cleanup',
-          store_id: p.store_id,
-          seller_id: p.seller_id,
-          vendor: p.vendor,
-          title: p.title,
-        }))
-      );
+    // Step 2: Backup to decora_home_backup_products (in batches)
+    for (let i = 0; i < eurodesignProducts.length; i += BATCH_SIZE) {
+      const batch = eurodesignProducts.slice(i, i + BATCH_SIZE);
+      const { error: backupProductsError } = await supabase
+        .from('decora_home_backup_products')
+        .insert(
+          batch.map(p => ({
+            original_product_id: p.id,
+            backup_reason: 'Vendor EURODESIGN - Manual cleanup',
+            store_id: p.store_id,
+            seller_id: p.seller_id,
+            vendor: p.vendor,
+            title: p.title,
+          }))
+        );
 
-    if (backupProductsError) {
-      console.error('❌ Error backing up products:', backupProductsError);
-      throw backupProductsError;
+      if (backupProductsError) {
+        console.error('❌ Error backing up products batch:', backupProductsError);
+        throw backupProductsError;
+      }
     }
 
     console.log('✅ Products backed up successfully');
 
-    // Step 3: Delete product_variants
-    const { error: variantsError } = await supabase
-      .from('product_variants')
-      .delete()
-      .in('product_id', productIds);
+    // Step 3: Delete related data in batches
+    for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+      const batch = productIds.slice(i, i + BATCH_SIZE);
+      console.log(`🗑️ Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(productIds.length / BATCH_SIZE)}`);
 
-    if (variantsError) {
-      console.error('❌ Error deleting variants:', variantsError);
-      throw variantsError;
+      // Delete product_variants
+      const { error: variantsError } = await supabase
+        .from('product_variants')
+        .delete()
+        .in('product_id', batch);
+
+      if (variantsError) {
+        console.error('❌ Error deleting variants:', variantsError);
+        throw variantsError;
+      }
+
+      // Delete product_images
+      const { error: imagesError } = await supabase
+        .from('product_images')
+        .delete()
+        .in('product_id', batch);
+
+      if (imagesError) {
+        console.error('❌ Error deleting images:', imagesError);
+        throw imagesError;
+      }
+
+      // Delete landing_page_history
+      await supabase
+        .from('landing_page_history')
+        .delete()
+        .in('product_id', batch);
+
+      // Delete product_image_history
+      await supabase
+        .from('product_image_history')
+        .delete()
+        .in('product_id', batch);
+
+      // Delete product_landing_pages
+      await supabase
+        .from('product_landing_pages')
+        .delete()
+        .in('product_id', batch);
     }
 
-    console.log('✅ Variants deleted');
+    console.log('✅ Related data deleted');
 
-    // Step 4: Delete product_images
-    const { error: imagesError } = await supabase
-      .from('product_images')
-      .delete()
-      .in('product_id', productIds);
+    // Step 4: Delete the products themselves (in batches)
+    for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+      const batch = productIds.slice(i, i + BATCH_SIZE);
+      
+      const { error: deleteError } = await supabase
+        .from('shopify_products')
+        .delete()
+        .in('id', batch);
 
-    if (imagesError) {
-      console.error('❌ Error deleting images:', imagesError);
-      throw imagesError;
-    }
-
-    console.log('✅ Images deleted');
-
-    // Step 5: Delete landing_page_history
-    const { error: landingError } = await supabase
-      .from('landing_page_history')
-      .delete()
-      .in('product_id', productIds);
-
-    if (landingError) {
-      console.error('⚠️ Error deleting landing pages (non-critical):', landingError);
-    }
-
-    // Step 6: Delete product_image_history
-    const { error: imageHistoryError } = await supabase
-      .from('product_image_history')
-      .delete()
-      .in('product_id', productIds);
-
-    if (imageHistoryError) {
-      console.error('⚠️ Error deleting image history (non-critical):', imageHistoryError);
-    }
-
-    // Step 7: Delete product_landing_pages
-    const { error: landingPagesError } = await supabase
-      .from('product_landing_pages')
-      .delete()
-      .in('product_id', productIds);
-
-    if (landingPagesError) {
-      console.error('⚠️ Error deleting product landing pages (non-critical):', landingPagesError);
-    }
-
-    // Step 8: Delete the products themselves
-    const { error: deleteError } = await supabase
-      .from('shopify_products')
-      .delete()
-      .in('id', productIds);
-
-    if (deleteError) {
-      console.error('❌ Error deleting products:', deleteError);
-      throw deleteError;
+      if (deleteError) {
+        console.error('❌ Error deleting products:', deleteError);
+        throw deleteError;
+      }
     }
 
     console.log('✅ Products deleted successfully');
