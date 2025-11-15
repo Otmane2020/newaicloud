@@ -216,8 +216,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initial
       } else {
         onOpenChange(false);
         resetForm();
+        
+        // Trigger import dialog automatically after store connection
         localStorage.setItem("shopify_just_connected", "true");
         localStorage.setItem("shopify_store_name", commercialName.trim());
+        localStorage.setItem("shopify_trigger_import", "true"); // New flag to trigger import
+        
         setTimeout(() => window.location.reload(), 1000);
       }
     } catch (error: any) {

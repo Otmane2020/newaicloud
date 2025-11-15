@@ -13,6 +13,9 @@ const ShopifySuccess = () => {
   useEffect(() => {
     // Rediriger seulement en cas de succès
     if (status === "success") {
+      // Trigger import dialog automatically after OAuth success
+      localStorage.setItem("shopify_trigger_import", "true");
+      
       const timer = setTimeout(() => {
         navigate("/integration");
       }, 3000);
