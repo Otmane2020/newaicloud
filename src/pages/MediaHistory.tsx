@@ -385,10 +385,10 @@ export default function MediaHistory() {
                           )}
                           <div className="flex-1">
                             <div className="font-medium line-clamp-1 text-sm text-purple-900">
-                              {variant.title}
+                              🎨 {variant.title}
                             </div>
                             <div className="text-xs text-purple-600">
-                              {variant.image_url ? '✓ Avec image' : '○ Sans image'}
+                              Variante • {variant.image_url ? '✓ Avec image' : '○ Sans image'}
                             </div>
                           </div>
                         </div>
