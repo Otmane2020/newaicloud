@@ -402,7 +402,7 @@ export function calculateAltTextScore(
   }
 
   // Apply weighting based on source
-  const weight = isAIGenerated ? 1.0 : 0.3;
+  const weight = isAIGenerated ? 1.0 : 0.5;
   const weightedScore = Math.round(qualityScore * weight);
 
   return {

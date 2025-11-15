@@ -683,8 +683,8 @@ export function SeoAltImage() {
   const altSeoScore = images.length > 0 
     ? Math.round(
         images.reduce((sum, img) => {
-          // Check if ALT is AI-generated (assume ALT with good quality = AI)
-          const isAI = img.alt_text && img.alt_text.length > 30;
+          // Check if ALT is AI-optimized based on optimization_count
+          const isAI = img.optimization_count > 0;
           const altScore = calculateAltTextScore(img.alt_text, isAI);
           return sum + altScore.score;
         }, 0) / images.length
