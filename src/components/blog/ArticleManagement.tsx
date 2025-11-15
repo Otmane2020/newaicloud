@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { calculateArticleSeoScore } from '@/lib/seoQuality';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import {
   Table,
   TableBody,
@@ -58,6 +59,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface Article {
   id: string;
@@ -614,6 +623,22 @@ const handleOptimizeArticle = async (articleId: string) => {
       return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
     });
   }
+
+  // Batch pagination
+  const {
+    paginatedItems: paginatedArticles,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage
+  } = usePaginatedSeo({
+    items: sortedArticles,
+    itemsPerPage: 50,
+    cacheKey: 'articles-pagination'
+  });
   
   // Calculate global SEO score
   const globalSeoScore = articles.length > 0
@@ -909,7 +934,7 @@ const handleOptimizeArticle = async (articleId: string) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedArticles.map((article) => {
+              {paginatedArticles.map((article) => {
                 const seoScore = getArticleSeoScore(article);
                 const scoreBadge = getSeoScoreBadge(seoScore);
                 const truncatedTitle = article.title.length > 50 
@@ -1085,7 +1110,7 @@ const handleOptimizeArticle = async (articleId: string) => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedArticles.map((article) => (
+          {paginatedArticles.map((article) => (
             <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-all">
               <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                 <FileText className="w-16 h-16 text-primary" />
@@ -1133,6 +1158,41 @@ const handleOptimizeArticle = async (articleId: string) => {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center py-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => goToPage(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={nextPage}
+                  className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
       

@@ -10,6 +10,7 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -99,8 +100,6 @@ export function PageOptimization() {
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showOptimizeAllConfirmDialog, setShowOptimizeAllConfirmDialog] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 50;
   const [previewPageId, setPreviewPageId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
@@ -226,17 +225,21 @@ export function PageOptimization() {
     return page.title.toLowerCase().includes(term);
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredPages.length / ITEMS_PER_PAGE);
-  const paginatedPages = filteredPages.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
+  // Batch pagination
+  const {
+    paginatedItems: paginatedPages,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage: goToNextPage,
+    previousPage: goToPreviousPage,
+    hasNextPage,
+    hasPreviousPage
+  } = usePaginatedSeo({
+    items: filteredPages,
+    itemsPerPage: 50,
+    cacheKey: 'pages-pagination'
+  });
 
   const handleSelectAll = () => {
     if (selectedPages.size === filteredPages.length) {
@@ -1158,8 +1161,8 @@ export function PageOptimization() {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious 
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      onClick={goToPreviousPage}
+                      className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                   
@@ -1172,7 +1175,7 @@ export function PageOptimization() {
                       return (
                         <PaginationItem key={page}>
                           <PaginationLink
-                            onClick={() => setCurrentPage(page)}
+                            onClick={() => goToPage(page)}
                             isActive={currentPage === page}
                             className="cursor-pointer"
                           >
@@ -1192,8 +1195,8 @@ export function PageOptimization() {
                   
                   <PaginationItem>
                     <PaginationNext 
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      onClick={goToNextPage}
+                      className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                 </PaginationContent>
