@@ -69,10 +69,6 @@ Deno.serve(async (req) => {
             target_url: link.url,
             anchor_text: link.anchor_text,
             link_type: link.type,
-            product_id: link.product_id,
-            page_id: link.page_id,
-            position_in_content: link.position_in_content,
-            context_snippet: link.context,
             seo_score: calculateSeoScore(link),
           }));
 
