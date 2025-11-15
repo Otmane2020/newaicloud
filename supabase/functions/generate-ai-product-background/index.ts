@@ -161,78 +161,50 @@ serve(async (req) => {
       landscape: "1024x768 landscape orientation (4:3)",
     };
 
-    // Use enriched prompt if available (includes SERP insights), otherwise build comprehensive prompt
+    // Nouveau prompt lifestyle premium pour Lovable
+    const premiumLifestylePrompt = `
+Crée une image lifestyle haut de gamme digne d'un catalogue de décoration premium (niveau Zara Home / La Redoute Intérieurs / Maisons du Monde).
+
+CONTRAINTE PRODUIT :
+- Ne PAS modifier le produit: forme, dimensions, couleur, matériaux.
+- Produit parfaitement net, haut niveau de détails, rendu réaliste.
+- Préserver exactement : texture, proportions, couleurs réelles.
+
+STYLE VISUEL :
+- Salon lumineux, ambiance chaleureuse et moderne.
+- Grande fenêtre, lumière naturelle douce (pas d'effets IA).
+- Palette beige / crème / sable, élégante et harmonieuse.
+- Décoration premium : canapé clair, tapis texturé, plantes réalistes, tableau moderne, objets fins.
+
+MISE EN SCÈNE :
+- Produit placé au sein d'un salon contemporain haut de gamme.
+- Image élégante, équilibrée, propre, réaliste.
+- Zéro artefact IA, zéro flou artificiel, zéro lens flare.
+
+QUALITÉ :
+- Photo ultra réaliste.
+- Style showroom premium.
+- Ambiance chaleureuse naturelle.
+- Résultat = digne d'un shooting professionnel e-commerce haut de gamme.
+`;
+
+    // Use enriched prompt if available (includes SERP insights), otherwise use premium lifestyle prompt
     const finalPrompt = enrichedPrompt || `
-You are a professional e-commerce product photographer creating a stunning product image.
+${premiumLifestylePrompt}
 
-PRODUCT: ${productContext}${variantInfo}
-IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "VARIANT IMAGE"}
-STYLE: ${styleDescriptions[style]}
-FORMAT: ${formatSpecs[format]}
+INFORMATIONS PRODUIT :
+${productContext}${variantOptions ? ` (Variant: ${variantOptions})` : ""}
 
-USER REQUEST: ${prompt}
+STYLE SÉLECTIONNÉ : ${style}
+FORMAT IMAGE : ${format}
 
-CRITICAL REQUIREMENTS:
-${
-  isMainImage
-    ? `
-1. MAIN IMAGE REQUIREMENTS:
-   - Product MUST be perfectly centered and sharp
-   - Product occupies 70-80% of the frame
-   - Product faces camera directly
-   - All product details clearly visible
-   - Preserve all textures, colors, and materials
-   - Professional product listing quality
-   - Natural shadows for depth
-`
-    : `
-1. VARIANT IMAGE REQUIREMENTS:
-   - Product prominently displayed
-   - Clear visibility of variant-specific features (color, size, pattern)
-   - Maintain product integrity and details
-   - Professional gallery-quality image
-   - Show product in context if applicable
-`
-}
-
-2. LIGHTING & ATMOSPHERE (CRITICAL FOR SALES):
-   - **NATURAL DAYLIGHT** - bright, well-lit scene with abundant natural light
-   - Warm, inviting atmosphere with soft shadows
-   - **Golden hour quality** - warm, flattering light that enhances colors
-   - Professional photography lighting that makes products irresistible
-   - Bright and cheerful ambiance that attracts buyers
-   - NO dark, gloomy, or evening/night lighting
-   - Think: morning sunlight, bright showroom, golden afternoon glow
-   
-3. BACKGROUND STYLE - REALISTIC LIFESTYLE SCENES:
-   - CREATE CONTEXTUAL LIFESTYLE SETTINGS with appropriate decorative elements
-   - Place product in its natural usage environment with bright, natural lighting
-   - Examples by category:
-     * Furniture (sofa, table, chair) → Bright, airy living room with natural daylight, complementary furniture, cushions, plants, art on walls
-     * Kitchen products → Sunlit modern kitchen counter with fresh ingredients, elegant dishware
-     * Tech gadgets → Well-lit stylish desk with books, coffee, indoor plants, warm natural light
-     * Fashion/Clothing → Bright boutique atmosphere with natural window light, mirrors, elegant textures
-     * Food/Beverages → Bright attractive table setting with golden hour lighting, elegant plates, utensils
-     * Home decor → Sunny, cozy living space with harmonious complementary decor
-   - Use sophisticated color palettes that match the product
-   - Add depth with subtle bokeh or premium textures
-   - Think: high-end editorial photography for luxury e-commerce catalogs
-   - NEVER plain white background (separate function for that)
-
-4. TECHNICAL SPECS:
-   - Format: ${formatSpecs[format]}
-   - High resolution and sharp focus
-   - Professional post-processing
-   - E-commerce ready quality
-
-4. CREATIVE EXECUTION:
-   - Match mood to product category
-   - Background enhances, never distracts
-   - Professional photography aesthetic
-   - Suitable for ${isMainImage ? "main product listing (Shopify/Amazon)" : "product gallery"}
-
-RESULT: A stunning, professional product photo that looks like it was created by a top e-commerce photographer.
-    `.trim();
+INSTRUCTIONS FINALES :
+- Conserve l'intégrité du produit.
+- Rendu 100% réaliste.
+- La scène doit mettre en valeur le produit de façon luxueuse.
+- Pas de décor bas de gamme ou générique.
+- Ne JAMAIS modifier le produit original.
+`.trim();
 
     if (enrichedPrompt) {
       console.log("✨ Using SERP-enriched prompt for generation");
