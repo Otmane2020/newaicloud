@@ -125,13 +125,13 @@ serve(async (req) => {
 
     console.log("[sync-landing-to-shopify] Using store URL:", fullStoreUrl);
 
-    // 🆕 SYNCHRONISER LA DESCRIPTION DU PRODUIT SHOPIFY EN PREMIER
-    console.log("📝 Updating Shopify product description...");
+    // 🆕 SYNCHRONISER LA DESCRIPTION ET LE TITRE DU PRODUIT SHOPIFY
+    console.log("📝 Updating Shopify product description and title...");
 
-    // Récupérer le shopify_id et landing_page
+    // Récupérer le shopify_id, landing_page et titre optimisé
     const { data: productData, error: productFetchError } = await supabase
       .from("shopify_products")
-      .select("id, shopify_id, landing_page, description, handle")
+      .select("id, shopify_id, landing_page, description, handle, title")
       .eq("id", productId)
       .single();
 
@@ -159,6 +159,8 @@ serve(async (req) => {
     }
 
     const shopifyProductId = productData.shopify_id;
+    
+    console.log(`🎯 [SYNC] Product title to sync: "${productData.title}"`);
     
     // 🆕 Update local description with landing_page content before syncing
     let contentToSync = htmlContent || productData.description || '';
@@ -188,7 +190,8 @@ serve(async (req) => {
       console.log("ℹ️ No landing_page to sync or description already up-to-date");
     }
 
-    // Mettre à jour la description du produit dans Shopify
+    // Mettre à jour la description ET le titre du produit dans Shopify
+    console.log("🔄 Syncing to Shopify - Title:", productData.title?.substring(0, 50), "...");
     const updateProductResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/products/${shopifyProductId}.json`, {
       method: "PUT",
       headers: {
@@ -198,6 +201,7 @@ serve(async (req) => {
       body: JSON.stringify({
         product: {
           id: shopifyProductId,
+          title: productData.title, // 🔥 Sync optimized title from SERP optimization
           body_html: contentToSync, // Use landing_page > description > htmlContent parameter
         },
       }),
@@ -205,11 +209,11 @@ serve(async (req) => {
 
     if (!updateProductResponse.ok) {
       const errorText = await updateProductResponse.text();
-      console.error("❌ Failed to update product description in Shopify:", errorText);
-      throw new Error(`Failed to update Shopify product description: ${updateProductResponse.status}`);
+      console.error("❌ Failed to update product in Shopify:", errorText);
+      throw new Error(`Failed to update Shopify product: ${updateProductResponse.status}`);
     }
 
-    console.log("✅ Product description synced to Shopify");
+    console.log("✅ Product title and description synced to Shopify");
 
     // Construire l'URL du produit Shopify
     const productUrl = `${fullStoreUrl}/products/${productData.handle || productHandle}`;

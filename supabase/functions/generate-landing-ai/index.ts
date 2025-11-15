@@ -359,6 +359,7 @@ serve(async (req) => {
       customHighlights,
       language,
       designStyle = "modern", // Default to modern if not provided
+      imageAnalysis, // 🔥 Vision AI data if available
     } = body ?? {};
 
     console.log("📥 Request parameters:", {
@@ -1251,6 +1252,35 @@ UTILISATION DES ICÔNES :
 
     // Simple assign HTML without SERP button
     const finalHtml = html;
+
+    // 🎯 OPTIMIZE PRODUCT TITLE WITH SERP BEFORE SAVING
+    if (userId && product_id) {
+      console.log("🎯 Optimizing product title with SERP...");
+      try {
+        const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke(
+          "optimize-product-title-serp",
+          {
+            body: {
+              productId: product_id,
+              currentTitle: productTitle,
+              description: description,
+              productType: imageAnalysis?.productType,
+              vendor: vendor,
+              language: language
+            }
+          }
+        );
+
+        if (titleError) {
+          console.error("⚠️ Title optimization failed:", titleError);
+        } else if (titleData?.success) {
+          console.log(`✅ Title optimized: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`);
+        }
+      } catch (titleOptError) {
+        console.error("⚠️ Title optimization error:", titleOptError);
+        // Continue even if title optimization fails
+      }
+    }
 
     // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
