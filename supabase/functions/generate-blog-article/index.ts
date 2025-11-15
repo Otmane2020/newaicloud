@@ -27,11 +27,12 @@ const corsHeaders = {
 };
 
 //------------------------------------------------------------
-// Detect Language
+// Detect Language (from store locale or product content)
 //------------------------------------------------------------
-async function detectLanguage(userId: string) {
+async function detectLanguage(userId: string, productTitle?: string): Promise<string> {
   let lang = "fr";
 
+  // 1. Try store locale
   const { data: store } = await supabase
     .from("shopify_connections")
     .select("store_url, primary_locale")
@@ -40,19 +41,35 @@ async function detectLanguage(userId: string) {
     .maybeSingle();
 
   if (store?.primary_locale) {
-    const detected = store.primary_locale.split("-")[0];
-    if (["fr", "en", "es", "de", "it"].includes(detected)) return detected;
+    const detected = store.primary_locale.split("-")[0].toLowerCase();
+    if (["fr", "en", "es", "de", "it"].includes(detected)) {
+      console.log(`[LANG] Detected from locale: ${detected}`);
+      return detected;
+    }
   }
 
+  // 2. Try domain extension
   if (store?.store_url) {
     const url = store.store_url.toLowerCase();
     if (url.endsWith(".fr")) return "fr";
     if (url.endsWith(".es")) return "es";
     if (url.endsWith(".de")) return "de";
     if (url.endsWith(".it")) return "it";
-    return "en";
+    if (url.endsWith(".com") || url.endsWith(".co.uk")) return "en";
   }
 
+  // 3. Try to detect from product title (basic heuristic)
+  if (productTitle) {
+    const title = productTitle.toLowerCase();
+    // French indicators
+    if (title.match(/\b(le|la|les|de|du|des|un|une)\b/)) lang = "fr";
+    // English indicators
+    else if (title.match(/\b(the|and|for|with|of)\b/)) lang = "en";
+    // Spanish indicators
+    else if (title.match(/\b(el|la|los|las|de|del|un|una)\b/)) lang = "es";
+  }
+
+  console.log(`[LANG] Final detected language: ${lang}`);
   return lang;
 }
 //------------------------------------------------------------
@@ -88,7 +105,61 @@ Reference image (if any): ${baseImage || "none"}
 }
 
 //------------------------------------------------------------
-// Generate Article (DeepSeek)
+// Get language-specific prompts
+//------------------------------------------------------------
+function getPromptByLanguage(lang: string) {
+  const prompts: Record<string, { intro: string; rules: string }> = {
+    fr: {
+      intro: "Tu es un rédacteur SEO expert e-commerce. Génère un article PRODUIT complet en HTML pur pour Shopify Blog.",
+      rules: `RÈGLES CRITIQUES:
+- Retourne UNIQUEMENT le HTML (pas de balises html, head, body)
+- Français parfait, naturel, sans fautes
+- Intègre les mots-clés naturellement
+- Liens produits cliquables
+- Structure H1 > H2 > H3 respectée`
+    },
+    en: {
+      intro: "You are an expert SEO e-commerce writer. Generate a complete PRODUCT article in pure HTML for Shopify Blog.",
+      rules: `CRITICAL RULES:
+- Return ONLY HTML (no html, head, body tags)
+- Perfect, natural English without errors
+- Integrate keywords naturally
+- Clickable product links
+- Follow H1 > H2 > H3 structure`
+    },
+    es: {
+      intro: "Eres un redactor SEO experto en comercio electrónico. Genera un artículo PRODUCTO completo en HTML puro para Shopify Blog.",
+      rules: `REGLAS CRÍTICAS:
+- Devuelve SOLO HTML (sin etiquetas html, head, body)
+- Español perfecto, natural, sin errores
+- Integra palabras clave naturalmente
+- Enlaces de productos clicables
+- Sigue estructura H1 > H2 > H3`
+    },
+    de: {
+      intro: "Sie sind ein SEO-E-Commerce-Experte. Erstellen Sie einen vollständigen PRODUKT-Artikel in reinem HTML für Shopify Blog.",
+      rules: `KRITISCHE REGELN:
+- Nur HTML zurückgeben (keine html, head, body Tags)
+- Perfektes, natürliches Deutsch ohne Fehler
+- Keywords natürlich integrieren
+- Anklickbare Produktlinks
+- H1 > H2 > H3 Struktur befolgen`
+    },
+    it: {
+      intro: "Sei un esperto scrittore SEO e-commerce. Genera un articolo PRODOTTO completo in HTML puro per Shopify Blog.",
+      rules: `REGOLE CRITICHE:
+- Restituisci SOLO HTML (nessun tag html, head, body)
+- Italiano perfetto, naturale, senza errori
+- Integra le parole chiave naturalmente
+- Link prodotti cliccabili
+- Segui struttura H1 > H2 > H3`
+    }
+  };
+  return prompts[lang] || prompts.fr;
+}
+
+//------------------------------------------------------------
+// Generate Article (DeepSeek with Timeout)
 //------------------------------------------------------------
 async function generateArticleHTML(
   products: any[],
@@ -98,116 +169,91 @@ async function generateArticleHTML(
   storeUrl: string,
 ) {
   const product = products[0];
+  const langPrompt = getPromptByLanguage(lang);
 
-  const prompt = `Tu es un rédacteur SEO expert e-commerce. Génère un article PRODUIT complet en HTML pur pour Shopify Blog.
+  const prompt = `${langPrompt.intro}
 
-LANGUE: Français (${lang})
-LONGUEUR: ${length} mots minimum
-MOTS-CLÉS: ${keywords.join(", ")}
+LANGUAGE: ${lang.toUpperCase()}
+LENGTH: Minimum ${length} words
+KEYWORDS: ${keywords.join(", ")}
 
-PRODUIT:
-- Titre: ${product.title}
-- Prix: ${product.price}€
+PRODUCT:
+- Title: ${product.title}
+- Price: ${product.price}€
 - Type: ${product.product_type}
-- Marque: ${product.vendor}
+- Brand: ${product.vendor}
 
-STRUCTURE OBLIGATOIRE (respecte l'ordre exact):
+REQUIRED STRUCTURE (follow exact order):
 
-<h1>Titre SEO optimisé avec mot-clé principal</h1>
+<h1>SEO-optimized title with main keyword</h1>
 
 <div class="intro">
-<p>Introduction 150-200 mots expliquant le produit et ses bénéfices.</p>
+<p>Introduction 150-200 words explaining the product and its benefits.</p>
 </div>
 
-<h2>Présentation du Produit ${product.title}</h2>
+<h2>Product Presentation: ${product.title}</h2>
 
-<h3>Description Détaillée</h3>
-<p>Paragraphe complet décrivant le produit, ses caractéristiques, son usage.</p>
+<h3>Detailed Description</h3>
+<p>Complete paragraph describing the product, its features, its use.</p>
 
-<h3>Galerie Photos</h3>
+<h3>Photo Gallery</h3>
 <div class="product-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
 ${products.slice(0, 4).map((p) => `  <img src="${p.full_image_url || p.image_url}" alt="${p.title}" style="width: 100%; border-radius: 8px;">`).join('\n')}
 </div>
 
-<h3>Fiche Produit</h3>
+<h3>Product Sheet</h3>
 <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
-<p><strong>Prix:</strong> ${product.price}€</p>
+<p><strong>Price:</strong> ${product.price}€</p>
 <p><strong>Type:</strong> ${product.product_type}</p>
-<p><strong>Marque:</strong> ${product.vendor}</p>
-<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; margin-top: 1rem;">Voir le Produit</a>
+<p><strong>Brand:</strong> ${product.vendor}</p>
+<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; margin-top: 1rem;">View Product</a>
 </div>
 
-<h2>Caractéristiques Techniques</h2>
+<h2>Technical Specifications</h2>
 <table style="width: 100%; border-collapse: collapse; margin: 2rem 0;">
-<tr style="background: #f3f4f6;"><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Caractéristique</th><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Détail</th></tr>
-<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Marque</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.vendor}</td></tr>
+<tr style="background: #f3f4f6;"><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Feature</th><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Detail</th></tr>
+<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Brand</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.vendor}</td></tr>
 <tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Type</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.product_type}</td></tr>
-<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Prix</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.price}€</td></tr>
+<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Price</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.price}€</td></tr>
 </table>
 
-<h2>Avantages et Points Forts</h2>
-<h3>Qualité des Matériaux</h3>
-<p>Paragraphe sur la qualité, les matériaux utilisés.</p>
+<h2>Advantages and Strengths</h2>
+<h3>Material Quality</h3>
+<p>Paragraph about quality, materials used.</p>
 
-<h3>Design et Esthétique</h3>
-<p>Paragraphe sur le design, le style, l'apparence.</p>
+<h3>Design and Aesthetics</h3>
+<p>Paragraph about design, style, appearance.</p>
 
-<h3>Pourquoi Choisir Ce Produit?</h3>
+<h3>Why Choose This Product?</h3>
 <ul>
-<li>Premier avantage concret</li>
-<li>Deuxième avantage important</li>
-<li>Troisième point fort</li>
-</ul>
-
-<h2>Idées d'Utilisation et Décoration</h2>
-<h3>Style Moderne et Minimaliste</h3>
-<p>Comment intégrer le produit dans un décor moderne.</p>
-
-<h3>Style Industriel</h3>
-<p>Comment l'utiliser dans un style industriel.</p>
-
-<h3>Style Classique</h3>
-<p>Comment l'intégrer dans un intérieur classique.</p>
-
-<h2>Produits Similaires</h2>
-<p>Découvrez aussi nos autres produits dans la catégorie <a href="${storeUrl}/collections/${product.product_type || 'all'}" style="color: #1e40af; text-decoration: underline;">${product.product_type}</a>.</p>
-
-<h2>Avis Clients</h2>
-<div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
-<p><strong>⭐⭐⭐⭐⭐ Sophie M.</strong></p>
-<p>"Excellent produit, très satisfaite de mon achat!"</p>
-</div>
-
-<h2>Liens Utiles</h2>
-<ul>
-<li><a href="${storeUrl}/pages/contact" style="color: #1e40af;">Contactez-nous</a></li>
-<li><a href="${storeUrl}/pages/shipping" style="color: #1e40af;">Livraison</a></li>
-<li><a href="${storeUrl}/pages/returns" style="color: #1e40af;">Retours</a></li>
+<li>First concrete advantage</li>
+<li>Second important benefit</li>
+<li>Third strong point</li>
 </ul>
 
 <h2>FAQ</h2>
-<h3>Quelle est la livraison?</h3>
-<p>Réponse sur la livraison.</p>
+<h3>Question 1</h3>
+<p>Answer...</p>
 
-<h3>Comment entretenir ce produit?</h3>
-<p>Conseils d'entretien.</p>
+INTERNAL LINKS (insert naturally):
+- <a href="${storeUrl}/pages/contact">Contact</a>
+- <a href="${storeUrl}/pages/shipping">Shipping</a>
+- <a href="${storeUrl}/pages/returns">Returns</a>
 
-<h2>Conclusion</h2>
-<p>Résumé des points clés et rappel des avantages. Invitation à l'achat.</p>
-<div style="text-align: center; margin: 2rem 0;">
-<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 1rem 3rem; border-radius: 6px; text-decoration: none; font-size: 1.125rem; font-weight: 600;">Acheter Maintenant</a>
-</div>
-
-RÈGLES CRITIQUES:
-- Retourne UNIQUEMENT le HTML (pas de balises html, head, body)
-- Français parfait, naturel, sans fautes
-- Intègre les mots-clés naturellement
-- Minimum ${length} mots
-- Liens produits cliquables avec ${products[0].product_url}
-- Structure H1 > H2 > H3 respectée
+${langPrompt.rules}
+- Minimum ${length} words
+- Write in ${lang.toUpperCase()} language matching product language
 `;
 
-  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+  console.log(`[DEEPSEEK] Calling API with lang=${lang}, length=${length}`);
+  
+  // Create timeout promise (55 seconds to stay under 60s function limit)
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("DeepSeek API timeout after 55s")), 55000)
+  );
+
+  // Create fetch promise
+  const fetchPromise = fetch("https://api.deepseek.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
@@ -217,11 +263,22 @@ RÈGLES CRITIQUES:
       model: "deepseek-chat",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.45,
-      max_tokens: 2000,
+      max_tokens: 4000, // Increased for longer articles
     }),
   });
 
+  // Race between fetch and timeout
+  const res = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[DEEPSEEK] API Error: ${res.status} - ${errorText}`);
+    throw new Error(`DeepSeek API error: ${res.status}`);
+  }
+
   const data = await res.json();
+  console.log(`[DEEPSEEK] Response received, tokens: ${data.usage?.total_tokens || 'unknown'}`);
+  
   return data.choices[0].message.content.trim();
 }
 //------------------------------------------------------------
@@ -237,24 +294,7 @@ serve(async (req) => {
     if (!user_id) throw new Error("Missing user_id");
 
     //------------------------------------------------------------
-    // Detect language
-    //------------------------------------------------------------
-    const lang = await detectLanguage(user_id);
-
-    //------------------------------------------------------------
-    // Fetch store
-    //------------------------------------------------------------
-    const { data: store } = await supabase
-      .from("shopify_connections")
-      .select("store_url, id")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    const storeUrl = store?.store_url || "";
-    const storeId = store?.id || null;
-
-    //------------------------------------------------------------
-    // Fetch products
+    // Fetch products first (needed for language detection)
     //------------------------------------------------------------
     let { data: products } = await supabase
       .from("shopify_products")
@@ -270,7 +310,25 @@ serve(async (req) => {
     if (!products.length) throw new Error("No products found");
 
     //------------------------------------------------------------
-    // Enrich products
+    // Detect language from store and product content
+    //------------------------------------------------------------
+    const lang = await detectLanguage(user_id, products[0]?.title);
+    console.log(`[MAIN] Using language: ${lang}`);
+
+    //------------------------------------------------------------
+    // Fetch store
+    //------------------------------------------------------------
+    const { data: store } = await supabase
+      .from("shopify_connections")
+      .select("store_url, id")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    const storeUrl = store?.store_url || "";
+    const storeId = store?.id || null;
+
+    //------------------------------------------------------------
+    // Enrich products with full URLs
     //------------------------------------------------------------
     products = products.map((p) => ({
       ...p,
@@ -328,13 +386,17 @@ serve(async (req) => {
       { headers: corsHeaders },
     );
   } catch (err) {
-    console.error(err);
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error(`[ERROR] ${error.message}`);
+    console.error(error.stack);
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: error.message,
+        details: error.stack?.split('\n').slice(0, 3).join('\n')
       }),
-      { status: 500, headers: corsHeaders },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
