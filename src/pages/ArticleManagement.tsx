@@ -520,18 +520,6 @@ export default function ArticleManagement() {
               </div>
             </details>
           </div>
-          
-          {/* Always visible actions */}
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-            <Button
-              onClick={loadArticles}
-              disabled={loading}
-              variant="ghost"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
 
           {/* Bulk Actions */}
           {selectedArticles.length > 0 && (
