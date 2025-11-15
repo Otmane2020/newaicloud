@@ -33,6 +33,8 @@ import {
   Package,
   Images,
   Check,
+  Grid3x3,
+  List,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -195,6 +197,7 @@ export default function ProductTitleDescription() {
   const [showVariantConfirmDialog, setShowVariantConfirmDialog] = useState(false);
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
@@ -1783,6 +1786,15 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}
+              >
+                {viewMode === "grid" ? <List className="h-4 w-4 mr-2" /> : <Grid3x3 className="h-4 w-4 mr-2" />}
+                {viewMode === "grid" ? "Liste" : "Grille"}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   if (!canDoAction('optimizations')) {
                     toast.error(t.contentOptimization.toasts.limitReached);
@@ -1855,11 +1867,12 @@ export default function ProductTitleDescription() {
           </AlertDescription>
         </Alert>
 
-        {/* Products Table */}
+        {/* Products Table/Grid */}
         <Card className="overflow-hidden">
-          <ScrollArea className="h-[600px] scroll-area-viewport">
-            <TooltipProvider>
-              <Table>
+          {viewMode === 'table' ? (
+            <ScrollArea className="h-[600px] scroll-area-viewport">
+              <TooltipProvider>
+                <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   <TableHead className="w-12">
@@ -2180,15 +2193,286 @@ export default function ProductTitleDescription() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-            </TooltipProvider>
+              </Table>
+              </TooltipProvider>
 
-            {filteredProducts.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">
-                {t.contentOptimization.empty.title}
-              </div>
-            )}
-          </ScrollArea>
+              {filteredProducts.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  {t.contentOptimization.empty.title}
+                </div>
+              )}
+            </ScrollArea>
+          ) : (
+            /* Grid View */
+            <div className="p-4">
+              <TooltipProvider>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {paginatedProducts.map((product) => (
+                    <Card 
+                      key={product.id}
+                      className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden"
+                      onClick={() => {
+                        setPreviewProduct(product);
+                        setShowPreviewDialog(true);
+                      }}
+                    >
+                      {/* Image with action buttons */}
+                      <div className="aspect-square bg-muted/50 relative overflow-hidden">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-12 h-12 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Action buttons - visible on hover */}
+                        <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction('optimizations')) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  setShowWhiteBgConfigDialog(true);
+                                  loadGalleryImages([product.id]);
+                                }}
+                                disabled={generatingWhiteBg}
+                              >
+                                <Square className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.whiteBg}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction('optimizations')) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  await loadGalleryImages([product.id]);
+                                  setShowAiConfigDialog(true);
+                                }}
+                                disabled={generatingAiBg}
+                              >
+                                <Palette className="h-4 w-4 text-purple-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.aiBg}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction('optimizations')) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedLandingProduct(product);
+                                  setShowLandingConfigDialog(true);
+                                }}
+                              >
+                                <Sparkles className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.generateLanding}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
+                                    try {
+                                      const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                        body: {
+                                          productId: product.id,
+                                          shopifyId: product.shopify_id,
+                                          seoTitle: product.seo_title,
+                                          seoDescription: product.seo_description,
+                                        }
+                                      });
+                                      
+                                      if (error) throw error;
+                                      toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
+                                    } catch (error) {
+                                      console.error('Error syncing:', error);
+                                      toast.error('Erreur lors de la synchronisation', { id: toastId });
+                                    }
+                                  }}
+                                >
+                                  <Upload className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t.contentOptimization.tooltips.sync}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white hover:bg-destructive/10 shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProductToDelete(product);
+                                  setShowDeleteDialog(true);
+                                }}
+                                disabled={deletingProductId === product.id}
+                              >
+                                {deletingProductId === product.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Supprimer le produit</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+
+                      {/* Product info */}
+                      <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start gap-2">
+                          <Checkbox
+                            checked={selectedProducts.has(product.id)}
+                            onCheckedChange={() => handleSelectProduct(product.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm line-clamp-2 mb-1">{product.seo_title || product.title}</h3>
+                            {product.vendor && (
+                              <Badge variant="outline" className="text-xs">
+                                {product.vendor}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        {product.seo_description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {product.seo_description}
+                          </p>
+                        )}
+
+                        {/* Status badge */}
+                        <div className="flex items-center justify-between">
+                          {hasRichHtmlDescription(product) ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                              <FileText className="h-3 w-3 mr-1" />
+                              Landing
+                            </Badge>
+                          ) : product.seo_title || product.seo_description ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {t.contentOptimization.table.status.basicContent} ✓
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">{t.contentOptimization.table.status.toOptimize}</Badge>
+                          )}
+
+                          {product.shopify_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!product.shopify_id) {
+                                  toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                                  return;
+                                }
+                                
+                                if (!selectedStore) {
+                                  toast.error("Aucun store sélectionné");
+                                  return;
+                                }
+                                
+                                const newStatus = product.status === 'active' ? 'draft' : 'active';
+                                const toastId = toast.loading("Mise à jour du statut...");
+                                
+                                try {
+                                  const { error } = await supabase.functions.invoke('update-product-status', {
+                                    body: {
+                                      productId: product.id,
+                                      shopifyId: product.shopify_id,
+                                      status: newStatus,
+                                    }
+                                  });
+                                  
+                                  if (error) throw error;
+                                  
+                                  setProducts(prev => prev.map(p => 
+                                    p.id === product.id ? { ...p, status: newStatus } : p
+                                  ));
+                                  
+                                  toast.success(`Produit ${newStatus === 'active' ? 'activé' : 'désactivé'}`, { id: toastId });
+                                } catch (error) {
+                                  console.error('Error updating status:', error);
+                                  toast.error('Erreur lors de la mise à jour', { id: toastId });
+                                }
+                              }}
+                            >
+                              {product.status === 'active' ? (
+                                <><Power className="h-3 w-3 mr-1 text-green-600" /> Actif</>
+                              ) : (
+                                <><PowerOff className="h-3 w-3 mr-1 text-gray-400" /> Draft</>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </TooltipProvider>
+
+              {filteredProducts.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  {t.contentOptimization.empty.title}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Pagination */}
           {totalPages > 1 && (
