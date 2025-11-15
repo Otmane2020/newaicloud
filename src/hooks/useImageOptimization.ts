@@ -308,12 +308,101 @@ export const useImageOptimization = () => {
     }
   });
 
+  const applyAllOptimizedImages = useMutation({
+    mutationFn: async ({ 
+      productId,
+    }: { 
+      productId: string;
+    }) => {
+      setIsOptimizing(true);
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        // Get all current optimized images for this product
+        const { data: historyData, error: historyError } = await supabase
+          .from('product_image_history')
+          .select('*')
+          .eq('product_id', productId)
+          .eq('is_current', true)
+          .eq('user_id', user.id);
+
+        if (historyError) throw historyError;
+        if (!historyData || historyData.length === 0) {
+          throw new Error('Aucune image optimisée à appliquer');
+        }
+
+        // Apply all images in parallel
+        const applyPromises = historyData.map(async (history) => {
+          // Update the product_images table with optimized URL
+          const { error: updateError } = await supabase
+            .from('product_images')
+            .update({ 
+              src: history.optimized_url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', history.image_id);
+
+          if (updateError) throw updateError;
+
+          return history;
+        });
+
+        await Promise.all(applyPromises);
+
+        // Update product optimization count and timestamp
+        const { data: currentProduct } = await supabase
+          .from('shopify_products')
+          .select('optimization_count')
+          .eq('id', productId)
+          .single();
+
+        const { error: productError } = await supabase
+          .from('shopify_products')
+          .update({ 
+            optimization_count: (currentProduct?.optimization_count || 0) + historyData.length,
+            last_optimization_at: new Date().toISOString()
+          })
+          .eq('id', productId);
+
+        if (productError) throw productError;
+
+        // Sync with Shopify
+        const { error: syncError } = await supabase.functions.invoke('shopify-sync-product', {
+          body: { productId }
+        });
+
+        if (syncError) throw syncError;
+
+        toast.success(`${historyData.length} images appliquées et synchronisées avec succès!`);
+        
+        await sendOptimizationNotification(historyData.length);
+
+        return { success: true, count: historyData.length };
+      } catch (error: any) {
+        setIsOptimizing(false);
+        toast.error(error.message || 'Erreur lors de l\'application des images');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+      queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+    },
+    onSettled: () => {
+      setIsOptimizing(false);
+    }
+  });
+
   return {
     isOptimizing,
     generateWhiteBackground,
     generateAIBackgroundVariants,
     generateProductDescription,
     applyOptimizedImage,
+    applyAllOptimizedImages,
     saveToHistory
   };
 };
