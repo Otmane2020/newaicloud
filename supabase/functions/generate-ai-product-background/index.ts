@@ -162,51 +162,82 @@ serve(async (req) => {
     };
 
 // Force full background replacement
-const forceFullBackgroundReplace = `
-IMPORTANT — FULL BACKGROUND REPLACEMENT MODE:
+    const forceFullBackgroundReplace = `
+🎯 ULTRA-CRITICAL E-COMMERCE PROFESSIONAL MODE:
 
-You MUST REMOVE the entire background of the input image.
-Do NOT keep or reuse ANY element from the original scene:
-- No sofa
-- No plant
-- No wall
-- No floor
-- No decor
-- No colors
-- No shadows or reflections from original image
+1. BACKGROUND DESTRUCTION (MANDATORY):
+   ❌ REMOVE 100% of the original background
+   ❌ NO walls, floors, furniture, decorations from original
+   ❌ NO colors, lighting, shadows from original scene
+   ✅ ONLY keep the product itself (perfectly intact)
 
-Only keep the PRODUCT itself, perfectly intact.
+2. E-COMMERCE PROFESSIONAL RENDERING (MANDATORY):
+   ✅ Studio-quality photography (like Zara Home, La Redoute, West Elm)
+   ✅ Professional lighting: soft, natural, no harsh shadows
+   ✅ Perfect focus: product 100% sharp and detailed
+   ✅ High-end lifestyle context (luxury but realistic)
+   ✅ Harmonious neutral colors (beige, cream, taupe, white, grey)
+   ✅ Premium materials visible (wood, marble, velvet, linen)
+   
+3. TECHNICAL REQUIREMENTS (MANDATORY):
+   ✅ Ultra-high resolution and sharpness
+   ✅ Professional color grading (warm, inviting, luxurious)
+   ✅ Natural depth of field (slight blur on background)
+   ✅ Perfect product integration (no floating, no cut edges)
+   ✅ Realistic shadows and reflections matching new scene
+   ✅ Clean, uncluttered composition
 
-You MUST fully reconstruct a NEW scene from scratch.
-This is NOT an enhancement. This is NOT an improvement of the existing scene.
-This is a FULL REPLACEMENT.
+4. CONTEXT RULES:
+   ✅ Minimal but elegant staging (2-3 complementary elements max)
+   ✅ Natural materials (plants, wood, stone, textiles)
+   ✅ Bright, airy atmosphere
+   ✅ Product is the hero (80% focus on product)
+   
+THIS IS A FULL SCENE RECONSTRUCTION FOR PROFESSIONAL E-COMMERCE.
+NOT an edit. NOT an enhancement. TOTAL REPLACEMENT.
 `;
 
-// Nouveau prompt lifestyle premium pour Lovable
+// Nouveau prompt lifestyle premium pour Lovable - Ultra précis pour rendu e-commerce professionnel
 const premiumLifestylePrompt = `
-Crée une image lifestyle haut de gamme digne d'un catalogue de décoration premium (niveau Zara Home / La Redoute Intérieurs / Maisons du Monde).
+🏆 PHOTOGRAPHIE PRODUIT E-COMMERCE PREMIUM - STANDARD PROFESSIONNEL
 
-CONTRAINTE PRODUIT :
-- Ne PAS modifier le produit: forme, dimensions, couleur, matériaux.
-- Produit parfaitement net, haut niveau de détails, rendu réaliste.
-- Préserver exactement : texture, proportions, couleurs réelles.
+Tu dois créer une PHOTOGRAPHIE PROFESSIONNELLE de qualité catalogue haut de gamme (Zara Home, La Redoute Intérieurs, West Elm).
 
-STYLE VISUEL :
-- Salon lumineux, ambiance chaleureuse et moderne.
-- Grande fenêtre, lumière naturelle douce (pas d'effets IA).
-- Palette beige / crème / sable, élégante et harmonieuse.
-- Décoration premium : canapé clair, tapis texturé, plantes réalistes, tableau moderne, objets fins.
+📸 QUALITÉ PHOTOGRAPHIQUE OBLIGATOIRE :
+- Qualité studio professionnel : ultra-nette, haute résolution
+- Éclairage naturel doux et diffus (style lumière du jour, golden hour)
+- Color grading professionnel : tons chauds, invitants, luxueux
+- Mise au point parfaite sur le produit (net à 100%)
+- Profondeur de champ naturelle (léger flou artistique sur l'arrière-plan)
+- Composition magazine : équilibrée, aérée, élégante
 
-MISE EN SCÈNE :
-- Produit placé au sein d'un salon contemporain haut de gamme.
-- Image élégante, équilibrée, propre, réaliste.
-- Zéro artefact IA, zéro flou artificiel, zéro lens flare.
+🎨 MISE EN SCÈNE LIFESTYLE :
+- Décor intérieur contemporain haut de gamme
+- Palette harmonieuse : beige, crème, taupe, blanc cassé, gris doux, tons terre
+- Matériaux premium visibles : bois naturel, marbre, velours, lin, céramique
+- 2-3 éléments déco maximum (pas de surcharge)
+- Plantes naturelles, textiles fins, objets design épurés
+- Ambiance lumineuse, spacieuse, aérée
 
-QUALITÉ :
-- Photo ultra réaliste.
-- Style showroom premium.
-- Ambiance chaleureuse naturelle.
-- Résultat = digne d'un shooting professionnel e-commerce haut de gamme.
+✨ INTÉGRATION PRODUIT :
+- Le produit est la STAR (80% du focus visuel)
+- Placement naturel, pas d'effet "flottant"
+- Ombres et reflets réalistes adaptés à la nouvelle scène
+- Aucune déformation du produit
+- Préservation exacte : couleurs, textures, proportions, détails
+
+🚫 INTERDICTIONS STRICTES :
+- Pas de flou artificiel ou effets IA visibles
+- Pas de lens flare exagéré
+- Pas de décor cheap ou générique
+- Pas de sur-saturation des couleurs
+- Pas d'objets incohérents ou mal intégrés
+- Pas de composition encombrée
+
+✅ RÉSULTAT ATTENDU :
+Une photo qui pourrait être publiée IMMÉDIATEMENT sur un site e-commerce premium.
+Qualité = shooting photo professionnel par photographe e-commerce expert.
+Style = luxueux mais accessible, réaliste, vendeur.
 `;
 
     // Use enriched prompt if available (includes SERP insights), otherwise use premium lifestyle prompt
@@ -215,18 +246,21 @@ ${forceFullBackgroundReplace}
 
 ${premiumLifestylePrompt}
 
-INFORMATIONS PRODUIT :
-${productContext}${variantOptions ? ` (Variant: ${variantOptions})` : ""}
+📦 CONTEXTE PRODUIT :
+${productContext}${variantOptions ? ` (Variante: ${variantOptions})` : ""}
 
-STYLE SÉLECTIONNÉ : ${style}
-FORMAT IMAGE : ${format}
+🎯 PARAMÈTRES SÉLECTIONNÉS :
+- Style demandé : ${style}
+- Format image : ${format}
 
-INSTRUCTIONS FINALES :
-- Conserve l'intégrité du produit.
-- Rendu 100% réaliste.
-- La scène doit mettre en valeur le produit de façon luxueuse.
-- Pas de décor bas de gamme ou générique.
-- Ne JAMAIS modifier le produit original.
+⚠️ RÈGLES FINALES NON-NÉGOCIABLES :
+1. Le produit original doit rester 100% intact (forme, couleur, texture, dimensions)
+2. Aucune modification du produit n'est autorisée
+3. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
+4. La scène doit être digne d'un catalogue e-commerce haut de gamme
+5. L'image finale doit être utilisable IMMÉDIATEMENT sur un site e-commerce premium
+
+MISSION : Créer une photographie professionnelle qui maximise l'attractivité du produit tout en respectant son intégrité absolue.
 `.trim();
 
     if (enrichedPrompt) {
