@@ -394,6 +394,8 @@ const handleOptimizeArticle = async (articleId: string) => {
         return;
       }
 
+      console.log('📰 Starting article import for store:', storeData.store_url);
+
       const { data, error } = await supabase.functions.invoke('import-shopify-articles', {
         body: { 
           shopName: storeData.store_url.replace('.myshopify.com', ''),
@@ -406,12 +408,25 @@ const handleOptimizeArticle = async (articleId: string) => {
 
       const totalArticles = data?.count || 0;
       const totalImages = data?.images || 0;
+      
+      console.log('✅ Import complete:', { totalArticles, totalImages });
+      
+      // Reset filters to show all imported articles
+      setActiveTab('all');
+      setQualityFilter('all');
+      setStatusFilter('all');
+      setSyncFilter('all');
+      setSearchTerm('');
+      
       toast.success(t.blog.management.messages.importSuccess
         .replace('{{totalArticles}}', String(totalArticles))
-        .replace('{{totalImages}}', String(totalImages)), { id: toastId });
+        .replace('{{totalImages}}', String(totalImages)), { 
+          id: toastId,
+          description: totalArticles > 0 ? 'Les filtres ont été réinitialisés pour afficher tous les articles.' : undefined
+        });
       await fetchArticles();
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('❌ Error importing articles:', error);
       toast.error(error.message || t.blog.management.messages.importError);
     } finally {
       setSyncing(false);
