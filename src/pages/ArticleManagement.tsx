@@ -41,14 +41,12 @@ interface Article {
   id: string;
   title: string;
   content: string;
-  seo_title: string | null;
-  seo_description: string | null;
   meta_description: string | null;
   keywords: string[] | null;
   status: string;
   published_at: string | null;
   shopify_blog_id: string | null;
-  shopify_article_id: string | null;
+  shopify_article_id: number | null;
   created_at: string;
   updated_at: string;
   source: string | null;
@@ -108,15 +106,41 @@ export default function ArticleManagement() {
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
-        .eq('user_id', user?.id)
         .eq('store_id', selectedStore.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setArticles((data || []) as unknown as Article[]);
+      setArticles(data || []);
     } catch (error) {
       console.error('Error loading articles:', error);
       toast.error('Error loading articles');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importShopifyArticles = async () => {
+    if (!selectedStore) {
+      toast.error('Veuillez sélectionner une boutique');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('📰 Importing articles from Shopify for store:', selectedStore.id);
+
+      const { data, error } = await supabase.functions.invoke('import-shopify-articles', {
+        body: { storeId: selectedStore.id }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Import failed');
+
+      toast.success(`${data.articlesImported || 0} article(s) importé(s) depuis Shopify`);
+      await loadArticles();
+    } catch (error: any) {
+      console.error('❌ Error importing articles:', error);
+      toast.error(error.message || 'Erreur lors de l\'importation des articles');
     } finally {
       setLoading(false);
     }
@@ -158,7 +182,7 @@ export default function ArticleManagement() {
     const matchesQuality = qualityFilter === 'all' || (() => {
       const seoScore = calculateArticleSeoScore(
         article.title,
-        article.seo_title || '',
+        article.title,
         article.meta_description || '',
         article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
         !!article.featured_image,
@@ -225,7 +249,7 @@ export default function ArticleManagement() {
       // Get optimized articles from database
       const { data: articles, error: articlesError } = await supabase
         .from('blog_articles')
-        .select('id, title, seo_title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
+        .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
         .in('id', articleIds);
 
       if (articlesError) throw articlesError;
@@ -429,6 +453,15 @@ export default function ArticleManagement() {
             >
               <Trash2 className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Supprimer</span>
+            </Button>
+            <Button
+              onClick={importShopifyArticles}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Importer depuis Shopify</span>
             </Button>
             <Button
               onClick={loadArticles}
@@ -662,8 +695,8 @@ export default function ArticleManagement() {
                         {(() => {
                           const seoScore = calculateArticleSeoScore(
                             article.title,
-                            article.seo_title,
-                            article.seo_description,
+                            article.title,
+                            article.meta_description,
                             article.keywords,
                             !!article.featured_image,
                             article.status === 'published',

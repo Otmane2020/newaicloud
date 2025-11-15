@@ -34,8 +34,9 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'ads-campaign', 'google-console'].includes(tab)) {
-      // Redirect old 'optimization' tab to 'products'
+    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'ads-campaign', 'google-console'];
+    
+    if (tab && validTabs.includes(tab)) {
       if (tab === 'optimization') {
         setActiveTab('products');
       } else {
@@ -315,7 +316,9 @@ export default function SEO() {
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'ads-campaign' && <AdsCampaign />}
-        {activeTab === 'google-console' && <GoogleSearchConsole />}
+        {activeTab === 'google-console' && (
+          <GoogleSearchConsole />
+        )}
       </div>
     </div>
   );
