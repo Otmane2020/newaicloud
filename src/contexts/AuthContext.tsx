@@ -26,9 +26,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        console.log('[Auth] Event:', event, 'Session:', !!session);
+        
+        // Handle session expiration and sign-out events
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          
+          // Only redirect and show toast if we were previously logged in
+          const wasLoggedIn = localStorage.getItem('supabase.auth.token');
+          if (wasLoggedIn && event === 'SIGNED_OUT') {
+            toast.error('Votre session a expiré. Veuillez vous reconnecter.');
+            navigate('/auth');
+          }
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
       }
     );
 
@@ -40,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     // Préserver les paramètres URL actuels (comme shopify_pending)
