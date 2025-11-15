@@ -41,6 +41,7 @@ interface ProductVariant {
   option2?: string | null;
   option3?: string | null;
   image_id?: string | null;
+  image_url?: string | null;
 }
 
 interface AiBackgroundDialogProps {
@@ -270,14 +271,22 @@ export function AiBackgroundDialog({
           const variant = product.variants?.find(v => v.id === variantId);
           
           if (variant) {
-            const variantImage = variant.image_id 
-              ? productImages.get(productId)?.find(img => img.id === variant.image_id)
-              : undefined;
+            // Use variant's image_url directly if available
+            const imageSrc = variant.image_url;
             
-            if (variantImage) {
-              newSelectedImages.set(productId, [variantImage.src]);
-            } else if (product.image_url) {
-              newSelectedImages.set(productId, [product.image_url]);
+            if (imageSrc) {
+              newSelectedImages.set(productId, [imageSrc]);
+            } else {
+              // Fallback: try to find image by shopify_image_id
+              const variantImage = variant.image_id 
+                ? productImages.get(productId)?.find(img => String(img.id) === String(variant.image_id))
+                : undefined;
+              
+              if (variantImage) {
+                newSelectedImages.set(productId, [variantImage.src]);
+              } else if (product.image_url) {
+                newSelectedImages.set(productId, [product.image_url]);
+              }
             }
           }
         }
@@ -440,10 +449,8 @@ export function AiBackgroundDialog({
                   <div className="space-y-2 pr-4">
                     {singleProduct.variants.map(variant => {
                       const isSelected = config.selectedVariants.get(singleProduct.id)?.includes(variant.id);
-                      const variantImage = variant.image_id 
-                        ? productImages.get(singleProduct.id)?.find(img => img.id === variant.image_id)
-                        : undefined;
-                      const imageSrc = variantImage?.src || singleProduct.image_url;
+                      // Use variant's image_url directly if available
+                      const imageSrc = variant.image_url || singleProduct.image_url;
 
                       return (
                         <button

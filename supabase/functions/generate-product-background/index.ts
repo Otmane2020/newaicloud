@@ -72,23 +72,32 @@ ${isMainImage ? `
    - Preserve product details but focus on atmosphere
 `}
 
-2. BACKGROUND STYLE - ELEGANT & TRENDY (NEVER WHITE):
+2. LIGHTING & ATMOSPHERE (CRITICAL FOR SALES):
+   - **NATURAL DAYLIGHT** - bright, well-lit scene with abundant natural light
+   - Warm, inviting atmosphere with soft shadows
+   - **Golden hour quality** - warm, flattering light that enhances the product
+   - Professional photography lighting setup
+   - Bright and cheerful ambiance that attracts buyers
+   - NO dark, gloomy, or evening lighting
+   - Think: morning sunlight streaming through windows, bright showroom lighting
+   
+3. BACKGROUND STYLE - ELEGANT & TRENDY (NEVER WHITE):
    - Create a beautiful, elegant, and trendy background that relates to "${productTitle}"
-   - Use sophisticated color palettes (jewel tones, earth tones, pastels, etc.)
+   - Use sophisticated color palettes (jewel tones, earth tones, warm pastels)
    - Add depth with subtle bokeh, gradient effects, or premium textures
    - Background should enhance product luxury and appeal
-   - Think high-end editorial photography style
+   - Think high-end editorial photography style for luxury e-commerce
    - NEVER use plain white background (there's a separate function for that)
    - CREATE CONTEXTUAL LIFESTYLE SCENES with decorative elements:
-     * Furniture → Place in beautifully styled room with complementary pieces (sofa, cushions, plants, art)
-     * Kitchen products → Modern kitchen counter with fresh ingredients, elegant dishware
-     * Tech gadgets → Stylish desk with books, coffee, plants, warm lighting
-     * Fashion → Boutique atmosphere with mirrors, hangers, elegant textures
-     * Food items → Attractive table setting with plates, utensils, mood lighting
-     * Home accessories → Cozy living space with harmonious decor
-   - Examples: marble textures, velvet surfaces, wooden aesthetics, soft gradients, lifestyle settings
+     * Furniture → Beautifully styled room with natural daylight, complementary pieces (sofa, cushions, plants, art), bright and airy
+     * Kitchen products → Modern kitchen with morning sunlight, fresh ingredients, elegant dishware
+     * Tech gadgets → Stylish workspace with natural window light, books, coffee, plants
+     * Fashion → Bright boutique with natural lighting, mirrors, elegant textures
+     * Food items → Bright attractive table setting with natural daylight, plates, utensils
+     * Home accessories → Sunny, cozy living space with harmonious decor
+   - Examples: marble textures in bright light, velvet surfaces with golden hour glow, wooden aesthetics with natural sunbeams, soft gradients with luminous quality
 
-3. TECHNICAL SPECS:
+4. TECHNICAL SPECS:
    - Square format (1024×1024)
    - Professional color grading
    - Balanced exposure and contrast

@@ -195,23 +195,31 @@ ${
 `
 }
 
-2. BACKGROUND & LIGHTING:
-   - CRITICAL: Remove and replace the existing background completely with a new one
-   - ${prompt}
-   - ${styleDescriptions[style]}
-   - CREATE A REALISTIC LIFESTYLE SETTING with appropriate decorative elements:
-     * Furniture products → Show in a styled room with complementary furniture (sofas, tables, lighting)
-     * Kitchen items → Display in modern kitchen with countertops, appliances, natural ingredients
-     * Tech products → Modern desk setup with plants, books, ambient lighting
-     * Fashion items → Elegant dressing room or boutique setting with mirrors, texture backgrounds
-     * Food/beverages → Beautiful table setting with complementary dishes, elegant presentation
-     * Home decor → Cozy living space with harmonious decoration elements
-   - Background should tell a story and create emotional connection
-   - Professional color grading
-   - Balanced exposure and contrast
-   - No watermarks, text, or logos
+2. LIGHTING & ATMOSPHERE (CRITICAL FOR SALES):
+   - **NATURAL DAYLIGHT** - bright, well-lit scene with abundant natural light
+   - Warm, inviting atmosphere with soft shadows
+   - **Golden hour quality** - warm, flattering light that enhances colors
+   - Professional photography lighting that makes products irresistible
+   - Bright and cheerful ambiance that attracts buyers
+   - NO dark, gloomy, or evening/night lighting
+   - Think: morning sunlight, bright showroom, golden afternoon glow
+   
+3. BACKGROUND STYLE - REALISTIC LIFESTYLE SCENES:
+   - CREATE CONTEXTUAL LIFESTYLE SETTINGS with appropriate decorative elements
+   - Place product in its natural usage environment with bright, natural lighting
+   - Examples by category:
+     * Furniture (sofa, table, chair) → Bright, airy living room with natural daylight, complementary furniture, cushions, plants, art on walls
+     * Kitchen products → Sunlit modern kitchen counter with fresh ingredients, elegant dishware
+     * Tech gadgets → Well-lit stylish desk with books, coffee, indoor plants, warm natural light
+     * Fashion/Clothing → Bright boutique atmosphere with natural window light, mirrors, elegant textures
+     * Food/Beverages → Bright attractive table setting with golden hour lighting, elegant plates, utensils
+     * Home decor → Sunny, cozy living space with harmonious complementary decor
+   - Use sophisticated color palettes that match the product
+   - Add depth with subtle bokeh or premium textures
+   - Think: high-end editorial photography for luxury e-commerce catalogs
+   - NEVER plain white background (separate function for that)
 
-3. TECHNICAL SPECS:
+4. TECHNICAL SPECS:
    - Format: ${formatSpecs[format]}
    - High resolution and sharp focus
    - Professional post-processing
