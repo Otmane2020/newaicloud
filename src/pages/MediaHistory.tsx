@@ -137,37 +137,6 @@ export default function MediaHistory() {
 
   const isLoading = productLoading || collectionLoading || articleLoading;
 
-  const applyProductImage = useMutation({
-    mutationFn: async ({ 
-      historyId, 
-      targetImageId, 
-      optimizedUrl 
-    }: { 
-      historyId: string; 
-      targetImageId: string; 
-      optimizedUrl: string;
-    }) => {
-      const { error: updateError } = await supabase
-        .from('product_images')
-        .update({ 
-          src: optimizedUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', targetImageId);
-
-      if (updateError) throw updateError;
-    },
-    onSuccess: () => {
-      toast.success('Image appliquée avec succès');
-      queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
-      queryClient.invalidateQueries({ queryKey: ['product-images'] });
-    },
-    onError: (error) => {
-      console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application');
-    }
-  });
-
   const applyCollectionImage = useMutation({
     mutationFn: async ({ collectionId, optimizedUrl }: { collectionId: string; optimizedUrl: string }) => {
       const { error } = await supabase
@@ -185,6 +154,66 @@ export default function MediaHistory() {
       queryClient.invalidateQueries({ queryKey: ['collection-image-history'] });
     },
     onError: () => toast.error('Erreur lors de l\'application')
+  });
+
+  const applyProductImage = useMutation({
+    mutationFn: async ({ 
+      historyId, 
+      targetImageId, 
+      optimizedUrl 
+    }: { 
+      historyId: string; 
+      targetImageId: string; 
+      optimizedUrl: string;
+    }) => {
+      // Update the product image
+      const { error: updateError } = await supabase
+        .from('product_images')
+        .update({ 
+          src: optimizedUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetImageId);
+
+      if (updateError) throw updateError;
+
+      // Mark this history version as current
+      await supabase
+        .from('product_image_history')
+        .update({ is_current: true })
+        .eq('id', historyId);
+
+      // Get product_id for sync
+      const { data: imageData } = await supabase
+        .from('product_images')
+        .select('product_id')
+        .eq('id', targetImageId)
+        .single();
+
+      if (imageData?.product_id) {
+        // Sync with Shopify
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: { productId: imageData.product_id }
+        });
+
+        if (syncError) {
+          console.error('Erreur sync Shopify:', syncError);
+          throw new Error(`Erreur de synchronisation: ${syncError.message}`);
+        }
+
+        if (!syncData?.success) {
+          throw new Error(syncData?.error || 'Échec de la synchronisation');
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success('Image appliquée et synchronisée avec Shopify');
+      queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+      queryClient.invalidateQueries({ queryKey: ['product-images'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erreur lors de l\'application');
+    }
   });
 
   const applyArticleImage = useMutation({
@@ -336,29 +365,43 @@ export default function MediaHistory() {
                     return (
                       <DropdownMenuItem
                         key={variant.id}
-                        onClick={async () => {
-                          try {
-                            // Update the variant's image_url directly
-                            const { error } = await supabase
-                              .from('product_variants')
-                              .update({ image_url: item.optimized_url })
-                              .eq('id', variant.id);
+                         onClick={async () => {
+                           try {
+                             // Update the variant's image_url directly
+                             const { error } = await supabase
+                               .from('product_variants')
+                               .update({ image_url: item.optimized_url })
+                               .eq('id', variant.id);
 
-                            if (error) throw error;
+                             if (error) throw error;
 
-                            // Mark this history version as current
-                            await supabase
-                              .from('product_image_history')
-                              .update({ is_current: true })
-                              .eq('id', item.id);
+                             // Mark this history version as current
+                             await supabase
+                               .from('product_image_history')
+                               .update({ is_current: true })
+                               .eq('id', item.id);
 
-                            toast.success('Image appliquée à la variante avec succès');
-                            queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
-                          } catch (error) {
-                            console.error('Error applying image to variant:', error);
-                            toast.error("Erreur lors de l'application de l'image");
-                          }
-                        }}
+                             // Sync with Shopify
+                             const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+                               body: { productId: item.product_id }
+                             });
+
+                             if (syncError) {
+                               console.error('Erreur sync Shopify:', syncError);
+                               throw new Error(`Erreur de synchronisation: ${syncError.message}`);
+                             }
+
+                             if (!syncData?.success) {
+                               throw new Error(syncData?.error || 'Échec de la synchronisation');
+                             }
+
+                             toast.success('Image appliquée à la variante et synchronisée avec Shopify');
+                             queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+                           } catch (error: any) {
+                             console.error('Error applying image to variant:', error);
+                             toast.error(error.message || "Erreur lors de l'application de l'image");
+                           }
+                         }}
                         className="gap-3 py-3 hover:bg-purple-50"
                       >
                         <div className="flex items-center gap-3 flex-1">
@@ -383,14 +426,14 @@ export default function MediaHistory() {
                               </div>
                             </div>
                           )}
-                          <div className="flex-1">
-                            <div className="font-medium line-clamp-1 text-sm text-purple-900">
-                              🎨 {item.ai_prompt || variant.title}
-                            </div>
-                            <div className="text-xs text-purple-600">
-                              Variante • {variant.image_url ? '✓ Avec image' : '○ Sans image'}
-                            </div>
-                          </div>
+                           <div className="flex-1">
+                             <div className="font-medium line-clamp-1 text-sm text-purple-900">
+                               🎨 {variant.title}
+                             </div>
+                             <div className="text-xs text-purple-600">
+                               Variante • {variant.image_url ? '✓ Avec image' : '○ Sans image'}
+                             </div>
+                           </div>
                         </div>
                       </DropdownMenuItem>
                     );
