@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     console.log(`🔄 Syncing images for product: ${productId}`);
 
-    // Get product with images
+    // Get product with images and store info
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
       .select(`
@@ -45,25 +45,34 @@ Deno.serve(async (req) => {
         images:product_images(id, src, alt_text, position, shopify_image_id, variant_id)
       `)
       .eq("id", productId)
-      .eq("seller_id", user.id)
       .single();
 
     if (productError || !product) {
-      // Check if product exists but doesn't belong to user
-      const { data: anyProduct } = await supabaseClient
-        .from("shopify_products")
-        .select("id, seller_id")
-        .eq("id", productId)
-        .single();
-      
-      if (anyProduct) {
-        console.error(`❌ Product ${productId} belongs to another user`);
-        throw new Error(`Product access denied`);
-      }
-      
       console.error(`❌ Product ${productId} not found in database`);
       throw new Error(`Product not found or has been deleted`);
     }
+
+    // Verify access: user must either own the product OR have access to the product's store
+    let hasAccess = product.seller_id === user.id;
+    
+    if (!hasAccess && product.store_id) {
+      // Check if user has access to this store
+      const { data: storeAccess } = await supabaseClient
+        .from("shopify_connections")
+        .select("id")
+        .eq("id", product.store_id)
+        .eq("seller_id", user.id)
+        .single();
+      
+      hasAccess = !!storeAccess;
+    }
+
+    if (!hasAccess) {
+      console.error(`❌ User ${user.id} does not have access to product ${productId}`);
+      throw new Error(`Product access denied`);
+    }
+
+    console.log(`✅ Access verified for product ${productId}`);
 
     // If product not synced to Shopify, just return success without syncing
     if (!product.shopify_product_id) {
