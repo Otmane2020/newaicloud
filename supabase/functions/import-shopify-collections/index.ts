@@ -36,11 +36,10 @@ Deno.serve(async (req: Request) => {
 
     // Read request body parameters
     const body = await req.json().catch(() => ({}));
-    const { shopName: bodyShopName, apiSecret: bodyApiSecret, storeId: bodyStoreId } = body;
+    const { shopName: bodyShopName, storeId: bodyStoreId } = body;
     
     console.log(`📦 [IMPORT-COLLECTIONS] Body params:`, {
       shopName: bodyShopName || 'not provided',
-      hasApiSecret: !!bodyApiSecret,
       storeId: bodyStoreId || 'not provided'
     });
 
@@ -49,10 +48,10 @@ Deno.serve(async (req: Request) => {
     let accessToken: string;
 
     // Use body parameters if provided, otherwise fallback to active connection
-    if (bodyShopName && bodyApiSecret && bodyStoreId) {
+    if (bodyShopName && bodyStoreId) {
       console.log(`✅ [IMPORT-COLLECTIONS] Using provided parameters`);
       
-      // Validate store belongs to user
+      // Validate store belongs to user and fetch access token
       const { data: storeData, error: storeError } = await supabase
         .from("shopify_connections")
         .select("*")
@@ -66,7 +65,7 @@ Deno.serve(async (req: Request) => {
 
       connection = storeData;
       shopifyUrl = `https://${bodyShopName}.myshopify.com`;
-      accessToken = bodyApiSecret;
+      accessToken = storeData.access_token; // Fetch from database
       
       console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${shopifyUrl}`);
     } else {
