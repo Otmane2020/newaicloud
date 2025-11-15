@@ -148,14 +148,27 @@ export default function Dashboard() {
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
-      // Build query with optional store filter - fetch ALL products (no 1000 limit)
+      // First get the exact count of products (without loading all data)
+      let countQuery = supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user?.id);
+
+      if (selectedStore?.id) {
+        countQuery = countQuery.eq('store_id', selectedStore.id);
+      }
+
+      const { count: totalProducts, error: countError } = await countQuery;
+
+      if (countError) throw countError;
+
+      // Then fetch products data (limited to first 10k for calculations)
       let productsQuery = supabase
         .from('shopify_products')
         .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify')
         .eq('seller_id', user?.id)
-        .range(0, 9999); // Increase limit to support up to 10k products
+        .range(0, 9999);
 
-      // Apply store filter only if a store is selected
       if (selectedStore?.id) {
         productsQuery = productsQuery.eq('store_id', selectedStore.id);
       }
@@ -164,7 +177,6 @@ export default function Dashboard() {
 
       if (productsError) throw productsError;
 
-      const totalProducts = products?.length || 0;
       const optimizedProducts = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0).length || 0;
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       

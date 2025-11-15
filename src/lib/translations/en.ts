@@ -1800,7 +1800,7 @@ export const translations = {
       collections: "Collection pages",
       pages: "Custom pages",
       articles: "Blog articles",
-      images: "Alt texts",
+      images: "Image optimization",
       tags: "Product tags optimization"
     },
     recommendations: {
