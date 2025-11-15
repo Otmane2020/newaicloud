@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { EmailSidebar } from './EmailSidebar';
 import { Dialog as TemplateDialog, DialogContent as TemplateDialogContent, DialogHeader as TemplateDialogHeader, DialogTitle as TemplateDialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface EmailTemplate {
   id: string;
@@ -134,8 +135,8 @@ export function EmailInbox() {
       if (error) throw error;
 
       const stats = {
-        inbox: data?.filter(e => (e.folder === 'inbox' || (!e.folder && e.direction === 'incoming'))).length || 0,
-        sent: data?.filter(e => (e.folder === 'sent' || (!e.folder && e.direction === 'outgoing'))).length || 0,
+        inbox: data?.filter(e => e.direction === 'incoming').length || 0,
+        sent: data?.filter(e => e.direction === 'outgoing').length || 0,
         drafts: data?.filter(e => e.folder === 'drafts').length || 0,
         trash: data?.filter(e => e.folder === 'trash').length || 0,
         spam: data?.filter(e => e.folder === 'spam').length || 0,
@@ -149,8 +150,14 @@ export function EmailInbox() {
 
   const getUnreadCount = (folder: string) => {
     return emails.filter(e => {
-      const inFolder = e.folder === folder || (!e.folder && 
-        (folder === 'inbox' ? e.direction === 'incoming' : e.direction === 'outgoing'));
+      let inFolder = false;
+      if (folder === 'inbox') {
+        inFolder = e.direction === 'incoming';
+      } else if (folder === 'sent') {
+        inFolder = e.direction === 'outgoing';
+      } else {
+        inFolder = e.folder === folder;
+      }
       return inFolder && !e.is_read;
     }).length;
   };
@@ -416,8 +423,12 @@ export function EmailInbox() {
   };
 
   const filteredEmails = emails.filter(e => {
-    if (activeFolder === 'inbox') return e.folder === 'inbox' || (!e.folder && e.direction === 'incoming');
-    if (activeFolder === 'sent') return e.folder === 'sent' || (!e.folder && e.direction === 'outgoing');
+    if (activeFolder === 'inbox') {
+      return e.direction === 'incoming';
+    }
+    if (activeFolder === 'sent') {
+      return e.direction === 'outgoing';
+    }
     return e.folder === activeFolder;
   });
 
@@ -575,20 +586,25 @@ export function EmailInbox() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 flex items-start gap-2">
                         {!email.is_read && (
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                          <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                         )}
                         <div className="flex-1">
-                          <p className={!email.is_read ? "font-bold" : "font-semibold"}>
+                          <p className={cn(
+                            !email.is_read ? "font-bold text-foreground" : "font-medium text-muted-foreground"
+                          )}>
                             {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
                           </p>
-                          <p className={`text-sm ${!email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                          <p className={cn(
+                            "text-sm",
+                            !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"
+                          )}>
                             {email.subject}
                           </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         {getStatusBadge(email.status)}
-                        {!email.is_read && (
+                        {!email.is_read && activeFolder === 'inbox' && (
                           <Badge variant="default" className="text-xs">
                             Nouveau
                           </Badge>
@@ -598,7 +614,10 @@ export function EmailInbox() {
                         </p>
                       </div>
                     </div>
-                    <p className={`text-sm line-clamp-2 ${!email.is_read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                    <p className={cn(
+                      "text-sm line-clamp-2",
+                      !email.is_read ? "font-medium text-foreground" : "text-muted-foreground"
+                    )}>
                       {email.body || email.html_body?.replace(/<[^>]+>/g, '').substring(0, 100) || 'Aucun aperçu disponible'}
                     </p>
                     {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
