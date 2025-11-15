@@ -44,6 +44,10 @@ verify_jwt = true
 verify_jwt = true
 memory_limit_mb = 256
 
+[functions.delete-shopify-connection]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.send-subscription-confirmed]
 verify_jwt = false
 
