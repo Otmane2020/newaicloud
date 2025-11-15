@@ -82,17 +82,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const requestBody = await req.json();
-    const { shopName, apiSecret, authToken, storeId } = requestBody;
-
-    if (!shopName) {
-      return new Response(
-        JSON.stringify({ error: 'Missing shopName' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    let { shopName, apiSecret, authToken, storeId } = requestBody;
 
     // Determine access token - fetch from DB if using OAuth (storeId)
     let accessToken = apiSecret || authToken;
@@ -154,7 +144,9 @@ Deno.serve(async (req: Request) => {
       }
       
       accessToken = connection.access_token;
-      console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
+      // Extract shop name from store_url (e.g., "my-store.myshopify.com" -> "my-store")
+      shopName = connection.store_url?.replace('.myshopify.com', '').replace('https://', '').replace('http://', '');
+      console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ') and shop name:', shopName);
     }
     
     if (!accessToken) {
@@ -162,6 +154,17 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: 'No access token available' }),
         {
           status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Validate shopName after fetching from database
+    if (!shopName) {
+      return new Response(
+        JSON.stringify({ error: 'Missing shopName' }),
+        {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
