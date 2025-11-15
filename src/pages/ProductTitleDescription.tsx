@@ -249,26 +249,54 @@ export default function ProductTitleDescription() {
       console.log('🚨🚨🚨 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
       console.log('🚨🚨🚨 [PRODUCT_TITLE] About to query with store_id filter:', selectedStore.id);
 
-      // Charger les produits avec filtre store_id
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] EXECUTING QUERY with store_id:', selectedStore.id);
-      const { data: rawProductsData, error: productsError } = await supabase
-        .from("shopify_products")
-        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
-        .eq("seller_id", user.id)
-        .eq("store_id", selectedStore.id)
-        .limit(5000)
-        .order("imported_at", { ascending: false });
+      // ✅ PAGINATION POUR DÉPASSER LA LIMITE DE 1000 PRODUITS
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
       
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] Query result:', rawProductsData?.length, 'products');
-      if (productsError) throw productsError;
-
+      console.log('🔄 [PRODUCT_TITLE] Starting paginated fetch...');
+      
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [PRODUCT_TITLE] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from("shopify_products")
+          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
+          .eq("seller_id", user.id)
+          .eq("store_id", selectedStore.id)
+          .range(start, end)
+          .order("imported_at", { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [PRODUCT_TITLE] Page ${page + 1} loaded: ${pageData.length} products`);
+          allProducts = [...allProducts, ...pageData];
+          
+          // Si on a reçu moins de PAGE_SIZE résultats, c'est la dernière page
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] Total products fetched:', allProducts.length);
+      
       // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
-      const productsData = guardStoreData(rawProductsData, selectedStore.id, 'product');
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] After guard filter:', productsData.length, 'valid products');
+      const rawProductsData = guardStoreData(allProducts, selectedStore.id, 'product');
+      console.log('🚨🚨🚨 [PRODUCT_TITLE] After guard filter:', rawProductsData.length, 'valid products');
 
       // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
-      if (productsData && productsData.length > 0) {
-        const productIds = productsData.map(p => p.id);
+      if (rawProductsData && rawProductsData.length > 0) {
+        const productIds = rawProductsData.map(p => p.id);
         console.log('🔍 [PRODUCT_TITLE] Loading variants for products:', productIds.length);
         
         let allVariants: any[] = [];
@@ -289,9 +317,9 @@ export default function ProductTitleDescription() {
         }
 
         console.log('✅ [PRODUCT_TITLE] Loaded total variants:', allVariants.length);
-
+        
         // Associer les variantes aux produits
-        const productsWithVariants = productsData.map(product => {
+        const productsWithVariants = rawProductsData.map(product => {
           const productVariants = allVariants.filter(v => v.product_id === product.id);
           if (productVariants.length > 0) {
             console.log(`🔍 [PRODUCT_TITLE] Product "${product.title}" has ${productVariants.length} variants:`, productVariants.map(v => v.title));
