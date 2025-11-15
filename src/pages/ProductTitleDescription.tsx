@@ -102,6 +102,7 @@ interface ProductVariant {
   option2?: string | null;
   option3?: string | null;
   image_id?: string | null;
+  image_url?: string | null;
 }
 
 interface ProductImage {
@@ -309,7 +310,7 @@ export default function ProductTitleDescription() {
           const batch = productIds.slice(i, i + batchSize);
           const { data: variantsData, error: variantsError } = await supabase
             .from("product_variants")
-            .select("id, product_id, title, option1, option2, option3")
+            .select("id, product_id, title, option1, option2, option3, image_url")
             .in("product_id", batch);
 
           if (variantsError) {
