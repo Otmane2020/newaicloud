@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { GoogleSearchConsoleIntegration } from './GoogleSearchConsoleIntegration';
 import { GoogleSearchConsoleInsights } from './GoogleSearchConsoleInsights';
 import { GoogleSearchConsoleProducts } from './GoogleSearchConsoleProducts';
 import { GoogleSearchConsoleArticles } from './GoogleSearchConsoleArticles';
@@ -53,7 +54,7 @@ export function GoogleSearchConsole() {
         </TabsList>
 
         <TabsContent value="integration" className="mt-6">
-          <div className="text-center p-12">Intégration Google Search Console</div>
+          <GoogleSearchConsoleIntegration />
         </TabsContent>
 
         <TabsContent value="insights" className="mt-6">
