@@ -162,14 +162,54 @@ Deno.serve(async (req: Request) => {
     
     console.log('🔄 Sync mode:', syncMode);
     
-    // Determine authentication method
+    // Determine authentication method and get access token
     const isManualAuth = !!apiKey;
-    const authToken = apiSecret!; // apiSecret is always present (validated above)
+    let authToken = apiSecret || '';
+    
+    // If using OAuth (storeId provided), fetch access token from database
+    if (storeId && !isManualAuth) {
+      const supabaseServiceClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const { data: connection, error: connectionError } = await supabaseServiceClient
+        .from('shopify_connections')
+        .select('access_token')
+        .eq('id', storeId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (connectionError || !connection) {
+        console.error('Failed to fetch Shopify connection:', connectionError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch Shopify credentials' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      authToken = connection.access_token;
+      console.log('✅ Using OAuth access token from database');
+    }
+    
+    if (!authToken) {
+      console.error('No access token available');
+      return new Response(
+        JSON.stringify({ error: 'No access token available' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
     
     console.log('🔐 Authentication method:', {
       type: isManualAuth ? 'Manual (API Key + Secret)' : 'OAuth',
       hasApiKey: !!apiKey,
-      hasApiSecret: !!apiSecret
+      hasAccessToken: !!authToken
     });
 
     // Create service role client for database operations
