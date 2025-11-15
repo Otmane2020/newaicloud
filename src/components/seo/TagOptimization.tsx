@@ -22,6 +22,7 @@ import {
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { calculateTagsScore } from '@/lib/seoQuality';
 import { 
   Search, 
   RefreshCw, 
@@ -267,9 +268,14 @@ export function TagOptimization() {
   const productsToSyncCount = products.filter(p => p.optimization_count && p.optimization_count > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score based on % of optimized products
+  // Calculate tag SEO score based on real quality of tags
   const tagSeoScore = products.length > 0 
-    ? Math.round((productsOptimized / products.length) * 100)
+    ? Math.round(
+        products.reduce((sum, p) => {
+          const score = calculateTagsScore(p.tags);
+          return sum + score;
+        }, 0) / products.length
+      ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
     : 0;
 
   const filters = [

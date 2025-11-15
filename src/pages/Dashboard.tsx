@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { calculateDetailedSeoScore, calculateArticleSeoScore, calculateTagsScore } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, calculateArticleSeoScore, calculateTagsScore, calculateAltTextScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -304,12 +304,18 @@ export default function Dashboard() {
       if (selectedStore?.id) {
         const { data: allImages } = await supabase
           .from('product_images')
-          .select('id, alt_text, shopify_products!inner(seller_id, store_id)')
+          .select('id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)')
           .eq('shopify_products.seller_id', user?.id)
           .eq('shopify_products.store_id', selectedStore.id);
 
         imagesScore = allImages && allImages.length > 0
-          ? Math.round((allImages.filter((img: any) => img.alt_text && img.alt_text.trim() !== '').length / allImages.length) * 100)
+          ? Math.round(
+              allImages.reduce((sum: number, img: any) => {
+                const isAI = img.optimization_count > 0;
+                const altScore = calculateAltTextScore(img.alt_text || '', isAI);
+                return sum + altScore.score;
+              }, 0) / allImages.length
+            )
           : 0;
       }
 
