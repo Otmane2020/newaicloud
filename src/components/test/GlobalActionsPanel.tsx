@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Download, RefreshCw, Activity, TestTube, Loader2 } from 'lucide-react';
+import { Download, RefreshCw, Activity, TestTube, Loader2, Trash2 } from 'lucide-react';
 
 interface GlobalActionsPanelProps {
   storeId: string;
@@ -75,10 +75,27 @@ export function GlobalActionsPanel({ storeId }: GlobalActionsPanelProps) {
     }
   };
 
+  const handleCleanupEurodesign = async () => {
+    setLoading('cleanup');
+    try {
+      const { data, error } = await supabase.functions.invoke('cleanup-eurodesign-products');
+      if (error) throw error;
+      console.log('Cleanup result:', data);
+      toast.success(data.message || 'Produits EURODESIGN supprimés');
+      // Reload page after cleanup
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast.error('Erreur lors du nettoyage EURODESIGN');
+      console.error(error);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-4">⚡ Actions Globales</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Button
           variant="outline"
           onClick={handleImportProducts}
@@ -126,6 +143,18 @@ export function GlobalActionsPanel({ storeId }: GlobalActionsPanelProps) {
             <TestTube className="w-4 h-4 mr-2" />
           )}
           Test Vision AI
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={handleCleanupEurodesign}
+          disabled={!!loading}
+        >
+          {loading === 'cleanup' ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4 mr-2" />
+          )}
+          Nettoyer EURODESIGN
         </Button>
       </div>
     </Card>
