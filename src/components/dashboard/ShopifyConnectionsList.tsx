@@ -301,51 +301,14 @@ export default function ShopifyConnectionsList() {
     if (!storeToDelete) return;
 
     try {
-      const { error } = await supabase
-        .from('shopify_connections')
-        .delete()
-        .eq('id', storeToDelete);
+      // Use edge function for async batch deletion to avoid timeout
+      const { data, error } = await supabase.functions.invoke('delete-shopify-connection', {
+        body: { storeId: storeToDelete }
+      });
 
       if (error) throw error;
       
-      // Also delete all associated products and update usage tracking
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Count products being deleted
-        const { count } = await supabase
-          .from('shopify_products')
-          .select('*', { count: 'exact', head: true })
-          .eq('store_id', storeToDelete);
-        
-        // Delete products
-        await supabase
-          .from('shopify_products')
-          .delete()
-          .eq('store_id', storeToDelete);
-        
-        // Update products_count in usage tracking (shopify_stores_count is handled by trigger)
-        if (count && count > 0) {
-          const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
-          const { data: usage } = await supabase
-            .from('usage_tracking')
-            .select('*')
-            .eq('seller_id', user.id)
-            .eq('month', currentMonth)
-            .maybeSingle();
-          
-          if (usage) {
-            await supabase
-              .from('usage_tracking')
-              .update({ 
-                products_count: Math.max(0, (usage.products_count || 0) - count)
-              })
-              .eq('id', usage.id);
-          }
-        }
-
-        // Refresh usage limits after deletion
-        await checkUsageLimits();
-      }
+      console.log('✅ Store deleted:', data);
       
       toast.success('Boutique déconnectée avec succès');
       loadConnections();
