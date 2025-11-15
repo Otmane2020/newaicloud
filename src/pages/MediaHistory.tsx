@@ -272,8 +272,8 @@ export default function MediaHistory() {
             {/* Product main images */}
             {productImages.length > 0 && (
               <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Images produit principales
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                  📸 Images produit principales
                 </div>
                 {productImages
                   .sort((a: any, b: any) => a.position - b.position)
@@ -285,23 +285,23 @@ export default function MediaHistory() {
                         targetImageId: img.id,
                         optimizedUrl: item.optimized_url
                       })}
-                      className="gap-3 py-3"
+                      className="gap-3 py-3 hover:bg-primary/5"
                     >
                       <div className="flex items-center gap-3 flex-1">
                         {img.src ? (
                           <img 
                             src={img.src} 
                             alt={`Image ${idx + 1}`}
-                            className="w-12 h-12 rounded object-cover border"
+                            className="w-12 h-12 rounded object-cover border-2 border-primary/20"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border-2 border-primary/20">
                             <ImageIcon className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <div className="font-medium">
-                            {idx === 0 ? 'Image principale' : `Image ${idx + 1}`}
+                          <div className="font-medium text-sm">
+                            {idx === 0 ? '⭐ Image principale' : `Image ${idx + 1}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Position {img.position || idx + 1}
@@ -317,8 +317,8 @@ export default function MediaHistory() {
             {/* Variant images */}
             {variants.length > 0 && (
               <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
-                  Images des variantes
+                <div className="px-2 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 border-t-2 border-purple-100 mt-1 pt-2">
+                  🎨 Variantes du produit
                 </div>
                 {variants
                   .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
@@ -349,26 +349,36 @@ export default function MediaHistory() {
                             toast.error("Erreur lors de l'application de l'image");
                           }
                         }}
-                        className="gap-3 py-3"
+                        className="gap-3 py-3 hover:bg-purple-50"
                       >
                         <div className="flex items-center gap-3 flex-1">
                           {variant.image_url ? (
-                            <img 
-                              src={variant.image_url} 
-                              alt={variant.title}
-                              className="w-12 h-12 rounded object-cover border"
-                            />
+                            <div className="relative">
+                              <img 
+                                src={variant.image_url} 
+                                alt={variant.title}
+                                className="w-12 h-12 rounded object-cover border-2 border-purple-300"
+                              />
+                              <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                V
+                              </div>
+                            </div>
                           ) : (
-                            <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border">
-                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            <div className="relative">
+                              <div className="w-12 h-12 rounded bg-purple-50 flex items-center justify-center border-2 border-purple-300 border-dashed">
+                                <ImageIcon className="w-6 h-6 text-purple-400" />
+                              </div>
+                              <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                V
+                              </div>
                             </div>
                           )}
                           <div className="flex-1">
-                            <div className="font-medium line-clamp-1">
+                            <div className="font-medium line-clamp-1 text-sm text-purple-900">
                               {variant.title}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              Variante {variant.image_url ? '' : '(sans image)'}
+                            <div className="text-xs text-purple-600">
+                              {variant.image_url ? '✓ Avec image' : '○ Sans image'}
                             </div>
                           </div>
                         </div>
