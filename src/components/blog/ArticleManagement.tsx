@@ -35,6 +35,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Share2,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
@@ -110,6 +111,7 @@ export function ArticleManagement() {
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [optimizedArticles, setOptimizedArticles] = useState<Article[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [indexingArticle, setIndexingArticle] = useState<string | null>(null);
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -359,6 +361,54 @@ const handleOptimizeArticle = async (articleId: string) => {
       toast.error(error.message || t.blog.management.messages.syncError);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleRequestIndexing = async (articleId: string, articleTitle: string) => {
+    setIndexingArticle(articleId);
+    try {
+      const article = articles.find(a => a.id === articleId);
+      if (!article) {
+        toast.error('Article introuvable');
+        return;
+      }
+
+      if (!selectedStore) {
+        toast.error('Boutique introuvable');
+        return;
+      }
+
+      const domain = selectedStore.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
+        ? selectedStore.public_domain
+        : selectedStore.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+      if (!domain) {
+        toast.error('Domaine de boutique introuvable');
+        return;
+      }
+
+      const articleUrl = `https://${domain}/blogs/news/${article.handle || articleTitle.toLowerCase().replace(/\s+/g, '-')}`;
+
+      const { data, error } = await supabase.functions.invoke('request-gsc-indexing', {
+        body: { articleId, url: articleUrl }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Demande d\'indexation envoyée avec succès');
+      } else if (data?.error === 'NO_GOOGLE_AUTH') {
+        toast.error('Veuillez connecter Google Search Console d\'abord');
+      } else if (data?.error === 'quota_exceeded') {
+        toast.warning('Quota d\'indexation dépassé, réessayez demain');
+      } else {
+        toast.error('Erreur lors de la demande d\'indexation');
+      }
+    } catch (error) {
+      console.error('Error requesting indexing:', error);
+      toast.error('Erreur lors de la demande d\'indexation');
+    } finally {
+      setIndexingArticle(null);
     }
   };
 
@@ -1010,6 +1060,20 @@ const handleOptimizeArticle = async (articleId: string) => {
                             <Upload className="w-5 h-5 text-green-600" />
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRequestIndexing(article.id, article.title)}
+                          disabled={indexingArticle === article.id}
+                          title="Soumettre à Google Search Console"
+                          className="hover:bg-blue-50"
+                        >
+                          {indexingArticle === article.id ? (
+                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                          ) : (
+                            <Share2 className="w-5 h-5 text-blue-600" />
+                          )}
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
