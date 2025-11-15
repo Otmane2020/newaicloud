@@ -61,12 +61,26 @@ export function GoogleSearchConsoleSitemaps({ selectedDomain }: GoogleSearchCons
 
       if (error) {
         console.error('[Sitemaps] ❌ Error:', error);
-        toast.error('Erreur lors du chargement des sitemaps');
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">Erreur lors du chargement des sitemaps</p>
+            <p className="text-sm">Vérifiez votre connexion Google Search Console</p>
+          </div>,
+          { duration: 6000 }
+        );
+        setSitemaps([]);
         return;
       }
 
       if (data?.error === 'NO_GOOGLE_AUTH') {
-        toast.error('Google Search Console non connecté');
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">Google Search Console non connecté</p>
+            <p className="text-sm">Veuillez connecter votre compte dans l'onglet "Intégration"</p>
+          </div>,
+          { duration: 6000 }
+        );
+        setSitemaps([]);
         return;
       }
 
