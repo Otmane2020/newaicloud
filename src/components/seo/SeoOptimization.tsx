@@ -158,23 +158,53 @@ export function SeoOptimization() {
     try {
       setLoading(true);
       
-      // Charger les produits avec filtre store_id
-      const { data: rawData, error } = await supabase
-        .from("shopify_products")
-        .select(`
-          *, 
-          optimization_count,
-          product_variants(sku),
-          store_id
-        `)
-        .eq('store_id', selectedStore.id)
-        .limit(5000)
-        .order("imported_at", { ascending: false });
-
-      if (error) throw error;
+      // ✅ PAGINATION POUR DÉPASSER LA LIMITE DE 1000 PRODUITS
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
+      
+      console.log('🔄 [SEO_OPTIMIZATION] Starting paginated fetch...');
+      
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [SEO_OPTIMIZATION] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from("shopify_products")
+          .select(`
+            *, 
+            optimization_count,
+            product_variants(sku),
+            store_id
+          `)
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order("imported_at", { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [SEO_OPTIMIZATION] Page ${page + 1} loaded: ${pageData.length} products`);
+          allProducts = [...allProducts, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log('🚨 [SEO_OPTIMIZATION] Total products fetched:', allProducts.length);
 
       // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
-      const data = guardStoreData(rawData, selectedStore.id, 'product');
+      const data = guardStoreData(allProducts, selectedStore.id, 'product');
+      console.log('🚨 [SEO_OPTIMIZATION] After guard filter:', data.length, 'valid products');
 
       setProducts(data);
       
