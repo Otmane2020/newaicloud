@@ -170,27 +170,59 @@ export function SmartPricingAI() {
 
       setCollections(collectionsData || []);
 
-      // Fetch products with collection names and ALL variants data + AI analysis
-      const { data: productsData, error: productsError } = await supabase
-        .from("shopify_products")
-        .select(
-          `
-          *,
-          product_variants(id, title, sku, price, compare_at_price, cost_price, option1, option2, option3, image_url),
-          market_price,
-          smart_price,
-          ai_reasoning,
-          competitors,
-          last_pricing_analysis
-        `,
-        )
-        .eq("seller_id", user.id)
-        .eq("store_id", selectedStore.id);
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUS les produits
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (productsError) {
-        console.error("Products error:", productsError);
-        throw productsError;
+      console.log('🔄 [SMART_PRICING] Starting paginated fetch...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [SMART_PRICING] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from("shopify_products")
+          .select(
+            `
+            *,
+            product_variants(id, title, sku, price, compare_at_price, cost_price, option1, option2, option3, image_url),
+            market_price,
+            smart_price,
+            ai_reasoning,
+            competitors,
+            last_pricing_analysis
+          `,
+          )
+          .eq("seller_id", user.id)
+          .eq("store_id", selectedStore.id)
+          .range(start, end);
+        
+        if (pageError) {
+          console.error("Products error:", pageError);
+          throw pageError;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [SMART_PRICING] Page ${page + 1} loaded: ${pageData.length} products`);
+          allProducts = [...allProducts, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
       }
+
+      console.log('✅ [SMART_PRICING] Total products fetched:', allProducts.length);
+
+      const productsData = allProducts;
 
       if (productsData) {
         // Map collection IDs to names

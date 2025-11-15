@@ -187,16 +187,46 @@ export function CollectionOptimization() {
         return;
       }
 
-      const { data: collectionsData, error } = await supabase
-        .from('shopify_collections')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('store_id', selectedStore.id)
-        .order('title', { ascending: true });
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUTES les collections
+      let allCollections: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (error) throw error;
+      console.log('🔄 [COLLECTIONS] Starting paginated fetch...');
 
-      setCollections(collectionsData || []);
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [COLLECTIONS] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('shopify_collections')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order('title', { ascending: true });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [COLLECTIONS] Page ${page + 1} loaded: ${pageData.length} collections`);
+          allCollections = [...allCollections, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('✅ [COLLECTIONS] Total collections fetched:', allCollections.length);
+      setCollections(allCollections);
     } catch (error) {
       console.error('Error fetching collections:', error);
       toast.error(t.collections.loadError);

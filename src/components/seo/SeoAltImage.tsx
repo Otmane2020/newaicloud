@@ -132,27 +132,88 @@ export function SeoAltImage() {
     try {
       setLoading(true);
       
-      // Fetch product images with store filter
-      const { data: productImagesData, error: productError } = await supabase
-        .from('product_images')
-        .select(`
-          *,
-          product:shopify_products!inner(id, title, vendor, category, store_id)
-        `)
-        .eq('product.store_id', selectedStore.id)
-        .order('product_id', { ascending: true })
-        .order('position', { ascending: true });
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUTES les images
+      let allProductImages: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (productError) throw productError;
+      console.log('🔄 [IMAGES] Starting paginated fetch for product images...');
 
-      // Fetch content images
-      const { data: contentImagesData, error: contentError } = await supabase
-        .from('content_images')
-        .select('*')
-        .order('content_id', { ascending: true })
-        .order('position', { ascending: true });
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [IMAGES] Fetching product images page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('product_images')
+          .select(`
+            *,
+            product:shopify_products!inner(id, title, vendor, category, store_id)
+          `)
+          .eq('product.store_id', selectedStore.id)
+          .range(start, end)
+          .order('product_id', { ascending: true })
+          .order('position', { ascending: true });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [IMAGES] Product images page ${page + 1} loaded: ${pageData.length} images`);
+          allProductImages = [...allProductImages, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
 
-      if (contentError) throw contentError;
+      const productImagesData = allProductImages;
+      console.log('✅ [IMAGES] Total product images fetched:', productImagesData.length);
+
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUTES les images de contenu
+      let allContentImages: any[] = [];
+      hasMore = true;
+      page = 0;
+
+      console.log('🔄 [IMAGES] Starting paginated fetch for content images...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [IMAGES] Fetching content images page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('content_images')
+          .select('*')
+          .range(start, end)
+          .order('content_id', { ascending: true })
+          .order('position', { ascending: true });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [IMAGES] Content images page ${page + 1} loaded: ${pageData.length} images`);
+          allContentImages = [...allContentImages, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const contentImagesData = allContentImages;
+      console.log('✅ [IMAGES] Total content images fetched:', contentImagesData.length);
 
       // Map product images
       const productImages = (productImagesData || [])
