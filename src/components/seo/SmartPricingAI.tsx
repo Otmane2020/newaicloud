@@ -1239,7 +1239,7 @@ export function SmartPricingAI() {
 
           <Select
             value={bulkOperation.method}
-            onValueChange={(value: "percentage" | "value") => setBulkOperation((prev) => ({ ...prev, method: value }))}
+            onValueChange={(value: "percentage" | "value") => setBulkOperation((prev) => ({ ...prev, method: value, amount: 0 }))}
           >
             <SelectTrigger>
               <SelectValue />
@@ -1250,14 +1250,27 @@ export function SmartPricingAI() {
             </SelectContent>
           </Select>
 
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Montant"
-            value={bulkOperation.amount || ""}
-            onChange={(e) => setBulkOperation((prev) => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              min="0"
+              max={bulkOperation.method === "percentage" ? 100 : undefined}
+              step={bulkOperation.method === "percentage" ? "1" : "0.01"}
+              placeholder={bulkOperation.method === "percentage" ? "Pourcentage (0-100)" : "Montant (€)"}
+              value={bulkOperation.amount || ""}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                const clampedValue = bulkOperation.method === "percentage" 
+                  ? Math.min(Math.max(value, 0), 100)
+                  : Math.max(value, 0);
+                setBulkOperation((prev) => ({ ...prev, amount: clampedValue }));
+              }}
+              className="pr-8"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              {bulkOperation.method === "percentage" ? "%" : "€"}
+            </span>
+          </div>
 
           <Button onClick={applyBulkOperation} className="gap-2">
             <ArrowUpDown className="w-4 h-4" />
