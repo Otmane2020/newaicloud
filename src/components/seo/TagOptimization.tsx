@@ -210,13 +210,9 @@ export function TagOptimization() {
   const productsToSyncCount = products.filter(p => p.optimization_count && p.optimization_count > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score
+  // Calculate tag SEO score based on % of optimized products
   const tagSeoScore = products.length > 0 
-    ? Math.round(
-        products.reduce((sum, p) => {
-          return sum + (p.tags ? 80 : 20);
-        }, 0) / products.length
-      )
+    ? Math.round((productsOptimized / products.length) * 100)
     : 0;
 
   const filters = [
