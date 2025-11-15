@@ -34,13 +34,17 @@ export function validateImportProducts(data: any): ValidationResult<{
     }
   }
 
-  // Check for either apiKey+apiSecret (manual) or apiSecret alone (OAuth)
+  // Check for either apiKey+apiSecret (manual) or storeId (OAuth)
   const hasApiKey = data.apiKey && typeof data.apiKey === 'string' && data.apiKey.trim().length > 0;
   const hasApiSecret = data.apiSecret && typeof data.apiSecret === 'string' && data.apiSecret.trim().length > 0;
+  const hasStoreId = data.storeId && typeof data.storeId === 'string';
 
-  if (!hasApiSecret) {
-    errors.push({ path: ['apiSecret'], message: 'API Secret or OAuth token is required' });
-  } else {
+  // For manual auth, require apiSecret. For OAuth, storeId is enough (token will be fetched from DB)
+  if (!hasApiSecret && !hasStoreId) {
+    errors.push({ path: ['apiSecret'], message: 'API Secret or Store ID is required' });
+  }
+  
+  if (hasApiSecret) {
     const trimmed = data.apiSecret.trim();
     if (trimmed.length < 20) {
       errors.push({ path: ['apiSecret'], message: 'API Secret appears to be invalid' });
@@ -80,7 +84,7 @@ export function validateImportProducts(data: any): ValidationResult<{
     data: {
       shopName: data.shopName.trim(),
       apiKey: hasApiKey ? data.apiKey.trim() : undefined,
-      apiSecret: data.apiSecret.trim(),
+      apiSecret: hasApiSecret ? data.apiSecret.trim() : undefined,
       storeId: data.storeId
     }
   };
