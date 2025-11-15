@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ExternalLink, Eye } from "lucide-react";
+import { useImageOptimization } from "@/hooks/useImageOptimization";
 
 export default function MediaHistory() {
   const queryClient = useQueryClient();
@@ -31,6 +32,7 @@ export default function MediaHistory() {
   const dateLocale = language === 'fr' ? fr : enUS;
   const [activeTab, setActiveTab] = useState('products');
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string; type: string } | null>(null);
+  const { applyAllOptimizedImages, isOptimizing } = useImageOptimization();
 
   // Product images history
   const { data: productHistory, isLoading: productLoading } = useQuery({
@@ -212,6 +214,14 @@ export default function MediaHistory() {
     link.click();
     document.body.removeChild(link);
     toast.success('Téléchargement démarré');
+  };
+
+  const handleApplyAll = async (productId: string) => {
+    try {
+      await applyAllOptimizedImages.mutateAsync({ productId });
+    } catch (error) {
+      console.error('Error applying all images:', error);
+    }
   };
 
   const getOptimizationTypeLabel = (type: string) => {
@@ -592,24 +602,51 @@ export default function MediaHistory() {
           {(() => {
             const grouped = groupProductsByTitle((productHistory as any[]) || []);
             return Object.keys(grouped).length > 0 ? (
-              Object.entries(grouped).map(([title, items]: [string, any[]]) => (
-                <Card key={title}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="w-5 h-5" />
-                      {title}
-                    </CardTitle>
-                    <CardDescription>
-                      {items.length} optimisation{items.length > 1 ? 's' : ''}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {items.map((item) => renderHistoryItem(item, 'product'))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              Object.entries(grouped).map(([title, items]: [string, any[]]) => {
+                const firstItem = items[0];
+                const productId = firstItem.product_id;
+                
+                return (
+                  <Card key={title}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            <Package className="w-5 h-5" />
+                            {title}
+                          </CardTitle>
+                          <CardDescription>
+                            {items.length} optimisation{items.length > 1 ? 's' : ''}
+                          </CardDescription>
+                        </div>
+                        <Button
+                          onClick={() => handleApplyAll(productId)}
+                          disabled={isOptimizing}
+                          className="gap-2"
+                          size="sm"
+                        >
+                          {isOptimizing ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Application...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Appliquer tout et synchroniser
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {items.map((item) => renderHistoryItem(item, 'product'))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
