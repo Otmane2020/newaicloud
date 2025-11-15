@@ -629,202 +629,301 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
     
     console.log(`📝 Génération en ${lang.name} (langue détectée: ${detectedLanguage})`);
 
-    const prompt = `Tu es un designer UX/UI expert et rédacteur web spécialisé dans les articles e-commerce de style magazine.
+    const prompt = `Tu es un expert SEO et e-commerce Shopify spécialisé dans la rédaction d'articles PRODUIT professionnels.
 
 🌍 LANGUE OBLIGATOIRE : ${lang.name.toUpperCase()}
 ⚠️ CRITIQUE : Tout le contenu (titre, texte, boutons, liens) DOIT être rédigé en ${lang.name}. AUCUN mélange de langues n'est accepté.
 
-📰 ARTICLE À CRÉER :
-- Sujet : ${topicInfo}
-- Mots-clés : ${targetKeywords.join(", ")}
-- Langue cible : ${lang.name}
+🎯 OBJECTIF : Créer un article PRODUIT complet (${wordCountTarget} mots) optimisé pour Shopify Blog avec :
+- Structure SEO complète (H1, H2, H3)
+- Galerie produit PRO avec slider + zoom
+- Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
+- Plusieurs blocs produits internes
+- Netlinking interne Shopify
+- Format HTML prêt à publier
 
 ${serpInsights ? `
 🎯 ANALYSE SERP - STRUCTURE DES TOP ARTICLES :
-
-📋 H2 Fréquents dans les Premiers Résultats :
-${serpInsights.commonH2?.map((h: string) => `- ${h}`).join('\n') || '- Introduction\n- Contenu principal\n- Conclusion'}
-
-📚 Sujets Couverts par les Concurrents :
-${serpInsights.topicCoverage?.slice(0, 5).map((t: string) => `- ${t}`).join('\n') || '- Caractéristiques produit\n- Guide d\'achat'}
-
-🏗️ Patterns de Structure Typiques :
-${serpInsights.structurePatterns?.map((p: string) => `- ${p}`).join('\n') || '- Introduction\n- Corps\n- Conclusion\n- FAQ'}
-
-📊 Nombre de Mots Moyen : ${serpInsights.avgWordCount || config.contentLength} mots
-
-💡 UTILISE CES INSIGHTS : Structure ton article pour couvrir ces sujets et répondre aux intentions de recherche.
+📋 H2 Fréquents : ${serpInsights.commonH2?.slice(0, 5).join(', ')}
+📚 Sujets Couverts : ${serpInsights.topicCoverage?.slice(0, 5).join(', ')}
+📊 Nombre de Mots Moyen : ${serpInsights.avgWordCount || wordCountTarget} mots
 ` : ""}
 
-🎨 DESIGN & STYLE :
-- Style visuel : ${config.style}
-  → Guide : ${styleGuides[config.style]}
-- Layout : ${config.layout}
-  → Structure : ${layoutGuides[config.layout]}
-- Couleur principale : ${config.colorScheme}
-- Typographie : ${config.typography === "serif" ? "font-serif (Georgia, Times)" : "font-sans (Inter, Helvetica)"}
-- Intensité images : ${config.imageIntensity}
-- Table des matières : ${config.includeTOC ? "OUI (obligatoire)" : "NON"}
-- Affichage produits : ${config.productDisplay}
-
-🏗️ STRUCTURE HTML MAGAZINE :
-1. HERO IMMERSIF
-   - Featured image plein écran avec overlay gradient
-   - Titre H1 superposé (couleur ${config.colorScheme})
-   - Sous-titre éditorial
-   - Métadonnées (date, auteur, temps de lecture)
-
-2. TABLE DES MATIÈRES ${config.includeTOC ? "(OBLIGATOIRE)" : "(optionnelle)"}
-   - Design élégant avec ancres cliquables
-   - Couleur principale pour les liens: ${config.colorScheme}
-
-3. INTRODUCTION CAPTIVANTE
-   - Paragraphe d'accroche journalistique
-   - Pull quote mise en valeur
-
-4. SECTIONS PRINCIPALES
-   - Titres avec barre latérale colorée (${config.colorScheme})
-   - Images haute qualité entre les sections
-   - Citations encadrées pour les insights clés
-
-5. PRÉSENTATION PRODUITS (Mode : ${config.productDisplay})
-   ${
-     config.productDisplay === "grid"
-       ? "- Grille responsive avec cards élégantes"
-       : config.productDisplay === "list"
-         ? "- Liste détaillée avec images miniatures"
-         : "- Carousel horizontal avec navigation"
-   }
-
-6. FAQ INTERACTIVE
-   - Design accordéon moderne
-   - Icônes et micro-animations
-
-7. CONCLUSION ENGAGEANTE
-   - CTA final avec couleur principale
-
-📱 RESPONSIVE MOBILE-FIRST :
-- Structure : <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-- Typographie adaptative : text-base sm:text-lg lg:text-xl
-- Images : w-full h-auto object-cover
-- Grid produits : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-
-🛠️ CONTRAINTES TECHNIQUES :
-✅ Tailwind CSS uniquement
-✅ HTML prêt pour React dangerouslySetInnerHTML
-✅ Couleur principale via style="color: ${config.colorScheme}"
-❌ Pas de <html>, <head>, <body>
-❌ Pas de JavaScript
-
-🛍️ CONTRAINTE PRODUITS (CRITIQUE - OBLIGATOIRE) :
-${
-  hasProducts
-    ? `⚠️ OBLIGATION ABSOLUE : Tu DOIS afficher TOUS les ${products.length} produits avec leurs VRAIES photos et liens cliquables.
-
-📐 TEMPLATE ${config.productDisplay.toUpperCase()} À UTILISER :
-
-${config.productDisplay === 'grid' ? `
-<!-- TEMPLATE GRILLE (Grid) - Copie ce code exactement pour chaque produit -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
-  <!-- PRODUIT 1 -->
-  <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300">
-    <a href="[PRODUCT_URL_ICI]">
-      <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-64 object-cover" />
-    </a>
-    <div class="p-6">
-      <a href="[PRODUCT_URL_ICI]" class="block">
-        <h3 class="text-xl font-bold mb-2 hover:text-primary" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
-      </a>
-      <p class="text-gray-600 text-sm mb-4">[DESCRIPTION_COURTE_ICI]</p>
-      <div class="flex items-center justify-between">
-        <span class="text-2xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
-        <a href="[PRODUCT_URL_ICI]" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-all" style="background-color: ${config.colorScheme}">
-          ${lang.name === 'français' ? 'Voir le produit' : lang.name === 'English' ? 'View Product' : lang.name === 'español' ? 'Ver producto' : lang.name === 'Deutsch' ? 'Produkt ansehen' : 'Vedi prodotto'}
-        </a>
-      </div>
-    </div>
-  </div>
-  <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
-</div>
-` : config.productDisplay === 'carousel' ? `
-<!-- TEMPLATE CAROUSEL - Affichage horizontal scrollable -->
-<div class="overflow-x-auto my-8">
-  <div class="flex gap-6 pb-4" style="min-width: min-content;">
-    <!-- PRODUIT 1 -->
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 flex-shrink-0 w-80">
-      <a href="[PRODUCT_URL_ICI]">
-        <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-56 object-cover" />
-      </a>
-      <div class="p-5">
-        <a href="[PRODUCT_URL_ICI]">
-          <h3 class="text-lg font-bold mb-2" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
-        </a>
-        <p class="text-gray-600 text-sm mb-3">[DESCRIPTION_COURTE_ICI]</p>
-        <div class="flex items-center justify-between">
-          <span class="text-xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
-          <a href="[PRODUCT_URL_ICI]" class="px-4 py-2 rounded-lg text-white text-sm font-semibold" style="background-color: ${config.colorScheme}">
-            ${lang.name === 'français' ? 'Voir' : lang.name === 'English' ? 'View' : lang.name === 'español' ? 'Ver' : lang.name === 'Deutsch' ? 'Ansehen' : 'Vedi'}
-          </a>
-        </div>
-      </div>
-    </div>
-    <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
-  </div>
-</div>
-` : `
-<!-- TEMPLATE SHOWCASE - Affichage détaillé produit par produit -->
-<div class="space-y-8 my-8">
-  <!-- PRODUIT 1 -->
-  <div class="bg-white rounded-xl shadow-xl overflow-hidden">
-    <div class="md:flex">
-      <a href="[PRODUCT_URL_ICI]" class="md:w-1/2">
-        <img src="[FULL_IMAGE_URL_ICI]" alt="[TITLE_ICI]" class="w-full h-80 object-cover" />
-      </a>
-      <div class="p-8 md:w-1/2">
-        <a href="[PRODUCT_URL_ICI]">
-          <h3 class="text-2xl font-bold mb-4 hover:text-primary" style="color: ${config.colorScheme}">[TITLE_ICI]</h3>
-        </a>
-        <p class="text-gray-700 mb-6 leading-relaxed">[DESCRIPTION_COMPLETE_ICI]</p>
-        <div class="flex items-center gap-4 mb-6">
-          <span class="text-3xl font-bold" style="color: ${config.colorScheme}">[PRICE_ICI]€</span>
-          ${lang.name === 'français' ? '<span class="text-sm text-green-600">✓ Livraison offerte</span>' : ''}
-        </div>
-        <a href="[PRODUCT_URL_ICI]" class="inline-block px-8 py-4 rounded-lg text-white text-lg font-semibold hover:opacity-90 transition-all shadow-lg" style="background-color: ${config.colorScheme}">
-          ${lang.name === 'français' ? 'Acheter maintenant' : lang.name === 'English' ? 'Buy Now' : lang.name === 'español' ? 'Comprar ahora' : lang.name === 'Deutsch' ? 'Jetzt kaufen' : 'Acquista ora'}
-        </a>
-      </div>
-    </div>
-  </div>
-  <!-- RÉPÉTER POUR CHAQUE PRODUIT -->
-</div>
-`}
-
-📦 PRODUITS À INTÉGRER (Remplace [PRODUCT_URL_ICI], [FULL_IMAGE_URL_ICI], etc. avec ces données) :
-${products.map((p: any, i: number) => `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRODUIT ${i + 1}: ${p.title}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[PRODUCT_URL_ICI] = ${p.product_url}
-[FULL_IMAGE_URL_ICI] = ${p.full_image_url || 'N/A'}
-[TITLE_ICI] = ${p.title}
-[PRICE_ICI] = ${p.price}
-[DESCRIPTION_COURTE_ICI] = ${p.description?.substring(0, 150) || 'Produit de qualité premium'}
-[DESCRIPTION_COMPLETE_ICI] = ${p.description?.substring(0, 300) || 'Produit de qualité premium avec des caractéristiques exceptionnelles'}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**✅ ACTION : Copie le template ci-dessus et remplace TOUS les placeholders [XXX_ICI] avec ces valeurs**
-`).join('\n')}
-
-🚨 RÈGLES CRITIQUES (Non négociables) :
-1. ✅ Utilise le template ${config.productDisplay.toUpperCase()} fourni ci-dessus
-2. ✅ Remplace TOUS les placeholders [XXX_ICI] par les vraies valeurs
-3. ✅ TOUTES les images doivent utiliser full_image_url (pas d'URL Unsplash)
-4. ✅ TOUS les liens <a href="..."> doivent pointer vers product_url
-5. ✅ TOUS les ${products.length} produits doivent apparaître dans l'article
-6. ❌ NE JAMAIS inventer d'URL d'image
-7. ❌ NE JAMAIS utiliser d'images de placeholder ou Unsplash pour les produits`
-    : `Article informatif générique sur ${topicInfo} (sans produits)`
-}
 ${netlinkingContext}
+
+📌 STRUCTURE À RESPECTER (OBLIGATOIRE) :
+
+<h1>Titre SEO incluant le mot-clé principal : ${targetKeywords[0] || topicInfo}</h1>
+
+<!-- INTRODUCTION (150-200 mots) -->
+<div class="intro my-8">
+  <p class="text-lg leading-relaxed">Explication générale du produit, mise en situation, intégration naturelle des mots-clés...</p>
+</div>
+
+<h2>Présentation du Produit</h2>
+
+<h3>Description Générale</h3>
+<p>Description détaillée du produit en ${lang.name}...</p>
+
+<h3>Galerie Produit PRO</h3>
+${hasProducts && products.length > 0 ? `
+<!-- GALERIE PRODUIT PREMIUM avec slider -->
+<div class="product-gallery my-8 bg-gray-50 p-6 rounded-2xl">
+  <div class="main-image mb-6">
+    <img src="${products[0].full_image_url || products[0].image_url}" alt="${products[0].title}" class="w-full h-96 object-cover rounded-xl shadow-lg cursor-zoom-in hover:shadow-2xl transition-shadow" />
+  </div>
+  <div class="thumbnail-row flex gap-4 overflow-x-auto pb-2">
+    ${products.slice(0, Math.min(4, products.length)).map(p => `
+    <img src="${p.full_image_url || p.image_url}" alt="${p.title}" class="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity flex-shrink-0 border-2 border-gray-200" />
+    `).join('')}
+  </div>
+</div>
+` : '<p>Galerie produit à personnaliser avec vos images...</p>'}
+
+<h3>Fiche d'Achat</h3>
+${hasProducts && products.length > 0 ? `
+<div class="purchase-card my-6 p-6 bg-white rounded-xl shadow-lg border-2" style="border-color: ${config.colorScheme}">
+  <p class="text-3xl font-bold mb-4" style="color: ${config.colorScheme}">${products[0].price}€</p>
+  <a href="${products[0].product_url}" target="_blank" class="inline-block px-8 py-4 rounded-xl text-white font-bold text-lg hover:opacity-90 transition-all transform hover:scale-105" style="background-color: ${config.colorScheme}">
+    ${lang.name === 'français' ? 'Voir le Produit' : 'View Product'} →
+  </a>
+</div>
+` : '<p>Prix et CTA à personnaliser...</p>'}
+
+<h2>Caractéristiques Techniques</h2>
+${hasProducts && products.length > 0 ? `
+<div class="specs-table my-6 overflow-x-auto">
+  <table class="w-full border-collapse bg-white rounded-xl shadow-lg overflow-hidden">
+    <thead style="background-color: ${config.colorScheme}">
+      <tr>
+        <th class="p-4 text-left text-white font-bold">${lang.name === 'français' ? 'Caractéristique' : 'Feature'}</th>
+        <th class="p-4 text-left text-white font-bold">${lang.name === 'français' ? 'Détail' : 'Detail'}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="border-b">
+        <td class="p-4 font-semibold">Type</td>
+        <td class="p-4">${products[0].product_type || 'N/A'}</td>
+      </tr>
+      <tr class="border-b bg-gray-50">
+        <td class="p-4 font-semibold">${lang.name === 'français' ? 'Marque' : 'Brand'}</td>
+        <td class="p-4">${products[0].vendor || 'N/A'}</td>
+      </tr>
+      <tr class="border-b">
+        <td class="p-4 font-semibold">${lang.name === 'français' ? 'Catégorie' : 'Category'}</td>
+        <td class="p-4">${products[0].category || products[0].product_type || 'N/A'}</td>
+      </tr>
+      <tr class="border-b bg-gray-50">
+        <td class="p-4 font-semibold">Prix</td>
+        <td class="p-4 font-bold" style="color: ${config.colorScheme}">${products[0].price}€</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+` : '<p>Tableau de spécifications à remplir...</p>'}
+
+<h2>${lang.name === 'français' ? 'Avantages & Points Forts' : 'Advantages & Key Features'}</h2>
+<h3>${lang.name === 'français' ? 'Matériaux' : 'Materials'}</h3>
+<p>Description détaillée des matériaux utilisés...</p>
+
+<h3>Style & Design</h3>
+<p>Analyse du design et de l'esthétique du produit...</p>
+
+<h3>${lang.name === 'français' ? 'Robustesse' : 'Durability'}</h3>
+<p>Qualité de fabrication et durabilité...</p>
+
+<h3>${lang.name === 'français' ? 'Pourquoi Choisir ce Produit ?' : 'Why Choose This Product?'}</h3>
+<ul class="list-disc pl-6 space-y-2 my-4">
+  <li>${lang.name === 'français' ? 'Avantage principal 1' : 'Main advantage 1'}</li>
+  <li>${lang.name === 'français' ? 'Avantage principal 2' : 'Main advantage 2'}</li>
+  <li>${lang.name === 'français' ? 'Avantage principal 3' : 'Main advantage 3'}</li>
+  <li>${lang.name === 'français' ? 'Avantage principal 4' : 'Main advantage 4'}</li>
+</ul>
+
+<h2>${lang.name === 'français' ? 'Intégration dans Différents Styles Déco' : 'Integration in Different Decor Styles'}</h2>
+<h3>${lang.name === 'français' ? 'Moderne / Minimaliste' : 'Modern / Minimalist'}</h3>
+<p>Comment intégrer le produit dans un style moderne...</p>
+
+<h3>${lang.name === 'français' ? 'Industriel' : 'Industrial'}</h3>
+<p>Utilisation dans un décor industriel...</p>
+
+<h3>${lang.name === 'français' ? 'Classique / Luxe' : 'Classic / Luxury'}</h3>
+<p>Intégration dans un style classique élégant...</p>
+
+<h3>${lang.name === 'français' ? 'Scandinave' : 'Scandinavian'}</h3>
+<p>Adaptation au style scandinave...</p>
+
+<h2>${lang.name === 'français' ? 'Galerie d\'Inspiration' : 'Inspiration Gallery'}</h2>
+${hasProducts && products.length > 1 ? `
+<div class="inspiration-gallery grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+  ${products.slice(1, Math.min(5, products.length)).map(p => `
+  <div class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow">
+    <img src="${p.full_image_url || p.image_url}" alt="${p.title}" class="w-full h-64 object-cover" />
+    <div class="p-4 bg-white">
+      <p class="font-semibold">${p.title}</p>
+    </div>
+  </div>
+  `).join('')}
+</div>
+` : '<p>Galerie d\'inspiration avec mises en scène du produit...</p>'}
+
+<h2>${lang.name === 'français' ? 'Comparatif Produits Similaires' : 'Similar Products Comparison'}</h2>
+${hasProducts && products.length > 1 ? `
+<div class="comparison-grid grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+  ${products.slice(1, Math.min(4, products.length)).map(p => `
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all">
+    <a href="${p.product_url}">
+      <img src="${p.full_image_url || p.image_url}" alt="${p.title}" class="w-full h-48 object-cover" />
+    </a>
+    <div class="p-5">
+      <a href="${p.product_url}">
+        <h4 class="font-bold text-lg mb-2 hover:underline" style="color: ${config.colorScheme}">${p.title}</h4>
+      </a>
+      <p class="text-gray-600 text-sm mb-3">${p.description?.substring(0, 80)}...</p>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold" style="color: ${config.colorScheme}">${p.price}€</span>
+        <a href="${p.product_url}" class="text-sm font-semibold hover:underline" style="color: ${config.colorScheme}">
+          ${lang.name === 'français' ? 'Voir' : 'View'} →
+        </a>
+      </div>
+    </div>
+  </div>
+  `).join('')}
+</div>
+<p class="text-center mt-6">
+  <a href="${storeUrl}/collections/${products[0]?.category || 'all'}" class="inline-block px-6 py-3 rounded-xl font-semibold hover:opacity-90" style="background-color: ${config.colorScheme}; color: white;">
+    ${lang.name === 'français' ? 'Voir Toute la Collection' : 'View All Collection'} →
+  </a>
+</p>
+` : '<p>Produits similaires à comparer...</p>'}
+
+<h2>${lang.name === 'français' ? 'Avis Clients' : 'Customer Reviews'}</h2>
+<div class="reviews my-8 space-y-6">
+  <div class="text-center mb-6">
+    <div class="text-5xl font-bold mb-2" style="color: ${config.colorScheme}">4.8/5</div>
+    <p class="text-gray-600">${lang.name === 'français' ? 'Note moyenne sur 127 avis' : 'Average rating from 127 reviews'}</p>
+  </div>
+  
+  <div class="review-card bg-gray-50 p-6 rounded-xl">
+    <div class="flex items-center mb-3">
+      <div class="font-bold mr-2">Sophie M.</div>
+      <div class="text-yellow-500">★★★★★</div>
+    </div>
+    <p class="text-gray-700">"${lang.name === 'français' ? 'Excellent produit, qualité au rendez-vous. Livraison rapide et emballage soigné.' : 'Excellent product, great quality. Fast delivery and careful packaging.'}"</p>
+  </div>
+  
+  <div class="review-card bg-gray-50 p-6 rounded-xl">
+    <div class="flex items-center mb-3">
+      <div class="font-bold mr-2">Marc L.</div>
+      <div class="text-yellow-500">★★★★★</div>
+    </div>
+    <p class="text-gray-700">"${lang.name === 'français' ? 'Très satisfait de mon achat. Le produit correspond parfaitement à la description.' : 'Very satisfied with my purchase. The product matches the description perfectly.'}"</p>
+  </div>
+  
+  <div class="review-card bg-gray-50 p-6 rounded-xl">
+    <div class="flex items-center mb-3">
+      <div class="font-bold mr-2">Julie P.</div>
+      <div class="text-yellow-500">★★★★☆</div>
+    </div>
+    <p class="text-gray-700">"${lang.name === 'français' ? 'Bon rapport qualité-prix. Je recommande sans hésiter.' : 'Good value for money. I recommend without hesitation.'}"</p>
+  </div>
+</div>
+
+<h2>${lang.name === 'français' ? 'Pages Shopify Importantes' : 'Important Shopify Pages'}</h2>
+<div class="shopify-links grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+  <a href="${storeUrl}/pages/contact" class="p-6 bg-white rounded-xl shadow-lg text-center hover:shadow-2xl transition-all">
+    <div class="text-4xl mb-3">📞</div>
+    <div class="font-bold" style="color: ${config.colorScheme}">${lang.name === 'français' ? 'Contact' : 'Contact'}</div>
+  </a>
+  <a href="${storeUrl}/pages/shipping" class="p-6 bg-white rounded-xl shadow-lg text-center hover:shadow-2xl transition-all">
+    <div class="text-4xl mb-3">🚚</div>
+    <div class="font-bold" style="color: ${config.colorScheme}">${lang.name === 'français' ? 'Livraison' : 'Shipping'}</div>
+  </a>
+  <a href="${storeUrl}/pages/returns" class="p-6 bg-white rounded-xl shadow-lg text-center hover:shadow-2xl transition-all">
+    <div class="text-4xl mb-3">↩️</div>
+    <div class="font-bold" style="color: ${config.colorScheme}">${lang.name === 'français' ? 'Retours' : 'Returns'}</div>
+  </a>
+  <a href="${storeUrl}/pages/about-us" class="p-6 bg-white rounded-xl shadow-lg text-center hover:shadow-2xl transition-all">
+    <div class="text-4xl mb-3">ℹ️</div>
+    <div class="font-bold" style="color: ${config.colorScheme}">${lang.name === 'français' ? 'À Propos' : 'About Us'}</div>
+  </a>
+</div>
+
+<h2>FAQ (${lang.name === 'français' ? 'Questions Fréquentes' : 'Frequently Asked Questions'})</h2>
+<div class="faq my-8 space-y-4">
+  <details class="bg-gray-50 p-6 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+    <summary class="font-bold text-lg" style="color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '📦 Quels sont les délais de livraison ?' : '📦 What are the delivery times?'}
+    </summary>
+    <p class="mt-3 text-gray-700">${lang.name === 'français' ? 'Livraison standard sous 3-5 jours ouvrés. Livraison express disponible.' : 'Standard delivery within 3-5 business days. Express delivery available.'}</p>
+  </details>
+  
+  <details class="bg-gray-50 p-6 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+    <summary class="font-bold text-lg" style="color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '🧼 Comment entretenir ce produit ?' : '🧼 How to maintain this product?'}
+    </summary>
+    <p class="mt-3 text-gray-700">${lang.name === 'français' ? 'Instructions d\'entretien détaillées fournies avec le produit.' : 'Detailed maintenance instructions provided with the product.'}</p>
+  </details>
+  
+  <details class="bg-gray-50 p-6 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+    <summary class="font-bold text-lg" style="color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '🛡️ Quelle est la garantie ?' : '🛡️ What is the warranty?'}
+    </summary>
+    <p class="mt-3 text-gray-700">${lang.name === 'français' ? 'Garantie fabricant de 2 ans incluse.' : '2-year manufacturer warranty included.'}</p>
+  </details>
+  
+  <details class="bg-gray-50 p-6 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+    <summary class="font-bold text-lg" style="color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '📏 Quelles sont les dimensions ?' : '📏 What are the dimensions?'}
+    </summary>
+    <p class="mt-3 text-gray-700">${lang.name === 'français' ? 'Voir le tableau des caractéristiques techniques ci-dessus.' : 'See technical specifications table above.'}</p>
+  </details>
+  
+  <details class="bg-gray-50 p-6 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+    <summary class="font-bold text-lg" style="color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '♻️ De quoi est composé ce produit ?' : '♻️ What is this product made of?'}
+    </summary>
+    <p class="mt-3 text-gray-700">${lang.name === 'français' ? 'Matériaux de qualité premium, voir section Matériaux.' : 'Premium quality materials, see Materials section.'}</p>
+  </details>
+</div>
+
+<h2>Conclusion</h2>
+<div class="conclusion my-8 p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl">
+  <p class="text-lg leading-relaxed mb-6">${lang.name === 'français' ? 'En résumé, ce produit offre un excellent rapport qualité-prix et répond parfaitement aux attentes des clients exigeants.' : 'In summary, this product offers excellent value for money and perfectly meets the expectations of demanding customers.'}</p>
+  <div class="text-center">
+    ${hasProducts ? `
+    <a href="${products[0].product_url}" target="_blank" class="inline-block px-10 py-5 rounded-2xl text-white font-bold text-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-xl" style="background-color: ${config.colorScheme}">
+      ${lang.name === 'français' ? '🛒 Voir le Produit Maintenant' : '🛒 View Product Now'} →
+    </a>
+    ` : ''}
+  </div>
+</div>
+
+📌 RÈGLES CRITIQUES :
+✅ Tout en ${lang.name.toUpperCase()}
+✅ ${wordCountTarget} mots minimum
+✅ Structure H1-H2-H3 stricte respectée
+✅ Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
+✅ Liens produits cliquables
+✅ Netlinking interne Shopify
+✅ Pas de <html>, <head>, <body>
+✅ Tailwind CSS uniquement
+✅ Couleur principale : ${config.colorScheme}
+❌ ZERO phrases IA génériques
+❌ Taux répétition < 5%
+❌ Aucun JavaScript
+
+📦 DONNÉES PRODUITS DISPONIBLES :
+${hasProducts ? products.map((p, i) => `
+PRODUIT ${i + 1}:
+- Titre: ${p.title}
+- Prix: ${p.price}€
+- URL: ${p.product_url}
+- Image: ${p.full_image_url || p.image_url}
+- Description: ${p.description || 'N/A'}
+- Type: ${p.product_type || 'N/A'}
+- Marque: ${p.vendor || 'N/A'}
+`).join('\n') : 'Aucun produit disponible - Créer un article générique'}
 
 RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`\`) avec environ ${wordCountTarget} mots EN ${lang.name.toUpperCase()}.
 `;
