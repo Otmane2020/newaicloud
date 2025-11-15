@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       .from("shopify_products")
       .select(`
         *,
-        images:product_images(id, src, alt_text, position, shopify_image_id, variant_id)
+        images:product_images(id, src, alt_text, position, shopify_image_id)
       `)
       .eq("id", productId)
       .single();
