@@ -48,6 +48,15 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface PreviewImage {
   productId: string;
@@ -119,25 +128,57 @@ export function GoogleShopping() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('shopify_products')
-        .select(`
-          id, 
-          title, 
-          image_url,
-          vendor,
-          google_product_category,
-          google_mpn,
-          google_condition,
-          google_gtin,
-          google_white_background,
-          seo_synced_to_shopify
-        `)
-        .order('title', { ascending: true });
+      
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUS les produits Google Shopping
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (error) throw error;
-      setProducts(data || []);
-      calculateOptimizationScore(data || []);
+      console.log('🔄 [GOOGLE_SHOPPING] Starting paginated fetch...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [GOOGLE_SHOPPING] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('shopify_products')
+          .select(`
+            id, 
+            title, 
+            image_url,
+            vendor,
+            google_product_category,
+            google_mpn,
+            google_condition,
+            google_gtin,
+            google_white_background,
+            seo_synced_to_shopify
+          `)
+          .range(start, end)
+          .order('title', { ascending: true });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [GOOGLE_SHOPPING] Page ${page + 1} loaded: ${pageData.length} products`);
+          allProducts = [...allProducts, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('✅ [GOOGLE_SHOPPING] Total products fetched:', allProducts.length);
+      setProducts(allProducts);
+      calculateOptimizationScore(allProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error(t.common.error);
@@ -161,6 +202,22 @@ export function GoogleShopping() {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return product.title.toLowerCase().includes(term);
+  });
+
+  // ✅ Pagination côté client (50 produits par page)
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedProducts,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: filteredProducts,
+    itemsPerPage: 50,
+    cacheKey: 'google-shopping-products',
   });
 
   const handleSelectAll = () => {
@@ -930,7 +987,7 @@ export function GoogleShopping() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {paginatedProducts.map((product) => {
                 const isEditing = editingProduct === product.id;
                 return (
                   <TableRow key={product.id}>
@@ -1108,6 +1165,62 @@ export function GoogleShopping() {
           </Table>
         </div>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center py-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                if (totalPages <= 7) {
+                  return i + 1;
+                }
+                
+                // Show first 3, current page neighbors, and last page with ellipses
+                if (i < 2) return i + 1;
+                if (i === 2 && currentPage > 4) return '...';
+                if (i === 2) return 3;
+                if (i === 3 && currentPage <= 4) return 4;
+                if (i === 3) return currentPage;
+                if (i === 4 && currentPage >= totalPages - 3) return totalPages - 2;
+                if (i === 4) return '...';
+                if (i === 5) return totalPages - 1;
+                return totalPages;
+              }).map((page, index) => (
+                page === '...' ? (
+                  <PaginationItem key={`ellipsis-${index}`}>
+                    <span className="flex h-9 w-9 items-center justify-center">...</span>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page as number)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={nextPage}
+                  className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       {/* Info Card */}
       <Card className="p-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800">
