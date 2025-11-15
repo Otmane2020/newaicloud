@@ -249,7 +249,7 @@ Deno.serve(async (req: Request) => {
     let allArticles: ShopifyArticle[] = [];
     
     for (const blog of blogs) {
-      console.log(`📖 Fetching articles from blog: ${blog.title}`);
+    console.log(`📖 Fetching articles from blog: ${blog.title} (ID: ${blog.id})`);
       
       let nextUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2025-01/blogs/${blog.id}/articles.json?limit=250`;
       
@@ -262,15 +262,18 @@ Deno.serve(async (req: Request) => {
         });
 
         if (!articlesResponse.ok) {
-          console.error(`❌ Error fetching articles from blog ${blog.id}`);
+          console.error(`❌ Error fetching articles from blog ${blog.id}:`, articlesResponse.status);
           break;
         }
 
         const { articles }: { articles: ShopifyArticle[] } = await articlesResponse.json();
         
+        console.log(`📊 Received ${articles?.length || 0} articles from blog ${blog.title}`);
         if (articles && articles.length > 0) {
+          // Log article IDs for debugging
+          console.log(`📋 Article IDs in this batch:`, articles.map(a => a.id).join(', '));
           allArticles = [...allArticles, ...articles];
-          console.log(`  ✅ Fetched ${articles.length} articles`);
+          console.log(`  ✅ Fetched ${articles.length} articles (Total so far: ${allArticles.length})`);
         } else {
           console.log(`  ⚠️ No articles found in blog ${blog.title}`);
         }
@@ -278,6 +281,9 @@ Deno.serve(async (req: Request) => {
         // Check for pagination
         const linkHeader = articlesResponse.headers.get('Link');
         nextUrl = parseLinkHeader(linkHeader);
+        if (nextUrl) {
+          console.log(`  📄 Found pagination, fetching next page...`);
+        }
       }
     }
 
