@@ -192,7 +192,8 @@ export function CollectionOptimization() {
         .select('*')
         .eq('user_id', user.id)
         .eq('store_id', selectedStore.id)
-        .order('title', { ascending: true });
+        .order('title', { ascending: true })
+        .limit(1000);
 
       if (error) throw error;
 

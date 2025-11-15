@@ -184,7 +184,8 @@ export function ArticleManagement() {
         .select('*')
         .eq('user_id', user.id)
         .or(`store_id.eq.${selectedStore.id},store_id.is.null`)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .limit(1000);
 
       if (error) throw error;
       
