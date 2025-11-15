@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -47,6 +48,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface Product {
   id: string;
@@ -202,6 +211,22 @@ export function TagOptimization() {
     }
 
     return true;
+  });
+
+  // Batch pagination
+  const {
+    paginatedItems: paginatedProducts,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage
+  } = usePaginatedSeo({
+    items: filteredProducts,
+    itemsPerPage: 50,
+    cacheKey: 'tags-pagination'
   });
 
   // Statistics - based on optimization_count
@@ -1035,7 +1060,7 @@ export function TagOptimization() {
       {/* Products Display */}
       {viewMode === 'list' ? (
         <div className="max-h-[600px] overflow-y-auto space-y-2">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <Card key={product.id} className="p-4">
               <div className="flex items-center gap-4">
                 <Checkbox
@@ -1179,7 +1204,7 @@ export function TagOptimization() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden">
               <div className="aspect-square bg-muted relative">
                 {product.image_url ? (
@@ -1312,6 +1337,41 @@ export function TagOptimization() {
           <h3 className="text-lg font-semibold mb-2">No products found</h3>
           <p className="text-muted-foreground">Try adjusting your filters or search term</p>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center py-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => goToPage(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={nextPage}
+                  className={!hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       )}
 
       {/* Dialogs */}

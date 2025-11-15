@@ -15,6 +15,7 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateAltTextScore } from '@/lib/seoQuality';
 import { useTranslation } from '@/lib/language';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
   Search, 
   RefreshCw, 
@@ -44,6 +45,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface ProductImage {
   id: string;
@@ -92,7 +101,6 @@ export function SeoAltImage() {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<AltImageTab>('all');
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentTypeFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,8 +121,6 @@ export function SeoAltImage() {
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
-
-  const IMAGES_PER_PAGE = 50;
 
   const fetchImages = async () => {
     if (!selectedStore?.id) {
@@ -318,14 +324,21 @@ export function SeoAltImage() {
     });
   }
 
-  const totalPages = Math.ceil(sortedImages.length / IMAGES_PER_PAGE);
-  const startIndex = (currentPage - 1) * IMAGES_PER_PAGE;
-  const paginatedImages = sortedImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
+  // Batch pagination
+  const {
+    paginatedItems: paginatedImages,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage
+  } = usePaginatedSeo({
+    items: sortedImages,
+    itemsPerPage: 50,
+    cacheKey: 'images-pagination'
+  });
 
   const handleSelectAll = () => {
     if (selectedImages.size === sortedImages.length) {
@@ -829,7 +842,7 @@ export function SeoAltImage() {
             key={tab.id}
             onClick={() => {
               setActiveTab(tab.id);
-              setCurrentPage(1);
+              goToPage(1);
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
               activeTab === tab.id
@@ -926,7 +939,7 @@ export function SeoAltImage() {
               key={filter.id}
               onClick={() => {
                 setContentTypeFilter(filter.id);
-                setCurrentPage(1);
+                goToPage(1);
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
                 contentTypeFilter === filter.id
@@ -1248,14 +1261,14 @@ export function SeoAltImage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            Affichage {startIndex + 1} à {Math.min(startIndex + IMAGES_PER_PAGE, filteredImages.length)} sur {filteredImages.length}
+            Page {currentPage} sur {totalPages} ({sortedImages.length} images au total)
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
+              onClick={previousPage}
+              disabled={!hasPreviousPage}
             >
               Précédent
             </Button>
@@ -1265,8 +1278,8 @@ export function SeoAltImage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
+              onClick={nextPage}
+              disabled={!hasNextPage}
             >
               Suivant
             </Button>
