@@ -514,6 +514,7 @@ export type Database = {
           name: string
           next_execution_at: string | null
           next_run_at: string | null
+          store_id: string | null
           target_audience: string | null
           topic_niche: string | null
           updated_at: string
@@ -531,6 +532,7 @@ export type Database = {
           name: string
           next_execution_at?: string | null
           next_run_at?: string | null
+          store_id?: string | null
           target_audience?: string | null
           topic_niche?: string | null
           updated_at?: string
@@ -548,12 +550,21 @@ export type Database = {
           name?: string
           next_execution_at?: string | null
           next_run_at?: string | null
+          store_id?: string | null
           target_audience?: string | null
           topic_niche?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blog_campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_netlinking: {
         Row: {
@@ -1998,7 +2009,15 @@ export type Database = {
           total_pages?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       landing_page_history: {
         Row: {
