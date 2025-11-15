@@ -794,6 +794,20 @@ export default function Products() {
                           </div>
                         )}
                         
+                        {/* Status badge - top left */}
+                        <div className="absolute top-2 left-2">
+                          <Badge
+                            onClick={(e) => handleToggleStatus(product, e)}
+                            className={`cursor-pointer text-xs transition-colors shadow-sm ${
+                              product.status === 'active' 
+                                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                : 'bg-gray-400 hover:bg-gray-500 text-white'
+                            }`}
+                          >
+                            {product.status === 'active' ? 'Active' : 'Draft'}
+                          </Badge>
+                        </div>
+                        
                         {/* Background actions - always visible */}
                         <div className="absolute top-2 right-2 flex gap-1 transition-opacity">
                           <Tooltip>
@@ -861,7 +875,7 @@ export default function Products() {
                         </div>
 
                         {/* Vendor and stock */}
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600 font-medium">{product.vendor || t.products.noVendor}</span>
                           <span
                             className={`text-xs px-1.5 py-0.5 rounded ${
@@ -870,20 +884,6 @@ export default function Products() {
                           >
                             {tf('products.stock', { count: formatNumber(product.inventory_quantity) })}
                           </span>
-                        </div>
-
-                        {/* Status badge - cliquable */}
-                        <div className="flex justify-start">
-                          <Badge
-                            onClick={(e) => handleToggleStatus(product, e)}
-                            className={`cursor-pointer text-xs transition-colors ${
-                              product.status === 'active' 
-                                ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                : 'bg-gray-400 hover:bg-gray-500 text-white'
-                            }`}
-                          >
-                            {product.status === 'active' ? 'Active' : 'Draft'}
-                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
