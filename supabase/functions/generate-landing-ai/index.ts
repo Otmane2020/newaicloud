@@ -228,7 +228,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
 
-  // Dimensions
+  // Dimensions from smart fields
   const dims = [];
   if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
   if (enriched.smart_width) dims.push(`l ${enriched.smart_width}${enriched.smart_width_unit || ""}`);
@@ -241,6 +241,15 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (dims.length > 0) {
     sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
     sections.push(`- ${dims.join(" × ")}`);
+  }
+
+  // Technical Details from Vision AI
+  if (enriched.vision_attributes?.technicalDetails && Array.isArray(enriched.vision_attributes.technicalDetails)) {
+    const techDetails = enriched.vision_attributes.technicalDetails;
+    if (techDetails.length > 0) {
+      sections.push(language === "en" ? "\nTECHNICAL SPECIFICATIONS (from Vision AI):" : "\nSPÉCIFICATIONS TECHNIQUES (Vision IA):");
+      sections.push(techDetails.map((detail: string) => `- ${detail}`).join("\n"));
+    }
   }
 
   // Categorization
