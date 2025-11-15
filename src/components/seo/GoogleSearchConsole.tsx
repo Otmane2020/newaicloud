@@ -1,18 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { GoogleSearchConsoleIntegration } from './GoogleSearchConsoleIntegration';
 import { GoogleSearchConsoleInsights } from './GoogleSearchConsoleInsights';
 import { GoogleSearchConsoleProducts } from './GoogleSearchConsoleProducts';
 import { GoogleSearchConsoleArticles } from './GoogleSearchConsoleArticles';
 import { GoogleSearchConsoleSitemaps } from './GoogleSearchConsoleSitemaps';
-import { BarChart3, Package, FileText, FileCode, Plug } from 'lucide-react';
+import { BarChart3, Package, FileText, FileCode, Plug, Globe } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function GoogleSearchConsole() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDomain, setSelectedDomain] = useState<string>('');
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [loadingDomains, setLoadingDomains] = useState(false);
   
   const activeSubTab = searchParams.get('subtab') || 'integration';
+
+  useEffect(() => {
+    checkConnection();
+  }, []);
+
+  const checkConnection = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('google_oauth_token')
+        .eq('id', user.id)
+        .single();
+
+      const connected = !!profile?.google_oauth_token;
+      setIsConnected(connected);
+
+      if (connected) {
+        await fetchAvailableDomains();
+      }
+    } catch (error) {
+      console.error('Error checking connection:', error);
+    }
+  };
+
+  const fetchAvailableDomains = async () => {
+    try {
+      setLoadingDomains(true);
+      const { data, error } = await supabase.functions.invoke('list-search-console-sites');
+
+      if (error) throw error;
+
+      if (data?.success && data.sites) {
+        const domains = data.sites.map((site: any) => site.siteUrl);
+        setAvailableDomains(domains);
+        
+        // Auto-select first domain if none selected
+        if (domains.length > 0 && !selectedDomain) {
+          setSelectedDomain(domains[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching domains:', error);
+      toast.error('Erreur lors du chargement des domaines');
+    } finally {
+      setLoadingDomains(false);
+    }
+  };
 
   const handleTabChange = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -28,6 +86,32 @@ export function GoogleSearchConsole() {
           Analysez vos performances SEO et optimisez votre visibilité
         </p>
       </div>
+
+      {/* Domain Selector - Only show if connected and not on integration tab */}
+      {isConnected && activeSubTab !== 'integration' && (
+        <Card className="p-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Globe className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <Label htmlFor="domain-select" className="text-sm font-medium mb-2 block">
+                Sélectionner un domaine
+              </Label>
+              <Select value={selectedDomain} onValueChange={setSelectedDomain}>
+                <SelectTrigger id="domain-select" className="w-full">
+                  <SelectValue placeholder={loadingDomains ? "Chargement..." : "Sélectionner un domaine"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDomains.map((domain) => (
+                    <SelectItem key={domain} value={domain}>
+                      {domain}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
@@ -54,7 +138,7 @@ export function GoogleSearchConsole() {
         </TabsList>
 
         <TabsContent value="integration" className="mt-6">
-          <GoogleSearchConsoleIntegration />
+          <GoogleSearchConsoleIntegration onConnectionChange={checkConnection} />
         </TabsContent>
 
         <TabsContent value="insights" className="mt-6">
