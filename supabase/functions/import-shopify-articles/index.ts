@@ -446,7 +446,7 @@ Deno.serve(async (req: Request) => {
       console.error(`⚠️ [IMPORT-ARTICLES] Error fetching existing articles:`, fetchError);
     } else if (existingArticles) {
       const articlesToDelete = existingArticles.filter(
-        existing => existing.shopify_article_id && !shopifyArticleIds.includes(existing.shopify_article_id)
+        existing => existing.shopify_article_id && !shopifyArticleIds.includes(existing.shopify_article_id.toString())
       );
       
       if (articlesToDelete.length > 0) {
