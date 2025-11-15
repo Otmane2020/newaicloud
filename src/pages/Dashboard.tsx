@@ -298,21 +298,20 @@ export default function Dashboard() {
 
       // 5. IMAGES SCORE (from SeoAltImageList.tsx)
       // Use a more efficient query that doesn't depend on the number of products
-      let imagesQuery = supabase
-        .from('product_images')
-        .select('id, alt_text, shopify_products!inner(seller_id, store_id)')
-        .eq('shopify_products.seller_id', user?.id);
-
-      // Apply store filter only if a store is selected
+      let imagesScore = 0;
+      
+      // Only calculate if a store is selected (same behavior as SeoAltImageList)
       if (selectedStore?.id) {
-        imagesQuery = imagesQuery.eq('shopify_products.store_id', selectedStore.id);
+        const { data: allImages } = await supabase
+          .from('product_images')
+          .select('id, alt_text, shopify_products!inner(seller_id, store_id)')
+          .eq('shopify_products.seller_id', user?.id)
+          .eq('shopify_products.store_id', selectedStore.id);
+
+        imagesScore = allImages && allImages.length > 0
+          ? Math.round((allImages.filter((img: any) => img.alt_text && img.alt_text.trim() !== '').length / allImages.length) * 100)
+          : 0;
       }
-
-      const { data: allImages } = await imagesQuery;
-
-      const imagesScore = allImages && allImages.length > 0
-        ? Math.round((allImages.filter((img: any) => img.alt_text && img.alt_text.trim() !== '').length / allImages.length) * 100)
-        : 0;
 
       // 6. HOMEPAGE SCORE (from HomePageSeoAudit.tsx)
       // @ts-ignore - Json type causes deep recursion, safe to ignore here
