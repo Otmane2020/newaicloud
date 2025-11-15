@@ -35,15 +35,8 @@ export function ShopifyConnectPrompt() {
       }
 
       try {
-        // On /account page, always check (ignore localStorage)
-        const isAccountPage = location.pathname === '/account';
-        
-        // Check if user has already seen the welcome prompt (localStorage)
-        const hasSeenWelcome = localStorage.getItem(`welcome_seen_${user.id}`);
-        if (hasSeenWelcome && !isAccountPage) {
-          setHasChecked(true);
-          return;
-        }
+        // Always check for store connection - no localStorage check
+        // This means the popup will show every time if no store is connected
 
         // CRITICAL: Check if user has completed Stripe checkout (has active subscription)
         const { data: profile } = await supabase
@@ -69,8 +62,7 @@ export function ShopifyConnectPrompt() {
         if (!stores || stores.length === 0) {
           console.log('✅ Checkout completed + No store connected, showing welcome popup');
           setOpen(true);
-          // Mark as seen in localStorage
-          localStorage.setItem(`welcome_seen_${user.id}`, 'true');
+          // No localStorage - popup will show every time until store is connected
         } else {
           console.log('ℹ️ Shopify store already connected, skipping popup');
         }
