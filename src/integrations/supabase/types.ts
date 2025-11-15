@@ -569,6 +569,7 @@ export type Database = {
           last_checked_at: string | null
           link_type: string | null
           seo_score: number | null
+          store_id: string | null
           target_type: string | null
           target_url: string
           updated_at: string | null
@@ -587,6 +588,7 @@ export type Database = {
           last_checked_at?: string | null
           link_type?: string | null
           seo_score?: number | null
+          store_id?: string | null
           target_type?: string | null
           target_url: string
           updated_at?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           last_checked_at?: string | null
           link_type?: string | null
           seo_score?: number | null
+          store_id?: string | null
           target_type?: string | null
           target_url?: string
           updated_at?: string | null
@@ -616,6 +619,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_netlinking_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -640,6 +650,7 @@ export type Database = {
           secondary_keywords: string[] | null
           seo_opportunity_score: number | null
           status: string | null
+          store_id: string | null
           structure: Json | null
           type: string
           updated_at: string
@@ -664,6 +675,7 @@ export type Database = {
           secondary_keywords?: string[] | null
           seo_opportunity_score?: number | null
           status?: string | null
+          store_id?: string | null
           structure?: Json | null
           type: string
           updated_at?: string
@@ -688,6 +700,7 @@ export type Database = {
           secondary_keywords?: string[] | null
           seo_opportunity_score?: number | null
           status?: string | null
+          store_id?: string | null
           structure?: Json | null
           type?: string
           updated_at?: string
@@ -699,6 +712,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
             referencedColumns: ["id"]
           },
         ]
