@@ -699,6 +699,34 @@ Deno.serve(async (req: Request) => {
 
         allImages.push(...imagesToInsert);
       }
+
+      // Also add variant-specific images if they're not in the main images array
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          if (variant.image_id) {
+            // Check if this image is already in allImages
+            const imageExists = allImages.some(
+              img => img.shopify_image_id === variant.image_id && img.product_id === productId
+            );
+            
+            if (!imageExists) {
+              // Find the image in product.images or use variant's own image data
+              const variantImage = product.images.find(img => img.id === variant.image_id);
+              if (variantImage) {
+                allImages.push({
+                  product_id: productId,
+                  shopify_image_id: variantImage.id,
+                  src: variantImage.src,
+                  position: allImages.filter(i => i.product_id === productId).length + 1,
+                  alt_text: (variantImage as any).alt || `${product.title} - ${variant.title}`,
+                  width: (variantImage as any).width || null,
+                  height: (variantImage as any).height || null,
+                });
+              }
+            }
+          }
+        }
+      }
     }
 
     // Insert variants in batches
