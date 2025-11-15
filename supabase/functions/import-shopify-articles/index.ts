@@ -84,14 +84,53 @@ Deno.serve(async (req: Request) => {
     const requestBody = await req.json();
     const { shopName, apiSecret, authToken, storeId } = requestBody;
 
-    // Accept either apiSecret or authToken for backwards compatibility
-    const accessToken = apiSecret || authToken;
-
-    if (!shopName || !accessToken) {
+    if (!shopName) {
       return new Response(
-        JSON.stringify({ error: 'Missing shopName or authToken/apiSecret' }),
+        JSON.stringify({ error: 'Missing shopName' }),
         {
           status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Determine access token - fetch from DB if using OAuth (storeId)
+    let accessToken = apiSecret || authToken;
+    
+    if (storeId && !accessToken) {
+      // Use service role client to fetch access token
+      const supabaseServiceClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const { data: connection, error: connectionError } = await supabaseServiceClient
+        .from('shopify_connections')
+        .select('access_token')
+        .eq('id', storeId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (connectionError || !connection) {
+        console.error('Failed to fetch Shopify connection:', connectionError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch Shopify credentials' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      accessToken = connection.access_token;
+      console.log('✅ Using OAuth access token from database');
+    }
+    
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ error: 'No access token available' }),
+        {
+          status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
