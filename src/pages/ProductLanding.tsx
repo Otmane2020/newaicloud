@@ -198,7 +198,7 @@ export default function ProductLanding() {
             className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span className="font-medium">Retour au chat</span>
+            <span className="font-medium">Retour</span>
           </button>
           <div className="flex items-center gap-3">
             <button
