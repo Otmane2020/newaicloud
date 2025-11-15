@@ -98,7 +98,6 @@ export function BlogOpportunities() {
       let cacheError: any = null;
       
       if (selectedStore?.id) {
-        // @ts-expect-error - Avoiding TS2589 type instantiation depth issue with Supabase query builder
         const result = await supabase
           .from('blog_opportunities')
           .select('*')
