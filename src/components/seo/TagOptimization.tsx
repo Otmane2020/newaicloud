@@ -122,8 +122,7 @@ export function TagOptimization() {
         .from('shopify_products')
         .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify, optimization_count')
         .eq('store_id', selectedStore.id)
-        .order('title', { ascending: true })
-        .limit(1000);
+        .order('title', { ascending: true });
 
       if (error) throw error;
       setProducts(data || []);

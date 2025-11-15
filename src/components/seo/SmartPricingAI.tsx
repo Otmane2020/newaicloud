@@ -170,7 +170,7 @@ export function SmartPricingAI() {
 
       setCollections(collectionsData || []);
 
-      // Fetch products with collection names and ALL variants data + AI analysis (limited to 1000)
+      // Fetch products with collection names and ALL variants data + AI analysis
       const { data: productsData, error: productsError } = await supabase
         .from("shopify_products")
         .select(
@@ -185,8 +185,7 @@ export function SmartPricingAI() {
         `,
         )
         .eq("seller_id", user.id)
-        .eq("store_id", selectedStore.id)
-        .limit(1000);
+        .eq("store_id", selectedStore.id);
 
       if (productsError) {
         console.error("Products error:", productsError);
