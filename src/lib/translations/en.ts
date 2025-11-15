@@ -735,6 +735,7 @@ export const translations = {
     saved: "Saved",
     save: "Save",
     cancel: "Cancel",
+    applying: "Applying...",
     delete: "Delete",
     edit: "Edit",
     search: "Search",
@@ -2227,12 +2228,33 @@ export const translations = {
       limitReached: "Limit reached. Only {{count}} product{{s}} will be optimized.",
       noToSync: "No products to synchronize",
       allSynced: "All products are synchronized",
+      status: {
+        optimized: "Optimized",
+        pending: "Pending...",
+        notOptimized: "Not Optimized",
+      },
+      stats: {
+        toOptimize: "To Optimize",
+        byAI: "By AI",
+      },
+      messages: {
+        showingOptimized: "Showing {{count}} optimized products",
+        tagsOptimizedSuccess: "Tags optimized successfully",
+      },
       filters: {
         all: "All Products",
         toOptimize: "Not Optimized",
         optimized: "Optimized",
         toSync: "To Synchronize",
         synced: "Synchronized"
+      }
+    },
+    imagePreview: {
+      whiteBackground: {
+        title: "Preview - HD White Background",
+        description: "Compare original image with optimized 2000x2000px version",
+        original: "Original",
+        optimized: "HD White Background",
       }
     },
     banners: {
