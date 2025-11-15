@@ -124,6 +124,26 @@ Deno.serve(async (req: Request) => {
     if (!blogsResponse.ok) {
       const errorText = await blogsResponse.text();
       console.error(`❌ Shopify blogs API error: ${blogsResponse.status}`, errorText);
+      
+      // If it's a 403 error about read_content scope, return success with a message
+      // This allows the sync to continue with other content types
+      if (blogsResponse.status === 403 && errorText.includes('read_content')) {
+        console.log('⚠️ [IMPORT-ARTICLES] Skipping articles import - read_content scope not approved');
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            articlesImported: 0,
+            imagesImported: 0,
+            message: 'Articles import skipped - read_content permission not approved by merchant',
+            scopeError: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: `Shopify API error: ${blogsResponse.status}` }),
         {

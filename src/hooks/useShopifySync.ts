@@ -195,9 +195,16 @@ export const useShopifySync = () => {
             errorMessages.push(`${type}: ${result.error.message || 'Unknown error'}`);
             importResults[type] = 0;
           } else {
-            const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
-            importResults[type] = imported;
-            console.log(`✅ [SYNC ${type.toUpperCase()}] Imported:`, imported);
+            // Check if this is a scope error (permission not granted)
+            if (result?.data?.scopeError) {
+              console.log(`⚠️ [SYNC ${type.toUpperCase()}] Skipped due to missing permissions:`, result.data.message);
+              importResults[type] = 0;
+              // Don't add to error messages, this is expected behavior
+            } else {
+              const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
+              importResults[type] = imported;
+              console.log(`✅ [SYNC ${type.toUpperCase()}] Imported:`, imported);
+            }
           }
         } catch (error: any) {
           console.error(`❌ [SYNC ${type.toUpperCase()} EXCEPTION]`, error);
