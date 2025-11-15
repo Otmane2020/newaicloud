@@ -1790,7 +1790,8 @@ export const translations = {
       homepage: "Page d'accueil",
       products: "Produits",
       collections: "Collections",
-      content: "Contenu",
+      pages: "Pages",
+      articles: "Articles",
       images: "Images",
       technical: "Technique"
     },
@@ -1798,7 +1799,8 @@ export const translations = {
       homepage: "Titre et description de votre page d'accueil",
       products: "Fiches produits SEO",
       collections: "Pages collections",
-      content: "Articles et pages",
+      pages: "Pages personnalisées",
+      articles: "Articles de blog",
       images: "Textes alternatifs",
       technical: "Configuration Shopify"
     },
@@ -1806,7 +1808,8 @@ export const translations = {
       homepage: "Optimisez le titre et la description de votre page d'accueil pour attirer plus de visiteurs qualifiés. Un bon SEO homepage peut augmenter votre trafic de 20-30%.",
       products: "Enrichissez vos fiches produits avec des titres et descriptions optimisés. Un meilleur SEO produit augmente directement les conversions.",
       collections: "Optimisez vos collections pour mieux ranker sur les recherches de catégories. Les pages collections sont des points d'entrée clés.",
-      content: "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
+      pages: "Optimisez vos pages personnalisées pour une meilleure visibilité. Des pages bien optimisées renforcent votre socle SEO.",
+      articles: "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
       images: "Ajoutez des textes alternatifs descriptifs à toutes vos images. Les images peuvent représenter jusqu'à 20% du trafic organique.",
       technical: "Vérifiez votre configuration technique et métadonnées. Une bonne base technique est essentielle pour le SEO."
     }
