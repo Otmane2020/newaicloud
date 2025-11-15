@@ -1056,7 +1056,7 @@ export function GoogleSearchConsole() {
                           <Badge variant="outline" className="w-8 h-8 flex items-center justify-center">
                             {index + 1}
                           </Badge>
-                          <span className="font-medium">{query.keys?.[0] || 'N/A'}</span>
+                          <span className="font-medium">{query.query || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
                           <div className="text-right">
@@ -1099,12 +1099,12 @@ export function GoogleSearchConsole() {
                             {index + 1}
                           </Badge>
                           <a 
-                            href={page.keys?.[0] || '#'} 
+                            href={page.page || '#'} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="font-medium truncate hover:text-primary transition-colors"
                           >
-                            {page.keys?.[0]?.replace(/^https?:\/\/[^/]+/, '') || '/'}
+                            {page.page?.replace(/^https?:\/\/[^/]+/, '') || '/'}
                           </a>
                         </div>
                         <div className="flex items-center gap-4 text-sm flex-shrink-0">
