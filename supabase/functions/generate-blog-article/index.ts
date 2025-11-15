@@ -167,89 +167,154 @@ async function generateArticleHTML(
   keywords: string[],
   length: string,
   storeUrl: string,
+  colorScheme: string = "#1E40AF",
 ) {
   const product = products[0];
-  const langPrompt = getPromptByLanguage(lang);
+  
+  // Construct image gallery HTML
+  const imageGalleryHTML = products.slice(0, 4)
+    .map(p => `  <img src="${p.full_image_url || p.image_url}" alt="${p.title}" class="w-full rounded-lg shadow-lg" />`)
+    .join('\n');
 
-  const prompt = `${langPrompt.intro}
+  const prompt = `Tu es un expert e-commerce Shopify, rédacteur SEO professionnel et designer UX.
+Ta mission : créer un **ARTICLE PRODUIT** complet, en **HTML pur** (sans markdown), prêt à être publié sur Shopify Blog.
 
-LANGUAGE: ${lang.toUpperCase()}
-LENGTH: Minimum ${length} words
-KEYWORDS: ${keywords.join(", ")}
+🎯 OBJECTIF :
+Générer un article haut de gamme, esthétique, commercial, SEO-friendly, contenant :
+- H1 / H2 / H3 stricts
+- Galerie produit
+- Lien vers le produit
+- Caractéristiques techniques
+- Avantages et mise en situation
+- FAQ complète
+- Call-to-action forts
+- Maillage interne vers les pages Shopify importantes (contact, livraison, retours, about us)
+- Style professionnel + classes Tailwind
 
-PRODUCT:
-- Title: ${product.title}
-- Price: ${product.price}€
-- Type: ${product.product_type}
-- Brand: ${product.vendor}
+📌 INFORMATIONS PRODUIT :
+- Nom du produit : ${product.title}
+- Prix : ${product.price}€
+- URL produit : ${product.product_url}
+- Images : ${products.length} image(s) disponible(s)
+- Catégorie : ${product.product_type || 'Non spécifié'}
+- Marque : ${product.vendor || 'Non spécifié'}
+- Mots-clés SEO : ${keywords.join(', ')}
+- Couleur principale : ${colorScheme}
+- Longueur voulue : ${length} mots
 
-REQUIRED STRUCTURE (follow exact order):
+📌 INFORMATIONS BOUTIQUE :
+- URL boutique : ${storeUrl}
+- Pages Shopify internes :
+  - Contact : ${storeUrl}/pages/contact
+  - Livraison : ${storeUrl}/pages/shipping
+  - Retours : ${storeUrl}/pages/returns
+  - À propos : ${storeUrl}/pages/about-us
 
-<h1>SEO-optimized title with main keyword</h1>
+📌 STRUCTURE OBLIGATOIRE :
 
-<div class="intro">
-<p>Introduction 150-200 words explaining the product and its benefits.</p>
+<h1>[Titre SEO contenant mot-clé principal]</h1>
+
+<div class="intro text-lg leading-relaxed my-6">
+Introduction de 120–180 mots, storytelling, contexte d'utilisation, bénéfices majeurs, intégration naturelle des mots-clés.
 </div>
 
-<h2>Product Presentation: ${product.title}</h2>
+<h2>Présentation du Produit</h2>
 
-<h3>Detailed Description</h3>
-<p>Complete paragraph describing the product, its features, its use.</p>
+<h3>Description Générale</h3>
+<p>Texte descriptif détaillé et vendeur.</p>
 
-<h3>Photo Gallery</h3>
-<div class="product-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 2rem 0;">
-${products.slice(0, 4).map((p) => `  <img src="${p.full_image_url || p.image_url}" alt="${p.title}" style="width: 100%; border-radius: 8px;">`).join('\n')}
+<h3>Galerie Produit</h3>
+<div class="gallery grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+${imageGalleryHTML}
 </div>
 
-<h3>Product Sheet</h3>
-<div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
-<p><strong>Price:</strong> ${product.price}€</p>
-<p><strong>Type:</strong> ${product.product_type}</p>
-<p><strong>Brand:</strong> ${product.vendor}</p>
-<a href="${products[0].product_url}" style="display: inline-block; background: #1e40af; color: white; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; margin-top: 1rem;">View Product</a>
+<h3>Fiche d'Achat</h3>
+<div class="purchase-card p-6 border rounded-xl my-6" style="border-color: ${colorScheme}">
+  <p class="text-4xl font-bold">${product.price}€</p>
+  <a href="${product.product_url}" target="_blank" class="inline-block px-6 py-4 rounded-xl text-white font-bold text-xl mt-3" style="background: ${colorScheme}">
+    Acheter Maintenant →
+  </a>
 </div>
 
-<h2>Technical Specifications</h2>
-<table style="width: 100%; border-collapse: collapse; margin: 2rem 0;">
-<tr style="background: #f3f4f6;"><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Feature</th><th style="padding: 0.75rem; text-align: left; border: 1px solid #e5e7eb;">Detail</th></tr>
-<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Brand</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.vendor}</td></tr>
-<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Type</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.product_type}</td></tr>
-<tr><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">Price</td><td style="padding: 0.75rem; border: 1px solid #e5e7eb;">${product.price}€</td></tr>
+<h2>Caractéristiques Techniques</h2>
+<table class="w-full border rounded-xl overflow-hidden my-4">
+<tr><td class="p-3 font-semibold">Catégorie</td><td class="p-3">${product.product_type || 'Non spécifié'}</td></tr>
+<tr><td class="p-3 font-semibold">Marque</td><td class="p-3">${product.vendor || 'Non spécifié'}</td></tr>
+<tr><td class="p-3 font-semibold">Prix</td><td class="p-3">${product.price}€</td></tr>
 </table>
 
-<h2>Advantages and Strengths</h2>
-<h3>Material Quality</h3>
-<p>Paragraph about quality, materials used.</p>
-
-<h3>Design and Aesthetics</h3>
-<p>Paragraph about design, style, appearance.</p>
-
-<h3>Why Choose This Product?</h3>
-<ul>
-<li>First concrete advantage</li>
-<li>Second important benefit</li>
-<li>Third strong point</li>
+<h2>Avantages & Points Forts</h2>
+<ul class="list-disc pl-6 space-y-2">
+  <li>Bénéfice 1 (à détailler)</li>
+  <li>Bénéfice 2 (à détailler)</li>
+  <li>Bénéfice 3 (à détailler)</li>
+  <li>Bénéfice 4 (à détailler)</li>
 </ul>
 
+<h2>Intégration dans Votre Intérieur</h2>
+<h3>Style Moderne</h3>
+<p>Comment intégrer ce produit dans un intérieur moderne...</p>
+
+<h3>Style Scandinave</h3>
+<p>Comment intégrer ce produit dans un intérieur scandinave...</p>
+
+<h2>Pages Shopify Importantes</h2>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
+  <a href="${storeUrl}/pages/contact" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
+    📞 Contact
+  </a>
+  <a href="${storeUrl}/pages/shipping" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
+    🚚 Livraison
+  </a>
+  <a href="${storeUrl}/pages/returns" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
+    ↩️ Retours
+  </a>
+  <a href="${storeUrl}/pages/about-us" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
+    ℹ️ À propos
+  </a>
+</div>
+
 <h2>FAQ</h2>
-<h3>Question 1</h3>
-<p>Answer...</p>
+<details class="p-4 bg-gray-50 rounded-xl my-2">
+  <summary class="font-semibold cursor-pointer">📦 Quels sont les délais de livraison ?</summary>
+  <p class="mt-2">Réponse SEO optimisée.</p>
+</details>
 
-INTERNAL LINKS (insert naturally):
-- <a href="${storeUrl}/pages/contact">Contact</a>
-- <a href="${storeUrl}/pages/shipping">Shipping</a>
-- <a href="${storeUrl}/pages/returns">Returns</a>
+<details class="p-4 bg-gray-50 rounded-xl my-2">
+  <summary class="font-semibold cursor-pointer">🛡 Quelle garantie offrez-vous ?</summary>
+  <p class="mt-2">Réponse claire et rassurante.</p>
+</details>
 
-${langPrompt.rules}
-- Minimum ${length} words
-- Write in ${lang.toUpperCase()} language matching product language
+<details class="p-4 bg-gray-50 rounded-xl my-2">
+  <summary class="font-semibold cursor-pointer">💳 Quels modes de paiement acceptez-vous ?</summary>
+  <p class="mt-2">Réponse détaillée.</p>
+</details>
+
+<h2>Conclusion</h2>
+<p>Résumé vendeur, CTA fort, mots-clés réintégrés naturellement.</p>
+<div class="text-center mt-6">
+  <a href="${product.product_url}" class="inline-block bg-black text-white px-8 py-4 rounded-xl text-xl font-bold hover:opacity-90 transition">
+    Acheter Maintenant →
+  </a>
+</div>
+
+📌 RÈGLES STRICTES :
+- HTML SEULEMENT (AUCUNE balise <html>, <body>, <head>)
+- Style Tailwind propre
+- Pas de répétitions
+- Pas de contenu IA générique
+- 0 phrases type "en tant que modèle linguistique"
+- Texte riche, naturel, pro
+- Aucune mention de ce prompt
+- LANGUE: ${lang.toUpperCase()} - Écrire UNIQUEMENT dans cette langue
+- Minimum ${length} mots
 `;
 
   console.log(`[DEEPSEEK] Calling API with lang=${lang}, length=${length}`);
   
-  // Create timeout promise (55 seconds to stay under 60s function limit)
+  // Create timeout promise (90 seconds for longer articles)
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("DeepSeek API timeout after 55s")), 55000)
+    setTimeout(() => reject(new Error("DeepSeek API timeout after 90s")), 90000)
   );
 
   // Create fetch promise
@@ -262,8 +327,8 @@ ${langPrompt.rules}
     body: JSON.stringify({
       model: "deepseek-chat",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.45,
-      max_tokens: 4000, // Increased for longer articles
+      temperature: 0.5,
+      max_tokens: 6000, // Increased for longer articles
     }),
   });
 
@@ -343,7 +408,8 @@ serve(async (req) => {
     //------------------------------------------------------------
     // Generate article HTML (DeepSeek)
     //------------------------------------------------------------
-    let html = await generateArticleHTML(products, lang, keywords, articleLength, storeUrl);
+    const colorScheme = body.articleConfig?.colorScheme || "#1E40AF";
+    let html = await generateArticleHTML(products, lang, keywords, articleLength, storeUrl, colorScheme);
 
     //------------------------------------------------------------
     // Clean HTML
