@@ -171,8 +171,7 @@ export function PageOptimization() {
         .select('*')
         .eq('user_id', user.id)
         .eq('store_id', selectedStore.id)
-        .order('published_at', { ascending: false })
-        .limit(1000);
+        .order('published_at', { ascending: false });
 
       if (error) throw error;
       

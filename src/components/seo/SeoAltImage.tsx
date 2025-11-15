@@ -132,7 +132,7 @@ export function SeoAltImage() {
     try {
       setLoading(true);
       
-      // Fetch product images with store filter (limited to 1000)
+      // Fetch product images with store filter
       const { data: productImagesData, error: productError } = await supabase
         .from('product_images')
         .select(`
@@ -141,18 +141,16 @@ export function SeoAltImage() {
         `)
         .eq('product.store_id', selectedStore.id)
         .order('product_id', { ascending: true })
-        .order('position', { ascending: true })
-        .limit(1000);
+        .order('position', { ascending: true });
 
       if (productError) throw productError;
 
-      // Fetch content images (limited to 1000)
+      // Fetch content images
       const { data: contentImagesData, error: contentError } = await supabase
         .from('content_images')
         .select('*')
         .order('content_id', { ascending: true })
-        .order('position', { ascending: true })
-        .limit(1000);
+        .order('position', { ascending: true });
 
       if (contentError) throw contentError;
 
