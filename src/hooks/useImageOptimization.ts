@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOptimizationNotifications } from './useOptimizationNotifications';
 
 interface OptimizationResult {
   success: boolean;
@@ -24,6 +25,7 @@ interface SaveHistoryParams {
 export const useImageOptimization = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const queryClient = useQueryClient();
+  const { sendOptimizationNotification } = useOptimizationNotifications();
 
   const saveToHistory = async (params: SaveHistoryParams) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -275,16 +277,30 @@ export const useImageOptimization = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['image-history'] });
       toast.success('Image appliquée et synchronisée avec Shopify');
-      queryClient.invalidateQueries({ queryKey: ['product-images'] });
-      queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
-      queryClient.invalidateQueries({ queryKey: ['image-history'] });
+      
+      // Send optimization notification
+      await sendOptimizationNotification(1);
+      
       setIsOptimizing(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application de l\'image');
+      
+      // Check if it's a Shopify authentication error
+      if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('Token Shopify invalide')) {
+        toast.error('Token Shopify invalide', {
+          description: 'Veuillez reconnecter votre boutique Shopify dans les paramètres.',
+          duration: 6000,
+        });
+      } else {
+        toast.error('Erreur lors de l\'application de l\'image');
+      }
+      
       setIsOptimizing(false);
     },
     onSettled: () => {
