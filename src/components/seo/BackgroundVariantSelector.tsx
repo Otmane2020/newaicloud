@@ -101,7 +101,7 @@ export const BackgroundVariantSelector = ({
                 {/* Image */}
                 <div className="aspect-square relative bg-muted">
                   <img
-                    src={variant.imageUrl}
+                    src={variant.imageUrl || `data:image/png;base64,${(variant as any).imageBase64}`}
                     alt={variant.description}
                     className="w-full h-full object-cover"
                   />

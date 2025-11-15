@@ -111,12 +111,32 @@ export const useImageOptimization = () => {
     }) => {
       setIsOptimizing(true);
       
+      console.log('🎨 [AI_BG] Starting generation for:', productTitle);
+      
       const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
         body: { productTitle, basePrompt, style, format }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to generate variants');
+      if (error) {
+        console.error('🎨 [AI_BG] Edge function error:', error);
+        throw error;
+      }
+      
+      if (!data.success) {
+        console.error('🎨 [AI_BG] Generation failed:', data.error);
+        throw new Error(data.error || 'Failed to generate variants');
+      }
+
+      console.log('🎨 [AI_BG] API Response:', {
+        success: data.success,
+        totalGenerated: data.totalGenerated,
+        variantsCount: data.variants?.length,
+        firstVariant: {
+          hasImageUrl: !!data.variants?.[0]?.imageUrl,
+          hasImageBase64: !!data.variants?.[0]?.imageBase64,
+          imageUrlLength: data.variants?.[0]?.imageUrl?.length || 0
+        }
+      });
 
       return data;
     },
