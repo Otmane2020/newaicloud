@@ -57,7 +57,12 @@ export function useStoreDomain() {
                 body: { storeId: selectedStore.id }
               });
 
-              if (!domainError && domainData?.domain) {
+              if (domainError) {
+                console.error('❌ [DOMAIN] Edge function error:', domainError);
+                throw domainError;
+              }
+
+              if (domainData?.domain) {
                 const fetchedDomain = domainData.domain;
                 
                 // Only use if it's not a myshopify domain
@@ -70,6 +75,8 @@ export function useStoreDomain() {
               }
             } catch (err) {
               console.error('❌ [DOMAIN] Error fetching domain via edge function:', err);
+              // If store not found, clear it from cache and return fallback
+              domainCache.delete(selectedStore.id);
             }
 
             // Fallback: use store_url if available
