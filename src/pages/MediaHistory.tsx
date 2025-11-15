@@ -39,21 +39,35 @@ export default function MediaHistory() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data: historyData, error: historyError } = await supabase
         .from('product_image_history')
-        .select(`
-          *,
-          shopify_products!product_image_history_product_id_fkey(
-            title,
-            product_images(id, position, src),
-            product_variants(id, title, image_url, position)
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (historyError) throw historyError;
+
+      // Fetch related product data separately
+      const enrichedData = await Promise.all(
+        historyData.map(async (item) => {
+          const { data: product } = await supabase
+            .from('shopify_products')
+            .select(`
+              title,
+              product_images(id, position, src),
+              product_variants(id, title, image_url, position)
+            `)
+            .eq('id', item.product_id)
+            .single();
+
+          return {
+            ...item,
+            shopify_products: product
+          };
+        })
+      );
+
+      return enrichedData;
     }
   });
 
