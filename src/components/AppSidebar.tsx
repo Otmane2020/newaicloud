@@ -76,6 +76,9 @@ export function AppSidebar() {
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  
+  // Check if user is the test account
+  const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
 
   const seoSubItems = [
     { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
@@ -123,7 +126,7 @@ export function AppSidebar() {
   ];
 
   const merchantSubItems = [
-    { title: t.merchantIntegration, url: "/merchant?tab=integration", icon: Globe, key: "integration" },
+    ...(isTestAccount ? [{ title: t.merchantIntegration, url: "/merchant?tab=integration", icon: Globe, key: "integration" }] : []),
     { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
     { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
@@ -138,7 +141,7 @@ export function AppSidebar() {
   ];
 
   const bottomMenuItems = [
-    { title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" },
+    ...(isTestAccount ? [{ title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" }] : []),
     { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
   ];
 
@@ -433,58 +436,62 @@ export function AppSidebar() {
               </Collapsible>
 
               {/* Google Ads Menu with Submenu */}
-              <Collapsible defaultOpen={isGoogleAdsActive} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isGoogleAdsActive}>
-                      <Megaphone className="h-4 w-4" />
-                      <span>Google Ads</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {googleAdsSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              {isTestAccount && (
+                <Collapsible defaultOpen={isGoogleAdsActive} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton isActive={isGoogleAdsActive}>
+                        <Megaphone className="h-4 w-4" />
+                        <span>Google Ads</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {googleAdsSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
 
               {/* Chat Menu with Submenu */}
-              <Collapsible defaultOpen={isChatActive} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isChatActive}>
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{t.navigation.chat}</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {chatSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              {isTestAccount && (
+                <Collapsible defaultOpen={isChatActive} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton isActive={isChatActive}>
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{t.navigation.chat}</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {chatSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
 
               {/* Smart Pricing AI - Main Menu Item */}
               <SidebarMenuItem>

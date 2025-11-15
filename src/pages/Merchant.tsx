@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
@@ -16,15 +17,25 @@ export default function Merchant() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "feed");
+  
+  // Import user from auth context
+  const { user } = useAuth();
+  
+  // Check if user is the test account
+  const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["integration", "feed", "settings", "sync"].includes(tab)) {
+    const validTabs = isTestAccount 
+      ? ["integration", "feed", "settings", "sync"]
+      : ["feed", "settings", "sync"];
+    
+    if (tab && validTabs.includes(tab)) {
       setActiveTab(tab);
     } else {
-      setActiveTab("integration");
+      setActiveTab(isTestAccount ? "integration" : "feed");
     }
-  }, [searchParams]);
+  }, [searchParams, isTestAccount]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -32,13 +43,13 @@ export default function Merchant() {
   };
 
   const tabs = [
-    {
+    ...(isTestAccount ? [{
       id: "integration",
       label: t.googleConsole.integration,
       icon: Globe,
       description: t.merchant.tabs.integration.description,
       component: <GoogleMerchantIntegration />,
-    },
+    }] : []),
     {
       id: "feed",
       label: t.navigation.merchantSubmenu.feed,
