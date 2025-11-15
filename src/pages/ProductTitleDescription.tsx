@@ -2226,8 +2226,23 @@ export default function ProductTitleDescription() {
                           </div>
                         )}
                         
-                        {/* Action buttons - visible on hover */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Status badge - top left */}
+                        <div className="absolute top-2 left-2">
+                          {product.status === 'active' ? (
+                            <Badge className="bg-green-600 text-white shadow-sm">
+                              <Power className="h-3 w-3 mr-1" />
+                              Actif
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600 shadow-sm">
+                              <PowerOff className="h-3 w-3 mr-1" />
+                              Draft
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Action buttons - always visible */}
+                        <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -2396,7 +2411,7 @@ export default function ProductTitleDescription() {
                         )}
 
                         {/* Status badge */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                           {hasRichHtmlDescription(product) ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
                               <FileText className="h-3 w-3 mr-1" />
@@ -2408,56 +2423,6 @@ export default function ProductTitleDescription() {
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">{t.contentOptimization.table.status.toOptimize}</Badge>
-                          )}
-
-                          {product.shopify_id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!product.shopify_id) {
-                                  toast.error("Ce produit n'est pas synchronisé avec Shopify");
-                                  return;
-                                }
-                                
-                                if (!selectedStore) {
-                                  toast.error("Aucun store sélectionné");
-                                  return;
-                                }
-                                
-                                const newStatus = product.status === 'active' ? 'draft' : 'active';
-                                const toastId = toast.loading("Mise à jour du statut...");
-                                
-                                try {
-                                  const { error } = await supabase.functions.invoke('update-product-status', {
-                                    body: {
-                                      productId: product.id,
-                                      shopifyId: product.shopify_id,
-                                      status: newStatus,
-                                    }
-                                  });
-                                  
-                                  if (error) throw error;
-                                  
-                                  setProducts(prev => prev.map(p => 
-                                    p.id === product.id ? { ...p, status: newStatus } : p
-                                  ));
-                                  
-                                  toast.success(`Produit ${newStatus === 'active' ? 'activé' : 'désactivé'}`, { id: toastId });
-                                } catch (error) {
-                                  console.error('Error updating status:', error);
-                                  toast.error('Erreur lors de la mise à jour', { id: toastId });
-                                }
-                              }}
-                            >
-                              {product.status === 'active' ? (
-                                <><Power className="h-3 w-3 mr-1 text-green-600" /> Actif</>
-                              ) : (
-                                <><PowerOff className="h-3 w-3 mr-1 text-gray-400" /> Draft</>
-                              )}
-                            </Button>
                           )}
                         </div>
                       </div>
