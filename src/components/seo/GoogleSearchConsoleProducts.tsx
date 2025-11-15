@@ -17,7 +17,6 @@ import {
 
 interface GoogleSearchConsoleProductsProps {
   selectedDomain: string;
-  isConnected: boolean;
 }
 
 interface ProductPerformance {
@@ -28,20 +27,20 @@ interface ProductPerformance {
   position: number;
 }
 
-export function GoogleSearchConsoleProducts({ selectedDomain, isConnected }: GoogleSearchConsoleProductsProps) {
+export function GoogleSearchConsoleProducts({ selectedDomain }: GoogleSearchConsoleProductsProps) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductPerformance[]>([]);
   const [loading, setLoading] = useState(false);
   const [days, setDays] = useState<7 | 30 | 90>(30);
 
   useEffect(() => {
-    if (selectedDomain && isConnected) {
+    if (selectedDomain) {
       loadProductPerformance();
     }
-  }, [selectedDomain, days, isConnected]);
+  }, [selectedDomain, days]);
 
   const loadProductPerformance = async () => {
-    if (!selectedDomain || !isConnected) return;
+    if (!selectedDomain) return;
 
     try {
       setLoading(true);
@@ -113,31 +112,6 @@ export function GoogleSearchConsoleProducts({ selectedDomain, isConnected }: Goo
     }
     return url;
   };
-
-  if (!isConnected) {
-    return (
-      <Card className="p-8">
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <Package className="h-12 w-12 text-primary" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Performance des produits</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Connectez votre compte Google pour voir les performances de vos pages produits dans les résultats de recherche.
-            </p>
-          </div>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>✓ Clics et impressions par produit</p>
-            <p>✓ CTR et position moyenne</p>
-            <p>✓ Suggestions d'optimisation</p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">

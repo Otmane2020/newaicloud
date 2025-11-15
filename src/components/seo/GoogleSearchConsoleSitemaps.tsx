@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 
 interface GoogleSearchConsoleSitemapsProps {
   selectedDomain: string;
-  isConnected: boolean;
 }
 
 interface Sitemap {
@@ -28,7 +27,7 @@ interface Sitemap {
   }>;
 }
 
-export function GoogleSearchConsoleSitemaps({ selectedDomain, isConnected }: GoogleSearchConsoleSitemapsProps) {
+export function GoogleSearchConsoleSitemaps({ selectedDomain }: GoogleSearchConsoleSitemapsProps) {
   const { t } = useTranslation();
   const { selectedStore } = useStore();
   const [sitemapUrl, setSitemapUrl] = useState('');
