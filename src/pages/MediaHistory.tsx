@@ -45,7 +45,8 @@ export default function MediaHistory() {
           *,
           shopify_products!product_image_history_product_id_fkey(
             title,
-            product_images(id, position)
+            product_images(id, position, src, variant_id),
+            product_variants(id, title, image_url, position)
           )
         `)
         .eq('user_id', user.id)
@@ -220,7 +221,12 @@ export default function MediaHistory() {
 
     if (type === 'product') {
       title = item.shopify_products?.title || 'Produit inconnu';
-      onApply = item.shopify_products?.product_images?.length > 0 ? (
+      
+      // Combine product images and variant images
+      const productImages = item.shopify_products?.product_images || [];
+      const variants = item.shopify_products?.product_variants || [];
+      
+      onApply = (productImages.length > 0 || variants.length > 0) ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -233,44 +239,109 @@ export default function MediaHistory() {
               <span>Appliquer à une image</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-              Choisir l'image à remplacer
-            </div>
-            {item.shopify_products.product_images
-              .sort((a: any, b: any) => a.position - b.position)
-              .map((img: any, idx: number) => (
-                <DropdownMenuItem
-                  key={img.id}
-                  onClick={() => applyProductImage.mutate({
-                    historyId: item.id,
-                    targetImageId: img.id,
-                    optimizedUrl: item.optimized_url
-                  })}
-                  className="gap-3"
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    {idx === 0 ? (
-                      <>
-                        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-lg">📸</div>
-                        <div>
-                          <div className="font-medium">Image principale</div>
-                          <div className="text-xs text-muted-foreground">Visible sur la page produit</div>
+          <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+            {/* Product main images */}
+            {productImages.length > 0 && (
+              <>
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Images produit principales
+                </div>
+                {productImages
+                  .sort((a: any, b: any) => a.position - b.position)
+                  .map((img: any, idx: number) => (
+                    <DropdownMenuItem
+                      key={img.id}
+                      onClick={() => applyProductImage.mutate({
+                        historyId: item.id,
+                        targetImageId: img.id,
+                        optimizedUrl: item.optimized_url
+                      })}
+                      className="gap-3 py-3"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {img.src ? (
+                          <img 
+                            src={img.src} 
+                            alt={`Image ${idx + 1}`}
+                            className="w-12 h-12 rounded object-cover border"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {idx === 0 ? 'Image principale' : `Image ${idx + 1}`}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Position {img.position || idx + 1}
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-lg">📷</div>
-                        <div>
-                          <div className="font-medium">Image {idx + 1}</div>
-                          <div className="text-xs text-muted-foreground">Galerie produit</div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                }
+              </>
+            )}
+            
+            {/* Variant images */}
+            {variants.length > 0 && (
+              <>
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                  Images des variantes
+                </div>
+                {variants
+                  .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+                  .filter((variant: any) => variant.image_url)
+                  .map((variant: any) => {
+                    // Find matching product_image by variant_id
+                    const matchingImage = productImages.find((img: any) => img.variant_id === variant.id);
+                    
+                    return (
+                      <DropdownMenuItem
+                        key={variant.id}
+                        onClick={() => {
+                          if (matchingImage) {
+                            applyProductImage.mutate({
+                              historyId: item.id,
+                              targetImageId: matchingImage.id,
+                              optimizedUrl: item.optimized_url
+                            });
+                          } else {
+                            toast.error('Image de variante non trouvée dans product_images');
+                          }
+                        }}
+                        className="gap-3 py-3"
+                        disabled={!matchingImage}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <img 
+                            src={variant.image_url} 
+                            alt={variant.title}
+                            className="w-12 h-12 rounded object-cover border"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium line-clamp-1">
+                              {variant.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Variante {matchingImage ? `(Image #${matchingImage.position})` : '(non liée)'}
+                            </div>
+                          </div>
                         </div>
-                      </>
-                    )}
-                  </div>
-                </DropdownMenuItem>
-              ))
-            }
+                      </DropdownMenuItem>
+                    );
+                  })
+                }
+              </>
+            )}
+            
+            {productImages.length === 0 && variants.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Aucune image disponible pour ce produit
+              </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null;
