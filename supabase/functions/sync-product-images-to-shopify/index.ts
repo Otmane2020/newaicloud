@@ -136,6 +136,11 @@ Deno.serve(async (req) => {
     if (!getResponse.ok) {
       const errorText = await getResponse.text();
       console.error("Shopify GET error:", getResponse.status, errorText);
+      
+      if (getResponse.status === 401) {
+        throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+      }
+      
       throw new Error(`Failed to fetch Shopify product: ${getResponse.status}`);
     }
 
@@ -176,7 +181,11 @@ Deno.serve(async (req) => {
         console.log(`✅ Added image: ${result.image.id}`);
       } else {
         const errorText = await addResponse.text();
-        console.error("Failed to add image:", errorText);
+        console.error(`Failed to add image ${newImage.src}:`, addResponse.status, errorText);
+        
+        if (addResponse.status === 401) {
+          throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+        }
       }
     }
 
