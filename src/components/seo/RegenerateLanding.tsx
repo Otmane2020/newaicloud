@@ -257,6 +257,32 @@ export default function RegenerateLanding({
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
+      setProgress(15);
+
+      // ✅ ÉTAPE 1.5 : Optimiser le titre avec SERP
+      setProgressMessage("Optimisation du titre avec SERP...");
+      try {
+        const { data: serpData, error: serpError } = await supabase.functions.invoke("optimize-product-title-serp", {
+          body: {
+            productId: product.id,
+            currentTitle: product.title,
+            description: product.description,
+            vendor: resolvedVendor,
+            language: language,
+          },
+        });
+
+        if (serpError) {
+          console.warn("[Landing] SERP title optimization failed:", serpError);
+        } else if (serpData?.success && serpData?.optimizedTitle) {
+          console.log("[Landing] Title optimized:", serpData.optimizedTitle);
+          toast.success(`Titre optimisé: ${serpData.optimizedTitle}`);
+        }
+      } catch (err) {
+        console.warn("[Landing] SERP optimization error:", err);
+        // Continue even if SERP optimization fails
+      }
+
       setProgress(20);
 
       // ✅ ÉTAPE 2 : Analyser l'image avec vision IA

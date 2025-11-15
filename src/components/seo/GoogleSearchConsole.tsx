@@ -88,26 +88,28 @@ export function GoogleSearchConsole() {
       </div>
 
       {/* Domain Selector - Only show if connected and not on integration tab */}
-      {isConnected && activeSubTab !== 'integration' && (
+      {isConnected && activeSubTab !== 'integration' && availableDomains.length > 0 && (
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-4">
             <Globe className="h-5 w-5 text-muted-foreground" />
             <div className="flex-1">
               <Label htmlFor="domain-select" className="text-sm font-medium mb-2 block">
-                Sélectionner un domaine
+                Domaine actif: {selectedDomain || 'Aucun'}
               </Label>
-              <Select value={selectedDomain} onValueChange={setSelectedDomain}>
-                <SelectTrigger id="domain-select" className="w-full">
-                  <SelectValue placeholder={loadingDomains ? "Chargement..." : "Sélectionner un domaine"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDomains.map((domain) => (
-                    <SelectItem key={domain} value={domain}>
-                      {domain}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {availableDomains.length > 1 && (
+                <Select value={selectedDomain} onValueChange={setSelectedDomain} disabled={loadingDomains}>
+                  <SelectTrigger id="domain-select" className="w-full">
+                    <SelectValue placeholder={loadingDomains ? "Chargement..." : "Sélectionner un domaine"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDomains.map((domain) => (
+                      <SelectItem key={domain} value={domain}>
+                        {domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </Card>
