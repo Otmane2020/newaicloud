@@ -309,7 +309,7 @@ export function TagOptimization() {
 
   const handleOptimizedClick = () => {
     setFilter('tagged');
-    toast.info(`Affichage de ${productsOptimized} produits optimisés`);
+    toast.info(tf('seo.tags.messages.showingOptimized', { count: productsOptimized }));
   };
 
   const handleToSyncClick = () => {
@@ -422,7 +422,7 @@ export function TagOptimization() {
       }
 
       if (response.ok && result.success) {
-        toast.success('Tags optimisés avec succès');
+        toast.success(t.seo.tags.messages.tagsOptimizedSuccess);
         await fetchProducts();
         await refreshLimits();
       } else {
@@ -778,15 +778,15 @@ export function TagOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non optimisé</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.tags.status.notOptimized}</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsNotOptimized}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                À optimiser
+                {t.seo.tags.stats.toOptimize}
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Cliquer pour voir</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
         <Card 
@@ -795,15 +795,15 @@ export function TagOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">Optimisé</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.tags.status.optimized}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsOptimized}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Par l'IA
+                {t.seo.tags.stats.byAI}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquer pour voir</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
         <Card 
@@ -1137,19 +1137,19 @@ export function TagOptimization() {
                       if (isOptimized) {
                         return (
                           <Badge className="bg-green-500 text-white text-xs">
-                            Optimisé
+                            {t.seo.tags.status.optimized}
                           </Badge>
                         );
                       } else if (!hasTags) {
                         return (
                           <Badge className="bg-red-500 text-white text-xs">
-                            En attente...
+                            {t.seo.tags.status.pending}
                           </Badge>
                         );
                       } else {
                         return (
                           <Badge className="bg-orange-500 text-white text-xs">
-                            En attente...
+                            {t.seo.tags.status.pending}
                           </Badge>
                         );
                       }
@@ -1284,19 +1284,19 @@ export function TagOptimization() {
                       if (isOptimized) {
                         return (
                           <Badge className="bg-green-500 text-white text-xs">
-                            Optimisé
+                            {t.seo.tags.status.optimized}
                           </Badge>
                         );
                       } else if (!hasTags) {
                         return (
                           <Badge className="bg-red-500 text-white text-xs">
-                            En attente...
+                            {t.seo.tags.status.pending}
                           </Badge>
                         );
                       } else {
                         return (
                           <Badge className="bg-orange-500 text-white text-xs">
-                            En attente...
+                            {t.seo.tags.status.pending}
                           </Badge>
                         );
                       }

@@ -735,6 +735,7 @@ export const translations = {
     saved: "Enregistré",
     save: "Enregistrer",
     cancel: "Annuler",
+    applying: "Application...",
     delete: "Supprimer",
     edit: "Modifier",
     search: "Rechercher",
@@ -2228,12 +2229,33 @@ export const translations = {
       limitReached: "Limite atteinte. Seulement {{count}} produit{{s}} sera{{ront}} optimisé{{s}}.",
       noToSync: "Aucun produit à synchroniser",
       allSynced: "Tous les produits sont synchronisés",
+      status: {
+        optimized: "Optimisé",
+        pending: "En attente...",
+        notOptimized: "Non optimisé",
+      },
+      stats: {
+        toOptimize: "À optimiser",
+        byAI: "Par l'IA",
+      },
+      messages: {
+        showingOptimized: "Affichage de {{count}} produits optimisés",
+        tagsOptimizedSuccess: "Tags optimisés avec succès",
+      },
       filters: {
         all: "Tous les produits",
         toOptimize: "Non optimisé",
         optimized: "Optimisé",
         toSync: "À synchroniser",
         synced: "Synchronisé"
+      }
+    },
+    imagePreview: {
+      whiteBackground: {
+        title: "Prévisualisation - Fond Blanc HD",
+        description: "Comparez l'image originale avec la version optimisée en 2000x2000px",
+        original: "Original",
+        optimized: "Fond Blanc HD",
       }
     },
     banners: {
