@@ -1814,6 +1814,62 @@ export const translations = {
     }
   },
 
+  advancedAnalytics: {
+    title: "Advanced Analytics",
+    subtitle: "Detailed analysis of your SEO performance",
+    periods: {
+      sevenDays: "7 days",
+      thirtyDays: "30 days",
+      ninetyDays: "90 days"
+    },
+    buttons: {
+      pdf: "PDF",
+      excel: "Excel"
+    },
+    kpis: {
+      products: "products",
+      optimizations: "optimizations",
+      articles: "articles",
+      seoScore: "SEO Score"
+    },
+    comparison: {
+      vsPreviousPeriod: "vs previous period"
+    },
+    tabs: {
+      trends: "Trends",
+      heatmap: "SEO Heatmap",
+      predictions: "AI Predictions"
+    },
+    charts: {
+      metricsEvolution: "Metrics Evolution",
+      performanceTracking: "Tracking your performance over {{period}}",
+      dailyActivity: "Daily Activity",
+      heatmapByCategory: "SEO Heatmap by Category",
+      performanceAndTrends: "Performance and trends of each section",
+      aiPredictions: "Predictions",
+      forecastDescription: "Estimates based on your current trends",
+      nextWeek: "Next Week",
+      nextMonth: "Next Month",
+      expected: "expected",
+      estimatedOptimizations: "Estimated optimizations",
+      expectedSeoScore: "Expected SEO score",
+      thirtyDayProjection: "30-day projection"
+    },
+    categories: {
+      products: "Products",
+      collections: "Collections",
+      blog: "Blog",
+      images: "Images",
+      technical: "Technical",
+      content: "Content"
+    },
+    loading: "Loading analytics...",
+    loadError: "Unable to load analytics",
+    exportInProgress: "Export in progress",
+    generatingPdf: "Generating PDF report...",
+    generatingExcel: "Generating Excel file..."
+  },
+
   seo: {
     title: "SEO Optimization",
     description: "Optimize your store for search engines with AI tools",

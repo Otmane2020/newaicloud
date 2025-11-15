@@ -275,11 +275,12 @@ export default function Dashboard() {
         : 0;
 
       // 5. IMAGES SCORE (from SeoAltImageList.tsx)
-      const productIds = products?.map((p: any) => p.id) || [];
+      // Use a more efficient query that doesn't depend on the number of products
       const { data: allImages } = await supabase
         .from('product_images')
-        .select('id, alt_text, product_id')
-        .in('product_id', productIds);
+        .select('id, alt_text, shopify_products!inner(seller_id, store_id)')
+        .eq('shopify_products.seller_id', user?.id)
+        .eq('shopify_products.store_id', selectedStore?.id || '');
 
       const imagesScore = allImages && allImages.length > 0
         ? Math.round((allImages.filter((img: any) => img.alt_text && img.alt_text.trim() !== '').length / allImages.length) * 100)
@@ -291,7 +292,6 @@ export default function Dashboard() {
         .from('homepage_seo')
         .select('last_audit')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();

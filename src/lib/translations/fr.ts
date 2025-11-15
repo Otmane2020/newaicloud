@@ -1815,6 +1815,62 @@ export const translations = {
     }
   },
 
+  advancedAnalytics: {
+    title: "Analytics Avancés",
+    subtitle: "Analyse détaillée de vos performances SEO",
+    periods: {
+      sevenDays: "7 jours",
+      thirtyDays: "30 jours",
+      ninetyDays: "90 jours"
+    },
+    buttons: {
+      pdf: "PDF",
+      excel: "Excel"
+    },
+    kpis: {
+      products: "products",
+      optimizations: "optimizations",
+      articles: "articles",
+      seoScore: "Score SEO"
+    },
+    comparison: {
+      vsPreviousPeriod: "vs période précédente"
+    },
+    tabs: {
+      trends: "Tendances",
+      heatmap: "Heatmap SEO",
+      predictions: "Prédictions IA"
+    },
+    charts: {
+      metricsEvolution: "Evolution des Métriques",
+      performanceTracking: "Suivi de vos performances sur {{period}}",
+      dailyActivity: "Activité Quotidienne",
+      heatmapByCategory: "Heatmap SEO par Catégorie",
+      performanceAndTrends: "Performance et tendances de chaque section",
+      aiPredictions: "Prédictions",
+      forecastDescription: "Estimations basées sur vos tendances actuelles",
+      nextWeek: "Semaine Prochaine",
+      nextMonth: "Mois Prochain",
+      expected: "estimées",
+      estimatedOptimizations: "Optimisations estimées",
+      expectedSeoScore: "Score SEO prévu",
+      thirtyDayProjection: "Projection à 30 jours"
+    },
+    categories: {
+      products: "Produits",
+      collections: "Collections",
+      blog: "Blog",
+      images: "Images",
+      technical: "Technique",
+      content: "Contenu"
+    },
+    loading: "Chargement des analytics...",
+    loadError: "Impossible de charger les analytics",
+    exportInProgress: "Export en cours",
+    generatingPdf: "Génération du rapport PDF...",
+    generatingExcel: "Génération du fichier Excel..."
+  },
+
   seo: {
     title: "Optimisation SEO",
     description: "Optimisez votre boutique pour les moteurs de recherche avec des outils IA",

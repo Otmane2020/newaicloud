@@ -65,7 +65,7 @@ export function AdvancedAnalytics() {
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,7 +201,7 @@ export function AdvancedAnalytics() {
       console.error('Error loading analytics:', error);
       toast({
         title: t.common.error,
-        description: "Impossible de charger les analytics",
+        description: t.advancedAnalytics.loadError,
         variant: "destructive"
       });
     } finally {
@@ -367,32 +367,32 @@ export function AdvancedAnalytics() {
 
     return [
       { 
-        category: 'Produits', 
+        category: t.advancedAnalytics.categories.products, 
         score: optimizationRate, 
         trend: optimizationRate > 70 ? 'up' as const : optimizationRate < 50 ? 'down' as const : 'stable' as const 
       },
       { 
-        category: 'Collections', 
+        category: t.advancedAnalytics.categories.collections, 
         score: Math.round(avgSeoScore * 0.85), 
         trend: avgSeoScore > 70 ? 'up' as const : 'stable' as const 
       },
       { 
-        category: 'Blog', 
+        category: t.advancedAnalytics.categories.blog, 
         score: blogScore, 
         trend: blogScore > 80 ? 'up' as const : 'stable' as const 
       },
       { 
-        category: 'Images', 
+        category: t.advancedAnalytics.categories.images, 
         score: Math.round(avgSeoScore * 0.8), 
         trend: avgSeoScore > 70 ? 'up' as const : 'down' as const 
       },
       { 
-        category: 'Technique', 
+        category: t.advancedAnalytics.categories.technical, 
         score: avgSeoScore, 
         trend: avgSeoScore > 75 ? 'up' as const : 'stable' as const 
       },
       { 
-        category: 'Contenu', 
+        category: t.advancedAnalytics.categories.content, 
         score: Math.round(avgSeoScore * 0.9), 
         trend: avgSeoScore > 65 ? 'up' as const : 'stable' as const 
       }
@@ -401,16 +401,16 @@ export function AdvancedAnalytics() {
 
   const handleExportPDF = async () => {
     toast({
-      title: "Export en cours",
-      description: "Génération du rapport PDF...",
+      title: t.advancedAnalytics.exportInProgress,
+      description: t.advancedAnalytics.generatingPdf,
     });
     // TODO: Implement PDF export
   };
 
   const handleExportExcel = async () => {
     toast({
-      title: "Export en cours",
-      description: "Génération du fichier Excel...",
+      title: t.advancedAnalytics.exportInProgress,
+      description: t.advancedAnalytics.generatingExcel,
     });
     // TODO: Implement Excel export
   };
@@ -424,7 +424,7 @@ export function AdvancedAnalytics() {
   };
 
   if (loading || !data) {
-    return <Card><CardContent className="p-8 text-center">Chargement des analytics...</CardContent></Card>;
+    return <Card><CardContent className="p-8 text-center">{t.advancedAnalytics.loading}</CardContent></Card>;
   }
 
   const { trends, comparison, predictions, heatmap } = data;
@@ -434,24 +434,24 @@ export function AdvancedAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Analytics Avancés</h2>
-          <p className="text-muted-foreground">Analyse détaillée de vos performances SEO</p>
+          <h2 className="text-2xl font-bold">{t.advancedAnalytics.title}</h2>
+          <p className="text-muted-foreground">{t.advancedAnalytics.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
             <TabsList>
-              <TabsTrigger value="7d">7 jours</TabsTrigger>
-              <TabsTrigger value="30d">30 jours</TabsTrigger>
-              <TabsTrigger value="90d">90 jours</TabsTrigger>
+              <TabsTrigger value="7d">{t.advancedAnalytics.periods.sevenDays}</TabsTrigger>
+              <TabsTrigger value="30d">{t.advancedAnalytics.periods.thirtyDays}</TabsTrigger>
+              <TabsTrigger value="90d">{t.advancedAnalytics.periods.ninetyDays}</TabsTrigger>
             </TabsList>
           </Tabs>
           <Button variant="outline" size="sm" onClick={handleExportPDF}>
             <Download className="w-4 h-4 mr-2" />
-            PDF
+            {t.advancedAnalytics.buttons.pdf}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel}>
             <Download className="w-4 h-4 mr-2" />
-            Excel
+            {t.advancedAnalytics.buttons.excel}
           </Button>
         </div>
       </div>
@@ -467,7 +467,7 @@ export function AdvancedAnalytics() {
             <Card key={key}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium capitalize flex items-center justify-between">
-                  <span>{key === 'seoScore' ? 'Score SEO' : key}</span>
+                  <span>{key === 'seoScore' ? t.advancedAnalytics.kpis.seoScore : t.advancedAnalytics.kpis[key as keyof typeof t.advancedAnalytics.kpis] || key}</span>
                   <Icon className="w-4 h-4 text-muted-foreground" />
                 </CardTitle>
               </CardHeader>
@@ -475,7 +475,7 @@ export function AdvancedAnalytics() {
                 <div className="text-2xl font-bold">{value}</div>
                 <div className={`flex items-center text-xs ${change.isPositive ? 'text-green-600' : 'text-red-600'}`}>
                   {change.isPositive ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                  {change.value}% vs période précédente
+                  {change.value}% {t.advancedAnalytics.comparison.vsPreviousPeriod}
                 </div>
               </CardContent>
             </Card>
@@ -486,16 +486,16 @@ export function AdvancedAnalytics() {
       {/* Main Charts */}
       <Tabs defaultValue="trends" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="trends">Tendances</TabsTrigger>
-          <TabsTrigger value="heatmap">Heatmap SEO</TabsTrigger>
-          <TabsTrigger value="predictions">Prédictions IA</TabsTrigger>
+          <TabsTrigger value="trends">{t.advancedAnalytics.tabs.trends}</TabsTrigger>
+          <TabsTrigger value="heatmap">{t.advancedAnalytics.tabs.heatmap}</TabsTrigger>
+          <TabsTrigger value="predictions">{t.advancedAnalytics.tabs.predictions}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Evolution des Métriques</CardTitle>
-              <CardDescription>Suivi de vos performances sur {period}</CardDescription>
+              <CardTitle>{t.advancedAnalytics.charts.metricsEvolution}</CardTitle>
+              <CardDescription>{tf('advancedAnalytics.charts.performanceTracking', { period })}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
@@ -505,8 +505,8 @@ export function AdvancedAnalytics() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Area type="monotone" dataKey="seoScore" stackId="1" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.6} name="Score SEO" />
-                  <Area type="monotone" dataKey="optimizations" stackId="2" stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.6} name="Optimisations" />
+                  <Area type="monotone" dataKey="seoScore" stackId="1" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.6} name={t.advancedAnalytics.kpis.seoScore} />
+                  <Area type="monotone" dataKey="optimizations" stackId="2" stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.6} name={t.advancedAnalytics.kpis.optimizations} />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -514,7 +514,7 @@ export function AdvancedAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Activité Quotidienne</CardTitle>
+              <CardTitle>{t.advancedAnalytics.charts.dailyActivity}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -524,8 +524,8 @@ export function AdvancedAnalytics() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="optimizations" fill={COLORS[0]} name="Optimisations" />
-                  <Bar dataKey="articles" fill={COLORS[1]} name="Articles" />
+                  <Bar dataKey="optimizations" fill={COLORS[0]} name={t.advancedAnalytics.kpis.optimizations} />
+                  <Bar dataKey="articles" fill={COLORS[1]} name={t.advancedAnalytics.kpis.articles} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -535,8 +535,8 @@ export function AdvancedAnalytics() {
         <TabsContent value="heatmap">
           <Card>
             <CardHeader>
-              <CardTitle>Heatmap SEO par Catégorie</CardTitle>
-              <CardDescription>Performance et tendances de chaque section</CardDescription>
+              <CardTitle>{t.advancedAnalytics.charts.heatmapByCategory}</CardTitle>
+              <CardDescription>{t.advancedAnalytics.charts.performanceAndTrends}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
@@ -570,21 +570,21 @@ export function AdvancedAnalytics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-primary" />
-                  Prédictions - Semaine Prochaine
+                  {t.advancedAnalytics.charts.aiPredictions} - {t.advancedAnalytics.charts.nextWeek}
                 </CardTitle>
-                <CardDescription>Estimations basées sur vos tendances actuelles</CardDescription>
+                <CardDescription>{t.advancedAnalytics.charts.forecastDescription}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <p className="font-medium">Optimisations estimées</p>
+                    <p className="font-medium">{t.advancedAnalytics.charts.estimatedOptimizations}</p>
                     <p className="text-2xl font-bold text-primary">{predictions.nextWeek.optimizations}</p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-green-500" />
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <p className="font-medium">Score SEO prévu</p>
+                    <p className="font-medium">{t.advancedAnalytics.charts.expectedSeoScore}</p>
                     <p className="text-2xl font-bold text-primary">{predictions.nextWeek.seoScore}</p>
                   </div>
                   <Target className="w-8 h-8 text-blue-500" />
@@ -596,21 +596,21 @@ export function AdvancedAnalytics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
-                  Prédictions - Mois Prochain
+                  {t.advancedAnalytics.charts.aiPredictions} - {t.advancedAnalytics.charts.nextMonth}
                 </CardTitle>
-                <CardDescription>Projection à 30 jours</CardDescription>
+                <CardDescription>{t.advancedAnalytics.charts.thirtyDayProjection}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <p className="font-medium">Optimisations estimées</p>
+                    <p className="font-medium">{t.advancedAnalytics.charts.estimatedOptimizations}</p>
                     <p className="text-2xl font-bold text-primary">{predictions.nextMonth.optimizations}</p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-green-500" />
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <p className="font-medium">Score SEO prévu</p>
+                    <p className="font-medium">{t.advancedAnalytics.charts.expectedSeoScore}</p>
                     <p className="text-2xl font-bold text-primary">{predictions.nextMonth.seoScore}</p>
                   </div>
                   <Target className="w-8 h-8 text-blue-500" />
