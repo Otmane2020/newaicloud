@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Square, Palette } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Square, Palette, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -63,12 +63,98 @@ export default function Products() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [generatingBgForProduct, setGeneratingBgForProduct] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 20;
 
   // Scroll to top when page changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
+
+  // Handler pour générer un fond blanc pour un produit
+  const handleGenerateWhiteBackground = async (product: Product) => {
+    if (!product.image_url) {
+      toast.error("Aucune image disponible pour ce produit");
+      return;
+    }
+
+    setGeneratingBgForProduct(product.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: { 
+          imageUrl: product.image_url,
+          productTitle: product.title,
+          imageType: 'main'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.imageUrl) {
+        // Mettre à jour l'image du produit
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: data.imageUrl })
+          .eq('id', product.id);
+
+        if (updateError) throw updateError;
+
+        toast.success("Fond blanc généré avec succès!");
+        loadProducts(); // Recharger les produits
+      } else {
+        throw new Error(data.error || 'Échec de la génération');
+      }
+    } catch (error: any) {
+      console.error('Error generating white background:', error);
+      toast.error("Erreur lors de la génération du fond blanc", {
+        description: error.message
+      });
+    } finally {
+      setGeneratingBgForProduct(null);
+      await refreshLimits();
+    }
+  };
+
+  // Handler pour générer un fond AI pour un produit
+  const handleGenerateAIBackground = async (product: Product) => {
+    if (!product.image_url) {
+      toast.error("Aucune image disponible pour ce produit");
+      return;
+    }
+
+    setGeneratingBgForProduct(product.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
+        body: { 
+          productId: product.id,
+          productTitle: product.title,
+          productDescription: product.description || '',
+          productType: product.product_type || '',
+          vendor: product.vendor || '',
+          style: 'professional'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.variants && data.variants.length > 0) {
+        toast.success(`${data.variants.length} fond(s) AI généré(s) avec succès!`);
+        navigate(`/product-title-description?productId=${product.id}`);
+      } else {
+        throw new Error('Aucune variante générée');
+      }
+    } catch (error: any) {
+      console.error('Error generating AI background:', error);
+      toast.error("Erreur lors de la génération du fond AI", {
+        description: error.message
+      });
+    } finally {
+      setGeneratingBgForProduct(null);
+      await refreshLimits();
+    }
+  };
 
   const loadProducts = async () => {
     if (!selectedStore?.id) {
@@ -696,10 +782,15 @@ export default function Products() {
                                 className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/product-title-description`);
+                                  handleGenerateWhiteBackground(product);
                                 }}
+                                disabled={generatingBgForProduct === product.id}
                               >
-                                <Square className="h-3.5 w-3.5" />
+                                {generatingBgForProduct === product.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Square className="h-3.5 w-3.5" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -715,10 +806,15 @@ export default function Products() {
                                 className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/product-title-description`);
+                                  handleGenerateAIBackground(product);
                                 }}
+                                disabled={generatingBgForProduct === product.id}
                               >
-                                <Palette className="h-3.5 w-3.5 text-purple-600" />
+                                {generatingBgForProduct === product.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Palette className="h-3.5 w-3.5 text-purple-600" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
