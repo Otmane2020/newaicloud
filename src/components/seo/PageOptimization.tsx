@@ -618,9 +618,21 @@ export function PageOptimization() {
       )
     : 0;
 
-  // Apply 30/70 weighting
+  // Calculate global score as the average of ALL pages (not weighted 30/70)
   const globalPageSeoScore = pages.length > 0
-    ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
+    ? Math.round(
+        pages.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title || p.title,
+            p.seo_description || p.body_html?.substring(0, 160) || '',
+            false,
+            !!p.handle,
+            undefined,
+            p.optimization_count || 0
+          );
+          return sum + score.score;
+        }, 0) / pages.length
+      )
     : 0;
 
   return (
