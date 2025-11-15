@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`🔄 Syncing images for product: ${productId}`);
+    console.log(`👤 User ID: ${user.id}`);
 
     // Get product with images and store info
     const { data: product, error: productError } = await supabaseClient
@@ -47,8 +48,32 @@ Deno.serve(async (req) => {
       .eq("id", productId)
       .single();
 
+    console.log(`📦 Product query result:`, {
+      found: !!product,
+      error: productError?.message,
+      errorDetails: productError,
+      productId: product?.id,
+      productTitle: product?.title,
+      sellerId: product?.seller_id,
+      storeId: product?.store_id
+    });
+
     if (productError || !product) {
-      console.error(`❌ Product ${productId} not found in database`);
+      console.error(`❌ Product ${productId} not found in database`, productError);
+      
+      // Try to check if product exists at all
+      const { data: anyProduct, error: checkError } = await supabaseClient
+        .from("shopify_products")
+        .select("id, title, seller_id, store_id")
+        .eq("id", productId)
+        .maybeSingle();
+      
+      if (anyProduct) {
+        console.log(`⚠️ Product exists but query failed:`, anyProduct);
+      } else {
+        console.log(`⚠️ Product truly does not exist. Check error:`, checkError);
+      }
+      
       throw new Error(`Product not found or has been deleted`);
     }
 
