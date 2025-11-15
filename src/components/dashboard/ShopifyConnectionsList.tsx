@@ -64,6 +64,7 @@ export default function ShopifyConnectionsList() {
   const [limitReached, setLimitReached] = useState(false);
   const [maxProducts, setMaxProducts] = useState(0);
   const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
+  const [storeProductCounts, setStoreProductCounts] = useState<Record<string, number>>({});
   
   const [usageLimits, setUsageLimits] = useState<any>(null);
   const [pendingImportStore, setPendingImportStore] = useState<ShopifyConnection | null>(null);
@@ -304,6 +305,21 @@ export default function ShopifyConnectionsList() {
 
       if (error) throw error;
       setConnections(data || []);
+      
+      // Load product counts for each store
+      if (data && data.length > 0) {
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          data.map(async (store) => {
+            const { count } = await supabase
+              .from('shopify_products')
+              .select('*', { count: 'exact', head: true })
+              .eq('store_id', store.id);
+            counts[store.id] = count || 0;
+          })
+        );
+        setStoreProductCounts(counts);
+      }
     } catch (error) {
       console.error('Error loading connections:', error);
       toast.error(t.common.error);
@@ -1082,16 +1098,9 @@ export default function ShopifyConnectionsList() {
                           </>
                         )}
                       </Badge>
-                      {usageLimits && (
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                          {usageLimits.usage?.products_count || 0}/
-                          {usageLimits.limits?.max_products && usageLimits.limits.max_products >= 999999 ? (
-                            <Infinity className="w-3 h-3" />
-                          ) : (
-                            usageLimits.limits?.max_products || 0
-                          )} produits
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        {storeProductCounts[store.id] || 0} produits importés
+                      </Badge>
                     </div>
                     
                     <p className="text-sm text-muted-foreground mb-2 truncate">
