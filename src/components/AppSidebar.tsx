@@ -91,13 +91,6 @@ export function AppSidebar() {
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
   ];
 
-  const googleConsoleSubItems = [
-    { title: t.googleConsole.integration, url: "/seo?tab=google-console&subtab=integration", icon: Globe, key: "gsc-integration" },
-    { title: t.googleConsole.insights, url: "/seo?tab=google-console&subtab=insights", icon: Activity, key: "gsc-insights" },
-    { title: t.googleConsole.products, url: "/seo?tab=google-console&subtab=products", icon: ShoppingBag, key: "gsc-products" },
-    { title: t.googleConsole.sitemaps, url: "/seo?tab=google-console&subtab=sitemaps", icon: Map, key: "gsc-sitemaps" },
-    { title: t.googleConsole.articles, url: "/seo?tab=google-console&subtab=articles", icon: Edit3, key: "gsc-articles" },
-  ];
 
   const auditSubItems = [
     { title: t.seo.audit.subtabs.overview, url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3, translationKey: "overview" },
@@ -220,9 +213,9 @@ export function AppSidebar() {
     currentPath.startsWith("/chat") ||
     currentPath === "/product-source" ||
     chatSubItems.some((item) => isActive(item.url));
-  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url)) || googleConsoleSubItems.some((item) => isActive(item.url));
+  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url)) || isActive('/seo?tab=google-console');
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
-  const isGoogleConsoleActive = googleConsoleSubItems.some((item) => isActive(item.url));
+  const isGoogleConsoleActive = isActive('/seo?tab=google-console');
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isGoogleAdsActive = currentPath === "/google-ads" || googleAdsSubItems.some((item) => isActive(item.url));
@@ -342,32 +335,15 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Google Search Console Menu with Submenu */}
-              <Collapsible defaultOpen={isGoogleConsoleActive} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isGoogleConsoleActive}>
-                      <TrendingUp className="h-4 w-4" />
-                      <span>Console Google Search</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {googleConsoleSubItems.map((gscItem) => (
-                        <SidebarMenuSubItem key={gscItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(gscItem.url)}>
-                            <NavLink to={gscItem.url}>
-                              <gscItem.icon className="h-4 w-4" />
-                              <span>{gscItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              {/* Google Search Console Menu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/seo?tab=google-console')}>
+                  <NavLink to="/seo?tab=google-console">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Console Google Search</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
               {/* Blog Menu with Submenu */}
               <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
