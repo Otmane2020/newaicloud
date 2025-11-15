@@ -337,10 +337,25 @@ export default function Dashboard() {
         ? Math.round(
             products.reduce((sum: number, p: any) => {
               const score = calculateTagsScore(p.tags);
+              // Debug first few products
+              if (products.indexOf(p) < 3) {
+                console.log('🏷️ [DASHBOARD TAG DEBUG]', {
+                  productId: p.id,
+                  title: p.title,
+                  tags: p.tags,
+                  calculatedScore: score
+                });
+              }
               return sum + score;
             }, 0) / products.length
           ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
         : 0;
+      
+      console.log('🎯 [DASHBOARD TAGS]', {
+        totalProducts: products?.length,
+        tagsScore,
+        productsWithTags: products?.filter((p: any) => p.tags && p.tags.trim().length > 0).length
+      });
 
       // Build articles query with optional store filter
       let articlesCountQuery = supabase

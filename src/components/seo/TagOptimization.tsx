@@ -273,10 +273,25 @@ export function TagOptimization() {
     ? Math.round(
         products.reduce((sum, p) => {
           const score = calculateTagsScore(p.tags);
+          // Debug first few products
+          if (products.indexOf(p) < 3) {
+            console.log('🏷️ [TAG DEBUG]', {
+              productId: p.id,
+              title: p.title,
+              tags: p.tags,
+              calculatedScore: score
+            });
+          }
           return sum + score;
         }, 0) / products.length
       ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
     : 0;
+  
+  console.log('🎯 [TAG SEO SCORE]', {
+    totalProducts: products.length,
+    finalScore: tagSeoScore,
+    productsWithTags: products.filter(p => p.tags && p.tags.trim().length > 0).length
+  });
 
   const filters = [
     { id: 'all' as FilterType, label: t.seo.tags.filters.all, count: products.length },
