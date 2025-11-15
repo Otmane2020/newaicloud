@@ -56,6 +56,7 @@ serve(async (req) => {
 
     let visionAnalysis = "";
     let productDimensions = "";
+    let technicalDimensions: any = null;
     
     // Analyse vision IA complète avec extraction des dimensions
     if (imageUrl) {
@@ -70,10 +71,24 @@ serve(async (req) => {
       if (cachedAnalysis) {
         console.log("✅ Cache - Analyse vision récupérée");
         visionAnalysis = cachedAnalysis.analysis_result;
-        // Extraire dimensions si présentes dans le cache
-        const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
-        if (dimMatch) {
-          productDimensions = dimMatch[1];
+        
+        // Extraire dimensions du schéma technique (priorité absolue)
+        try {
+          const techDimMatch = visionAnalysis.match(/technicalDimensions[:\s]*({[^}]+})/i);
+          if (techDimMatch) {
+            technicalDimensions = JSON.parse(techDimMatch[1]);
+            console.log("📏 Dimensions schéma technique extraites:", technicalDimensions);
+          }
+        } catch (e) {
+          console.log("⚠️ Erreur parsing technicalDimensions, fallback sur extraction texte");
+        }
+        
+        // Fallback: extraire dimensions textuelles
+        if (!technicalDimensions) {
+          const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
+          if (dimMatch) {
+            productDimensions = dimMatch[1];
+          }
         }
       } else {
         console.log("🤖 Analyse vision IA en cours...");
@@ -93,11 +108,17 @@ serve(async (req) => {
                   content: [
                     {
                       type: "text",
-                      text: `Analyse ce produit en 4 points:
+                      text: `Analyse ce produit:
+
 1. Couleurs + matériaux (1 phrase)
 2. Style + design (1 phrase)
-3. Dimensions visibles (format: LxlxH en cm, sinon "dimensions non visibles")
+3. DIMENSIONS:
+   - Si l'image est un schéma technique avec cotes/mesures annotées, extrait TOUTES les dimensions visibles au format JSON structuré:
+     technicalDimensions: {"hauteur_totale": "XXcm", "hauteur_assise": "XXcm", "largeur": "XXcm", "profondeur": "XXcm", "diametre": "XXcm"}
+   - Sinon, indique les dimensions visibles au format texte: "LxlxH en cm" ou "dimensions non visibles"
 4. 3 caractéristiques uniques
+
+⚠️ CRITIQUE: Si schéma technique visible, TOUJOURS extraire les dimensions au format JSON structuré.
 
 Sois concis et précis.`
                     },
@@ -127,11 +148,24 @@ Sois concis et précis.`
             visionAnalysis = visionData.choices?.[0]?.message?.content || "";
             console.log("✅ Analyse vision complétée:", visionAnalysis.substring(0, 100) + "...");
             
-            // Extraire dimensions de l'analyse
-            const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
-            if (dimMatch) {
-              productDimensions = dimMatch[1];
-              console.log("📏 Dimensions extraites:", productDimensions);
+            // Extraire dimensions du schéma technique (priorité absolue)
+            try {
+              const techDimMatch = visionAnalysis.match(/technicalDimensions[:\s]*({[^}]+})/i);
+              if (techDimMatch) {
+                technicalDimensions = JSON.parse(techDimMatch[1]);
+                console.log("📏 Dimensions schéma technique extraites:", technicalDimensions);
+              }
+            } catch (e) {
+              console.log("⚠️ Erreur parsing technicalDimensions, fallback sur extraction texte");
+            }
+            
+            // Fallback: extraire dimensions textuelles
+            if (!technicalDimensions) {
+              const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
+              if (dimMatch) {
+                productDimensions = dimMatch[1];
+                console.log("📏 Dimensions textuelles extraites:", productDimensions);
+              }
             }
             
             // Cache l'analyse
@@ -205,8 +239,12 @@ Sois concis et précis.`
    
 2. INTÉGRER NATURELLEMENT les résultats Vision AI dans la description
 
-3. UTILISER les dimensions extraites du titre dans les spécifications
-
+3. DIMENSIONS - HIÉRARCHIE DE PRIORITÉ:
+   - PRIORITÉ 1: Dimensions du schéma technique (si fournies) = VÉRITÉ ABSOLUE
+   - PRIORITÉ 2: Dimensions extraites du titre
+   - PRIORITÉ 3: Dimensions de l'analyse vision IA
+   - ⚠️ Ne JAMAIS remplacer les dimensions du schéma technique par des données SERP
+   
 4. AJOUTER les informations personnalisées fournies par l'utilisateur
 
 5. NE PAS inventer ou modifier les données factuelles (dimensions, marque, modèle)
@@ -223,7 +261,17 @@ Sois concis et précis.`
       userPrompt += `\n\n🏷️ VENDOR/MARQUE: ${extractedVendor} (À CONSERVER dans le titre et description)`;
     }
     
-    if (extractedDimensions) {
+    // PRIORITÉ ABSOLUE: Dimensions du schéma technique
+    if (technicalDimensions) {
+      console.log("⚠️ UTILISATION DIMENSIONS SCHÉMA TECHNIQUE (priorité absolue)");
+      userPrompt += `\n\n📐 DIMENSIONS SCHÉMA TECHNIQUE (PRIORITÉ ABSOLUE - UTILISER CES VALEURS):`;
+      if (technicalDimensions.hauteur_totale) userPrompt += `\n- Hauteur totale: ${technicalDimensions.hauteur_totale}`;
+      if (technicalDimensions.hauteur_assise) userPrompt += `\n- Hauteur d'assise: ${technicalDimensions.hauteur_assise}`;
+      if (technicalDimensions.largeur) userPrompt += `\n- Largeur: ${technicalDimensions.largeur}`;
+      if (technicalDimensions.profondeur) userPrompt += `\n- Profondeur: ${technicalDimensions.profondeur}`;
+      if (technicalDimensions.diametre) userPrompt += `\n- Diamètre: ${technicalDimensions.diametre}`;
+      userPrompt += `\n⚠️ CES DIMENSIONS SONT EXACTES (schéma technique) - Ne pas utiliser d'autres dimensions même si présentes dans SERP`;
+    } else if (extractedDimensions) {
       userPrompt += `\n\n📏 DIMENSIONS (du titre): ${extractedDimensions} (UTILISER ces dimensions exactes dans les specs)`;
     }
     
@@ -231,7 +279,7 @@ Sois concis et précis.`
       userPrompt += `\n\n🔍 ANALYSE VISION IA (INTÉGRER naturellement):\n${visionAnalysis}`;
     }
     
-    if (productDimensions && productDimensions !== extractedDimensions) {
+    if (productDimensions && productDimensions !== extractedDimensions && !technicalDimensions) {
       userPrompt += `\n\n📏 DIMENSIONS (vision AI): ${productDimensions}`;
     }
 

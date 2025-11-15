@@ -132,13 +132,15 @@ Instructions :
 - style : style de design global
 - room : pièce/contexte si identifiable
 - mood : ambiance/feeling général
-- technicalDetails : détails visibles précis. INCLUS ABSOLUMENT :
-  * TOUTES les dimensions et mesures annotées dans l'image (ex: "Hauteur: 100cm", "Largeur: 47.5cm", "Profondeur: 43cm", "Assise à 71cm")
-  * Si c'est un schéma technique avec des cotes, extrait TOUTES les mesures visibles avec leurs unités
-  * Autres détails: pieds en bois massif, nervures du travertin, veinage du marbre, coussins amovibles, finition mate/brillante, texture rugueuse/lisse, etc.
+- technicalDimensions : UNIQUEMENT SI l'image est un schéma technique avec des cotes/mesures annotées :
+  * EXTRAIT les dimensions EXACTES avec format structuré : {"hauteur_totale": "98cm", "hauteur_assise": "72cm", "largeur": "47cm", "profondeur": "47cm", "diametre": "36cm"}
+  * PRIORITÉ ABSOLUE aux dimensions du schéma technique (ligne de cote avec flèches)
+  * Si pas de schéma technique, renvoie null
+- technicalDetails : détails visibles précis (autres que dimensions) :
+  * Pieds en bois massif, nervures du travertin, veinage du marbre, coussins amovibles, finition mate/brillante, texture rugueuse/lisse, etc.
 - confidence : score de confiance entre 0 et 1
 
-⚠️ CRITIQUE : Si l'image contient un schéma technique avec des dimensions annotées, tu DOIS extraire TOUTES les mesures visibles et les inclure dans technicalDetails.
+⚠️ CRITIQUE : Si l'image contient un schéma technique avec des dimensions annotées, tu DOIS extraire TOUTES les mesures visibles et les mettre dans technicalDimensions sous format JSON structuré.
 
 Sois TRÈS précis et descriptif sur les matériaux, textures ET dimensions. N'invente pas, base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image.`;
 
