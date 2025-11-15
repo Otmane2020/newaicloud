@@ -1777,7 +1777,7 @@ export const translations = {
     subtitle: "Analyse complète de votre visibilité en ligne",
     currentScore: "SCORE ACTUEL",
     categories: "Catégories SEO",
-    excellentCount: "{{count}}/6 Excellent",
+    excellentCount: "{{count}}/7 Excellent",
     priorityRecommendation: "Recommandation prioritaire",
     potentialImpact: "Impact potentiel :",
     points: "points",
@@ -1793,7 +1793,7 @@ export const translations = {
       pages: "Pages",
       articles: "Articles",
       images: "Images",
-      technical: "Technique"
+      tags: "Tags"
     },
     categoryDescriptions: {
       homepage: "Titre et description de votre page d'accueil",
@@ -1802,7 +1802,7 @@ export const translations = {
       pages: "Pages personnalisées",
       articles: "Articles de blog",
       images: "Textes alternatifs",
-      technical: "Configuration Shopify"
+      tags: "Optimisation des tags produits"
     },
     recommendations: {
       homepage: "Optimisez le titre et la description de votre page d'accueil pour attirer plus de visiteurs qualifiés. Un bon SEO homepage peut augmenter votre trafic de 20-30%.",
@@ -1811,7 +1811,7 @@ export const translations = {
       pages: "Optimisez vos pages personnalisées pour une meilleure visibilité. Des pages bien optimisées renforcent votre socle SEO.",
       articles: "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
       images: "Ajoutez des textes alternatifs descriptifs à toutes vos images. Les images peuvent représenter jusqu'à 20% du trafic organique.",
-      technical: "Vérifiez votre configuration technique et métadonnées. Une bonne base technique est essentielle pour le SEO."
+      tags: "Optimisez vos tags produits pour améliorer la catégorisation. Des tags bien structurés améliorent la découvrabilité et le SEO."
     }
   },
 

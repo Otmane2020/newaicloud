@@ -52,7 +52,7 @@ interface Stats {
     pages: number;
     articles: number;
     images: number;
-    technical: number;
+    tags: number;
   };
   connectedStores: number;
   productsWithImages: number;
@@ -89,7 +89,7 @@ export default function Dashboard() {
       pages: 0,
       articles: 0,
       images: 0,
-      technical: 0
+      tags: 0
     },
     connectedStores: 0,
     productsWithImages: 0,
@@ -164,7 +164,7 @@ export default function Dashboard() {
       if (productsError) throw productsError;
 
       const totalProducts = products?.length || 0;
-      const optimizedProducts = products?.filter((p: any) => p.seo_title && p.seo_description).length || 0;
+      const optimizedProducts = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0).length || 0;
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       
       // Calculate average SEO score of optimized products
@@ -274,36 +274,34 @@ export default function Dashboard() {
           )
         : 0;
 
-      // 5. IMAGES SCORE (simplified to avoid TS recursion)
-      const imagesScore = 80; // Default score - will be calculated by alt tab
+      // 5. IMAGES SCORE (from SeoAltImageList.tsx)
+      const productIds = products?.map((p: any) => p.id) || [];
+      const { data: allImages } = await supabase
+        .from('product_images')
+        .select('id, alt_text, product_id')
+        .in('product_id', productIds);
 
-      // Get latest SEO audit for homepage score only
-      const { data: latestAudit } = await supabase
-        .from('seo_audit_reports')
-        .select('homepage_score')
+      const imagesScore = allImages && allImages.length > 0
+        ? Math.round((allImages.filter((img: any) => img.alt_text && img.alt_text.trim() !== '').length / allImages.length) * 100)
+        : 0;
+
+      // 6. HOMEPAGE SCORE (from HomePageSeoAudit.tsx)
+      // @ts-ignore - Json type causes deep recursion, safe to ignore here
+      const { data: homepageData }: any = await supabase
+        .from('homepage_seo')
+        .select('last_audit')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
+        .eq('store_id', selectedStore?.id || '')
+        .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      const homepageScore = latestAudit?.homepage_score || 50; // Default to 50 if no audit
+      const homepageScore = homepageData?.last_audit?.score || 0;
 
-      // Build SEO categories with real scores from tabs
-      const seoCategories = {
-        homepage: homepageScore,
-        products: productsScore,
-        collections: collectionsScore,
-        pages: pagesScore,
-        articles: articlesScore,
-        images: imagesScore,
-        technical: 80 // Default
-      };
-
-      // Calculate global score as average of all categories
-      const seoScore = Math.round(
-        (seoCategories.homepage + seoCategories.products + seoCategories.collections + 
-         seoCategories.pages + seoCategories.articles + seoCategories.images + seoCategories.technical) / 7
-      );
+      // 7. TAGS SCORE (from TagOptimization.tsx)
+      const tagsScore = products && products.length > 0
+        ? Math.round((products.filter((p: any) => p.optimization_count > 0).length / products.length) * 100)
+        : 0;
 
       // Build articles query with optional store filter
       let articlesQuery = supabase
@@ -316,6 +314,42 @@ export default function Dashboard() {
       }
 
       const { count: articlesCount } = await articlesQuery;
+
+      // Build SEO categories with real scores from tabs
+      const seoCategories = {
+        homepage: homepageScore,
+        products: productsScore,
+        collections: collectionsScore,
+        pages: pagesScore,
+        articles: articlesScore,
+        images: imagesScore,
+        tags: tagsScore
+      };
+
+      // Calculate global score as average of all categories
+      const seoScore = Math.round(
+        (seoCategories.homepage + seoCategories.products + seoCategories.collections + 
+         seoCategories.pages + seoCategories.articles + seoCategories.images + seoCategories.tags) / 7
+      );
+
+      // DEBUG: Log all calculated scores
+      console.log('🔍 Dashboard SEO Scores:', {
+        globalScore: seoScore,
+        categories: {
+          homepage: homepageScore,
+          products: productsScore,
+          collections: collectionsScore,
+          pages: pagesScore,
+          articles: articlesScore,
+          images: imagesScore,
+          tags: tagsScore
+        },
+        counts: {
+          totalProducts,
+          optimizedProducts,
+          totalArticles: articlesCount || 0
+        }
+      });
 
       // Count products with/without alt texts
       const productsWithImages = products?.filter(p => p.image_url)?.length || 0;

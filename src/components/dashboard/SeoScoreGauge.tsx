@@ -12,7 +12,7 @@ interface SeoScoreGaugeProps {
     pages: number;
     articles: number;
     images: number;
-    technical: number;
+    tags: number;
   };
 }
 
@@ -127,6 +127,14 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       max: 100,
       link: "/seo?tab=articles",
       key: "articles" as const
+    },
+    {
+      name: t.seoGauge.categoryNames.tags,
+      description: t.seoGauge.categoryDescriptions.tags,
+      value: Math.round(categoryScores.tags),
+      max: 100,
+      link: "/seo?tab=tags",
+      key: "tags" as const
     },
     {
       name: t.seoGauge.categoryNames.homepage,
