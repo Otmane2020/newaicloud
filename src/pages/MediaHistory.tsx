@@ -45,7 +45,7 @@ export default function MediaHistory() {
           *,
           shopify_products!product_image_history_product_id_fkey(
             title,
-            product_images(id, position, src, variant_id),
+            product_images(id, position, src),
             product_variants(id, title, image_url, position)
           )
         `)
