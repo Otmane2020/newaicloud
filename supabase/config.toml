@@ -276,4 +276,7 @@ verify_jwt = true
 [functions.generate-ai-product-background]
 verify_jwt = true
 
+[functions.optimize-product-title-serp]
+verify_jwt = true
+
 
