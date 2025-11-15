@@ -29,18 +29,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] Event:', event, 'Session:', !!session);
         
         // Handle session expiration and sign-out events
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+        if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
           setSession(null);
           setUser(null);
           setLoading(false);
           
-          // Only redirect and show toast if we were previously logged in
-          const wasLoggedIn = localStorage.getItem('supabase.auth.token');
-          if (wasLoggedIn && event === 'SIGNED_OUT') {
+          // Clear all auth-related data
+          localStorage.removeItem('supabase.auth.token');
+          
+          if (event === 'SIGNED_OUT' || !session) {
             toast.error('Votre session a expiré. Veuillez vous reconnecter.');
             navigate('/auth');
           }
-        } else {
+        } else if (session) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
