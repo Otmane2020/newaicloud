@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { calculateDetailedSeoScore, calculateArticleSeoScore } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, calculateArticleSeoScore, calculateTagsScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -326,8 +326,14 @@ export default function Dashboard() {
       const homepageScore = homepageData?.last_audit?.score || 0;
 
       // 7. TAGS SCORE (from TagOptimization.tsx)
+      // Use calculateTagsScore for each product and average the results
       const tagsScore = products && products.length > 0
-        ? Math.round((products.filter((p: any) => p.optimization_count > 0).length / products.length) * 100)
+        ? Math.round(
+            products.reduce((sum: number, p: any) => {
+              const score = calculateTagsScore(p.tags);
+              return sum + score;
+            }, 0) / products.length
+          ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
         : 0;
 
       // Build articles query with optional store filter
