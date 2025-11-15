@@ -166,14 +166,46 @@ export function PageOptimization() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('shopify_pages')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('store_id', selectedStore.id)
-        .order('published_at', { ascending: false });
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUTES les pages
+      let allPages: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (error) throw error;
+      console.log('🔄 [PAGES] Starting paginated fetch...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [PAGES] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('shopify_pages')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order('published_at', { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [PAGES] Page ${page + 1} loaded: ${pageData.length} pages`);
+          allPages = [...allPages, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('✅ [PAGES] Total pages fetched:', allPages.length);
+      const data = allPages;
       
       // Map Shopify pages to our interface
       const mappedPages: ShopifyPage[] = (data || []).map((page: any) => ({

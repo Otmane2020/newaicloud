@@ -118,14 +118,46 @@ export function TagOptimization() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('shopify_products')
-        .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify, optimization_count')
-        .eq('store_id', selectedStore.id)
-        .order('title', { ascending: true });
+      
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUS les produits
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (error) throw error;
-      setProducts(data || []);
+      console.log('🔄 [TAGS] Starting paginated fetch...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [TAGS] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('shopify_products')
+          .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify, optimization_count')
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order('title', { ascending: true });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [TAGS] Page ${page + 1} loaded: ${pageData.length} products`);
+          allProducts = [...allProducts, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('✅ [TAGS] Total products fetched:', allProducts.length);
+      setProducts(allProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error(t.seo.tags.loadError);

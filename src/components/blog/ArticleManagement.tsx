@@ -179,14 +179,46 @@ export function ArticleManagement() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('blog_articles')
-        .select('*')
-        .eq('user_id', user.id)
-        .or(`store_id.eq.${selectedStore.id},store_id.is.null`)
-        .order('updated_at', { ascending: false });
+      // ✅ PAGINATION CÔTÉ SERVEUR pour récupérer TOUS les articles
+      let allArticles: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
 
-      if (error) throw error;
+      console.log('🔄 [ARTICLES] Starting paginated fetch...');
+
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [ARTICLES] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('blog_articles')
+          .select('*')
+          .eq('user_id', user.id)
+          .or(`store_id.eq.${selectedStore.id},store_id.is.null`)
+          .range(start, end)
+          .order('updated_at', { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          console.log(`✅ [ARTICLES] Page ${page + 1} loaded: ${pageData.length} articles`);
+          allArticles = [...allArticles, ...pageData];
+          
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('✅ [ARTICLES] Total articles fetched:', allArticles.length);
+      const data = allArticles;
       
       // Debug logs for article import
       console.log('📊 Articles loaded:', data?.length, 'articles');
