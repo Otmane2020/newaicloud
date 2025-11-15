@@ -655,7 +655,7 @@ TYPOGRAPHIE - GÉANTE ET AÉRÉE:
 - Font-weight: 300 (léger) ou 700 (bold), jamais moyen
 
 ESPACES - MASSIFS:
-- Sections: py-24 md:py-32 lg:py-40 (TRÈS GÉNÉREUX)
+- Sections: py-12 md:py-32 lg:py-40 (adapté mobile)
 - Entre éléments: space-y-16 md:space-y-20
 - Containers: max-w-4xl (ÉTROIT pour focus)
 
@@ -698,7 +698,7 @@ TYPOGRAPHIE - ÉQUILIBRÉE:
 - Contraste weight entre titres et texte
 
 ESPACES - HARMONIEUX:
-- Sections: py-16 md:py-24 (équilibré)
+- Sections: py-12 md:py-24 (adapté mobile)
 - Entre éléments: space-y-8 md:space-y-12
 - Containers: max-w-7xl (standard large)
 
@@ -741,7 +741,7 @@ TYPOGRAPHIE - LUXUEUSE SERIF:
 - Font-weight: 300 (ultra-light) ou 800 (extra-bold)
 
 ESPACES - TRÈS GÉNÉREUX:
-- Sections: py-24 md:py-36 lg:py-48 (MAXIMUM espace)
+- Sections: py-12 md:py-36 lg:py-48 (adapté mobile)
 - Entre éléments: space-y-16 md:space-y-24
 - Containers: max-w-7xl avec beaucoup de breathing room
 
@@ -898,14 +898,14 @@ ${selectedIcon}
 3. Bright white text: class="text-white"
 4. Large font size: class="text-4xl md:text-6xl font-bold"
 5. MANDATORY structure example for hero with image:
-   <div class="relative h-[500px] md:h-[600px]">
-     <img src="..." class="absolute inset-0 w-full h-full object-cover">
+   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
+     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
      <div class="absolute inset-0 bg-black/40"></div>
      <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
        <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
          ${productTitle}
        </h1>
-       <p class="text-xl md:text-2xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
          Short description
        </p>
      </div>
@@ -937,7 +937,9 @@ DESIGN & TONE (CRITICAL):
 
 STRUCTURE:
 - Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
+- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 - <script src="https://cdn.tailwindcss.com"></script> in <head>
+- 🚨 ALL images MUST have loading="lazy" attribute
 - Mobile-first (sm:, md:, lg:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0 (margins on mobile, none on desktop)
 - Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
@@ -1020,6 +1022,13 @@ ICONS USAGE (MANDATORY):
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle.
 
+📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE):
+🚨 TOUJOURS inclure ces optimisations:
+1. Images: TOUJOURS ajouter loading="lazy" sur TOUTES les balises <img>
+2. Viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+3. Textes: Adapter les tailles avec classes responsive (text-base md:text-lg)
+4. Espacements: Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
+
 PRODUIT :
 - Titre : ${productTitle}
 - Marque : ${vendor}
@@ -1070,14 +1079,14 @@ Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégr
 3. Texte en blanc éclatant : class="text-white"
 4. Taille de police grande : class="text-4xl md:text-6xl font-bold"
 5. Structure exemple OBLIGATOIRE pour hero avec image :
-   <div class="relative h-[500px] md:h-[600px]">
-     <img src="..." class="absolute inset-0 w-full h-full object-cover">
+   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
+     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
      <div class="absolute inset-0 bg-black/40"></div>
      <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
        <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
          ${productTitle}
        </h1>
-       <p class="text-xl md:text-2xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
          Description courte
        </p>
      </div>
@@ -1109,7 +1118,9 @@ DESIGN & TON (CRITIQUE) :
 
 STRUCTURE :
 - HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
+- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 - <script src="https://cdn.tailwindcss.com"></script> dans <head>
+- 🚨 TOUTES les images DOIVENT avoir l'attribut loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
