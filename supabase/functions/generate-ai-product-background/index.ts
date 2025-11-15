@@ -161,8 +161,29 @@ serve(async (req) => {
       landscape: "1024x768 landscape orientation (4:3)",
     };
 
-    // Nouveau prompt lifestyle premium pour Lovable
-    const premiumLifestylePrompt = `
+// Force full background replacement
+const forceFullBackgroundReplace = `
+IMPORTANT — FULL BACKGROUND REPLACEMENT MODE:
+
+You MUST REMOVE the entire background of the input image.
+Do NOT keep or reuse ANY element from the original scene:
+- No sofa
+- No plant
+- No wall
+- No floor
+- No decor
+- No colors
+- No shadows or reflections from original image
+
+Only keep the PRODUCT itself, perfectly intact.
+
+You MUST fully reconstruct a NEW scene from scratch.
+This is NOT an enhancement. This is NOT an improvement of the existing scene.
+This is a FULL REPLACEMENT.
+`;
+
+// Nouveau prompt lifestyle premium pour Lovable
+const premiumLifestylePrompt = `
 Crée une image lifestyle haut de gamme digne d'un catalogue de décoration premium (niveau Zara Home / La Redoute Intérieurs / Maisons du Monde).
 
 CONTRAINTE PRODUIT :
@@ -189,7 +210,9 @@ QUALITÉ :
 `;
 
     // Use enriched prompt if available (includes SERP insights), otherwise use premium lifestyle prompt
-    const finalPrompt = enrichedPrompt || `
+const finalPrompt = enrichedPrompt || `
+${forceFullBackgroundReplace}
+
 ${premiumLifestylePrompt}
 
 INFORMATIONS PRODUIT :

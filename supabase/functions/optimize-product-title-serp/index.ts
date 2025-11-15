@@ -131,10 +131,25 @@ RÈGLES STRICTES :
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Get current optimization count
+    const { data: productData, error: fetchError } = await supabase
+      .from("shopify_products")
+      .select("optimization_count")
+      .eq("id", productId)
+      .single();
+
+    if (fetchError) {
+      console.error("❌ Failed to fetch product:", fetchError);
+      throw fetchError;
+    }
+
+    // Update product with optimized title and increment optimization count
     const { error: updateError } = await supabase
       .from("shopify_products")
       .update({
         title: optimizedTitle,
+        optimization_count: (productData.optimization_count || 0) + 1,
+        last_optimization_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", productId);
