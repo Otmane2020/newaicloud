@@ -41,9 +41,17 @@ interface AdminEmail {
   is_read: boolean;
   folder: string;
   metadata?: {
+    email_id?: string;
     content_available?: boolean;
     content_source?: string;
     warning?: string;
+    attachments?: Array<{
+      id: string;
+      filename: string;
+      content_type: string;
+      size: number;
+    }>;
+    attachments_count?: number;
   };
 }
 
@@ -593,6 +601,14 @@ export function EmailInbox() {
                     <p className={`text-sm line-clamp-2 ${!email.is_read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
                       {email.body || email.html_body?.replace(/<[^>]+>/g, '').substring(0, 100) || 'Aucun aperçu disponible'}
                     </p>
+                    {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
+                      <div className="flex items-center gap-1 mt-2">
+                        <FileText className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? 's' : ''} jointe{email.metadata.attachments_count > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
                     {email.error_message && (
                       <p className="text-xs text-red-600 mt-2">
                         Erreur: {email.error_message}
@@ -689,6 +705,66 @@ export function EmailInbox() {
                       )}
                     </div>
                   </div>
+
+                  {/* Attachments Section */}
+                  {selectedEmail.metadata?.attachments && selectedEmail.metadata.attachments.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Pièces jointes ({selectedEmail.metadata.attachments.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedEmail.metadata.attachments.map((attachment) => (
+                          <div 
+                            key={attachment.id}
+                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-5 h-5 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{attachment.filename}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {attachment.content_type} • {(attachment.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                try {
+                                  // Download attachment via Resend API
+                                  const { data, error } = await supabase.functions.invoke('download-email-attachment', {
+                                    body: {
+                                      emailId: selectedEmail.metadata?.email_id,
+                                      attachmentId: attachment.id
+                                    }
+                                  });
+
+                                  if (error) throw error;
+
+                                  // Open attachment in new tab or download
+                                  toast({
+                                    title: 'Téléchargement',
+                                    description: `Téléchargement de ${attachment.filename}...`
+                                  });
+                                } catch (error: any) {
+                                  toast({
+                                    title: 'Erreur',
+                                    description: error.message || 'Impossible de télécharger la pièce jointe',
+                                    variant: 'destructive'
+                                  });
+                                }
+                              }}
+                            >
+                              Télécharger
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {selectedEmail.error_message && (
                     <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
                       <p className="text-sm text-red-600 dark:text-red-400">

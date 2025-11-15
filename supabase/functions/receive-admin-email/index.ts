@@ -25,81 +25,106 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Parse incoming email data from Resend webhook
     const emailData = await req.json();
-    console.log("📧 Webhook Resend - Email reçu (FULL PAYLOAD):");
-    console.log(JSON.stringify(emailData, null, 2));
+    console.log("📧 Webhook Resend - Email reçu");
 
     // Resend webhook format: { type: "email.received", data: { ... } }
     const data = emailData.data || emailData;
-    const { from, to, subject, email_id, text, html, body_plain, body_html } = data;
+    const { from, to, subject, email_id } = data;
 
-    console.log("📨 Extraction des champs:");
+    console.log("📨 Email ID:", email_id);
     console.log("  - from:", from);
     console.log("  - to:", to);
     console.log("  - subject:", subject);
-    console.log("  - email_id:", email_id);
-    console.log("  - text:", text ? `${text.substring(0, 100)}...` : 'NON PRÉSENT');
-    console.log("  - html:", html ? `${html.substring(0, 100)}...` : 'NON PRÉSENT');
-    console.log("  - body_plain:", body_plain ? `${body_plain.substring(0, 100)}...` : 'NON PRÉSENT');
-    console.log("  - body_html:", body_html ? `${body_html.substring(0, 100)}...` : 'NON PRÉSENT');
-    console.log("  - Tous les champs disponibles:", Object.keys(data).join(', '));
 
-    if (!from || !to) {
-      console.error("❌ Données email invalides - from ou to manquant");
-      throw new Error("Données email invalides");
+    if (!from || !to || !email_id) {
+      console.error("❌ Données email invalides");
+      throw new Error("Données email invalides - from, to ou email_id manquant");
     }
 
-    // Essayer différents champs pour le contenu
-    let emailText = text || body_plain || '';
-    let emailHtml = html || body_html || '';
+    // Use Resend Receiving API to fetch the full email content
+    console.log(`🔍 Récupération du contenu complet via Resend Receiving API (email_id: ${email_id})`);
     
-    console.log(`📝 Contenu initial - text: ${emailText.length} chars, html: ${emailHtml.length} chars`);
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY non configurée");
+    }
     
-    // Si on n'a toujours pas de contenu, vérifier si le contenu est dans d'autres champs
-    if (!emailText && !emailHtml) {
-      console.log("⚠️ ATTENTION: Aucun contenu texte/HTML trouvé dans le webhook!");
-      console.log("📋 Configuration Resend requise:");
-      console.log("   1. Inbound Routing doit être activé");
-      console.log("   2. Le webhook doit être configuré pour 'email.received'");
-      console.log("   3. Resend ne stocke PAS le contenu des emails entrants via l'API");
-      console.log("");
-      console.log("💡 SOLUTION RECOMMANDÉE:");
-      console.log("   - Utiliser Resend Inbound Parsing (si disponible)");
-      console.log("   - OU utiliser un service comme Mailgun Inbound Routes");
-      console.log("   - OU intégrer Gmail API pour lire les emails");
-      console.log("");
-      console.log("⚠️ Pour l'instant, l'email sera enregistré SANS contenu");
+    let emailText = '';
+    let emailHtml = '';
+    let attachments: any[] = [];
+    
+    try {
+      // Get the full received email using Resend Receiving API
+      const emailResponse = await fetch(`https://api.resend.com/emails/receiving/${email_id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+      });
       
-      // Essayer de récupérer via l'API si on a un email_id (pour les emails sortants uniquement)
-      if (email_id) {
-        try {
-          console.log(`🔍 Tentative de récupération via API Resend (email_id: ${email_id})`);
-          const resendApiKey = Deno.env.get("RESEND_API_KEY");
-          
-          if (resendApiKey) {
-            const response = await fetch(`https://api.resend.com/emails/${email_id}`, {
-              headers: {
-                'Authorization': `Bearer ${resendApiKey}`,
-              },
-            });
-            
-            if (response.ok) {
-              const emailDetails = await response.json();
-              console.log("📧 Réponse API Resend:", JSON.stringify(emailDetails, null, 2));
-              emailText = emailDetails.text || emailDetails.body_plain || '';
-              emailHtml = emailDetails.html || emailDetails.body_html || '';
-              console.log(`✅ Contenu récupéré via API - text: ${emailText.length} chars, html: ${emailHtml.length} chars`);
-            } else {
-              console.error('❌ Erreur API Resend (status ' + response.status + '):', await response.text());
-            }
-          }
-        } catch (error) {
-          console.error('❌ Erreur lors de la récupération du contenu:', error);
-        }
+      if (emailResponse.ok) {
+        const receivedEmail = await emailResponse.json();
+        console.log("✅ Email récupéré via Resend Receiving API");
+        
+        emailText = receivedEmail.text || receivedEmail.body_plain || '';
+        emailHtml = receivedEmail.html || receivedEmail.body_html || '';
+        
+        console.log(`📝 Contenu - text: ${emailText.length} chars, html: ${emailHtml.length} chars`);
+      } else {
+        const errorText = await emailResponse.text();
+        console.error(`❌ Erreur Resend Receiving API (${emailResponse.status}):`, errorText);
       }
+
+      // Get attachments if any
+      try {
+        const attachmentsResponse = await fetch(
+          `https://api.resend.com/emails/receiving/${email_id}/attachments`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json'
+            },
+          }
+        );
+        
+        if (attachmentsResponse.ok) {
+          const attachmentsData = await attachmentsResponse.json();
+          
+          if (attachmentsData && attachmentsData.data && attachmentsData.data.length > 0) {
+            console.log(`📎 ${attachmentsData.data.length} pièce(s) jointe(s) trouvée(s)`);
+            
+            // Store attachment metadata
+            attachments = attachmentsData.data.map((att: any) => ({
+              id: att.id,
+              filename: att.filename,
+              content_type: att.content_type,
+              size: att.size
+            }));
+          }
+        } else {
+          console.log('⚠️ Aucune pièce jointe ou endpoint non disponible');
+        }
+      } catch (attachmentError) {
+        console.error('⚠️ Erreur lors de la récupération des pièces jointes:', attachmentError);
+        // Continue even if attachment retrieval fails
+      }
+    } catch (apiError: any) {
+      console.error('❌ Erreur Resend Receiving API:', apiError);
+      console.error('Message:', apiError.message);
       
-      // Si toujours pas de contenu, utiliser le subject comme contenu temporaire
-      if (!emailText && !emailHtml) {
-        emailText = `Email reçu - Contenu non disponible.\nSujet: ${subject}\n\nPour voir le contenu complet, veuillez configurer l'inbound parsing.`;
+      // Fallback: use webhook data if available
+      const fallbackText = data.text || data.body_plain || '';
+      const fallbackHtml = data.html || data.body_html || '';
+      
+      if (fallbackText || fallbackHtml) {
+        emailText = fallbackText;
+        emailHtml = fallbackHtml;
+        console.log('✅ Utilisation des données du webhook comme fallback');
+      } else {
+        emailText = `Email reçu - Contenu non disponible via API.\nSujet: ${subject}`;
+        console.log('⚠️ Aucun contenu disponible, utilisation du placeholder');
       }
     }
 
@@ -140,9 +165,9 @@ const handler = async (req: Request): Promise<Response> => {
           webhook_received_at: new Date().toISOString(),
           email_id: email_id,
           content_available: !!(emailText || emailHtml),
-          content_source: emailText || emailHtml ? 'webhook_or_api' : 'none',
-          warning: emailText || emailHtml ? null : 'Content not available from Resend. Configure inbound parsing.',
-          raw_data: emailData
+          content_source: 'resend_receiving_api',
+          attachments: attachments.length > 0 ? attachments : null,
+          attachments_count: attachments.length
         }
       })
       .select()
@@ -158,11 +183,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("  - Folder:", savedEmail.folder);
     console.log("  - Status:", savedEmail.status);
     console.log("  - Body length:", cleanBody.length);
+    console.log("  - Attachments:", attachments.length);
 
     return new Response(JSON.stringify({ 
       success: true,
       message: 'Email reçu et enregistré',
-      emailId: savedEmail.id 
+      emailId: savedEmail.id,
+      attachments: attachments.length
     }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
