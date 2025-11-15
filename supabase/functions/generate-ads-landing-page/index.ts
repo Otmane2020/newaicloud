@@ -296,6 +296,34 @@ Return ONLY the complete HTML document. Start with <!DOCTYPE html>. No markdown,
       console.error("Failed to save landing page:", updateError);
     }
 
+    // Optimize SERP titles for all campaign products
+    console.log(`🎯 Optimizing SERP titles for ${products.length} products...`);
+    const optimizationPromises = products.map(async (product: any) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('optimize-product-title-serp', {
+          body: {
+            productId: product.id,
+            currentTitle: product.title,
+            description: product.description || product.optimized_description,
+            productType: product.product_type,
+            vendor: product.vendor,
+            language: 'fr'
+          }
+        });
+        
+        if (error) {
+          console.error(`❌ Failed to optimize title for ${product.title}:`, error);
+        } else {
+          console.log(`✅ Optimized title for ${product.title}`);
+        }
+      } catch (err) {
+        console.error(`❌ Error optimizing ${product.title}:`, err);
+      }
+    });
+
+    await Promise.all(optimizationPromises);
+    console.log('✅ All SERP titles optimized');
+
     return new Response(
       JSON.stringify({ 
         success: true,

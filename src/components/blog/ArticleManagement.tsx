@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { calculateDescriptionScore } from '@/lib/seoQuality';
+import { calculateArticleSeoScore } from '@/lib/seoQuality';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -176,6 +176,15 @@ export function ArticleManagement() {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Debug logs for article import
+      console.log('📊 Articles loaded:', data?.length, 'articles');
+      console.log('📊 By source:', {
+        shopify: data?.filter(a => a.source === 'shopify_import').length,
+        ai: data?.filter(a => a.source === 'ai_generated').length,
+        other: data?.filter(a => !a.source || (a.source !== 'shopify_import' && a.source !== 'ai_generated')).length
+      });
+      
       setArticles(data || []);
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -185,27 +194,17 @@ export function ArticleManagement() {
     }
   };
 
-  const calculateArticleSeoScore = (article: Article): number => {
-    const detailedScore = calculateDescriptionScore(
+  // Helper to get numeric SEO score from article
+  const getArticleSeoScore = (article: Article): number => {
+    return calculateArticleSeoScore(
+      article.title,
+      article.seo_title,
       article.meta_description,
-      undefined,
-      undefined,
-      article.title
-    );
-    
-    let score = detailedScore.score;
-    
-    // Penalty if no featured image (15%)
-    if (!article.featured_image) {
-      score = Math.round(score * 0.85);
-    }
-    
-    // Bonus for optimization
-    if (article.optimization_count && article.optimization_count > 0) {
-      score = Math.min(100, score + 10);
-    }
-    
-    return score;
+      article.keywords,
+      !!article.featured_image,
+      article.status === 'published',
+      article.optimization_count || 0
+    ).score;
   };
 
   const getSeoScoreBadge = (score: number) => {
@@ -425,6 +424,8 @@ const handleOptimizeArticle = async (articleId: string) => {
           description: totalArticles > 0 ? 'Les filtres ont été réinitialisés pour afficher tous les articles.' : undefined
         });
       await fetchArticles();
+      // Force complete refresh
+      setSelectedArticles(new Set());
     } catch (error: any) {
       console.error('❌ Error importing articles:', error);
       toast.error(error.message || t.blog.management.messages.importError);
@@ -528,7 +529,7 @@ const handleOptimizeArticle = async (articleId: string) => {
     // Quality filter
     if (qualityFilter !== 'all') {
       filtered = filtered.filter(a => {
-        const score = calculateArticleSeoScore(a);
+        const score = getArticleSeoScore(a);
 
         if (qualityFilter === 'excellent' && score < 80) return false;
         if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
@@ -557,8 +558,8 @@ const handleOptimizeArticle = async (articleId: string) => {
   const sortedArticles = [...filteredArticles];
   if (seoScoreSort !== 'none') {
     sortedArticles.sort((a, b) => {
-      const scoreA = calculateArticleSeoScore(a);
-      const scoreB = calculateArticleSeoScore(b);
+      const scoreA = getArticleSeoScore(a);
+      const scoreB = getArticleSeoScore(b);
       
       return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
     });
@@ -566,7 +567,7 @@ const handleOptimizeArticle = async (articleId: string) => {
   
   // Calculate global SEO score
   const globalSeoScore = articles.length > 0
-    ? Math.round(articles.reduce((sum, article) => sum + calculateArticleSeoScore(article), 0) / articles.length)
+    ? Math.round(articles.reduce((sum, article) => sum + getArticleSeoScore(article), 0) / articles.length)
     : 0;
   
   const stats = {
@@ -859,7 +860,7 @@ const handleOptimizeArticle = async (articleId: string) => {
             </TableHeader>
             <TableBody>
               {sortedArticles.map((article) => {
-                const seoScore = calculateArticleSeoScore(article);
+                const seoScore = getArticleSeoScore(article);
                 const scoreBadge = getSeoScoreBadge(seoScore);
                 const truncatedTitle = article.title.length > 50 
                   ? article.title.substring(0, 50) + '...' 
