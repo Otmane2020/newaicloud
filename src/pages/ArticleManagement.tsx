@@ -82,23 +82,6 @@ export default function ArticleManagement() {
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  useEffect(() => {
-    loadArticles();
-    loadCategories();
-  }, []);
-
-  if (!selectedStore) {
-    return (
-      <Alert className="m-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
-        <AlertDescription>
-          Veuillez sélectionner une boutique dans le menu en haut pour afficher les articles.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   const loadCategories = async () => {
     try {
       const { data } = await supabase
@@ -138,6 +121,23 @@ export default function ArticleManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadArticles();
+    loadCategories();
+  }, []);
+
+  if (!selectedStore) {
+    return (
+      <Alert className="m-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertDescription>
+          Veuillez sélectionner une boutique dans le menu en haut pour afficher les articles.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = !searchQuery || 
