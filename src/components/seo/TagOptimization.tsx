@@ -1383,16 +1383,37 @@ export function TagOptimization() {
                 />
               </PaginationItem>
               
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    onClick={() => goToPage(page)}
-                    isActive={currentPage === page}
-                    className="cursor-pointer"
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                if (totalPages <= 7) {
+                  return i + 1;
+                }
+                
+                // Show first 3, current page neighbors, and last page with ellipses
+                if (i < 2) return i + 1; // First 2 pages
+                if (i === 2 && currentPage > 4) return '...'; // Ellipsis after page 2
+                if (i === 2) return 3;
+                if (i === 3 && currentPage <= 4) return 4;
+                if (i === 3) return currentPage;
+                if (i === 4 && currentPage >= totalPages - 3) return totalPages - 2;
+                if (i === 4) return '...'; // Ellipsis before last page
+                if (i === 5) return totalPages - 1;
+                return totalPages;
+              }).map((page, index) => (
+                page === '...' ? (
+                  <PaginationItem key={`ellipsis-${index}`}>
+                    <span className="flex h-9 w-9 items-center justify-center">...</span>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page as number)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
               ))}
               
               <PaginationItem>
