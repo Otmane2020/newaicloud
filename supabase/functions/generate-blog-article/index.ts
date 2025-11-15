@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import OpenAI from "npm:openai";
 
 //------------------------------------------------------------
 // ENV
@@ -17,11 +16,6 @@ const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
 // INIT
 //------------------------------------------------------------
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-const deepseek = new OpenAI({
-  apiKey: DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com",
-});
 
 //------------------------------------------------------------
 // CORS
@@ -163,14 +157,22 @@ ${products
 
 Return ONLY HTML.`;
 
-  const res = await deepseek.chat.completions.create({
-    model: "deepseek-chat",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.45,
-    max_tokens: 2000,
+  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.45,
+      max_tokens: 2000,
+    }),
   });
 
-  return res.choices[0].message.content.trim();
+  const data = await res.json();
+  return data.choices[0].message.content.trim();
 }
 //------------------------------------------------------------
 // MAIN SERVE
@@ -280,7 +282,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: err.message,
+        error: err instanceof Error ? err.message : "Unknown error",
       }),
       { status: 500, headers: corsHeaders },
     );
