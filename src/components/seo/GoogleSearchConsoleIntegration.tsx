@@ -28,7 +28,11 @@ interface SearchConsoleSite {
   permissionLevel: string;
 }
 
-export function GoogleSearchConsoleIntegration() {
+interface GoogleSearchConsoleIntegrationProps {
+  onConnectionChange?: () => void;
+}
+
+export function GoogleSearchConsoleIntegration({ onConnectionChange }: GoogleSearchConsoleIntegrationProps = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [googleConsoleEmail, setGoogleConsoleEmail] = useState<string | null>(null);
   const [sites, setSites] = useState<SearchConsoleSite[]>([]);
@@ -74,9 +78,14 @@ export function GoogleSearchConsoleIntegration() {
       const connected = !!profile?.google_oauth_token;
       setIsConnected(connected);
       setGoogleConsoleEmail(profile?.google_console_email || null);
-      
+
       if (connected) {
         await fetchSites();
+      }
+      
+      // Notify parent of connection change
+      if (onConnectionChange) {
+        onConnectionChange();
       }
     } catch (error) {
       console.error('Error checking Google connection:', error);
