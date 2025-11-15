@@ -167,7 +167,9 @@ Deno.serve(async (req: Request) => {
     let authToken = apiSecret || '';
     
     // If using OAuth (storeId provided), fetch access token from database
-    if (storeId && !isManualAuth) {
+    if (storeId && !authToken) {
+      console.log('🔍 Fetching access token from database for storeId:', storeId);
+      
       const supabaseServiceClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -175,15 +177,22 @@ Deno.serve(async (req: Request) => {
       
       const { data: connection, error: connectionError } = await supabaseServiceClient
         .from('shopify_connections')
-        .select('access_token')
+        .select('access_token, store_url, user_id')
         .eq('id', storeId)
-        .eq('user_id', user.id)
         .single();
       
-      if (connectionError || !connection) {
-        console.error('Failed to fetch Shopify connection:', connectionError);
+      console.log('📊 Connection query result:', {
+        found: !!connection,
+        error: connectionError?.message,
+        userId: connection?.user_id,
+        expectedUserId: user.id,
+        hasToken: !!connection?.access_token
+      });
+      
+      if (connectionError) {
+        console.error('❌ Database error fetching connection:', connectionError);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch Shopify credentials' }),
+          JSON.stringify({ error: `Database error: ${connectionError.message}` }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -191,8 +200,30 @@ Deno.serve(async (req: Request) => {
         );
       }
       
+      if (!connection) {
+        console.error('❌ No connection found with storeId:', storeId);
+        return new Response(
+          JSON.stringify({ error: 'Store connection not found' }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (connection.user_id !== user.id) {
+        console.error('❌ Store does not belong to user');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to store' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       authToken = connection.access_token;
-      console.log('✅ Using OAuth access token from database');
+      console.log('✅ Using OAuth access token from database (length:', authToken?.length, ')');
     }
     
     if (!authToken) {

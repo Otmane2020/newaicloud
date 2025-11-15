@@ -98,6 +98,8 @@ Deno.serve(async (req: Request) => {
     let accessToken = apiSecret || authToken;
     
     if (storeId && !accessToken) {
+      console.log('🔍 [ARTICLES] Fetching access token from database for storeId:', storeId);
+      
       // Use service role client to fetch access token
       const supabaseServiceClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -106,15 +108,22 @@ Deno.serve(async (req: Request) => {
       
       const { data: connection, error: connectionError } = await supabaseServiceClient
         .from('shopify_connections')
-        .select('access_token')
+        .select('access_token, store_url, user_id')
         .eq('id', storeId)
-        .eq('user_id', user.id)
         .single();
       
-      if (connectionError || !connection) {
-        console.error('Failed to fetch Shopify connection:', connectionError);
+      console.log('📊 [ARTICLES] Connection query result:', {
+        found: !!connection,
+        error: connectionError?.message,
+        userId: connection?.user_id,
+        expectedUserId: user.id,
+        hasToken: !!connection?.access_token
+      });
+      
+      if (connectionError) {
+        console.error('❌ [ARTICLES] Database error:', connectionError);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch Shopify credentials' }),
+          JSON.stringify({ error: `Database error: ${connectionError.message}` }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -122,8 +131,30 @@ Deno.serve(async (req: Request) => {
         );
       }
       
+      if (!connection) {
+        console.error('❌ [ARTICLES] No connection found');
+        return new Response(
+          JSON.stringify({ error: 'Store connection not found' }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (connection.user_id !== user.id) {
+        console.error('❌ [ARTICLES] Store does not belong to user');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to store' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       accessToken = connection.access_token;
-      console.log('✅ Using OAuth access token from database');
+      console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
     }
     
     if (!accessToken) {
