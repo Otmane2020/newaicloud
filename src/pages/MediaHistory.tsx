@@ -50,19 +50,34 @@ export default function MediaHistory() {
       // Fetch related product data separately
       const enrichedData = await Promise.all(
         historyData.map(async (item) => {
+          // Get product title
           const { data: product } = await supabase
             .from('shopify_products')
-            .select(`
-              title,
-              product_images(id, position, src),
-              product_variants(id, title, image_url, position)
-            `)
+            .select('title')
             .eq('id', item.product_id)
             .single();
 
+          // Get product images
+          const { data: images } = await supabase
+            .from('product_images')
+            .select('id, position, src')
+            .eq('product_id', item.product_id)
+            .order('position', { ascending: true });
+
+          // Get product variants
+          const { data: variants } = await supabase
+            .from('product_variants')
+            .select('id, title, image_url, position')
+            .eq('product_id', item.product_id)
+            .order('position', { ascending: true });
+
           return {
             ...item,
-            shopify_products: product
+            shopify_products: {
+              title: product?.title,
+              product_images: images || [],
+              product_variants: variants || []
+            }
           };
         })
       );
