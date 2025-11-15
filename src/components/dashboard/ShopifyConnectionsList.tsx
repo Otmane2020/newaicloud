@@ -103,6 +103,26 @@ export default function ShopifyConnectionsList() {
     checkUsageLimits();
     updateStoreNames();
   }, []);
+
+  // Check if we need to trigger auto-import after store connection
+  useEffect(() => {
+    const autoTriggerImport = async () => {
+      const shouldTriggerImport = localStorage.getItem("shopify_trigger_import");
+      if (shouldTriggerImport === "true" && connections.length > 0) {
+        localStorage.removeItem("shopify_trigger_import");
+        
+        // Wait a bit for the UI to settle
+        setTimeout(() => {
+          const lastStore = connections[0]; // Most recent store
+          setStoreToImport(lastStore);
+          setShowImportConfirm(true);
+        }, 500);
+      }
+    };
+
+    autoTriggerImport();
+  }, [connections]);
+  
   
   const updateStoreNames = async () => {
     try {

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { GoogleSearchConsoleIntegration } from './GoogleSearchConsoleIntegration';
 import { GoogleSearchConsoleInsights } from './GoogleSearchConsoleInsights';
 import { GoogleSearchConsoleProducts } from './GoogleSearchConsoleProducts';
 import { GoogleSearchConsoleArticles } from './GoogleSearchConsoleArticles';
