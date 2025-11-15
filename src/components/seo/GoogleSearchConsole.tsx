@@ -48,6 +48,8 @@ import {
   Calendar,
   LogOut,
   Settings,
+  Search,
+  FileText,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
@@ -110,6 +112,8 @@ export function GoogleSearchConsole() {
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
   const [data, setData] = useState<SearchConsoleData[]>([]);
+  const [topPages, setTopPages] = useState<any[]>([]);
+  const [topQueries, setTopQueries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddDomainDialog, setShowAddDomainDialog] = useState(false);
   const [showAvailableSitesDialog, setShowAvailableSitesDialog] = useState(false);
@@ -401,10 +405,14 @@ export function GoogleSearchConsole() {
       if (!data?.data) throw new Error('Aucune donnée reçue');
 
       setData(data.data);
+      setTopPages(data.topPages || []);
+      setTopQueries(data.topQueries || []);
       toast.success('Données chargées');
     } catch (error: any) {
       toast.error(error?.message || 'Erreur de chargement');
       setData([]);
+      setTopPages([]);
+      setTopQueries([]);
     } finally {
       setLoading(false);
     }
@@ -1032,6 +1040,97 @@ export function GoogleSearchConsole() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </Card>
+              
+              {/* Top Queries Section */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Mots-clés les plus performants
+                </h3>
+                {topQueries.length > 0 ? (
+                  <div className="space-y-2">
+                    {topQueries.slice(0, 10).map((query: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Badge variant="outline" className="w-8 h-8 flex items-center justify-center">
+                            {index + 1}
+                          </Badge>
+                          <span className="font-medium">{query.keys?.[0] || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="text-right">
+                            <p className="font-semibold text-primary">{query.clicks?.toLocaleString() || 0}</p>
+                            <p className="text-xs text-muted-foreground">clics</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">{query.impressions?.toLocaleString() || 0}</p>
+                            <p className="text-xs text-muted-foreground">impressions</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-600">{query.ctr?.toFixed(2) || 0}%</p>
+                            <p className="text-xs text-muted-foreground">CTR</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-orange-600">{query.position?.toFixed(1) || 0}</p>
+                            <p className="text-xs text-muted-foreground">position</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">Aucun mot-clé trouvé</p>
+                )}
+              </Card>
+
+              {/* Top Pages Section */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Pages les plus consultées
+                </h3>
+                {topPages.length > 0 ? (
+                  <div className="space-y-2">
+                    {topPages.slice(0, 10).map((page: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Badge variant="outline" className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                            {index + 1}
+                          </Badge>
+                          <a 
+                            href={page.keys?.[0] || '#'} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="font-medium truncate hover:text-primary transition-colors"
+                          >
+                            {page.keys?.[0]?.replace(/^https?:\/\/[^/]+/, '') || '/'}
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm flex-shrink-0">
+                          <div className="text-right">
+                            <p className="font-semibold text-primary">{page.clicks?.toLocaleString() || 0}</p>
+                            <p className="text-xs text-muted-foreground">clics</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">{page.impressions?.toLocaleString() || 0}</p>
+                            <p className="text-xs text-muted-foreground">impressions</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-600">{page.ctr?.toFixed(2) || 0}%</p>
+                            <p className="text-xs text-muted-foreground">CTR</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-orange-600">{page.position?.toFixed(1) || 0}</p>
+                            <p className="text-xs text-muted-foreground">position</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">Aucune page trouvée</p>
+                )}
               </Card>
             </>
           )}
