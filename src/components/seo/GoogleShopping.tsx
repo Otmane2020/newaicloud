@@ -44,6 +44,7 @@ import {
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
 import { OptimizeAllDialog } from './OptimizeAllDialog';
+import { GoogleCategoryImport } from './GoogleCategoryImport';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
@@ -312,21 +313,52 @@ export function GoogleShopping() {
     let successCount = 0;
     let errorCount = 0;
 
-    for (const productId of Array.from(selectedProducts)) {
+    const productsToClassify = products.filter(p => selectedProducts.has(p.id));
+    toast.info('Classification automatique', {
+      description: `Classification de ${productsToClassify.length} produits avec DeepSeek AI...`,
+    });
+
+    for (const product of productsToClassify) {
       try {
-        const { data, error } = await supabase.functions.invoke('generate-google-category', {
-          body: { productId }
+        const { data, error } = await supabase.functions.invoke('classify-product-category', {
+          body: {
+            productTitle: product.title,
+            productDescription: null,
+            productType: null,
+            imageUrl: product.image_url,
+          }
         });
         
         if (error) throw error;
-        if (data.success) successCount++;
-        else errorCount++;
+        
+        if (data.success && data.classification) {
+          // Update product with classification
+          await supabase
+            .from('shopify_products')
+            .update({
+              google_category: data.classification.gpc_path,
+              google_category_id: data.classification.gpc_id,
+              google_category_confidence: data.classification.confidence,
+              google_product_category: data.classification.gpc_path,
+            })
+            .eq('id', product.id);
+          
+          successCount++;
+        } else {
+          errorCount++;
+        }
       } catch (error) {
+        console.error(`Error classifying ${product.title}:`, error);
         errorCount++;
       }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    toast.success(`Catégories générées: ${successCount} succès, ${errorCount} erreurs`);
+    toast.success('Classification terminée', {
+      description: `${successCount} produits classifiés, ${errorCount} erreurs`,
+    });
     await fetchProducts();
     setSelectedProducts(new Set());
     setGeneratingCategories(false);
@@ -818,12 +850,15 @@ export function GoogleShopping() {
             <div>
               <strong className="font-semibold">Guide d'optimisation rapide</strong>
               <p className="mt-1 text-sm">
-                1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
+                0. Importer taxonomie Google → 1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
               </p>
             </div>
           </div>
         </AlertDescription>
       </Alert>
+
+      {/* Import Google Taxonomy */}
+      <GoogleCategoryImport />
 
       {/* Header */}
       <div>

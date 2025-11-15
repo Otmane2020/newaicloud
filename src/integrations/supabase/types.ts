@@ -1585,6 +1585,42 @@ export type Database = {
         }
         Relationships: []
       }
+      google_product_taxonomy: {
+        Row: {
+          created_at: string | null
+          depth: number
+          full_path: string
+          id: number
+          level1: string | null
+          level2: string | null
+          level3: string | null
+          level4: string | null
+          level5: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          depth: number
+          full_path: string
+          id: number
+          level1?: string | null
+          level2?: string | null
+          level3?: string | null
+          level4?: string | null
+          level5?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          depth?: number
+          full_path?: string
+          id?: number
+          level1?: string | null
+          level2?: string | null
+          level3?: string | null
+          level4?: string | null
+          level5?: string | null
+        }
+        Relationships: []
+      }
       google_search_console_data: {
         Row: {
           clicks: number | null
@@ -3573,6 +3609,9 @@ export type Database = {
           google_age_group: string | null
           google_availability: string | null
           google_brand: string | null
+          google_category: string | null
+          google_category_confidence: number | null
+          google_category_id: number | null
           google_condition: string | null
           google_custom_label_0: string | null
           google_custom_label_1: string | null
@@ -3693,6 +3732,9 @@ export type Database = {
           google_age_group?: string | null
           google_availability?: string | null
           google_brand?: string | null
+          google_category?: string | null
+          google_category_confidence?: number | null
+          google_category_id?: number | null
           google_condition?: string | null
           google_custom_label_0?: string | null
           google_custom_label_1?: string | null
@@ -3813,6 +3855,9 @@ export type Database = {
           google_age_group?: string | null
           google_availability?: string | null
           google_brand?: string | null
+          google_category?: string | null
+          google_category_confidence?: number | null
+          google_category_id?: number | null
           google_condition?: string | null
           google_custom_label_0?: string | null
           google_custom_label_1?: string | null
