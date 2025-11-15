@@ -146,15 +146,15 @@ export function GoogleSearchConsole() {
         </TabsContent>
 
         <TabsContent value="products" className="mt-6">
-          <GoogleSearchConsoleProducts selectedDomain={selectedDomain} />
+          <GoogleSearchConsoleProducts selectedDomain={selectedDomain} isConnected={isConnected} />
         </TabsContent>
 
         <TabsContent value="articles" className="mt-6">
-          <GoogleSearchConsoleArticles selectedDomain={selectedDomain} />
+          <GoogleSearchConsoleArticles selectedDomain={selectedDomain} isConnected={isConnected} />
         </TabsContent>
 
         <TabsContent value="sitemaps" className="mt-6">
-          <GoogleSearchConsoleSitemaps selectedDomain={selectedDomain} />
+          <GoogleSearchConsoleSitemaps selectedDomain={selectedDomain} isConnected={isConnected} />
         </TabsContent>
       </Tabs>
     </div>

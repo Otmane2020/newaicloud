@@ -18,9 +18,10 @@ interface Article {
 
 interface GoogleSearchConsoleArticlesProps {
   selectedDomain: string;
+  isConnected: boolean;
 }
 
-export function GoogleSearchConsoleArticles({ selectedDomain }: GoogleSearchConsoleArticlesProps) {
+export function GoogleSearchConsoleArticles({ selectedDomain, isConnected }: GoogleSearchConsoleArticlesProps) {
   const { selectedStore } = useStore();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
