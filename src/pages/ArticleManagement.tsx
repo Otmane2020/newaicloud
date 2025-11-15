@@ -136,7 +136,7 @@ export default function ArticleManagement() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Import failed');
 
-      toast.success(`${data.articlesImported || 0} article(s) importé(s) depuis Shopify`);
+      toast.success(`${data.imported || 0} article(s) importé(s) depuis Shopify`);
       await loadArticles();
     } catch (error: any) {
       console.error('❌ Error importing articles:', error);
@@ -490,62 +490,97 @@ export default function ArticleManagement() {
               />
             </div>
 
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All sources</SelectItem>
-                  <SelectItem value="ai">AI NewAI</SelectItem>
-                  <SelectItem value="shopify">Shopify</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Collapsible Filters */}
+            <details className="group">
+              <summary className="flex items-center justify-between cursor-pointer list-none">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Filtres avancés
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {[sourceFilter, statusFilter, syncFilter, qualityFilter].filter(f => f !== 'all').length} actif(s)
+                </Badge>
+              </summary>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t">
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="all">Toutes sources</SelectItem>
+                    <SelectItem value="ai">IA Généré</SelectItem>
+                    <SelectItem value="shopify">Shopify</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="all">Tous statuts</SelectItem>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="published">Publié</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={syncFilter} onValueChange={setSyncFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Synchronization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="synced">Synced</SelectItem>
-                  <SelectItem value="not_synced">Not synced</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={syncFilter} onValueChange={setSyncFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Synchronisation" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="synced">Synchronisé</SelectItem>
+                    <SelectItem value="not_synced">Non synchronisé</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select 
-                value={qualityFilter} 
-                onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="SEO Score" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All scores</SelectItem>
-                  <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
-                  <SelectItem value="good">Good (55-79%)</SelectItem>
-                  <SelectItem value="medium">Medium (40-54%)</SelectItem>
-                  <SelectItem value="poor">Poor (&lt;40%)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <Select 
+                  value={qualityFilter} 
+                  onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Score SEO" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="all">Tous scores</SelectItem>
+                    <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
+                    <SelectItem value="good">Bon (55-79%)</SelectItem>
+                    <SelectItem value="medium">Moyen (40-54%)</SelectItem>
+                    <SelectItem value="poor">Faible (&lt;40%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </details>
+          </div>
+          
+          {/* Always visible actions */}
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+            <Button
+              onClick={importShopifyArticles}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Importer depuis Shopify</span>
+            </Button>
+            <Button
+              onClick={loadArticles}
+              disabled={loading}
+              variant="ghost"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
 
           {/* Bulk Actions */}
           {selectedArticles.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 pt-2 border-t">
               <span className="text-sm text-muted-foreground mb-2 sm:mb-0">
                 {selectedArticles.length} selected
               </span>
