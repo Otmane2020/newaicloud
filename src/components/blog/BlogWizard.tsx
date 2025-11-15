@@ -807,7 +807,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm p-4 border-t z-10 flex items-center justify-between -mx-6 -mb-6 mt-6">
             <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
               <ChevronLeft className="w-4 h-4 mr-2" />
               {t.common.previous}
