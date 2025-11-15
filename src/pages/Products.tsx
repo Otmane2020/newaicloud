@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Square, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Product {
   id: string;
@@ -665,7 +666,8 @@ export default function Products() {
               </Card>
             ) : viewMode === "grid" ? (
               // Optimized mobile grid (2 columns) - Like the photo
-              <div className="grid grid-cols-2 gap-3">
+              <TooltipProvider>
+                <div className="grid grid-cols-2 gap-3">
                 {filteredProducts.map((product) => {
                   const discount = calculateDiscount(product.price, product.compare_at_price);
 
@@ -675,7 +677,7 @@ export default function Products() {
                       onClick={() => navigate(`/product-landing/${product.id}`)}
                       className="cursor-pointer border-0 shadow-sm overflow-hidden transition-all active:scale-95 bg-white"
                     >
-                      <div className="aspect-square bg-muted/50 relative overflow-hidden">
+                      <div className="aspect-square bg-muted/50 relative overflow-hidden group">
                         {product.image_url ? (
                           <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                         ) : (
@@ -683,20 +685,47 @@ export default function Products() {
                             <Package className="w-8 h-8 text-muted-foreground" />
                           </div>
                         )}
-                        {/* Discount badge */}
-                        {discount && (
-                          <Badge className="absolute top-2 left-2 bg-red-500 text-white text-xs px-1.5 py-0">
-                            -{discount}%
-                          </Badge>
-                        )}
-                         {/* Status badge */}
-                        <Badge
-                          className={`absolute top-2 right-2 text-xs px-1.5 py-0 ${
-                            product.status === "active" ? "bg-green-500 text-white" : "bg-gray-500 text-white"
-                          }`}
-                        >
-                          {product.status === "active" ? t.common.active : t.common.draft}
-                        </Badge>
+                        
+                        {/* Background actions - visible on hover */}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/product-title-description`);
+                                }}
+                              >
+                                <Square className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Fond blanc</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/product-title-description`);
+                                }}
+                              >
+                                <Palette className="h-3.5 w-3.5 text-purple-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Générer fond AI</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
                       <CardContent className="p-3">
                         <h3 className="font-semibold text-sm line-clamp-2 mb-2 leading-tight">{product.title}</h3>
@@ -729,6 +758,7 @@ export default function Products() {
                   );
                 })}
               </div>
+              </TooltipProvider>
             ) : (
               // Optimized mobile list - Like the photo
               <div className="space-y-3">
