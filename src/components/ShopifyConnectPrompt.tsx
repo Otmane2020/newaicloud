@@ -25,8 +25,8 @@ export function ShopifyConnectPrompt() {
     const checkShopifyConnection = async () => {
       if (!user || hasChecked) return;
 
-      // Only show on landing page and login page
-      const allowedPaths = ['/', '/auth'];
+      // Show on important pages where users might need Shopify
+      const allowedPaths = ['/', '/auth', '/dashboard', '/account', '/products', '/seo', '/integration'];
       const isAllowedPath = allowedPaths.includes(location.pathname);
       
       if (!isAllowedPath) {
@@ -35,9 +35,12 @@ export function ShopifyConnectPrompt() {
       }
 
       try {
+        // On /account page, always check (ignore localStorage)
+        const isAccountPage = location.pathname === '/account';
+        
         // Check if user has already seen the welcome prompt (localStorage)
         const hasSeenWelcome = localStorage.getItem(`welcome_seen_${user.id}`);
-        if (hasSeenWelcome) {
+        if (hasSeenWelcome && !isAccountPage) {
           setHasChecked(true);
           return;
         }
