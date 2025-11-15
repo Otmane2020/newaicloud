@@ -354,7 +354,7 @@ Deno.serve(async (req: Request) => {
     }
 
     let allProducts: ShopifyProduct[] = [];
-    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants(id,title,price,compare_at_price,sku,barcode,inventory_quantity,weight,weight_unit,option1,option2,option3,image_id),images,metafields_global_title_tag,metafields_global_description_tag`;
+    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
     let quotaReached = false;
 

@@ -109,7 +109,7 @@ export const useShopifySync = () => {
       console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore, imagesBefore });
 
       // Trigger import for all content types
-      const types = ['products', 'collections', 'pages', 'articles', 'images'];
+      const types = ['products', 'costs', 'collections', 'pages', 'articles', 'images'];
       const importResults: Record<string, number> = {};
       const errorMessages: string[] = [];
       
@@ -139,6 +139,17 @@ export const useShopifySync = () => {
                     apiSecret: storeData.access_token, 
                     storeId: storeToSync.id,
                     syncMode: 'smart'
+                  }
+                })
+              );
+              break;
+            case 'costs':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-costs-from-shopify', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: storeToSync.id 
                   }
                 })
               );
