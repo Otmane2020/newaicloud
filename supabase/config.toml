@@ -8,6 +8,12 @@ function = "trigger-cleanup-sync"
 schedule = "0 * * * *"
 function = "trigger-hourly-sync"
 
+[functions.trigger-hourly-sync]
+verify_jwt = false
+
+[functions.scheduled-sync]
+verify_jwt = false
+
 [functions.receive-admin-email]
 verify_jwt = false
 

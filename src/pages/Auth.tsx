@@ -134,7 +134,7 @@ export default function Auth() {
                   Connexion Shopify en attente
                 </p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Votre boutique {searchParams.get('shop')} sera automatiquement connectée après authentification.
+                  Votre boutique {searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.
                 </p>
               </AlertDescription>
             </Alert>
