@@ -127,6 +127,11 @@ html, body {
 body {
   @apply bg-background text-foreground;
 }
+
+/* Force navigation text to be bold */
+nav a, nav button, nav span {
+  font-weight: 600 !important;
+}
 }
 
 @layer utilities {
