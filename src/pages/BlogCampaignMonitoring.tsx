@@ -99,7 +99,7 @@ export default function BlogCampaignMonitoring() {
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user?.id,
-          category: campaign.topic_niche,
+          campaign_id: campaign.id, // 🔥 Send campaign_id instead
           keywords: campaign.keywords,
           mode: 'manual'
         }
