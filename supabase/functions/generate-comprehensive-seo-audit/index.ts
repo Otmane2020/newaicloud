@@ -82,7 +82,8 @@ Deno.serve(async (req) => {
       images_score: 0,
       technical_score: 0,
       issues: [] as any[],
-      recommendations: [] as any[]
+      recommendations: [] as any[],
+      action_plan: [] as any[]
     };
 
     // 1. HOMEPAGE AUDIT
@@ -140,8 +141,28 @@ Deno.serve(async (req) => {
     ];
     auditResults.global_score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 
-    // Generate recommendations
+    // Generate recommendations and action plan
     auditResults.recommendations = generateRecommendations(auditResults);
+    
+    // Generate action_plan from high and medium priority issues
+    const highPriorityIssues = auditResults.issues.filter((i: any) => i.priority === 'high');
+    const mediumPriorityIssues = auditResults.issues.filter((i: any) => i.priority === 'medium');
+    auditResults.action_plan = [
+      ...highPriorityIssues.map((issue: any) => ({
+        priority: 'high',
+        title: issue.title,
+        action: issue.action,
+        category: issue.category,
+        impact: issue.impact
+      })),
+      ...mediumPriorityIssues.map((issue: any) => ({
+        priority: 'medium',
+        title: issue.title,
+        action: issue.action,
+        category: issue.category,
+        impact: issue.impact
+      }))
+    ];
 
     console.log(`[AUDIT] Audit complete - Global score: ${auditResults.global_score}/100`);
 
