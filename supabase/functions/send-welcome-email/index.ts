@@ -104,6 +104,12 @@ Pour vous désinscrire: https://app.newai.sale/unsubscribe
           overflow: hidden;
           box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
         }
+        .logo-header {
+          background: white;
+          padding: 24px;
+          text-align: center;
+          border-bottom: 1px solid #e2e8f0;
+        }
         .header {
           background: linear-gradient(135deg, #0f172a 0%, #1e40af 40%, #06b6d4 100%);
           color: white;
@@ -188,6 +194,23 @@ Pour vous désinscrire: https://app.newai.sale/unsubscribe
     </head>
     <body>
       <div class="container">
+        <div class="logo-header">
+          <div style="display: inline-flex; align-items: center; gap: 16px;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);">
+              <svg width="36" height="36" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M64 20L30 40L64 60L98 40L64 20Z" fill="white" fill-opacity="0.95"/>
+                <path d="M30 88L64 108L98 88" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                <path d="M30 64L64 84L98 64" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                <circle cx="94" cy="34" r="14" fill="white"/>
+                <path d="M94 28V40M88 34H100" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-weight: 600; color: #1e293b; font-size: 18px; margin-bottom: 2px;">NewAI Support</div>
+              <div style="color: #64748b; font-size: 14px;">support@newai.sale</div>
+            </div>
+          </div>
+        </div>
         <div class="header">
           <h1 class="logo">NewAI</h1>
           <h2 class="title">${t.title}</h2>
@@ -224,8 +247,8 @@ Pour vous désinscrire: https://app.newai.sale/unsubscribe
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "NewAI <noreply@newai.sale>",
-        reply_to: "contact@newai.sale",
+        from: "NewAI Support <support@newai.sale>",
+        reply_to: "support@newai.sale",
         to: [email],
         subject: t.subject,
         html: emailHtml,
