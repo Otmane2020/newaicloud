@@ -486,13 +486,12 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
   
   products.forEach(product => {
     const scoreResult = calculateDetailedSeoScore(
-      product.seo_title,
+      product.seo_title || product.title,
       product.seo_description,
       product.images?.length > 0,
       product.tags,
       !!product.handle,
-      product.optimization_count || 0,
-      product.product_type
+      product.optimization_count || 0
     );
     totalScore += scoreResult.score;
   });
@@ -555,8 +554,8 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
   
   collections.forEach(collection => {
     const scoreResult = calculateDetailedSeoScore(
-      collection.seo_title,
-      collection.seo_description,
+      collection.seo_title || collection.title,
+      collection.seo_description || collection.body_html?.substring(0, 160) || '',
       !!collection.image,
       null,
       !!collection.handle,
@@ -604,8 +603,8 @@ function auditPages(pages: any[]): { score: number; issues: any[] } {
   
   pages.forEach(page => {
     const scoreResult = calculateDetailedSeoScore(
-      page.seo_title,
-      page.seo_description,
+      page.seo_title || page.title,
+      page.seo_description || page.body_html?.substring(0, 160) || '',
       false,
       null,
       !!page.handle,
@@ -653,8 +652,8 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
   
   articles.forEach(article => {
     const articleScore = calculateArticleSeoScore(
+      article.title,
       article.meta_description,
-      article.content?.substring(0, 200),
       article.keywords,
       article.featured_image,
       article.status === 'published',
