@@ -102,11 +102,47 @@ serve(async (req) => {
 
     console.log("[CLAIM-SHOPIFY] Connection successfully claimed for", pending.shop_url);
 
+    // 🆕 Déclencher l'import automatique des 10 premiers produits
+    console.log("[CLAIM-SHOPIFY] 🚀 Triggering auto-import of first 10 products");
+
+    try {
+      const shopName = pending.shop_url.replace('.myshopify.com', '');
+      
+      // Appeler la fonction import-products de manière asynchrone
+      const importResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/import-products`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            shopName: shopName,
+            autoImport: true,
+            maxProducts: 10,
+          }),
+        }
+      );
+
+      if (!importResponse.ok) {
+        const errorText = await importResponse.text();
+        console.error("[CLAIM-SHOPIFY] ❌ Auto-import failed:", errorText);
+      } else {
+        const importData = await importResponse.json();
+        console.log("[CLAIM-SHOPIFY] ✅ Auto-import initiated successfully:", importData);
+      }
+    } catch (importError) {
+      console.error("[CLAIM-SHOPIFY] ⚠️ Error triggering auto-import:", importError);
+      // Ne pas faire échouer la connexion si l'import échoue
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         shop: pending.shop_url,
-        message: "Shopify connection successfully linked to your account",
+        message: "Shopify connection successfully linked and products are being imported",
+        autoImportTriggered: true,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

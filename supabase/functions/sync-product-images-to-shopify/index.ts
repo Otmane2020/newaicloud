@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkTrialLimits } from "../_shared/trial-limits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,29 @@ Deno.serve(async (req) => {
     if (userError || !user) {
       throw new Error("User not authenticated");
     }
+
+    // 🆕 Vérifier les limites trial
+    const trialCheck = await checkTrialLimits(supabaseClient, user.id);
+
+    if (!trialCheck.canUpdateShopify) {
+      console.log('[SYNC-IMAGES] 🚫 Trial user attempting Shopify update - blocked');
+      return new Response(
+        JSON.stringify({
+          error: 'upgrade_required',
+          message: 'Les mises à jour Shopify ne sont pas disponibles sur le plan trial. Veuillez upgrader pour synchroniser vos modifications.',
+          isTrialActive: trialCheck.isTrialActive,
+          trialEndsAt: trialCheck.trialEndsAt,
+          requiresUpgrade: true,
+          upgradeUrl: '/subscription',
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log('[SYNC-IMAGES] ✅ User authorized for Shopify updates');
 
     const { productId } = await req.json();
 
@@ -98,6 +122,30 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ Access verified for product ${productId}`);
+
+    // Récupérer les variantes pour mapper les images
+    const { data: variants, error: variantsError } = await supabaseClient
+      .from('product_variants')
+      .select('id, shopify_variant_id, image_url')
+      .eq('product_id', productId);
+
+    if (variantsError) {
+      console.error('⚠️ Error fetching variants:', variantsError);
+    }
+
+    // Créer un map: image URL -> shopify_variant_ids[]
+    const imageToVariantMap = new Map<string, number[]>();
+    if (variants && variants.length > 0) {
+      console.log(`📦 Found ${variants.length} variants for product`);
+      for (const variant of variants) {
+        if (variant.image_url && variant.shopify_variant_id) {
+          const existing = imageToVariantMap.get(variant.image_url) || [];
+          existing.push(Number(variant.shopify_variant_id));
+          imageToVariantMap.set(variant.image_url, existing);
+        }
+      }
+      console.log(`🔗 Image to variant mapping:`, Array.from(imageToVariantMap.entries()).length, 'mappings');
+    }
 
     // If product not synced to Shopify, just return success without syncing
     if (!product.shopify_product_id) {
@@ -186,11 +234,19 @@ Deno.serve(async (req) => {
     // Prepare new images to add (only those without shopify_image_id)
     const newImages = (product.images || [])
       .filter((img: any) => !img.shopify_image_id) // Only new images
-      .map((img: any) => ({
-        src: img.src,
-        alt: img.alt_text || "",
-        variant_ids: img.variant_id ? [img.variant_id] : undefined,
-      }));
+      .map((img: any) => {
+        const variantIds = imageToVariantMap.get(img.src);
+        const imageData: any = {
+          src: img.src,
+          alt: img.alt_text || "",
+        };
+        // Ajouter variant_ids seulement s'il y en a
+        if (variantIds && variantIds.length > 0) {
+          imageData.variant_ids = variantIds;
+          console.log(`🔗 Assigning variants ${variantIds} to new image: ${img.src}`);
+        }
+        return imageData;
+      });
 
     // Prepare images to update (those with shopify_image_id but src/alt changed)
     const imagesToUpdate = (product.images || [])
@@ -204,38 +260,44 @@ Deno.serve(async (req) => {
     console.log(`🔄 Updating ${imagesToUpdate.length} existing images in Shopify`);
 
     // Update existing images first
-    const updatedImages = [];
+    let updatedCount = 0;
     for (const imgToUpdate of imagesToUpdate) {
-      console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} with new src: ${imgToUpdate.src}`);
-      const updateResponse = await fetch(
-        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images/${imgToUpdate.shopify_image_id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": connection.access_token,
-          },
-          body: JSON.stringify({ 
-            image: {
-              id: imgToUpdate.shopify_image_id,
-              src: imgToUpdate.src,
-              alt: imgToUpdate.alt_text || "",
-            } 
-          }),
-        }
-      );
-
-      if (updateResponse.ok) {
-        const result = await updateResponse.json();
-        updatedImages.push(result.image);
-        console.log(`✅ Updated Shopify image: ${result.image.id}`);
-      } else {
-        const errorText = await updateResponse.text();
-        console.error(`Failed to update image ${imgToUpdate.shopify_image_id}:`, updateResponse.status, errorText);
+      try {
+        console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} with new src: ${imgToUpdate.src}`);
+        const variantIds = imageToVariantMap.get(imgToUpdate.src);
+        const updateData: any = {
+          id: imgToUpdate.shopify_image_id,
+          src: imgToUpdate.src,
+          alt: imgToUpdate.alt_text || "",
+        };
         
-        if (updateResponse.status === 401) {
-          throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+        // Ajouter variant_ids seulement s'il y en a
+        if (variantIds && variantIds.length > 0) {
+          updateData.variant_ids = variantIds;
+          console.log(`🔗 Assigning variants ${variantIds} to updated image: ${imgToUpdate.src}`);
         }
+
+        const updateResponse = await fetch(
+          `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images/${imgToUpdate.shopify_image_id}.json`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": connection.access_token,
+            },
+            body: JSON.stringify({ image: updateData }),
+          }
+        );
+
+        if (updateResponse.ok) {
+          updatedCount++;
+          console.log(`✅ Updated image ${imgToUpdate.shopify_image_id}`);
+        } else {
+          const errorText = await updateResponse.text();
+          console.error(`❌ Failed to update image ${imgToUpdate.shopify_image_id}:`, errorText);
+        }
+      } catch (updateError) {
+        console.error(`Error updating image ${imgToUpdate.shopify_image_id}:`, updateError);
       }
     }
 
@@ -285,16 +347,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`✅ Successfully synced images: ${updatedImages.length} updated, ${addedImages.length} added`);
+    console.log(`✅ Successfully synced images: ${updatedCount} updated, ${addedImages.length} added`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Images synchronized successfully",
-        imageCount: addedImages.length + updatedImages.length,
-        totalImages: existingImages.length + addedImages.length,
-        updatedCount: updatedImages.length,
+        message: `Synchronisation terminée: ${addedImages.length} images ajoutées, ${updatedCount} images mises à jour`,
         addedCount: addedImages.length,
+        updatedCount,
+        totalProcessed: addedImages.length + updatedCount,
       }),
       {
         status: 200,

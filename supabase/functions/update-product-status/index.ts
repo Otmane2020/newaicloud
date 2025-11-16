@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { checkTrialLimits } from '../_shared/trial-limits.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,6 +37,29 @@ Deno.serve(async (req) => {
     }
     
     console.log('[UPDATE-STATUS] User authenticated:', user.id);
+
+    // 🆕 Vérifier les limites trial
+    const trialCheck = await checkTrialLimits(supabaseAdmin, user.id);
+
+    if (!trialCheck.canUpdateShopify) {
+      console.log('[UPDATE-STATUS] 🚫 Trial user attempting Shopify update - blocked');
+      return new Response(
+        JSON.stringify({
+          error: 'upgrade_required',
+          message: 'Les mises à jour Shopify ne sont pas disponibles sur le plan trial. Veuillez upgrader pour synchroniser vos modifications.',
+          isTrialActive: trialCheck.isTrialActive,
+          trialEndsAt: trialCheck.trialEndsAt,
+          requiresUpgrade: true,
+          upgradeUrl: '/subscription',
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('[UPDATE-STATUS] ✅ User authorized for Shopify updates');
 
     const { productId, shopifyId, storeId, newStatus } = await req.json();
 
