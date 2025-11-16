@@ -274,27 +274,21 @@ export default function Dashboard() {
         : 0;
 
       // 4. ARTICLES SCORE (from ArticleManagement.tsx)
-      let articlesQuery = supabase
+      const { data: articlesData } = await supabase
         .from('blog_articles')
         .select('title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
+        .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
-      
-      // Apply store filter only if a store is selected, otherwise get all articles
-      if (selectedStore?.id) {
-        articlesQuery = articlesQuery.or(`store_id.eq.${selectedStore.id},store_id.is.null`);
-      }
-      
-      const { data: articlesData } = await articlesQuery;
 
       const articlesScore = articlesData && articlesData.length > 0
         ? Math.round(
             articlesData.reduce((sum: number, article: any) => {
               const score = calculateArticleSeoScore(
                 article.title,
-                article.title, // Use title for seoTitle as it doesn't exist in the table
-                article.meta_description,
-                article.keywords,
+                article.title,
+                article.meta_description || '',
+                article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
                 !!article.featured_image,
                 article.status === 'published',
                 article.optimization_count || 0
