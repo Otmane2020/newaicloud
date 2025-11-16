@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
-import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
+import { ResultsDialog, ProgressDialog, SyncConfirmationDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateArticleSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
@@ -54,7 +54,11 @@ interface Article {
   optimization_count: number;
 }
 
-export default function ArticleManagement() {
+export interface ArticleManagementRef {
+  optimizeAllArticles: () => Promise<void>;
+}
+
+const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
@@ -68,6 +72,10 @@ export default function ArticleManagement() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [optimizing, setOptimizing] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -196,8 +204,57 @@ export default function ArticleManagement() {
     }
   };
 
+  const optimizeAllArticles = async () => {
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    try {
+      setOptimizing(true);
+      setShowProgressDialog(true);
+      
+      const allArticleIds = articles.map(a => a.id);
+      setProgress({ current: 0, total: allArticleIds.length });
+      
+      const { data, error } = await supabase.functions.invoke('generate-article-seo', {
+        body: { article_ids: allArticleIds }
+      });
+
+      if (error) throw error;
+      
+      setProgress({ current: allArticleIds.length, total: allArticleIds.length });
+      
+      const { data: optimizedData, error: articlesError } = await supabase
+        .from('blog_articles')
+        .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
+        .in('id', allArticleIds);
+
+      if (articlesError) throw articlesError;
+
+      await loadArticles();
+      await refreshLimits();
+      
+      setOptimizedArticles(optimizedData || []);
+      setShowProgressDialog(false);
+      setShowSyncDialog(true);
+    } catch (error) {
+      console.error('Error optimizing:', error);
+      toast.error('❌ Erreur lors de l\'optimisation', {
+        description: 'Veuillez réessayer'
+      });
+      setShowProgressDialog(false);
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   const optimizeArticles = async (articleIds: string[]) => {
-    // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
         toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
@@ -219,7 +276,6 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       
-      // Get optimized articles from database
       const { data: articles, error: articlesError } = await supabase
         .from('blog_articles')
         .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
@@ -229,7 +285,6 @@ export default function ArticleManagement() {
 
       toast.dismiss(loadingToast);
       
-      // Show dialog with results
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
@@ -242,6 +297,10 @@ export default function ArticleManagement() {
       });
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    optimizeAllArticles
+  }));
 
   const syncToShopify = async (articleIds: string[]) => {
     const loadingToast = toast.loading('📤 Synchronisation Shopify', {
@@ -819,6 +878,31 @@ export default function ArticleManagement() {
         onOpenChange={setShowUpgradeDialog}
         limitType="optimizations"
       />
+
+      {/* Progress Dialog */}
+      <ProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        type="seo"
+        operation="optimizing"
+        current={progress.current}
+        total={progress.total}
+      />
+
+      {/* Sync Confirmation Dialog */}
+      <SyncConfirmationDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        onConfirm={async () => {
+          await syncToShopify(optimizedArticles.map(a => a.id));
+          setShowSyncDialog(false);
+        }}
+        itemCount={optimizedArticles.length}
+        type="seo"
+        loading={false}
+      />
     </div>
   );
-}
+});
+
+export default ArticleManagement;
