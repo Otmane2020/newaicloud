@@ -15,16 +15,39 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-    const { taxonomyData } = await req.json();
+    console.log("🔄 Starting Google Product Taxonomy import...");
 
-    if (!taxonomyData || !Array.isArray(taxonomyData)) {
-      throw new Error("Invalid taxonomy data format");
+    // Check if table already has data
+    const { count } = await supabase
+      .from("google_product_taxonomy")
+      .select("*", { count: "exact", head: true });
+
+    if (count && count > 0) {
+      console.log(`⚠️ Table already contains ${count} entries. Clearing...`);
+      // Clear existing data
+      await supabase
+        .from("google_product_taxonomy")
+        .delete()
+        .neq("id", 0);
     }
 
-    console.log(`📦 Importing ${taxonomyData.length} taxonomy entries...`);
+    // Download taxonomy from Google (French version)
+    console.log("📥 Downloading taxonomy from Google...");
+    const response = await fetch(
+      "https://www.google.com/basepages/producttype/taxonomy-with-ids.fr-FR.txt"
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to download taxonomy: ${response.status}`);
+    }
+
+    const text = await response.text();
+    const lines = text.split("\n").filter(line => line.trim() && !line.startsWith("#"));
+
+    console.log(`📊 Processing ${lines.length} taxonomy entries...`);
 
     // Parse and structure the data
-    const structuredData = taxonomyData.map((line: string) => {
+    const structuredData = lines.map((line: string) => {
       // Format: "id - full path"
       const match = line.match(/^(\d+)\s*-\s*(.+)$/);
       if (!match) return null;
@@ -47,19 +70,8 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Parsed ${structuredData.length} valid entries`);
 
-    // Clear existing data
-    console.log("🗑️ Clearing existing taxonomy data...");
-    const { error: deleteError } = await supabase
-      .from("google_product_taxonomy")
-      .delete()
-      .neq("id", 0);
-
-    if (deleteError) {
-      console.error("Error clearing data:", deleteError);
-    }
-
-    // Insert in batches of 1000
-    const batchSize = 1000;
+    // Insert in batches of 500
+    const batchSize = 500;
     let inserted = 0;
 
     for (let i = 0; i < structuredData.length; i += batchSize) {
@@ -75,8 +87,10 @@ Deno.serve(async (req) => {
       }
 
       inserted += batch.length;
-      console.log(`✅ Inserted ${inserted}/${structuredData.length}`);
+      console.log(`✅ Inserted batch ${i / batchSize + 1}: ${inserted}/${structuredData.length}`);
     }
+
+    console.log(`🎉 Import complete! Inserted ${inserted} entries`);
 
     return new Response(
       JSON.stringify({

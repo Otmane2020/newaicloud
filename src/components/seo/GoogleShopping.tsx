@@ -39,7 +39,8 @@ import {
   Image as ImageIcon,
   Zap,
   BookOpen,
-  Clock
+  Clock,
+  Download
 } from 'lucide-react';
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
@@ -50,6 +51,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
+import { useGoogleTaxonomyImport } from '@/hooks/useGoogleTaxonomyImport';
 import {
   Pagination,
   PaginationContent,
@@ -83,6 +85,7 @@ interface Product {
 export function GoogleShopping() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
