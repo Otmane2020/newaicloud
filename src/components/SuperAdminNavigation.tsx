@@ -89,8 +89,8 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
                   <button
                     onClick={() => onTabChange(item.id)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 w-full font-semibold",
-                      "hover:bg-accent hover:text-accent-foreground",
+                      "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 w-full",
+                      "hover:bg-accent hover:text-accent-foreground font-semibold",
                       isActive && "bg-accent text-accent-foreground"
                     )}
                   >

@@ -171,10 +171,10 @@ export function Navigation() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 font-semibold ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 ${
                   location.pathname === '/admin'
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
-                    : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50 font-semibold'
+                    : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200 font-semibold'
                 }`}
                 title={collapsed ? 'Admin Panel' : undefined}
               >
@@ -195,10 +195,10 @@ export function Navigation() {
                     <>
                       <button
                         onClick={() => toggleMenu(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                           isActive 
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
-                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
+                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                         }`}
                       >
                         <Icon className="w-5 h-5 flex-shrink-0" />
@@ -280,10 +280,10 @@ export function Navigation() {
                   ) : (
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                         isActive 
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
-                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                       }`}
                       title={collapsed ? item.label : undefined}
                     >
@@ -320,10 +320,10 @@ export function Navigation() {
               <Link
                 key={item.path + item.label}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                 }`}
                 title={collapsed ? item.label : undefined}
               >
