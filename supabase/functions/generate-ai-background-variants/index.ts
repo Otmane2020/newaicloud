@@ -9,7 +9,7 @@ interface BackgroundVariant {
   variantId: string;
   imageBase64: string;
   prompt: string;
-  style: "professional" | "lifestyle" | "artistic" | "minimalist";
+  style: "cozy_lifestyle" | "professional_studio" | "luxurious_nature" | "modern_minimalist" | "urban_contemporary";
   description: string;
   qualityScore: number;
 }
@@ -74,28 +74,29 @@ serve(async (req) => {
     // ---------- Variants avec contexte enrichi et décoratif ----------
     const variants = [
       {
-        style: "professional" as const,
-        description: "Studio professionnel élégant",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Professional e-commerce product photography of ${enrichedContext}. ${basePrompt}. Studio setup with professional lighting, clean neutral background, product prominently displayed and centered. High-quality commercial photography. Ultra high resolution, sharp focus, perfect lighting. 2000x2000px.`,
+        style: "cozy_lifestyle" as const,
+        description: "Cozy Lifestyle – Salon moderne",
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a cozy lifestyle setting with warm lighting and a comfortable modern living room interior. ${basePrompt}. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce. Ultra high resolution, 2000x2000px.`,
       },
       {
-        style: "lifestyle" as const,
-        description: "Scène de vie naturelle",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Lifestyle product photography of ${enrichedContext}. ${basePrompt}. 
-        🏠 CONTEXTE DÉCORATIF: If furniture (sofa, chair, table, bed): place in a tastefully decorated living room or bedroom with matching decor elements, plants, cushions, and warm lighting.
-        If kitchen item (appliance, utensil, cookware): place in a modern bright kitchen with wooden countertop, fresh ingredients, natural daylight.
-        If decor item (vase, lamp, frame, candle): place in a stylish home interior matching the product aesthetic with complementary furniture and accessories.
-        Natural setting with warm ambient lighting, realistic environment. Product shown centered in authentic use context. Professional lifestyle photography. Ultra high resolution, natural colors, inviting atmosphere. 2000x2000px.`,
+        style: "professional_studio" as const,
+        description: "Studio professionnel",
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Professional studio photography of ${enrichedContext} with a clean white background and perfect soft lighting. ${basePrompt}. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic. Ultra high resolution, 2000x2000px.`,
       },
       {
-        style: "artistic" as const,
-        description: "Design artistique et créatif",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Artistic product photography of ${enrichedContext}. ${basePrompt}. Creative composition with artistic lighting and unique perspective. Product centered. High-end editorial style. Ultra high resolution, dramatic lighting, premium aesthetic. 2000x2000px.`,
+        style: "luxurious_nature" as const,
+        description: "Nature luxueuse",
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. ${basePrompt}. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment. Ultra high resolution, 2000x2000px.`,
       },
       {
-        style: "minimalist" as const,
-        description: "Minimaliste épuré",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Minimalist product photography of ${enrichedContext}. ${basePrompt}. Clean minimal background with soft shadows, modern contemporary aesthetic. Product centered. Sleek and refined composition. Ultra high resolution, perfect symmetry. 2000x2000px.`,
+        style: "modern_minimalist" as const,
+        description: "Minimaliste moderne",
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. ${basePrompt}. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce. Ultra high resolution, 2000x2000px.`,
+      },
+      {
+        style: "urban_contemporary" as const,
+        description: "Urbain contemporain",
+        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} with contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. ${basePrompt}. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot. Ultra high resolution, 2000x2000px.`,
       },
     ];
 
@@ -103,7 +104,7 @@ serve(async (req) => {
     const results = await Promise.all(
       variants.map(async (variant, i) => {
         try {
-          console.log(`🧠 Generating variant ${i + 1}/4: ${variant.style}`);
+          console.log(`🧠 Generating variant ${i + 1}/5: ${variant.style}`);
           
           const res = await fetch(
             "https://ai.gateway.lovable.dev/v1/chat/completions",

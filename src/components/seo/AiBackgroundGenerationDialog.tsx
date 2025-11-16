@@ -259,14 +259,20 @@ export function AiBackgroundConfigDialog({
                 <SelectItem value="Place this product in a professional studio setting with soft lighting and neutral gray backdrop">
                   🎬 Studio professionnel
                 </SelectItem>
-                <SelectItem value="Place this product in a luxurious natural environment with elegant plants and soft natural lighting">
+                <SelectItem value="A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.">
+                  🛋️ Cozy Lifestyle – Salon moderne
+                </SelectItem>
+                <SelectItem value="Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.">
+                  📸 Studio professionnel
+                </SelectItem>
+                <SelectItem value="Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.">
                   🌿 Nature luxueuse
                 </SelectItem>
-                <SelectItem value="Place this product in a modern minimalist setting with clean lines and geometric shapes">
-                  ⚪ Minimaliste moderne
+                <SelectItem value="Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.">
+                  🧼 Minimaliste moderne
                 </SelectItem>
-                <SelectItem value="Place this product in a warm lifestyle scene with cozy home elements and soft ambient lighting">
-                  🏠 Lifestyle chaleureux
+                <SelectItem value="Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.">
+                  🏙️ Urbain contemporain
                 </SelectItem>
                 <SelectItem value="Place this product in a contemporary urban setting with industrial elements and modern aesthetics">
                   🏙️ Urbain contemporain
