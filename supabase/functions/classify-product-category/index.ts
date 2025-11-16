@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Loaded ${taxonomy.length} categories`);
 
+    // Check if taxonomy is empty
+    if (!taxonomy || taxonomy.length === 0) {
+      throw new Error("Google Product Taxonomy is empty. Please populate the taxonomy table first.");
+    }
+
     // Create a concise taxonomy summary for the AI
     const taxonomySummary = taxonomy
       .map((t) => `${t.id}|${t.full_path}`)
@@ -139,6 +144,11 @@ RÉPONDS UNIQUEMENT EN JSON, RIEN D'AUTRE.`;
       console.warn("⚠️ AI returned invalid category, using fallback");
       // Fallback to a generic category
       const fallback = taxonomy.find((t) => t.level1 && !t.level2) || taxonomy[0];
+      
+      if (!fallback) {
+        throw new Error("No valid fallback category found in taxonomy");
+      }
+      
       classification = {
         gpc_id: fallback.id,
         gpc_path: fallback.full_path,
