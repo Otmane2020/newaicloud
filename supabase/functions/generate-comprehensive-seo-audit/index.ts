@@ -58,10 +58,11 @@ Deno.serve(async (req) => {
       store?.id
         ? supabaseAdmin.from('shopify_collections').select('id, seo_title, title, seo_description, body_html, image_url, image_alt, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
         : supabaseAdmin.from('shopify_collections').select('id, seo_title, title, seo_description, body_html, image_url, image_alt, optimization_count').eq('user_id', user.id),
-      // Articles filtered by store_id (strict filter, same as ArticleManagement.tsx line 117)
+      // Articles filtered with OR logic to include store articles AND null store_id (same as ArticleManagement.tsx line 200)
+      // Also fetch seo_title for correct score calculation
       store?.id
-        ? supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id),
+        ? supabaseAdmin.from('blog_articles').select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id).or(`store_id.eq.${store.id},store_id.is.null`)
+        : supabaseAdmin.from('blog_articles').select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id),
       // Pages filtered by store_id (same as Dashboard line 253)
       store?.id
         ? supabaseAdmin.from('shopify_pages').select('seo_title, title, seo_description, body_html, handle, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
@@ -679,10 +680,12 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
     return { score: 100, issues };
   }
   
+  // CRITICAL: Must use article.seo_title (not article.title) for second parameter
+  // to match ArticleManagement.tsx calculation (lines 242-250), which is the authoritative reference
   articles.forEach(article => {
     const articleScore = calculateArticleSeoScore(
       article.title,
-      article.title,
+      article.seo_title, // ArticleManagement uses seo_title
       article.meta_description || '',
       article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
       !!article.featured_image,
