@@ -265,6 +265,71 @@ Réponds UNIQUEMENT en JSON valide:
 
     console.log('📝 Parsed attributes:', parsedData);
 
+    // PHASE 3: Try SERP search for similar products specs
+    let serpData = null;
+    let specsSource = 'estimated';
+    let specsConfidence = 0.5;
+    let serpVerified = false;
+
+    try {
+      console.log('🔍 Searching SERP for similar products...');
+      const { data: serpResponse, error: serpError } = await supabase.functions.invoke(
+        'search-similar-products-specs',
+        {
+          body: {
+            productTitle: product.title,
+            imageUrl: product.images?.[0]?.src,
+            productType: parsedData.category,
+          }
+        }
+      );
+
+      if (!serpError && serpResponse && serpResponse.confidence > 0.7 && serpResponse.similarProducts?.length >= 3) {
+        console.log('✅ SERP data verified with high confidence:', serpResponse.confidence);
+        serpData = serpResponse;
+        specsSource = 'serp';
+        specsConfidence = serpResponse.confidence;
+        serpVerified = true;
+
+        // Override estimated dimensions with SERP data
+        if (serpResponse.averageWeight) {
+          const weightMatch = serpResponse.averageWeight.match(/^([\d.]+)(kg)?$/);
+          if (weightMatch) {
+            parsedData.smart_weight = parseFloat(weightMatch[1]);
+            parsedData.smart_weight_unit = 'kg';
+          }
+        }
+
+        if (serpResponse.averageDimensions?.length) {
+          const lengthMatch = serpResponse.averageDimensions.length.match(/^([\d.]+)(cm)?$/);
+          if (lengthMatch) {
+            parsedData.smart_length = parseFloat(lengthMatch[1]);
+            parsedData.smart_length_unit = 'cm';
+          }
+        }
+
+        if (serpResponse.averageDimensions?.width) {
+          const widthMatch = serpResponse.averageDimensions.width.match(/^([\d.]+)(cm)?$/);
+          if (widthMatch) {
+            parsedData.smart_width = parseFloat(widthMatch[1]);
+            parsedData.smart_width_unit = 'cm';
+          }
+        }
+
+        if (serpResponse.averageDimensions?.height) {
+          const heightMatch = serpResponse.averageDimensions.height.match(/^([\d.]+)(cm)?$/);
+          if (heightMatch) {
+            parsedData.smart_height = parseFloat(heightMatch[1]);
+            parsedData.smart_height_unit = 'cm';
+          }
+        }
+      } else {
+        console.log('⚠️ SERP search returned low confidence or insufficient data');
+      }
+    } catch (serpError) {
+      console.warn('⚠️ SERP search failed, using estimated values:', serpError);
+    }
+
     // Update ALL AI attributes and dimensions
     const { error: updateError } = await supabase
       .from('shopify_products')
@@ -289,7 +354,7 @@ Réponds UNIQUEMENT en JSON valide:
         ai_background_style: parsedData.ai_background_style || null,
         ai_condition_notes: parsedData.ai_condition_notes || null,
         
-        // Dimensions
+        // Dimensions (potentially updated by SERP)
         smart_length: parsedData.smart_length || null,
         smart_length_unit: parsedData.smart_length_unit || null,
         smart_width: parsedData.smart_width || null,
