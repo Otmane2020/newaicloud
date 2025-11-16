@@ -629,18 +629,19 @@ export function SeoAuditDashboard() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                        <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
                         {(() => {
-                          const scores = [
+                           const scores = [
                             audit.homepage_score || 0,
                             audit.products_score || 0,
                             audit.collections_score || 0,
-                            audit.audit_results?.content_score || audit.blog_score || 0,
+                            audit.pages_score || 0,
+                            audit.articles_score || 0,
                             audit.images_score || 0,
-                            audit.technical_score || 0
+                            audit.tags_score || 0
                           ];
                           return scores.filter(score => score >= 80).length;
                         })()}
                       </div>
-                      <div className="text-xs text-muted-foreground font-semibold">{tf('seoAuditDashboard.overview.categoriesOptimized', { count: 6 })}</div>
+                      <div className="text-xs text-muted-foreground font-semibold">{tf('seoAuditDashboard.overview.categoriesOptimized', { count: 7 })}</div>
                       <div className="text-xs text-muted-foreground">{t.seoAuditDashboard.overview.optimized}</div>
                     </div>
                   </div>
@@ -715,11 +716,11 @@ export function SeoAuditDashboard() {
                   desc: t.seoAuditDashboard.categoryDescriptions.images 
                 },
                 {
-                  key: "technical_score",
-                  label: t.seoAuditDashboard.categories.technical,
+                  key: "tags_score",
+                  label: t.seoAuditDashboard.categories.tags,
                   icon: Sparkles,
                   tab: "products",
-                  desc: t.seoAuditDashboard.categoryDescriptions.technical,
+                  desc: t.seoAuditDashboard.categoryDescriptions.tags,
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 const categoryStats =
