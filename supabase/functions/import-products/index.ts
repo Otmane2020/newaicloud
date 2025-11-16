@@ -48,6 +48,8 @@ interface RequestBody {
   apiKey?: string;
   apiSecret?: string;
   storeId?: string;
+  autoImport?: boolean;  // 🆕 Flag pour mode auto-import
+  maxProducts?: number;  // 🆕 Limite explicite
 }
 
 interface ShopifyResponse {
@@ -425,7 +427,15 @@ Deno.serve(async (req: Request) => {
     }
 
     let allProducts: ShopifyProduct[] = [];
-    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
+    
+    // 🆕 Déterminer le mode et la limite
+    const isAutoImport = requestBody.autoImport === true;
+    const requestedMaxProducts = requestBody.maxProducts || 50;
+    const productLimitForUrl = isAutoImport ? Math.min(10, requestedMaxProducts) : 50;
+
+    console.log(`📦 [IMPORT] Mode: ${isAutoImport ? '⚡ AUTO-IMPORT' : '📥 MANUAL'}, limit: ${isAutoImport ? productLimitForUrl : 'all available'} products`);
+    
+    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=${productLimitForUrl}&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
     let quotaReached = false;
 
@@ -500,10 +510,16 @@ Deno.serve(async (req: Request) => {
         .eq('id', importJob.id);
 
       if (parsedNextUrl) {
-        nextPageUrl = parsedNextUrl;
-        console.log(`Next page URL found, continuing...`);
-        // Réduire le délai pour accélérer l'import
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // 🆕 Pour auto-import, ne pas paginer - prendre seulement la première page
+        if (isAutoImport) {
+          console.log('[IMPORT] ⚡ Auto-import mode: stopping after first page (10 products max)');
+          nextPageUrl = null;
+        } else {
+          nextPageUrl = parsedNextUrl;
+          console.log(`Next page URL found, continuing...`);
+          // Réduire le délai pour accélérer l'import
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       } else {
         nextPageUrl = null;
       }

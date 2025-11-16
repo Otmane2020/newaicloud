@@ -275,7 +275,25 @@ export const useImageOptimization = () => {
             body: { productId }
           });
 
-          if (syncError) {
+          // 🆕 Vérifier si l'erreur est due au trial
+          if (syncError || syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
+            if (syncData?.requiresUpgrade) {
+              console.log('🚫 [OPTIMIZATION] Shopify sync blocked - trial user');
+              toast.error('Mise à jour Shopify bloquée', {
+                description: 'Upgradez votre plan pour synchroniser avec Shopify',
+                action: {
+                  label: '✨ Voir les plans',
+                  onClick: () => {
+                    window.location.href = '/subscription';
+                  }
+                },
+                duration: 10000,
+              });
+              
+              // L'optimisation locale a réussi, mais pas la sync Shopify
+              return { success: true, shopifySyncBlocked: true };
+            }
+            
             console.error('❌ Shopify sync failed:', syncError);
             toast.warning('Image appliquée mais synchronisation Shopify échouée', {
               description: 'L\'image est mise à jour localement. Synchronisez manuellement si nécessaire.'

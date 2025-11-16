@@ -50,9 +50,17 @@ export default function Auth() {
             if (error) throw error;
 
             if (data?.success) {
-              toast.success("Shopify store connected successfully!");
-              // Rediriger vers la page d'intégration après succès
-              navigate('/integration');
+              toast.success("🎉 Boutique Shopify connectée!", {
+                description: data.autoImportTriggered 
+                  ? "Import des 10 premiers produits en cours... Vous serez redirigé vers le dashboard." 
+                  : "Connexion établie avec succès."
+              });
+              
+              // Attendre 2 secondes pour que l'import background démarre
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Rediriger vers le dashboard où les produits importés seront visibles
+              navigate('/dashboard');
             } else {
               throw new Error('Failed to claim connection');
             }
