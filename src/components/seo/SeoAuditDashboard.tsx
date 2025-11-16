@@ -24,6 +24,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
+import {
+  calculateProductsSeoScore,
+  calculateCollectionsSeoScore,
+  calculatePagesSeoScore,
+  calculateArticlesSeoScore,
+  calculateImagesSeoScore,
+  calculateTagsSeoScore,
+  calculateHomepageSeoScore,
+} from "@/lib/seoQuality";
 import { useTranslation } from "@/lib/language";
 
 export function SeoAuditDashboard() {
@@ -61,45 +70,84 @@ export function SeoAuditDashboard() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      const [products, collections, pages, articles] = await Promise.all([
-        supabase.from("shopify_products").select("id, seo_title, seo_description, enrichment_status").eq("seller_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("shopify_collections").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("shopify_pages").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("blog_articles").select("id, meta_description, content").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+      // Fetch all data in parallel using the same queries as Dashboard
+      const [productsRes, collectionsRes, pagesRes, articlesRes, allImagesRes, homepageRes] = await Promise.all([
+        supabase
+          .from("shopify_products")
+          .select("id, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, enrichment_status")
+          .eq("seller_id", user?.id)
+          .eq("store_id", selectedStore.id)
+          .range(0, 9999),
+        supabase
+          .from("shopify_collections")
+          .select("id, seo_title, title, seo_description, body_html, image_url, optimization_count")
+          .eq("user_id", user?.id)
+          .eq("store_id", selectedStore.id)
+          .range(0, 9999),
+        supabase
+          .from("shopify_pages")
+          .select("seo_title, title, seo_description, body_html, handle, optimization_count")
+          .eq("user_id", user?.id)
+          .eq("store_id", selectedStore.id)
+          .range(0, 9999),
+        supabase
+          .from("blog_articles")
+          .select("title, meta_description, keywords, featured_image, status, optimization_count")
+          .eq("user_id", user?.id)
+          .eq("store_id", selectedStore.id)
+          .range(0, 9999),
+        supabase
+          .from("product_images")
+          .select("id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)")
+          .eq("shopify_products.seller_id", user?.id)
+          .eq("shopify_products.store_id", selectedStore.id),
+        supabase
+          .from("homepage_seo")
+          .select("seo_title, seo_description")
+          .eq("user_id", user?.id)
+          .maybeSingle()
       ]);
 
-      // Fetch images for image stats
-      const productIds = products.data?.map(p => p.id) || [];
-      const { data: images } = await supabase
-        .from("product_images")
-        .select("id, alt_text")
-        .in("product_id", productIds);
+      // Calculate real-time scores using shared functions (same as Dashboard)
+      const products = productsRes.data || [];
+      const collections = collectionsRes.data || [];
+      const pages = pagesRes.data || [];
+      const articles = articlesRes.data || [];
+      const images = allImagesRes.data || [];
+      const homepageSeo = homepageRes.data;
 
       setStats({
         products: {
-          total: products.data?.length || 0,
-          optimized: products.data?.filter((p) => p.seo_title && p.seo_description).length || 0,
+          total: products.length,
+          optimized: products.filter((p) => p.seo_title && p.seo_description).length,
+          score: calculateProductsSeoScore(products)
         },
         collections: {
-          total: collections.data?.length || 0,
-          optimized: collections.data?.filter((c) => c.seo_title && c.seo_description).length || 0,
+          total: collections.length,
+          optimized: collections.filter((c) => c.seo_title && c.seo_description).length,
+          score: calculateCollectionsSeoScore(collections)
         },
         pages: {
-          total: pages.data?.length || 0,
-          optimized: pages.data?.filter((p) => p.seo_title && p.seo_description).length || 0,
+          total: pages.length,
+          optimized: pages.filter((p) => p.seo_title && p.seo_description).length,
+          score: calculatePagesSeoScore(pages)
         },
         articles: {
-          total: articles.data?.length || 0,
-          optimized: articles.data?.filter((a) => a.meta_description && a.content).length || 0,
+          total: articles.length,
+          optimized: articles.filter((a) => a.meta_description).length,
+          score: calculateArticlesSeoScore(articles)
         },
         images: {
-          total: images?.length || 0,
-          optimized: images?.filter((img) => img.alt_text && img.alt_text.length > 0).length || 0,
+          total: images.length,
+          optimized: images.filter((img) => img.alt_text && img.alt_text.length > 0).length,
+          score: calculateImagesSeoScore(images)
         },
-        technical: {
-          total: products.data?.length || 0,
-          optimized: products.data?.filter((p) => p.enrichment_status === 'enriched').length || 0,
+        tags: {
+          score: calculateTagsSeoScore(products)
         },
+        homepage: {
+          score: calculateHomepageSeoScore(homepageSeo)
+        }
       });
     } catch (error) {
       console.error("Error loading stats:", error);

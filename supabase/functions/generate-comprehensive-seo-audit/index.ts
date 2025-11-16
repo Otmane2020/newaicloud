@@ -446,13 +446,14 @@ function calculateAltTextScore(altText: string | null, isAiGenerated: boolean): 
 function auditHomepage(store: any, homepageSeo: any): { score: number; issues: any[] } {
   const issues: any[] = [];
   
-  // Use detailed homepage score if available
-  if (homepageSeo?.last_audit && typeof homepageSeo.last_audit === 'object' && 'score' in homepageSeo.last_audit) {
-    console.log(`[AUDIT] Using detailed homepage score: ${homepageSeo.last_audit.score}`);
-    return { score: homepageSeo.last_audit.score, issues: [] };
-  }
+  // Calculate homepage score using the same method as Dashboard
+  let score = 0;
   
-  let score = 100;
+  if (homepageSeo) {
+    const titleScore = calculateTitleScore(homepageSeo.seo_title || null);
+    const descScore = calculateDescriptionScore(homepageSeo.seo_description || null);
+    score = Math.round((titleScore.score + descScore.score) / 2);
+  }
 
   if (!store) {
     issues.push({
@@ -466,8 +467,7 @@ function auditHomepage(store: any, homepageSeo: any): { score: number; issues: a
     return { score: 0, issues };
   }
 
-  if (!store.seo_title || store.seo_title.length < 40) {
-    score -= 30;
+  if (!homepageSeo?.seo_title || homepageSeo.seo_title.length < 40) {
     issues.push({
       category: 'homepage',
       severity: 'high',
@@ -478,8 +478,7 @@ function auditHomepage(store: any, homepageSeo: any): { score: number; issues: a
     });
   }
 
-  if (!store.seo_description || store.seo_description.length < 90) {
-    score -= 25;
+  if (!homepageSeo?.seo_description || homepageSeo.seo_description.length < 90) {
     issues.push({
       category: 'homepage',
       severity: 'medium',

@@ -304,6 +304,161 @@ export function calculateTagsScore(tags: string | null | undefined): number {
 }
 
 /**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SHARED SCORE CALCULATION FUNCTIONS
+ * ═══════════════════════════════════════════════════════════════════════════
+ * These functions ensure 100% consistency between Dashboard, Audit, and 
+ * Individual Optimization tabs. They are the single source of truth for 
+ * all SEO score calculations across the entire application.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/**
+ * Calculate Products SEO Score
+ * Used by: Dashboard, Audit, SeoOptimization.tsx
+ * Authority: SeoOptimization.tsx is the reference implementation
+ */
+export function calculateProductsSeoScore(products: any[]): number {
+  if (!products || products.length === 0) return 0;
+  
+  const totalScore = products.reduce((sum, p) => {
+    const scoreRaw = calculateDetailedSeoScore(
+      p.seo_title || p.title,
+      p.seo_description || p.vendor,
+      !!p.image_url,
+      true,
+      p.tags,
+      p.optimization_count || 0
+    );
+    // Apply penalty for pending or not optimized products (same as SeoOptimization.tsx)
+    const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+      ? scoreRaw.score * 0.5 
+      : scoreRaw.score;
+    return sum + score;
+  }, 0);
+  
+  return Math.round(totalScore / products.length);
+}
+
+/**
+ * Calculate Collections SEO Score
+ * Used by: Dashboard, Audit, CollectionOptimization.tsx
+ * Authority: CollectionOptimization.tsx is the reference implementation
+ */
+export function calculateCollectionsSeoScore(collections: any[]): number {
+  if (!collections || collections.length === 0) return 0;
+  
+  const totalScore = collections.reduce((sum, c) => {
+    const score = calculateDetailedSeoScore(
+      c.seo_title || c.title,
+      c.seo_description || c.body_html?.substring(0, 160) || '',
+      !!c.image_url,
+      true,
+      undefined,
+      c.optimization_count || 0
+    );
+    return sum + score.score;
+  }, 0);
+  
+  return Math.round(totalScore / collections.length);
+}
+
+/**
+ * Calculate Pages SEO Score
+ * Used by: Dashboard, Audit, PageOptimization.tsx
+ * Authority: PageOptimization.tsx is the reference implementation
+ */
+export function calculatePagesSeoScore(pages: any[]): number {
+  if (!pages || pages.length === 0) return 0;
+  
+  const totalScore = pages.reduce((sum, page) => {
+    const score = calculateDetailedSeoScore(
+      page.seo_title || page.title,
+      page.seo_description || page.body_html?.substring(0, 160) || '',
+      false,
+      !!page.handle,
+      undefined,
+      page.optimization_count || 0
+    );
+    return sum + score.score;
+  }, 0);
+  
+  return Math.round(totalScore / pages.length);
+}
+
+/**
+ * Calculate Articles SEO Score
+ * Used by: Dashboard, Audit, ArticleManagement.tsx
+ * Authority: ArticleManagement.tsx is the reference implementation
+ */
+export function calculateArticlesSeoScore(articles: any[]): number {
+  if (!articles || articles.length === 0) return 0;
+  
+  const totalScore = articles.reduce((sum, article) => {
+    const score = calculateArticleSeoScore(
+      article.title,
+      article.seo_title, // Use seo_title like ArticleManagement.tsx
+      article.meta_description || '',
+      article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
+      !!article.featured_image,
+      article.status === 'published',
+      article.optimization_count || 0
+    );
+    return sum + score.score;
+  }, 0);
+  
+  return Math.round(totalScore / articles.length);
+}
+
+/**
+ * Calculate Images SEO Score
+ * Used by: Dashboard, Audit, SeoAltImageList.tsx
+ * Authority: SeoAltImageList.tsx is the reference implementation
+ */
+export function calculateImagesSeoScore(images: any[]): number {
+  if (!images || images.length === 0) return 0;
+  
+  const totalScore = images.reduce((sum, img) => {
+    const isAI = img.optimization_count > 0;
+    const altScore = calculateAltTextScore(img.alt_text || '', isAI);
+    return sum + altScore.score;
+  }, 0);
+  
+  return Math.round(totalScore / images.length);
+}
+
+/**
+ * Calculate Tags SEO Score
+ * Used by: Dashboard, Audit
+ */
+export function calculateTagsSeoScore(products: any[]): number {
+  if (!products || products.length === 0) return 0;
+  
+  let totalScore = 0;
+  products.forEach((product) => {
+    const tagScore = calculateTagsScore(product.tags);
+    totalScore += tagScore;
+  });
+  
+  // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
+  return Math.round((totalScore / products.length) * 5);
+}
+
+/**
+ * Calculate Homepage SEO Score
+ * Used by: Dashboard, Audit, HomePageSeoAudit.tsx
+ * Authority: HomePageSeoAudit.tsx is the reference implementation
+ */
+export function calculateHomepageSeoScore(homepageSeo: any): number {
+  if (!homepageSeo) return 0;
+  
+  const titleScore = calculateTitleScore(homepageSeo.seo_title || null);
+  const descScore = calculateDescriptionScore(homepageSeo.seo_description || null);
+  
+  return Math.round((titleScore.score + descScore.score) / 2);
+}
+
+/**
  * Calculate detailed SEO score combining title, description, and tags
  * Pondération: Title 35% + Description 35% + Tags 15% + Image 6% + URL 6%
  * 
