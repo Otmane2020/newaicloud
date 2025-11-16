@@ -222,7 +222,7 @@ export function Navigation() {
                                 <div key={subItem.path}>
                                   <button
                                     onClick={() => toggleMenu(subItem.path)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-normal ${
                                       isSubActive
                                         ? 'bg-blue-100 text-blue-700 font-medium'
                                         : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -242,7 +242,7 @@ export function Navigation() {
                                           <Link
                                             key={subSubItem.path}
                                             to={subSubItem.path}
-                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs ${
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-normal ${
                                               isSubSubActive
                                                 ? 'bg-blue-100 text-blue-700 font-medium'
                                                 : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -263,7 +263,7 @@ export function Navigation() {
                               <Link
                                 key={subItem.path}
                                 to={subItem.path}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-normal ${
                                   isSubActive
                                     ? 'bg-blue-100 text-blue-700 font-medium'
                                     : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
