@@ -65,7 +65,7 @@ export function SeoAuditDashboard() {
         supabase.from("shopify_products").select("id, seo_title, seo_description, enrichment_status").eq("seller_id", user?.id).eq("store_id", selectedStore.id),
         supabase.from("shopify_collections").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
         supabase.from("shopify_pages").select("id, seo_title, seo_description").eq("user_id", user?.id).eq("store_id", selectedStore.id),
-        supabase.from("blog_articles").select("id, meta_description, content").eq("user_id", user?.id).eq("store_id", selectedStore.id),
+        supabase.from("blog_articles").select("id, meta_description, content").eq("user_id", user?.id).or(`store_id.eq.${selectedStore.id},store_id.is.null`),
       ]);
 
       // Fetch images for image stats
