@@ -38,41 +38,9 @@ export default function Auth() {
       const shopifyPending = searchParams.get('shopify_pending');
       
       if (shopifyPending) {
-        console.log('🔗 Claiming Shopify connection with pending token');
-        
-        // Associer la connexion Shopify au compte
-        const claimConnection = async () => {
-          try {
-            const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
-              body: { pendingToken: shopifyPending }
-            });
-
-            if (error) throw error;
-
-            if (data?.success) {
-              toast.success("🎉 Boutique Shopify connectée!", {
-                description: data.autoImportTriggered 
-                  ? "Import des 10 premiers produits en cours... Vous serez redirigé vers le dashboard." 
-                  : "Connexion établie avec succès."
-              });
-              
-              // Attendre 2 secondes pour que l'import background démarre
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              
-              // Rediriger vers le dashboard où les produits importés seront visibles
-              navigate('/dashboard');
-            } else {
-              throw new Error('Failed to claim connection');
-            }
-          } catch (error) {
-            console.error('Failed to claim Shopify connection:', error);
-            toast.error("Failed to connect Shopify store. Please try again from the integration page.");
-            // Rediriger quand même vers le dashboard
-            navigate(redirectPath || '/dashboard');
-          }
-        };
-
-        claimConnection();
+        console.log('🔗 Shopify pending token detected, redirecting to onboarding for trial setup');
+        // Rediriger vers onboarding pour configurer l'essai AVANT de claim
+        navigate(`/onboarding?shopify_pending=${shopifyPending}`);
       } else {
         // Redirection normale sans Shopify pending
         const destination = redirectPath || '/dashboard';
