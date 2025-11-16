@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[AUDIT] Starting comprehensive SEO audit');
+    console.log('[AUDIT] Starting comprehensive SEO audit with 7 categories');
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     if (productIds.length > 0) {
       const { data: imgData } = await supabaseAdmin
         .from('product_images')
-        .select('id, alt_text, optimization_count')
+        .select('id, alt_text, optimization_count, ai_generated_alt')
         .in('product_id', productIds);
       productImages = imgData || [];
     }
@@ -72,97 +72,84 @@ Deno.serve(async (req) => {
     console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}`);
     console.log(`[AUDIT] Images fetched - Product images: ${productImages.length}, Content images: ${contentImages.length}, Total: ${productImages.length + contentImages.length}`);
 
-    // Initialize audit results
+    // Initialize audit results with 7 categories
     const auditResults = {
       global_score: 0,
       homepage_score: 0,
       products_score: 0,
       collections_score: 0,
-      content_score: 0, // Articles + Pages combined
+      pages_score: 0,
+      articles_score: 0,
       images_score: 0,
-      technical_score: 0,
+      tags_score: 0,
       issues: [] as any[],
       recommendations: [] as any[],
       action_plan: [] as any[]
     };
 
-    // 1. HOMEPAGE AUDIT
-    console.log('[AUDIT] Analyzing homepage...');
-    // Use the detailed analysis from homepage_seo if available
-    if (homepageSeo?.last_audit && typeof homepageSeo.last_audit === 'object' && 'score' in homepageSeo.last_audit) {
-      auditResults.homepage_score = homepageSeo.last_audit.score;
-      console.log(`[AUDIT] Using detailed homepage score: ${homepageSeo.last_audit.score}`);
-    } else {
-      const homepageIssues = auditHomepage(store);
-      auditResults.issues.push(...homepageIssues.issues);
-      auditResults.homepage_score = homepageIssues.score;
-    }
-
-    // 2. PRODUCTS AUDIT
-    console.log('[AUDIT] Analyzing products...');
+    // Run audits for all 7 categories
+    console.log('[AUDIT] Running audits for 7 categories: homepage, products, collections, pages, articles, images, tags');
+    
+    const homepageAudit = auditHomepage(store, homepageSeo);
     const productsAudit = auditProducts(products);
-    auditResults.issues.push(...productsAudit.issues);
-    auditResults.products_score = productsAudit.score;
-
-    // 3. COLLECTIONS AUDIT
-    console.log('[AUDIT] Analyzing collections...');
     const collectionsAudit = auditCollections(collections);
-    auditResults.issues.push(...collectionsAudit.issues);
-    auditResults.collections_score = collectionsAudit.score;
-
-    // 4. CONTENT AUDIT (Articles + Pages)
-    console.log('[AUDIT] Analyzing content (articles + pages)...');
-    const contentAudit = auditContent(articles, pages);
-    auditResults.issues.push(...contentAudit.issues);
-    auditResults.content_score = contentAudit.score;
-
-    // 5. IMAGES AUDIT
-    console.log(`[AUDIT] Analyzing images... (${productImages.length} product + ${contentImages.length} content)`);
+    const pagesAudit = auditPages(pages);
+    const articlesAudit = auditArticles(articles);
     const imagesAudit = auditImages(productImages, contentImages);
-    console.log(`[AUDIT] Images score calculated: ${imagesAudit.score}`);
-    auditResults.issues.push(...imagesAudit.issues);
+    const tagsAudit = auditTags(products);
+
+    // Aggregate results
+    auditResults.homepage_score = homepageAudit.score;
+    auditResults.products_score = productsAudit.score;
+    auditResults.collections_score = collectionsAudit.score;
+    auditResults.pages_score = pagesAudit.score;
+    auditResults.articles_score = articlesAudit.score;
     auditResults.images_score = imagesAudit.score;
+    auditResults.tags_score = tagsAudit.score;
 
-    // 6. TECHNICAL AUDIT
-    console.log('[AUDIT] Technical analysis...');
-    const technicalAudit = auditTechnical(store);
-    console.log(`[AUDIT] Technical score calculated: ${technicalAudit.score}`);
-    auditResults.issues.push(...technicalAudit.issues);
-    auditResults.technical_score = technicalAudit.score;
+    console.log(`[AUDIT] Category scores - Homepage: ${homepageAudit.score}, Products: ${productsAudit.score}, Collections: ${collectionsAudit.score}, Pages: ${pagesAudit.score}, Articles: ${articlesAudit.score}, Images: ${imagesAudit.score}, Tags: ${tagsAudit.score}`);
 
-    // Calculate global score (6 categories)
+    auditResults.issues = [
+      ...homepageAudit.issues,
+      ...productsAudit.issues,
+      ...collectionsAudit.issues,
+      ...pagesAudit.issues,
+      ...articlesAudit.issues,
+      ...imagesAudit.issues,
+      ...tagsAudit.issues
+    ];
+
+    // Calculate global score (average of all 7 categories)
     const scores = [
       auditResults.homepage_score,
       auditResults.products_score,
       auditResults.collections_score,
-      auditResults.content_score,
+      auditResults.pages_score,
+      auditResults.articles_score,
       auditResults.images_score,
-      auditResults.technical_score
+      auditResults.tags_score
     ];
-    auditResults.global_score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    auditResults.global_score = Math.round(scores.reduce((a, b) => a + b, 0) / 7);
 
-    // Generate recommendations and action plan
+    console.log(`[AUDIT] Global score calculated: ${auditResults.global_score}/100 (average of 7 categories)`);
+
+    // Generate recommendations based on issues
     auditResults.recommendations = generateRecommendations(auditResults);
-    
-    // Generate action_plan from high and medium priority issues
-    const highPriorityIssues = auditResults.issues.filter((i: any) => i.priority === 'high');
-    const mediumPriorityIssues = auditResults.issues.filter((i: any) => i.priority === 'medium');
-    auditResults.action_plan = [
-      ...highPriorityIssues.map((issue: any) => ({
-        priority: 'high',
-        title: issue.title,
-        action: issue.action,
+
+    // Generate action plan
+    auditResults.action_plan = auditResults.issues
+      .sort((a, b) => {
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        return severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder];
+      })
+      .slice(0, 10)
+      .map((issue, idx) => ({
+        priority: idx + 1,
         category: issue.category,
-        impact: issue.impact
-      })),
-      ...mediumPriorityIssues.map((issue: any) => ({
-        priority: 'medium',
-        title: issue.title,
         action: issue.action,
-        category: issue.category,
-        impact: issue.impact
-      }))
-    ];
+        impact: issue.impact,
+        effort: issue.severity === 'high' ? 'high' : issue.severity === 'medium' ? 'medium' : 'low'
+      }));
 
     console.log(`[AUDIT] Audit complete - Global score: ${auditResults.global_score}/100`);
 
@@ -176,9 +163,10 @@ Deno.serve(async (req) => {
         homepage_score: auditResults.homepage_score,
         products_score: auditResults.products_score,
         collections_score: auditResults.collections_score,
-        blog_score: auditResults.content_score, // Store as blog_score for compatibility
-        images_score: auditResults.images_score, // Add images score
-        technical_score: auditResults.technical_score, // Add technical score
+        pages_score: auditResults.pages_score,
+        articles_score: auditResults.articles_score,
+        images_score: auditResults.images_score,
+        tags_score: auditResults.tags_score,
         audit_results: auditResults,
         recommendations: auditResults.recommendations
       }, {
@@ -192,11 +180,11 @@ Deno.serve(async (req) => {
       throw saveError;
     }
 
-    console.log('[AUDIT] Audit saved successfully');
+    console.log('[AUDIT] Audit saved successfully with 7 categories');
 
     return new Response(
       JSON.stringify({ success: true, audit: savedAudit }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
@@ -204,485 +192,643 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
 
-// ============= AUDIT FUNCTIONS =============
+// SEO Score Calculation Functions (from src/lib/seoQuality.ts)
 
-function auditHomepage(store: any) {
-  const issues = [];
-  let score = 100;
-
-  if (!store) {
-    issues.push({
-      category: 'homepage',
-      priority: 'high',
-      title: 'Pas de connexion boutique',
-      description: 'Aucune boutique Shopify connectée',
-      impact: 'Impossible d\'auditer la homepage',
-      action: 'Connecter une boutique Shopify'
-    });
-    return { issues, score: 0 };
-  }
-
-  // Check store configuration
-  if (!store.store_url) {
-    issues.push({
-      category: 'homepage',
-      priority: 'high',
-      title: 'URL de boutique manquante',
-      description: 'L\'URL de la boutique n\'est pas configurée',
-      impact: 'Problèmes de référencement et d\'accessibilité',
-      action: 'Configurer l\'URL de la boutique'
-    });
-    score -= 30;
-  }
-
-  return { issues, score };
+interface SeoScoreDetails {
+  score: number;
+  breakdown: {
+    presence: number;
+    length: number;
+    keywords: number;
+    readability: number;
+  };
+  maxScore: number;
 }
 
-function auditProducts(products: any[]) {
-  const issues = [];
-  let totalScore = 0;
-
-  if (products.length === 0) {
-    return { issues: [], score: 100 };
-  }
-
-  // Calculate SEO score for each product using the same method as SeoOptimization
-  products.forEach(p => {
-    const score = calculateSeoScore(p.seo_title, p.seo_description, !!p.image_url, p.tags, p.optimization_count);
-    totalScore += score;
-  });
+function calculateTitleScore(title: string | null, productType?: string): SeoScoreDetails {
+  const breakdown = { presence: 0, length: 0, keywords: 0, readability: 0 };
+  const weights = { presence: 30, length: 25, keywords: 25, readability: 20 };
   
-  const avgScore = Math.round(totalScore / products.length);
-
-  // Check for duplicate titles
-  const titleMap = new Map();
-  products.forEach(p => {
-    const title = p.title || '';
-    titleMap.set(title, (titleMap.get(title) || 0) + 1);
-  });
-
-  const duplicates = Array.from(titleMap.entries()).filter(([, count]) => count > 1);
-  if (duplicates.length > 0) {
-    issues.push({
-      category: 'products',
-      priority: 'high',
-      title: `${duplicates.length} titres dupliqués`,
-      description: `Plusieurs produits partagent le même titre`,
-      impact: 'Pénalise le référencement et crée de la confusion',
-      action: 'Rendre chaque titre unique',
-      count: duplicates.length
-    });
+  if (!title) {
+    return { score: 0, breakdown, maxScore: 100 };
   }
-
-  // Check for missing SEO descriptions
-  const missingDesc = products.filter(p => !p.seo_description || p.seo_description.length < 50);
-  if (missingDesc.length > 0) {
-    issues.push({
-      category: 'products',
-      priority: 'medium',
-      title: `${missingDesc.length} produits sans meta description`,
-      description: 'Des produits n\'ont pas de meta description optimisée',
-      impact: 'Réduit le taux de clic dans les résultats de recherche',
-      action: 'Ajouter des meta descriptions de 150-160 caractères',
-      count: missingDesc.length
-    });
+  
+  breakdown.presence = weights.presence;
+  
+  const length = title.length;
+  if (length >= 40 && length <= 75) {
+    breakdown.length = weights.length;
+  } else if (length >= 30 && length < 40) {
+    breakdown.length = weights.length * 0.7;
+  } else if (length > 75 && length <= 90) {
+    breakdown.length = weights.length * 0.6;
   }
-
-  // Check for missing SEO titles
-  const missingSeoTitle = products.filter(p => !p.seo_title || p.seo_title === p.title);
-  if (missingSeoTitle.length > 0) {
-    issues.push({
-      category: 'products',
-      priority: 'medium',
-      title: `${missingSeoTitle.length} produits sans SEO title`,
-      description: 'Des produits n\'ont pas de titre SEO optimisé',
-      impact: 'Perte d\'opportunités de référencement',
-      action: 'Créer des titres SEO uniques avec mots-clés',
-      count: missingSeoTitle.length
-    });
-  }
-
-  return { issues, score: avgScore };
+  
+  const titleLower = title.toLowerCase();
+  const hasCategory = productType ? titleLower.includes(productType.toLowerCase()) : false;
+  const hasStyle = /\b(moderne|classique|élégant|vintage|contemporain|design)\b/i.test(title);
+  const hasColor = /\b(noir|blanc|rouge|bleu|vert|jaune|rose|gris)\b/i.test(title);
+  
+  const keywordScore = [hasCategory, hasStyle, hasColor].filter(Boolean).length;
+  breakdown.keywords = (keywordScore / 3) * weights.keywords;
+  
+  const capsCount = (title.match(/[A-Z]/g) || []).length;
+  const capsRatio = capsCount / title.length;
+  const words = title.split(/\s+/);
+  const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+  const repetitionRatio = uniqueWords.size / words.length;
+  
+  let readabilityScore = 1;
+  if (capsRatio > 0.3) readabilityScore *= 0.7;
+  if (repetitionRatio < 0.8) readabilityScore *= 0.8;
+  breakdown.readability = readabilityScore * weights.readability;
+  
+  const totalScore = Object.values(breakdown).reduce((a, b) => a + b, 0);
+  return { score: Math.round(totalScore), breakdown, maxScore: 100 };
 }
 
-// Helper function to calculate SEO score (must match frontend calculation)
-function calculateSeoScore(
+function calculateDescriptionScore(description: string | null, productTitle?: string): SeoScoreDetails {
+  const breakdown = { presence: 0, length: 0, keywords: 0, readability: 0 };
+  const weights = { presence: 30, length: 25, keywords: 25, readability: 20 };
+  
+  if (!description) {
+    return { score: 0, breakdown, maxScore: 100 };
+  }
+  
+  breakdown.presence = weights.presence;
+  
+  const length = description.length;
+  if (length >= 90 && length <= 200) {
+    breakdown.length = weights.length;
+  } else if (length >= 70 && length < 90) {
+    breakdown.length = weights.length * 0.8;
+  } else if (length > 200 && length <= 250) {
+    breakdown.length = weights.length * 0.7;
+  }
+  
+  const descLower = description.toLowerCase();
+  const titleWords = productTitle ? productTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3) : [];
+  const hasProductKeywords = titleWords.some(word => descLower.includes(word));
+  const hasCategory = /\b(produit|article|accessoire|vêtement|décoration)\b/i.test(description);
+  const hasStyle = /\b(moderne|classique|élégant|vintage|contemporain|design|unique)\b/i.test(description);
+  
+  const keywordScore = [hasProductKeywords, hasCategory, hasStyle].filter(Boolean).length;
+  breakdown.keywords = (keywordScore / 3) * weights.keywords;
+  
+  const hasPunctuation = /[.,!?;:]/.test(description);
+  const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const hasMultipleSentences = sentences.length > 1;
+  const words = description.split(/\s+/);
+  const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+  const repetitionRatio = uniqueWords.size / words.length;
+  
+  let readabilityScore = 0;
+  if (hasPunctuation) readabilityScore += 0.3;
+  if (hasMultipleSentences) readabilityScore += 0.4;
+  if (repetitionRatio > 0.7) readabilityScore += 0.3;
+  breakdown.readability = readabilityScore * weights.readability;
+  
+  const totalScore = Object.values(breakdown).reduce((a, b) => a + b, 0);
+  return { score: Math.round(totalScore), breakdown, maxScore: 100 };
+}
+
+function calculateTagsScore(tags: string | null): number {
+  if (!tags) return 0;
+  
+  const tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  const tagCount = tagArray.length;
+  const qualityTags = tagArray.filter(t => t.length > 3).length;
+  
+  let score = 0;
+  if (tagCount > 0) score += 5;
+  if (tagCount >= 3 && tagCount <= 10) score += 10;
+  if (qualityTags >= 3) score += 5;
+  
+  return score;
+}
+
+function calculateDetailedSeoScore(
   title: string | null,
   description: string | null,
   hasImage: boolean,
   tags: string | null,
+  hasUrl: boolean,
+  optimizationCount: number,
+  productType?: string
+): SeoScoreDetails {
+  const titleResult = calculateTitleScore(title, productType);
+  const descResult = calculateDescriptionScore(description, title || undefined);
+  const tagsScore = calculateTagsScore(tags);
+  
+  const imageScore = hasImage ? 10 : 0;
+  const urlScore = hasUrl ? 5 : 0;
+  const optimizationBonus = optimizationCount > 0 ? 5 : 0;
+  
+  const totalScore = Math.min(100, 
+    (titleResult.score * 0.35) + 
+    (descResult.score * 0.35) + 
+    (tagsScore) + 
+    imageScore + 
+    urlScore + 
+    optimizationBonus
+  );
+  
+  return {
+    score: Math.round(totalScore),
+    breakdown: {
+      presence: titleResult.breakdown.presence + descResult.breakdown.presence,
+      length: titleResult.breakdown.length + descResult.breakdown.length,
+      keywords: titleResult.breakdown.keywords + descResult.breakdown.keywords,
+      readability: titleResult.breakdown.readability + descResult.breakdown.readability
+    },
+    maxScore: 100
+  };
+}
+
+function calculateArticleSeoScore(
+  seoTitle: string | null,
+  seoDescription: string | null,
+  keywords: string[] | null,
+  featuredImage: string | null,
+  isPublished: boolean,
   optimizationCount: number
-): number {
+): { score: number; breakdown: string[] } {
+  let score = 0;
+  const breakdown: string[] = [];
+  
+  if (seoTitle && seoTitle.length >= 40 && seoTitle.length <= 70) {
+    score += 20;
+    breakdown.push('Titre SEO optimisé');
+  }
+  
+  if (seoDescription && seoDescription.length >= 120 && seoDescription.length <= 160) {
+    score += 20;
+    breakdown.push('Meta description optimisée');
+  }
+  
+  if (keywords && keywords.length >= 3 && keywords.length <= 8) {
+    score += 15;
+    breakdown.push('Mots-clés bien définis');
+  }
+  
+  if (featuredImage) {
+    score += 15;
+    breakdown.push('Image mise en avant présente');
+  }
+  
+  if (isPublished) {
+    score += 10;
+    breakdown.push('Article publié');
+  }
+  
+  if (optimizationCount === 0) {
+    score = Math.max(0, score - 20);
+    breakdown.push('⚠️ Article non optimisé');
+  } else {
+    score += 10;
+    breakdown.push('Article optimisé');
+  }
+  
+  return { score: Math.min(100, score), breakdown };
+}
+
+function calculateAltTextScore(altText: string | null, isAiGenerated: boolean): number {
+  if (!altText) return 0;
+  
+  const length = altText.length;
   let score = 0;
   
-  // Title score (35 points)
-  if (title) {
-    const titleLength = title.length;
-    if (titleLength >= 50 && titleLength <= 60) {
-      score += 35;
-    } else if (titleLength >= 40 && titleLength <= 70) {
-      score += 28;
-    } else if (titleLength >= 30) {
-      score += 20;
-    } else {
-      score += 10;
-    }
+  if (length >= 15 && length <= 90) {
+    score = 100;
+  } else if (length >= 10 && length < 15) {
+    score = 70;
+  } else if (length > 90 && length <= 125) {
+    score = 80;
+  } else if (length > 0) {
+    score = 50;
   }
   
-  // Description score (35 points)
-  if (description) {
-    const descLength = description.length;
-    if (descLength >= 120 && descLength <= 160) {
-      score += 35;
-    } else if (descLength >= 100 && descLength <= 200) {
-      score += 28;
-    } else if (descLength >= 70) {
-      score += 20;
-    } else {
-      score += 10;
-    }
-  }
-  
-  // Image score (10 points)
-  if (hasImage) score += 10;
-  
-  // Tags score (10 points)
-  if (tags && tags.length > 0) score += 10;
-  
-  // Optimization bonus (10 points)
-  if (optimizationCount > 0) score += 10;
-  
-  return Math.min(100, score);
+  const weight = isAiGenerated ? 1.0 : 0.5;
+  return Math.round(score * weight);
 }
 
-function auditCollections(collections: any[]) {
-  const issues = [];
-  let totalScore = 0;
-
-  if (collections.length === 0) {
-    return { issues: [], score: 100 };
-  }
-
-  // Calculate SEO score for each collection
-  collections.forEach(c => {
-    const score = calculateSeoScore(c.seo_title, c.seo_description, !!c.image_url, null, c.optimization_count || 0);
-    totalScore += score;
-  });
+// Audit functions for each category
+function auditHomepage(store: any, homepageSeo: any): { score: number; issues: any[] } {
+  const issues: any[] = [];
   
-  const avgScore = Math.round(totalScore / collections.length);
-
-  // Check for missing descriptions
-  const missingDesc = collections.filter(c => !c.seo_description || c.seo_description.length < 50);
-  if (missingDesc.length > 0) {
-    issues.push({
-      category: 'collections',
-      priority: 'medium',
-      title: `${missingDesc.length} collections sans description SEO`,
-      description: 'Collections sans meta description optimisée',
-      impact: 'Opportunités de référencement manquées',
-      action: 'Ajouter des descriptions uniques et persuasives',
-      count: missingDesc.length
-    });
-  }
-
-  // Check for missing images alt
-  const missingAlt = collections.filter(c => c.image_url && !c.image_alt);
-  if (missingAlt.length > 0) {
-    issues.push({
-      category: 'collections',
-      priority: 'low',
-      title: `${missingAlt.length} images de collection sans texte alt`,
-      description: 'Images sans attribut alt pour l\'accessibilité',
-      impact: 'Problèmes d\'accessibilité et SEO image',
-      action: 'Ajouter des descriptions alt aux images',
-      count: missingAlt.length
-    });
-  }
-
-  return { issues, score: avgScore };
-}
-
-function auditContent(articles: any[], pages: any[]) {
-  const issues = [];
-  let articleTotalScore = 0;
-  let pageTotalScore = 0;
-
-  // ARTICLES AUDIT
-  if (articles.length === 0) {
-    issues.push({
-      category: 'content',
-      priority: 'low',
-      title: 'Aucun article de blog',
-      description: 'Pas de contenu blog pour le SEO',
-      impact: 'Perte d\'opportunités de trafic organique',
-      action: 'Créer des articles de blog optimisés SEO',
-      count: 0
-    });
-  } else {
-    // Calculate average score for articles
-    articles.forEach(a => {
-      const score = calculateSeoScore(a.title, a.meta_description || a.seo_description, !!a.featured_image, null, a.optimization_count || 0);
-      articleTotalScore += score;
-    });
-    
-    // Check for published articles
-    const published = articles.filter(a => a.status === 'published');
-    if (published.length === 0) {
-      issues.push({
-        category: 'content',
-        priority: 'medium',
-        title: 'Aucun article publié',
-        description: 'Tous les articles sont en brouillon',
-        impact: 'Pas de contenu visible pour les moteurs de recherche',
-        action: 'Publier des articles optimisés',
-        count: articles.length
-      });
-    } else {
-      // Check for articles without featured image
-      const missingFeaturedImage = published.filter(a => !a.featured_image);
-      if (missingFeaturedImage.length > 0) {
-        issues.push({
-          category: 'content',
-          priority: 'medium',
-          title: `${missingFeaturedImage.length} articles sans image à la une`,
-          description: 'Articles publiés sans featured image',
-          impact: 'Moins attractif dans les SERP et réseaux sociaux',
-          action: 'Ajouter une image à la une pour chaque article',
-          count: missingFeaturedImage.length
-        });
-      }
-      
-      const optimizedArticles = published.filter(a => 
-        a.meta_description && 
-        a.meta_description.length >= 120 &&
-        a.optimization_count > 0
-      );
-      
-      if (optimizedArticles.length < published.length) {
-        issues.push({
-          category: 'content',
-          priority: 'medium',
-          title: `${published.length - optimizedArticles.length} articles non optimisés`,
-          description: 'Articles publiés sans optimisation SEO complète',
-          impact: 'Taux de clic réduit dans les SERP',
-          action: 'Optimiser les meta descriptions et titres SEO',
-          count: published.length - optimizedArticles.length
-        });
-      }
-    }
-  }
-
-  // PAGES AUDIT
-  if (pages.length === 0) {
-    issues.push({
-      category: 'content',
-      priority: 'low',
-      title: 'Aucune page Shopify',
-      description: 'Pas de pages statiques pour le SEO',
-      impact: 'Opportunités de contenu manquées',
-      action: 'Créer des pages optimisées (À propos, Contact, etc.)',
-      count: 0
-    });
-  } else {
-    // Calculate average score for pages
-    pages.forEach(p => {
-      const score = calculateSeoScore(p.seo_title || p.title, p.seo_description, false, null, p.optimization_count || 0);
-      pageTotalScore += score;
-    });
-    
-    // Check for optimized pages
-    const optimizedPages = pages.filter(p => 
-      p.seo_title && 
-      p.seo_description && 
-      p.seo_description.length >= 120 &&
-      p.optimization_count > 0
-    );
-    
-    if (optimizedPages.length < pages.length) {
-      issues.push({
-        category: 'content',
-        priority: 'medium',
-        title: `${pages.length - optimizedPages.length} pages non optimisées`,
-        description: 'Pages sans SEO optimisé',
-        impact: 'Référencement des pages non optimal',
-        action: 'Optimiser les titres et descriptions SEO des pages',
-        count: pages.length - optimizedPages.length
-      });
-    }
-  }
-
-  // Combined score
-  let finalScore;
-  if (articles.length === 0 && pages.length === 0) {
-    finalScore = 0;
-  } else if (articles.length === 0) {
-    finalScore = Math.round(pageTotalScore / pages.length);
-  } else if (pages.length === 0) {
-    finalScore = Math.round(articleTotalScore / articles.length);
-  } else {
-    const avgArticleScore = Math.round(articleTotalScore / articles.length);
-    const avgPageScore = Math.round(pageTotalScore / pages.length);
-    finalScore = Math.round((avgArticleScore + avgPageScore) / 2);
+  // Use detailed homepage score if available
+  if (homepageSeo?.last_audit && typeof homepageSeo.last_audit === 'object' && 'score' in homepageSeo.last_audit) {
+    console.log(`[AUDIT] Using detailed homepage score: ${homepageSeo.last_audit.score}`);
+    return { score: homepageSeo.last_audit.score, issues: [] };
   }
   
-  return { issues, score: Math.max(0, finalScore) };
-}
-
-function auditImages(productImages: any[], contentImages: any[]) {
-  const issues = [];
-  let score = 100;
-
-  // Combine all images
-  const allImages = [...productImages, ...contentImages];
-
-  if (allImages.length === 0) {
-    return { issues: [], score: 100 };
-  }
-
-  // Count images without ALT text
-  const imagesWithoutAlt = allImages.filter(img => !img.alt_text || img.alt_text.trim() === '');
-  const imagesWithAlt = allImages.filter(img => img.alt_text && img.alt_text.trim() !== '');
-  
-  // Calculate completion percentage
-  const completionRate = (imagesWithAlt.length / allImages.length) * 100;
-  
-  // Score based on completion rate
-  score = Math.round(completionRate);
-
-  // Calculate quality bonus for AI-optimized images
-  const optimizedImages = allImages.filter(img => img.optimization_count > 0);
-  const optimizationBonus = Math.min(20, (optimizedImages.length / allImages.length) * 20);
-  score = Math.min(100, score + optimizationBonus);
-
-  if (imagesWithoutAlt.length > 0) {
-    const percentage = Math.round((imagesWithoutAlt.length / allImages.length) * 100);
-    issues.push({
-      category: 'images',
-      priority: percentage > 50 ? 'high' : 'medium',
-      title: `${imagesWithoutAlt.length} images sans texte alt`,
-      description: `${percentage}% de vos images n'ont pas de texte alternatif`,
-      impact: 'Accessibilité réduite et SEO image non optimisé',
-      action: 'Générer des textes alt avec l\'IA Vision',
-      count: imagesWithoutAlt.length
-    });
-  }
-
-  console.log(`[AUDIT-IMAGES] Total: ${allImages.length}, With ALT: ${imagesWithAlt.length}, Without ALT: ${imagesWithoutAlt.length}, Score: ${score}`);
-
-  return { issues, score: Math.max(0, score) };
-}
-
-function auditTechnical(store: any) {
-  const issues = [];
   let score = 100;
 
   if (!store) {
     issues.push({
-      category: 'technical',
-      priority: 'critical',
-      title: 'Aucune boutique connectée',
-      description: 'Pas de connexion Shopify active',
-      impact: 'Impossible de synchroniser et d\'optimiser',
-      action: 'Connecter votre boutique Shopify'
+      category: 'homepage',
+      severity: 'high',
+      title: 'Boutique non connectée',
+      description: 'Aucune boutique Shopify n\'est connectée.',
+      impact: 'Impossible d\'optimiser le SEO de la page d\'accueil.',
+      action: 'Connectez votre boutique Shopify dans les paramètres.'
     });
-    return { issues, score: 0 };
+    return { score: 0, issues };
   }
 
-  // Check store configuration
-  if (!store.store_url) {
-    issues.push({
-      category: 'technical',
-      priority: 'high',
-      title: 'URL de boutique manquante',
-      description: 'Configuration incomplète',
-      impact: 'Synchronisation impossible',
-      action: 'Configurer l\'URL dans les paramètres'
-    });
+  if (!store.seo_title || store.seo_title.length < 40) {
     score -= 30;
-  }
-
-  // Check synchronization status
-  if (!store.last_sync_at) {
     issues.push({
-      category: 'technical',
-      priority: 'medium',
-      title: 'Aucune synchronisation effectuée',
-      description: 'La boutique n\'a jamais été synchronisée',
-      impact: 'Données potentiellement obsolètes',
-      action: 'Effectuer une première synchronisation'
+      category: 'homepage',
+      severity: 'high',
+      title: 'Titre SEO manquant ou trop court',
+      description: 'Le titre de votre page d\'accueil n\'est pas optimisé.',
+      impact: 'Visibilité réduite dans les moteurs de recherche.',
+      action: 'Ajoutez un titre SEO entre 40 et 70 caractères.'
     });
-    score -= 20;
-  } else {
-    // Check if sync is recent (within last 7 days)
-    const lastSync = new Date(store.last_sync_at);
-    const daysSinceSync = Math.floor((Date.now() - lastSync.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceSync > 7) {
-      issues.push({
-        category: 'technical',
-        priority: 'low',
-        title: 'Synchronisation ancienne',
-        description: `Dernière sync il y a ${daysSinceSync} jours`,
-        impact: 'Données potentiellement obsolètes',
-        action: 'Re-synchroniser votre boutique'
-      });
-      score -= 10;
-    }
   }
 
-  // Check if store is active
-  if (!store.is_active) {
+  if (!store.seo_description || store.seo_description.length < 90) {
+    score -= 25;
     issues.push({
-      category: 'technical',
-      priority: 'high',
-      title: 'Boutique désactivée',
-      description: 'La connexion est inactive',
-      impact: 'Aucune synchronisation possible',
-      action: 'Réactiver la connexion Shopify'
+      category: 'homepage',
+      severity: 'medium',
+      title: 'Meta description manquante',
+      description: 'La meta description de votre homepage est absente ou trop courte.',
+      impact: 'CTR réduit dans les résultats de recherche.',
+      action: 'Ajoutez une description engageante de 120-160 caractères.'
     });
-    score -= 40;
   }
 
-  return { issues, score: Math.max(0, score) };
+  return { score: Math.max(0, score), issues };
 }
 
-function generateRecommendations(auditResults: any) {
-  const recommendations = [];
+function auditProducts(products: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  let totalScore = 0;
+  
+  if (products.length === 0) {
+    issues.push({
+      category: 'products',
+      severity: 'high',
+      title: 'Aucun produit',
+      description: 'Votre boutique ne contient aucun produit.',
+      impact: 'Impossible de générer du trafic sans contenu.',
+      action: 'Ajoutez des produits à votre catalogue.'
+    });
+    return { score: 0, issues };
+  }
+  
+  products.forEach(product => {
+    const scoreResult = calculateDetailedSeoScore(
+      product.seo_title,
+      product.seo_description,
+      product.images?.length > 0,
+      product.tags,
+      !!product.handle,
+      product.optimization_count || 0,
+      product.product_type
+    );
+    totalScore += scoreResult.score;
+  });
+  
+  const avgScore = Math.round(totalScore / products.length);
+  
+  const duplicateTitles = products.filter((p, i, arr) => 
+    arr.findIndex(p2 => p2.seo_title === p.seo_title) !== i
+  );
+  
+  if (duplicateTitles.length > 0) {
+    issues.push({
+      category: 'products',
+      severity: 'high',
+      title: 'Titres dupliqués',
+      description: `${duplicateTitles.length} produits ont des titres identiques.`,
+      impact: 'Cannibalisation SEO et confusion pour les moteurs de recherche.',
+      action: 'Rendez chaque titre unique et descriptif.'
+    });
+  }
+  
+  const missingDescriptions = products.filter(p => !p.seo_description || p.seo_description.length < 50);
+  if (missingDescriptions.length > 0) {
+    issues.push({
+      category: 'products',
+      severity: 'medium',
+      title: 'Descriptions manquantes',
+      description: `${missingDescriptions.length} produits n'ont pas de description SEO.`,
+      impact: 'Perte d\'opportunités de ranking sur des mots-clés longue traîne.',
+      action: 'Ajoutez des descriptions détaillées (120-160 caractères).'
+    });
+  }
+  
+  const unoptimizedTitles = products.filter(p => {
+    const len = p.seo_title?.length || 0;
+    return len < 40 || len > 75;
+  });
+  
+  if (unoptimizedTitles.length > 0) {
+    issues.push({
+      category: 'products',
+      severity: 'medium',
+      title: 'Titres non optimisés',
+      description: `${unoptimizedTitles.length} produits ont des titres trop courts ou trop longs.`,
+      impact: 'Réduction du CTR et de la visibilité dans les SERP.',
+      action: 'Optimisez les titres entre 40 et 75 caractères.'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
 
-  // Priority 1: Critical issues
-  const criticalIssues = auditResults.issues.filter((i: any) => i.priority === 'high');
+function auditCollections(collections: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  let totalScore = 0;
+  
+  if (collections.length === 0) {
+    return { score: 100, issues };
+  }
+  
+  collections.forEach(collection => {
+    const scoreResult = calculateDetailedSeoScore(
+      collection.seo_title,
+      collection.seo_description,
+      !!collection.image,
+      null,
+      !!collection.handle,
+      collection.optimization_count || 0
+    );
+    totalScore += scoreResult.score;
+  });
+  
+  const avgScore = Math.round(totalScore / collections.length);
+  
+  const missingDescriptions = collections.filter(c => !c.seo_description);
+  if (missingDescriptions.length > 0) {
+    issues.push({
+      category: 'collections',
+      severity: 'medium',
+      title: 'Descriptions manquantes',
+      description: `${missingDescriptions.length} collections sans description.`,
+      impact: 'Opportunités SEO manquées pour les pages catégories.',
+      action: 'Ajoutez des descriptions riches en mots-clés.'
+    });
+  }
+  
+  const missingImageAlt = collections.filter(c => c.image && !c.image_alt);
+  if (missingImageAlt.length > 0) {
+    issues.push({
+      category: 'collections',
+      severity: 'low',
+      title: 'Textes alternatifs manquants',
+      description: `${missingImageAlt.length} images de collections sans alt text.`,
+      impact: 'Accessibilité réduite et perte d\'opportunités en recherche d\'images.',
+      action: 'Ajoutez des descriptions alt pour toutes les images.'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
+
+function auditPages(pages: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  let totalScore = 0;
+  
+  if (pages.length === 0) {
+    return { score: 100, issues };
+  }
+  
+  pages.forEach(page => {
+    const scoreResult = calculateDetailedSeoScore(
+      page.seo_title,
+      page.seo_description,
+      false,
+      null,
+      !!page.handle,
+      page.optimization_count || 0
+    );
+    totalScore += scoreResult.score;
+  });
+  
+  const avgScore = Math.round(totalScore / pages.length);
+  
+  const missingTitles = pages.filter(p => !p.seo_title);
+  if (missingTitles.length > 0) {
+    issues.push({
+      category: 'pages',
+      severity: 'high',
+      title: 'Titres SEO manquants',
+      description: `${missingTitles.length} pages sans titre SEO.`,
+      impact: 'Pages invisibles dans les moteurs de recherche.',
+      action: 'Ajoutez un titre unique et descriptif pour chaque page.'
+    });
+  }
+  
+  const missingDescriptions = pages.filter(p => !p.seo_description);
+  if (missingDescriptions.length > 0) {
+    issues.push({
+      category: 'pages',
+      severity: 'medium',
+      title: 'Descriptions manquantes',
+      description: `${missingDescriptions.length} pages sans meta description.`,
+      impact: 'CTR réduit dans les résultats de recherche.',
+      action: 'Ajoutez des descriptions engageantes (120-160 caractères).'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
+
+function auditArticles(articles: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  let totalScore = 0;
+  
+  if (articles.length === 0) {
+    return { score: 100, issues };
+  }
+  
+  articles.forEach(article => {
+    const articleScore = calculateArticleSeoScore(
+      article.meta_description,
+      article.content?.substring(0, 200),
+      article.keywords,
+      article.featured_image,
+      article.status === 'published',
+      article.optimization_count || 0
+    );
+    totalScore += articleScore.score;
+  });
+  
+  const avgScore = Math.round(totalScore / articles.length);
+  
+  const publishedArticles = articles.filter(a => a.status === 'published');
+  if (publishedArticles.length < articles.length * 0.5) {
+    issues.push({
+      category: 'articles',
+      severity: 'medium',
+      title: 'Articles non publiés',
+      description: `${articles.length - publishedArticles.length} articles en brouillon.`,
+      impact: 'Contenu créé mais non visible pour le SEO.',
+      action: 'Publiez les articles terminés.'
+    });
+  }
+  
+  const missingImages = articles.filter(a => !a.featured_image);
+  if (missingImages.length > 0) {
+    issues.push({
+      category: 'articles',
+      severity: 'low',
+      title: 'Images manquantes',
+      description: `${missingImages.length} articles sans image mise en avant.`,
+      impact: 'Engagement et partages sociaux réduits.',
+      action: 'Ajoutez une image attractive pour chaque article.'
+    });
+  }
+  
+  const unoptimizedArticles = articles.filter(a => (a.optimization_count || 0) === 0);
+  if (unoptimizedArticles.length > 0) {
+    issues.push({
+      category: 'articles',
+      severity: 'high',
+      title: 'Articles non optimisés',
+      description: `${unoptimizedArticles.length} articles n'ont jamais été optimisés.`,
+      impact: 'Contenu sous-performant en SEO.',
+      action: 'Utilisez l\'optimiseur IA pour améliorer vos articles.'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
+
+function auditImages(productImages: any[], contentImages: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  const allImages = [...productImages, ...contentImages];
+  
+  if (allImages.length === 0) {
+    return { score: 100, issues };
+  }
+  
+  let totalScore = 0;
+  allImages.forEach(img => {
+    const altScore = calculateAltTextScore(img.alt_text, !!img.ai_generated_alt);
+    totalScore += altScore;
+  });
+  
+  const avgScore = Math.round(totalScore / allImages.length);
+  
+  const imagesWithoutAlt = allImages.filter(img => !img.alt_text);
+  if (imagesWithoutAlt.length > 0) {
+    issues.push({
+      category: 'images',
+      severity: 'high',
+      title: 'Images sans texte alternatif',
+      description: `${imagesWithoutAlt.length} images n'ont pas de texte alternatif.`,
+      impact: 'Accessibilité compromise et opportunités SEO images perdues.',
+      action: 'Générez des alt texts avec l\'IA ou ajoutez-les manuellement.'
+    });
+  }
+  
+  const poorQualityAlt = allImages.filter(img => {
+    if (!img.alt_text) return false;
+    const len = img.alt_text.length;
+    return len < 15 || len > 125;
+  });
+  
+  if (poorQualityAlt.length > 0) {
+    issues.push({
+      category: 'images',
+      severity: 'medium',
+      title: 'Alt texts de faible qualité',
+      description: `${poorQualityAlt.length} images ont des alt texts trop courts ou trop longs.`,
+      impact: 'Efficacité SEO réduite pour la recherche d\'images.',
+      action: 'Optimisez les alt texts entre 15 et 90 caractères.'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
+
+function auditTags(products: any[]): { score: number; issues: any[] } {
+  const issues: any[] = [];
+  
+  if (products.length === 0) {
+    return { score: 100, issues };
+  }
+  
+  let totalScore = 0;
+  products.forEach(product => {
+    const tagScore = calculateTagsScore(product.tags);
+    totalScore += tagScore;
+  });
+  
+  const avgScore = Math.round((totalScore / products.length) * 5); // Scale to 0-100
+  
+  const productsWithoutTags = products.filter(p => !p.tags || p.tags.trim().length === 0);
+  if (productsWithoutTags.length > 0) {
+    issues.push({
+      category: 'tags',
+      severity: 'medium',
+      title: 'Produits sans tags',
+      description: `${productsWithoutTags.length} produits n'ont aucun tag.`,
+      impact: 'Organisation et découvrabilité réduites.',
+      action: 'Ajoutez 3-10 tags pertinents par produit.'
+    });
+  }
+  
+  const poorTags = products.filter(p => {
+    if (!p.tags) return false;
+    const tags = p.tags.split(',').map((t: string) => t.trim());
+    return tags.length < 3 || tags.some((t: string) => t.length <= 3);
+  });
+  
+  if (poorTags.length > 0) {
+    issues.push({
+      category: 'tags',
+      severity: 'low',
+      title: 'Tags de faible qualité',
+      description: `${poorTags.length} produits ont des tags trop courts ou insuffisants.`,
+      impact: 'Catégorisation inefficace.',
+      action: 'Utilisez des tags descriptifs de plus de 3 caractères.'
+    });
+  }
+  
+  return { score: avgScore, issues };
+}
+
+function generateRecommendations(auditResults: any): any[] {
+  const recommendations: any[] = [];
+  const criticalIssues = auditResults.issues.filter((i: any) => i.severity === 'high');
+  
   if (criticalIssues.length > 0) {
     recommendations.push({
       priority: 'high',
-      title: '🔴 Actions Critiques (Semaine 1)',
-      actions: criticalIssues.map((issue: any) => issue.action).slice(0, 3)
+      title: 'Corriger les problèmes critiques',
+      description: `${criticalIssues.length} problèmes critiques nécessitent une action immédiate.`,
+      actions: criticalIssues.slice(0, 3).map((i: any) => i.action)
     });
   }
-
-  // Priority 2: Important improvements
-  const mediumIssues = auditResults.issues.filter((i: any) => i.priority === 'medium');
-  if (mediumIssues.length > 0) {
+  
+  if (auditResults.global_score < 50) {
+    recommendations.push({
+      priority: 'high',
+      title: 'Refonte SEO nécessaire',
+      description: 'Votre score global est faible. Une optimisation globale est recommandée.',
+      actions: ['Utilisez l\'optimiseur automatique', 'Suivez le plan d\'action proposé']
+    });
+  }
+  
+  if (auditResults.global_score >= 50 && auditResults.global_score < 80) {
     recommendations.push({
       priority: 'medium',
-      title: '🟡 Améliorations Importantes (Semaine 2-3)',
-      actions: mediumIssues.map((issue: any) => issue.action).slice(0, 5)
+      title: 'Optimisations ciblées',
+      description: 'Concentrez-vous sur les catégories avec les scores les plus faibles.',
+      actions: ['Identifiez les opportunités rapides', 'Optimisez les contenus prioritaires']
     });
   }
-
-  // Priority 3: Optimizations
-  const lowIssues = auditResults.issues.filter((i: any) => i.priority === 'low');
-  if (lowIssues.length > 0) {
-    recommendations.push({
-      priority: 'low',
-      title: '🟢 Optimisations (Mois suivant)',
-      actions: lowIssues.map((issue: any) => issue.action).slice(0, 3)
-    });
-  }
-
+  
   return recommendations;
 }
