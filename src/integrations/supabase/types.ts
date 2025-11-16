@@ -3072,6 +3072,7 @@ export type Database = {
       }
       seo_audit_reports: {
         Row: {
+          articles_score: number | null
           audit_results: Json | null
           backlinks_count: number | null
           blog_score: number | null
@@ -3094,15 +3095,18 @@ export type Database = {
           mobile_friendly: boolean | null
           page_authority: number | null
           page_speed: Json | null
+          pages_score: number | null
           products_score: number | null
           recommendations: Json | null
           ssl_secure: boolean | null
           store_id: string | null
+          tags_score: number | null
           technical_score: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          articles_score?: number | null
           audit_results?: Json | null
           backlinks_count?: number | null
           blog_score?: number | null
@@ -3125,15 +3129,18 @@ export type Database = {
           mobile_friendly?: boolean | null
           page_authority?: number | null
           page_speed?: Json | null
+          pages_score?: number | null
           products_score?: number | null
           recommendations?: Json | null
           ssl_secure?: boolean | null
           store_id?: string | null
+          tags_score?: number | null
           technical_score?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          articles_score?: number | null
           audit_results?: Json | null
           backlinks_count?: number | null
           blog_score?: number | null
@@ -3156,10 +3163,12 @@ export type Database = {
           mobile_friendly?: boolean | null
           page_authority?: number | null
           page_speed?: Json | null
+          pages_score?: number | null
           products_score?: number | null
           recommendations?: Json | null
           ssl_secure?: boolean | null
           store_id?: string | null
+          tags_score?: number | null
           technical_score?: number | null
           updated_at?: string | null
           user_id?: string
