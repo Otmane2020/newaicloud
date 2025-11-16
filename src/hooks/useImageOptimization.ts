@@ -31,39 +31,56 @@ export const useImageOptimization = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // Get next version number
-    const { data: versionData } = await supabase
-      .rpc('get_next_image_version', { p_image_id: params.imageId });
-    
-    const versionNumber = versionData || 1;
+    try {
+      // Get next version number
+      const { data: versionData, error: versionError } = await supabase
+        .rpc('get_next_image_version', { p_image_id: params.imageId });
+      
+      if (versionError) {
+        console.error('Error getting version number:', versionError);
+      }
+      
+      const versionNumber = versionData || 1;
 
-    // Mark all previous versions as not current
-    await supabase
-      .from('product_image_history')
-      .update({ is_current: false })
-      .eq('image_id', params.imageId);
+      // Mark all previous versions as not current
+      const { error: updateError } = await supabase
+        .from('product_image_history')
+        .update({ is_current: false })
+        .eq('image_id', params.imageId);
+      
+      if (updateError) {
+        console.error('Error updating previous versions:', updateError);
+      }
 
-    // Insert new history entry
-    const { error } = await supabase
-      .from('product_image_history')
-      .insert({
-        product_id: params.productId,
-        image_id: params.imageId,
-        user_id: user.id,
-        optimization_type: params.optimizationType,
-        original_url: params.originalUrl,
-        optimized_url: params.optimizedUrl,
-        version_number: versionNumber,
-        ai_model: params.aiModel,
-        ai_prompt: params.aiPrompt,
-        resolution: params.resolution,
-        quality_score: params.qualityScore,
-        is_current: true
-      });
+      // Insert new history entry
+      const { error: insertError } = await supabase
+        .from('product_image_history')
+        .insert({
+          product_id: params.productId,
+          image_id: params.imageId,
+          user_id: user.id,
+          optimization_type: params.optimizationType,
+          original_url: params.originalUrl,
+          optimized_url: params.optimizedUrl,
+          version_number: versionNumber,
+          ai_model: params.aiModel,
+          ai_prompt: params.aiPrompt,
+          resolution: params.resolution,
+          quality_score: params.qualityScore,
+          is_current: true
+        });
 
-    if (error) throw error;
+      if (insertError) {
+        console.error('❌ Error saving to history:', insertError);
+        throw insertError;
+      }
 
-    return versionNumber;
+      console.log('✅ Successfully saved to product_image_history');
+      return versionNumber;
+    } catch (error) {
+      console.error('❌ Failed to save history:', error);
+      throw error;
+    }
   };
 
   const generateWhiteBackground = useMutation({

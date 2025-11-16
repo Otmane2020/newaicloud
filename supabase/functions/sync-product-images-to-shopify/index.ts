@@ -192,7 +192,52 @@ Deno.serve(async (req) => {
         variant_ids: img.variant_id ? [img.variant_id] : undefined,
       }));
 
+    // Prepare images to update (those with shopify_image_id but src/alt changed)
+    const imagesToUpdate = (product.images || [])
+      .filter((img: any) => {
+        if (!img.shopify_image_id) return false;
+        const existingImg = existingImages.find((ei: any) => ei.id === img.shopify_image_id);
+        return existingImg && existingImg.src !== img.src;
+      });
+
     console.log(`➕ Adding ${newImages.length} new images to Shopify`);
+    console.log(`🔄 Updating ${imagesToUpdate.length} existing images in Shopify`);
+
+    // Update existing images first
+    const updatedImages = [];
+    for (const imgToUpdate of imagesToUpdate) {
+      console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} with new src: ${imgToUpdate.src}`);
+      const updateResponse = await fetch(
+        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images/${imgToUpdate.shopify_image_id}.json`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": connection.access_token,
+          },
+          body: JSON.stringify({ 
+            image: {
+              id: imgToUpdate.shopify_image_id,
+              src: imgToUpdate.src,
+              alt: imgToUpdate.alt_text || "",
+            } 
+          }),
+        }
+      );
+
+      if (updateResponse.ok) {
+        const result = await updateResponse.json();
+        updatedImages.push(result.image);
+        console.log(`✅ Updated Shopify image: ${result.image.id}`);
+      } else {
+        const errorText = await updateResponse.text();
+        console.error(`Failed to update image ${imgToUpdate.shopify_image_id}:`, updateResponse.status, errorText);
+        
+        if (updateResponse.status === 401) {
+          throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+        }
+      }
+    }
 
     // Add new images one by one to preserve existing ones
     const addedImages = [];
@@ -240,14 +285,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`✅ Successfully added ${addedImages.length} new images to Shopify`);
+    console.log(`✅ Successfully synced images: ${updatedImages.length} updated, ${addedImages.length} added`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Images synchronized successfully",
-        imageCount: addedImages.length,
+        imageCount: addedImages.length + updatedImages.length,
         totalImages: existingImages.length + addedImages.length,
+        updatedCount: updatedImages.length,
+        addedCount: addedImages.length,
       }),
       {
         status: 200,
