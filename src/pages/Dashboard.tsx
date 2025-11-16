@@ -276,9 +276,9 @@ export default function Dashboard() {
       // 4. ARTICLES SCORE (from ArticleManagement.tsx)
       const { data: articlesData } = await supabase
         .from('blog_articles')
-        .select('title, meta_description, keywords, featured_image, status, optimization_count')
+        .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '')
+        .or(`store_id.eq.${selectedStore?.id || ''},store_id.is.null`)
         .range(0, 9999);
 
       const articlesScore = articlesData && articlesData.length > 0
@@ -286,7 +286,7 @@ export default function Dashboard() {
             articlesData.reduce((sum: number, article: any) => {
               const score = calculateArticleSeoScore(
                 article.title,
-                article.title,
+                article.seo_title, // Use seo_title like ArticleManagement.tsx (authoritative reference)
                 article.meta_description || '',
                 article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
                 !!article.featured_image,
