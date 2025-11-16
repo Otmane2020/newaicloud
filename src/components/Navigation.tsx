@@ -197,8 +197,8 @@ export function Navigation() {
                         onClick={() => toggleMenu(item.path)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                           isActive 
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-medium' 
-                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 active' 
+                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                         }`}
                       >
                         <Icon className="w-5 h-5 flex-shrink-0" />
@@ -224,8 +224,8 @@ export function Navigation() {
                                     onClick={() => toggleMenu(subItem.path)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                       isSubActive
-                                        ? 'bg-blue-100 text-blue-700 font-medium'
-                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                                        ? 'bg-blue-100 text-blue-700 active'
+                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                     }`}
                                   >
                                     <SubIcon className="w-4 h-4 flex-shrink-0" />
@@ -244,8 +244,8 @@ export function Navigation() {
                                             to={subSubItem.path}
                                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs ${
                                               isSubSubActive
-                                                ? 'bg-blue-100 text-blue-700 font-medium'
-                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                                                ? 'bg-blue-100 text-blue-700 active'
+                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                             }`}
                                           >
                                             <SubSubIcon className="w-3 h-3 flex-shrink-0" />
@@ -265,8 +265,8 @@ export function Navigation() {
                                 to={subItem.path}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                   isSubActive
-                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                                    ? 'bg-blue-100 text-blue-700 active'
+                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                 }`}
                               >
                                 <SubIcon className="w-4 h-4 flex-shrink-0" />
@@ -282,8 +282,8 @@ export function Navigation() {
                       to={item.path}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                         isActive 
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-medium' 
-                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 active' 
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                       }`}
                       title={collapsed ? item.label : undefined}
                     >
@@ -322,8 +322,8 @@ export function Navigation() {
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-medium' 
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-normal'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 active' 
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                 }`}
                 title={collapsed ? item.label : undefined}
               >
@@ -338,7 +338,7 @@ export function Navigation() {
         <div className="border-t border-gray-200 p-2 space-y-1">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-normal"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
             title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
@@ -347,7 +347,7 @@ export function Navigation() {
           
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 font-normal"
+            className="w-full flex items-center justify-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
           >
             {collapsed ? (
               <ChevronRight className="w-5 h-5" />

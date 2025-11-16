@@ -155,17 +155,17 @@ h3 {
 
 /* Navigation - Shopify style: normal weight by default */
 nav a, nav button, nav span {
-  font-weight: 400;
+  font-weight: 400 !important;
   letter-spacing: 0.005em;
 }
 
 /* Active navigation items are medium weight */
 nav a.active, nav button.active {
-  font-weight: 500;
+  font-weight: 500 !important;
 }
 
-/* Button text should be medium */
-button {
+/* Button text should be medium - except for navigation buttons */
+button:not(nav button) {
   font-weight: 500;
   letter-spacing: 0.01em;
 }
