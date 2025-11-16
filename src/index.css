@@ -53,13 +53,14 @@ All colors MUST be HSL.
     --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.4);
     --shadow-glow: 0 0 40px hsl(199 89% 48% / 0.5);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Shopify-style sidebar - fond très clair */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 0 0% 20%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 92%;
     --sidebar-ring: 217 91% 60%;
   }
 
@@ -182,22 +183,49 @@ nav div[class*="border-l"] a {
   font-weight: 200 !important;
 }
 
-/* Taille uniforme pour le TEXTE de navigation uniquement */
+/* Style Shopify pour la sidebar */
+
+/* Taille uniforme pour le TEXTE de navigation */
 [data-sidebar="menu-button"] > span,
 [data-sidebar="menu-sub-button"] > span {
   font-size: 0.875rem !important;
 }
 
-/* Onglets principaux : font-weight 500 (bold) */
+/* Onglets principaux : font-weight 600 (semibold comme Shopify) */
 [data-sidebar="menu-button"],
 [data-sidebar="menu-button"] > span {
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+  color: hsl(0 0% 20%) !important;
 }
 
-/* Sous-onglets : font-weight 200 (extra light) */
+/* Sous-onglets : font-weight 400 (normal) avec couleur plus légère */
 [data-sidebar="menu-sub-button"],
 [data-sidebar="menu-sub-button"] > span {
-  font-weight: 200 !important;
+  font-weight: 400 !important;
+  color: hsl(0 0% 40%) !important;
+}
+
+/* Item actif : style Shopify subtil */
+[data-sidebar="menu-button"][data-active="true"],
+[data-sidebar="menu-sub-button"][data-active="true"] {
+  background-color: hsl(0 0% 96%) !important;
+  font-weight: 600 !important;
+  color: hsl(0 0% 10%) !important;
+}
+
+/* Hover plus subtil */
+[data-sidebar="menu-button"]:hover,
+[data-sidebar="menu-sub-button"]:hover {
+  background-color: hsl(0 0% 97%) !important;
+}
+
+/* Group labels plus discrets */
+[data-sidebar="group-label"] {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: hsl(0 0% 50%) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Button text should be medium - except for navigation buttons */
