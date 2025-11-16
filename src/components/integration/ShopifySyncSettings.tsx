@@ -385,13 +385,18 @@ const ScheduleSettings = ({
 const NextSyncDisplay = ({ nextImportAt }: { nextImportAt: string | null }) => {
   if (!nextImportAt) return null;
 
+  // Convertir l'heure UTC en heure locale
+  const localDate = new Date(nextImportAt);
+
   return (
     <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
       <div className="flex items-center gap-3">
         <Calendar className="w-5 h-5 text-primary" />
         <div>
           <p className="font-medium text-sm">Prochaine synchronisation</p>
-          <p className="text-sm text-muted-foreground">{format(new Date(nextImportAt), "PPp", { locale: fr })}</p>
+          <p className="text-sm text-muted-foreground">
+            {format(localDate, "d MMM yyyy 'à' HH:mm", { locale: fr })}
+          </p>
         </div>
       </div>
       <Badge variant="secondary">
@@ -907,22 +912,6 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
               </Badge>
             </div>
 
-            {/* Next sync */}
-            {settings?.next_import_at && (
-              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium text-sm">Prochaine synchronisation</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(settings.next_import_at), "PPpp", { locale: fr })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Last sync */}
             {settings?.last_import_at && (
