@@ -3678,6 +3678,8 @@ export type Database = {
           seo_sync_error: string | null
           seo_synced_to_shopify: boolean | null
           seo_title: string | null
+          serp_data: Json | null
+          serp_verified: boolean | null
           shipping_cost: number | null
           shop_name: string | null
           shopify_id: number | null
@@ -3696,6 +3698,8 @@ export type Database = {
           smart_weight_unit: string | null
           smart_width: number | null
           smart_width_unit: string | null
+          specs_confidence: number | null
+          specs_source: string | null
           status: string | null
           store_id: string | null
           style: string | null
@@ -3801,6 +3805,8 @@ export type Database = {
           seo_sync_error?: string | null
           seo_synced_to_shopify?: boolean | null
           seo_title?: string | null
+          serp_data?: Json | null
+          serp_verified?: boolean | null
           shipping_cost?: number | null
           shop_name?: string | null
           shopify_id?: number | null
@@ -3819,6 +3825,8 @@ export type Database = {
           smart_weight_unit?: string | null
           smart_width?: number | null
           smart_width_unit?: string | null
+          specs_confidence?: number | null
+          specs_source?: string | null
           status?: string | null
           store_id?: string | null
           style?: string | null
@@ -3924,6 +3932,8 @@ export type Database = {
           seo_sync_error?: string | null
           seo_synced_to_shopify?: boolean | null
           seo_title?: string | null
+          serp_data?: Json | null
+          serp_verified?: boolean | null
           shipping_cost?: number | null
           shop_name?: string | null
           shopify_id?: number | null
@@ -3942,6 +3952,8 @@ export type Database = {
           smart_weight_unit?: string | null
           smart_width?: number | null
           smart_width_unit?: string | null
+          specs_confidence?: number | null
+          specs_source?: string | null
           status?: string | null
           store_id?: string | null
           style?: string | null

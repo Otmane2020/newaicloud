@@ -228,19 +228,49 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
 
-  // Dimensions from smart fields
+  // PHASE 1: Prioritize technicalDimensions from image if available
+  const techDims = enriched.vision_attributes?.technicalDimensions;
   const dims = [];
-  if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
-  if (enriched.smart_width) dims.push(`l ${enriched.smart_width}${enriched.smart_width_unit || ""}`);
-  if (enriched.smart_height) dims.push(`H ${enriched.smart_height}${enriched.smart_height_unit || ""}`);
-  if (enriched.smart_weight) dims.push(`Poids ${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
-  if (enriched.smart_diameter) dims.push(`Ø ${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
-  if (enriched.smart_depth) dims.push(`P ${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
-  if (enriched.smart_seat_height)
-    dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
-  if (dims.length > 0) {
-    sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
-    sections.push(`- ${dims.join(" × ")}`);
+  
+  if (techDims && Object.keys(techDims).length > 0) {
+    // Use dimensions extracted from technical schematic (HIGHEST PRIORITY)
+    if (techDims.hauteur_totale) dims.push(`H ${techDims.hauteur_totale}`);
+    if (techDims.largeur) dims.push(`L ${techDims.largeur}`);
+    if (techDims.profondeur) dims.push(`P ${techDims.profondeur}`);
+    if (techDims.hauteur_assise) dims.push(`Hauteur d'assise ${techDims.hauteur_assise}`);
+    if (techDims.diametre) dims.push(`Ø ${techDims.diametre}`);
+    
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (from technical schematic):" : "\nDIMENSIONS (schéma technique):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
+    // Use SERP-verified dimensions (MEDIUM PRIORITY)
+    const serpDims = enriched.serp_data.averageDimensions;
+    if (serpDims.length) dims.push(`L ${serpDims.length}`);
+    if (serpDims.width) dims.push(`l ${serpDims.width}`);
+    if (serpDims.height) dims.push(`H ${serpDims.height}`);
+    if (enriched.serp_data.averageWeight) dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+    
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  } else {
+    // Fallback to estimated smart dimensions (LOWEST PRIORITY)
+    if (enriched.smart_length) dims.push(`L ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
+    if (enriched.smart_width) dims.push(`l ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
+    if (enriched.smart_height) dims.push(`H ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
+    if (enriched.smart_weight) dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+    if (enriched.smart_diameter) dims.push(`Ø ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
+    if (enriched.smart_depth) dims.push(`P ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
+    if (enriched.smart_seat_height)
+      dims.push(`Hauteur d'assise ~${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
+    
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (estimated):" : "\nDIMENSIONS (estimées):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
   }
 
   // Technical Details from Vision AI
@@ -958,6 +988,34 @@ STRUCTURE:
 - Desktop (md:): Use standard <table> with class "hidden md:table"
 - Mobile: Use cards with class "block md:hidden space-y-4"
 - Example structure:
+
+🔍 PHASE 5: SPECIFICATIONS RELIABILITY BADGE (MANDATORY):
+ALWAYS include a reliability indicator in the technical specifications section:
+
+${enrichedProduct?.serp_verified ? `
+✅ Badge for SERP-verified specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>Spécifications vérifiées</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Dimensions confirmées par ${enrichedProduct?.serp_data?.similarProducts?.length || 0} produits similaires</p>
+` : enrichedProduct?.vision_attributes?.technicalDimensions ? `
+📐 Badge for image-extracted specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+  <span>Mesures extraites du schéma technique</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Dimensions précises lues directement sur l'image produit</p>
+` : `
+⚠️ Badge for estimated specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-sm font-medium text-amber-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+  <span>Dimensions approximatives</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Ces mesures sont estimées et peuvent varier légèrement</p>
+`}
+
+🚨 CRITICAL: Place this badge IMMEDIATELY BEFORE the technical specifications table/section
   <!-- Mobile cards -->
   <div class="block md:hidden space-y-4">
     <div class="bg-white rounded-lg p-4 shadow">
