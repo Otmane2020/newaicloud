@@ -179,7 +179,7 @@ export function Navigation() {
                 title={collapsed ? 'Admin Panel' : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-semibold">{t.navigation.adminPanel}</span>}
+                {!collapsed && <span>{t.navigation.adminPanel}</span>}
               </Link>
             )}
             
@@ -195,7 +195,7 @@ export function Navigation() {
                     <>
                       <button
                         onClick={() => toggleMenu(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                           isActive 
                             ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                             : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -204,7 +204,7 @@ export function Navigation() {
                         <Icon className="w-5 h-5 flex-shrink-0" />
                         {!collapsed && (
                           <>
-                            <span className="flex-1 text-left font-semibold">{item.label}</span>
+                            <span className="flex-1 text-left">{item.label}</span>
                             <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </>
                         )}
@@ -224,12 +224,12 @@ export function Navigation() {
                                     onClick={() => toggleMenu(subItem.path)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                       isSubActive
-                                        ? 'bg-blue-100 text-blue-700 font-semibold'
-                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                     }`}
                                   >
                                     <SubIcon className="w-4 h-4 flex-shrink-0" />
-                                    <span className="flex-1 text-left font-semibold">{subItem.label}</span>
+                                    <span className="flex-1 text-left">{subItem.label}</span>
                                     <ChevronDown className={`w-3 h-3 transition-transform ${isSubExpanded ? 'rotate-180' : ''}`} />
                                   </button>
                                   {isSubExpanded && (
@@ -244,12 +244,12 @@ export function Navigation() {
                                             to={subSubItem.path}
                                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs ${
                                               isSubSubActive
-                                                ? 'bg-blue-100 text-blue-700 font-semibold'
-                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                             }`}
                                           >
                                             <SubSubIcon className="w-3 h-3 flex-shrink-0" />
-                                            <span className="font-semibold">{subSubItem.label}</span>
+                                            <span>{subSubItem.label}</span>
                                           </Link>
                                         );
                                       })}
@@ -265,12 +265,12 @@ export function Navigation() {
                                 to={subItem.path}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                   isSubActive
-                                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                                 }`}
                               >
                                 <SubIcon className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-semibold">{subItem.label}</span>
+                                <span>{subItem.label}</span>
                               </Link>
                             );
                           })}
@@ -280,7 +280,7 @@ export function Navigation() {
                   ) : (
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                         isActive 
                           ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                           : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -288,7 +288,7 @@ export function Navigation() {
                       title={collapsed ? item.label : undefined}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
-                      {!collapsed && <span className="font-semibold">{item.label}</span>}
+                      {!collapsed && <span>{item.label}</span>}
                     </Link>
                   )}
                 </div>
@@ -320,7 +320,7 @@ export function Navigation() {
               <Link
                 key={item.path + item.label}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                     : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -328,7 +328,7 @@ export function Navigation() {
                 title={collapsed ? item.label : undefined}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm font-semibold">{item.label}</span>}
+                {!collapsed && <span className="text-sm">{item.label}</span>}
               </Link>
             );
           })}
@@ -338,11 +338,11 @@ export function Navigation() {
         <div className="border-t border-gray-200 p-2 space-y-1">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-semibold"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
             title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-semibold">{t.navigation.logout}</span>}
+            {!collapsed && <span>{t.navigation.logout}</span>}
           </button>
           
           <button
@@ -354,7 +354,7 @@ export function Navigation() {
             ) : (
               <>
                 <ChevronLeft className="w-5 h-5" />
-                <span className="font-semibold">{t.navigation.collapse}</span>
+                <span>{t.navigation.collapse}</span>
               </>
             )}
           </button>
