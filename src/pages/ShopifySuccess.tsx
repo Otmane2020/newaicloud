@@ -9,19 +9,25 @@ const ShopifySuccess = () => {
   const shop = searchParams.get("shop");
   const status = searchParams.get("status");
   const reason = searchParams.get("reason");
+  const shopifyPending = searchParams.get("shopify_pending");
 
   useEffect(() => {
     // Rediriger seulement en cas de succès
     if (status === "success") {
-      // Trigger import dialog automatically after OAuth success
-      localStorage.setItem("shopify_trigger_import", "true");
-      
       const timer = setTimeout(() => {
-        navigate("/integration");
+        // Si shopify_pending existe, c'est un nouveau compte depuis l'app dev
+        // Rediriger vers onboarding pour claim + import auto
+        if (shopifyPending) {
+          navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+        } else {
+          // Sinon, flux normal vers integration
+          localStorage.setItem("shopify_trigger_import", "true");
+          navigate("/integration");
+        }
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [navigate, status]);
+  }, [navigate, status, shopifyPending]);
 
   // Gérer les erreurs de flux OAuth
   if (status === "error" && reason === "invalid_flow") {

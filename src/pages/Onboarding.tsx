@@ -72,48 +72,6 @@ export default function Onboarding() {
       return;
     }
     
-    // Check if there's a Shopify pending connection to claim
-    const shopifyPending = searchParams.get('shopify_pending');
-    if (shopifyPending) {
-      console.log('🔗 Claiming Shopify connection with pending token');
-      setClaimingShopify(true);
-      
-      const claimConnection = async () => {
-        try {
-          const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
-            body: { pendingToken: shopifyPending }
-          });
-
-          if (error) throw error;
-
-          if (data?.success) {
-            toast.success(t.sync.shopifyConnected);
-            
-            // Show import toast
-            toast.info(t.sync.autoImport, { 
-              duration: 5000,
-            });
-            
-            // Wait 3 seconds for import to complete
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            // Redirect to dashboard to see imported products
-            navigate('/dashboard', { replace: true });
-          } else {
-            throw new Error('Failed to claim connection');
-          }
-        } catch (error) {
-          console.error('Failed to claim Shopify connection:', error);
-          toast.error(t.sync.connectionFailed);
-        } finally {
-          setClaimingShopify(false);
-        }
-      };
-
-      claimConnection();
-      return; // Don't proceed with other checks while claiming
-    }
-    
     // Check if user already has active subscription
     checkExistingSubscription();
     loadPlans();
@@ -121,6 +79,47 @@ export default function Onboarding() {
     // Check if user is returning from checkout
     if (searchParams.get('checkout') === 'success') {
       handleCheckSubscription();
+      
+      // Après checkout réussi, vérifier si on doit claim une connexion Shopify
+      const shopifyPending = searchParams.get('shopify_pending');
+      if (shopifyPending && !claimingShopify) {
+        console.log('🔗 Claiming Shopify connection after trial setup');
+        setClaimingShopify(true);
+        
+        const claimConnection = async () => {
+          try {
+            const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
+              body: { pendingToken: shopifyPending }
+            });
+
+            if (error) throw error;
+
+            if (data?.success) {
+              toast.success(t.sync.shopifyConnected);
+              
+              // Show import toast
+              toast.info(t.sync.autoImport, { 
+                duration: 5000,
+              });
+              
+              // Wait 3 seconds for import to complete
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              
+              // Redirect to dashboard to see imported products
+              navigate('/dashboard', { replace: true });
+            } else {
+              throw new Error('Failed to claim connection');
+            }
+          } catch (error) {
+            console.error('Failed to claim Shopify connection:', error);
+            toast.error(t.sync.connectionFailed);
+          } finally {
+            setClaimingShopify(false);
+          }
+        };
+
+        claimConnection();
+      }
     }
   }, [user, navigate, searchParams]);
 
@@ -356,12 +355,17 @@ export default function Onboarding() {
       }
       
       // Otherwise, create new checkout session
+      const shopifyPending = searchParams.get('shopify_pending');
+      const successUrl = shopifyPending 
+        ? `${window.location.origin}/onboarding?checkout=success&shopify_pending=${shopifyPending}`
+        : `${window.location.origin}/onboarding?checkout=success`;
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,
           billing_period: billingCycle,
           currency: language === 'fr' ? 'EUR' : 'USD',
-          success_url: `${window.location.origin}/onboarding?checkout=success`,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
           force_immediate_payment: hasActiveTrial
         }
