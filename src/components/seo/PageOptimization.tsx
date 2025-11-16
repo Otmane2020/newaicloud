@@ -442,6 +442,32 @@ export function PageOptimization() {
     toast.success(`${successCount}/${pagesToOptimize.length} pages optimized!`);
     await fetchPages();
     await refreshLimits();
+    
+    // Check if auto-sync is enabled
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: syncSettings } = await supabase
+        .from('shopify_sync_settings')
+        .select('export_after_optimization')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (syncSettings?.export_after_optimization) {
+        // Auto-sync enabled - synchronize automatically
+        console.log('🔄 Auto-sync enabled, syncing pages automatically...');
+        const pagesToSync = pages.filter(p => p.optimized && (p.optimization_count || 0) > 0);
+        
+        if (pagesToSync.length > 0) {
+          setTimeout(async () => {
+            try {
+              await handleSyncAll();
+            } catch (error) {
+              console.error('Auto-sync error:', error);
+            }
+          }, 1000);
+        }
+      }
+    }
   };
 
   const handleSyncAll = async () => {

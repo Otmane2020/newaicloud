@@ -563,11 +563,19 @@ export function CollectionOptimization() {
         .maybeSingle();
 
       if (syncSettings?.export_after_optimization) {
-        // Auto-sync enabled - show sync dialog after delay
-        setTimeout(() => {
-          setCollectionsToSync(optimized);
-          setShowSyncDialog(true);
-        }, 800);
+        // Auto-sync enabled - synchronize automatically without showing dialog
+        console.log('🔄 Auto-sync enabled, syncing collections automatically...');
+        setCollectionsToSync(optimized);
+        
+        // Trigger automatic sync after a small delay
+        setTimeout(async () => {
+          try {
+            // Collections are already set via setCollectionsToSync above
+            await handleSyncCollections();
+          } catch (error) {
+            console.error('Auto-sync error:', error);
+          }
+        }, 1000);
       } else {
         // Show results dialog to let user decide
         setTimeout(() => {

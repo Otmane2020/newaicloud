@@ -696,6 +696,34 @@ export function SeoOptimization() {
     setIsOptimizationComplete(true);
     await fetchProducts();
     await refreshLimits();
+    
+    // Check if auto-sync is enabled
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: syncSettings } = await supabase
+        .from('shopify_sync_settings')
+        .select('export_after_optimization')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (syncSettings?.export_after_optimization) {
+        // Auto-sync enabled - synchronize automatically
+        console.log('🔄 Auto-sync enabled, syncing products automatically...');
+        const toSync = products
+          .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
+          .map((p) => p.id);
+        
+        if (toSync.length > 0) {
+          setTimeout(async () => {
+            try {
+              await handleSyncProducts(toSync);
+            } catch (error) {
+              console.error('Auto-sync error:', error);
+            }
+          }, 1000);
+        }
+      }
+    }
   };
 
   const handleSyncSelected = async () => {
