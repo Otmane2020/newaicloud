@@ -171,10 +171,10 @@ export function Navigation() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 font-semibold ${
                   location.pathname === '/admin'
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50 font-semibold'
-                    : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200 font-semibold'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
+                    : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
                 }`}
                 title={collapsed ? 'Admin Panel' : undefined}
               >
@@ -195,16 +195,16 @@ export function Navigation() {
                     <>
                       <button
                         onClick={() => toggleMenu(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                           isActive 
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
-                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                         }`}
                       >
                         <Icon className="w-5 h-5 flex-shrink-0" />
                         {!collapsed && (
                           <>
-                            <span className="font-medium flex-1 text-left">{item.label}</span>
+                            <span className="flex-1 text-left">{item.label}</span>
                             <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </>
                         )}
@@ -280,10 +280,10 @@ export function Navigation() {
                   ) : (
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                         isActive 
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
-                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                       }`}
                       title={collapsed ? item.label : undefined}
                     >
@@ -320,10 +320,10 @@ export function Navigation() {
               <Link
                 key={item.path + item.label}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                   isActive 
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50 font-semibold' 
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                 }`}
                 title={collapsed ? item.label : undefined}
               >
