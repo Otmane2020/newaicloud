@@ -166,10 +166,10 @@ Deno.serve(async (req) => {
 
     console.log(`[AUDIT] Audit complete - Global score: ${auditResults.global_score}/100`);
 
-    // Save audit to database
+    // Save audit to database (upsert to update existing or create new)
     const { data: savedAudit, error: saveError } = await supabaseAdmin
       .from('seo_audit_reports')
-      .insert({
+      .upsert({
         user_id: user.id,
         store_id: store?.id,
         global_score: auditResults.global_score,
@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
         technical_score: auditResults.technical_score, // Add technical score
         audit_results: auditResults,
         recommendations: auditResults.recommendations
+      }, {
+        onConflict: 'user_id'
       })
       .select()
       .single();
