@@ -1380,9 +1380,9 @@ export function SeoOptimization() {
                       </TableCell>
                       <TableCell>
                         {product.image_url ? (
-                          <img src={product.image_url} alt={product.title} className="w-16 h-16 object-cover rounded" />
+                          <img src={product.image_url} alt={product.title} className="w-16 h-16 aspect-square object-cover rounded" />
                         ) : (
-                          <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                          <div className="w-16 h-16 aspect-square bg-muted rounded flex items-center justify-center">
                             <Package className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
