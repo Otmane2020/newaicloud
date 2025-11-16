@@ -118,65 +118,78 @@ RÉPONDS UNIQUEMENT EN JSON.`;
     // STEP 2: SQL search for relevant categories
     console.log("🔍 Step 2: Searching relevant categories in database...");
     console.log("📊 Extracted data:", JSON.stringify(extracted));
-    
-    // Use the main product_type for search, plus category
-    const mainSearchTerms = [
-      extracted.product_type,
-      extracted.category
-    ].filter(Boolean);
 
-    console.log("🔍 Main search terms:", mainSearchTerms);
+    const normalizedProductType = extracted.product_type?.toLowerCase() || "";
+    const productWords = normalizedProductType.split(/\s+/).filter((w: string) => w.length > 2);
 
-    // Build search conditions: prioritize categories matching ALL terms
-    // Split product_type into words for better matching (e.g., "table basse" → "table" AND "basse")
-    const productWords = extracted.product_type?.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2) || [];
-    
-    // Search strategy:
-    // 1. Look for categories matching the product type words
-    // 2. Exclude obviously wrong top-level categories (like "Adulte", "Entreprise")
-    // 3. Prioritize deeper/more specific categories (depth >= 2)
-    
-    const searchConditions = productWords
-      .map((word: string) => `full_path.ilike.*${encodeURIComponent(word)}*`)
-      .join(",");
+    console.log("🔍 Product words:", productWords);
+    console.log("🔍 Category filter:", extracted.category);
 
-    const { data: relevantCategories, error: searchError } = await supabase
+    // Build search query with strict category filtering
+    let query = supabase
       .from("google_product_taxonomy")
       .select("id, full_path, level1, level2, level3, level4, level5, depth")
-      .or(searchConditions)
-      .not("level1", "in", '("Adulte","Entreprise et industrie","Animaux")')
-      .gte("depth", 2)
-      .order("depth", { ascending: false })
-      .limit(15);
+      .eq("level1", extracted.category) // Filter by main category first (e.g., "Meubles")
+      .gte("depth", 2);
+
+    // Add AND conditions for each product word (all must match)
+    for (const word of productWords) {
+      query = query.ilike("full_path", `%${word}%`);
+    }
+
+    query = query.order("depth", { ascending: false }).limit(15);
+    
+    let { data: relevantCategories, error: searchError } = await query;
 
     if (searchError) throw searchError;
 
     console.log(`✅ Found ${relevantCategories?.length || 0} relevant categories`);
 
     if (!relevantCategories || relevantCategories.length === 0) {
-      console.warn("⚠️ No relevant categories found, using fallback");
-      const { data: fallbackCategories } = await supabase
-        .from("google_product_taxonomy")
-        .select("id, full_path")
-        .eq("depth", 1)
-        .limit(1);
+      console.warn("⚠️ No categories found with strict filter, trying fallback with textSearch...");
       
-      if (!fallbackCategories || fallbackCategories.length === 0) {
-        throw new Error("No categories found in taxonomy");
+      // Fallback: use full-text search on the entire product type
+      const { data: fallbackCategories, error: fallbackError } = await supabase
+        .from("google_product_taxonomy")
+        .select("id, full_path, level1, level2, level3, level4, level5, depth")
+        .textSearch("full_path", normalizedProductType, { type: "websearch" })
+        .not("level1", "in", '("Adulte","Entreprise et industrie","Animaux")')
+        .gte("depth", 2)
+        .order("depth", { ascending: false })
+        .limit(10);
+      
+      if (fallbackError || !fallbackCategories || fallbackCategories.length === 0) {
+        console.error("⚠️ Fallback search also failed, using generic category");
+        const { data: genericCategories } = await supabase
+          .from("google_product_taxonomy")
+          .select("id, full_path")
+          .eq("level1", extracted.category)
+          .eq("depth", 1)
+          .limit(1);
+        
+        if (!genericCategories || genericCategories.length === 0) {
+          throw new Error("No categories found in taxonomy");
+        }
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            classification: {
+              gpc_id: genericCategories[0].id,
+              gpc_path: genericCategories[0].full_path,
+              confidence: 20,
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
       
-      return new Response(
-        JSON.stringify({
-          success: true,
-          classification: {
-            gpc_id: fallbackCategories[0].id,
-            gpc_path: fallbackCategories[0].full_path,
-            confidence: 30,
-          },
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.log(`✅ Fallback found ${fallbackCategories.length} categories`);
+      // Use fallback categories for final selection
+      relevantCategories = fallbackCategories;
     }
+
+    // At this point, relevantCategories is guaranteed to be non-null and non-empty
 
     // STEP 3: Final selection with DeepSeek
     console.log("🤖 Step 3: Final category selection...");
