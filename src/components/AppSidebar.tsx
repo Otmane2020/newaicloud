@@ -524,10 +524,10 @@ export function AppSidebar() {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group w-fit"
                   >
                     <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
-                    <span className="text-white uppercase tracking-wider font-semibold" style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: "0.1em" }}>
+                    <span className="text-white text-xs uppercase tracking-wide font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {userPlan || t.common.loading}
                     </span>
-                    <span className="text-white/90 font-medium" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    <span className="text-white/90 text-xs font-normal" style={{ fontFamily: "'Inter', sans-serif" }}>
                       (Upgrade)
                     </span>
                   </NavLink>
