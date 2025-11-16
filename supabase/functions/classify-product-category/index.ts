@@ -114,9 +114,9 @@ RÉPONDS UNIQUEMENT EN JSON.`;
 
     console.log("🔍 Search terms:", searchTerms);
 
-    // Build ILIKE conditions for search using PostgREST format
+    // Build ILIKE conditions for search using PostgREST format with URL encoding
     const searchConditions = extracted.keywords
-      .map((keyword: string) => `full_path.ilike.*${keyword}*`)
+      .map((keyword: string) => `full_path.ilike.*${encodeURIComponent(keyword)}*`)
       .join(",");
 
     const { data: relevantCategories, error: searchError } = await supabase
