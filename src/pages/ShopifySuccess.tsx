@@ -19,7 +19,9 @@ const ShopifySuccess = () => {
         // Rediriger vers auth pour création compte/login
         // Auth se chargera ensuite de rediriger vers onboarding
         if (shopifyPending) {
-          navigate(`/auth?shopify_pending=${shopifyPending}`);
+          // Transmettre le nom de la boutique
+          const shopParam = shop ? `&shop=${encodeURIComponent(shop)}` : '';
+          navigate(`/auth?shopify_pending=${shopifyPending}${shopParam}`);
         } else {
           // Sinon, flux normal vers integration (utilisateur déjà connecté)
           localStorage.setItem("shopify_trigger_import", "true");
@@ -28,7 +30,7 @@ const ShopifySuccess = () => {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [navigate, status, shopifyPending]);
+  }, [navigate, status, shopifyPending, shop]);
 
   // Gérer les erreurs de flux OAuth
   if (status === "error" && reason === "invalid_flow") {

@@ -528,7 +528,7 @@ export default function Onboarding() {
                 <p className="text-sm text-blue-700 dark:text-blue-300">
                   {claimingShopify 
                     ? "Import automatique de vos 10 premiers produits en cours..."
-                    : `Votre boutique ${searchParams.get('shop')} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
+                    : `Votre boutique ${searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
                   }
                 </p>
               </div>
