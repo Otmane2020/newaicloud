@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult, homepageSeoResult] = await Promise.all([
       supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id),
       supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
+      // Fetch articles with same logic as Dashboard (all articles, will filter by store later if store exists)
       supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_connections').select('*').eq('user_id', user.id).limit(1).maybeSingle(),
@@ -51,11 +52,16 @@ Deno.serve(async (req) => {
 
     const products = productsResult.data || [];
     const collections = collectionsResult.data || [];
-    const articles = articlesResult.data || [];
+    const allArticles = articlesResult.data || [];
     const pages = pagesResult.data || [];
     const store = storeResult.data;
     const contentImages = contentImagesResult.data || [];
     const homepageSeo = homepageSeoResult.data;
+
+    // Filter articles by store_id (same logic as Dashboard line 284-286)
+    const articles = store?.id 
+      ? allArticles.filter(a => a.store_id === store.id || a.store_id === null)
+      : allArticles;
 
     // Fetch product images for user's products
     const productIds = products.map(p => p.id);
@@ -69,8 +75,9 @@ Deno.serve(async (req) => {
       productImages = imgData || [];
     }
 
-    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}`);
-    console.log(`[AUDIT] Images fetched - Product images: ${productImages.length}, Content images: ${contentImages.length}, Total: ${productImages.length + contentImages.length}`);
+    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length} (filtered by store), Pages: ${pages.length}`);
+    console.log(`[AUDIT] Images fetched - Product images: ${productImages.length} (using optimization_count for AI detection)`);
+    console.log(`[AUDIT] Store filter applied: ${store?.id || 'none'} - Articles filtered from ${allArticles.length} to ${articles.length}`);
 
     // Initialize audit results with 7 categories
     const auditResults = {
