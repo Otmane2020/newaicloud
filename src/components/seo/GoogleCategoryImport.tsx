@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useGoogleTaxonomyImport } from "@/hooks/useGoogleTaxonomyImport";
@@ -7,9 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 export function GoogleCategoryImport() {
   const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
+  const hasAttemptedImport = useRef(false);
 
   useEffect(() => {
+    if (hasAttemptedImport.current) return;
+
     const checkAndImport = async () => {
+      hasAttemptedImport.current = true;
+      
       try {
         const { count } = await supabase
           .from("google_product_taxonomy")
