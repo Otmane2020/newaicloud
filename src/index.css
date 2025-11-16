@@ -122,15 +122,58 @@ html, body {
   @apply bg-background text-foreground;
   overflow-x: hidden;
   max-width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   @apply bg-background text-foreground;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
-/* Force navigation text to be bold */
+/* Shopify-inspired Typography System */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Navigation - Shopify style */
 nav a, nav button, nav span {
   font-weight: 600 !important;
+  letter-spacing: 0.005em;
+}
+
+/* Button text should be semibold */
+button {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Strong emphasis */
+strong, b {
+  font-weight: 600;
+}
+
+/* Labels and form inputs */
+label {
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 }
 
