@@ -154,25 +154,31 @@ h3 {
 }
 
 /* Navigation - Onglets principaux et sous-onglets */
+
 /* Onglets principaux : font-weight 500 */
-nav > div > div > a,
-nav > div > div > button,
-nav > div > a,
-nav > div > button,
-.sidebar-menu-button {
+/* Cible les items directs du menu principal */
+[data-sidebar="sidebar"] [data-sidebar-menu] > [data-sidebar-menu-item] > a,
+[data-sidebar="sidebar"] [data-sidebar-menu] > [data-sidebar-menu-item] > button,
+.sidebar-menu > .sidebar-menu-item > a,
+.sidebar-menu > .sidebar-menu-item > button,
+nav > div > div > a:not([class*="ml-"]):not([class*="pl-8"]):not([class*="pl-14"]),
+nav > div > div > button:not([class*="ml-"]):not([class*="pl-8"]):not([class*="pl-14"]) {
   font-weight: 500 !important;
   letter-spacing: 0.005em;
 }
 
 /* Sous-onglets : font-weight 200 */
+/* Cible les sous-menus */
+[data-sidebar="sidebar"] [data-sidebar-menu-sub] a,
+[data-sidebar="sidebar"] [data-sidebar-menu-sub] button,
+.sidebar-menu-sub a,
+.sidebar-menu-sub button,
 nav a[class*="ml-"],
 nav a[class*="pl-8"],
 nav a[class*="pl-14"],
 nav button[class*="ml-"],
 nav div[class*="ml-"] a,
-nav div[class*="border-l"] a,
-.sidebar-menu-sub a,
-.sidebar-menu-sub button {
+nav div[class*="border-l"] a {
   font-weight: 200 !important;
 }
 
