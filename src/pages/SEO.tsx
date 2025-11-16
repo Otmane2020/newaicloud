@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ProductOptimizationTabs } from '@/components/seo/ProductOptimizationTabs';
 import { TagOptimization } from '@/components/seo/TagOptimization';
@@ -9,7 +9,7 @@ import { HomePageSeo } from '@/components/seo/HomePageSeo';
 import { HomePageSeoAudit } from '@/components/seo/HomePageSeoAudit';
 import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
 import { CollectionOptimization } from '@/components/seo/CollectionOptimization';
-import ArticleManagement from '@/pages/ArticleManagement';
+import ArticleManagement, { ArticleManagementRef } from '@/pages/ArticleManagement';
 import { AdsCampaign } from '@/components/seo/AdsCampaign';
 import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
 import { GoogleSearchConsole } from '@/components/seo/GoogleSearchConsole';
@@ -31,6 +31,7 @@ export default function SEO() {
   const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
+  const articleManagementRef = useRef<ArticleManagementRef>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -296,7 +297,7 @@ export default function SEO() {
                   </div>
                   <Button
                     size="lg"
-                    onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+                    onClick={() => articleManagementRef.current?.optimizeAllArticles()}
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg w-full lg:w-auto"
                   >
                     <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -306,7 +307,7 @@ export default function SEO() {
                 </div>
               </div>
             </Card>
-            <ArticleManagement />
+            <ArticleManagement ref={articleManagementRef} />
           </>
         )}
         {activeTab === 'collections' && <CollectionOptimization />}
