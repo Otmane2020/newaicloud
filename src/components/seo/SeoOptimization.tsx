@@ -269,7 +269,7 @@ export function SeoOptimization() {
     productsNotOptimized.length > 0
       ? Math.round(
           productsNotOptimized.reduce((sum, p) => {
-            const score = calculateDetailedSeoScore(
+            const scoreRaw = calculateDetailedSeoScore(
               p.title, // Original Shopify title
               p.vendor, // Using vendor as description proxy for non-enriched
               !!p.image_url,
@@ -277,7 +277,11 @@ export function SeoOptimization() {
               p.tags, // Shopify tags
               p.optimization_count, // Pass optimization count
             );
-            return sum + score.score;
+            // Apply penalty for pending or not optimized products
+            const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+              ? scoreRaw.score * 0.5 
+              : scoreRaw.score;
+            return sum + score;
           }, 0) / productsNotOptimized.length,
         )
       : 0;
@@ -287,7 +291,7 @@ export function SeoOptimization() {
     productsOptimized.length > 0
       ? Math.round(
           productsOptimized.reduce((sum, p) => {
-            const score = calculateDetailedSeoScore(
+            const scoreRaw = calculateDetailedSeoScore(
               p.seo_title, // AI-generated title
               p.seo_description, // AI-generated description
               !!p.image_url,
@@ -295,7 +299,11 @@ export function SeoOptimization() {
               p.tags, // Tags
               p.optimization_count, // Pass optimization count
             );
-            return sum + score.score;
+            // Apply penalty for pending or not optimized products
+            const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+              ? scoreRaw.score * 0.5 
+              : scoreRaw.score;
+            return sum + score;
           }, 0) / productsOptimized.length,
         )
       : 0;
@@ -304,7 +312,7 @@ export function SeoOptimization() {
   const globalSeoScore = products.length > 0 
     ? Math.round(
         products.reduce((sum, p) => {
-          const score = calculateDetailedSeoScore(
+          const scoreRaw = calculateDetailedSeoScore(
             p.seo_title || p.title,
             p.seo_description || p.vendor,
             !!p.image_url,
@@ -312,7 +320,11 @@ export function SeoOptimization() {
             p.tags,
             p.optimization_count || 0
           );
-          return sum + score.score;
+          // Apply penalty for pending or not optimized products
+          const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+            ? scoreRaw.score * 0.5 
+            : scoreRaw.score;
+          return sum + score;
         }, 0) / products.length
       )
     : 0;
@@ -325,13 +337,13 @@ export function SeoOptimization() {
     const cache = new Map();
 
     return (product) => {
-      const cacheKey = `${product.seo_title}_${product.seo_description}_${product.image_url}_${product.tags}_${product.optimization_count}`;
+      const cacheKey = `${product.seo_title}_${product.seo_description}_${product.image_url}_${product.tags}_${product.optimization_count}_${product.enrichment_status}`;
 
       if (cache.has(cacheKey)) {
         return cache.get(cacheKey);
       }
 
-      const score = calculateDetailedSeoScore(
+      const scoreRaw = calculateDetailedSeoScore(
         product.seo_title,
         product.seo_description,
         !!product.image_url,
@@ -339,6 +351,11 @@ export function SeoOptimization() {
         product.tags,
         product.optimization_count || 0,
       ).score;
+      
+      // Apply penalty for pending or not optimized products
+      const score = (product.enrichment_status === 'pending' || product.enrichment_status === 'not_optimised') 
+        ? scoreRaw * 0.5 
+        : scoreRaw;
 
       cache.set(cacheKey, score);
       return score;
@@ -408,7 +425,7 @@ export function SeoOptimization() {
   if (seoScoreSort !== "none") {
     sortedProducts.sort((a, b) => {
       // Calculate scores using the same values as display
-      const scoreA = calculateDetailedSeoScore(
+      const scoreARaw = calculateDetailedSeoScore(
         a.seo_title,
         a.seo_description,
         !!a.image_url,
@@ -416,8 +433,13 @@ export function SeoOptimization() {
         a.tags,
         a.optimization_count,
       ).score;
+      
+      // Apply penalty for pending or not optimized products
+      const scoreA = (a.enrichment_status === 'pending' || a.enrichment_status === 'not_optimised') 
+        ? scoreARaw * 0.5 
+        : scoreARaw;
 
-      const scoreB = calculateDetailedSeoScore(
+      const scoreBRaw = calculateDetailedSeoScore(
         b.seo_title,
         b.seo_description,
         !!b.image_url,
@@ -425,6 +447,11 @@ export function SeoOptimization() {
         b.tags,
         b.optimization_count,
       ).score;
+      
+      // Apply penalty for pending or not optimized products
+      const scoreB = (b.enrichment_status === 'pending' || b.enrichment_status === 'not_optimised') 
+        ? scoreBRaw * 0.5 
+        : scoreBRaw;
 
       return seoScoreSort === "asc" ? scoreA - scoreB : scoreB - scoreA;
     });
@@ -1298,7 +1325,7 @@ export function SeoOptimization() {
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((product) => {
-                  const seoScore = calculateDetailedSeoScore(
+                  const seoScoreRaw = calculateDetailedSeoScore(
                     product.seo_title,
                     product.seo_description,
                     !!product.image_url,
@@ -1306,6 +1333,14 @@ export function SeoOptimization() {
                     product.tags,
                     product.optimization_count,
                   );
+                  
+                  // Apply penalty for pending or not optimized products
+                  const seoScore = {
+                    ...seoScoreRaw,
+                    score: (product.enrichment_status === 'pending' || product.enrichment_status === 'not_optimised') 
+                      ? seoScoreRaw.score * 0.5 
+                      : seoScoreRaw.score
+                  };
 
                   return (
                     <TableRow key={product.id} className="hover:bg-muted/50">
@@ -1435,7 +1470,7 @@ export function SeoOptimization() {
         // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paginatedProducts.map((product) => {
-            const seoScore = calculateDetailedSeoScore(
+            const seoScoreRaw = calculateDetailedSeoScore(
               product.seo_title,
               product.seo_description,
               !!product.image_url,
@@ -1443,6 +1478,14 @@ export function SeoOptimization() {
               product.tags,
               product.optimization_count,
             );
+            
+            // Apply penalty for pending or not optimized products
+            const seoScore = {
+              ...seoScoreRaw,
+              score: (product.enrichment_status === 'pending' || product.enrichment_status === 'not_optimised') 
+                ? seoScoreRaw.score * 0.5 
+                : seoScoreRaw.score
+            };
 
             return (
               <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
