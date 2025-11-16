@@ -153,15 +153,27 @@ h3 {
   font-weight: 600;
 }
 
-/* Navigation - Shopify style: normal weight by default */
-nav a, nav button, nav span {
-  font-weight: 400 !important;
+/* Navigation - Onglets principaux et sous-onglets */
+/* Onglets principaux : font-weight 500 */
+nav > div > div > a,
+nav > div > div > button,
+nav > div > a,
+nav > div > button,
+.sidebar-menu-button {
+  font-weight: 500 !important;
   letter-spacing: 0.005em;
 }
 
-/* Active navigation items are medium weight */
-nav a.active, nav button.active {
-  font-weight: 500 !important;
+/* Sous-onglets : font-weight 200 */
+nav a[class*="ml-"],
+nav a[class*="pl-8"],
+nav a[class*="pl-14"],
+nav button[class*="ml-"],
+nav div[class*="ml-"] a,
+nav div[class*="border-l"] a,
+.sidebar-menu-sub a,
+.sidebar-menu-sub button {
+  font-weight: 200 !important;
 }
 
 /* Taille uniforme pour tous les éléments de navigation */
