@@ -182,17 +182,24 @@ nav div[class*="border-l"] a {
   font-weight: 200 !important;
 }
 
-/* Force une taille uniforme de 14px pour TOUS les éléments de la sidebar */
-[data-sidebar] *,
-[data-sidebar] span,
-[data-sidebar] a,
-[data-sidebar] button,
-[data-sidebar] [data-sidebar-group-label],
-[data-sidebar] [data-sidebar="group-label"],
-[data-sidebar] [data-sidebar="group-content"],
-[data-sidebar] [data-sidebar="menu-button"],
-[data-sidebar] [data-sidebar="menu-sub-button"] {
-  font-size: 0.875rem !important; /* 14px - équivalent à text-sm */
+/* Taille uniforme pour le TEXTE de navigation uniquement */
+[data-sidebar] [data-sidebar-menu-button] > span,
+[data-sidebar] [data-sidebar-menu-sub-button] > span,
+[data-sidebar] a > span:not([class*="badge"]):not([class*="icon"]),
+[data-sidebar] button > span:not([class*="badge"]):not([class*="icon"]) {
+  font-size: 0.875rem !important;
+}
+
+/* Onglets principaux : font-weight 500 */
+[data-sidebar] [data-sidebar-menu] > [data-sidebar-menu-item] > [data-sidebar-menu-button],
+[data-sidebar] [data-sidebar-menu] > [data-sidebar-menu-item] > [data-sidebar-menu-button] > span {
+  font-weight: 500 !important;
+}
+
+/* Sous-onglets : font-weight 200 */
+[data-sidebar] [data-sidebar-menu-sub] [data-sidebar-menu-sub-button],
+[data-sidebar] [data-sidebar-menu-sub] [data-sidebar-menu-sub-button] > span {
+  font-weight: 200 !important;
 }
 
 /* Button text should be medium - except for navigation buttons */
