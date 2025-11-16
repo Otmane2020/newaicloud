@@ -524,10 +524,10 @@ export function AppSidebar() {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group w-fit"
                   >
                     <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wide">
+                    <span className="text-xs text-white uppercase tracking-wide">
                       {userPlan || t.common.loading}
                     </span>
-                    <span className="text-xs text-white/90 font-medium">
+                    <span className="text-xs text-white/90">
                       (Upgrade)
                     </span>
                   </NavLink>

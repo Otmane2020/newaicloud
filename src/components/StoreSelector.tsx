@@ -29,7 +29,7 @@ export function StoreSelector() {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
         <Store className="w-4 h-4 text-primary shrink-0" />
-        <span className="text-sm font-medium text-foreground truncate">
+        <span className="text-sm text-foreground truncate">
           {stores[0].store_label || stores[0].store_name || 'Boutique'}
         </span>
       </div>
@@ -57,7 +57,7 @@ export function StoreSelector() {
       <SelectTrigger className="flex items-center gap-3 px-3 py-2.5 h-auto bg-primary/10 hover:bg-primary/15 rounded-lg border-0 transition-colors">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Store className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="text-sm text-foreground truncate">
             {selectedStore?.store_label || selectedStore?.store_name || 'Sélectionner une boutique'}
           </span>
         </div>

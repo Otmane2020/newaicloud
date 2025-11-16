@@ -171,9 +171,9 @@ export function Navigation() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 font-semibold ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 ${
                   location.pathname === '/admin'
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50 active'
                     : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
                 }`}
                 title={collapsed ? 'Admin Panel' : undefined}
@@ -302,13 +302,13 @@ export function Navigation() {
           {!collapsed && userPlan && (
             <div className="px-3 py-2 mb-2 text-center">
               <div className="text-xs text-muted-foreground mb-1">{t.navigation.currentPlan}</div>
-              <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs font-semibold">
+              <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs">
                 {userPlan}
               </div>
             </div>
           )}
           {!collapsed && (
-        <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <div className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">
           {t.navigation.settings}
         </div>
           )}
