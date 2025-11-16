@@ -316,18 +316,17 @@ function calculateDetailedSeoScore(
   title: string | null,
   description: string | null,
   hasImage: boolean,
-  tags: string | null,
   hasUrl: boolean,
-  optimizationCount: number,
-  productType?: string
+  tags?: string | null,
+  optimizationCount?: number
 ): SeoScoreDetails {
-  const titleResult = calculateTitleScore(title, productType);
-  const descResult = calculateDescriptionScore(description, title || undefined);
-  const tagsScore = calculateTagsScore(tags);
+  const titleResult = calculateTitleScore(title);
+  const descResult = calculateDescriptionScore(description);
+  const tagsScore = calculateTagsScore(tags || null);
   
   const imageScore = hasImage ? 10 : 0;
   const urlScore = hasUrl ? 5 : 0;
-  const optimizationBonus = optimizationCount > 0 ? 5 : 0;
+  const optimizationBonus = (optimizationCount && optimizationCount > 0) ? 5 : 0;
   
   const totalScore = Math.min(100, 
     (titleResult.score * 0.35) + 
@@ -351,10 +350,11 @@ function calculateDetailedSeoScore(
 }
 
 function calculateArticleSeoScore(
+  title: string | null,
   seoTitle: string | null,
   seoDescription: string | null,
   keywords: string[] | null,
-  featuredImage: string | null,
+  hasFeaturedImage: boolean,
   isPublished: boolean,
   optimizationCount: number
 ): { score: number; breakdown: string[] } {
@@ -376,7 +376,7 @@ function calculateArticleSeoScore(
     breakdown.push('Mots-clés bien définis');
   }
   
-  if (featuredImage) {
+  if (hasFeaturedImage) {
     score += 15;
     breakdown.push('Image mise en avant présente');
   }
@@ -397,8 +397,8 @@ function calculateArticleSeoScore(
   return { score: Math.min(100, score), breakdown };
 }
 
-function calculateAltTextScore(altText: string | null, isAiGenerated: boolean): number {
-  if (!altText) return 0;
+function calculateAltTextScore(altText: string | null, isAiGenerated: boolean): { score: number; weight: number; isAI: boolean } {
+  if (!altText) return { score: 0, weight: 0, isAI: false };
   
   const length = altText.length;
   let score = 0;
@@ -413,8 +413,8 @@ function calculateAltTextScore(altText: string | null, isAiGenerated: boolean): 
     score = 50;
   }
   
-  const weight = isAiGenerated ? 1.0 : 0.5;
-  return Math.round(score * weight);
+  const weight = isAiGenerated ? 1.0 : 0.3;
+  return { score: Math.round(score * weight), weight, isAI: isAiGenerated };
 }
 
 // Audit functions for each category
@@ -487,10 +487,10 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
   products.forEach(product => {
     const scoreResult = calculateDetailedSeoScore(
       product.seo_title || product.title,
-      product.seo_description,
+      product.seo_description || product.vendor,
       product.images?.length > 0,
+      true,
       product.tags,
-      !!product.handle,
       product.optimization_count || 0
     );
     totalScore += scoreResult.score;
@@ -557,8 +557,8 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
       collection.seo_title || collection.title,
       collection.seo_description || collection.body_html?.substring(0, 160) || '',
       !!collection.image,
-      null,
-      !!collection.handle,
+      true,
+      undefined,
       collection.optimization_count || 0
     );
     totalScore += scoreResult.score;
@@ -606,8 +606,8 @@ function auditPages(pages: any[]): { score: number; issues: any[] } {
       page.seo_title || page.title,
       page.seo_description || page.body_html?.substring(0, 160) || '',
       false,
-      null,
       !!page.handle,
+      undefined,
       page.optimization_count || 0
     );
     totalScore += scoreResult.score;
@@ -653,9 +653,10 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
   articles.forEach(article => {
     const articleScore = calculateArticleSeoScore(
       article.title,
+      article.title,
       article.meta_description,
       article.keywords,
-      article.featured_image,
+      !!article.featured_image,
       article.status === 'published',
       article.optimization_count || 0
     );
@@ -713,8 +714,8 @@ function auditImages(productImages: any[], contentImages: any[]): { score: numbe
   
   let totalScore = 0;
   allImages.forEach(img => {
-    const altScore = calculateAltTextScore(img.alt_text, !!img.ai_generated_alt);
-    totalScore += altScore;
+    const altScoreResult = calculateAltTextScore(img.alt_text, !!img.ai_generated_alt);
+    totalScore += altScoreResult.score;
   });
   
   const avgScore = Math.round(totalScore / allImages.length);
