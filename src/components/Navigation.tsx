@@ -171,7 +171,7 @@ export function Navigation() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-2 font-semibold ${
                   location.pathname === '/admin'
                     ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
                     : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
@@ -179,7 +179,7 @@ export function Navigation() {
                 title={collapsed ? 'Admin Panel' : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-bold">{t.navigation.adminPanel}</span>}
+                {!collapsed && <span>{t.navigation.adminPanel}</span>}
               </Link>
             )}
             
@@ -195,7 +195,7 @@ export function Navigation() {
                     <>
                       <button
                         onClick={() => toggleMenu(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                           isActive 
                             ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                             : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -280,7 +280,7 @@ export function Navigation() {
                   ) : (
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                         isActive 
                           ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                           : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -288,7 +288,7 @@ export function Navigation() {
                       title={collapsed ? item.label : undefined}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
-                      {!collapsed && <span className="font-medium">{item.label}</span>}
+                      {!collapsed && <span>{item.label}</span>}
                     </Link>
                   )}
                 </div>
@@ -320,7 +320,7 @@ export function Navigation() {
               <Link
                 key={item.path + item.label}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-semibold ${
                   isActive 
                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
                     : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
@@ -328,7 +328,7 @@ export function Navigation() {
                 title={collapsed ? item.label : undefined}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+                {!collapsed && <span className="text-sm">{item.label}</span>}
               </Link>
             );
           })}
@@ -338,11 +338,11 @@ export function Navigation() {
         <div className="border-t border-gray-200 p-2 space-y-1">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-semibold"
             title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-medium">{t.navigation.logout}</span>}
+            {!collapsed && <span>{t.navigation.logout}</span>}
           </button>
           
           <button
