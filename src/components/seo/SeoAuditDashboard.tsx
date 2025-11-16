@@ -681,46 +681,53 @@ export function SeoAuditDashboard() {
               {[
                 {
                   key: "homepage_score",
-                  label: t.seoAuditDashboard.categories.homepage,
+                  label: "Page d'accueil",
                   icon: Home,
                   tab: "audit-dashboard",
                   subtab: "homepage",
-                  desc: t.seoAuditDashboard.categoryDescriptions.homepage,
+                  desc: "Optimisation de votre page d'accueil",
                 },
                 {
                   key: "products_score",
-                  label: t.seoAuditDashboard.categories.products,
+                  label: "Produits",
                   icon: ShoppingBag,
                   tab: "products",
-                  desc: t.seoAuditDashboard.categoryDescriptions.products,
+                  desc: "Optimisation de vos fiches produits",
                 },
                 {
                   key: "collections_score",
-                  label: t.seoAuditDashboard.categories.collections,
+                  label: "Collections",
                   icon: Layers,
                   tab: "collections",
-                  desc: t.seoAuditDashboard.categoryDescriptions.collections,
+                  desc: "Optimisation de vos collections",
                 },
                 { 
-                  key: "blog_score", 
-                  label: t.seoAuditDashboard.categories.content, 
+                  key: "pages_score", 
+                  label: "Pages", 
+                  icon: FileText, 
+                  tab: "pages", 
+                  desc: "Optimisation de vos pages" 
+                },
+                { 
+                  key: "articles_score", 
+                  label: "Articles", 
                   icon: FileText, 
                   tab: "articles", 
-                  desc: t.seoAuditDashboard.categoryDescriptions.content 
+                  desc: "Optimisation de vos articles de blog" 
                 },
                 { 
                   key: "images_score", 
-                  label: t.seoAuditDashboard.categories.images, 
+                  label: "Images", 
                   icon: ImageIcon, 
                   tab: "alt", 
-                  desc: t.seoAuditDashboard.categoryDescriptions.images 
+                  desc: "Optimisation des balises alt" 
                 },
                 {
                   key: "tags_score",
-                  label: t.seoAuditDashboard.categories.tags,
+                  label: "Tags",
                   icon: Sparkles,
                   tab: "products",
-                  desc: t.seoAuditDashboard.categoryDescriptions.tags,
+                  desc: "Score des tags de produits",
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 const categoryStats =
