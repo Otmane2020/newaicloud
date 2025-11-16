@@ -38,46 +38,64 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch all data needed for audit (including images and homepage SEO)
-    const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult, homepageSeoResult] = await Promise.all([
-      supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id),
-      supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
-      // Fetch articles with same logic as Dashboard (all articles, will filter by store later if store exists)
-      supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
-      supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
-      supabaseAdmin.from('shopify_connections').select('*').eq('user_id', user.id).limit(1).maybeSingle(),
-      supabaseAdmin.from('content_images').select('id, alt_text, optimization_count').eq('user_id', user.id),
+    // First, get the store to use it for filtering (same as Dashboard)
+    const { data: store } = await supabaseAdmin
+      .from('shopify_connections')
+      .select('*')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    console.log(`[AUDIT] Store filter: ${store?.id || 'none'}`);
+
+    // Fetch all data needed for audit with store_id filter (same as Dashboard)
+    const [productsResult, collectionsResult, articlesResult, pagesResult, homepageSeoResult] = await Promise.all([
+      // Products filtered by store_id (same as Dashboard line 180)
+      store?.id 
+        ? supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id),
+      // Collections filtered by store_id (same as Dashboard line 229)
+      store?.id
+        ? supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
+      // Articles filtered by store_id (strict filter, same as ArticleManagement.tsx line 117)
+      store?.id
+        ? supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
+      // Pages filtered by store_id (same as Dashboard line 253)
+      store?.id
+        ? supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
       supabaseAdmin.from('homepage_seo').select('last_audit').eq('user_id', user.id).maybeSingle()
     ]);
 
     const products = productsResult.data || [];
     const collections = collectionsResult.data || [];
-    const allArticles = articlesResult.data || [];
+    const articles = articlesResult.data || [];
     const pages = pagesResult.data || [];
-    const store = storeResult.data;
-    const contentImages = contentImagesResult.data || [];
     const homepageSeo = homepageSeoResult.data;
 
-    // Filter articles by store_id (strict filter, same as ArticleManagement.tsx line 117)
-    const articles = store?.id 
-      ? allArticles.filter(a => a.store_id === store.id)
-      : allArticles;
-
-    // Fetch product images for user's products
-    const productIds = products.map(p => p.id);
+    // Fetch product images for user's products with store filter (same as Dashboard line 307-311)
     let productImages: any[] = [];
     
-    if (productIds.length > 0) {
+    if (store?.id && products.length > 0) {
       const { data: imgData } = await supabaseAdmin
         .from('product_images')
-        .select('id, alt_text, optimization_count, ai_generated_alt')
+        .select('id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)')
+        .eq('shopify_products.seller_id', user.id)
+        .eq('shopify_products.store_id', store.id);
+      productImages = imgData || [];
+    } else if (products.length > 0) {
+      // Fallback if no store (but shouldn't happen)
+      const productIds = products.map(p => p.id);
+      const { data: imgData } = await supabaseAdmin
+        .from('product_images')
+        .select('id, alt_text, optimization_count')
         .in('product_id', productIds);
       productImages = imgData || [];
     }
 
-    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length} (filtered by store), Pages: ${pages.length}`);
-    console.log(`[AUDIT] Images fetched - Product images: ${productImages.length} (using optimization_count for AI detection)`);
-    console.log(`[AUDIT] Store filter applied: ${store?.id || 'none'} - Articles filtered from ${allArticles.length} to ${articles.length}`);
+    console.log(`[AUDIT] Data fetched with store filter (${store?.id || 'none'}) - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}, Images: ${productImages.length}`);
 
     // Initialize audit results with 7 categories
     const auditResults = {
