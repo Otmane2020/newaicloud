@@ -58,9 +58,9 @@ Deno.serve(async (req) => {
     const contentImages = contentImagesResult.data || [];
     const homepageSeo = homepageSeoResult.data;
 
-    // Filter articles by store_id (same logic as Dashboard line 284-286)
+    // Filter articles by store_id (strict filter, same as ArticleManagement.tsx line 117)
     const articles = store?.id 
-      ? allArticles.filter(a => a.store_id === store.id || a.store_id === null)
+      ? allArticles.filter(a => a.store_id === store.id)
       : allArticles;
 
     // Fetch product images for user's products
@@ -665,8 +665,8 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
     const articleScore = calculateArticleSeoScore(
       article.title,
       article.title,
-      article.meta_description,
-      article.keywords,
+      article.meta_description || '',
+      article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
       !!article.featured_image,
       article.status === 'published',
       article.optimization_count || 0

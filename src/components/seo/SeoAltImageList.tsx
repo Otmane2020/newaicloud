@@ -33,6 +33,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { calculateAltTextScore } from '@/lib/seoQuality';
 
 interface ProductImage {
   id: string;
@@ -43,6 +44,7 @@ interface ProductImage {
   product_title?: string;
   last_synced_at?: string | null;
   shopify_image_id?: number | null;
+  optimization_count?: number;
 }
 
 interface ProductWithImages {
@@ -100,6 +102,7 @@ export function SeoAltImageList() {
           product_id,
           last_synced_at,
           shopify_image_id,
+          optimization_count,
           shopify_products!inner(
             id,
             title,
@@ -484,9 +487,15 @@ export function SeoAltImageList() {
     filled: allImages.filter(img => !!img.alt_text).length
   };
 
-  // Calculate global score for ALT images
+  // Calculate global score for ALT images using calculateAltTextScore (same as Dashboard and Audit)
   const globalAltScore = stats.total > 0 
-    ? Math.round((stats.filled / stats.total) * 100) 
+    ? Math.round(
+        allImages.reduce((sum, img) => {
+          const isAI = (img.optimization_count || 0) > 0;
+          const altScore = calculateAltTextScore(img.alt_text || '', isAI);
+          return sum + altScore.score;
+        }, 0) / stats.total
+      )
     : 0;
 
   if (loading) {
