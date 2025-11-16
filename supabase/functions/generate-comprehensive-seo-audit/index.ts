@@ -797,7 +797,8 @@ function auditTags(products: any[]): { score: number; issues: any[] } {
     totalScore += tagScore;
   });
   
-  const avgScore = Math.round(totalScore / products.length);
+  // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100 (same as Dashboard line 353)
+  const avgScore = Math.round((totalScore / products.length) * 5);
   
   const productsWithoutTags = products.filter(p => !p.tags || p.tags.trim().length === 0);
   if (productsWithoutTags.length > 0) {
