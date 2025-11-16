@@ -114,10 +114,10 @@ RÉPONDS UNIQUEMENT EN JSON.`;
 
     console.log("🔍 Search terms:", searchTerms);
 
-    // Build ILIKE conditions for search
+    // Build ILIKE conditions for search using PostgREST format
     const searchConditions = extracted.keywords
-      .map((keyword: string) => `full_path ILIKE '%${keyword}%'`)
-      .join(" OR ");
+      .map((keyword: string) => `full_path.ilike.*${keyword}*`)
+      .join(",");
 
     const { data: relevantCategories, error: searchError } = await supabase
       .from("google_product_taxonomy")
