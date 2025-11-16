@@ -164,6 +164,15 @@ nav a.active, nav button.active {
   font-weight: 500 !important;
 }
 
+/* Taille uniforme pour tous les éléments de navigation */
+nav a, nav button {
+  font-size: 0.875rem; /* équivalent à text-sm - 14px */
+}
+
+nav a span, nav button span {
+  font-size: inherit;
+}
+
 /* Button text should be medium - except for navigation buttons */
 button:not(nav button) {
   font-weight: 500;
