@@ -5,7 +5,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { calculateDetailedSeoScore, calculateArticleSeoScore, calculateTagsScore, calculateAltTextScore } from '@/lib/seoQuality';
+import {
+  calculateProductsSeoScore,
+  calculateCollectionsSeoScore,
+  calculatePagesSeoScore,
+  calculateArticlesSeoScore,
+  calculateImagesSeoScore,
+  calculateTagsSeoScore,
+  calculateHomepageSeoScore,
+  calculateDetailedSeoScore,
+  calculateArticleSeoScore,
+  calculateTagsScore,
+  calculateAltTextScore
+} from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -202,30 +214,12 @@ export default function Dashboard() {
           )
         : 0;
       
-      // Calculate SEO scores using the same logic as each tab
+      // Calculate SEO scores using shared functions to ensure consistency with Audit
       
-      // 1. PRODUCTS SCORE (from SeoOptimization.tsx)
-      const productsScore = products && products.length > 0
-        ? Math.round(
-            products.reduce((sum: number, p: any) => {
-              const scoreRaw = calculateDetailedSeoScore(
-                p.seo_title || p.title,
-                p.seo_description || p.vendor,
-                !!p.image_url,
-                true,
-                p.tags,
-                p.optimization_count || 0
-              );
-              // Apply penalty for pending or not optimized products (same as SeoOptimization.tsx)
-              const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
-                ? scoreRaw.score * 0.5 
-                : scoreRaw.score;
-              return sum + score;
-            }, 0) / products.length
-          )
-        : 0;
+      // 1. PRODUCTS SCORE
+      const productsScore = calculateProductsSeoScore(products || []);
 
-      // 2. COLLECTIONS SCORE (from CollectionOptimization.tsx)
+      // 2. COLLECTIONS SCORE
       const { data: collections } = await supabase
         .from('shopify_collections')
         .select('id, seo_title, title, seo_description, body_html, image_url, optimization_count')
@@ -233,23 +227,9 @@ export default function Dashboard() {
         .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
       
-      const collectionsScore = collections && collections.length > 0
-        ? Math.round(
-            collections.reduce((sum: number, c: any) => {
-              const score = calculateDetailedSeoScore(
-                c.seo_title || c.title,
-                c.seo_description || c.body_html?.substring(0, 160) || '',
-                !!c.image_url,
-                true,
-                undefined,
-                c.optimization_count || 0
-              );
-              return sum + score.score;
-            }, 0) / collections.length
-          )
-        : 0;
+      const collectionsScore = calculateCollectionsSeoScore(collections || []);
 
-      // 3. PAGES SCORE (from PageOptimization.tsx)
+      // 3. PAGES SCORE
       const { data: pagesData } = await supabase
         .from('shopify_pages')
         .select('seo_title, title, seo_description, body_html, handle, optimization_count')
@@ -257,23 +237,9 @@ export default function Dashboard() {
         .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
 
-      const pagesScore = pagesData && pagesData.length > 0
-        ? Math.round(
-            pagesData.reduce((sum: number, page: any) => {
-              const score = calculateDetailedSeoScore(
-                page.seo_title || page.title,
-                page.seo_description || page.body_html?.substring(0, 160) || '',
-                false,
-                !!page.handle,
-                undefined,
-                page.optimization_count || 0
-              );
-              return sum + score.score;
-            }, 0) / pagesData.length
-          )
-        : 0;
+      const pagesScore = calculatePagesSeoScore(pagesData || []);
 
-      // 4. ARTICLES SCORE (from ArticleManagement.tsx)
+      // 4. ARTICLES SCORE
       const { data: articlesData } = await supabase
         .from('blog_articles')
         .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
@@ -281,25 +247,9 @@ export default function Dashboard() {
         .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
 
-      const articlesScore = articlesData && articlesData.length > 0
-        ? Math.round(
-            articlesData.reduce((sum: number, article: any) => {
-              const score = calculateArticleSeoScore(
-                article.title,
-                article.seo_title, // Use seo_title like ArticleManagement.tsx (authoritative reference)
-                article.meta_description || '',
-                article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
-                !!article.featured_image,
-                article.status === 'published',
-                article.optimization_count || 0
-              );
-              return sum + score.score;
-            }, 0) / articlesData.length
-          )
-        : 0;
+      const articlesScore = calculateArticlesSeoScore(articlesData || []);
 
-      // 5. IMAGES SCORE (from SeoAltImageList.tsx)
-      // Use a more efficient query that doesn't depend on the number of products
+      // 5. IMAGES SCORE
       let imagesScore = 0;
       
       // Only calculate if a store is selected (same behavior as SeoAltImageList)
@@ -310,18 +260,13 @@ export default function Dashboard() {
           .eq('shopify_products.seller_id', user?.id)
           .eq('shopify_products.store_id', selectedStore.id);
 
-        imagesScore = allImages && allImages.length > 0
-          ? Math.round(
-              allImages.reduce((sum: number, img: any) => {
-                const isAI = img.optimization_count > 0;
-                const altScore = calculateAltTextScore(img.alt_text || '', isAI);
-                return sum + altScore.score;
-              }, 0) / allImages.length
-            )
-          : 0;
+        imagesScore = calculateImagesSeoScore(allImages || []);
       }
 
-      // 6. HOMEPAGE SCORE (from HomePageSeoAudit.tsx)
+      // 6. TAGS SCORE  
+      const tagsScore = calculateTagsSeoScore(products || []);
+
+      // 7. HOMEPAGE SCORE
       // @ts-ignore - Json type causes deep recursion, safe to ignore here
       const { data: homepageData }: any = await supabase
         .from('homepage_seo')
@@ -332,32 +277,6 @@ export default function Dashboard() {
         .maybeSingle();
 
       const homepageScore = homepageData?.last_audit?.score || 0;
-
-      // 7. TAGS SCORE (from TagOptimization.tsx)
-      // Use calculateTagsScore for each product and average the results
-      const tagsScore = products && products.length > 0
-        ? Math.round(
-            products.reduce((sum: number, p: any) => {
-              const score = calculateTagsScore(p.tags);
-              // Debug first few products
-              if (products.indexOf(p) < 3) {
-                console.log('🏷️ [DASHBOARD TAG DEBUG]', {
-                  productId: p.id,
-                  title: p.title,
-                  tags: p.tags,
-                  calculatedScore: score
-                });
-              }
-              return sum + score;
-            }, 0) / products.length
-          ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
-        : 0;
-      
-      console.log('🎯 [DASHBOARD TAGS]', {
-        totalProducts: products?.length,
-        tagsScore,
-        productsWithTags: products?.filter((p: any) => p.tags && p.tags.trim().length > 0).length
-      });
 
       // Build articles query with optional store filter
       let articlesCountQuery = supabase
