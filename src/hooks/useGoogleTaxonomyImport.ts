@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function useGoogleTaxonomyImport() {
   const [isImporting, setIsImporting] = useState(false);
 
-  const importTaxonomy = async () => {
+  const importTaxonomy = useCallback(async () => {
     setIsImporting(true);
 
     try {
@@ -29,7 +29,7 @@ export function useGoogleTaxonomyImport() {
     } finally {
       setIsImporting(false);
     }
-  };
+  }, []);
 
   return {
     isImporting,
