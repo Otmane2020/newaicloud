@@ -436,10 +436,10 @@ const AutoExportSettings = ({
     <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
       <div className="flex-1">
         <Label htmlFor="export_after_opt" className="cursor-pointer font-medium">
-          Exporter après optimisation
+          Synchronisation automatique après optimisation
         </Label>
         <p className="text-xs text-muted-foreground mt-1">
-          Exporter automatiquement vers Shopify après optimisation IA
+          Synchroniser automatiquement vers Shopify après optimisation IA sans confirmation (skip tous les pop-ups)
         </p>
       </div>
       <Switch
