@@ -16,11 +16,12 @@ const ShopifySuccess = () => {
     if (status === "success") {
       const timer = setTimeout(() => {
         // Si shopify_pending existe, c'est un nouveau compte depuis l'app dev
-        // Rediriger vers onboarding pour claim + import auto
+        // Rediriger vers auth pour création compte/login
+        // Auth se chargera ensuite de rediriger vers onboarding
         if (shopifyPending) {
-          navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+          navigate(`/auth?shopify_pending=${shopifyPending}`);
         } else {
-          // Sinon, flux normal vers integration
+          // Sinon, flux normal vers integration (utilisateur déjà connecté)
           localStorage.setItem("shopify_trigger_import", "true");
           navigate("/integration");
         }

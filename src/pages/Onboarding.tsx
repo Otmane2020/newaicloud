@@ -68,7 +68,13 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      // Préserver le token shopify_pending si présent
+      const shopifyPending = searchParams.get('shopify_pending');
+      if (shopifyPending) {
+        navigate(`/auth?shopify_pending=${shopifyPending}`);
+      } else {
+        navigate('/auth');
+      }
       return;
     }
     
