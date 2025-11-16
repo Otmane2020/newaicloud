@@ -43,17 +43,29 @@ Deno.serve(async (req) => {
 - Description : ${productDescription || "Non fournie"}
 - Type : ${productType || "Non spécifié"}
 
-🎯 EXTRAIT :
-1. Mots-clés principaux (3-5 mots maximum)
-2. Catégorie générale (ex: Électronique, Vêtements, Maison, etc.)
-3. Sous-catégorie si évidente
+🎯 INSTRUCTIONS CRITIQUES :
+1. **TYPE DE PRODUIT** : Identifie le TYPE PRINCIPAL du produit (ex: "table basse", "chaise", "lampe", "t-shirt")
+   - PAS les détails de style (ignorer "design moderne", "noir et blanc", etc.)
+   - PAS les caractéristiques (ignorer "avec tiroir", "pliable", etc.)
+   - JUSTE le type de produit de base
+
+2. **CATÉGORIE** : La catégorie principale (Meubles, Vêtements, Électronique, etc.)
+
+3. **SOUS-CATÉGORIE** : Le type spécifique si pertinent
 
 📤 FORMAT JSON strict :
 {
-  "keywords": ["mot1", "mot2", "mot3"],
-  "general_category": "Catégorie générale",
+  "product_type": "type de produit principal en 2-3 mots max",
+  "category": "Catégorie principale",
   "subcategory": "Sous-catégorie ou null"
 }
+
+✅ EXEMPLE CORRECT :
+Produit: "Table Basse 80x40 – Design Moderne Noir et Blanc avec Tiroir"
+→ {"product_type": "table basse", "category": "Meubles", "subcategory": "Tables"}
+
+❌ MAUVAIS EXEMPLE :
+→ {"product_type": "design moderne noir blanc tiroir", ...} ← TROP GÉNÉRIQUE !
 
 RÉPONDS UNIQUEMENT EN JSON.`;
 
@@ -105,26 +117,37 @@ RÉPONDS UNIQUEMENT EN JSON.`;
 
     // STEP 2: SQL search for relevant categories
     console.log("🔍 Step 2: Searching relevant categories in database...");
+    console.log("📊 Extracted data:", JSON.stringify(extracted));
     
-    const searchTerms = [
-      ...extracted.keywords,
-      extracted.general_category,
-      extracted.subcategory
-    ].filter(Boolean).join(" ");
+    // Use the main product_type for search, plus category
+    const mainSearchTerms = [
+      extracted.product_type,
+      extracted.category
+    ].filter(Boolean);
 
-    console.log("🔍 Search terms:", searchTerms);
+    console.log("🔍 Main search terms:", mainSearchTerms);
 
-    // Build ILIKE conditions for search using PostgREST format with URL encoding
-    const searchConditions = extracted.keywords
-      .map((keyword: string) => `full_path.ilike.*${encodeURIComponent(keyword)}*`)
+    // Build search conditions: prioritize categories matching ALL terms
+    // Split product_type into words for better matching (e.g., "table basse" → "table" AND "basse")
+    const productWords = extracted.product_type?.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2) || [];
+    
+    // Search strategy:
+    // 1. Look for categories matching the product type words
+    // 2. Exclude obviously wrong top-level categories (like "Adulte", "Entreprise")
+    // 3. Prioritize deeper/more specific categories (depth >= 2)
+    
+    const searchConditions = productWords
+      .map((word: string) => `full_path.ilike.*${encodeURIComponent(word)}*`)
       .join(",");
 
     const { data: relevantCategories, error: searchError } = await supabase
       .from("google_product_taxonomy")
       .select("id, full_path, level1, level2, level3, level4, level5, depth")
       .or(searchConditions)
+      .not("level1", "in", '("Adulte","Entreprise et industrie","Animaux")')
+      .gte("depth", 2)
       .order("depth", { ascending: false })
-      .limit(10);
+      .limit(15);
 
     if (searchError) throw searchError;
 
