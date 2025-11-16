@@ -1,23 +1,34 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Upload, CheckCircle2, AlertCircle, Download } from "lucide-react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useGoogleTaxonomyImport } from "@/hooks/useGoogleTaxonomyImport";
+import { supabase } from "@/integrations/supabase/client";
 
 export function GoogleCategoryImport() {
   const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const handleImport = async () => {
-    setImportStatus("idle");
+  useEffect(() => {
+    const checkAndImport = async () => {
+      try {
+        const { count } = await supabase
+          .from("google_product_taxonomy")
+          .select("*", { count: "exact", head: true });
 
-    try {
-      await importTaxonomy();
-      setImportStatus("success");
-    } catch (error) {
-      setImportStatus("error");
-    }
-  };
+        if (count === 0) {
+          await importTaxonomy();
+          setImportStatus("success");
+        } else {
+          setImportStatus("success");
+        }
+      } catch (error) {
+        console.error("Auto-import error:", error);
+        setImportStatus("error");
+      }
+    };
+
+    checkAndImport();
+  }, [importTaxonomy]);
 
   return (
     <Card className="p-6">
@@ -32,23 +43,12 @@ export function GoogleCategoryImport() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button
-            onClick={handleImport}
-            disabled={isImporting}
-            className="gap-2"
-          >
-            {isImporting ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Téléchargement et import...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Importer la Taxonomie Google
-              </>
-            )}
-          </Button>
+          {isImporting && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span className="text-sm font-medium">Téléchargement et import...</span>
+            </div>
+          )}
 
           {importStatus === "success" && (
             <div className="flex items-center gap-2 text-green-600">
