@@ -4,6 +4,10 @@ project_id = "nekqqlhrjgmyudmmewas"
 schedule = "0 * * * *"
 function = "trigger-cleanup-sync"
 
+[cron.shopify-hourly-sync]
+schedule = "0 * * * *"
+function = "trigger-hourly-sync"
+
 [functions.receive-admin-email]
 verify_jwt = false
 
