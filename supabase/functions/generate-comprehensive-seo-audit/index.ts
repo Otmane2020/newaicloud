@@ -52,20 +52,20 @@ Deno.serve(async (req) => {
     const [productsResult, collectionsResult, articlesResult, pagesResult, homepageSeoResult] = await Promise.all([
       // Products filtered by store_id (same as Dashboard line 180)
       store?.id 
-        ? supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id),
+        ? supabaseAdmin.from('shopify_products').select('id, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, enrichment_status').eq('seller_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_products').select('id, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, enrichment_status').eq('seller_id', user.id),
       // Collections filtered by store_id (same as Dashboard line 229)
       store?.id
-        ? supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
+        ? supabaseAdmin.from('shopify_collections').select('id, seo_title, title, seo_description, body_html, image_url, image_alt, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_collections').select('id, seo_title, title, seo_description, body_html, image_url, image_alt, optimization_count').eq('user_id', user.id),
       // Articles filtered by store_id (strict filter, same as ArticleManagement.tsx line 117)
       store?.id
-        ? supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
+        ? supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id),
       // Pages filtered by store_id (same as Dashboard line 253)
       store?.id
-        ? supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
+        ? supabaseAdmin.from('shopify_pages').select('seo_title, title, seo_description, body_html, handle, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('shopify_pages').select('seo_title, title, seo_description, body_html, handle, optimization_count').eq('user_id', user.id),
       supabaseAdmin.from('homepage_seo').select('last_audit').eq('user_id', user.id).maybeSingle()
     ]);
 
@@ -513,7 +513,7 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
     const scoreRaw = calculateDetailedSeoScore(
       product.seo_title || product.title,
       product.seo_description || product.vendor,
-      product.images?.length > 0,
+      !!product.image_url,
       true,
       product.tags,
       product.optimization_count || 0
@@ -585,7 +585,7 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
     const scoreResult = calculateDetailedSeoScore(
       collection.seo_title || collection.title,
       collection.seo_description || collection.body_html?.substring(0, 160) || '',
-      !!collection.image,
+      !!collection.image_url,
       true,
       undefined,
       collection.optimization_count || 0
@@ -607,7 +607,7 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
     });
   }
   
-  const missingImageAlt = collections.filter(c => c.image && !c.image_alt);
+  const missingImageAlt = collections.filter(c => c.image_url && !c.image_alt);
   if (missingImageAlt.length > 0) {
     issues.push({
       category: 'collections',
@@ -795,7 +795,7 @@ function auditTags(products: any[]): { score: number; issues: any[] } {
     totalScore += tagScore;
   });
   
-  const avgScore = Math.round((totalScore / products.length) * 5); // Scale to 0-100
+  const avgScore = Math.round(totalScore / products.length);
   
   const productsWithoutTags = products.filter(p => !p.tags || p.tags.trim().length === 0);
   if (productsWithoutTags.length > 0) {
