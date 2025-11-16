@@ -278,7 +278,7 @@ export default function Dashboard() {
         .from('blog_articles')
         .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
-        .or(`store_id.eq.${selectedStore?.id || ''},store_id.is.null`)
+        .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
 
       const articlesScore = articlesData && articlesData.length > 0
