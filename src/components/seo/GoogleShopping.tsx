@@ -807,18 +807,20 @@ export function GoogleShopping() {
           </div>
 
           {/* Optimization Score */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Score d'optimisation Google Shopping</span>
-              <span className="text-2xl font-bold">{optimizationScore}%</span>
+          <div className="bg-white/20 backdrop-blur-md rounded-lg p-5 mb-4 border border-white/30">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-base font-semibold text-white">Score d'optimisation Google Shopping</span>
+              <span className="text-3xl font-bold text-white">{optimizationScore}%</span>
             </div>
-            <Progress value={optimizationScore} className="h-2 bg-white/20" />
-            <p className="text-xs text-white/70 mt-2">
-              {products.length > 0 
-                ? `Score basé sur 3 critères : Catégorie (33%), GTIN (33%), Fond blanc IA (34%)`
-                : 'Aucun produit à optimiser'
-              }
-            </p>
+            <Progress value={optimizationScore} className="h-3 bg-white/30" />
+            <div className="mt-3 pt-3 border-t border-white/20">
+              <p className="text-sm text-white/90 font-medium">
+                {products.length > 0 
+                  ? `Basé sur 3 critères : Catégorie Google (33%) • GTIN (33%) • Fond blanc IA (34%)`
+                  : 'Aucun produit à optimiser'
+                }
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-3 mt-6">
