@@ -18,7 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateDescriptionScore, calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { calculateArticleSeoScore, calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
@@ -66,33 +66,24 @@ export default function SEO() {
       setLoadingScores(true);
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('*')
-        .or(`store_id.eq.${selectedStore.id},store_id.is.null`);
+        .select('title, meta_description, keywords, featured_image, status, optimization_count')
+        .eq('store_id', selectedStore.id);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
         const scores = data.map((article: any) => {
-          const detailedScore = calculateDescriptionScore(
-            article.meta_description,
-            undefined,
-            undefined,
-            article.title
+          const score = calculateArticleSeoScore(
+            article.title,
+            article.title,
+            article.meta_description || '',
+            article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
+            !!article.featured_image,
+            article.status === 'published',
+            article.optimization_count || 0
           );
           
-          let score = detailedScore.score;
-          
-          // Penalty if no featured image (15%)
-          if (!article.featured_image) {
-            score = Math.round(score * 0.85);
-          }
-          
-          // Bonus for optimization
-          if (article.optimization_count && article.optimization_count > 0) {
-            score = Math.min(100, score + 10);
-          }
-          
-          return score;
+          return score.score;
         });
 
         const avgScore = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
