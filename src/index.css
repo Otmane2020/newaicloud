@@ -183,22 +183,20 @@ nav div[class*="border-l"] a {
 }
 
 /* Taille uniforme pour le TEXTE de navigation uniquement */
-[data-sidebar] [data-sidebar-menu-button] > span,
-[data-sidebar] [data-sidebar-menu-sub-button] > span,
-[data-sidebar] a > span:not([class*="badge"]):not([class*="icon"]),
-[data-sidebar] button > span:not([class*="badge"]):not([class*="icon"]) {
+[data-sidebar="menu-button"] > span,
+[data-sidebar="menu-sub-button"] > span {
   font-size: 0.875rem !important;
 }
 
-/* Onglets principaux : font-weight 500 */
-[data-sidebar] [data-sidebar-menu] > [data-sidebar-menu-item] > [data-sidebar-menu-button],
-[data-sidebar] [data-sidebar-menu] > [data-sidebar-menu-item] > [data-sidebar-menu-button] > span {
+/* Onglets principaux : font-weight 500 (bold) */
+[data-sidebar="menu-button"],
+[data-sidebar="menu-button"] > span {
   font-weight: 500 !important;
 }
 
-/* Sous-onglets : font-weight 200 */
-[data-sidebar] [data-sidebar-menu-sub] [data-sidebar-menu-sub-button],
-[data-sidebar] [data-sidebar-menu-sub] [data-sidebar-menu-sub-button] > span {
+/* Sous-onglets : font-weight 200 (extra light) */
+[data-sidebar="menu-sub-button"],
+[data-sidebar="menu-sub-button"] > span {
   font-weight: 200 !important;
 }
 
