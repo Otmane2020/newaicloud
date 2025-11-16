@@ -165,7 +165,7 @@ export default function Dashboard() {
       // Then fetch products data (limited to first 10k for calculations)
       let productsQuery = supabase
         .from('shopify_products')
-        .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify')
+        .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify, enrichment_status')
         .eq('seller_id', user?.id)
         .range(0, 9999);
 
@@ -185,7 +185,7 @@ export default function Dashboard() {
       const avgOptimizedScore = optimizedProductsList.length > 0
         ? Math.round(
             optimizedProductsList.reduce((sum: number, p: any) => {
-              const score = calculateDetailedSeoScore(
+              const scoreRaw = calculateDetailedSeoScore(
                 p.seo_title || p.title,
                 p.seo_description || p.vendor,
                 !!p.image_url,
@@ -193,7 +193,11 @@ export default function Dashboard() {
                 p.tags,
                 p.optimization_count || 0
               );
-              return sum + score.score;
+              // Apply penalty for pending or not optimized products (same as SeoOptimization.tsx)
+              const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+                ? scoreRaw.score * 0.5 
+                : scoreRaw.score;
+              return sum + score;
             }, 0) / optimizedProductsList.length
           )
         : 0;
@@ -204,7 +208,7 @@ export default function Dashboard() {
       const productsScore = products && products.length > 0
         ? Math.round(
             products.reduce((sum: number, p: any) => {
-              const score = calculateDetailedSeoScore(
+              const scoreRaw = calculateDetailedSeoScore(
                 p.seo_title || p.title,
                 p.seo_description || p.vendor,
                 !!p.image_url,
@@ -212,7 +216,11 @@ export default function Dashboard() {
                 p.tags,
                 p.optimization_count || 0
               );
-              return sum + score.score;
+              // Apply penalty for pending or not optimized products (same as SeoOptimization.tsx)
+              const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+                ? scoreRaw.score * 0.5 
+                : scoreRaw.score;
+              return sum + score;
             }, 0) / products.length
           )
         : 0;
