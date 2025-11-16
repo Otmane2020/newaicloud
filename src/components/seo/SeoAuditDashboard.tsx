@@ -627,8 +627,18 @@ export function SeoAuditDashboard() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
-                        {Math.round(audit.global_score / 16.67)}
+                       <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
+                        {(() => {
+                          const scores = [
+                            audit.homepage_score || 0,
+                            audit.products_score || 0,
+                            audit.collections_score || 0,
+                            audit.audit_results?.content_score || audit.blog_score || 0,
+                            audit.images_score || 0,
+                            audit.technical_score || 0
+                          ];
+                          return scores.filter(score => score >= 80).length;
+                        })()}
                       </div>
                       <div className="text-xs text-muted-foreground font-semibold">{tf('seoAuditDashboard.overview.categoriesOptimized', { count: 6 })}</div>
                       <div className="text-xs text-muted-foreground">{t.seoAuditDashboard.overview.optimized}</div>
