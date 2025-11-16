@@ -58,7 +58,7 @@ export default function MediaHistory() {
               product_variants(id, title, image_url, position)
             `)
             .eq('id', item.product_id)
-            .single();
+            .maybeSingle();
 
           return {
             ...item,
