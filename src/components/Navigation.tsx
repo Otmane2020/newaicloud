@@ -222,10 +222,10 @@ export function Navigation() {
                                 <div key={subItem.path}>
                                   <button
                                     onClick={() => toggleMenu(subItem.path)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-normal ${
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                       isSubActive
-                                        ? 'bg-blue-100 text-blue-700 font-medium'
-                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                        ? 'bg-blue-100 text-blue-700 font-semibold'
+                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                                     }`}
                                   >
                                     <SubIcon className="w-4 h-4 flex-shrink-0" />
@@ -242,10 +242,10 @@ export function Navigation() {
                                           <Link
                                             key={subSubItem.path}
                                             to={subSubItem.path}
-                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-normal ${
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs ${
                                               isSubSubActive
-                                                ? 'bg-blue-100 text-blue-700 font-medium'
-                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                                ? 'bg-blue-100 text-blue-700 font-semibold'
+                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                                             }`}
                                           >
                                             <SubSubIcon className="w-3 h-3 flex-shrink-0" />
@@ -263,10 +263,10 @@ export function Navigation() {
                               <Link
                                 key={subItem.path}
                                 to={subItem.path}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-normal ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                                   isSubActive
-                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                    ? 'bg-blue-100 text-blue-700 font-semibold'
+                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 font-semibold'
                                 }`}
                               >
                                 <SubIcon className="w-4 h-4 flex-shrink-0" />
