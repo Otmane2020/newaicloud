@@ -23,9 +23,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+    let loadingTimeout: NodeJS.Timeout;
+    
+    // Safety timeout to prevent infinite loading
+    loadingTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('[Auth] Loading timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, 5000);
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
+        
         console.log('[Auth] Event:', event, 'Session:', !!session);
         
         // Handle session expiration and sign-out events
@@ -35,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
           
           // Clear all auth-related data
-          localStorage.removeItem('supabase.auth.token');
+          localStorage.clear();
           
           if (event === 'SIGNED_OUT' || !session) {
             toast.error('Votre session a expiré. Veuillez vous reconnecter.');
@@ -45,19 +58,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+        } else {
+          // No session and no special event - stop loading
+          setLoading(false);
         }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // THEN check for existing session with error handling
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      
+      if (error) {
+        console.error('[Auth] Session check error:', error);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch(err => {
+      if (!mounted) return;
+      console.error('[Auth] Session check failed:', err);
+      setSession(null);
+      setUser(null);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      mounted = false;
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
+  }, [navigate, loading]);
 
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     // Préserver les paramètres URL actuels (comme shopify_pending)
