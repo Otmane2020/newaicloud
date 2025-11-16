@@ -23,19 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    // Timeout de sécurité : forcer setLoading(false) après 3 secondes
-    timeoutId = setTimeout(() => {
-      console.warn('[Auth] Loading timeout - forcing loading to false');
-      setLoading(false);
-    }, 3000);
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('[Auth] Event:', event, 'Session:', !!session);
-        clearTimeout(timeoutId); // Annuler le timeout si on reçoit un événement
         
         // Handle session expiration and sign-out events
         if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
@@ -54,33 +45,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-        } else {
-          // CAS IMPORTANT : Aucune session au démarrage
-          console.log('[Auth] No session at startup');
-          setLoading(false);
         }
       }
     );
 
-    // THEN check for existing session avec gestion d'erreur
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        console.log('[Auth] getSession result:', !!session);
-        clearTimeout(timeoutId);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('[Auth] getSession error:', error);
-        clearTimeout(timeoutId);
-        setLoading(false); // IMPORTANT : Toujours arrêter le loading même en cas d'erreur
-      });
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-    return () => {
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {

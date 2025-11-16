@@ -24,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ExternalLink, Eye } from "lucide-react";
-import { useImageOptimization } from "@/hooks/useImageOptimization";
 
 export default function MediaHistory() {
   const queryClient = useQueryClient();
@@ -32,7 +31,6 @@ export default function MediaHistory() {
   const dateLocale = language === 'fr' ? fr : enUS;
   const [activeTab, setActiveTab] = useState('products');
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string; type: string } | null>(null);
-  const { applyAllOptimizedImages, isOptimizing } = useImageOptimization();
 
   // Product images history
   const { data: productHistory, isLoading: productLoading } = useQuery({
@@ -52,34 +50,19 @@ export default function MediaHistory() {
       // Fetch related product data separately
       const enrichedData = await Promise.all(
         historyData.map(async (item) => {
-          // Get product title
           const { data: product } = await supabase
             .from('shopify_products')
-            .select('title')
+            .select(`
+              title,
+              product_images(id, position, src),
+              product_variants(id, title, image_url, position)
+            `)
             .eq('id', item.product_id)
             .single();
 
-          // Get product images
-          const { data: images } = await supabase
-            .from('product_images')
-            .select('id, position, src')
-            .eq('product_id', item.product_id)
-            .order('position', { ascending: true });
-
-          // Get product variants
-          const { data: variants } = await supabase
-            .from('product_variants')
-            .select('id, title, image_url, position')
-            .eq('product_id', item.product_id)
-            .order('position', { ascending: true });
-
           return {
             ...item,
-            shopify_products: {
-              title: product?.title,
-              product_images: images || [],
-              product_variants: variants || []
-            }
+            shopify_products: product
           };
         })
       );
@@ -137,6 +120,37 @@ export default function MediaHistory() {
 
   const isLoading = productLoading || collectionLoading || articleLoading;
 
+  const applyProductImage = useMutation({
+    mutationFn: async ({ 
+      historyId, 
+      targetImageId, 
+      optimizedUrl 
+    }: { 
+      historyId: string; 
+      targetImageId: string; 
+      optimizedUrl: string;
+    }) => {
+      const { error: updateError } = await supabase
+        .from('product_images')
+        .update({ 
+          src: optimizedUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetImageId);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      toast.success('Image appliquée avec succès');
+      queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+      queryClient.invalidateQueries({ queryKey: ['product-images'] });
+    },
+    onError: (error) => {
+      console.error('Error applying image:', error);
+      toast.error('Erreur lors de l\'application');
+    }
+  });
+
   const applyCollectionImage = useMutation({
     mutationFn: async ({ collectionId, optimizedUrl }: { collectionId: string; optimizedUrl: string }) => {
       const { error } = await supabase
@@ -154,66 +168,6 @@ export default function MediaHistory() {
       queryClient.invalidateQueries({ queryKey: ['collection-image-history'] });
     },
     onError: () => toast.error('Erreur lors de l\'application')
-  });
-
-  const applyProductImage = useMutation({
-    mutationFn: async ({ 
-      historyId, 
-      targetImageId, 
-      optimizedUrl 
-    }: { 
-      historyId: string; 
-      targetImageId: string; 
-      optimizedUrl: string;
-    }) => {
-      // Update the product image
-      const { error: updateError } = await supabase
-        .from('product_images')
-        .update({ 
-          src: optimizedUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', targetImageId);
-
-      if (updateError) throw updateError;
-
-      // Mark this history version as current
-      await supabase
-        .from('product_image_history')
-        .update({ is_current: true })
-        .eq('id', historyId);
-
-      // Get product_id for sync
-      const { data: imageData } = await supabase
-        .from('product_images')
-        .select('product_id')
-        .eq('id', targetImageId)
-        .single();
-
-      if (imageData?.product_id) {
-        // Sync with Shopify
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-          body: { productId: imageData.product_id }
-        });
-
-        if (syncError) {
-          console.error('Erreur sync Shopify:', syncError);
-          throw new Error(`Erreur de synchronisation: ${syncError.message}`);
-        }
-
-        if (!syncData?.success) {
-          throw new Error(syncData?.error || 'Échec de la synchronisation');
-        }
-      }
-    },
-    onSuccess: () => {
-      toast.success('Image appliquée et synchronisée avec Shopify');
-      queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
-      queryClient.invalidateQueries({ queryKey: ['product-images'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'application');
-    }
   });
 
   const applyArticleImage = useMutation({
@@ -243,14 +197,6 @@ export default function MediaHistory() {
     link.click();
     document.body.removeChild(link);
     toast.success('Téléchargement démarré');
-  };
-
-  const handleApplyAll = async (productId: string) => {
-    try {
-      await applyAllOptimizedImages.mutateAsync({ productId });
-    } catch (error) {
-      console.error('Error applying all images:', error);
-    }
   };
 
   const getOptimizationTypeLabel = (type: string) => {
@@ -311,8 +257,8 @@ export default function MediaHistory() {
             {/* Product main images */}
             {productImages.length > 0 && (
               <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                  📸 Images produit principales
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Images produit principales
                 </div>
                 {productImages
                   .sort((a: any, b: any) => a.position - b.position)
@@ -324,23 +270,23 @@ export default function MediaHistory() {
                         targetImageId: img.id,
                         optimizedUrl: item.optimized_url
                       })}
-                      className="gap-3 py-3 hover:bg-primary/5"
+                      className="gap-3 py-3"
                     >
                       <div className="flex items-center gap-3 flex-1">
                         {img.src ? (
                           <img 
                             src={img.src} 
                             alt={`Image ${idx + 1}`}
-                            className="w-12 h-12 rounded object-cover border-2 border-primary/20"
+                            className="w-12 h-12 rounded object-cover border"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border-2 border-primary/20">
+                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
                             <ImageIcon className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <div className="font-medium text-sm">
-                            {idx === 0 ? '⭐ Image principale' : `Image ${idx + 1}`}
+                          <div className="font-medium">
+                            {idx === 0 ? 'Image principale' : `Image ${idx + 1}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Position {img.position || idx + 1}
@@ -356,8 +302,8 @@ export default function MediaHistory() {
             {/* Variant images */}
             {variants.length > 0 && (
               <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 border-t-2 border-purple-100 mt-1 pt-2">
-                  🎨 Variantes du produit
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                  Images des variantes
                 </div>
                 {variants
                   .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
@@ -365,75 +311,51 @@ export default function MediaHistory() {
                     return (
                       <DropdownMenuItem
                         key={variant.id}
-                         onClick={async () => {
-                           try {
-                             // Update the variant's image_url directly
-                             const { error } = await supabase
-                               .from('product_variants')
-                               .update({ image_url: item.optimized_url })
-                               .eq('id', variant.id);
+                        onClick={async () => {
+                          try {
+                            // Update the variant's image_url directly
+                            const { error } = await supabase
+                              .from('product_variants')
+                              .update({ image_url: item.optimized_url })
+                              .eq('id', variant.id);
 
-                             if (error) throw error;
+                            if (error) throw error;
 
-                             // Mark this history version as current
-                             await supabase
-                               .from('product_image_history')
-                               .update({ is_current: true })
-                               .eq('id', item.id);
+                            // Mark this history version as current
+                            await supabase
+                              .from('product_image_history')
+                              .update({ is_current: true })
+                              .eq('id', item.id);
 
-                             // Sync with Shopify
-                             const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-                               body: { productId: item.product_id }
-                             });
-
-                             if (syncError) {
-                               console.error('Erreur sync Shopify:', syncError);
-                               throw new Error(`Erreur de synchronisation: ${syncError.message}`);
-                             }
-
-                             if (!syncData?.success) {
-                               throw new Error(syncData?.error || 'Échec de la synchronisation');
-                             }
-
-                             toast.success('Image appliquée à la variante et synchronisée avec Shopify');
-                             queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
-                           } catch (error: any) {
-                             console.error('Error applying image to variant:', error);
-                             toast.error(error.message || "Erreur lors de l'application de l'image");
-                           }
-                         }}
-                        className="gap-3 py-3 hover:bg-purple-50"
+                            toast.success('Image appliquée à la variante avec succès');
+                            queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+                          } catch (error) {
+                            console.error('Error applying image to variant:', error);
+                            toast.error("Erreur lors de l'application de l'image");
+                          }
+                        }}
+                        className="gap-3 py-3"
                       >
                         <div className="flex items-center gap-3 flex-1">
                           {variant.image_url ? (
-                            <div className="relative">
-                              <img 
-                                src={variant.image_url} 
-                                alt={variant.title}
-                                className="w-12 h-12 rounded object-cover border-2 border-purple-300"
-                              />
-                              <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                                V
-                              </div>
-                            </div>
+                            <img 
+                              src={variant.image_url} 
+                              alt={variant.title}
+                              className="w-12 h-12 rounded object-cover border"
+                            />
                           ) : (
-                            <div className="relative">
-                              <div className="w-12 h-12 rounded bg-purple-50 flex items-center justify-center border-2 border-purple-300 border-dashed">
-                                <ImageIcon className="w-6 h-6 text-purple-400" />
-                              </div>
-                              <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                                V
-                              </div>
+                            <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border">
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
                             </div>
                           )}
-                           <div className="flex-1">
-                             <div className="font-medium line-clamp-1 text-sm text-purple-900">
-                               🎨 {variant.title}
-                             </div>
-                             <div className="text-xs text-purple-600">
-                               Variante • {variant.image_url ? '✓ Avec image' : '○ Sans image'}
-                             </div>
-                           </div>
+                          <div className="flex-1">
+                            <div className="font-medium line-clamp-1">
+                              {variant.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Variante {variant.image_url ? '' : '(sans image)'}
+                            </div>
+                          </div>
                         </div>
                       </DropdownMenuItem>
                     );
@@ -645,51 +567,24 @@ export default function MediaHistory() {
           {(() => {
             const grouped = groupProductsByTitle((productHistory as any[]) || []);
             return Object.keys(grouped).length > 0 ? (
-              Object.entries(grouped).map(([title, items]: [string, any[]]) => {
-                const firstItem = items[0];
-                const productId = firstItem.product_id;
-                
-                return (
-                  <Card key={title}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <Package className="w-5 h-5" />
-                            {title}
-                          </CardTitle>
-                          <CardDescription>
-                            {items.length} optimisation{items.length > 1 ? 's' : ''}
-                          </CardDescription>
-                        </div>
-                        <Button
-                          onClick={() => handleApplyAll(productId)}
-                          disabled={isOptimizing}
-                          className="gap-2"
-                          size="sm"
-                        >
-                          {isOptimizing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Application...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-4 w-4" />
-                              Appliquer tout et synchroniser
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {items.map((item) => renderHistoryItem(item, 'product'))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+              Object.entries(grouped).map(([title, items]: [string, any[]]) => (
+                <Card key={title}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      {title}
+                    </CardTitle>
+                    <CardDescription>
+                      {items.length} optimisation{items.length > 1 ? 's' : ''}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {items.map((item) => renderHistoryItem(item, 'product'))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             ) : (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
