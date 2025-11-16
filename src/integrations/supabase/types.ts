@@ -413,6 +413,7 @@ export type Database = {
       }
       blog_articles: {
         Row: {
+          campaign_id: string | null
           collection_id: string | null
           content: string
           created_at: string
@@ -437,6 +438,7 @@ export type Database = {
           vision_confidence: number | null
         }
         Insert: {
+          campaign_id?: string | null
           collection_id?: string | null
           content: string
           created_at?: string
@@ -461,6 +463,7 @@ export type Database = {
           vision_confidence?: number | null
         }
         Update: {
+          campaign_id?: string | null
           collection_id?: string | null
           content?: string
           created_at?: string
@@ -486,6 +489,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "blog_articles_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "blog_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "blog_articles_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
@@ -503,6 +513,7 @@ export type Database = {
       }
       blog_campaigns: {
         Row: {
+          articles_generated: number | null
           auto_post: boolean | null
           created_at: string
           frequency: string | null
@@ -521,6 +532,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          articles_generated?: number | null
           auto_post?: boolean | null
           created_at?: string
           frequency?: string | null
@@ -539,6 +551,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          articles_generated?: number | null
           auto_post?: boolean | null
           created_at?: string
           frequency?: string | null
