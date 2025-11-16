@@ -807,14 +807,14 @@ export function GoogleShopping() {
           </div>
 
           {/* Optimization Score */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg p-5 mb-4 border border-emerald-400/30 shadow-lg">
+          <div className="bg-white/20 backdrop-blur-md rounded-lg p-5 mb-4 border border-white/30">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-base font-semibold text-white drop-shadow-sm">Score d'optimisation Google Shopping</span>
-              <span className="text-3xl font-bold text-white drop-shadow-md">{optimizationScore}%</span>
+              <span className="text-base font-semibold text-white">Score d'optimisation Google Shopping</span>
+              <span className="text-3xl font-bold text-white">{optimizationScore}%</span>
             </div>
-            <Progress value={optimizationScore} className="h-3 bg-white/30 [&>div]:bg-white" />
-            <div className="mt-3 pt-3 border-t border-white/30">
-              <p className="text-sm text-white drop-shadow-sm font-medium">
+            <Progress value={optimizationScore} className="h-3 bg-white/30" />
+            <div className="mt-3 pt-3 border-t border-white/20">
+              <p className="text-sm text-white/90 font-medium">
                 {products.length > 0 
                   ? `Basé sur 3 critères : Catégorie Google (33%) • GTIN (33%) • Fond blanc IA (34%)`
                   : 'Aucun produit à optimiser'
