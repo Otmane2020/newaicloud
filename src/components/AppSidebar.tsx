@@ -322,7 +322,7 @@ export function AppSidebar() {
                                 <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
                                   <NavLink to={auditItem.url}>
                                     <auditItem.icon className="h-3 w-3" />
-                                    <span className="text-xs">{auditItem.title}</span>
+                                    <span>{auditItem.title}</span>
                                   </NavLink>
                                 </SidebarMenuSubButton>
                               ))}
@@ -524,16 +524,16 @@ export function AppSidebar() {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group w-fit"
                   >
                     <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
-                    <span className="text-xs text-white uppercase tracking-wide">
+                    <span className="text-white uppercase tracking-wide">
                       {userPlan || t.common.loading}
                     </span>
-                    <span className="text-xs text-white/90">
+                    <span className="text-white/90">
                       (Upgrade)
                     </span>
                   </NavLink>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <User className="h-3.5 w-3.5 shrink-0" />
-                    <span className="text-xs truncate">{user?.email}</span>
+                    <span className="truncate">{user?.email}</span>
                   </div>
                 </>
               ) : (
@@ -549,7 +549,7 @@ export function AppSidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
+              <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
                 {state === "expanded" && <span>{t.navigation.logout}</span>}
               </Button>
