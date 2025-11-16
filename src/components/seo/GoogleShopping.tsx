@@ -312,6 +312,26 @@ export function GoogleShopping() {
       return;
     }
 
+    // Vérifier que la taxonomie Google est chargée
+    try {
+      const { count, error } = await supabase
+        .from('google_product_taxonomy')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      
+      if (!count || count === 0) {
+        toast.error('Taxonomie Google manquante', {
+          description: 'Veuillez d\'abord importer la taxonomie Google en haut de la page (bouton "Importer la Taxonomie Google")',
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking taxonomy:', error);
+      toast.error('Erreur lors de la vérification de la taxonomie');
+      return;
+    }
+
     setGeneratingCategories(true);
     let successCount = 0;
     let errorCount = 0;
@@ -352,6 +372,14 @@ export function GoogleShopping() {
         }
       } catch (error) {
         console.error(`Error classifying ${product.title}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        if (errorMessage.includes('taxonomy')) {
+          toast.error('Taxonomie manquante', {
+            description: 'Importez d\'abord la taxonomie Google en haut de la page',
+          });
+          setGeneratingCategories(false);
+          return;
+        }
         errorCount++;
       }
 
