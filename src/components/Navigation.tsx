@@ -179,7 +179,7 @@ export function Navigation() {
                 title={collapsed ? 'Admin Panel' : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span>{t.navigation.adminPanel}</span>}
+                {!collapsed && <span className="font-semibold">{t.navigation.adminPanel}</span>}
               </Link>
             )}
             
@@ -204,7 +204,7 @@ export function Navigation() {
                         <Icon className="w-5 h-5 flex-shrink-0" />
                         {!collapsed && (
                           <>
-                            <span className="flex-1 text-left">{item.label}</span>
+                            <span className="flex-1 text-left font-semibold">{item.label}</span>
                             <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </>
                         )}
@@ -229,7 +229,7 @@ export function Navigation() {
                                     }`}
                                   >
                                     <SubIcon className="w-4 h-4 flex-shrink-0" />
-                                    <span className="flex-1 text-left">{subItem.label}</span>
+                                    <span className="flex-1 text-left font-semibold">{subItem.label}</span>
                                     <ChevronDown className={`w-3 h-3 transition-transform ${isSubExpanded ? 'rotate-180' : ''}`} />
                                   </button>
                                   {isSubExpanded && (
@@ -249,7 +249,7 @@ export function Navigation() {
                                             }`}
                                           >
                                             <SubSubIcon className="w-3 h-3 flex-shrink-0" />
-                                            <span>{subSubItem.label}</span>
+                                            <span className="font-semibold">{subSubItem.label}</span>
                                           </Link>
                                         );
                                       })}
@@ -270,7 +270,7 @@ export function Navigation() {
                                 }`}
                               >
                                 <SubIcon className="w-4 h-4 flex-shrink-0" />
-                                <span>{subItem.label}</span>
+                                <span className="font-semibold">{subItem.label}</span>
                               </Link>
                             );
                           })}
@@ -288,7 +288,7 @@ export function Navigation() {
                       title={collapsed ? item.label : undefined}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.label}</span>}
+                      {!collapsed && <span className="font-semibold">{item.label}</span>}
                     </Link>
                   )}
                 </div>
@@ -328,7 +328,7 @@ export function Navigation() {
                 title={collapsed ? item.label : undefined}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm">{item.label}</span>}
+                {!collapsed && <span className="text-sm font-semibold">{item.label}</span>}
               </Link>
             );
           })}
@@ -342,7 +342,7 @@ export function Navigation() {
             title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span>{t.navigation.logout}</span>}
+            {!collapsed && <span className="font-semibold">{t.navigation.logout}</span>}
           </button>
           
           <button
@@ -354,7 +354,7 @@ export function Navigation() {
             ) : (
               <>
                 <ChevronLeft className="w-5 h-5" />
-                <span className="font-medium">{t.navigation.collapse}</span>
+                <span className="font-semibold">{t.navigation.collapse}</span>
               </>
             )}
           </button>
