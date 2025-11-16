@@ -24,6 +24,23 @@ export default {
           'sans-serif'
         ],
       },
+      fontSize: {
+        xs: ['12px', { lineHeight: '1.5' }],
+        sm: ['13px', { lineHeight: '1.5' }],
+        base: ['14px', { lineHeight: '1.5' }],
+        lg: ['16px', { lineHeight: '1.5' }],
+        xl: ['18px', { lineHeight: '1.5' }],
+        '2xl': ['20px', { lineHeight: '1.4' }],
+        '3xl': ['24px', { lineHeight: '1.3' }],
+        '4xl': ['30px', { lineHeight: '1.2' }],
+        '5xl': ['36px', { lineHeight: '1.1' }],
+      },
+      fontWeight: {
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
