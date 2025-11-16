@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Palette, Check, Sparkles, Loader2, CheckSquare, Square } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface ProductImage {
   id: string;
@@ -70,6 +71,7 @@ export function AiBackgroundDialog({
   productImages,
   onConfirm,
 }: AiBackgroundDialogProps) {
+  const { language } = useTranslation();
   const [config, setConfig] = useState<AiBackgroundConfig>({
     prompt: "",
     format: "square",
@@ -309,24 +311,29 @@ export function AiBackgroundDialog({
 
   const presetStyles = [
     {
-      name: "Studio professionnel",
-      prompt: "professional studio photography with clean white background and perfect lighting",
+      name: language === 'fr' ? "Cozy Lifestyle – Salon moderne" : "Cozy Lifestyle – Modern Living Room",
+      prompt: "A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.",
+      icon: "🛋️",
+    },
+    {
+      name: language === 'fr' ? "Studio professionnel" : "Professional Studio",
+      prompt: "Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.",
       icon: "📸",
     },
     {
-      name: "Nature luxueuse",
-      prompt: "luxurious natural setting with plants, wood textures and soft daylight",
+      name: language === 'fr' ? "Nature luxueuse" : "Luxurious Nature",
+      prompt: "Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.",
       icon: "🌿",
     },
     {
-      name: "Minimaliste moderne",
-      prompt: "modern minimalist interior with clean lines and neutral colors",
-      icon: "⬜",
+      name: language === 'fr' ? "Minimaliste moderne" : "Modern Minimalist",
+      prompt: "Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.",
+      icon: "🧼",
     },
     {
-      name: "Lifestyle chaleureux",
-      prompt: "cozy lifestyle setting with warm lighting and comfortable interior",
-      icon: "🏠",
+      name: language === 'fr' ? "Urbain contemporain" : "Urban Contemporary",
+      prompt: "Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.",
+      icon: "🏙️",
     },
     {
       name: "Urbain contemporain",
