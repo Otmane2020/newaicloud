@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     // Fetch all data needed for audit (including images and homepage SEO)
     const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult, homepageSeoResult] = await Promise.all([
-      supabaseAdmin.from('shopify_products').select('*').eq('seller_id', user.id),
+      supabaseAdmin.from('shopify_products').select('*, enrichment_status').eq('seller_id', user.id),
       supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
       supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     const collectionsAudit = auditCollections(collections);
     const pagesAudit = auditPages(pages);
     const articlesAudit = auditArticles(articles);
-    const imagesAudit = auditImages(productImages, contentImages);
+    const imagesAudit = auditImages(productImages);
     const tagsAudit = auditTags(products);
 
     // Aggregate results
@@ -485,7 +485,7 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
   }
   
   products.forEach(product => {
-    const scoreResult = calculateDetailedSeoScore(
+    const scoreRaw = calculateDetailedSeoScore(
       product.seo_title || product.title,
       product.seo_description || product.vendor,
       product.images?.length > 0,
@@ -493,7 +493,11 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
       product.tags,
       product.optimization_count || 0
     );
-    totalScore += scoreResult.score;
+    // Apply penalty for pending or not optimized products (same as Dashboard)
+    const score = (product.enrichment_status === 'pending' || product.enrichment_status === 'not_optimised') 
+      ? scoreRaw.score * 0.5 
+      : scoreRaw.score;
+    totalScore += score;
   });
   
   const avgScore = Math.round(totalScore / products.length);
@@ -704,23 +708,24 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
   return { score: avgScore, issues };
 }
 
-function auditImages(productImages: any[], contentImages: any[]): { score: number; issues: any[] } {
+function auditImages(productImages: any[]): { score: number; issues: any[] } {
   const issues: any[] = [];
-  const allImages = [...productImages, ...contentImages];
   
-  if (allImages.length === 0) {
+  if (productImages.length === 0) {
     return { score: 100, issues };
   }
   
   let totalScore = 0;
-  allImages.forEach(img => {
-    const altScoreResult = calculateAltTextScore(img.alt_text, !!img.ai_generated_alt);
+  productImages.forEach(img => {
+    // Use optimization_count instead of ai_generated_alt (same as Dashboard)
+    const isAI = (img.optimization_count || 0) > 0;
+    const altScoreResult = calculateAltTextScore(img.alt_text || '', isAI);
     totalScore += altScoreResult.score;
   });
   
-  const avgScore = Math.round(totalScore / allImages.length);
+  const avgScore = Math.round(totalScore / productImages.length);
   
-  const imagesWithoutAlt = allImages.filter(img => !img.alt_text);
+  const imagesWithoutAlt = productImages.filter(img => !img.alt_text);
   if (imagesWithoutAlt.length > 0) {
     issues.push({
       category: 'images',
@@ -732,7 +737,7 @@ function auditImages(productImages: any[], contentImages: any[]): { score: numbe
     });
   }
   
-  const poorQualityAlt = allImages.filter(img => {
+  const poorQualityAlt = productImages.filter(img => {
     if (!img.alt_text) return false;
     const len = img.alt_text.length;
     return len < 15 || len > 125;
