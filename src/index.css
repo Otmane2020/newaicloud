@@ -182,13 +182,17 @@ nav div[class*="border-l"] a {
   font-weight: 200 !important;
 }
 
-/* Taille uniforme pour tous les éléments de navigation */
-nav a, nav button {
-  font-size: 0.875rem; /* équivalent à text-sm - 14px */
-}
-
-nav a span, nav button span {
-  font-size: inherit;
+/* Force une taille uniforme de 14px pour TOUS les éléments de la sidebar */
+[data-sidebar] *,
+[data-sidebar] span,
+[data-sidebar] a,
+[data-sidebar] button,
+[data-sidebar] [data-sidebar-group-label],
+[data-sidebar] [data-sidebar="group-label"],
+[data-sidebar] [data-sidebar="group-content"],
+[data-sidebar] [data-sidebar="menu-button"],
+[data-sidebar] [data-sidebar="menu-sub-button"] {
+  font-size: 0.875rem !important; /* 14px - équivalent à text-sm */
 }
 
 /* Button text should be medium - except for navigation buttons */
