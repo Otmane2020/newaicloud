@@ -193,13 +193,6 @@ export function GoogleShopping() {
 
   useEffect(() => {
     fetchProducts();
-    
-    // Auto-refresh products and score every 15 seconds to catch updates
-    const interval = setInterval(() => {
-      fetchProducts();
-    }, 15000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const filteredProducts = products.filter((product) => {
@@ -881,7 +874,7 @@ export function GoogleShopping() {
             <div>
               <strong className="font-semibold">Guide d'optimisation rapide</strong>
               <p className="mt-1 text-sm">
-                0. Importer taxonomie Google → 1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
+                1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
               </p>
             </div>
           </div>
