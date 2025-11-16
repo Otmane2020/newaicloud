@@ -117,16 +117,25 @@ export function GoogleShopping() {
     return () => window.removeEventListener('show-upgrade-dialog', handleShowUpgrade);
   }, []);
 
-  // Calculate optimization score
+  // Calculate optimization score with partial credit
   const calculateOptimizationScore = (productsList: Product[]) => {
     if (productsList.length === 0) {
       setOptimizationScore(0);
       return;
     }
-    const optimized = productsList.filter(p => 
-      p.google_product_category && p.google_gtin && p.google_white_background
-    ).length;
-    setOptimizationScore(Math.round((optimized / productsList.length) * 100));
+    
+    // Give partial credit: 33.33% for each attribute (category, GTIN, white background)
+    let totalScore = 0;
+    productsList.forEach(p => {
+      let productScore = 0;
+      if (p.google_product_category) productScore += 33.33;
+      if (p.google_gtin) productScore += 33.33;
+      if (p.google_white_background) productScore += 33.34; // 33.34 to round to 100%
+      totalScore += productScore;
+    });
+    
+    const averageScore = totalScore / productsList.length;
+    setOptimizationScore(Math.round(averageScore));
   };
 
   const fetchProducts = async () => {
@@ -806,7 +815,7 @@ export function GoogleShopping() {
             <Progress value={optimizationScore} className="h-2 bg-white/20" />
             <p className="text-xs text-white/70 mt-2">
               {products.length > 0 
-                ? `${Math.round(products.length * optimizationScore / 100)} produits sur ${products.length} optimisés (Catégorie + GTIN + Fond blanc IA)`
+                ? `Score basé sur 3 critères : Catégorie (33%), GTIN (33%), Fond blanc IA (34%)`
                 : 'Aucun produit à optimiser'
               }
             </p>
