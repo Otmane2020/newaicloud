@@ -34,59 +34,30 @@ Deno.serve(async (req) => {
 
     console.log(`🔍 Classifying product: ${productTitle}`);
 
-    // Fetch all taxonomy data
-    console.log("📚 Loading Google Product Taxonomy...");
-    const { data: taxonomy, error: taxonomyError } = await supabase
-      .from("google_product_taxonomy")
-      .select("id, full_path, level1, level2, level3")
-      .order("id");
+    // STEP 1: Extract keywords and general category with DeepSeek
+    console.log("🤖 Step 1: Extracting keywords and general category...");
+    const extractionPrompt = `Analyse ce produit et extrais les informations clés pour la classification Google Shopping.
 
-    if (taxonomyError) throw taxonomyError;
-
-    console.log(`✅ Loaded ${taxonomy.length} categories`);
-
-    // Check if taxonomy is empty
-    if (!taxonomy || taxonomy.length === 0) {
-      throw new Error("Google Product Taxonomy is empty. Please populate the taxonomy table first.");
-    }
-
-    // Create a concise taxonomy summary for the AI
-    const taxonomySummary = taxonomy
-      .map((t) => `${t.id}|${t.full_path}`)
-      .join("\n");
-
-    // Construct prompt for DeepSeek
-    const prompt = `Tu es un expert Google Shopping spécialisé dans la classification de produits.
-
-📦 PRODUIT À CLASSIFIER :
+📦 PRODUIT :
 - Titre : ${productTitle}
 - Description : ${productDescription || "Non fournie"}
 - Type : ${productType || "Non spécifié"}
 
-📋 TAXONOMIE GOOGLE PRODUCT CATEGORY :
-${taxonomySummary}
+🎯 EXTRAIT :
+1. Mots-clés principaux (3-5 mots maximum)
+2. Catégorie générale (ex: Électronique, Vêtements, Maison, etc.)
+3. Sous-catégorie si évidente
 
-🎯 TA MISSION :
-Analyse ce produit et trouve la catégorie Google Product Category LA PLUS PERTINENTE ET SPÉCIFIQUE.
-
-⚠️ RÈGLES CRITIQUES :
-1. Choisis TOUJOURS la catégorie LA PLUS SPÉCIFIQUE possible (niveau le plus profond)
-2. Privilégie les catégories avec le plus grand nombre de niveaux (ex: level1 > level2 > level3 > level4)
-3. Si hésitation, choisis la catégorie la plus détaillée
-4. Le score de confiance doit être entre 0 et 100
-
-📤 FORMAT DE RÉPONSE (JSON strict) :
+📤 FORMAT JSON strict :
 {
-  "gpc_id": <code numérique exact>,
-  "gpc_path": "<chemin complet exact depuis la taxonomie>",
-  "confidence": <score 0-100>
+  "keywords": ["mot1", "mot2", "mot3"],
+  "general_category": "Catégorie générale",
+  "subcategory": "Sous-catégorie ou null"
 }
 
-RÉPONDS UNIQUEMENT EN JSON, RIEN D'AUTRE.`;
+RÉPONDS UNIQUEMENT EN JSON.`;
 
-    // Call DeepSeek API
-    console.log("🤖 Calling DeepSeek AI...");
-    const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    const extractionResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${deepseekApiKey}`,
@@ -97,62 +68,178 @@ RÉPONDS UNIQUEMENT EN JSON, RIEN D'AUTRE.`;
         messages: [
           {
             role: "system",
-            content: "Tu es un expert en classification de produits pour Google Shopping. Tu réponds UNIQUEMENT en JSON strict.",
+            content: "Tu es un expert en classification de produits. Tu réponds UNIQUEMENT en JSON strict.",
           },
           {
             role: "user",
-            content: prompt,
+            content: extractionPrompt,
           },
         ],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 200,
       }),
     });
 
-    if (!deepseekResponse.ok) {
-      const errorText = await deepseekResponse.text();
-      console.error("DeepSeek API error:", errorText);
-      throw new Error(`DeepSeek API error: ${deepseekResponse.status}`);
+    if (!extractionResponse.ok) {
+      const errorText = await extractionResponse.text();
+      console.error("DeepSeek extraction error:", errorText);
+      throw new Error(`DeepSeek API error: ${extractionResponse.status}`);
     }
 
-    const deepseekData = await deepseekResponse.json();
-    const aiResponse = deepseekData.choices[0].message.content;
+    const extractionData = await extractionResponse.json();
+    const extractionText = extractionData.choices[0].message.content;
+    
+    console.log("🤖 Extraction result:", extractionText);
 
-    console.log("🤖 AI Response:", aiResponse);
-
-    // Parse JSON response
-    let classification: CategoryClassification;
+    let extracted;
     try {
-      // Remove markdown code blocks if present
-      const cleanedResponse = aiResponse
+      const cleanedExtraction = extractionText
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      
-      classification = JSON.parse(cleanedResponse);
+      extracted = JSON.parse(cleanedExtraction);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", aiResponse);
-      throw new Error("Invalid AI response format");
+      console.error("Failed to parse extraction:", extractionText);
+      throw new Error("Invalid extraction format");
     }
 
-    // Validate the classification
-    const isValid = taxonomy.some(
-      (t) => t.id === classification.gpc_id && t.full_path === classification.gpc_path
+    // STEP 2: SQL search for relevant categories
+    console.log("🔍 Step 2: Searching relevant categories in database...");
+    
+    const searchTerms = [
+      ...extracted.keywords,
+      extracted.general_category,
+      extracted.subcategory
+    ].filter(Boolean).join(" ");
+
+    console.log("🔍 Search terms:", searchTerms);
+
+    // Build ILIKE conditions for search
+    const searchConditions = extracted.keywords
+      .map((keyword: string) => `full_path ILIKE '%${keyword}%'`)
+      .join(" OR ");
+
+    const { data: relevantCategories, error: searchError } = await supabase
+      .from("google_product_taxonomy")
+      .select("id, full_path, level1, level2, level3, level4, level5, depth")
+      .or(searchConditions)
+      .order("depth", { ascending: false })
+      .limit(10);
+
+    if (searchError) throw searchError;
+
+    console.log(`✅ Found ${relevantCategories?.length || 0} relevant categories`);
+
+    if (!relevantCategories || relevantCategories.length === 0) {
+      console.warn("⚠️ No relevant categories found, using fallback");
+      const { data: fallbackCategories } = await supabase
+        .from("google_product_taxonomy")
+        .select("id, full_path")
+        .eq("depth", 1)
+        .limit(1);
+      
+      if (!fallbackCategories || fallbackCategories.length === 0) {
+        throw new Error("No categories found in taxonomy");
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          classification: {
+            gpc_id: fallbackCategories[0].id,
+            gpc_path: fallbackCategories[0].full_path,
+            confidence: 30,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // STEP 3: Final selection with DeepSeek
+    console.log("🤖 Step 3: Final category selection...");
+    
+    const categoriesSummary = relevantCategories
+      .map((c) => `${c.id}|${c.full_path}`)
+      .join("\n");
+
+    const finalPrompt = `Choisis LA MEILLEURE catégorie Google Shopping pour ce produit.
+
+📦 PRODUIT :
+- Titre : ${productTitle}
+- Description : ${productDescription || "Non fournie"}
+
+📋 CATÉGORIES DISPONIBLES (10 meilleures correspondances) :
+${categoriesSummary}
+
+🎯 CHOISIS :
+La catégorie LA PLUS SPÉCIFIQUE et PERTINENTE.
+
+📤 FORMAT JSON strict :
+{
+  "gpc_id": <ID numérique exact>,
+  "gpc_path": "<chemin complet exact>",
+  "confidence": <score 0-100>
+}
+
+RÉPONDS UNIQUEMENT EN JSON.`;
+
+    const finalResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${deepseekApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: "Tu es un expert en classification Google Shopping. Tu réponds UNIQUEMENT en JSON strict.",
+          },
+          {
+            role: "user",
+            content: finalPrompt,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!finalResponse.ok) {
+      const errorText = await finalResponse.text();
+      console.error("DeepSeek final selection error:", errorText);
+      throw new Error(`DeepSeek API error: ${finalResponse.status}`);
+    }
+
+    const finalData = await finalResponse.json();
+    const finalText = finalData.choices[0].message.content;
+
+    console.log("🤖 Final selection:", finalText);
+
+    let classification: CategoryClassification;
+    try {
+      const cleanedFinal = finalText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+      classification = JSON.parse(cleanedFinal);
+    } catch (parseError) {
+      console.error("Failed to parse final selection:", finalText);
+      throw new Error("Invalid final selection format");
+    }
+
+    // Validate the classification exists in our search results
+    const isValid = relevantCategories.some(
+      (c) => c.id === classification.gpc_id && c.full_path === classification.gpc_path
     );
 
     if (!isValid) {
-      console.warn("⚠️ AI returned invalid category, using fallback");
-      // Fallback to a generic category
-      const fallback = taxonomy.find((t) => t.level1 && !t.level2) || taxonomy[0];
-      
-      if (!fallback) {
-        throw new Error("No valid fallback category found in taxonomy");
-      }
-      
+      console.warn("⚠️ AI returned category not in search results, using first result");
       classification = {
-        gpc_id: fallback.id,
-        gpc_path: fallback.full_path,
-        confidence: 30,
+        gpc_id: relevantCategories[0].id,
+        gpc_path: relevantCategories[0].full_path,
+        confidence: 50,
       };
     }
 
