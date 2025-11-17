@@ -902,7 +902,7 @@ export function SeoAuditDashboard() {
           )}
 
           {/* Quick Wins Section */}
-          {activeSubTab === "quick-wins" && audit?.audit_results?.quick_wins && audit.audit_results.quick_wins.length > 0 && (
+          {activeSubTab === "quick-wins" && (
             <Card className="border-2 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[#22c55e]/5 to-[#16a34a]/5 border-b-2">
                 <div className="flex items-center justify-between">
@@ -914,17 +914,48 @@ export function SeoAuditDashboard() {
                       Quick Wins ⚡ - Actions Rapides à Fort Impact
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      {audit.audit_results.quick_wins.length} opportunités d'amélioration immédiate
+                      {audit?.audit_results?.quick_wins?.length || 0} opportunités d'amélioration immédiate
                     </CardDescription>
                   </div>
-                  <Badge className="bg-[#22c55e] text-white text-lg px-4 py-2">
-                    {audit.audit_results.quick_wins.length} actions
-                  </Badge>
+                  {audit?.audit_results?.quick_wins && audit.audit_results.quick_wins.length > 0 && (
+                    <Badge className="bg-[#22c55e] text-white text-lg px-4 py-2">
+                      {audit.audit_results.quick_wins.length} actions
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="pt-8">
-                <div className="grid gap-4 md:grid-cols-2">
-                  {audit.audit_results.quick_wins.map((quickWin: any, index: number) => (
+                {!audit?.audit_results?.quick_wins || audit.audit_results.quick_wins.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 mx-auto mb-6 flex items-center justify-center">
+                      <AlertCircle className="w-10 h-10 text-yellow-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3">Quick Wins non disponibles</h3>
+                    <p className="text-muted-foreground text-lg mb-6 max-w-2xl mx-auto">
+                      Cette fonctionnalité nécessite un nouvel audit. Régénérez votre audit pour découvrir les actions rapides qui auront le plus d'impact sur votre SEO.
+                    </p>
+                    <Button
+                      onClick={handleGenerateAudit}
+                      disabled={generating}
+                      size="lg"
+                      className="bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#22c55e] text-white font-bold shadow-xl px-8 py-4"
+                    >
+                      {generating ? (
+                        <>
+                          <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                          Génération en cours...
+                        </>
+                      ) : (
+                        <>
+                          <FileSearch className="w-5 h-5 mr-2" />
+                          Générer un nouvel audit
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {audit.audit_results.quick_wins.map((quickWin: any, index: number) => (
                     <Card
                       key={index}
                       className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-[#22c55e]/50 bg-gradient-to-br from-card to-[#22c55e]/5"
@@ -977,6 +1008,7 @@ export function SeoAuditDashboard() {
                     </Card>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           )}
