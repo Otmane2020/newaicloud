@@ -1,468 +1,1066 @@
-//------------------------------------------------------------
-// generate-blog-article (DeepSeek + Lovable) — VERSION COMPACTE
-//------------------------------------------------------------
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-//------------------------------------------------------------
-// ENV
-//------------------------------------------------------------
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
-
-//------------------------------------------------------------
-// INIT
-//------------------------------------------------------------
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-//------------------------------------------------------------
-// CORS
-//------------------------------------------------------------
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type,Authorization,apikey",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey"
 };
 
-//------------------------------------------------------------
-// Detect Language (from store locale or product content)
-//------------------------------------------------------------
-async function detectLanguage(userId: string, productTitle?: string): Promise<string> {
-  let lang = "fr";
-
-  // 1. Try store locale
-  const { data: store } = await supabase
-    .from("shopify_connections")
-    .select("store_url, primary_locale")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (store?.primary_locale) {
-    const detected = store.primary_locale.split("-")[0].toLowerCase();
-    if (["fr", "en", "es", "de", "it"].includes(detected)) {
-      console.log(`[LANG] Detected from locale: ${detected}`);
-      return detected;
-    }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
-
-  // 2. Try domain extension
-  if (store?.store_url) {
-    const url = store.store_url.toLowerCase();
-    if (url.endsWith(".fr")) return "fr";
-    if (url.endsWith(".es")) return "es";
-    if (url.endsWith(".de")) return "de";
-    if (url.endsWith(".it")) return "it";
-    if (url.endsWith(".com") || url.endsWith(".co.uk")) return "en";
-  }
-
-  // 3. Try to detect from product title (basic heuristic)
-  if (productTitle) {
-    const title = productTitle.toLowerCase();
-    // French indicators
-    if (title.match(/\b(le|la|les|de|du|des|un|une)\b/)) lang = "fr";
-    // English indicators
-    else if (title.match(/\b(the|and|for|with|of)\b/)) lang = "en";
-    // Spanish indicators
-    else if (title.match(/\b(el|la|los|las|de|del|un|una)\b/)) lang = "es";
-  }
-
-  console.log(`[LANG] Final detected language: ${lang}`);
-  return lang;
-}
-//------------------------------------------------------------
-// Generate Featured Image (Lovable)
-//------------------------------------------------------------
-async function generateFeaturedImage(productTitle: string, baseImage?: string) {
+  
   try {
-    const prompt = `
-High-end professional product photo.
-Clean studio lighting, soft reflections, premium aesthetic.
-Product: ${productTitle}
-Reference image (if any): ${baseImage || "none"}
-`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    
+    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "cosmos_image_v1",
-        prompt,
-        size: "1024x1024",
-      }),
+    const supabase = createClient(supabaseUrl!, supabaseKey!);
+    const requestData = await req.json();
+
+    if (requestData.mode === "auto") {
+      console.log("Mode auto : génération d'articles...");
+      
+      const { data: campaigns, error: campaignError } = await supabase
+        .from("blog_campaigns")
+        .select("*")
+        .eq("is_active", true)
+        .limit(requestData.limit || 5);
+
+      if (campaignError) throw campaignError;
+      if (!campaigns?.length) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: "Aucune campagne active."
+        }), { status: 200, headers: corsHeaders });
+      }
+
+      const results = [];
+      for (const campaign of campaigns) {
+        const res = await generateSingleArticle({ campaign_id: campaign.id }, supabase, lovableApiKey);
+        results.push(res);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `${results.length} articles générés.`,
+        results
+      }), { status: 200, headers: corsHeaders });
+    }
+
+    const result = await generateSingleArticle(requestData, supabase, lovableApiKey);
+    return new Response(JSON.stringify(result), {
+      status: result.success ? 200 : 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-    const json = await res.json();
-    return json?.data?.[0]?.url || baseImage || null;
-  } catch {
-    return baseImage || null;
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    }), { status: 500, headers: corsHeaders });
   }
-}
+});
 
-//------------------------------------------------------------
-// Get language-specific prompts
-//------------------------------------------------------------
-function getPromptByLanguage(lang: string) {
-  const prompts: Record<string, { intro: string; rules: string }> = {
-    fr: {
-      intro: "Tu es un rédacteur SEO expert e-commerce. Génère un article PRODUIT complet en HTML pur pour Shopify Blog.",
-      rules: `RÈGLES CRITIQUES:
-- Retourne UNIQUEMENT le HTML (pas de balises html, head, body)
-- Français parfait, naturel, sans fautes
-- Intègre les mots-clés naturellement
-- Liens produits cliquables
-- Structure H1 > H2 > H3 respectée`
-    },
-    en: {
-      intro: "You are an expert SEO e-commerce writer. Generate a complete PRODUCT article in pure HTML for Shopify Blog.",
-      rules: `CRITICAL RULES:
-- Return ONLY HTML (no html, head, body tags)
-- Perfect, natural English without errors
-- Integrate keywords naturally
-- Clickable product links
-- Follow H1 > H2 > H3 structure`
-    },
-    es: {
-      intro: "Eres un redactor SEO experto en comercio electrónico. Genera un artículo PRODUCTO completo en HTML puro para Shopify Blog.",
-      rules: `REGLAS CRÍTICAS:
-- Devuelve SOLO HTML (sin etiquetas html, head, body)
-- Español perfecto, natural, sin errores
-- Integra palabras clave naturalmente
-- Enlaces de productos clicables
-- Sigue estructura H1 > H2 > H3`
-    },
-    de: {
-      intro: "Sie sind ein SEO-E-Commerce-Experte. Erstellen Sie einen vollständigen PRODUKT-Artikel in reinem HTML für Shopify Blog.",
-      rules: `KRITISCHE REGELN:
-- Nur HTML zurückgeben (keine html, head, body Tags)
-- Perfektes, natürliches Deutsch ohne Fehler
-- Keywords natürlich integrieren
-- Anklickbare Produktlinks
-- H1 > H2 > H3 Struktur befolgen`
-    },
-    it: {
-      intro: "Sei un esperto scrittore SEO e-commerce. Genera un articolo PRODOTTO completo in HTML puro per Shopify Blog.",
-      rules: `REGOLE CRITICHE:
-- Restituisci SOLO HTML (nessun tag html, head, body)
-- Italiano perfetto, naturale, senza errori
-- Integra le parole chiave naturalmente
-- Link prodotti cliccabili
-- Segui struttura H1 > H2 > H3`
-    }
-  };
-  return prompts[lang] || prompts.fr;
-}
-
-//------------------------------------------------------------
-// Generate Article (DeepSeek with Timeout)
-//------------------------------------------------------------
-async function generateArticleHTML(
-  products: any[],
-  lang: string,
-  keywords: string[],
-  length: string,
-  storeUrl: string,
-  colorScheme: string = "#1E40AF",
-) {
-  const product = products[0];
-  
-  // Construct image gallery HTML
-  const imageGalleryHTML = products.slice(0, 4)
-    .map(p => `  <img src="${p.full_image_url || p.image_url}" alt="${p.title}" class="w-full rounded-lg shadow-lg" />`)
-    .join('\n');
-
-  const prompt = `Tu es un expert e-commerce Shopify, rédacteur SEO professionnel et designer UX.
-Ta mission : créer un **ARTICLE PRODUIT** complet, en **HTML pur** (sans markdown), prêt à être publié sur Shopify Blog.
-
-🎯 OBJECTIF :
-Générer un article haut de gamme, esthétique, commercial, SEO-friendly, contenant :
-- H1 / H2 / H3 stricts
-- Galerie produit
-- Lien vers le produit
-- Caractéristiques techniques
-- Avantages et mise en situation
-- FAQ complète
-- Call-to-action forts
-- Maillage interne vers les pages Shopify importantes (contact, livraison, retours, about us)
-- Style professionnel + classes Tailwind
-
-📌 INFORMATIONS PRODUIT :
-- Nom du produit : ${product.title}
-- Prix : ${product.price}€
-- URL produit : ${product.product_url}
-- Images : ${products.length} image(s) disponible(s)
-- Catégorie : ${product.product_type || 'Non spécifié'}
-- Marque : ${product.vendor || 'Non spécifié'}
-- Mots-clés SEO : ${keywords.join(', ')}
-- Couleur principale : ${colorScheme}
-- Longueur voulue : ${length} mots
-
-📌 INFORMATIONS BOUTIQUE :
-- URL boutique : ${storeUrl}
-- Pages Shopify internes :
-  - Contact : ${storeUrl}/pages/contact
-  - Livraison : ${storeUrl}/pages/shipping
-  - Retours : ${storeUrl}/pages/returns
-  - À propos : ${storeUrl}/pages/about-us
-
-📌 STRUCTURE OBLIGATOIRE :
-
-<h1>[Titre SEO contenant mot-clé principal]</h1>
-
-<div class="intro text-lg leading-relaxed my-6">
-Introduction de 120–180 mots, storytelling, contexte d'utilisation, bénéfices majeurs, intégration naturelle des mots-clés.
-</div>
-
-<h2>Présentation du Produit</h2>
-
-<h3>Description Générale</h3>
-<p>Texte descriptif détaillé et vendeur.</p>
-
-<h3>Galerie Produit</h3>
-<div class="gallery grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-${imageGalleryHTML}
-</div>
-
-<h3>Fiche d'Achat</h3>
-<div class="purchase-card p-6 border rounded-xl my-6" style="border-color: ${colorScheme}">
-  <p class="text-4xl font-bold">${product.price}€</p>
-  <a href="${product.product_url}" target="_blank" class="inline-block px-6 py-4 rounded-xl text-white font-bold text-xl mt-3" style="background: ${colorScheme}">
-    Acheter Maintenant →
-  </a>
-</div>
-
-<h2>Caractéristiques Techniques</h2>
-<table class="w-full border rounded-xl overflow-hidden my-4">
-<tr><td class="p-3 font-semibold">Catégorie</td><td class="p-3">${product.product_type || 'Non spécifié'}</td></tr>
-<tr><td class="p-3 font-semibold">Marque</td><td class="p-3">${product.vendor || 'Non spécifié'}</td></tr>
-<tr><td class="p-3 font-semibold">Prix</td><td class="p-3">${product.price}€</td></tr>
-</table>
-
-<h2>Avantages & Points Forts</h2>
-<ul class="list-disc pl-6 space-y-2">
-  <li>Bénéfice 1 (à détailler)</li>
-  <li>Bénéfice 2 (à détailler)</li>
-  <li>Bénéfice 3 (à détailler)</li>
-  <li>Bénéfice 4 (à détailler)</li>
-</ul>
-
-<h2>Intégration dans Votre Intérieur</h2>
-<h3>Style Moderne</h3>
-<p>Comment intégrer ce produit dans un intérieur moderne...</p>
-
-<h3>Style Scandinave</h3>
-<p>Comment intégrer ce produit dans un intérieur scandinave...</p>
-
-<h2>Pages Shopify Importantes</h2>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
-  <a href="${storeUrl}/pages/contact" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
-    📞 Contact
-  </a>
-  <a href="${storeUrl}/pages/shipping" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
-    🚚 Livraison
-  </a>
-  <a href="${storeUrl}/pages/returns" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
-    ↩️ Retours
-  </a>
-  <a href="${storeUrl}/pages/about-us" class="p-4 bg-white shadow rounded-lg text-center hover:shadow-lg transition">
-    ℹ️ À propos
-  </a>
-</div>
-
-<h2>FAQ</h2>
-<details class="p-4 bg-gray-50 rounded-xl my-2">
-  <summary class="font-semibold cursor-pointer">📦 Quels sont les délais de livraison ?</summary>
-  <p class="mt-2">Réponse SEO optimisée.</p>
-</details>
-
-<details class="p-4 bg-gray-50 rounded-xl my-2">
-  <summary class="font-semibold cursor-pointer">🛡 Quelle garantie offrez-vous ?</summary>
-  <p class="mt-2">Réponse claire et rassurante.</p>
-</details>
-
-<details class="p-4 bg-gray-50 rounded-xl my-2">
-  <summary class="font-semibold cursor-pointer">💳 Quels modes de paiement acceptez-vous ?</summary>
-  <p class="mt-2">Réponse détaillée.</p>
-</details>
-
-<h2>Conclusion</h2>
-<p>Résumé vendeur, CTA fort, mots-clés réintégrés naturellement.</p>
-<div class="text-center mt-6">
-  <a href="${product.product_url}" class="inline-block bg-black text-white px-8 py-4 rounded-xl text-xl font-bold hover:opacity-90 transition">
-    Acheter Maintenant →
-  </a>
-</div>
-
-📌 RÈGLES STRICTES :
-- HTML SEULEMENT (AUCUNE balise <html>, <body>, <head>)
-- Style Tailwind propre
-- Pas de répétitions
-- Pas de contenu IA générique
-- 0 phrases type "en tant que modèle linguistique"
-- Texte riche, naturel, pro
-- Aucune mention de ce prompt
-- LANGUE: ${lang.toUpperCase()} - Écrire UNIQUEMENT dans cette langue
-- Minimum ${length} mots
-`;
-
-  console.log(`[DEEPSEEK] Calling API with lang=${lang}, length=${length}`);
-  
-  // Create timeout promise (90 seconds for longer articles)
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("DeepSeek API timeout after 90s")), 90000)
-  );
-
-  // Create fetch promise
-  const fetchPromise = fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.5,
-      max_tokens: 6000, // Increased for longer articles
-    }),
-  });
-
-  // Race between fetch and timeout
-  const res = await Promise.race([fetchPromise, timeoutPromise]) as Response;
-  
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error(`[DEEPSEEK] API Error: ${res.status} - ${errorText}`);
-    throw new Error(`DeepSeek API error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  console.log(`[DEEPSEEK] Response received, tokens: ${data.usage?.total_tokens || 'unknown'}`);
-  
-  return data.choices[0].message.content.trim();
-}
-//------------------------------------------------------------
-// MAIN SERVE
-//------------------------------------------------------------
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
+async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
   try {
-    const body = await req.json();
-    const { user_id, productIds = [], keywords = [], articleLength = "1600" } = body;
+    const { user_id, category = "Guide", keywords = [], title, articleLength = "2000" } = requestData;
+    
+    if (!user_id) {
+      throw new Error("user_id is required");
+    }
+    
+    // Vérification des limites d'usage
+    if (authHeader) {
+      console.log('Vérification des limites pour user:', user_id);
+      const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (limitResponse.ok) {
+        const limitCheck = await limitResponse.json();
+        if (!limitCheck?.canUseArticles) {
+          console.log('Limite atteinte pour cet utilisateur');
+          throw new Error('trial_limit_reached: Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+        }
+        console.log('Limites OK, génération en cours');
+      }
+    }
+    
+    const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
+    const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
-    if (!user_id) throw new Error("Missing user_id");
+    console.log(`Génération article : ${articleTitle} pour user ${user_id}`);
 
-    //------------------------------------------------------------
-    // Fetch products first (needed for language detection)
-    //------------------------------------------------------------
-    let { data: products } = await supabase
-      .from("shopify_products")
-      .select("*")
-      .in("id", productIds)
-      .eq("seller_id", user_id);
-
-    if (!products?.length) {
-      const fallback = await supabase.from("shopify_products").select("*").eq("seller_id", user_id).limit(5);
-      products = fallback.data || [];
+    // Recherche des produits
+    let products: any[] = [];
+    
+    if (category && category !== "Guide" && category !== "Tous produits") {
+      console.log(`Recherche produits avec catégorie: ${category}`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images")
+        .eq("seller_id", user_id)
+        .or(`category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`)
+        .limit(12);
+      
+      if (data && data.length > 0) {
+        products = data;
+        console.log(`${products.length} produits trouvés`);
+      }
+    }
+    
+    // Fallback si aucun produit trouvé
+    if (products.length === 0) {
+      console.log(`Aucun produit trouvé pour "${category}", utilisation de tous les produits`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images")
+        .eq("seller_id", user_id)
+        .limit(8);
+      
+      if (data) {
+        products = data;
+      }
     }
 
-    if (!products.length) throw new Error("No products found");
-
-    //------------------------------------------------------------
-    // Detect language from store and product content
-    //------------------------------------------------------------
-    const lang = await detectLanguage(user_id, products[0]?.title);
-    console.log(`[MAIN] Using language: ${lang}`);
-
-    //------------------------------------------------------------
-    // Fetch store
-    //------------------------------------------------------------
-    const { data: store } = await supabase
-      .from("shopify_connections")
-      .select("store_url, id")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    const storeUrl = store?.store_url || "";
-    const storeId = store?.id || null;
-
-    //------------------------------------------------------------
-    // Enrich products with full URLs
-    //------------------------------------------------------------
-    products = products.map((p) => ({
-      ...p,
-      full_image_url: p.image_url,
-      product_url: `${storeUrl}/products/${p.handle}`,
-    }));
-    //------------------------------------------------------------
-    // Featured image (Lovable)
-    //------------------------------------------------------------
-    const featuredImage = await generateFeaturedImage(products[0].title, products[0].image_url);
-
-    //------------------------------------------------------------
-    // Generate article HTML (DeepSeek)
-    //------------------------------------------------------------
-    const colorScheme = body.articleConfig?.colorScheme || "#1E40AF";
-    let html = await generateArticleHTML(products, lang, keywords, articleLength, storeUrl, colorScheme);
-
-    //------------------------------------------------------------
-    // Clean HTML
-    //------------------------------------------------------------
-    html = html.replace(/```html|```/g, "").trim();
-
-    if (html.length > 50000) {
-      html = html.substring(0, 50000);
+    const hasProducts = products && products.length > 0;
+    
+    if (!hasProducts) {
+      console.log("Aucun produit trouvé, génération d'un article générique");
     }
 
-    //------------------------------------------------------------
-    // Save in DB
-    //------------------------------------------------------------
-    const { data: saved, error } = await supabase
-      .from("blog_articles")
-      .insert({
-        user_id,
-        store_id: storeId,
-        title: products[0].title.substring(0, 200),
-        content: html,
-        featured_image: featuredImage,
-        keywords: keywords.slice(0, 3),
-        status: "draft",
+    // Génération de l'image featured avec OpenAI
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    let featuredImage = "";
+    
+    if (openaiKey) {
+      try {
+        console.log("Génération image featured...");
+        const imagePrompt = `Professional e-commerce hero image for an article about ${category}, modern minimalist design, clean background, high quality product photography, blog featured image style, 16:9 ratio`;
+        
+        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt,
+            n: 1,
+            size: "1792x1024",
+            quality: "standard"
+          })
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          featuredImage = imageData.data[0].url;
+          console.log("Image featured générée avec succès");
+        }
+      } catch (imgErr) {
+        console.error("Erreur génération image:", imgErr);
+      }
+    }
+    
+    // Génération du titre optimisé SEO
+    const mainKeyword = keywords.length > 0 ? keywords[0] : category;
+    
+    const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "Expert SEO spécialisé dans la création de titres percutants et optimisés." 
+          },
+          { 
+            role: "user", 
+            content: `Crée un titre d'article SEO engageant contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre.`
+          }
+        ]
       })
+    });
+
+    const titleData = await titleResponse.json();
+    const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+    
+    console.log(`Titre optimisé: ${optimizedTitle}`);
+
+    // Récupération de l'URL du store
+    let storeUrl = '';
+    if (hasProducts && products[0]?.store_id) {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_url')
+        .eq('id', products[0].store_id)
+        .single();
+      
+      if (storeData?.store_url) {
+        storeUrl = storeData.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        storeUrl = `https://${storeUrl}`;
+      }
+    }
+
+    // Génération du contenu HTML complet avec présentation améliorée
+    const wordCountTarget = parseInt(articleLength);
+    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en français d'environ ${wordCountTarget} mots.
+
+${hasProducts ? `PRODUITS DISPONIBLES :
+${products.map((p: any) => `- ${p.title} (${p.price}€) : ${p.description?.substring(0, 100) || 'Description non disponible'}`).join("\n")}` : `SUJET : ${targetKeywords.join(", ")} - Article informatif sans produits spécifiques`}
+
+STRUCTURE HTML À SUIVRE :
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .blog-article {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      line-height: 1.7;
+      color: #1a1a1a;
+    }
+
+    /* Header et Featured Image */
+    .article-header {
+      text-align: center;
+      margin-bottom: 4rem;
+      position: relative;
+    }
+    
+    .featured-image-container {
+      position: relative;
+      margin-bottom: 2rem;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+    
+    .featured-image {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    
+    .featured-image:hover {
+      transform: scale(1.02);
+    }
+    
+    .article-title {
+      font-size: 3rem;
+      font-weight: 800;
+      margin: 2rem 0 1rem;
+      color: #000;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    /* Table des matières */
+    .toc-container {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2.5rem;
+      border-radius: 16px;
+      margin: 3rem 0;
+    }
+    
+    .toc-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .toc-list {
+      columns: 2;
+      gap: 2rem;
+    }
+    
+    .toc-list ol {
+      margin: 0;
+      padding-left: 1rem;
+    }
+    
+    .toc-list li {
+      margin: 0.75rem 0;
+      break-inside: avoid;
+    }
+    
+    .toc-list a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.2s;
+      display: block;
+      padding: 0.5rem 0;
+    }
+    
+    .toc-list a:hover {
+      opacity: 0.9;
+      text-decoration: underline;
+    }
+
+    /* Sections de contenu */
+    .article-section {
+      margin: 4rem 0;
+      scroll-margin-top: 2rem;
+    }
+    
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1.5rem;
+      color: #000;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+    
+    .subsection-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 2rem 0 1rem;
+      color: #2d3748;
+    }
+
+    /* Présentation des produits */
+    .products-section {
+      background: #f8fafc;
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 3rem 0;
+    }
+    
+    .view-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+    
+    .view-btn {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid #e2e8f0;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .view-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    /* Mode Grille */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    
+    .product-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .product-image-link {
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .product-image {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    
+    .product-image:hover {
+      transform: scale(1.05);
+    }
+    
+    .product-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #48bb78;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    /* Mode Liste */
+    .product-list {
+      display: none;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .product-list-item {
+      display: grid;
+      grid-template-columns: 120px 1fr auto;
+      gap: 1.5rem;
+      align-items: center;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s;
+    }
+    
+    .product-list-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+    
+    .list-view.active {
+      display: flex;
+    }
+    
+    .grid-view.active {
+      display: grid;
+    }
+
+    .product-info {
+      padding: 1.5rem;
+    }
+    
+    .product-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: #1a202c;
+    }
+    
+    .product-description {
+      color: #718096;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin: 0.5rem 0;
+    }
+    
+    .product-pricing {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    
+    .current-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+    
+    .original-price {
+      font-size: 1.1rem;
+      color: #a0aec0;
+      text-decoration: line-through;
+    }
+    
+    .product-meta {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    
+    .stock-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .in-stock {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    
+    .out-of-stock {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+    
+    .product-actions {
+      margin-top: 1.5rem;
+    }
+    
+    .product-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.875rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .product-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Section FAQ */
+    .faq-section {
+      background: #f7fafc;
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 4rem 0;
+    }
+    
+    .faq-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: #1a202c;
+    }
+    
+    .faq-item {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    
+    .faq-question {
+      padding: 1.5rem;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #2d3748;
+    }
+    
+    .faq-answer {
+      padding: 0 1.5rem 1.5rem;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    /* Pages Shopify intégrées */
+    .shopify-pages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 3rem 0;
+    }
+    
+    .page-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s;
+    }
+    
+    .page-card:hover {
+      border-color: #667eea;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .page-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .page-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #2d3748;
+    }
+    
+    .page-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .page-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .article-title { font-size: 2rem; }
+      .toc-list { columns: 1; }
+      .product-grid { grid-template-columns: 1fr; }
+      .product-list-item { grid-template-columns: 1fr; text-align: center; }
+      .view-toggle { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<article class="blog-article">
+  <header class="article-header">
+    ${featuredImage ? `
+    <div class="featured-image-container">
+      <img src="${featuredImage}" alt="${optimizedTitle}" class="featured-image" />
+    </div>
+    ` : ''}
+    <h1 class="article-title">${optimizedTitle}</h1>
+  </header>
+
+  <nav class="toc-container">
+    <div class="toc-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
+      </svg>
+      Table des matières
+    </div>
+    <div class="toc-list">
+      <ol>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#criteres">Critères de sélection</a></li>
+        <li><a href="#produits">Notre sélection</a></li>
+        <li><a href="#comparaison">Guide d'achat</a></li>
+        <li><a href="#conseils">Conseils experts</a></li>
+        <li><a href="#faq">Questions fréquentes</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+      </ol>
+    </div>
+  </nav>
+
+  <section id="introduction" class="article-section">
+    <h2 class="section-title">Introduction</h2>
+    <p>[Introduction engageante de 200-250 mots présentant le sujet et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
+  </section>
+
+  <section id="criteres" class="article-section">
+    <h2 class="section-title">Critères essentiels de choix</h2>
+    
+    <h3 class="subsection-title">Qualité et durabilité</h3>
+    <p>[Détail des aspects qualité à considérer - 150 mots]</p>
+    
+    <h3 class="subsection-title">Rapport qualité-prix</h3>
+    <p>[Analyse des différentes gammes de prix - 150 mots]</p>
+    
+    <h3 class="subsection-title">Design et fonctionnalités</h3>
+    <p>[Présentation des caractéristiques importantes - 150 mots]</p>
+  </section>
+
+  ${hasProducts ? `
+  <section id="produits" class="products-section">
+    <h2 class="section-title">Notre sélection de produits</h2>
+    
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="grid">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M3 3h8v8H3zm0 10h8v8H3zm10-10h8v8h-8zm0 10h8v8h-8z"/>
+        </svg>
+        Vue grille
+      </button>
+      <button class="view-btn" data-view="list">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0 4h2v-2H3v2zm4-8h14v-2H7v2zm0 4h14v-2H7v2zm0 4h14v-2H7v2z"/>
+        </svg>
+        Vue liste
+      </button>
+    </div>
+
+    <!-- Mode Grille -->
+    <div class="product-grid grid-view active">
+      ${products.map((product: any) => `
+      <div class="product-card">
+        <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+           class="product-image-link" 
+           target="${storeUrl ? '_blank' : '_self'}">
+          <img src="${product.image_url || '/placeholder-product.jpg'}" 
+               alt="${product.title}" 
+               class="product-image"
+               loading="lazy">
+          ${product.compare_at_price && product.compare_at_price > product.price ? `
+          <div class="product-badge">Promotion</div>
+          ` : ''}
+        </a>
+        <div class="product-info">
+          <h3 class="product-name">${product.title}</h3>
+          <p class="product-description">${(product.description || '').substring(0, 120)}...</p>
+          
+          <div class="product-pricing">
+            ${product.compare_at_price && product.compare_at_price > product.price ? `
+            <span class="original-price">${product.compare_at_price} €</span>
+            ` : ''}
+            <span class="current-price">${product.price} €</span>
+          </div>
+          
+          <div class="product-meta">
+            <div class="stock-status ${product.inventory_quantity > 0 ? 'in-stock' : 'out-of-stock'}">
+              ${product.inventory_quantity > 0 ? 
+                `En stock${product.inventory_quantity > 10 ? '' : ` (${product.inventory_quantity})`}` : 
+                'Rupture'}
+            </div>
+          </div>
+          
+          <div class="product-actions">
+            <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+               class="product-link"
+               target="${storeUrl ? '_blank' : '_self'}">
+              Voir le produit
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+      `).join('')}
+    </div>
+
+    <!-- Mode Liste -->
+    <div class="product-list list-view">
+      ${products.map((product: any) => `
+      <div class="product-list-item">
+        <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+           class="product-image-link"
+           target="${storeUrl ? '_blank' : '_self'}">
+          <img src="${product.image_url || '/placeholder-product.jpg'}" 
+               alt="${product.title}" 
+               class="product-image"
+               loading="lazy"
+               style="height: 80px; width: 80px; border-radius: 8px;">
+        </a>
+        <div class="product-details">
+          <h3 class="product-name">${product.title}</h3>
+          <p class="product-description">${product.description || 'Description non disponible'}</p>
+          <div class="product-pricing">
+            ${product.compare_at_price && product.compare_at_price > product.price ? `
+            <span class="original-price">${product.compare_at_price} €</span>
+            ` : ''}
+            <span class="current-price">${product.price} €</span>
+          </div>
+        </div>
+        <div class="product-actions">
+          <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+             class="product-link"
+             target="${storeUrl ? '_blank' : '_self'}">
+            Acheter
+          </a>
+        </div>
+      </div>
+      `).join('')}
+    </div>
+  </section>
+  ` : ''}
+
+  <section id="comparaison" class="article-section">
+    <h2 class="section-title">Guide d'achat comparatif</h2>
+    <p>[Section détaillée de comparaison et d'analyse - 400 mots]</p>
+  </section>
+
+  <section id="conseils" class="article-section">
+    <h2 class="section-title">Conseils d'experts</h2>
+    <p>[Recommandations et astuces pratiques - 300 mots]</p>
+  </section>
+
+  <!-- Section FAQ -->
+  <section id="faq" class="faq-section">
+    <h2 class="faq-title">Questions Fréquentes</h2>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        Quels sont les critères les plus importants à considérer ?
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+      <div class="faq-answer">
+        [Réponse détaillée sur les critères essentiels - 100-150 mots]
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        Quel est le budget moyen recommandé ?
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+      <div class="faq-answer">
+        [Conseils sur les budgets et fourchettes de prix - 100-150 mots]
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        Comment entretenir et prolonger la durée de vie ?
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+      <div class="faq-answer">
+        [Guide d'entretien et maintenance - 100-150 mots]
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        Quelles sont les garanties offertes ?
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+      <div class="faq-answer">
+        [Informations sur les garanties et retours - 100-150 mots]
+      </div>
+    </div>
+  </section>
+
+  <!-- Pages Shopify intégrées -->
+  <div class="shopify-pages">
+    <div class="page-card">
+      <div class="page-icon">📞</div>
+      <h3 class="page-title">Contact</h3>
+      <p>Une question ? Notre équipe vous répond</p>
+      <a href="/contact" class="page-link">Nous contacter</a>
+    </div>
+    
+    <div class="page-card">
+      <div class="page-icon">🚚</div>
+      <h3 class="page-title">Livraison</h3>
+      <p>Informations sur les délais et frais</p>
+      <a href="/pages/shipping" class="page-link">En savoir plus</a>
+    </div>
+    
+    <div class="page-card">
+      <div class="page-icon">↩️</div>
+      <h3 class="page-title">Retours</h3>
+      <p>Notre politique de retour simplifiée</p>
+      <a href="/pages/returns" class="page-link">Découvrir</a>
+    </div>
+    
+    <div class="page-card">
+      <div class="page-icon">❓</div>
+      <h3 class="page-title">Aide</h3>
+      <p>Centre d'aide et support</p>
+      <a href="/pages/help" class="page-link">Accéder</a>
+    </div>
+  </div>
+
+  <section id="conclusion" class="article-section">
+    <h2 class="section-title">Conclusion</h2>
+    <p>[Synthèse et recommandation finale - 200 mots]</p>
+  </section>
+</article>
+
+<script>
+  // Toggle entre vue grille et liste
+  document.addEventListener('DOMContentLoaded', function() {
+    const viewButtons = document.querySelectorAll('.view-btn');
+    const gridView = document.querySelector('.grid-view');
+    const listView = document.querySelector('.list-view');
+    
+    viewButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const view = this.dataset.view;
+        
+        // Update active button
+        viewButtons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show/hide views
+        if (view === 'grid') {
+          gridView.classList.add('active');
+          listView.classList.remove('active');
+        } else {
+          gridView.classList.remove('active');
+          listView.classList.add('active');
+        }
+      });
+    });
+    
+    // FAQ accordéon
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', function() {
+        const answer = this.nextElementSibling;
+        const isOpen = answer.style.display === 'block';
+        
+        // Close all answers
+        document.querySelectorAll('.faq-answer').forEach(ans => {
+          ans.style.display = 'none';
+        });
+        
+        // Toggle current answer
+        answer.style.display = isOpen ? 'none' : 'block';
+      });
+    });
+  });
+</script>
+</body>
+</html>
+
+RÈGLES DE CRÉATION :
+- Structure HTML complète et responsive
+- Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
+- Longueur totale : ${wordCountTarget} mots environ
+- Ton professionnel et engageant
+- ${hasProducts ? `Utilisation des ${products.length} produits fournis avec liens cliquables` : 'Guide informatif générique'}
+- FAQ complète avec 4-6 questions pertinentes
+- Retourne le code HTML complet et fonctionnel`;
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "Expert en rédaction e-commerce et création de contenu HTML professionnel." 
+          },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+
+    if (!aiResponse.ok) {
+      const err = await aiResponse.text();
+      throw new Error(`AI Error: ${err}`);
+    }
+
+    const result = await aiResponse.json();
+    let content = result.choices[0].message.content.trim();
+    
+    // Nettoyage du contenu
+    content = content.replace(/```html/g, '').replace(/```/g, '').trim();
+
+    // Génération des mots-clés SEO
+    const keywordsResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "Expert SEO pour la génération de mots-clés pertinents." 
+          },
+          { 
+            role: "user", 
+            content: `Génère 8-12 mots-clés SEO pour "${optimizedTitle}". Liste séparée par des virgules.`
+          }
+        ]
+      })
+    });
+
+    const keywordsData = await keywordsResponse.json();
+    const seoKeywords = keywordsData.choices[0].message.content.trim()
+      .split(',')
+      .map((k: string) => k.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+
+    // Sauvegarde de l'article
+    const { data: savedArticle, error: saveError } = await supabaseClient
+      .from("blog_articles")
+      .insert([{
+        user_id,
+        title: optimizedTitle,
+        content,
+        featured_image: featuredImage,
+        meta_description: `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
+        keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
+        status: "draft"
+      }])
       .select()
       .single();
 
-    if (error) throw error;
+    if (saveError) {
+      console.error("Erreur sauvegarde:", saveError);
+      throw saveError;
+    }
 
-    //------------------------------------------------------------
-    // Response
-    //------------------------------------------------------------
-    return new Response(
-      JSON.stringify({
-        success: true,
-        article_id: saved.id,
-        article: saved,
-        featured_image: featuredImage,
-      }),
-      { headers: corsHeaders },
-    );
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    console.error(`[ERROR] ${error.message}`);
-    console.error(error.stack);
+    console.log(`Article sauvegardé : ${savedArticle.id}`);
     
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        details: error.stack?.split('\n').slice(0, 3).join('\n')
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    // Extraction des données de netlinking
+    try {
+      await supabaseClient.functions.invoke('extract-netlinking-from-articles', {
+        body: { article_ids: [savedArticle.id] }
+      });
+      console.log('Netlinking extrait avec succès');
+    } catch (netlinkError) {
+      console.error('Erreur extraction netlinking:', netlinkError);
+    }
+    
+    // Mise à jour du compteur d'usage
+    await supabaseClient.rpc('increment_usage', {
+      p_seller_id: user_id,
+      p_field: 'articles_count',
+      p_increment: 1
+    });
+    
+    return { 
+      success: true, 
+      article_id: savedArticle.id, 
+      article: savedArticle,
+      featured_image: featuredImage 
+    };
+
+  } catch (err) {
+    console.error("Erreur génération:", err);
+    return { 
+      success: false, 
+      error: err instanceof Error ? err.message : "Unknown error" 
+    };
   }
-});
+}
