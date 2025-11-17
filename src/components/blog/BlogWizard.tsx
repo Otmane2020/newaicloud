@@ -817,22 +817,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.keywordManagement}</label>
                   <p className="text-xs text-muted-foreground mb-2">{t.wizards.blog.keywordDescription}</p>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      placeholder={t.wizards.blog.keywordPlaceholder}
-                      value={keywordInput}
-                      onChange={(e) => setKeywordInput(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
-                    />
-                    <Button onClick={addKeyword} type="button">
-                      {t.wizards.blog.add}
-                    </Button>
-                  </div>
                   
                   {/* ✅ Suggestions de mots-clés */}
                   {keywordSuggestions.length > 0 && (
-                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-blue-900 flex items-center gap-2">
                           <Sparkles className="h-4 w-4" />
@@ -870,6 +858,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                       </p>
                     </div>
                   )}
+
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder={t.wizards.blog.keywordPlaceholder}
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
+                    />
+                    <Button onClick={addKeyword} type="button">
+                      {t.wizards.blog.add}
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {keywords.map((keyword, index) => (
