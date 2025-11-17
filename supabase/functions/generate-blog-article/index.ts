@@ -243,7 +243,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
@@ -264,7 +264,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
@@ -289,7 +289,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
