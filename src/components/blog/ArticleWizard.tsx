@@ -453,23 +453,7 @@ export function ArticleWizard({
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold font-serif">Sélection des produits</h2>
-              <p className="text-muted-foreground">
-                {selectedProducts.length} produit{selectedProducts.length > 1 ? 's' : ''} sélectionné{selectedProducts.length > 1 ? 's' : ''}
-              </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (selectedProducts.length === products.length) {
-                  setSelectedProducts([]);
-                } else {
-                  setSelectedProducts(products.map(p => p.id));
-                }
-              }}
-            >
-              {selectedProducts.length === products.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-            </Button>
           </div>
 
           <div className="mb-4">
@@ -480,6 +464,38 @@ export function ArticleWizard({
               onChange={(e) => setProductSearch(e.target.value)}
               className="w-full"
             />
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted-foreground">
+              {(() => {
+                const filteredProducts = products.filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                );
+                return `${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`;
+              })()}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const filteredProducts = products.filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                );
+                const filteredIds = filteredProducts.map(p => p.id);
+                const allFilteredSelected = filteredIds.every(id => selectedProducts.includes(id));
+                
+                if (allFilteredSelected) {
+                  setSelectedProducts(selectedProducts.filter(id => !filteredIds.includes(id)));
+                } else {
+                  setSelectedProducts([...new Set([...selectedProducts, ...filteredIds])]);
+                }
+              }}
+            >
+              Tout sélectionner
+            </Button>
           </div>
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
