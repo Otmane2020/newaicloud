@@ -252,15 +252,27 @@ export default function Dashboard() {
       // 5. IMAGES SCORE
       let imagesScore = 0;
       
-      // Only calculate if a store is selected (same behavior as SeoAltImageList)
+      // Only calculate if a store is selected (same behavior as SeoAltImage)
       if (selectedStore?.id) {
-        const { data: allImages } = await supabase
+        // Fetch product images
+        const { data: productImages } = await supabase
           .from('product_images')
           .select('id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)')
           .eq('shopify_products.seller_id', user?.id)
-          .eq('shopify_products.store_id', selectedStore.id);
+          .eq('shopify_products.store_id', selectedStore.id)
+          .range(0, 9999);
 
-        imagesScore = calculateImagesSeoScore(allImages || []);
+        // Fetch content images (articles, pages, collections, homepage)
+        const { data: contentImages } = await supabase
+          .from('content_images')
+          .select('id, alt_text, optimization_count')
+          .eq('user_id', user?.id)
+          .eq('store_id', selectedStore.id)
+          .range(0, 9999);
+
+        // Combine both types of images for score calculation (same as SeoAltImage.tsx)
+        const allImages = [...(productImages || []), ...(contentImages || [])];
+        imagesScore = calculateImagesSeoScore(allImages);
       }
 
       // 6. TAGS SCORE  
