@@ -228,20 +228,30 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
 
-  // PHASE 1: Prioritize technicalDimensions from image if available
+  // PHASE 1: Prioritize technicalDimensions from image if available (HIGHEST PRIORITY)
   const techDims = enriched.vision_attributes?.technicalDimensions;
   const dims = [];
+  let weightSource: string | null = null; // Track where weight comes from
   
   if (techDims && Object.keys(techDims).length > 0) {
-    // Use dimensions extracted from technical schematic (HIGHEST PRIORITY)
+    // Use dimensions extracted from technical schematic or visible on packaging
     if (techDims.hauteur_totale) dims.push(`H ${techDims.hauteur_totale}`);
+    if (techDims.height) dims.push(`H ${techDims.height}`);
     if (techDims.largeur) dims.push(`L ${techDims.largeur}`);
+    if (techDims.length) dims.push(`L ${techDims.length}`);
     if (techDims.profondeur) dims.push(`P ${techDims.profondeur}`);
+    if (techDims.width) dims.push(`l ${techDims.width}`);
     if (techDims.hauteur_assise) dims.push(`Hauteur d'assise ${techDims.hauteur_assise}`);
     if (techDims.diametre) dims.push(`Ø ${techDims.diametre}`);
     
+    // Extract weight from vision (HIGHEST PRIORITY)
+    if (techDims.weight) {
+      dims.push(`Poids ${techDims.weight}`);
+      weightSource = "vision"; // Mark that weight comes from vision
+    }
+    
     if (dims.length > 0) {
-      sections.push(language === "en" ? "\nDIMENSIONS (from technical schematic):" : "\nDIMENSIONS (schéma technique):");
+      sections.push(language === "en" ? "\nDIMENSIONS (visible on image):" : "\nDIMENSIONS (visibles sur image):");
       sections.push(`- ${dims.join(" × ")}`);
     }
   } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
@@ -250,7 +260,12 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     if (serpDims.length) dims.push(`L ${serpDims.length}`);
     if (serpDims.width) dims.push(`l ${serpDims.width}`);
     if (serpDims.height) dims.push(`H ${serpDims.height}`);
-    if (enriched.serp_data.averageWeight) dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+    
+    // Add SERP weight only if not already extracted from vision
+    if (!weightSource && enriched.serp_data.averageWeight) {
+      dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+      weightSource = "serp";
+    }
     
     if (dims.length > 0) {
       sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
@@ -261,7 +276,13 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     if (enriched.smart_length) dims.push(`L ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
     if (enriched.smart_width) dims.push(`l ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
     if (enriched.smart_height) dims.push(`H ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
-    if (enriched.smart_weight) dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+    
+    // Add estimated weight only if not from vision or SERP
+    if (!weightSource && enriched.smart_weight) {
+      dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+      weightSource = "estimated";
+    }
+    
     if (enriched.smart_diameter) dims.push(`Ø ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
     if (enriched.smart_depth) dims.push(`P ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
     if (enriched.smart_seat_height)
@@ -623,11 +644,18 @@ serve(async (req) => {
       console.warn("⚠️ SERP analysis error:", serpErr);
     }
 
-    // Vision AI with timeout (15s) - Optional, won't block if it fails
-    let visualAnalysis = "";
-    if (imageUrl) {
+    // 🖼️ Multi-Image Vision AI Analysis - Analyze ALL product images
+    console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
+    const imageAnalyses: Array<{ imageUrl: string; description: string; index: number }> = [];
+    
+    // Analyze main image + all additional images (limit to 6 images max for performance)
+    const imagesToAnalyze = images.slice(0, 6);
+    
+    for (let i = 0; i < imagesToAnalyze.length; i++) {
+      const img = imagesToAnalyze[i];
       try {
-        console.log("🔍 Starting Vision AI analysis...");
+        console.log(`📸 Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${img.src.substring(0, 50)}...`);
+        
         const visionController = new AbortController();
         const visionTimeout = setTimeout(() => visionController.abort(), 15000);
 
@@ -635,9 +663,12 @@ serve(async (req) => {
           "analyze-image-with-vision",
           {
             body: {
-              imageUrl,
-              productContext: `${productTitle} ${vendor || ""}`,
-              detectMeasurements: true,
+              imageUrl: img.src,
+              productContext: {
+                title: productTitle,
+                category: enrichedProduct.category,
+                type: enrichedProduct.product_type,
+              },
             },
             signal: visionController.signal,
           },
@@ -646,17 +677,39 @@ serve(async (req) => {
         clearTimeout(visionTimeout);
 
         if (visionError) {
-          console.log("⚠️ Vision AI failed:", visionError.message);
-        } else if (visionData?.attributes) {
-          visualAnalysis = buildVisionSummary(visionData.attributes, detectedLanguage);
-          console.log("✅ Vision AI analysis completed");
+          console.log(`⚠️ Vision AI failed for image ${i + 1}:`, visionError.message);
+        } else if (visionData?.visualAttributes) {
+          const description = buildVisionSummary(visionData.visualAttributes, detectedLanguage);
+          imageAnalyses.push({
+            imageUrl: img.src,
+            description,
+            index: i + 1,
+          });
+          console.log(`✅ Vision AI analysis completed for image ${i + 1}`);
         }
       } catch (err: unknown) {
         const error = err instanceof Error ? err : new Error(String(err));
-        console.log("⚠️ Vision AI timeout or error (continuing without it):", error.message);
+        console.log(`⚠️ Vision AI timeout for image ${i + 1} (continuing):`, error.message);
       }
+    }
+    
+    console.log(`✅ Completed Vision AI analysis: ${imageAnalyses.length}/${imagesToAnalyze.length} images analyzed`);
+    
+    // Build comprehensive visual analysis summary
+    let visualAnalysis = "";
+    if (imageAnalyses.length > 0) {
+      visualAnalysis = detectedLanguage === "en" 
+        ? "\n🖼️ IMAGE ANALYSIS (Gemini Vision AI):\n\n"
+        : "\n🖼️ ANALYSE DES IMAGES (Gemini Vision AI):\n\n";
+      
+      imageAnalyses.forEach((analysis) => {
+        const imageLabel = detectedLanguage === "en" 
+          ? `Image ${analysis.index}${analysis.index === 1 ? " (main)" : ""}`
+          : `Photo ${analysis.index}${analysis.index === 1 ? " (principale)" : ""}`;
+        visualAnalysis += `${imageLabel}:\n${analysis.description}\n\n`;
+      });
     } else {
-      console.log("⏭️ No image URL provided, skipping Vision AI");
+      console.log("⏭️ No images analyzed by Vision AI");
     }
 
     // --- Prompt bilingual ---

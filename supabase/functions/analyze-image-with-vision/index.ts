@@ -114,7 +114,13 @@ Réponds UNIQUEMENT avec un objet JSON valide contenant :
     "style": "style/design (moderne, scandinave, industriel, vintage, classique, etc.)",
     "room": "contexte/pièce si visible (salon, chambre, cuisine, bureau, etc.)",
     "mood": "ambiance/atmosphère (chaleureux, élégant, minimaliste, cosy, contemporain, etc.)",
-    "technicalDetails": ["détail technique 1", "détail technique 2"]
+    "technicalDetails": ["détail technique 1", "détail technique 2"],
+    "technicalDimensions": {
+      "weight": "poids si visible sur l'image ou l'emballage (ex: 5.2 kg)",
+      "length": "longueur si visible (ex: 120 cm)",
+      "width": "largeur si visible (ex: 80 cm)",
+      "height": "hauteur si visible (ex: 75 cm)"
+    }
   },
   "confidence": 0.95
 }
@@ -132,17 +138,22 @@ Instructions :
 - style : style de design global
 - room : pièce/contexte si identifiable
 - mood : ambiance/feeling général
-- technicalDimensions : UNIQUEMENT SI l'image est un schéma technique avec des cotes/mesures annotées :
+- technicalDimensions : UNIQUEMENT SI l'image est un schéma technique avec des cotes/mesures annotées OU si le poids/dimensions sont visibles sur l'emballage :
   * EXTRAIT les dimensions EXACTES avec format structuré : {"hauteur_totale": "98cm", "hauteur_assise": "72cm", "largeur": "47cm", "profondeur": "47cm", "diametre": "36cm"}
+  * **IMPORTANT**: Si le POIDS est visible sur l'image (emballage, étiquette, schéma), ajoute {"weight": "5.2 kg"}
+  * **IMPORTANT**: Si les DIMENSIONS sont visibles sur l'emballage ou une étiquette, extrais-les : {"length": "120 cm", "width": "80 cm", "height": "75 cm"}
   * PRIORITÉ ABSOLUE aux dimensions du schéma technique (ligne de cote avec flèches)
-  * Si pas de schéma technique, renvoie null
+  * Si pas de schéma technique NI d'info visible sur l'emballage, renvoie null
 - technicalDetails : détails visibles précis (autres que dimensions) :
   * Pieds en bois massif, nervures du travertin, veinage du marbre, coussins amovibles, finition mate/brillante, texture rugueuse/lisse, etc.
 - confidence : score de confiance entre 0 et 1
 
-⚠️ CRITIQUE : Si l'image contient un schéma technique avec des dimensions annotées, tu DOIS extraire TOUTES les mesures visibles et les mettre dans technicalDimensions sous format JSON structuré.
+⚠️ CRITIQUE : 
+- Si l'image contient un schéma technique avec des dimensions annotées, tu DOIS extraire TOUTES les mesures visibles et les mettre dans technicalDimensions sous format JSON structuré.
+- Si le POIDS est visible sur l'image (carton, étiquette, emballage), tu DOIS l'extraire et l'ajouter dans technicalDimensions: {"weight": "X kg" ou "X lbs"}
+- Si les DIMENSIONS sont visibles textuellement sur l'emballage, extrais-les également.
 
-Sois TRÈS précis et descriptif sur les matériaux, textures ET dimensions. N'invente pas, base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image.`;
+Sois TRÈS précis et descriptif sur les matériaux, textures ET dimensions/poids. N'invente pas, base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image.`;
 
     // Call Lovable AI with Vision support (higher quota limits)
     const lovableController = new AbortController();
