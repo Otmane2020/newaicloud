@@ -163,10 +163,6 @@ async function callVisionAI(imageUrl: string, productContext: string, titleKeywo
   const minDelayBetweenRequests = 6500; // 6.5s to stay under 10 req/min
   await sleep(minDelayBetweenRequests);
 
-  const keywordsContext = titleKeywords.length > 0 
-    ? `\nMots-clés SEO du titre à intégrer : ${titleKeywords.join(', ')}`
-    : '';
-
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
@@ -177,60 +173,53 @@ async function callVisionAI(imageUrl: string, productContext: string, titleKeywo
         {
           parts: [
             {
-              text: `🎯 MISSION : Créer un ALT text impactant en fusionnant l'analyse visuelle ET les mots-clés SEO du titre.
+              text: `Tu es un expert en vision par ordinateur et en génération de textes ALT conformes aux standards Google d'accessibilité.
 
-📊 ANALYSE VISUELLE DÉTAILLÉE (ce que tu VOIS dans l'image) :
-   - Couleurs dominantes et secondaires précises
-   - Matériaux visibles - SOIS PRÉCIS :
-     * Bois (chêne, noyer, teck, pin, hêtre, etc.)
-     * Métaux (acier, laiton, fer, aluminium, cuivre)
-     * Tissus (lin, coton, velours, polyester)
-     * Pierres naturelles (marbre, travertin, granit, ardoise, onyx, quartz)
-     * Autres (cuir, plastique, verre, béton, résine, céramique)
-   - Type d'objet EXACT (plateau, table complète, dessus de table, meuble monobloc, etc.)
-   - Formes, dimensions apparentes, proportions
-   - Textures (lisse, rugueux, brillant, mat, structuré, veiné, poli, brut)
-   - Style visuel (moderne, vintage, minimaliste, classique, industriel, scandinave)
-   - Détails importants (pieds, poignées, motifs, finitions, ornements, nervures)
-   - Environnement et contexte visuel
+🎯 MISSION : Décris UNIQUEMENT ce qui est VISUELLEMENT présent dans cette image.
 
-🔑 MOTS-CLÉS SEO DU TITRE À INTÉGRER :${keywordsContext}
+📸 RÈGLES STRICTES D'ANALYSE VISUELLE :
+1. Analyse l'image comme si tu la voyais pour la première fois
+2. Décris SEULEMENT les éléments visibles : formes, couleurs, matériaux apparents, angle de vue, composition
+3. Maximum 12-16 mots pour l'ALT text
+4. Ton factuel et neutre (comme un observateur neutre)
+5. N'invente RIEN, ne suppose RIEN sur le produit complet ou son contexte
+6. N'utilise AUCUNE information externe (tu ne connais pas le titre, la description, le contexte du produit)
+7. Si tu vois un détail isolé (ex: pieds de meuble), décris SEULEMENT ce détail visible, pas l'objet complet
+8. Évite tout langage marketing ou superlatif
+9. Sois précis sur les matériaux visibles (métal, bois, tissu, pierre, verre, etc.)
+10. Mentionne l'angle de vue si pertinent (gros plan, vue d'ensemble, détail, macro, etc.)
 
-📝 Context produit :
-${productContext}
+🔍 ÉLÉMENTS À OBSERVER :
+- Formes et structures visibles
+- Couleurs précises (noir, blanc, beige, gris, etc.)
+- Matériaux identifiables visuellement
+- Textures apparentes (lisse, mat, brillant, texturé, etc.)
+- Angle de prise de vue
+- Composition de l'image
+- Détails distinctifs visibles
 
-✨ FUSION INTELLIGENTE - Crée un résumé IMPACTANT :
-   1. Identifie d'abord LE MATÉRIAU EXACT visible dans l'image (travertin, marbre, bois, métal...)
-   2. Détermine le TYPE D'OBJET précis (plateau seul, table complète avec pieds, dessus, meuble...)
-   3. Valide que les mots-clés du titre correspondent EXACTEMENT à ce que tu vois
-   4. Enrichis avec tes observations visuelles précises (nervures du travertin, veinage du marbre, grain du bois...)
-   5. Crée une description fluide, naturelle et SEO-optimisée
-   6. Mets en avant les points forts visuels + mots-clés importants
-   7. 15-25 mots maximum, percutants et descriptifs
+❌ EXEMPLES DE CE QU'IL NE FAUT PAS FAIRE :
+Image montrant uniquement des pieds métalliques noirs :
+❌ FAUX : "Table basse gigogne avec plateau en marbre et structure métallique noire"
+✅ CORRECT : "Gros plan sur pieds en métal noir arrondis avec plateau blanc en arrière-plan"
 
-💎 EXEMPLES DE RÉSULTATS IMPACTANTS :
-Titre: "Canapé d'angle Scandinave OSLO 5 Places Tissu Beige"
-Vision: Canapé angle, tissu beige clair texturé, pieds bois clair épuré
-✅ ALT: "Canapé d'angle scandinave Oslo 5 places, tissu beige texturé, pieds bois naturel, design épuré et élégant"
+Image montrant un détail de textile :
+❌ FAUX : "Canapé d'angle scandinave 5 places en tissu beige"
+✅ CORRECT : "Texture de tissu beige clair à trame visible"
 
-Titre: "Lampe Design Industriel Edison - Métal Noir Mat"
-Vision: Lampe suspension métal noir mat, ampoule Edison visible, câble tressé
-✅ ALT: "Lampe suspension industrielle Edison, structure métal noir mat, ampoule apparente, câble textile tressé noir"
+✅ EXEMPLES CORRECTS :
+"Plateau rectangulaire en pierre beige nervurée, surface polie"
+"Structure métallique noire tubulaire, finition mate, vue en macro"
+"Assemblage de planches de bois clair veiné, vue d'ensemble"
+"Détail de textile gris chiné à mailles serrées"
 
-Titre: "Plateau Table à Manger en Travertin"
-Vision: Plateau rectangulaire en pierre travertin beige avec nervures naturelles visibles, surface polie
-✅ ALT: "Plateau de table en travertin beige naturel, surface polie avec nervures caractéristiques, pierre naturelle italienne"
-
-⚠️ ATTENTION - Distingue bien :
-- "Plateau" = dessus seul, sans pieds
-- "Table" = meuble complet avec pieds/structure
-- Matériaux : travertin ≠ marbre ≠ béton (observe les nervures, veinage, texture)
-
-Réponds UNIQUEMENT avec ce JSON valide :
+📝 FORMAT DE RÉPONSE (JSON strict) :
 {
-  "alt_text": "Ton ALT text impactant fusionnant vision + mots-clés",
-  "visual_analysis": "Description technique complète de tout ce que tu observes dans l'image (couleurs précises, matériaux, style, détails)"
-}`
+  "alt_text": "Description courte (12-16 mots max) de CE QUI EST VISIBLE uniquement",
+  "visual_analysis": "Analyse détaillée technique uniquement des éléments visuellement identifiables dans l'image, sans suppositions sur le produit complet"
+}
+
+Maintenant, analyse cette image en suivant strictement ces règles.`
             },
             {
               inlineData: {
