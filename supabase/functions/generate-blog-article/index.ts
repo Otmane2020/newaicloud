@@ -177,6 +177,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       collectionTitle = "",
       productIds = [],
       opportunityData,
+      articleConfig,
     } = requestData;
 
     if (!user_id) {
@@ -441,8 +442,67 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }).join('');
     };
 
+    // ✅ Phase 2: Amélioration de la génération des cartes produits avec carousel complet
+    const generateProductCardsEnhanced = (products: any[], storeUrl: string) => {
+      return products.map(product => {
+        const hasPromotion = product.compare_at_price && product.compare_at_price > product.price;
+        const discount = hasPromotion 
+          ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
+          : 0;
+        
+        const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : '#';
+        const images = product.images || [];
+        const mainImage = product.image_url || (images.length > 0 ? images[0].src : '/placeholder.jpg');
+        
+        let galleryHtml = '';
+        
+        if (images.length === 0 || images.length === 1) {
+          galleryHtml = `<img src="${mainImage}" alt="${product.title}" class="product-main-image" loading="lazy">`;
+        } else if (images.length <= 4) {
+          galleryHtml = `<div class="product-gallery-grid">${images.slice(0, 4).map((img: any) => `
+            <img src="${img.src}" alt="${img.alt || product.title}" class="gallery-image" loading="lazy">
+          `).join('')}</div>`;
+        } else {
+          // Carousel complet avec navigation
+          galleryHtml = `
+            <div class="product-carousel" data-product="${product.id}">
+              <div class="carousel-track">
+                ${images.map((img: any, idx: number) => `
+                  <img src="${img.src}" alt="${img.alt || product.title}" class="carousel-image ${idx === 0 ? 'active' : ''}" loading="lazy">
+                `).join('')}
+              </div>
+              <button class="carousel-btn carousel-prev" onclick="prevImage(this)">‹</button>
+              <button class="carousel-btn carousel-next" onclick="nextImage(this)">›</button>
+              <div class="carousel-dots">
+                ${images.map((_: any, idx: number) => `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="goToImage(this, ${idx})"></span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        return `
+          <div class="product-card">
+            ${hasPromotion ? `<div class="promotion-badge">-${discount}%</div>` : ''}
+            <a href="${productUrl}" target="_blank" rel="noopener" class="product-link">
+              ${galleryHtml}
+              <div class="product-info">
+                <h3 class="product-title">${product.title}</h3>
+                ${product.category ? `<span class="product-category">${product.category}</span>` : ''}
+                <div class="product-price">
+                  ${hasPromotion ? `<span class="old-price">${product.compare_at_price.toFixed(2)} ${product.currency_code || '€'}</span>` : ''}
+                  <span class="current-price">${product.price.toFixed(2)} ${product.currency_code || '€'}</span>
+                </div>
+                ${product.body_html ? `<p class="product-description">${product.body_html.replace(/<[^>]*>/g, '').substring(0, 120)}...</p>` : ''}
+                <button class="product-cta">Voir le produit →</button>
+              </div>
+            </a>
+          </div>
+        `;
+      }).join('');
+    };
+
     const productCardsHtml = hasProducts 
-      ? generateProductCards(products, storeUrl)
+      ? generateProductCardsEnhanced(products, storeUrl)
       : '<p class="no-products">Aucun produit sélectionné pour cet article.</p>';
 
     // Récupération des pages Shopify réelles pour netlinking
@@ -543,16 +603,66 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     const lang = languageConfig[language] || languageConfig.fr;
     const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
 
-    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en ${lang.name} d'environ ${wordCountTarget} mots.
+    // ✅ Phase 1: Extraction dynamique des couleurs et layout
+    const primaryColor = articleConfig?.colorScheme || "#667eea";
+    const layout: "1-colonne" | "2-colonnes" | "3-colonnes" = articleConfig?.layout || "1-colonne";
+    const style: "magazine" | "blog" | "minimal" = articleConfig?.style || "magazine";
+
+    // Génération du schéma de couleurs dynamique
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : "102, 126, 234";
+    };
+
+    const colorScheme = {
+      primary: primaryColor,
+      primaryRgb: hexToRgb(primaryColor),
+      text: "#1a1a1a",
+      background: "#ffffff"
+    };
+
+    // Configuration du layout
+    const layoutConfig: Record<"1-colonne" | "2-colonnes" | "3-colonnes", { tocColumns: number; productColumns: number; maxWidth: string }> = {
+      "1-colonne": { tocColumns: 1, productColumns: 1, maxWidth: "800px" },
+      "2-colonnes": { tocColumns: 2, productColumns: 2, maxWidth: "1000px" },
+      "3-colonnes": { tocColumns: 2, productColumns: 3, maxWidth: "1200px" }
+    };
+
+    const currentLayout = layoutConfig[layout] || layoutConfig["1-colonne"];
+
+    // Description du style pour l'IA
+    const styleDescriptions: Record<"magazine" | "blog" | "minimal", string> = {
+      magazine: "Style magazine premium avec visuels riches et ton sophistiqué",
+      blog: "Style blog conversationnel et engageant avec ton amical",
+      minimal: "Style minimaliste et épuré avec ton professionnel direct"
+    };
+
+    const prompt = `Tu es un expert SEO et rédacteur e-commerce. Crée un article professionnel en ${lang.name} d'environ ${wordCountTarget} mots.
+
+**STYLE ÉDITORIAL** : ${styleDescriptions[style]}
+
+**CONFIGURATION VISUELLE** :
+- Couleur principale : ${colorScheme.primary}
+- Layout : ${layout}
+- Ton : ${style === 'blog' ? 'conversationnel et amical' : style === 'minimal' ? 'direct et professionnel' : 'sophistiqué et premium'}
+
 
 SUJET : ${topicInfo}
 MOTS-CLÉS : ${targetKeywords.join(", ")}
-${
-  hasProducts
-    ? `PRODUITS SÉLECTIONNÉS (${products.length}) :
-${products.map((p: any) => `- ${p.title} (${p.price}€)${p.category ? ` - Catégorie: ${p.category}` : ""} : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
-    : `Article informatif générique sur ${topicInfo}`
-}${pagesContext}
+
+**PRODUITS À INTÉGRER** (${products.length}) :
+${products.map((p: any, i: number) => `
+${i + 1}. **${p.title}**
+   - Prix : ${p.price} ${p.currency_code || '€'} ${p.compare_at_price ? `(avant: ${p.compare_at_price} ${p.currency_code || '€'} soit -${Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100)}%)` : ''}
+   - Catégorie : ${p.category || 'Non spécifiée'}
+   - Description : ${p.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || 'Non disponible'}
+   - Lien : ${storeUrl}/products/${p.handle}
+   - Images : ${p.images?.length || 1} image(s)
+`).join('\n')}${pagesContext}
+
+**IMPORTANT** : Les cartes produits HTML sont déjà générées et intégrées dans le template ci-dessous.
+Tu dois UNIQUEMENT rédiger le contenu textuel (introduction, critères, conseils, FAQ).
+Ne modifie PAS les cartes produits déjà présentes.
 
 STRUCTURE HTML À SUIVRE :
 
@@ -562,12 +672,19 @@ STRUCTURE HTML À SUIVRE :
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root {
+      --color-primary: ${colorScheme.primary};
+      --color-primary-rgb: ${colorScheme.primaryRgb};
+      --color-text: ${colorScheme.text};
+      --color-bg: ${colorScheme.background};
+    }
+
     .blog-article {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      max-width: 1200px;
+      max-width: ${currentLayout.maxWidth};
       margin: 0 auto;
       line-height: 1.7;
-      color: #1a1a1a;
+      color: var(--color-text);
     }
 
     /* Header et Featured Image */
@@ -607,11 +724,12 @@ STRUCTURE HTML À SUIVRE :
 
     /* Table des matières */
     .toc-container {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%);
       color: white;
       padding: 2.5rem;
       border-radius: 16px;
       margin: 3rem 0;
+      box-shadow: 0 10px 40px rgba(var(--color-primary-rgb), 0.2);
     }
     
     .toc-title {
@@ -624,7 +742,7 @@ STRUCTURE HTML À SUIVRE :
     }
     
     .toc-list {
-      columns: 2;
+      columns: ${currentLayout.tocColumns};
       gap: 2rem;
     }
     
@@ -672,7 +790,7 @@ STRUCTURE HTML À SUIVRE :
       content: '';
       width: 4px;
       height: 2rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%);
       border-radius: 2px;
     }
     
@@ -689,6 +807,13 @@ STRUCTURE HTML À SUIVRE :
       padding: 3rem;
       border-radius: 16px;
       margin: 3rem 0;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(${currentLayout.productColumns}, 1fr);
+      gap: 2rem;
+      margin-top: 2rem;
     }
     
     .view-toggle {
@@ -1049,112 +1174,14 @@ STRUCTURE HTML À SUIVRE :
       </button>
     </div>
 
-    <!-- Mode Grille -->
+    <!-- Mode Grille avec cartes pré-générées -->
     <div class="product-grid grid-view active">
-      ${products
-        .map((product: any) => {
-          const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`;
-          const images = product.images || [];
-          const currencySymbol = product.currency_code === 'USD' ? '$' : product.currency_code === 'GBP' ? '£' : product.currency_code === 'CAD' ? 'CA$' : '€';
-          const discount = product.compare_at_price && product.compare_at_price > product.price 
-            ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
-            : 0;
-          
-          return `
-      <div class="product-card" style="position: relative;">
-        <a href="${productUrl}" 
-           class="product-image-link" 
-           target="${storeUrl ? "_blank" : "_self"}">
-          ${discount > 0 ? `<div class="product-badge" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; z-index: 10;">-${discount}%</div>` : ''}
-          
-          ${images.length > 1 ? `
-          <div class="product-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
-            ${images.slice(0, 4).map((img: any) => `
-            <img src="${img.src}" 
-                 alt="${img.alt || product.title}" 
-                 style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;"
-                 loading="lazy">
-            `).join('')}
-          </div>
-          ` : `
-          <img src="${product.image_url || "/placeholder-product.jpg"}" 
-               alt="${product.title}" 
-               class="product-image"
-               loading="lazy">
-          `}
-        </a>
-        <div class="product-info">
-          <h3 class="product-name">${product.title}</h3>
-          <p class="product-description">${(product.description || "").substring(0, 120)}...</p>
-          
-          <div class="product-pricing">
-            ${discount > 0 ? `<span class="original-price">${product.compare_at_price.toFixed(2)} ${currencySymbol}</span>` : ''}
-            <span class="current-price">${product.price.toFixed(2)} ${currencySymbol}</span>
-          </div>
-          
-          <div class="product-meta">
-            <div class="stock-status ${product.inventory_quantity > 0 ? "in-stock" : "out-of-stock"}">
-              ${product.inventory_quantity > 0 ? `En stock${product.inventory_quantity > 10 ? "" : ` (${product.inventory_quantity})`}` : "Rupture"}
-            </div>
-          </div>
-          
-          <div class="product-actions">
-            <a href="${productUrl}" 
-               class="product-link"
-               target="${storeUrl ? "_blank" : "_self"}">
-              Voir le produit
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-      `;
-        })
-        .join("")}
+      ${productCardsHtml}
     </div>
 
-    <!-- Mode Liste -->
+    <!-- Mode Liste avec cartes pré-générées -->
     <div class="product-list list-view">
-      ${products
-        .map(
-          (product: any) => `
-      <div class="product-list-item">
-        <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
-           class="product-image-link"
-           target="${storeUrl ? "_blank" : "_self"}">
-          <img src="${product.image_url || "/placeholder-product.jpg"}" 
-               alt="${product.title}" 
-               class="product-image"
-               loading="lazy"
-               style="height: 80px; width: 80px; border-radius: 8px;">
-        </a>
-        <div class="product-details">
-          <h3 class="product-name">${product.title}</h3>
-          <p class="product-description">${product.description || "Description non disponible"}</p>
-          <div class="product-pricing">
-            ${
-              product.compare_at_price && product.compare_at_price > product.price
-                ? `
-            <span class="original-price">${product.compare_at_price} €</span>
-            `
-                : ""
-            }
-            <span class="current-price">${product.price} €</span>
-          </div>
-        </div>
-        <div class="product-actions">
-          <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
-             class="product-link"
-             target="${storeUrl ? "_blank" : "_self"}">
-            Acheter
-          </a>
-        </div>
-      </div>
-      `,
-        )
-        .join("")}
+      ${productCardsHtml}
     </div>
   </section>
   `
@@ -1262,7 +1289,39 @@ STRUCTURE HTML À SUIVRE :
 </article>
 
 <script>
-  // Toggle entre vue grille et liste
+  // Navigation carousel
+  function prevImage(btn) {
+    const carousel = btn.closest('.product-carousel');
+    const images = carousel.querySelectorAll('.carousel-image');
+    const dots = carousel.querySelectorAll('.dot');
+    let currentIdx = Array.from(images).findIndex(img => img.classList.contains('active'));
+    const newIdx = currentIdx === 0 ? images.length - 1 : currentIdx - 1;
+    
+    images.forEach((img, idx) => img.classList.toggle('active', idx === newIdx));
+    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === newIdx));
+  }
+
+  function nextImage(btn) {
+    const carousel = btn.closest('.product-carousel');
+    const images = carousel.querySelectorAll('.carousel-image');
+    const dots = carousel.querySelectorAll('.dot');
+    let currentIdx = Array.from(images).findIndex(img => img.classList.contains('active'));
+    const newIdx = (currentIdx + 1) % images.length;
+    
+    images.forEach((img, idx) => img.classList.toggle('active', idx === newIdx));
+    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === newIdx));
+  }
+
+  function goToImage(dot, idx) {
+    const carousel = dot.closest('.product-carousel');
+    const images = carousel.querySelectorAll('.carousel-image');
+    const dots = carousel.querySelectorAll('.dot');
+    
+    images.forEach((img, i) => img.classList.toggle('active', i === idx));
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+
+  // Toggle vue grille/liste et FAQ
   document.addEventListener('DOMContentLoaded', function() {
     const viewButtons = document.querySelectorAll('.view-btn');
     const gridView = document.querySelector('.grid-view');
@@ -1307,6 +1366,14 @@ STRUCTURE HTML À SUIVRE :
 </script>
 </body>
 </html>
+
+**STRUCTURE SEO STRICTE** :
+- 1 seul H1 (titre principal)
+- 3-5 H2 (sections principales) : Introduction, Critères de choix, Notre sélection, Guide d'achat, FAQ, Conclusion
+- Sous chaque H2, 2-4 H3 (sous-sections)
+- Si nécessaire, des H4 sous les H3 pour des détails
+- TOUJOURS du contenu entre un titre et son sous-titre
+- Table des matières cliquable avec ancres
 
 **RÈGLE CRITIQUE** : Tu DOIS remplacer TOUS les placeholders [texte...] par du contenu réel et spécifique. 
 Aucun placeholder ne doit rester dans le HTML final.
