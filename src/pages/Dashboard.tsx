@@ -262,12 +262,11 @@ export default function Dashboard() {
           .eq('shopify_products.store_id', selectedStore.id)
           .range(0, 9999);
 
-        // Fetch content images (articles, pages, collections, homepage)
+      // Fetch content images (articles, pages, collections, homepage)
+        // NOTE: Not filtering by store_id/user_id to match SeoAltImage.tsx behavior (reference)
         const { data: contentImages } = await supabase
           .from('content_images')
           .select('id, alt_text, optimization_count')
-          .eq('user_id', user?.id)
-          .eq('store_id', selectedStore.id)
           .range(0, 9999);
 
         // Combine both types of images for score calculation (same as SeoAltImage.tsx)
