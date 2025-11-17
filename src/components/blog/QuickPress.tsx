@@ -168,7 +168,7 @@ export function QuickPress() {
 
       if (data?.success && data?.article) {
         setArticleId(data.article.id);
-        setPreview(data.article.preview || data.article.content?.substring(0, 500));
+        setPreview(data.article.content || data.article.preview || '');
         setProgress(100);
         setCurrentStep('Article généré avec succès!');
         toast.success('Quick Press généré!');
@@ -362,7 +362,7 @@ export function QuickPress() {
               </Button>
             )}
           </div>
-          <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+          <ScrollArea className="h-[600px] w-full rounded-md border p-4">
             <div 
               className="prose prose-sm dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: preview }}
