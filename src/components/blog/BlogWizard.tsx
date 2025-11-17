@@ -894,14 +894,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 Ajoutez des mots-clés pertinents pour optimiser le référencement de votre article.
               </p>
 
-              {/* Suggestions IA */}
-              {keywordSuggestions.length > 0 && (
+              {/* Suggestions IA - Filtrer les mots-clés déjà sélectionnés */}
+              {keywordSuggestions.filter(s => !keywords.includes(s)).length > 0 && (
                 <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h4 className="font-semibold text-blue-900 flex items-center gap-2">
                         <Sparkles className="h-4 w-4" />
-                        Suggestions IA ({keywordSuggestions.length})
+                        Suggestions IA ({keywordSuggestions.filter(s => !keywords.includes(s)).length})
                       </h4>
                       <p className="text-xs text-blue-700 mt-1">
                         Mots-clés générés automatiquement basés sur vos produits
@@ -924,21 +924,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {keywordSuggestions.map((suggestion, idx) => (
-                      <Badge
-                        key={idx}
-                        variant={keywords.includes(suggestion) ? "default" : "outline"}
-                        className={`cursor-pointer transition-all ${
-                          keywords.includes(suggestion)
-                            ? "bg-primary hover:bg-primary/90"
-                            : "hover:bg-blue-100 hover:text-blue-900"
-                        }`}
-                        onClick={() => addSuggestedKeyword(suggestion)}
-                      >
-                        {suggestion}
-                        {keywords.includes(suggestion) && <Check className="ml-1 h-3 w-3" />}
-                      </Badge>
-                    ))}
+                    {keywordSuggestions
+                      .filter(s => !keywords.includes(s))
+                      .map((suggestion, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="cursor-pointer transition-all hover:bg-blue-100 hover:text-blue-900"
+                          onClick={() => addSuggestedKeyword(suggestion)}
+                        >
+                          {suggestion}
+                        </Badge>
+                      ))}
                   </div>
                 </div>
               )}
