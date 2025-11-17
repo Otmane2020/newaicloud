@@ -257,7 +257,7 @@ export function ArticleWizard({
 
     try {
       const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-        body: { article_ids: [articleId] }
+        body: { articleId }
       });
 
       if (error) throw error;
