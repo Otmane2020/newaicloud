@@ -32,16 +32,34 @@ export function QuickPress() {
   };
 
   const loadCollections = async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
+    
     try {
-      console.log('Loading collections for user:', user?.id);
+      console.log('Loading collections for user:', user?.id, 'store:', storeId);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('shopify_collections')
-        .select('id, title, product_count');
+        .select('id, title, product_count')
+        .eq('user_id', user.id);
+      
+      // Filter by store if available
+      if (storeId) {
+        query = query.eq('store_id', storeId);
+      }
+      
+      const { data, error } = await query.order('title');
 
-      console.log('Collections query result:', { data, error });
+      console.log('Collections query result:', { data, error, count: data?.length });
 
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        console.log('No collections found. Please import from Shopify.');
+      }
+      
       setCollections(data || []);
     } catch (error) {
       console.error('Error loading collections:', error);

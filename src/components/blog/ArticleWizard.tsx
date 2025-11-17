@@ -120,12 +120,22 @@ export function ArticleWizard({
   }, [selectedProducts]);
 
   const loadProducts = async () => {
+    if (!selectedCollection || !storeId) {
+      console.log('Cannot load products: missing collection or store_id', { selectedCollection, storeId });
+      return;
+    }
+    
     try {
+      console.log('Loading products for collection:', selectedCollection, 'store:', storeId);
+      
       const { data, error } = await supabase
         .from('shopify_products')
         .select('id, title, price, image_url, category, handle, tags, description')
+        .eq('store_id', storeId)
         .contains('collection_ids', [selectedCollection])
         .limit(30);
+
+      console.log('Products loaded:', { count: data?.length, error });
 
       if (error) throw error;
       setProducts(data || []);
