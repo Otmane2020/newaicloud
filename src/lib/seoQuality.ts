@@ -397,7 +397,7 @@ export function calculateArticlesSeoScore(articles: any[]): number {
   const totalScore = articles.reduce((sum, article) => {
     const score = calculateArticleSeoScore(
       article.title,
-      article.seo_title, // Use seo_title like ArticleManagement.tsx
+      article.title, // blog_articles doesn't have seo_title column, use title
       article.meta_description || '',
       article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
       !!article.featured_image,
