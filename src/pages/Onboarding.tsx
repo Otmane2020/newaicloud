@@ -586,7 +586,7 @@ export default function Onboarding() {
                     {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
                   </Badge>
                 )}
-                <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">{starterPlan.description}</p>
+                <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">{t.dashboard.plans.descriptions.starter}</p>
 
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
