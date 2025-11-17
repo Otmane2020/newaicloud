@@ -61,9 +61,12 @@ async function generateArticle(
       category = "Guide", 
       keywords = [], 
       title, 
-      articleLength = "2000",
+      articleLength = "2500",
       targetAudience,
-      articleAngle
+      articleAngle,
+      layout = "editorial",
+      colorPalette = "classic",
+      generateFeaturedImage = false
     } = requestData;
 
     if (!user_id) {
@@ -213,44 +216,82 @@ async function generateArticle(
 
     console.log("📦 Products context prepared");
 
-    // Étape 4: Générer l'image de couverture
-    let featuredImage = "";
-    try {
-      const openaiKey = Deno.env.get("OPENAI_API_KEY");
-      if (openaiKey) {
-        const imagePrompt = `Create a modern, professional featured image for an article about "${title || category}". 
-Style: clean, minimalist, high-quality photography or illustration. 
-No text, just visual representation of the topic.`;
+    // Définir le titre de l'article
+    const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
 
-        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
+    // Étape 4: Générer l'image de couverture avec Lovable AI
+    let featuredImage = "";
+    if (generateFeaturedImage) {
+      try {
+        console.log("🎨 Generating featured image with Lovable AI...");
+        
+        const imagePrompt = `Créez une image de couverture moderne et professionnelle pour un article sur "${articleTitle}". 
+Style: photographie de haute qualité, minimaliste, épurée, professionnelle.
+Thème: ${category} - ${keywords.slice(0, 3).join(', ')}
+Aucun texte, juste une représentation visuelle du sujet.`;
+
+        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: imagePrompt,
-            n: 1,
-            size: "1792x1024",
-            quality: "standard",
+            model: "google/gemini-2.5-flash-image",
+            messages: [
+              {
+                role: "user",
+                content: imagePrompt
+              }
+            ],
+            modalities: ["image", "text"]
           }),
         });
 
         if (imageResponse.ok) {
           const imageData = await imageResponse.json();
-          featuredImage = imageData.data[0]?.url || "";
-          console.log("✅ Featured image generated");
+          const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (base64Image) {
+            featuredImage = base64Image;
+            console.log("✅ Featured image generated with Lovable AI");
+          }
         }
+      } catch (err) {
+        console.warn("⚠️ Could not generate featured image:", err);
       }
-    } catch (err) {
-      console.warn("⚠️ Could not generate featured image:", err);
     }
 
     // Étape 5: Générer le contenu HTML avec Gemini
-    const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     
-    const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce.
+    // Layout-specific styles
+    const layoutStyles: Record<string, string> = {
+      editorial: `
+        .article-container { max-width: 800px; margin: 0 auto; font-family: 'Georgia', serif; }
+        .product-card { margin: 40px 0; padding: 30px; border-left: 4px solid #333; }
+        .product-image { width: 100%; max-width: 600px; margin: 20px auto; }
+      `,
+      grid: `
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .product-card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; transition: transform 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+      `,
+      story: `
+        .story-section { margin: 60px 0; }
+        .product-inline { display: inline-block; margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+        .story-text { line-height: 1.8; font-size: 18px; }
+      `
+    };
+
+    // Color palette styles
+    const paletteStyles: Record<string, string> = {
+      classic: `--color-primary: #1a1a1a; --color-secondary: #ffffff; --color-accent: #4a90e2;`,
+      warm: `--color-primary: #8b4513; --color-secondary: #faf0e6; --color-accent: #d2691e;`,
+      cool: `--color-primary: #2c3e50; --color-secondary: #ecf0f1; --color-accent: #3498db;`,
+      elegant: `--color-primary: #2d2d2d; --color-secondary: #f5f5f5; --color-accent: #c9a961;`,
+      modern: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`
+    };
+    
+    const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce, spécialisé dans le style New York Times.
 
 **MISSION**: Génère un article HTML complet de ${articleLength} mots sur le sujet "${articleTitle}".
 
@@ -260,62 +301,66 @@ No text, just visual representation of the topic.`;
 - Mots-clés: ${keywords.join(", ")}
 - Public cible: ${targetAudience || "Grand public"}
 - Angle: ${articleAngle || "Guide d'achat"}
+- Layout: ${layout}
 
 **PRODUITS DISPONIBLES**:
 ${productsContext}
 
 **INSTRUCTIONS CRITIQUES**:
 1. Structure HTML5 sémantique avec <article>, <section>, <header>
-2. Table des matières cliquable en début d'article
-3. Pour CHAQUE produit disponible, crée une carte produit HTML belle et moderne avec:
-   - Image du produit (utilise image_url ou placeholder)
-   - Titre du produit EXACT
-   - Prix RÉEL avec badge promo si applicable
-   - Caractéristiques techniques RÉELLES (dimensions, matériau, poids)
-   - Badge de stock
-   - Bouton "Voir le produit" avec lien vers ${storeUrl}/products/[handle]
-4. CSS moderne inclus dans <style> avec:
-   - Design responsive
-   - Cartes produits attractives avec hover effects
-   - Badges colorés pour promos et stock
-   - Typographie professionnelle
-   - Couleurs harmonieuses
-5. Contenu RICHE et DÉTAILLÉ:
-   - Introduction captivante
+2. Typographie style New York Times: Serif professionnelle, espacements généreux
+3. Layout "${layout}" avec le style approprié
+4. Palette de couleurs: ${colorPalette}
+5. Pour CHAQUE produit, intégration intelligente:
+   ${layout === 'grid' ? '- Grille de produits avec cartes complètes' : 
+     layout === 'story' ? '- Produits intégrés naturellement dans le texte avec hyperliens' :
+     '- Style éditorial avec grandes images'}
+6. NE PAS afficher: stock détaillé, informations techniques excessives
+7. AFFICHER: Prix, caractéristiques clés, lien vers produit
+8. CSS moderne inclus dans <style> avec:
+   ${layoutStyles[layout] || layoutStyles.editorial}
+   :root { ${paletteStyles[colorPalette] || paletteStyles.classic} }
+   - Font: Georgia, Garamond, serif pour le corps
+   - Titres: font-weight: 700
+   - Espacement: line-height: 1.75
+   - Images: Grandes, haute qualité, bien espacées
+9. Contenu RICHE:
+   - Introduction captivante (200 mots)
    - Sections structurées avec H2/H3
-   - Conseils d'expert basés sur les produits réels
-   - Comparaisons entre produits si pertinent
+   - Paragraphes de 3-4 lignes maximum
+   - Produits présentés avec hyperliens: <a href="${storeUrl}/products/[handle]">[nom produit]</a>
    - FAQ en fin d'article
-6. SEO: Utilise naturellement les mots-clés "${keywords.join('", "')}"
-7. Ton: Professionnel mais accessible, expert mais pas technique
+10. SEO: Utilise naturellement les mots-clés "${keywords.join('", "')}"
+11. Ton: Journalistique, expert, accessible
 
-**FORMAT DE SORTIE**: HTML pur sans markdown, prêt à insérer dans une page web.
+**FORMAT DE SORTIE**: HTML pur, prêt à insérer.
 
-**EXEMPLE DE CARTE PRODUIT**:
-\`\`\`html
-<div class="product-card">
-  <div class="product-image">
-    <img src="URL_IMAGE" alt="NOM_PRODUIT">
-    <span class="promo-badge">-20%</span>
-  </div>
-  <div class="product-info">
-    <h3 class="product-title">Nom exact du produit</h3>
-    <div class="product-price">
-      <span class="current-price">199€</span>
-      <span class="original-price">249€</span>
-    </div>
-    <ul class="product-specs">
-      <li>🎨 Couleur réelle</li>
-      <li>📏 Dimensions réelles</li>
-      <li>⚖️ Poids réel</li>
-    </ul>
-    <div class="stock-badge in-stock">✓ En stock (15 unités)</div>
-    <a href="LIEN_PRODUIT" class="cta-button">Voir le produit</a>
+${layout === 'grid' ? `
+**EXEMPLE GRILLE PRODUIT**:
+<div class="product-grid">
+  <div class="product-card">
+    <img src="[image_url]" alt="[title]" />
+    <h3>[Title]</h3>
+    <p class="price">[price]€</p>
+    <p>[Description courte]</p>
+    <a href="${storeUrl}/products/[handle]" class="btn-primary">Voir le produit</a>
   </div>
 </div>
-\`\`\`
+` : layout === 'story' ? `
+**EXEMPLE INTÉGRATION STORY**:
+<p>Pour ceux qui recherchent l'élégance, le <a href="${storeUrl}/products/[handle]">[nom produit]</a> 
+représente un choix idéal. Ses [caractéristiques] en font...</p>
+` : `
+**EXEMPLE ÉDITORIAL**:
+<section class="product-feature">
+  <img src="[image_url]" alt="[title]" class="featured-image" />
+  <h2>[Title]</h2>
+  <p class="lead">[Description riche]</p>
+  <a href="${storeUrl}/products/[handle]">Découvrir ce produit</a>
+</section>
+`}
 
-Génère maintenant l'article HTML complet.`;
+Commence par <!DOCTYPE html> et génère l'article complet.`;
 
     console.log("🤖 Calling Gemini AI...");
 
