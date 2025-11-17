@@ -271,8 +271,8 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.
     console.error('[GENERATE-BLOG-ARTICLE] Error:', error);
     return new Response(
       JSON.stringify({
-        error: error.message || 'Erreur lors de la génération',
-        details: error.toString()
+        error: error instanceof Error ? error.message : 'Erreur lors de la génération',
+        details: error instanceof Error ? error.toString() : String(error)
       }),
       {
         status: 500,
@@ -282,15 +282,3 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.
   }
 });
 
-// Ajouter l'icône Plus manquante
-const Plus = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
-
-const Hash = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-  </svg>
-);
