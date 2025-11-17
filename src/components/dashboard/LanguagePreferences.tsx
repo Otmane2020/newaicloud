@@ -31,7 +31,7 @@ export function LanguagePreferences() {
           onClick={() => handleLanguageChange('en')}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🇬🇧</span>
+            <span className="text-lg font-bold px-3 py-1 bg-primary/10 rounded">EN</span>
             <span className="font-semibold">{t.account.language.english}</span>
             {language === 'en' && <Check className="w-5 h-5 ml-2" />}
           </div>
@@ -43,7 +43,7 @@ export function LanguagePreferences() {
           onClick={() => handleLanguageChange('fr')}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🇫🇷</span>
+            <span className="text-lg font-bold px-3 py-1 bg-primary/10 rounded">FR</span>
             <span className="font-semibold">{t.account.language.french}</span>
             {language === 'fr' && <Check className="w-5 h-5 ml-2" />}
           </div>
