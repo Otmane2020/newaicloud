@@ -203,15 +203,21 @@ export function ArticleWizard({
     setStep(6);
 
     try {
-      setCurrentStep('Analyse des produits...');
-      setProgress(15);
+      setCurrentStep('🔍 Analyse des produits sélectionnés...');
+      setProgress(10);
+      await new Promise(r => setTimeout(r, 500));
 
       const collectionTitle = collections.find(c => c.id === selectedCollection)?.title;
 
-      setCurrentStep('Génération de l\'image featured...');
-      setProgress(30);
+      setCurrentStep('🎨 Génération de l\'image de couverture...');
+      setProgress(20);
+      await new Promise(r => setTimeout(r, 800));
 
-      setCurrentStep('Rédaction de l\'article...');
+      setCurrentStep('📝 Rédaction de l\'introduction...');
+      setProgress(35);
+      await new Promise(r => setTimeout(r, 600));
+
+      setCurrentStep('🛍️ Intégration des produits...');
       setProgress(50);
 
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
@@ -229,8 +235,16 @@ export function ArticleWizard({
         }
       });
 
+      setProgress(70);
+      setCurrentStep('🔗 Ajout du netlinking et des liens internes...');
+      await new Promise(r => setTimeout(r, 500));
+
       setProgress(85);
-      setCurrentStep('Finalisation...');
+      setCurrentStep('✨ Optimisation SEO et méta-données...');
+      await new Promise(r => setTimeout(r, 500));
+
+      setProgress(95);
+      setCurrentStep('🎯 Finalisation de l\'article...');
 
       if (error) throw error;
 
@@ -238,7 +252,7 @@ export function ArticleWizard({
         setArticleId(data.article.id);
         setPreview(data.article.content || '');
         setProgress(100);
-        setCurrentStep('Article généré avec succès!');
+        setCurrentStep('✅ Article généré avec succès!');
         toast.success('Article créé avec succès!');
       } else {
         throw new Error('Erreur lors de la génération');
@@ -305,9 +319,11 @@ export function ArticleWizard({
             </div>
           ))}
         </div>
-        <div className="text-center text-sm text-muted-foreground">
-          Étape {step} sur {totalSteps}
-        </div>
+        {step < 6 && (
+          <div className="text-center text-sm text-muted-foreground">
+            Étape {step} sur {totalSteps - 1}
+          </div>
+        )}
       </Card>
 
           {/* Step 1: Collection Selection */}
@@ -527,37 +543,31 @@ export function ArticleWizard({
           <div className="space-y-6 mb-6">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <Label className="text-base font-semibold">Mots-clés suggérés</Label>
-                <div className="flex gap-2 items-center">
-                  <Button 
-                    onClick={selectAllKeywords} 
-                    variant="outline" 
-                    size="sm"
-                  >
-                    Tout sélectionner
-                  </Button>
-                  <Badge variant="secondary">{selectedKeywords.length} sélectionnés</Badge>
-                </div>
+                <Label className="text-base font-semibold">Mots-clés suggérés ({suggestedKeywords.length})</Label>
+                <Button onClick={selectAllKeywords} variant="outline" size="sm">
+                  Tout sélectionner ({selectedKeywords.length}/{suggestedKeywords.length})
+                </Button>
               </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Cliquez sur un mot-clé pour l'ajouter
+              </p>
               <div className="flex flex-wrap gap-2">
                 {suggestedKeywords.map((keyword) => (
                   <Badge
                     key={keyword}
                     variant={selectedKeywords.includes(keyword) ? "default" : "outline"}
-                    className="cursor-pointer text-sm py-2 px-3 transition-all hover:scale-105"
+                    className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform"
                     onClick={() => toggleKeyword(keyword)}
                   >
                     {keyword}
-                    {selectedKeywords.includes(keyword) && (
-                      <Check className="w-3 h-3 ml-1" />
-                    )}
+                    {selectedKeywords.includes(keyword) && <Check className="w-3 h-3 ml-1" />}
                   </Badge>
                 ))}
               </div>
             </div>
 
             <div>
-              <Label className="text-base font-semibold mb-3 block">Ajouter vos mots-clés</Label>
+              <Label className="text-base font-semibold mb-3 block">Vos mots-clés personnalisés</Label>
               <div className="flex gap-2 mb-3">
                 <Input
                   value={keywordInput}
@@ -566,22 +576,20 @@ export function ArticleWizard({
                   placeholder="Ex: décoration moderne, tendance 2024..."
                   className="flex-1"
                 />
-                <Button onClick={addCustomKeyword} variant="outline">
-                  Ajouter
-                </Button>
+                <Button onClick={addCustomKeyword} variant="outline">Ajouter</Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {customKeywords.map((keyword) => (
-                  <Badge
-                    key={keyword}
-                    variant="secondary"
-                    className="cursor-pointer text-sm py-1 px-3"
-                    onClick={() => removeCustomKeyword(keyword)}
-                  >
-                    {keyword} ×
-                  </Badge>
-                ))}
-              </div>
+              {(selectedKeywords.length > 0 || customKeywords.length > 0) && (
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                  {selectedKeywords.map((kw) => (
+                    <Badge key={kw} variant="default" className="text-sm py-1.5 px-3">{kw}</Badge>
+                  ))}
+                  {customKeywords.map((kw) => (
+                    <Badge key={kw} variant="secondary" className="cursor-pointer text-sm py-1.5 px-3 hover:bg-destructive/10" onClick={() => removeCustomKeyword(kw)}>
+                      {kw} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
