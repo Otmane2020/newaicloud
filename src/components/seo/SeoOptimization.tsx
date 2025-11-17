@@ -254,20 +254,6 @@ export function SeoOptimization() {
   // Count all products that are not AI-optimized (enrichment_status !== "enriched")
   const notEnrichedCount = products.filter((p) => p.enrichment_status !== "enriched").length;
   const enrichedCount = products.filter((p) => p.enrichment_status === "enriched").length;
-  
-  // Debug logging
-  console.log('📊 [SEO_OPTIMIZATION_COUNTS]', {
-    totalProducts: products.length,
-    notEnrichedCount,
-    enrichedCount,
-    totalEmpty,
-    existingData,
-    sample: products.slice(0, 3).map(p => ({
-      title: p.title,
-      enrichment_status: p.enrichment_status,
-      has_seo: !!(p.seo_title || p.seo_description)
-    }))
-  });
   const pendingSyncCount = products.filter(
     (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
   ).length;
@@ -512,8 +498,6 @@ export function SeoOptimization() {
   };
 
   const handleGenerateAll = () => {
-    console.log('🔘 [GENERATE_ALL_CLICKED]', { notEnrichedCount, totalProducts: products.length });
-    
     if (notEnrichedCount === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
       return;
@@ -579,12 +563,13 @@ export function SeoOptimization() {
     const productsToGenerate = products.filter((p) => {
       if (!idsToUse.has(p.id)) return false;
 
-      // If in trial, exclude already optimized products
-      if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
+      // If in trial, exclude products that are fully enriched (successfully optimized)
+      if (limits?.isTrialing && p.enrichment_status === 'enriched') {
         return false;
       }
 
       // For paid users, allow re-optimization
+      // For trial users, allow optimization of pending/failed products
       return true;
     });
 
