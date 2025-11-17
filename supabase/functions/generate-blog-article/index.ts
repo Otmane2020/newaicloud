@@ -53,10 +53,26 @@ Deno.serve(async (req) => {
       const results = [];
       for (const campaign of campaigns) {
         try {
+          // Récupérer le store_id actif pour ce user
+          const { data: storeData } = await supabase
+            .from("shopify_connections")
+            .select("id")
+            .eq("user_id", campaign.user_id)
+            .eq("is_active", true)
+            .single();
+
+          if (!storeData?.id) {
+            console.error(`❌ Aucun store actif pour user ${campaign.user_id}`);
+            throw new Error("Aucun store actif trouvé");
+          }
+
+          console.log(`[AUTO] Campaign ${campaign.name} - store_id: ${storeData.id}`);
+
           // Générer l'article avec les paramètres de la campagne
           const res = await generateSingleArticle(
             {
               user_id: campaign.user_id,
+              store_id: storeData.id, // ✅ AJOUT du store_id
               category: campaign.topic_niche || "Guide",
               keywords: campaign.keywords || [],
               title: null,
@@ -167,15 +183,23 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       throw new Error("user_id is required");
     }
 
-    if (!store_id) {
-      console.error("❌ store_id manquant");
-      throw new Error("store_id est requis");
+    // ✅ VALIDATION STRICTE du store_id
+    if (!store_id || typeof store_id !== 'string' || store_id.trim() === '') {
+      console.error("❌ [VALIDATION] store_id manquant ou invalide:", store_id);
+      throw new Error("store_id est requis et doit être une chaîne non vide");
     }
 
+    console.log(`📦 [REQUEST] Données reçues:`);
+    console.log(`  - user_id: ${user_id}`);
+    console.log(`  - store_id: ${store_id} (type: ${typeof store_id})`);
+    console.log(`  - productIds: ${productIds?.length || 0} produits`);
+    console.log(`  - keywords: ${keywords?.length || 0} mots-clés`);
+    console.log(`✅ [VALIDATION] store_id validé: ${store_id}`);
+
     if (opportunityData) {
-      console.log(`[ARTICLE] Using opportunity data: ${title}`);
-      console.log(`[ARTICLE] Angle: ${opportunityData.angle || 'N/A'}`);
-      console.log(`[ARTICLE] Target audience: ${opportunityData.targetAudience || 'N/A'}`);
+      console.log(`📋 [OPPORTUNITY] Using opportunity data: ${title}`);
+      console.log(`  - Angle: ${opportunityData.angle || 'N/A'}`);
+      console.log(`  - Target audience: ${opportunityData.targetAudience || 'N/A'}`);
     }
 
     // Vérification des limites d'usage
@@ -201,15 +225,21 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
-    console.log(`Génération article : ${articleTitle} pour user ${user_id}`);
+    console.log(`📝 [GENERATION] Génération article : ${articleTitle} pour user ${user_id}`);
+    console.log(`🏪 [STORE] store_id utilisé: ${store_id}`);
 
     // Recherche des produits
     let products: any[] = [];
 
+    console.log(`🔍 [PRODUCTS] Recherche des produits...`);
+    console.log(`  - productIds fournis: ${productIds?.length || 0}`);
+    console.log(`  - category: ${category}`);
+    console.log(`  - store_id: ${store_id}`);
+
     // Si des IDs de produits spécifiques sont fournis
     if (productIds && productIds.length > 0) {
-      console.log(`Récupération des produits sélectionnés: ${productIds.length}`);
-      const { data } = await supabaseClient
+      console.log(`🎯 [PRODUCTS] Recherche de produits spécifiques:`, productIds);
+      const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
           "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
@@ -218,15 +248,19 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         .eq("store_id", store_id)
         .in("id", productIds);
 
+      if (error) console.error(`❌ [PRODUCTS] Erreur récupération produits spécifiques:`, error);
+
       if (data && data.length > 0) {
         products = data;
-        console.log(`${products.length} produits spécifiques trouvés`);
+        console.log(`✅ [PRODUCTS] ${products.length} produits spécifiques trouvés`);
+      } else {
+        console.log(`⚠️ [PRODUCTS] Aucun produit spécifique trouvé avec ces IDs`);
       }
     }
     // Sinon recherche par catégorie
     else if (category && category !== "Guide" && category !== "Tous produits") {
-      console.log(`Recherche produits avec catégorie: ${category}`);
-      const { data } = await supabaseClient
+      console.log(`📂 [PRODUCTS] Recherche par catégorie: "${category}"`);
+      const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
           "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
@@ -238,28 +272,42 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         )
         .limit(12);
 
+      if (error) console.error(`❌ [PRODUCTS] Erreur recherche par catégorie:`, error);
+
       if (data && data.length > 0) {
         products = data;
-        console.log(`${products.length} produits trouvés`);
+        console.log(`✅ [PRODUCTS] ${products.length} produits trouvés pour "${category}"`);
+      } else {
+        console.log(`⚠️ [PRODUCTS] Aucun produit trouvé pour "${category}"`);
       }
     }
 
-    // Fallback si aucun produit trouvé
+    // ✅ FALLBACK ROBUSTE si aucun produit trouvé
     if (products.length === 0) {
-      console.log(`Aucun produit trouvé, utilisation de tous les produits`);
-      const { data } = await supabaseClient
+      console.log(`🔄 [PRODUCTS] FALLBACK - Récupération des produits récents du store`);
+      const { data, error } = await supabaseClient
         .from("shopify_products")
         .select(
           "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
-        .limit(8);
+        .order("created_at", { ascending: false })
+        .limit(12);
 
-      if (data) {
+      if (error) console.error(`❌ [PRODUCTS] Erreur fallback:`, error);
+
+      if (data && data.length > 0) {
         products = data;
+        console.log(`✅ [PRODUCTS] ${products.length} produits récupérés (fallback)`);
+      } else {
+        console.error(`❌ [PRODUCTS] AUCUN PRODUIT trouvé pour store_id: ${store_id}`);
+        console.error(`⚠️ [PRODUCTS] L'article sera générique sans produits`);
       }
     }
+
+    // ✅ LOG FINAL du résultat
+    console.log(`📊 [PRODUCTS] Résultat final: ${products.length} produits disponibles`);
 
     const hasProducts = products && products.length > 0;
 
@@ -1208,6 +1256,20 @@ STRUCTURE HTML À SUIVRE :
 </body>
 </html>
 
+**RÈGLE CRITIQUE** : Tu DOIS remplacer TOUS les placeholders [texte...] par du contenu réel et spécifique. 
+Aucun placeholder ne doit rester dans le HTML final.
+
+${opportunityData ? `
+**CONTEXTE DE L'OPPORTUNITÉ** :
+- Titre suggéré : ${opportunityData.title}
+- Angle éditorial : ${opportunityData.angle}
+- Audience cible : ${opportunityData.targetAudience}
+- Type d'article : ${opportunityData.type}
+- Catégorie : ${opportunityData.category} ${opportunityData.subCategory ? `> ${opportunityData.subCategory}` : ''}
+
+Utilise ces informations pour créer un article aligné avec l'opportunité.
+` : ''}
+
 RÈGLES DE CRÉATION :
 - LANGUE: Tout le contenu doit être rédigé en ${lang.name}
 - Structure HTML complète et responsive
@@ -1220,7 +1282,9 @@ RÈGLES DE CRÉATION :
 - Tables des matières (H1-H5) bien structurée en ${lang.name}
 - Tags SEO optimisés pour ${collectionTitle || category}
 - Galerie d'images produits avec liens cliquables
-- Retourne le code HTML complet et fonctionnel`;
+- Retourne le code HTML complet et fonctionnel
+
+**IMPORTANT** : Remplace tous les textes entre crochets [comme ceci...] par du contenu rédigé et pertinent.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -1247,6 +1311,27 @@ RÈGLES DE CRÉATION :
 
     const result = await aiResponse.json();
     let content = result.choices[0].message.content.trim();
+
+    console.log("✅ [GEMINI] Article généré");
+    
+    // ✅ VALIDATION POST-GÉNÉRATION - Vérifier les placeholders restants
+    const placeholderRegex = /\[([^\]]+)\.\.\.\]/g;
+    const remainingPlaceholders = content.match(placeholderRegex);
+    
+    if (remainingPlaceholders && remainingPlaceholders.length > 0) {
+      console.warn(`⚠️ [VALIDATION] ${remainingPlaceholders.length} placeholders détectés`);
+      
+      // Nettoyer les placeholders les plus communs
+      content = content
+        .replace(/\[introduction engageante.*?\]/gi, '')
+        .replace(/\[texte.*?\]/gi, '')
+        .replace(/\[contenu.*?\]/gi, '')
+        .replace(/\[description.*?\]/gi, '');
+      
+      console.log(`🧹 [VALIDATION] Placeholders nettoyés`);
+    } else {
+      console.log("✅ [VALIDATION] Aucun placeholder détecté - HTML propre");
+    }
 
     // Nettoyage du contenu
     content = content
@@ -1284,13 +1369,19 @@ RÈGLES DE CRÉATION :
       .filter(Boolean)
       .slice(0, 12);
 
+    // ✅ LOG avant sauvegarde
+    console.log(`💾 [SAVE] Sauvegarde de l'article...`);
+    console.log(`  - user_id: ${user_id}`);
+    console.log(`  - store_id: ${store_id} (CRITICAL - doit être non-null)`);
+    console.log(`  - title: ${optimizedTitle}`);
+    
     // Sauvegarde de l'article
     const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
       .insert([
         {
           user_id,
-          store_id,
+          store_id, // ✅ VÉRIFIÉ non-null plus haut
           title: optimizedTitle,
           content,
           featured_image: featuredImage,
