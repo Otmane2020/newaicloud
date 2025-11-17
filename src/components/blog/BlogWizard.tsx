@@ -960,10 +960,457 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   Ajouter
                 </Button>
               </div>
-            </div>
 
-            {/* Mots-clés sélectionnés */}
+              {/* Mots-clés sélectionnés */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold">
+                    Mots-clés sélectionnés ({keywords.length})
+                  </label>
+                  {keywords.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setKeywords([])}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Tout supprimer
+                    </Button>
+                  )}
+                </div>
+
+                {keywords.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <Tag className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p className="text-gray-500">Aucun mot-clé sélectionné</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Ajoutez des mots-clés pour améliorer le référencement
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg min-h-[80px]">
+                    {keywords.map((keyword, index) => (
+                      <Badge key={index} variant="secondary" className="gap-2 py-1.5 px-3 text-sm">
+                        <Hash className="w-3 h-3" />
+                        {keyword}
+                        <button 
+                          onClick={() => removeKeyword(keyword)}
+                          className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Conseils SEO */}
+              <Alert className="bg-green-50 border-green-200">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  <strong>Conseil SEO :</strong> Utilisez 5-10 mots-clés pertinents incluant votre produit principal, 
+                  des mots-clés longue traîne et des termes de recherche courants.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <ArticleConfigDialog 
+              config={articleConfig} 
+              onConfigChange={setArticleConfig} 
+            />
+            
+            {/* Aperçu rapide de la configuration */}
+            <Card className="p-4 bg-gradient-to-r from-gray-50 to-blue-50">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Aperçu de la configuration
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Style :</span>
+                  <span className="font-medium ml-2 capitalize">{articleConfig.style}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Layout :</span>
+                  <span className="font-medium ml-2">{articleConfig.layout}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Couleur :</span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded border"
+                      style={{ backgroundColor: articleConfig.colorScheme }}
+                    />
+                    <span className="font-medium">{articleConfig.colorScheme}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Typographie :</span>
+                  <span className="font-medium ml-2">{articleConfig.typography}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            {/* Résumé de la configuration */}
+            <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Récapitulatif de votre article
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Angle éditorial :</span>
+                    <span className="font-semibold capitalize">
+                      {formData.articleAngle === "guide" && "📚 Guide complet"}
+                      {formData.articleAngle === "comparison" && "⚖️ Comparatif"}
+                      {formData.articleAngle === "review" && "⭐ Avis expert"}
+                      {formData.articleAngle === "tutorial" && "🎓 Tutoriel"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Audience :</span>
+                    <span className="font-semibold capitalize">
+                      {formData.targetAudience === "beginner" && "👶 Débutant"}
+                      {formData.targetAudience === "general" && "👥 Général"}
+                      {formData.targetAudience === "expert" && "🎯 Expert"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Longueur :</span>
+                    <span className="font-semibold">
+                      {formData.articleLength === "700" && "Court (~700 mots)"}
+                      {formData.articleLength === "2000" && "Long (~2000 mots)"}
+                      {formData.articleLength === "4000" && "Complet (~4000 mots)"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Produits :</span>
+                    <span className="font-semibold">{selectedProducts.length} sélectionné(s)</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Collections :</span>
+                    <span className="font-semibold">{formData.collection_ids.length} sélectionnée(s)</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Mots-clés :</span>
+                    <span className="font-semibold">{keywords.length} défini(s)</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Aperçu des produits */}
+              {selectedProducts.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <h4 className="font-semibold mb-2">Produits sélectionnés :</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.slice(0, 5).map((product) => (
+                      <Badge key={product.id} variant="outline" className="text-xs">
+                        {product.title}
+                      </Badge>
+                    ))}
+                    {selectedProducts.length > 5 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{selectedProducts.length - 5} autres...
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Dernières options */}
+            <Card className="p-4">
+              <h4 className="font-semibold mb-3">Options de génération</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Optimisation SEO avancée</p>
+                    <p className="text-sm text-muted-foreground">
+                      Structure optimisée pour le référencement Google
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Activée
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Design mobile-first</p>
+                    <p className="text-sm text-muted-foreground">
+                      Optimisé pour les mobiles et tablettes
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-blue-100 text-blue-800">
+                    Activé
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Structured Data</p>
+                    <p className="text-sm text-muted-foreground">
+                      Balises schema.org pour les rich snippets
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-purple-100 text-purple-800">
+                    Activé
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+
+            {/* Message de confirmation */}
+            <Alert className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              <Sparkles className="w-4 h-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <strong>Prêt à générer !</strong> Votre article sera optimisé pour le référencement 
+                et inclura tous les produits sélectionnés avec un design professionnel.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-semibold">
-                  Mots
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t.wizards.blog.title}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Créez un article SEO optimisé avec vos produits
+              </p>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Usage limits alert */}
+          {limits && limits.isTrialing && (
+            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+              <AlertDescription className="text-sm">
+                {limits.limitReached.articles ? (
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                    ⚠️ Limite atteinte : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                ) : (
+                  <span>
+                    🚀 Essai gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mb-8">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center relative">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/25"
+                          : isCompleted
+                            ? "bg-green-500 text-white shadow-lg shadow-green-500/25"
+                            : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-6 h-6" />
+                      ) : (
+                        <Icon className="w-6 h-6" />
+                      )}
+                    </div>
+                    <span className={`text-sm mt-2 text-center font-medium ${
+                      isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-gray-500"
+                    }`}>
+                      {step.title}
+                    </span>
+                    {isActive && (
+                      <div className="absolute -bottom-6 w-32 text-xs text-center text-primary font-medium">
+                        {step.description}
+                      </div>
+                    )}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 transition-colors ${
+                      isCompleted ? "bg-green-500" : "bg-gray-200"
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Step Content */}
+          <div className="mb-8 min-h-[400px]">
+            {renderStepContent()}
+          </div>
+
+          {/* Navigation */}
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm p-4 border-t z-10 flex items-center justify-between -mx-6 -mb-6 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={handlePrevious} 
+              disabled={currentStep === 1}
+              className="gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {t.common.previous}
+            </Button>
+
+            {currentStep < steps.length ? (
+              <Button onClick={handleNext} className="gap-2">
+                {t.common.next}
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleGenerate} 
+                disabled={generating}
+                className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Générer l'article SEO
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Dialogs */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="articles"
+        usage={limits?.usage.articles_count}
+        limit={limits?.limits.max_articles}
+      />
+
+      <ResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={
+          generatedArticle
+            ? [
+                {
+                  id: generatedArticle.id,
+                  title: generatedArticle.title,
+                  seo_title: generatedArticle.seo_title,
+                  seo_description: generatedArticle.seo_description,
+                  content: generatedArticle.content,
+                  featured_image: generatedArticle.featured_image,
+                },
+              ]
+            : []
+        }
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          setShowSyncDialog(true);
+        }}
+        onClose={handleSkipPublish}
+      />
+
+      <ArticleSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        article={generatedArticle || { title: "" }}
+        onConfirm={handlePublishToShopify}
+        loading={false}
+      />
+
+      <ProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        type="seo"
+        operation="syncing"
+        current={1}
+        total={1}
+      />
+
+      <SuccessDialog
+        open={isOptimizationComplete && showProgressDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowProgressDialog(false);
+            onClose();
+          }
+        }}
+        type="seo"
+        count={1}
+        onClose={() => {
+          setShowProgressDialog(false);
+          onClose();
+        }}
+      />
+
+      <ArticleGenerationProgress 
+        open={showGenerationProgress} 
+        onClose={() => setShowGenerationProgress(false)} 
+      />
+    </div>
+  );
+}
+
+// Composants d'icônes manquants
+const Plus = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const Hash = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+  </svg>
+);
