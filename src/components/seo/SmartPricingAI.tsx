@@ -1545,20 +1545,90 @@ export function SmartPricingAI() {
                     onCheckedChange={toggleAllSelection}
                   />
                 </th>
-                <th className="p-3 text-left font-semibold text-sm">{t.smartPricing.table.product}</th>
-                <th className="hidden md:table-cell p-3 text-left font-semibold text-sm">{t.smartPricing.table.sku}</th>
-                <th className="p-3 text-right font-semibold text-sm">{t.smartPricing.table.price}</th>
-                <th className="hidden sm:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.comparePrice}</th>
-                <th className="hidden sm:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.discount}</th>
-                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.costPrice}</th>
-                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.shippingCost}</th>
-                <th className="hidden xl:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.grossMargin}</th>
-                <th className="hidden xl:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.grossMarginPercent}</th>
-                <th className="p-3 text-right font-semibold text-sm">{t.smartPricing.table.netMargin}</th>
-                <th className="hidden md:table-cell p-3 text-center font-semibold text-sm">{t.smartPricing.table.netMarginPercent}</th>
-                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.marketPrice}</th>
-                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">{t.smartPricing.table.smartPrice}</th>
-                <th className="p-3 text-center font-semibold text-sm">{t.smartPricing.table.actions}</th>
+                <th className="p-3 text-left font-semibold text-sm">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    {t.smartPricing.table.product}
+                  </div>
+                </th>
+                <th className="hidden md:table-cell p-3 text-left font-semibold text-sm">
+                  <div className="flex items-center gap-2">
+                    <Image className="w-4 h-4" />
+                    {t.smartPricing.table.sku}
+                  </div>
+                </th>
+                <th className="p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    {t.smartPricing.table.price}
+                  </div>
+                </th>
+                <th className="hidden sm:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <DollarSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    {t.smartPricing.table.comparePrice}
+                  </div>
+                </th>
+                <th className="hidden sm:table-cell p-3 text-center font-semibold text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <Percent className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    {t.smartPricing.table.discount}
+                  </div>
+                </th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <Calculator className="w-4 h-4" />
+                    {t.smartPricing.table.costPrice}
+                  </div>
+                </th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <Truck className="w-4 h-4" />
+                    {t.smartPricing.table.shippingCost}
+                  </div>
+                </th>
+                <th className="hidden xl:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    {t.smartPricing.table.grossMargin}
+                  </div>
+                </th>
+                <th className="hidden xl:table-cell p-3 text-center font-semibold text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <Percent className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    {t.smartPricing.table.grossMarginPercent}
+                  </div>
+                </th>
+                <th className="p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    {t.smartPricing.table.netMargin}
+                  </div>
+                </th>
+                <th className="hidden md:table-cell p-3 text-center font-semibold text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <Percent className="w-4 h-4" />
+                    {t.smartPricing.table.netMarginPercent}
+                  </div>
+                </th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    {t.smartPricing.table.marketPrice}
+                  </div>
+                </th>
+                <th className="hidden lg:table-cell p-3 text-right font-semibold text-sm">
+                  <div className="flex items-center justify-end gap-2">
+                    <Calculator className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    {t.smartPricing.table.smartPrice}
+                  </div>
+                </th>
+                <th className="p-3 text-center font-semibold text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    {t.smartPricing.table.actions}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>

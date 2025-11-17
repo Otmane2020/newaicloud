@@ -143,6 +143,81 @@ interface PriceData {
   url: string;
   title: string;
   imageUrl?: string;
+  source?: 'serp' | 'image_search';
+}
+
+// Google Image Search for visual product matching
+async function searchWithGoogleImages(
+  imageUrl: string,
+  productTitle: string
+): Promise<PriceData[]> {
+  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_CSE_API_KEY');
+  const SEARCH_ENGINE_ID = Deno.env.get('GOOGLE_CSE_ID');
+  
+  if (!GOOGLE_API_KEY || !SEARCH_ENGINE_ID) {
+    console.warn('⚠️ Google Custom Search API not configured');
+    return [];
+  }
+
+  console.log(`🖼️ Google Image Search for: ${productTitle}`);
+  
+  const endpoint = `https://www.googleapis.com/customsearch/v1`;
+  const params = new URLSearchParams({
+    key: GOOGLE_API_KEY,
+    cx: SEARCH_ENGINE_ID,
+    q: productTitle,
+    searchType: 'image',
+    imgSize: 'large',
+    num: '10',
+    safe: 'active'
+  });
+
+  try {
+    const response = await fetch(`${endpoint}?${params}`);
+    
+    if (!response.ok) {
+      console.error(`❌ Google API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const items = data.items || [];
+    
+    console.log(`📸 Found ${items.length} visual matches`);
+    
+    const priceData: PriceData[] = [];
+    
+    for (const item of items) {
+      const pageUrl = item.image?.contextLink || item.link;
+      const imageUrl = item.link;
+      const snippet = item.snippet || '';
+      
+      // Extract price from snippet or title
+      const priceMatch = snippet.match(/(\d+[.,]\d{2})\s*€|€\s*(\d+[.,]\d{2})/);
+      
+      if (priceMatch && pageUrl) {
+        const priceStr = (priceMatch[1] || priceMatch[2]).replace(/,/g, '.');
+        const price = parseFloat(priceStr);
+        
+        if (!isNaN(price) && price > 1) {
+          priceData.push({
+            price,
+            currency: 'EUR',
+            url: pageUrl,
+            title: item.title || productTitle,
+            imageUrl: imageUrl,
+            source: 'image_search'
+          });
+        }
+      }
+    }
+    
+    console.log(`✅ Extracted ${priceData.length} prices from Google Images`);
+    return priceData;
+  } catch (error) {
+    console.error('❌ Google Image Search error:', error);
+    return [];
+  }
 }
 
 // Analyse visuelle avec Gemini Vision
@@ -400,12 +475,26 @@ serve(async (req) => {
         // Étape 1: Générer requêtes optimisées
         const queries = await generateSearchQueries(product.title);
 
-        // Étape 2: Recherche SERP avec DataForSEO
+        // Étape 2: Recherche par image avec Google Custom Search
         const allPriceData: PriceData[] = [];
         
+        if (product.image_url) {
+          console.log('🖼️ Starting Google Image Search...');
+          try {
+            const imageResults = await searchWithGoogleImages(product.image_url, product.title);
+            allPriceData.push(...imageResults);
+            await new Promise(resolve => setTimeout(resolve, 800));
+          } catch (error) {
+            console.error('❌ Google Image Search failed:', error);
+          }
+        }
+
+        // Étape 3: Recherche SERP avec DataForSEO
         for (const query of queries.slice(0, 2)) {
           try {
             const serpPrices = await searchWithDataForSEO(query);
+            // Mark SERP results
+            serpPrices.forEach(p => p.source = 'serp');
             allPriceData.push(...serpPrices);
             await new Promise(resolve => setTimeout(resolve, 1200));
           } catch (error) {
@@ -413,11 +502,16 @@ serve(async (req) => {
           }
         }
 
-        console.log(`📈 Total prices found: ${allPriceData.length}`);
+        // Dédupliquer par URL
+        const uniquePrices = Array.from(
+          new Map(allPriceData.map(p => [p.url, p])).values()
+        );
 
-        // Étape 3: Analyse visuelle avec Gemini
+        console.log(`📈 Total unique prices found: ${uniquePrices.length} (${allPriceData.filter(p => p.source === 'image_search').length} from images, ${allPriceData.filter(p => p.source === 'serp').length} from SERP)`);
+
+        // Étape 4: Analyse visuelle avec Gemini
         const visionResults: { similarities: number[] } = { similarities: [] };
-        const competitorImages = allPriceData.filter(p => p.imageUrl).map(p => p.imageUrl!);
+        const competitorImages = uniquePrices.filter(p => p.imageUrl).map(p => p.imageUrl!);
 
         if (product.image_url && competitorImages.length > 0) {
           console.log(`🖼️ Vision analysis for ${competitorImages.length} images`);
@@ -430,16 +524,16 @@ serve(async (req) => {
           }
         }
 
-        // Étape 4: Combiner SERP + Vision
-        const competitorPrices: CompetitorPrice[] = allPriceData
+        // Étape 5: Combiner Image Search + SERP + Vision
+        const competitorPrices: CompetitorPrice[] = uniquePrices
           .map((data, index) => ({
             url: data.url,
             title: data.title,
             price: data.price,
             currency: data.currency,
-            similarity: visionResults.similarities[index] || 0.7,
+            similarity: visionResults.similarities[index] || (data.source === 'image_search' ? 0.8 : 0.7),
             imageUrl: data.imageUrl,
-            source: new URL(data.url).hostname
+            source: `${new URL(data.url).hostname}${data.source === 'image_search' ? ' 🖼️' : ''}`
           }))
           .filter(c => c.similarity >= 0.5)
           .sort((a, b) => b.similarity - a.similarity)
