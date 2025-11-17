@@ -26,7 +26,11 @@ import {
   ArrowRight,
   Eye,
   X,
-  Search
+  Search,
+  Grid3x3,
+  Image,
+  FileText,
+  LayoutGrid
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,9 +44,30 @@ interface ArticleWizardProps {
 }
 
 const LAYOUTS = [
-  { id: 'editorial', name: 'Éditorial', description: 'Style magazine avec grandes images' },
-  { id: 'grid', name: 'Grille', description: 'Produits en grille organisée' },
-  { id: 'story', name: 'Story', description: 'Narration avec produits intégrés' },
+  { 
+    id: 'editorial', 
+    name: 'Éditorial', 
+    description: 'Style magazine avec grandes images et texte riche',
+    icon: FileText
+  },
+  { 
+    id: 'gallery', 
+    name: 'Galerie', 
+    description: 'Focus sur les visuels avec grille d\'images',
+    icon: LayoutGrid
+  },
+  { 
+    id: 'grid', 
+    name: 'Grille Produits', 
+    description: 'Présentation structurée des produits',
+    icon: Grid3x3
+  },
+  { 
+    id: 'story', 
+    name: 'Storytelling', 
+    description: 'Narration immersive avec produits intégrés',
+    icon: Image
+  },
 ];
 
 const COLOR_PALETTES = [
@@ -84,9 +109,15 @@ export function ArticleWizard({
   useEffect(() => {
     if (selectedCollection && open) {
       loadProducts();
-      generateKeywords();
     }
   }, [selectedCollection, open]);
+
+  // Generate keywords when products are selected
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      generateKeywords();
+    }
+  }, [selectedProducts]);
 
   const loadProducts = async () => {
     try {
@@ -105,12 +136,13 @@ export function ArticleWizard({
   };
 
   const generateKeywords = async () => {
+    if (selectedProducts.length === 0) return;
+    
     try {
       const { data: products } = await supabase
         .from('shopify_products')
         .select('title, tags, category, description')
-        .contains('collection_ids', [selectedCollection])
-        .limit(20);
+        .in('id', selectedProducts);
 
       const shortPhrases = new Set<string>();
       const longPhrases = new Set<string>();
@@ -155,7 +187,7 @@ export function ArticleWizard({
       ];
       
       setSuggestedKeywords(allSuggestions);
-      setSelectedKeywords(allSuggestions.slice(0, 5));
+      setSelectedKeywords([]);
     } catch (error) {
       console.error('Error generating keywords:', error);
     }
@@ -170,11 +202,13 @@ export function ArticleWizard({
   };
 
   const toggleKeyword = (keyword: string) => {
-    setSelectedKeywords(prev => 
-      prev.includes(keyword) 
-        ? prev.filter(k => k !== keyword)
-        : [...prev, keyword]
-    );
+    setSelectedKeywords(prev => {
+      if (prev.includes(keyword)) {
+        return prev.filter(k => k !== keyword);
+      } else {
+        return [...prev, keyword];
+      }
+    });
   };
 
   const selectAllKeywords = () => {
@@ -305,32 +339,92 @@ export function ArticleWizard({
           {/* Progress Indicator */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              {[1, 2, 3, 4, 5, 6].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                    step > s ? 'bg-primary text-primary-foreground' :
-                    step === s ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    {step > s ? <Check className="w-5 h-5" /> : s}
+              {[
+                { num: 1, label: 'Layout' },
+                { num: 2, label: 'Collection' },
+                { num: 3, label: 'Couleurs' },
+                { num: 4, label: 'Produits' },
+                { num: 5, label: 'Mots-clés' },
+                { num: 6, label: 'Génération' }
+              ].map((s, idx) => (
+                <div key={s.num} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                      step > s.num ? 'bg-primary text-primary-foreground' :
+                      step === s.num ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
+                      'bg-muted text-muted-foreground'
+                    }`}>
+                      {step > s.num ? <Check className="w-5 h-5" /> : s.num}
+                    </div>
+                    <span className={`text-xs mt-1 ${step === s.num ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                      {s.label}
+                    </span>
                   </div>
-                  {s < 6 && (
-                <div className={`h-1 w-12 mx-2 transition-all ${
-                  step > s ? 'bg-primary' : 'bg-muted'
+                  {idx < 5 && (
+                <div className={`h-1 w-8 mx-2 transition-all ${
+                  step > s.num ? 'bg-primary' : 'bg-muted'
                 }`} />
               )}
             </div>
           ))}
         </div>
-        {step < 6 && (
-          <div className="text-center text-sm text-muted-foreground">
-            Étape {step} sur {totalSteps - 1}
-          </div>
-        )}
       </Card>
 
-          {/* Step 1: Collection Selection */}
+          {/* Step 1: Layout Selection */}
           {step === 1 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Layout className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold font-serif">Choisissez un layout</h2>
+              <p className="text-muted-foreground">Style visuel de votre article</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            {LAYOUTS.map((layout) => {
+              const IconComponent = layout.icon;
+              return (
+                <button
+                  key={layout.id}
+                  onClick={() => setSelectedLayout(layout.id)}
+                  className={`p-8 rounded-lg border-2 transition-all text-left hover:shadow-lg ${
+                    selectedLayout === layout.id
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
+                      selectedLayout === layout.id 
+                        ? 'bg-primary text-white' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <IconComponent className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2 font-serif">{layout.name}</h3>
+                      <p className="text-sm text-muted-foreground">{layout.description}</p>
+                    </div>
+                    {selectedLayout === layout.id && (
+                      <div className="flex items-center gap-2 text-primary text-sm">
+                        <Check className="w-4 h-4" />
+                        <span>Sélectionné</span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          </Card>
+        )}
+
+          {/* Step 2: Collection Selection */}
+          {step === 2 && (
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -369,39 +463,6 @@ export function ArticleWizard({
 
             </Card>
           )}
-
-          {/* Step 2: Layout Selection */}
-          {step === 2 && (
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Layout className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold font-serif">Choisissez un layout</h2>
-              <p className="text-muted-foreground">Style New York Times</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {LAYOUTS.map((layout) => (
-              <button
-                key={layout.id}
-                onClick={() => setSelectedLayout(layout.id)}
-                className={`p-6 rounded-lg border-2 transition-all text-left hover:shadow-md ${
-                  selectedLayout === layout.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <h3 className="font-semibold mb-2 font-serif">{layout.name}</h3>
-                <p className="text-sm text-muted-foreground">{layout.description}</p>
-              </button>
-            ))}
-          </div>
-
-          </Card>
-        )}
 
         {/* Step 3: Color Palette */}
         {step === 3 && (
@@ -560,24 +621,27 @@ export function ArticleWizard({
           <div className="space-y-6 mb-6">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <Label className="text-base font-semibold">Mots-clés suggérés ({suggestedKeywords.length})</Label>
+                <Label className="text-base font-semibold">
+                  Mots-clés suggérés ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
+                </Label>
                 <Button onClick={selectAllKeywords} variant="outline" size="sm">
-                  Tout sélectionner ({selectedKeywords.length}/{suggestedKeywords.length})
+                  Tout sélectionner
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
                 Cliquez sur un mot-clé pour l'ajouter
               </p>
               <div className="flex flex-wrap gap-2">
-                {suggestedKeywords.map((keyword) => (
+                {suggestedKeywords
+                  .filter(keyword => !selectedKeywords.includes(keyword))
+                  .map((keyword) => (
                   <Badge
                     key={keyword}
-                    variant={selectedKeywords.includes(keyword) ? "default" : "outline"}
+                    variant="outline"
                     className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform"
                     onClick={() => toggleKeyword(keyword)}
                   >
                     {keyword}
-                    {selectedKeywords.includes(keyword) && <Check className="w-3 h-3 ml-1" />}
                   </Badge>
                 ))}
               </div>
@@ -662,7 +726,7 @@ export function ArticleWizard({
               onClick={() => setStep(2)} 
               className="w-full" 
               size="lg"
-              disabled={!selectedCollection}
+              disabled={!selectedLayout}
             >
               <ArrowRight className="w-4 h-4 mr-2" />
               Continuer
@@ -675,7 +739,7 @@ export function ArticleWizard({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
-              <Button onClick={() => setStep(3)} className="flex-1" size="lg">
+              <Button onClick={() => setStep(3)} className="flex-1" size="lg" disabled={!selectedCollection}>
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Continuer
               </Button>
