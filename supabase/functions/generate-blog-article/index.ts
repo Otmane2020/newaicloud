@@ -160,6 +160,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       language = "fr",
       collectionTitle = "",
       productIds = [],
+      opportunityData,
     } = requestData;
 
     if (!user_id) {
@@ -169,6 +170,12 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     if (!store_id) {
       console.error("❌ store_id manquant");
       throw new Error("store_id est requis");
+    }
+
+    if (opportunityData) {
+      console.log(`[ARTICLE] Using opportunity data: ${title}`);
+      console.log(`[ARTICLE] Angle: ${opportunityData.angle || 'N/A'}`);
+      console.log(`[ARTICLE] Target audience: ${opportunityData.targetAudience || 'N/A'}`);
     }
 
     // Vérification des limites d'usage
@@ -1287,7 +1294,7 @@ RÈGLES DE CRÉATION :
           title: optimizedTitle,
           content,
           featured_image: featuredImage,
-          meta_description: `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
+          meta_description: opportunityData?.metaDescription || `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
           keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
           status: "draft",
         },
@@ -1298,6 +1305,17 @@ RÈGLES DE CRÉATION :
     if (saveError) {
       console.error("Erreur sauvegarde:", saveError);
       throw saveError;
+    }
+
+    // If generated from opportunity, update the opportunity record
+    if (opportunityData?.opportunityId && savedArticle) {
+      await supabaseClient
+        .from("blog_opportunities")
+        .update({ 
+          article_id: savedArticle.id,
+          generated_at: new Date().toISOString()
+        })
+        .eq("id", opportunityData.opportunityId);
     }
 
     console.log(`Article sauvegardé : ${savedArticle.id}`);
