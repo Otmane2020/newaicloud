@@ -97,7 +97,7 @@ export function AppSidebar() {
     { title: t.seo.audit.subtabs.homepage, url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home, translationKey: "homepage" },
     { title: t.seo.audit.subtabs.issues, url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle, translationKey: "issues" },
     { title: t.seo.audit.subtabs.actions, url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target, translationKey: "actions" },
-    { title: t.seo.audit.subtabs.reports, url: "/seo?tab=audit", icon: List, translationKey: "reports" },
+    // { title: t.seo.audit.subtabs.reports, url: "/seo?tab=audit", icon: List, translationKey: "reports" },
   ];
 
   const mainMenuItems = [
