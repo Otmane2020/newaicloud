@@ -9,6 +9,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
+import { ArticleGenerationProgress } from "@/components/blog/ArticleGenerationProgress";
 
 interface Opportunity {
   id: string;
@@ -37,6 +38,7 @@ export function BlogOpportunities() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showGenerationProgress, setShowGenerationProgress] = useState(false);
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
 
@@ -217,6 +219,7 @@ export function BlogOpportunities() {
     }
 
     setGenerating(opp.id);
+    setShowGenerationProgress(true);
     
     try {
       toast.info("🚀 Génération automatique de l'article...", {
@@ -273,6 +276,9 @@ export function BlogOpportunities() {
       });
     } finally {
       setGenerating(null);
+      setShowGenerationProgress(false);
+    }
+      setShowGenerationProgress(false);
     }
   };
 
@@ -531,6 +537,11 @@ export function BlogOpportunities() {
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
         limitType="articles"
+      />
+      
+      <ArticleGenerationProgress 
+        open={showGenerationProgress} 
+        onClose={() => setShowGenerationProgress(false)} 
       />
     </div>
   );
