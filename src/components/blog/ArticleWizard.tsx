@@ -378,46 +378,133 @@ export function ArticleWizard({
               <Layout className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-serif">Choisissez un layout</h2>
-              <p className="text-muted-foreground">Style visuel de votre article</p>
+              <h2 className="text-2xl font-bold font-serif">Layout de la page</h2>
+              <p className="text-muted-foreground">Choisissez la structure visuelle de votre article</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6 mb-6">
-            {LAYOUTS.map((layout) => {
-              const IconComponent = layout.icon;
-              return (
-                <button
-                  key={layout.id}
-                  onClick={() => setSelectedLayout(layout.id)}
-                  className={`p-8 rounded-lg border-2 transition-all text-left hover:shadow-lg ${
-                    selectedLayout === layout.id
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
-                      selectedLayout === layout.id 
-                        ? 'bg-primary text-white' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      <IconComponent className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2 font-serif">{layout.name}</h3>
-                      <p className="text-sm text-muted-foreground">{layout.description}</p>
-                    </div>
-                    {selectedLayout === layout.id && (
-                      <div className="flex items-center gap-2 text-primary text-sm">
-                        <Check className="w-4 h-4" />
-                        <span>Sélectionné</span>
-                      </div>
-                    )}
+            {/* Editorial Layout */}
+            <button
+              onClick={() => setSelectedLayout('editorial')}
+              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+                selectedLayout === 'editorial'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {selectedLayout === 'editorial' && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <div className="mb-4">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex flex-col gap-2">
+                  <div className="h-16 bg-primary/20 rounded animate-fade-in" />
+                  <div className="space-y-1.5">
+                    <div className="h-2 bg-foreground/10 rounded w-full" />
+                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
+                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
                   </div>
-                </button>
-              );
-            })}
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg mb-1 font-serif">Éditorial</h3>
+                <p className="text-xs text-muted-foreground">Style magazine avec grandes images</p>
+              </div>
+            </button>
+
+            {/* Gallery Layout */}
+            <button
+              onClick={() => setSelectedLayout('gallery')}
+              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+                selectedLayout === 'gallery'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {selectedLayout === 'gallery' && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <div className="mb-4">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32">
+                  <div className="grid grid-cols-3 gap-2 h-full">
+                    <div className="bg-primary/20 rounded animate-fade-in" />
+                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.1s' }} />
+                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.2s' }} />
+                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.3s' }} />
+                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.4s' }} />
+                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.5s' }} />
+                  </div>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg mb-1 font-serif">Galerie</h3>
+                <p className="text-xs text-muted-foreground">Grille d'images produits</p>
+              </div>
+            </button>
+
+            {/* Grid Layout */}
+            <button
+              onClick={() => setSelectedLayout('grid')}
+              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+                selectedLayout === 'grid'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {selectedLayout === 'grid' && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <div className="mb-4">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex gap-3">
+                  <div className="flex-1 bg-primary/20 rounded animate-fade-in" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-2 bg-foreground/10 rounded" />
+                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
+                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
+                  </div>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg mb-1 font-serif">Grille Produits</h3>
+                <p className="text-xs text-muted-foreground">Image + Texte organisé</p>
+              </div>
+            </button>
+
+            {/* Story Layout */}
+            <button
+              onClick={() => setSelectedLayout('story')}
+              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+                selectedLayout === 'story'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {selectedLayout === 'story' && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <div className="mb-4">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex gap-3">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-2 bg-foreground/10 rounded" />
+                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
+                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
+                  </div>
+                  <div className="flex-1 bg-primary/20 rounded animate-fade-in" />
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg mb-1 font-serif">Hero Droite</h3>
+                <p className="text-xs text-muted-foreground">Image dominante à droite</p>
+              </div>
+            </button>
           </div>
 
           </Card>
