@@ -254,6 +254,20 @@ export function SeoOptimization() {
   // Count all products that are not AI-optimized (enrichment_status !== "enriched")
   const notEnrichedCount = products.filter((p) => p.enrichment_status !== "enriched").length;
   const enrichedCount = products.filter((p) => p.enrichment_status === "enriched").length;
+  
+  // Debug logging
+  console.log('📊 [SEO_OPTIMIZATION_COUNTS]', {
+    totalProducts: products.length,
+    notEnrichedCount,
+    enrichedCount,
+    totalEmpty,
+    existingData,
+    sample: products.slice(0, 3).map(p => ({
+      title: p.title,
+      enrichment_status: p.enrichment_status,
+      has_seo: !!(p.seo_title || p.seo_description)
+    }))
+  });
   const pendingSyncCount = products.filter(
     (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
   ).length;
@@ -498,6 +512,8 @@ export function SeoOptimization() {
   };
 
   const handleGenerateAll = () => {
+    console.log('🔘 [GENERATE_ALL_CLICKED]', { notEnrichedCount, totalProducts: products.length });
+    
     if (notEnrichedCount === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
       return;
@@ -907,11 +923,11 @@ export function SeoOptimization() {
             <Button
               size="lg"
               onClick={handleGenerateAll}
-              disabled={generating || notEnrichedCount === 0}
+              disabled={generating || loading || notEnrichedCount === 0}
               className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
             >
               <Sparkles className="w-5 h-5" />
-              {notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization}
+              {loading ? t.common.loading : (notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization)}
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
@@ -1046,7 +1062,7 @@ export function SeoOptimization() {
                 // Show confirmation dialog
                 setShowBulkOptimizeConfirmDialog(true);
               }}
-              disabled={generating || notEnrichedCount === 0}
+              disabled={generating || loading || notEnrichedCount === 0}
               variant="outline"
               size="sm"
             >
@@ -1199,7 +1215,7 @@ export function SeoOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={generating || notEnrichedCount === 0}
+                disabled={generating || loading || notEnrichedCount === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-4 h-4" />
