@@ -62,7 +62,7 @@ export function SeoAltImageList() {
   const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [filterStatus, setFilterStatus] = useState<'all' | 'empty' | 'filled'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'empty' | 'filled' | 'synced' | 'unsynced'>('all');
   
   // Workflow states
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -481,10 +481,15 @@ export function SeoAltImageList() {
   });
 
   const allImages = products.flatMap(p => p.images);
+  const emptyAltCount = allImages.filter(img => !img.alt_text).length;
+  const filledAltCount = allImages.filter(img => img.alt_text).length;
+  const syncedCount = allImages.filter(img => img.alt_text && img.last_synced_at).length;
+  const unsyncedCount = allImages.filter(img => img.alt_text && !img.last_synced_at).length;
+  
   const stats = {
     total: allImages.length,
-    empty: allImages.filter(img => !img.alt_text).length,
-    filled: allImages.filter(img => !!img.alt_text).length
+    empty: emptyAltCount,
+    filled: filledAltCount
   };
 
   // Calculate global score for ALT images using calculateAltTextScore (same as Dashboard and Audit)
@@ -584,18 +589,19 @@ export function SeoAltImageList() {
         <Card 
           className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(tf('seo.altImage.info.toSyncImages', { count: allImages.filter(img => img.alt_text && !img.last_synced_at).length }));
+            setFilterStatus('unsynced');
+            toast.info(tf('seo.altImage.info.toSyncImages', { count: unsyncedCount }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.seo.altImage.stats.toSync}</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{allImages.filter(img => img.alt_text && !img.last_synced_at).length}</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{unsyncedCount}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
                 {t.seo.altImage.stats.aiOptimizedOnly}
               </p>
             </div>
-            <Upload className="w-8 h-8 text-purple-600" />
+            <RefreshCw className="w-8 h-8 text-purple-600" />
           </div>
           <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
@@ -603,13 +609,14 @@ export function SeoAltImageList() {
         <Card 
           className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(tf('seo.altImage.info.syncedImages', { count: allImages.filter(img => img.last_synced_at).length }));
+            setFilterStatus('synced');
+            toast.info(tf('seo.altImage.info.syncedImages', { count: syncedCount }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.altImage.stats.synchronized}</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{allImages.filter(img => img.last_synced_at).length}</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 {t.seo.altImage.stats.syncedToShopify}
               </p>
