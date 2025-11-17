@@ -178,10 +178,10 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Store audit results in database
-    const { error: insertError } = await supabaseClient
+    // Store audit results in database using upsert to handle existing audits
+    const { error: upsertError } = await supabaseClient
       .from("seo_audit_reports")
-      .insert({
+      .upsert({
         user_id: user.id,
         global_score: globalScore,
         products_score: productsScore,
@@ -192,11 +192,14 @@ Deno.serve(async (req) => {
         technical_score: technicalScore,
         audit_results: auditResults,
         recommendations: auditResults.homepage.recommendations,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
       });
 
-    if (insertError) {
-      console.error("[AUDIT] Error storing audit:", insertError);
-      throw insertError;
+    if (upsertError) {
+      console.error("[AUDIT] Error storing audit:", upsertError);
+      throw upsertError;
     }
 
     console.log("[AUDIT] Audit completed successfully");
