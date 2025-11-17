@@ -460,6 +460,44 @@ export const translations = {
       title: "Aucune campagne",
       description: "Commencez par créer votre première landing page publicitaire",
       cta: "Créer ma première campagne"
+    },
+    
+    wizard: {
+      title: "Assistant de Campagne",
+      description: "Créez des landing pages artistiques pour vos campagnes",
+      campaignName: "Nom de la campagne *",
+      campaignNamePlaceholder: "Ex: Galerie Collection Élément",
+      campaignType: "Type de campagne *",
+      product: "Produit",
+      productDesc: "Galerie artistique pour mettre en valeur vos produits",
+      collection: "Collection",
+      collectionDesc: "Expérience immersive pour une collection complète",
+      store: "Boutique",
+      storeDesc: "Présentation artistique de votre univers boutique",
+      selectCollections: "Sélectionner les collections",
+      selectProducts: "Sélectionner les produits",
+      generating: "Génération du résumé de la boutique...",
+      regenerate: "Régénérer le résumé",
+      headline: "Titre principal *",
+      headlinePlaceholder: "Ex: Découvrez notre galerie d'art contemporain",
+      subheadline: "Sous-titre",
+      subheadlinePlaceholder: "Ex: Une sélection unique et inspirante",
+      cta: "Texte du bouton Call-to-Action *",
+      ctaPlaceholder: "Ex: Explorer la galerie",
+      highlights: "Points forts",
+      addProof: "Ajouter",
+      proofPlaceholder: "Ex: Livraison gratuite",
+      designStyle: "Choisir le style de design",
+      artistic: "Artistique",
+      artisticDesc: "Layouts créatifs avec effets visuels élégants",
+      minimal: "Minimal",
+      minimalDesc: "Design épuré et moderne",
+      bold: "Bold",
+      boldDesc: "Impactant avec forts contrastes",
+      cancel: "Annuler",
+      back: "Retour",
+      next: "Suivant",
+      createGallery: "Créer la galerie"
     }
   },
 
@@ -2856,61 +2894,65 @@ export const translations = {
     importing: "Import en cours...",
     optimizing: "Optimisation...",
     syncing: "Synchronisation...",
+    viewMode: {
+      grid: "Vue Grille",
+      list: "Vue Liste",
+    },
   },
-    settings: {
-      title: "Configuration du Flux Google Shopping",
-      description: "Configurez les paramètres de votre flux XML pour Google Merchant Center",
-      storeName: "Nom de la boutique",
-      storeNameHint: "Utilisé dans l'URL de votre flux",
-      storeNameDesc: "Le nom de boutique peut être utilisé comme identifiant alternatif dans votre flux",
-      storeNamePlaceholder: "ma-boutique",
-      autoUpdate: "Mise à jour automatique",
-      autoUpdateDesc: "Synchroniser automatiquement le flux avec vos modifications",
-      generateGtin: "Générer les GTIN automatiquement",
-      generateGtinDesc: "Inclure les codes GTIN dans le flux XML Google Shopping",
-      gtinFormat: "Format GTIN",
-      gtinCountryHint: "Pays principal de vente",
-      defaultCurrency: "Devise par défaut",
-      defaultCondition: "État par défaut",
-      defaultBrand: "Marque par défaut",
-      defaultBrandPlaceholder: "Votre marque principale",
-      defaultBrandHint: "Utilisée pour les produits sans marque spécifiée",
-      collectionFiltering: "Filtrage par collections",
-      filterMode: "Mode de filtrage",
-      collectionsToInclude: "Collections à inclure",
-      collectionsToExclude: "Collections à exclure",
-      noCollections: "Aucune collection disponible",
-      collectionsSelected: "{{count}} collection(s) sélectionnée(s)",
-      save: "Enregistrer les paramètres",
-      saved: "Paramètres sauvegardés avec succès ! 🎉",
-      errorSave: "Erreur lors de la sauvegarde des paramètres",
-      errorLoad: "Erreur lors du chargement des paramètres",
-      testFeed: "Tester le flux",
-      feedTested: "Flux XML testé avec succès ! ✅",
-      errorTest: "Erreur lors du test du flux",
-      userNotConnected: "Utilisateur non connecté",
-      invalidXml: "Format XML invalide",
-      filterModes: {
-        all: "Toutes les collections",
-        include: "Inclure uniquement certaines collections",
-        exclude: "Exclure certaines collections"
-      },
-      conditions: {
-        new: "Neuf",
-        refurbished: "Reconditionné",
-        used: "Occasion"
-      },
-      validation: {
-        storeNameRequired: "Le nom de la boutique est requis",
-        storeNameFormat: "Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets",
-        storeNameTooShort: "Le nom de la boutique doit contenir au moins 3 caractères",
-        storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères"
-      },
-      statusBadges: {
-        operational: "✓ Opérationnel",
-        error: "✗ Erreur",
-        untested: "⏳ Non testé"
-      }
+
+  merchantSettings: {
+    title: "Configuration du Flux Google Shopping",
+    description: "Configurez les paramètres de votre flux XML pour Google Merchant Center",
+    storeName: "Nom de la boutique",
+    storeNameHint: "Utilisé dans l'URL de votre flux",
+    storeNameDesc: "Le nom de boutique peut être utilisé comme identifiant alternatif dans votre flux",
+    storeNamePlaceholder: "ma-boutique",
+    autoUpdate: "Mise à jour automatique",
+    autoUpdateDesc: "Synchroniser automatiquement le flux avec vos modifications",
+    generateGtin: "Générer les GTIN automatiquement",
+    generateGtinDesc: "Inclure les codes GTIN dans le flux XML Google Shopping",
+    gtinFormat: "Format GTIN",
+    gtinCountryHint: "Pays principal de vente",
+    defaultCurrency: "Devise par défaut",
+    defaultCondition: "État par défaut",
+    defaultBrand: "Marque par défaut",
+    defaultBrandPlaceholder: "Votre marque principale",
+    defaultBrandHint: "Utilisée pour les produits sans marque spécifiée",
+    collectionFiltering: "Filtrage par collections",
+    filterMode: "Mode de filtrage",
+    collectionsToInclude: "Collections à inclure",
+    collectionsToExclude: "Collections à exclure",
+    noCollections: "Aucune collection disponible",
+    collectionsSelected: "{{count}} collection(s) sélectionnée(s)",
+    save: "Enregistrer les paramètres",
+    saved: "Paramètres sauvegardés avec succès ! 🎉",
+    errorSave: "Erreur lors de la sauvegarde des paramètres",
+    errorLoad: "Erreur lors du chargement des paramètres",
+    testFeed: "Tester le flux",
+    feedTested: "Flux XML testé avec succès ! ✅",
+    errorTest: "Erreur lors du test du flux",
+    userNotConnected: "Utilisateur non connecté",
+    invalidXml: "Format XML invalide",
+    filterModes: {
+      all: "Toutes les collections",
+      include: "Inclure uniquement certaines collections",
+      exclude: "Exclure certaines collections"
+    },
+    conditions: {
+      new: "Neuf",
+      refurbished: "Reconditionné",
+      used: "Occasion"
+    },
+    validation: {
+      storeNameRequired: "Le nom de la boutique est requis",
+      storeNameFormat: "Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets",
+      storeNameTooShort: "Le nom de la boutique doit contenir au moins 3 caractères",
+      storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères"
+    },
+    statusBadges: {
+      operational: "✓ Opérationnel",
+      error: "✗ Erreur",
+      untested: "⏳ Non testé"
     }
   },
 
@@ -2921,6 +2963,228 @@ export const translations = {
     feed: "Flux Shopping",
     optimize: "Optimiser pour Google",
     syncAll: "Synchroniser Tous les Produits",
+  },
+
+  chat: {
+    title: "Assistant IA",
+    history: "Historique du Chat",
+    settings: "Paramètres du Chat",
+    newChat: "Nouveau Chat",
+    placeholder: "Demandez-moi n'importe quoi...",
+    send: "Envoyer",
+    thinking: "Réflexion...",
+    noHistory: "Aucun historique de chat",
+    deleteSession: "Supprimer la session",
+    submenu: {
+      assistant: "Assistant Chat",
+      robot: "Robot IA",
+      orders: "Commandes",
+      learning: "Apprentissage",
+      history: "Historique",
+      productSource: "Source Produits",
+      settings: "Paramètres Chat",
+    },
+    robot: {
+      title: "Assistant Vocal",
+      startListening: "Commencer l'écoute",
+      stopListening: "Arrêter l'écoute",
+      speaking: "En train de parler...",
+    },
+    ordersManagement: {
+      title: "Gestion des Commandes",
+      description: "Suivez et gérez vos commandes Shopify",
+      comingSoon: "Bientôt Disponible",
+      comingSoonDesc: "La gestion des commandes sera bientôt disponible"
+    },
+    knowledgeBase: {
+      title: "Base de Connaissances",
+      description: "Enrichissez les réponses de votre assistant avec vos informations",
+      add: "Ajouter",
+      edit: "Modifier la question",
+      new: "Nouvelle question",
+      dialogDescription: "Ajoutez les informations que l'assistant utilisera pour répondre",
+      category: "Catégorie",
+      question: "Question",
+      questionPlaceholder: "Quelle est la question ?",
+      answer: "Réponse",
+      answerPlaceholder: "La réponse détaillée...",
+      keywords: "Mots-clés (séparés par des virgules)",
+      keywordsPlaceholder: "livraison, délai, expédition",
+      update: "Mettre à jour",
+      cancel: "Annuler",
+      questionsCount: "{{count}} question(s) dans cette catégorie",
+      noQuestions: "Aucune question dans cette catégorie",
+      confirmDelete: "Êtes-vous sûr de vouloir supprimer cette question ?",
+      deleted: "Question supprimée",
+      updated: "Question mise à jour avec succès",
+      added: "Question ajoutée avec succès",
+      errorLoad: "Impossible de charger la base de connaissances",
+      errorSave: "Impossible d'enregistrer",
+      errorDelete: "Impossible de supprimer",
+      errorTest: "Impossible de tester",
+      userNotConnected: "Utilisateur non connecté",
+      categories: {
+        delivery: "🚚 Livraison",
+        return: "🔄 Retours",
+        pickup: "📦 Points Relais",
+        payment: "💳 Paiement",
+        support: "📱 Support",
+        general: "ℹ️ Général"
+      },
+      suggested: "Questions suggérées",
+      testChat: "Tester le chat",
+      testPlaceholder: "Posez une question pour tester la base...",
+      test: "Tester",
+      assistantResponse: "Réponse de l'assistant :",
+      noResponse: "Aucune réponse",
+      templates: {
+        deliveryTime: "Quels sont les délais de livraison ?",
+        deliveryTimeAnswer: "Les délais de livraison standard sont de 3 à 5 jours ouvrés.",
+        deliveryZones: "Quelles sont les zones de livraison ?",
+        deliveryZonesAnswer: "Nous livrons en France métropolitaine, Corse et dans toute l'Europe.",
+        returnPolicy: "Quelle est la politique de retour ?",
+        returnPolicyAnswer: "Vous disposez de 14 jours pour retourner un article non utilisé.",
+        pickupLocation: "Où puis-je récupérer ma commande ?",
+        pickupLocationAnswer: "Le retrait en magasin est disponible dans nos points de vente.",
+        paymentMethods: "Quels modes de paiement acceptez-vous ?",
+        paymentMethodsAnswer: "Nous acceptons les cartes bancaires, Visa, Mastercard, PayPal et virement bancaire.",
+        contactSupport: "Comment vous contacter ?",
+        contactSupportAnswer: "Vous pouvez nous contacter par email ou téléphone du lundi au vendredi."
+      }
+    },
+    settingsPage: {
+      title: "Paramètres du Chat",
+      description: "Configurez le style et le comportement de votre assistant IA",
+      assistantName: {
+        title: "Nom de l'assistant",
+        description: "Personnalisez le nom de votre conseiller commercial",
+        label: "Nom de l'assistant",
+        placeholder: "Nicolas",
+        hint: "Ce nom sera affiché dans le chat et utilisé dans les conversations"
+      },
+      assistantStyle: {
+        title: "Style de l'assistant",
+        description: "Choisissez la personnalité de votre conseiller",
+        professional: "Professionnel",
+        professionalDesc: "Formel et expert",
+        friendly: "Amical",
+        friendlyDesc: "Chaleureux et accessible",
+        casual: "Décontracté",
+        casualDesc: "Moderne et cool"
+      },
+      tone: {
+        title: "Paramètres de tonalité",
+        description: "Ajustez le ton des réponses"
+      },
+      responseLength: {
+        title: "Paramètres de réponse",
+        description: "Personnalisez la longueur et le ton"
+      },
+      save: "Enregistrer les paramètres",
+      saved: "Paramètres sauvegardés avec succès !",
+      error: "Erreur lors de la sauvegarde des paramètres"
+    }
+  },
+
+  auth: {
+    login: "Connexion",
+    signup: "S'inscrire",
+    email: "Email",
+    password: "Mot de passe",
+    confirmPassword: "Confirmer le mot de passe",
+    forgotPassword: "Mot de passe oublié ?",
+    resetPassword: "Réinitialiser le mot de passe",
+    updatePassword: "Mettre à jour le mot de passe",
+    sendResetLink: "Envoyer le lien de réinitialisation",
+    backToLogin: "Retour à la connexion",
+    noAccount: "Vous n'avez pas de compte ?",
+    haveAccount: "Vous avez déjà un compte ?",
+    resetLinkSent: "Lien de réinitialisation envoyé à votre email",
+    passwordUpdated: "Mot de passe mis à jour avec succès",
+    loginError: "Échec de la connexion",
+    signupError: "Échec de l'inscription",
+    invalidEmail: "Adresse email invalide",
+    passwordTooShort: "Le mot de passe doit contenir au moins 6 caractères",
+    signInWithGoogle: "Se connecter avec Google",
+    signUpWithGoogle: "S'inscrire avec Google",
+    continueWithGoogle: "Continuer avec Google",
+  },
+
+  onboarding: {
+    title: "Choisissez votre plan NewAI",
+    subtitle: "Choisissez le plan qui correspond à vos besoins • Accès immédiat à toutes les fonctionnalités",
+    monthly: "Mensuel",
+    yearly: "Annuel",
+    save: "Économisez {{percent}}%",
+    perMonth: "/mois",
+    perYear: "/an",
+    mostPopular: "Le Plus Populaire",
+    selectPlan: "Sélectionner le Plan",
+    startTrial: "Commencer l'Essai Gratuit",
+    features: "Fonctionnalités",
+    allFeatures: "Toutes les Fonctionnalités",
+    billing: {
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      save: "Économisez jusqu'à 20%"
+    },
+    trial: {
+      available: "💳 Essai gratuit disponible sur le plan Starter",
+      freeTrial: "🎁 {{days}} jours d'essai gratuit",
+      startTrial: "Commencer l'essai gratuit",
+      cardRequired: "💳 Carte requise • Premier paiement le {{date}}"
+    },
+    verification: {
+      title: "Vérification de votre abonnement",
+      checking: "Nous vérifions votre paiement avec Stripe...",
+      verifyNow: "Vérifier maintenant",
+      success: "Abonnement vérifié avec succès !",
+      activated: "Votre abonnement a été activé avec succès !"
+    },
+    errors: {
+      loadingPlans: "Erreur lors du chargement des plans",
+      mustBeConnected: "Vous devez être connecté",
+      noActiveSubscription: "Aucun abonnement actif trouvé. Veuillez contacter le support.",
+      paymentError: "Erreur lors de la création du paiement"
+    },
+    planFeatures: {
+      unlimited: "Illimité",
+      products: "produits",
+      optimizations: "optimisations/mois",
+      articles: "articles/mois",
+      campaigns: "campagnes",
+      chatResponses: "réponses chat/mois",
+      subscribe: "S'abonner maintenant",
+      perMonth: "/mois",
+      mostPopular: "Le Plus Populaire",
+      bestValue: "Meilleur Rapport Qualité-Prix",
+      forGrowth: "Pour les boutiques en croissance",
+      forEnterprise: "Pour les grandes boutiques et agences",
+      chooseTier: "Choisir un niveau"
+    },
+    infoFooter: {
+      starterOnly: "✨ Plan Starter uniquement : 14 jours d'essai gratuit avec limites réduites",
+      cardRequired: "💳 Carte bancaire requise • Annulez à tout moment pendant l'essai sans frais",
+      proEnterprise: "💡 Plans Pro et Enterprise : paiement immédiat, pas d'essai gratuit",
+      cancelAnytime: "🔒 Annulez à tout moment avant la fin de l'essai"
+    }
+  },
+
+  merchant: {
+    title: "Google Merchant Center",
+    description: "Gérez votre flux et synchronisez vos produits",
+    syncFeed: "Synchroniser le Flux",
+    downloadFeed: "Télécharger le Flux",
+    feedUrl: "URL du Flux",
+    lastSync: "Dernière Synchro",
+    totalProducts: "Produits Totaux",
+    status: "Statut",
+    openMerchantCenter: "Ouvrir Merchant Center",
+    submenu: {
+      feed: "Flux XML",
+      insights: "Insights",
+      settings: "Paramètres"
+    }
   },
 
   

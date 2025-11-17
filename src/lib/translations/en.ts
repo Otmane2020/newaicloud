@@ -2868,9 +2868,6 @@ export const translations = {
       images: "images",
       handle: "Handle",
     },
-    import: {
-      importing: "Importing collections..."
-    },
     loadError: "Error loading collections",
     loading: "Loading collections...",
     importComplete: "Import Complete",
