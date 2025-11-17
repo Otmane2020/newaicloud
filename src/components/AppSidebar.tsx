@@ -111,6 +111,7 @@ export function AppSidebar() {
   ];
 
   const blogSubItems = [
+    { title: t.blog.submenu.blogging, url: "/blog?subtab=blogging", icon: Zap, key: "blogging" },
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
     { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
