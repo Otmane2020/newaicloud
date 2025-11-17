@@ -338,7 +338,7 @@ Génère maintenant l'article HTML complet.`;
           }
         ],
         temperature: 0.8,
-        max_tokens: 4000,
+        max_tokens: 16000,
       }),
     });
 
