@@ -3,97 +3,188 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey"
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
-  
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
     const requestData = await req.json();
 
     if (requestData.mode === "auto") {
-      console.log("Mode auto : génération d'articles...");
-      
+      console.log("Mode auto : génération d'articles de campagnes...");
+
+      const now = new Date();
+
+      // Récupérer les campagnes actives qui doivent être exécutées
       const { data: campaigns, error: campaignError } = await supabase
         .from("blog_campaigns")
         .select("*")
         .eq("is_active", true)
-        .limit(requestData.limit || 5);
+        .lte("next_execution_at", now.toISOString())
+        .limit(requestData.limit || 10);
 
       if (campaignError) throw campaignError;
+
       if (!campaigns?.length) {
-        return new Response(JSON.stringify({
-          success: false,
-          message: "Aucune campagne active."
-        }), { status: 200, headers: corsHeaders });
+        console.log("Aucune campagne à exécuter pour le moment");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Aucune campagne à exécuter.",
+            campaigns_checked: 0,
+          }),
+          { status: 200, headers: corsHeaders },
+        );
       }
+
+      console.log(`${campaigns.length} campagnes à traiter`);
 
       const results = [];
       for (const campaign of campaigns) {
-        const res = await generateSingleArticle({ campaign_id: campaign.id }, supabase, lovableApiKey);
-        results.push(res);
+        try {
+          // Générer l'article avec les paramètres de la campagne
+          const res = await generateSingleArticle(
+            {
+              user_id: campaign.user_id,
+              category: campaign.topic_niche || "Guide",
+              keywords: campaign.keywords || [],
+              title: null,
+              language: "fr",
+              articleLength: "2000",
+            },
+            supabase,
+            lovableApiKey,
+          );
+
+          results.push({
+            campaign_id: campaign.id,
+            campaign_name: campaign.name,
+            ...res,
+          });
+
+          // Mettre à jour la campagne avec la prochaine date d'exécution
+          if (res.success) {
+            const nextExecution = calculateNextExecution(campaign.frequency, now);
+
+            await supabase
+              .from("blog_campaigns")
+              .update({
+                last_generation_date: now.toISOString(),
+                next_execution_at: nextExecution.toISOString(),
+              })
+              .eq("id", campaign.id);
+
+            console.log(`✅ Campagne ${campaign.name} - Prochain article: ${nextExecution.toISOString()}`);
+          }
+        } catch (err) {
+          console.error(`❌ Erreur campagne ${campaign.name}:`, err);
+          results.push({
+            campaign_id: campaign.id,
+            campaign_name: campaign.name,
+            success: false,
+            error: err instanceof Error ? err.message : "Unknown error",
+          });
+        }
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        message: `${results.length} articles générés.`,
-        results
-      }), { status: 200, headers: corsHeaders });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `${results.filter((r) => r.success).length}/${campaigns.length} articles générés.`,
+          results,
+        }),
+        { status: 200, headers: corsHeaders },
+      );
+    }
+
+    function calculateNextExecution(frequency: string, lastExecution: Date): Date {
+      const next = new Date(lastExecution);
+
+      switch (frequency) {
+        case "daily":
+          next.setDate(next.getDate() + 1);
+          break;
+        case "weekly":
+          next.setDate(next.getDate() + 7);
+          break;
+        case "biweekly":
+          next.setDate(next.getDate() + 14);
+          break;
+        case "monthly":
+          next.setMonth(next.getMonth() + 1);
+          break;
+        default:
+          next.setDate(next.getDate() + 7); // Par défaut: hebdomadaire
+      }
+
+      return next;
     }
 
     const result = await generateSingleArticle(requestData, supabase, lovableApiKey);
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    }), { status: 500, headers: corsHeaders });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500, headers: corsHeaders },
+    );
   }
 });
 
 async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
   try {
-    const { user_id, category = "Guide", keywords = [], title, articleLength = "2000" } = requestData;
-    
+    const {
+      user_id,
+      category = "Guide",
+      keywords = [],
+      title,
+      articleLength = "2000",
+      language = "fr",
+      collectionTitle = "",
+      productIds = [],
+    } = requestData;
+
     if (!user_id) {
       throw new Error("user_id is required");
     }
-    
+
     // Vérification des limites d'usage
     if (authHeader) {
-      console.log('Vérification des limites pour user:', user_id);
+      console.log("Vérification des limites pour user:", user_id);
       const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
         headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        }
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+        },
       });
-      
+
       if (limitResponse.ok) {
         const limitCheck = await limitResponse.json();
         if (!limitCheck?.canUseArticles) {
-          console.log('Limite atteinte pour cet utilisateur');
-          throw new Error('trial_limit_reached: Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+          console.log("Limite atteinte pour cet utilisateur");
+          throw new Error("trial_limit_reached: Limite d'essai atteinte. Activez votre abonnement pour continuer.");
         }
-        console.log('Limites OK, génération en cours');
+        console.log("Limites OK, génération en cours");
       }
     }
-    
+
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
@@ -101,38 +192,61 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     // Recherche des produits
     let products: any[] = [];
-    
-    if (category && category !== "Guide" && category !== "Tous produits") {
+
+    // Si des IDs de produits spécifiques sont fournis
+    if (productIds && productIds.length > 0) {
+      console.log(`Récupération des produits sélectionnés: ${productIds.length}`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select(
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+        )
+        .eq("seller_id", user_id)
+        .in("id", productIds);
+
+      if (data && data.length > 0) {
+        products = data;
+        console.log(`${products.length} produits spécifiques trouvés`);
+      }
+    }
+    // Sinon recherche par catégorie
+    else if (category && category !== "Guide" && category !== "Tous produits") {
       console.log(`Recherche produits avec catégorie: ${category}`);
       const { data } = await supabaseClient
         .from("shopify_products")
-        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images")
+        .select(
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+        )
         .eq("seller_id", user_id)
-        .or(`category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`)
+        .or(
+          `category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`,
+        )
         .limit(12);
-      
+
       if (data && data.length > 0) {
         products = data;
         console.log(`${products.length} produits trouvés`);
       }
     }
-    
+
     // Fallback si aucun produit trouvé
     if (products.length === 0) {
-      console.log(`Aucun produit trouvé pour "${category}", utilisation de tous les produits`);
+      console.log(`Aucun produit trouvé, utilisation de tous les produits`);
       const { data } = await supabaseClient
         .from("shopify_products")
-        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images")
+        .select(
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+        )
         .eq("seller_id", user_id)
         .limit(8);
-      
+
       if (data) {
         products = data;
       }
     }
 
     const hasProducts = products && products.length > 0;
-    
+
     if (!hasProducts) {
       console.log("Aucun produit trouvé, génération d'un article générique");
     }
@@ -140,25 +254,25 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     // Génération de l'image featured avec OpenAI
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     let featuredImage = "";
-    
+
     if (openaiKey) {
       try {
         console.log("Génération image featured...");
         const imagePrompt = `Professional e-commerce hero image for an article about ${category}, modern minimalist design, clean background, high quality product photography, blog featured image style, 16:9 ratio`;
-        
+
         const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${openaiKey}`,
-            "Content-Type": "application/json"
+            Authorization: `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: "dall-e-3",
             prompt: imagePrompt,
             n: 1,
             size: "1792x1024",
-            quality: "standard"
-          })
+            quality: "standard",
+          }),
         });
 
         if (imageResponse.ok) {
@@ -170,57 +284,159 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         console.error("Erreur génération image:", imgErr);
       }
     }
-    
+
     // Génération du titre optimisé SEO
     const mainKeyword = keywords.length > 0 ? keywords[0] : category;
-    
+
     const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "Expert SEO spécialisé dans la création de titres percutants et optimisés." 
+          {
+            role: "system",
+            content: "Expert SEO spécialisé dans la création de titres percutants et optimisés.",
           },
-          { 
-            role: "user", 
-            content: `Crée un titre d'article SEO engageant contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre.`
-          }
-        ]
-      })
+          {
+            role: "user",
+            content: `Crée un titre d'article SEO engageant contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre.`,
+          },
+        ],
+      }),
     });
 
     const titleData = await titleResponse.json();
-    const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
-    
+    const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
+
     console.log(`Titre optimisé: ${optimizedTitle}`);
 
     // Récupération de l'URL du store
-    let storeUrl = '';
+    let storeUrl = "";
     if (hasProducts && products[0]?.store_id) {
       const { data: storeData } = await supabaseClient
-        .from('shopify_connections')
-        .select('store_url')
-        .eq('id', products[0].store_id)
+        .from("shopify_connections")
+        .select("store_url")
+        .eq("id", products[0].store_id)
         .single();
-      
+
       if (storeData?.store_url) {
-        storeUrl = storeData.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        storeUrl = storeData.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
         storeUrl = `https://${storeUrl}`;
       }
     }
 
+    // Récupération des pages Shopify réelles pour netlinking
+    let shopifyPages: any[] = [];
+    if (user_id) {
+      const { data: pagesData } = await supabaseClient
+        .from("shopify_pages")
+        .select("title, handle, body_html")
+        .eq("user_id", user_id)
+        .limit(10);
+
+      if (pagesData && pagesData.length > 0) {
+        shopifyPages = pagesData;
+        console.log(`${shopifyPages.length} pages Shopify trouvées pour netlinking`);
+      }
+    }
+
+    const pagesContext =
+      shopifyPages.length > 0
+        ? `\n\nPAGES SHOPIFY DISPONIBLES POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title} (handle: ${p.handle})`).join("\n")}\n**IMPORTANT: Intègre des liens vers ces pages dans l'article pour améliorer le maillage interne.**`
+        : "";
+
     // Génération du contenu HTML complet avec présentation améliorée
     const wordCountTarget = parseInt(articleLength);
-    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en français d'environ ${wordCountTarget} mots.
 
-${hasProducts ? `PRODUITS DISPONIBLES :
-${products.map((p: any) => `- ${p.title} (${p.price}€) : ${p.description?.substring(0, 100) || 'Description non disponible'}`).join("\n")}` : `SUJET : ${targetKeywords.join(", ")} - Article informatif sans produits spécifiques`}
+    // Configuration de la langue pour le prompt
+    const languageConfig: Record<
+      string,
+      {
+        name: string;
+        toc: string;
+        intro: string;
+        criteria: string;
+        selection: string;
+        comparison: string;
+        advice: string;
+        faq: string;
+        conclusion: string;
+      }
+    > = {
+      fr: {
+        name: "français",
+        toc: "Table des matières",
+        intro: "Introduction",
+        criteria: "Critères essentiels de choix",
+        selection: "Notre sélection de produits",
+        comparison: "Guide d'achat comparatif",
+        advice: "Conseils d'experts",
+        faq: "Questions Fréquentes",
+        conclusion: "Conclusion",
+      },
+      en: {
+        name: "English",
+        toc: "Table of Contents",
+        intro: "Introduction",
+        criteria: "Essential Selection Criteria",
+        selection: "Our Product Selection",
+        comparison: "Buyer's Guide & Comparison",
+        advice: "Expert Tips",
+        faq: "Frequently Asked Questions",
+        conclusion: "Conclusion",
+      },
+      es: {
+        name: "español",
+        toc: "Tabla de contenidos",
+        intro: "Introducción",
+        criteria: "Criterios esenciales de selección",
+        selection: "Nuestra selección de productos",
+        comparison: "Guía de compra comparativa",
+        advice: "Consejos de expertos",
+        faq: "Preguntas Frecuentes",
+        conclusion: "Conclusión",
+      },
+      de: {
+        name: "Deutsch",
+        toc: "Inhaltsverzeichnis",
+        intro: "Einführung",
+        criteria: "Wesentliche Auswahlkriterien",
+        selection: "Unsere Produktauswahl",
+        comparison: "Kaufratgeber & Vergleich",
+        advice: "Expertentipps",
+        faq: "Häufig gestellte Fragen",
+        conclusion: "Fazit",
+      },
+      it: {
+        name: "italiano",
+        toc: "Sommario",
+        intro: "Introduzione",
+        criteria: "Criteri essenziali di scelta",
+        selection: "La nostra selezione di prodotti",
+        comparison: "Guida all'acquisto comparativa",
+        advice: "Consigli degli esperti",
+        faq: "Domande Frequenti",
+        conclusion: "Conclusione",
+      },
+    };
+
+    const lang = languageConfig[language] || languageConfig.fr;
+    const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
+
+    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en ${lang.name} d'environ ${wordCountTarget} mots.
+
+SUJET : ${topicInfo}
+MOTS-CLÉS : ${targetKeywords.join(", ")}
+${
+  hasProducts
+    ? `PRODUITS SÉLECTIONNÉS (${products.length}) :
+${products.map((p: any) => `- ${p.title} (${p.price}€)${p.category ? ` - Catégorie: ${p.category}` : ""} : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
+    : `Article informatif générique sur ${topicInfo}`
+}${pagesContext}
 
 STRUCTURE HTML À SUIVRE :
 
@@ -646,11 +862,15 @@ STRUCTURE HTML À SUIVRE :
 <body>
 <article class="blog-article">
   <header class="article-header">
-    ${featuredImage ? `
+    ${
+      featuredImage
+        ? `
     <div class="featured-image-container">
       <img src="${featuredImage}" alt="${optimizedTitle}" class="featured-image" />
     </div>
-    ` : ''}
+    `
+        : ""
+    }
     <h1 class="article-title">${optimizedTitle}</h1>
   </header>
 
@@ -659,28 +879,28 @@ STRUCTURE HTML À SUIVRE :
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
       </svg>
-      Table des matières
+      ${lang.toc}
     </div>
     <div class="toc-list">
       <ol>
-        <li><a href="#introduction">Introduction</a></li>
-        <li><a href="#criteres">Critères de sélection</a></li>
-        <li><a href="#produits">Notre sélection</a></li>
-        <li><a href="#comparaison">Guide d'achat</a></li>
-        <li><a href="#conseils">Conseils experts</a></li>
-        <li><a href="#faq">Questions fréquentes</a></li>
-        <li><a href="#conclusion">Conclusion</a></li>
+        <li><a href="#introduction">${lang.intro}</a></li>
+        <li><a href="#criteres">${lang.criteria}</a></li>
+        <li><a href="#produits">${lang.selection}</a></li>
+        <li><a href="#comparaison">${lang.comparison}</a></li>
+        <li><a href="#conseils">${lang.advice}</a></li>
+        <li><a href="#faq">${lang.faq}</a></li>
+        <li><a href="#conclusion">${lang.conclusion}</a></li>
       </ol>
     </div>
   </nav>
 
   <section id="introduction" class="article-section">
-    <h2 class="section-title">Introduction</h2>
-    <p>[Introduction engageante de 200-250 mots présentant le sujet et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
+    <h2 class="section-title">${lang.intro}</h2>
+    <p>[${lang.intro} engageante de 200-250 mots présentant ${topicInfo} et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
   </section>
 
   <section id="criteres" class="article-section">
-    <h2 class="section-title">Critères essentiels de choix</h2>
+    <h2 class="section-title">${lang.criteria}</h2>
     
     <h3 class="subsection-title">Qualité et durabilité</h3>
     <p>[Détail des aspects qualité à considérer - 150 mots]</p>
@@ -692,9 +912,11 @@ STRUCTURE HTML À SUIVRE :
     <p>[Présentation des caractéristiques importantes - 150 mots]</p>
   </section>
 
-  ${hasProducts ? `
+  ${
+    hasProducts
+      ? `
   <section id="produits" class="products-section">
-    <h2 class="section-title">Notre sélection de produits</h2>
+    <h2 class="section-title">${lang.selection}${collectionTitle ? ` - ${collectionTitle}` : ""}</h2>
     
     <div class="view-toggle">
       <button class="view-btn active" data-view="grid">
@@ -713,42 +935,54 @@ STRUCTURE HTML À SUIVRE :
 
     <!-- Mode Grille -->
     <div class="product-grid grid-view active">
-      ${products.map((product: any) => `
+      ${products
+        .map(
+          (product: any) => `
       <div class="product-card">
         <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
            class="product-image-link" 
-           target="${storeUrl ? '_blank' : '_self'}">
-          <img src="${product.image_url || '/placeholder-product.jpg'}" 
+           target="${storeUrl ? "_blank" : "_self"}">
+          <img src="${product.image_url || "/placeholder-product.jpg"}" 
                alt="${product.title}" 
                class="product-image"
                loading="lazy">
-          ${product.compare_at_price && product.compare_at_price > product.price ? `
+          ${
+            product.compare_at_price && product.compare_at_price > product.price
+              ? `
           <div class="product-badge">Promotion</div>
-          ` : ''}
+          `
+              : ""
+          }
         </a>
         <div class="product-info">
           <h3 class="product-name">${product.title}</h3>
-          <p class="product-description">${(product.description || '').substring(0, 120)}...</p>
+          <p class="product-description">${(product.description || "").substring(0, 120)}...</p>
           
           <div class="product-pricing">
-            ${product.compare_at_price && product.compare_at_price > product.price ? `
+            ${
+              product.compare_at_price && product.compare_at_price > product.price
+                ? `
             <span class="original-price">${product.compare_at_price} €</span>
-            ` : ''}
+            `
+                : ""
+            }
             <span class="current-price">${product.price} €</span>
           </div>
           
           <div class="product-meta">
-            <div class="stock-status ${product.inventory_quantity > 0 ? 'in-stock' : 'out-of-stock'}">
-              ${product.inventory_quantity > 0 ? 
-                `En stock${product.inventory_quantity > 10 ? '' : ` (${product.inventory_quantity})`}` : 
-                'Rupture'}
+            <div class="stock-status ${product.inventory_quantity > 0 ? "in-stock" : "out-of-stock"}">
+              ${
+                product.inventory_quantity > 0
+                  ? `En stock${product.inventory_quantity > 10 ? "" : ` (${product.inventory_quantity})`}`
+                  : "Rupture"
+              }
             </div>
           </div>
           
           <div class="product-actions">
             <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
                class="product-link"
-               target="${storeUrl ? '_blank' : '_self'}">
+               target="${storeUrl ? "_blank" : "_self"}">
               Voir le produit
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
@@ -757,17 +991,21 @@ STRUCTURE HTML À SUIVRE :
           </div>
         </div>
       </div>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </div>
 
     <!-- Mode Liste -->
     <div class="product-list list-view">
-      ${products.map((product: any) => `
+      ${products
+        .map(
+          (product: any) => `
       <div class="product-list-item">
         <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
            class="product-image-link"
-           target="${storeUrl ? '_blank' : '_self'}">
-          <img src="${product.image_url || '/placeholder-product.jpg'}" 
+           target="${storeUrl ? "_blank" : "_self"}">
+          <img src="${product.image_url || "/placeholder-product.jpg"}" 
                alt="${product.title}" 
                class="product-image"
                loading="lazy"
@@ -775,40 +1013,48 @@ STRUCTURE HTML À SUIVRE :
         </a>
         <div class="product-details">
           <h3 class="product-name">${product.title}</h3>
-          <p class="product-description">${product.description || 'Description non disponible'}</p>
+          <p class="product-description">${product.description || "Description non disponible"}</p>
           <div class="product-pricing">
-            ${product.compare_at_price && product.compare_at_price > product.price ? `
+            ${
+              product.compare_at_price && product.compare_at_price > product.price
+                ? `
             <span class="original-price">${product.compare_at_price} €</span>
-            ` : ''}
+            `
+                : ""
+            }
             <span class="current-price">${product.price} €</span>
           </div>
         </div>
         <div class="product-actions">
           <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
              class="product-link"
-             target="${storeUrl ? '_blank' : '_self'}">
+             target="${storeUrl ? "_blank" : "_self"}">
             Acheter
           </a>
         </div>
       </div>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </div>
   </section>
-  ` : ''}
+  `
+      : ""
+  }
 
   <section id="comparaison" class="article-section">
-    <h2 class="section-title">Guide d'achat comparatif</h2>
-    <p>[Section détaillée de comparaison et d'analyse - 400 mots]</p>
+    <h2 class="section-title">${lang.comparison}</h2>
+    <p>[Section détaillée de comparaison et d'analyse des produits ${collectionTitle || topicInfo} - 400 mots]</p>
   </section>
 
   <section id="conseils" class="article-section">
-    <h2 class="section-title">Conseils d'experts</h2>
-    <p>[Recommandations et astuces pratiques - 300 mots]</p>
+    <h2 class="section-title">${lang.advice}</h2>
+    <p>[Recommandations et astuces pratiques pour ${collectionTitle || topicInfo} - 300 mots]</p>
   </section>
 
   <!-- Section FAQ -->
   <section id="faq" class="faq-section">
-    <h2 class="faq-title">Questions Fréquentes</h2>
+    <h2 class="faq-title">${lang.faq}</h2>
     
     <div class="faq-item">
       <div class="faq-question">
@@ -891,8 +1137,8 @@ STRUCTURE HTML À SUIVRE :
   </div>
 
   <section id="conclusion" class="article-section">
-    <h2 class="section-title">Conclusion</h2>
-    <p>[Synthèse et recommandation finale - 200 mots]</p>
+    <h2 class="section-title">${lang.conclusion}</h2>
+    <p>[Synthèse et recommandation finale sur ${collectionTitle || topicInfo} - 200 mots]</p>
   </section>
 </article>
 
@@ -944,30 +1190,35 @@ STRUCTURE HTML À SUIVRE :
 </html>
 
 RÈGLES DE CRÉATION :
+- LANGUE: Tout le contenu doit être rédigé en ${lang.name}
 - Structure HTML complète et responsive
+- Collection/Catégorie: ${collectionTitle || category}
 - Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
 - Longueur totale : ${wordCountTarget} mots environ
-- Ton professionnel et engageant
-- ${hasProducts ? `Utilisation des ${products.length} produits fournis avec liens cliquables` : 'Guide informatif générique'}
-- FAQ complète avec 4-6 questions pertinentes
+- Ton professionnel et engageant en ${lang.name}
+- ${hasProducts ? `Utilisation des ${products.length} produits sélectionnés avec liens cliquables vers la boutique` : "Guide informatif générique"}
+- FAQ complète avec 4-6 questions pertinentes en ${lang.name}
+- Tables des matières (H1-H5) bien structurée en ${lang.name}
+- Tags SEO optimisés pour ${collectionTitle || category}
+- Galerie d'images produits avec liens cliquables
 - Retourne le code HTML complet et fonctionnel`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "Expert en rédaction e-commerce et création de contenu HTML professionnel." 
+          {
+            role: "system",
+            content: "Expert en rédaction e-commerce et création de contenu HTML professionnel.",
           },
-          { role: "user", content: prompt }
-        ]
-      })
+          { role: "user", content: prompt },
+        ],
+      }),
     });
 
     if (!aiResponse.ok) {
@@ -977,35 +1228,39 @@ RÈGLES DE CRÉATION :
 
     const result = await aiResponse.json();
     let content = result.choices[0].message.content.trim();
-    
+
     // Nettoyage du contenu
-    content = content.replace(/```html/g, '').replace(/```/g, '').trim();
+    content = content
+      .replace(/```html/g, "")
+      .replace(/```/g, "")
+      .trim();
 
     // Génération des mots-clés SEO
     const keywordsResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "Expert SEO pour la génération de mots-clés pertinents." 
+          {
+            role: "system",
+            content: "Expert SEO pour la génération de mots-clés pertinents.",
           },
-          { 
-            role: "user", 
-            content: `Génère 8-12 mots-clés SEO pour "${optimizedTitle}". Liste séparée par des virgules.`
-          }
-        ]
-      })
+          {
+            role: "user",
+            content: `Génère 8-12 mots-clés SEO pour "${optimizedTitle}". Liste séparée par des virgules.`,
+          },
+        ],
+      }),
     });
 
     const keywordsData = await keywordsResponse.json();
-    const seoKeywords = keywordsData.choices[0].message.content.trim()
-      .split(',')
+    const seoKeywords = keywordsData.choices[0].message.content
+      .trim()
+      .split(",")
       .map((k: string) => k.trim())
       .filter(Boolean)
       .slice(0, 12);
@@ -1013,15 +1268,17 @@ RÈGLES DE CRÉATION :
     // Sauvegarde de l'article
     const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
-      .insert([{
-        user_id,
-        title: optimizedTitle,
-        content,
-        featured_image: featuredImage,
-        meta_description: `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
-        keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
-        status: "draft"
-      }])
+      .insert([
+        {
+          user_id,
+          title: optimizedTitle,
+          content,
+          featured_image: featuredImage,
+          meta_description: `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
+          keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
+          status: "draft",
+        },
+      ])
       .select()
       .single();
 
@@ -1031,36 +1288,35 @@ RÈGLES DE CRÉATION :
     }
 
     console.log(`Article sauvegardé : ${savedArticle.id}`);
-    
+
     // Extraction des données de netlinking
     try {
-      await supabaseClient.functions.invoke('extract-netlinking-from-articles', {
-        body: { article_ids: [savedArticle.id] }
+      await supabaseClient.functions.invoke("extract-netlinking-from-articles", {
+        body: { article_ids: [savedArticle.id] },
       });
-      console.log('Netlinking extrait avec succès');
+      console.log("Netlinking extrait avec succès");
     } catch (netlinkError) {
-      console.error('Erreur extraction netlinking:', netlinkError);
+      console.error("Erreur extraction netlinking:", netlinkError);
     }
-    
-    // Mise à jour du compteur d'usage
-    await supabaseClient.rpc('increment_usage', {
-      p_seller_id: user_id,
-      p_field: 'articles_count',
-      p_increment: 1
-    });
-    
-    return { 
-      success: true, 
-      article_id: savedArticle.id, 
-      article: savedArticle,
-      featured_image: featuredImage 
-    };
 
+    // Mise à jour du compteur d'usage
+    await supabaseClient.rpc("increment_usage", {
+      p_seller_id: user_id,
+      p_field: "articles_count",
+      p_increment: 1,
+    });
+
+    return {
+      success: true,
+      article_id: savedArticle.id,
+      article: savedArticle,
+      featured_image: featuredImage,
+    };
   } catch (err) {
     console.error("Erreur génération:", err);
-    return { 
-      success: false, 
-      error: err instanceof Error ? err.message : "Unknown error" 
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
     };
   }
 }
