@@ -5711,4 +5711,174 @@ export const translations = {
     connectionNotFound: "Connexion Shopify introuvable",
   },
 
+  // ============= Google Search Console (GSC) =============
+  googleSearchConsole: {
+    dateRange: {
+      last7Days: "7 derniers jours",
+      last30Days: "30 derniers jours",
+      last90Days: "90 derniers jours"
+    },
+    domain: {
+      selectPlaceholder: "Sélectionner un domaine",
+      add: "Ajouter",
+      verified: "✓ Vérifié"
+    }
+  },
+
+  // ============= Ads Campaign Wizard =============
+  adsCampaign: {
+    wizard: {
+      title: "Assistant Campagne",
+      description: "Créez des landing pages artistiques pour vos campagnes",
+      campaignName: "Nom de la campagne *",
+      campaignNamePlaceholder: "Ex: Galerie Collection Élément",
+      campaignType: "Type de campagne *",
+      product: "Produit",
+      productDesc: "Galerie artistique pour mettre en valeur vos produits",
+      collection: "Collection",
+      collectionDesc: "Expérience immersive pour une collection complète",
+      store: "Boutique",
+      storeDesc: "Présentation artistique de votre univers boutique",
+      selectCollections: "Sélectionner les collections",
+      selectProducts: "Sélectionner les produits",
+      generating: "Génération du résumé boutique...",
+      regenerate: "Régénérer le résumé",
+      headline: "Titre principal *",
+      headlinePlaceholder: "Ex: Découvrez notre galerie d'art contemporain",
+      subheadline: "Sous-titre",
+      subheadlinePlaceholder: "Ex: Une sélection unique et inspirante",
+      cta: "Texte du bouton Call-to-Action *",
+      ctaPlaceholder: "Ex: Explorer la galerie",
+      highlights: "Points forts",
+      addProof: "Ajouter",
+      proofPlaceholder: "Ex: Livraison gratuite",
+      designStyle: "Choisissez le style de design",
+      artistic: "Artistique",
+      artisticDesc: "Mise en page créative avec des effets visuels élégants",
+      minimal: "Minimaliste",
+      minimalDesc: "Design épuré et moderne",
+      bold: "Audacieux",
+      boldDesc: "Impact avec des contrastes forts",
+      cancel: "Annuler",
+      back: "Retour",
+      next: "Suivant",
+      createGallery: "Créer la galerie"
+    }
+  },
+
+  // ============= AI Background Dialog =============
+  aiBackground: {
+    title: "Générer un Background IA",
+    forProduct: "pour",
+    selectImages: "Sélectionnez les images à traiter",
+    selectVariant: "Sélectionnez une variante",
+    selectedCount: "{{count}} produit(s) sélectionné(s)",
+    loading: "Chargement de la galerie d'images...",
+    selectAll: "Sélectionner tout",
+    deselectAll: "Tout désélectionner",
+    imagesProcessed: "Images qui seront traitées",
+    chooseVariant: "Choisissez une variante",
+    configuration: "Configuration",
+    backgroundDesc: "Description du background",
+    backgroundPlaceholder: "Ex: studio blanc minimaliste avec éclairage doux",
+    imageFormat: "Format d'image",
+    square: "Carré (1:1)",
+    portrait: "Portrait (3:4)",
+    landscape: "Paysage (16:9)",
+    presetStyles: "Styles prédéfinis",
+    professionalStudio: "Studio Professionnel",
+    cozyLifestyle: "Cozy Lifestyle",
+    luxuryNature: "Nature Luxueuse",
+    modernMinimalist: "Minimaliste Moderne",
+    urbanContemporary: "Urbain Contemporain",
+    classicElegance: "Élégance Classique",
+    noImagesSelected: "Aucune image sélectionnée. Veuillez sélectionner au moins une image à traiter.",
+    cancel: "Annuler",
+    generate: "Générer {{count}} image(s)"
+  },
+
+  // ============= Collections Optimization =============
+  collections: {
+    searchPlaceholder: "Rechercher des collections par titre...",
+    optimize: "Optimiser",
+    optimizeAll: "Optimiser tout",
+    optimizeSelection: "Optimiser sélection ({{count}})",
+    sync: "Synchroniser",
+    syncAll: "Synchroniser tout",
+    clickToGenerate: "Cliquer pour générer une image avec AI",
+    filters: "Filtres",
+    allCollections: "Toutes les collections",
+    notOptimized: "Non optimisées",
+    optimized: "Optimisées",
+    pendingSync: "En attente de sync",
+    synced: "Synchronisées",
+    viewMode: "Affichage",
+    grid: "Grille",
+    listView: "Liste",
+    sortBy: "Trier par",
+    titleSort: "Titre",
+    seoScore: "Score SEO",
+    products: "Produits",
+    status: "Statut",
+    lastOptimization: "Dernière optimisation"
+  },
+
+  // ============= Auto Optimization Dialog =============
+  autoOptimization: {
+    title: "Optimisation Automatique",
+    selectActions: "Sélectionnez les actions que vous souhaitez effectuer. Le système optimisera automatiquement tous les éléments concernés.",
+    optimizeProducts: "Optimiser les produits",
+    optimizeProductsDesc: "Génération de titres et descriptions SEO",
+    optimizeCollections: "Optimiser les collections",
+    optimizeCollectionsDesc: "Enrichissement SEO des collections",
+    generateAltTexts: "Générer les ALT texts",
+    generateAltTextsDesc: "Textes alternatifs pour les images",
+    optimizeArticles: "Optimiser les articles",
+    optimizeArticlesDesc: "SEO pour le blog",
+    optimizePages: "Optimiser les pages",
+    optimizePagesDesc: "SEO pour les pages statiques",
+    summary: "Résumé",
+    actionsSelected: "{{count}} action(s) sélectionnée(s)",
+    itemsToProcess: "{{count}} élément(s) à traiter",
+    estimatedTime: "Temps estimé : {{minutes}} min",
+    processing: "Optimisations en cours...",
+    currentAction: "Action en cours :",
+    results: "Résultats",
+    successCount: "{{count}} élément(s) optimisé(s) avec succès",
+    errorCount: "{{count}} erreur(s)",
+    syncReminder: "N'oubliez pas de synchroniser vos optimisations avec Shopify pour les rendre visibles sur votre boutique !",
+    cancel: "Annuler",
+    start: "Démarrer l'optimisation",
+    close: "Fermer"
+  },
+
+  // ============= Background Dialog =============
+  backgroundDialog: {
+    title: "Aperçu Background IA",
+    forProduct: "pour",
+    preview: "Aperçu",
+    customPrompt: "Prompt personnalisé (optionnel)",
+    customPromptPlaceholder: "Décrivez le background souhaité...",
+    presets: "Presets",
+    selectPreset: "Choisir un preset",
+    professionalStudio: "Studio professionnel",
+    cozyLifestyle: "Cozy Lifestyle – Salon moderne",
+    luxuryNature: "Nature luxueuse",
+    modernMinimalist: "Minimaliste moderne",
+    urbanContemporary: "Urbain contemporain",
+    classicElegance: "Élégance classique",
+    noPreview: "Aucun aperçu disponible",
+    generating: "Génération...",
+    successStatus: "Généré",
+    errorStatus: "Erreur",
+    selectToApply: "Sélectionner les images à appliquer",
+    selectedImages: "{{count}} sélectionné(s)",
+    regenerate: "Régénérer",
+    apply: "Appliquer",
+    syncShopify: "Synchroniser avec Shopify",
+    cancel: "Annuler"
+  }
+
 };
+
+export type Translations = typeof translations;

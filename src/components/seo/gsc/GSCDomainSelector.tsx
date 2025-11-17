@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Globe, Plus, RefreshCw } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface Domain {
   id: string;
@@ -25,13 +26,15 @@ export function GSCDomainSelector({
   onRefresh,
   loading
 }: GSCDomainSelectorProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 flex-1">
         <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <Select value={selectedDomain} onValueChange={onDomainChange} disabled={loading}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sélectionner un domaine" />
+            <SelectValue placeholder={t.googleSearchConsole.domain.selectPlaceholder} />
           </SelectTrigger>
           <SelectContent>
             {domains.map((domain) => (
@@ -39,7 +42,7 @@ export function GSCDomainSelector({
                 <div className="flex items-center gap-2">
                   <span>{domain.domain}</span>
                   {domain.verified && (
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400">{t.googleSearchConsole.domain.verified}</span>
                   )}
                 </div>
               </SelectItem>
@@ -54,7 +57,7 @@ export function GSCDomainSelector({
 
       <Button variant="outline" onClick={onAddDomain} disabled={loading}>
         <Plus className="h-4 w-4 mr-2" />
-        Ajouter
+        {t.googleSearchConsole.domain.add}
       </Button>
     </div>
   );
