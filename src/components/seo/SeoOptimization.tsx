@@ -251,14 +251,14 @@ export function SeoOptimization() {
   const existingData = products.filter(
     (p) => (p.seo_title || p.seo_description) && p.enrichment_status !== "enriched",
   ).length;
-  const aiOptimized = products.filter((p) => p.enrichment_status === "enriched").length;
-  const notEnrichedCount = totalEmpty + existingData;
-  const enrichedCount = aiOptimized;
+  // Count all products that are not AI-optimized (enrichment_status !== "enriched")
+  const notEnrichedCount = products.filter((p) => p.enrichment_status !== "enriched").length;
+  const enrichedCount = products.filter((p) => p.enrichment_status === "enriched").length;
   const pendingSyncCount = products.filter(
     (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
   ).length;
   const syncedCount = products.filter((p) => p.seo_synced_to_shopify && p.enrichment_status === "enriched").length;
-  const optimizationRate = products.length > 0 ? Math.round((aiOptimized / products.length) * 100) : 0;
+  const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
   const productsNotOptimized = products.filter((p) => p.enrichment_status !== "enriched");
@@ -933,15 +933,9 @@ export function SeoOptimization() {
                 {t.seo.optimization.notAiOptimized}
               </p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notEnrichedCount}</p>
-              <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
-                <span>
-                  {t.seo.optimization.empty}: {totalEmpty}
-                </span>
-                <span>•</span>
-                <span>
-                  {t.seo.optimization.existing}: {existingData}
-                </span>
-              </div>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                {t.seo.optimization.generatedByAI}
+              </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
