@@ -2872,51 +2872,13 @@ export const translations = {
       importing: "Importing collections..."
     },
     loadError: "Error loading collections",
-    optimization: {
-      title: "Collection Optimization",
-      description: "Optimize your collections for better SEO",
-      tabs: {
-        all: "All",
-        notOptimized: "Not optimized",
-        optimized: "Optimized"
-      },
-      messages: {
-        collectionsToOptimize: "{{count}} collections to optimize",
-        collectionsOptimized: "{{count}} collections optimized",
-        allOptimized: "All collections are optimized",
-        noneSelected: "No collections selected",
-        invalidIds: "Invalid collection IDs",
-        optimizationError: "Optimization error: {{message}}",
-        optimizationFailed: "Optimization failed",
-        trialLimitReached: "Trial limit reached",
-        monthlyLimitReached: "Monthly limit reached",
-        alreadyOptimizedTrial: "Collection already optimized",
-        optimizationSuccess: "{{count}} collections optimized successfully"
-      },
-      features: {
-        intelligent: "Intelligent optimization",
-        visibility: "Improved visibility",
-        fast: "Fast processing"
-      },
-      globalScore: "Global SEO Score",
-      optimized: "optimized",
-      optimizeAll: "Optimize All",
-      actions: {
-        syncToShopify: "Sync to Shopify",
-        syncAll: "Sync All"
-      },
-      table: {
-        image: "Image",
-        title: "Title",
-        products: "Products",
-        description: "Description",
-        seoScore: "SEO Score",
-        status: "Status",
-        synced: "Synced",
-        actions: "Actions"
-      }
-    }
-  },
+    loading: "Loading collections...",
+    importComplete: "Import Complete",
+    importCollections: "Import Collections",
+    importImages: "Import Collections + Images",
+    importing: "Importing...",
+    optimizing: "Optimizing...",
+    syncing: "Syncing...",
     import: {
       importing: "Importing collections...",
       notAuthenticated: "Not authenticated",
@@ -2934,14 +2896,6 @@ export const translations = {
       noContentFound: "No content found on Shopify",
       fullImportComplete: "✅ Full import: {{parts}}",
     },
-    loading: "Loading collections...",
-    loadError: "Error loading collections",
-    importComplete: "Import Complete",
-    importCollections: "Import Collections",
-    importImages: "Import Collections + Images",
-    importing: "Importing...",
-    optimizing: "Optimizing...",
-    syncing: "Syncing...",
     optimization: {
       title: "Collection Optimization",
       description: "Optimize your Shopify collections with AI. Generate titles, SEO descriptions and images with Vision AI",
