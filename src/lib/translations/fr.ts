@@ -1501,11 +1501,15 @@ export const translations = {
       synchronized: "Synchronisées",
       notConnected: "Non connecté",
       products: "produits",
+      optimizations: "optimisations",
       actionRequired: "Action requise",
       optimizedProducts: "produits optimisés",
       excellent: "Excellent",
       good: "Bon",
       needsImprovement: "À améliorer",
+      aiProcessed: "traités par IA",
+      avgScore: "Score moyen :",
+      basedOnSeoAvg: "Basé sur score SEO moyen de",
     },
     recentActivity: {
       title: "Activité Récente",
@@ -1867,8 +1871,8 @@ export const translations = {
       excel: "Excel"
     },
     kpis: {
-      products: "products",
-      optimizations: "optimizations",
+      products: "produits",
+      optimizations: "optimisations",
       articles: "articles",
       seoScore: "Score SEO"
     },
