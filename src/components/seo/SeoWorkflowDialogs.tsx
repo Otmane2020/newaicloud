@@ -341,7 +341,10 @@ export function ResultsDialog({
             article={{
               title: selectedArticle.title,
               content: selectedArticle.content || '',
-              featured_image: selectedArticle.featured_image
+              featured_image: selectedArticle.featured_image,
+              seo_title: selectedArticle.seo_title,
+              seo_description: selectedArticle.seo_description,
+              handle: selectedArticle.handle
             }}
           />
         )}

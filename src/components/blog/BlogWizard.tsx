@@ -117,8 +117,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     productDisplay: "grid",
     typography: "sans-serif",
     imageIntensity: "medium",
-    includeFAQ: true,
-    includeComparison: true,
   });
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -503,7 +501,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             hasCollections: formData.collection_ids.length > 0,
             productCount: selectedProducts.length,
             collectionCount: formData.collection_ids.length,
-            storeName: selectedStore.name
+            storeName: selectedStore.store_name || ''
           }
         },
       });
