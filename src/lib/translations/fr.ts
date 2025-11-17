@@ -2894,6 +2894,58 @@ export const translations = {
     importing: "Import en cours...",
     optimizing: "Optimisation...",
     syncing: "Synchronisation...",
+    optimization: {
+      title: "Optimisation des Collections",
+      description: "Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec Vision AI",
+      optimizeAll: "Tout Optimiser",
+      optimizeSelected: "Optimiser la Sélection",
+      globalScore: "Score SEO Global",
+      scoreWeighting: "(50% Titre + 30% Description + 20% Image)",
+      optimized: "optimisée(s)",
+      table: {
+        image: "Image",
+        title: "Titre",
+        products: "Produits",
+        description: "Description",
+        seoTitle: "Titre SEO",
+        seoDescription: "Description SEO",
+        seoScore: "Score SEO",
+        status: "Statut",
+        synced: "Synchronisé",
+        actions: "Actions"
+      },
+      features: {
+        intelligent: "SEO Intelligent",
+        visibility: "+40% visibilité",
+        fast: "Génération rapide",
+      },
+      tabs: {
+        all: "Toutes les Collections",
+        optimized: "Optimisées",
+        notOptimized: "Non Optimisées",
+      },
+      messages: {
+        optimizationSuccess: "{{count}} collections optimisées",
+        optimizationError: "Erreur lors de l'optimisation",
+        syncSuccess: "{{count}} collections synchronisées",
+        syncError: "Erreur lors de la synchronisation",
+        collectionsToOptimize: "{{count}} collections à optimiser",
+        collectionsOptimized: "{{success}}/{{total}} collections optimisées !",
+        allOptimized: "Toutes les collections sont déjà optimisées",
+        trialLimitReached: "Limite d'essai atteinte. Passez à un plan supérieur pour continuer.",
+        noneSelected: "Aucune collection sélectionnée",
+        invalidIds: "IDs de collection invalides",
+        optimizationFailed: "Échec de l'optimisation",
+        alreadyOptimizedTrial: "Cette collection est déjà optimisée (limite d'essai atteinte)",
+        monthlyLimitReached: "Limite mensuelle atteinte. Passez à un plan supérieur pour continuer.",
+      },
+      actions: {
+        optimizeAll: "Tout Optimiser",
+        syncAll: "Tout Synchroniser",
+        syncToShopify: "Synchroniser vers Shopify",
+        refresh: "Actualiser",
+      },
+    },
     viewMode: {
       grid: "Vue Grille",
       list: "Vue Liste",
@@ -3064,21 +3116,11 @@ export const translations = {
       },
       assistantStyle: {
         title: "Style de l'assistant",
-        description: "Choisissez la personnalité de votre conseiller",
-        professional: "Professionnel",
-        professionalDesc: "Formel et expert",
-        friendly: "Amical",
-        friendlyDesc: "Chaleureux et accessible",
-        casual: "Décontracté",
-        casualDesc: "Moderne et cool"
+        description: "Choisissez la personnalité de votre conseiller"
       },
-      tone: {
-        title: "Paramètres de tonalité",
-        description: "Ajustez le ton des réponses"
-      },
-      responseLength: {
+      responseSettings: {
         title: "Paramètres de réponse",
-        description: "Personnalisez la longueur et le ton"
+        description: "Personnalisez la tonalité et la longueur"
       },
       save: "Enregistrer les paramètres",
       saved: "Paramètres sauvegardés avec succès !",
@@ -3182,8 +3224,174 @@ export const translations = {
     openMerchantCenter: "Ouvrir Merchant Center",
     submenu: {
       feed: "Flux XML",
-      insights: "Insights",
-      settings: "Paramètres"
+      settings: "Paramètres",
+      products: "Produits",
+      sync: "Synchronisation",
+    },
+    tabs: {
+      integration: {
+        label: "Intégration",
+        description: "Connectez votre compte Google Merchant Center",
+      },
+      feed: {
+        description: "Gérez votre flux XML Google Shopping",
+      },
+      settings: {
+        description: "Configurez les paramètres de votre boutique et de votre flux",
+      },
+      sync: {
+        label: "Synchro Auto",
+        description: "Configurez la synchronisation automatique du flux",
+      },
+      monitoring: {
+        label: "Monitoring",
+        description: "Suivez les performances et l'état de votre flux",
+      },
+    },
+    feed: {
+      products: "produits",
+      inDatabase: "en base",
+      optimizationScore: "Score d'Optimisation",
+      optimizationDetails: "{{optimized}} produits sur {{total}} optimisés (Catégorie + GTIN + Background Blanc)",
+      noProducts: "Aucun produit à optimiser",
+      statusTitle: "État du Flux",
+      lastTest: "Dernier Test",
+      detectedProducts: "Produits Détectés",
+      format: "Format",
+      formatValue: "XML Google Shopping",
+      enrichment: {
+        title: "Enrichissez vos données Google Shopping",
+        description: "Optimisez vos produits avec les catégories Google, les GTIN et le background blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
+        action: "Optimiser maintenant"
+      },
+      url: {
+        title: "URL du Flux XML",
+        description: "Copiez cette URL pour Google Merchant Center",
+        label: "URL de votre flux Google Shopping",
+        copy: "Copier",
+        copied: "Copié !",
+        preview: "Prévisualiser le flux",
+        note: {
+          title: "Note :",
+          description: "Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe."
+        }
+      },
+      actions: {
+        optimizeAll: "Tout Optimiser",
+        testFeed: "Tester le Flux",
+        regenerate: "Régénérer le XML",
+        downloadXML: "Télécharger le XML",
+        exportCSV: "Exporter en CSV"
+      },
+      status: {
+        operational: "Opérationnel",
+        error: "Erreur",
+        testing: "Test en cours",
+        notTested: "Non Testé",
+        never: "Jamais",
+        generating: "Génération du fichier CSV..."
+      },
+      success: {
+        regenerated: "Flux XML régénéré avec succès ! 🎉",
+        exported: "{{count}} produits exportés en CSV ! 📊"
+      },
+      errors: {
+        invalidFormat: "Format XML invalide",
+        unknown: "Erreur inconnue",
+        regenerateFailed: "Erreur lors de la régénération du flux",
+        noProducts: "Aucun produit à exporter",
+        exportFailed: "Erreur lors de l'export CSV"
+      },
+      csv: {
+        headers: {
+          id: "ID",
+          title: "Titre",
+          description: "Description",
+          price: "Prix",
+          url: "URL",
+          imageUrl: "URL Image",
+          availability: "Disponibilité",
+          brand: "Marque",
+          category: "Catégorie Google",
+          gtin: "GTIN",
+          mpn: "MPN",
+          condition: "État",
+          whiteBackground: "Background Blanc IA"
+        },
+        inStock: "en stock",
+        outOfStock: "rupture de stock",
+        yes: "Oui",
+        no: "Non"
+      },
+      info: {
+        format: {
+          title: "Format",
+          description: "Flux XML Google Shopping conforme aux spécifications officielles"
+        },
+        update: {
+          title: "Mise à jour",
+          description: "Flux mis à jour automatiquement en temps réel"
+        },
+        schedule: {
+          title: "Planification",
+          description: "Synchronisation automatique quotidienne"
+        }
+      }
+    },
+    settings: {
+      title: "Configuration du Flux Google Shopping",
+      description: "Configurez les paramètres de votre flux XML pour Google Merchant Center",
+      storeName: "Nom de la boutique",
+      storeNameHint: "Utilisé dans l'URL de votre flux",
+      storeNameDesc: "Le nom de boutique peut être utilisé comme identifiant alternatif dans votre flux",
+      storeNamePlaceholder: "ma-boutique",
+      autoUpdate: "Mise à jour automatique",
+      autoUpdateDesc: "Synchroniser automatiquement le flux avec vos modifications",
+      generateGtin: "Générer les GTIN automatiquement",
+      generateGtinDesc: "Inclure les codes GTIN dans le flux XML Google Shopping",
+      gtinFormat: "Format GTIN",
+      gtinCountryHint: "Pays principal de vente",
+      defaultCurrency: "Devise par défaut",
+      defaultCondition: "État par défaut",
+      defaultBrand: "Marque par défaut",
+      defaultBrandPlaceholder: "Votre marque principale",
+      defaultBrandHint: "Utilisée pour les produits sans marque spécifiée",
+      collectionFiltering: "Filtrage par collections",
+      filterMode: "Mode de filtrage",
+      collectionsToInclude: "Collections à inclure",
+      collectionsToExclude: "Collections à exclure",
+      noCollections: "Aucune collection disponible",
+      collectionsSelected: "{{count}} collection(s) sélectionnée(s)",
+      save: "Enregistrer les paramètres",
+      saved: "Paramètres sauvegardés avec succès ! 🎉",
+      errorSave: "Erreur lors de la sauvegarde des paramètres",
+      errorLoad: "Erreur lors du chargement des paramètres",
+      testFeed: "Tester le flux",
+      feedTested: "Flux XML testé avec succès ! ✅",
+      errorTest: "Erreur lors du test du flux",
+      userNotConnected: "Utilisateur non connecté",
+      invalidXml: "Format XML invalide",
+      filterModes: {
+        all: "Toutes les collections",
+        include: "Inclure uniquement certaines collections",
+        exclude: "Exclure certaines collections"
+      },
+      conditions: {
+        new: "Neuf",
+        refurbished: "Reconditionné",
+        used: "Occasion"
+      },
+      validation: {
+        storeNameRequired: "Le nom de la boutique est requis",
+        storeNameFormat: "Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets",
+        storeNameTooShort: "Le nom de la boutique doit contenir au moins 3 caractères",
+        storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères"
+      },
+      statusBadges: {
+        operational: "✓ Opérationnel",
+        error: "✗ Erreur",
+        untested: "⏳ Non testé"
+      }
     }
   },
 
