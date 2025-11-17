@@ -383,126 +383,125 @@ export function ArticleWizard({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Editorial Layout */}
             <button
               onClick={() => setSelectedLayout('editorial')}
-              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+              className={`group relative p-4 rounded-lg border-2 transition-all hover:shadow-md ${
                 selectedLayout === 'editorial'
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50'
               }`}
             >
               {selectedLayout === 'editorial' && (
-                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+                <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div className="mb-4">
-                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex flex-col gap-2">
-                  <div className="h-16 bg-primary/20 rounded animate-fade-in" />
-                  <div className="space-y-1.5">
-                    <div className="h-2 bg-foreground/10 rounded w-full" />
-                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
-                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
+              <div className="mb-3">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded p-2 h-20 flex flex-col gap-1.5">
+                  <div className="h-10 bg-primary/20 rounded animate-fade-in" />
+                  <div className="space-y-1">
+                    <div className="h-1 bg-foreground/10 rounded w-full" />
+                    <div className="h-1 bg-foreground/10 rounded w-4/5" />
                   </div>
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-lg mb-1 font-serif">Éditorial</h3>
-                <p className="text-xs text-muted-foreground">Style magazine avec grandes images</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">Éditorial</h3>
+                <p className="text-xs text-muted-foreground">Magazine, grandes images</p>
               </div>
             </button>
 
             {/* Gallery Layout */}
             <button
               onClick={() => setSelectedLayout('gallery')}
-              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+              className={`group relative p-4 rounded-lg border-2 transition-all hover:shadow-md ${
                 selectedLayout === 'gallery'
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50'
               }`}
             >
               {selectedLayout === 'gallery' && (
-                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+                <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div className="mb-4">
-                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32">
-                  <div className="grid grid-cols-3 gap-2 h-full">
-                    <div className="bg-primary/20 rounded animate-fade-in" />
-                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.1s' }} />
-                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.2s' }} />
-                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.3s' }} />
-                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.4s' }} />
-                    <div className="bg-primary/20 rounded animate-fade-in" style={{ animationDelay: '0.5s' }} />
+              <div className="mb-3">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded p-2 h-20">
+                  <div className="grid grid-cols-3 gap-1.5 h-full">
+                    <div className="bg-primary/20 rounded" />
+                    <div className="bg-primary/20 rounded" />
+                    <div className="bg-primary/20 rounded" />
+                    <div className="bg-primary/20 rounded" />
+                    <div className="bg-primary/20 rounded" />
+                    <div className="bg-primary/20 rounded" />
                   </div>
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-lg mb-1 font-serif">Galerie</h3>
-                <p className="text-xs text-muted-foreground">Grille d'images produits</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">Galerie</h3>
+                <p className="text-xs text-muted-foreground">Grille d'images</p>
               </div>
             </button>
 
             {/* Grid Layout */}
             <button
               onClick={() => setSelectedLayout('grid')}
-              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+              className={`group relative p-4 rounded-lg border-2 transition-all hover:shadow-md ${
                 selectedLayout === 'grid'
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50'
               }`}
             >
               {selectedLayout === 'grid' && (
-                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+                <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div className="mb-4">
-                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex gap-3">
-                  <div className="flex-1 bg-primary/20 rounded animate-fade-in" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-2 bg-foreground/10 rounded" />
-                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
-                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
+              <div className="mb-3">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded p-2 h-20 flex gap-2">
+                  <div className="flex-1 bg-primary/20 rounded" />
+                  <div className="flex-1 space-y-1">
+                    <div className="h-1 bg-foreground/10 rounded" />
+                    <div className="h-1 bg-foreground/10 rounded w-4/5" />
+                    <div className="h-1 bg-foreground/10 rounded w-3/4" />
                   </div>
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-lg mb-1 font-serif">Grille Produits</h3>
-                <p className="text-xs text-muted-foreground">Image + Texte organisé</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">Grille Produits</h3>
+                <p className="text-xs text-muted-foreground">Image + Texte</p>
               </div>
             </button>
 
             {/* Story Layout */}
             <button
               onClick={() => setSelectedLayout('story')}
-              className={`group relative p-6 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-105 ${
+              className={`group relative p-4 rounded-lg border-2 transition-all hover:shadow-md ${
                 selectedLayout === 'story'
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50'
               }`}
             >
               {selectedLayout === 'story' && (
-                <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+                <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div className="mb-4">
-                <div className="bg-gradient-to-b from-muted to-muted/50 rounded-lg p-4 h-32 flex gap-3">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-2 bg-foreground/10 rounded" />
-                    <div className="h-2 bg-foreground/10 rounded w-4/5" />
-                    <div className="h-2 bg-foreground/10 rounded w-3/4" />
+              <div className="mb-3">
+                <div className="bg-gradient-to-b from-muted to-muted/50 rounded p-2 h-20 flex gap-2">
+                  <div className="flex-1 space-y-1">
+                    <div className="h-1 bg-foreground/10 rounded" />
+                    <div className="h-1 bg-foreground/10 rounded w-4/5" />
+                    <div className="h-1 bg-foreground/10 rounded w-3/4" />
                   </div>
-                  <div className="flex-1 bg-primary/20 rounded animate-fade-in" />
+                  <div className="flex-1 bg-primary/20 rounded" />
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-lg mb-1 font-serif">Hero Droite</h3>
-                <p className="text-xs text-muted-foreground">Image dominante à droite</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">Hero Droite</h3>
+                <p className="text-xs text-muted-foreground">Image dominante</p>
               </div>
             </button>
           </div>
@@ -523,30 +522,36 @@ export function ArticleWizard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                {collections.map((collection) => (
-                  <button
-                    key={collection.id}
-                    onClick={() => setSelectedCollection(collection.id)}
-                    className={`p-6 rounded-lg border-2 transition-all text-left hover:shadow-md ${
-                      selectedCollection === collection.id
-                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {collection.product_count || 0} produit{(collection.product_count || 0) !== 1 ? 's' : ''}
-                    </p>
-                    {selectedCollection === collection.id && (
-                      <div className="flex items-center gap-2 text-primary text-sm mt-2">
-                        <Check className="w-4 h-4" />
-                        <span>Sélectionné</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {collections.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Aucune collection trouvée. Veuillez importer vos collections Shopify.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                  {collections.map((collection) => (
+                    <button
+                      key={collection.id}
+                      onClick={() => setSelectedCollection(collection.id)}
+                      className={`p-6 rounded-lg border-2 transition-all text-left hover:shadow-md ${
+                        selectedCollection === collection.id
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {collection.product_count || 0} produit{(collection.product_count || 0) !== 1 ? 's' : ''}
+                      </p>
+                      {selectedCollection === collection.id && (
+                        <div className="flex items-center gap-2 text-primary text-sm mt-2">
+                          <Check className="w-4 h-4" />
+                          <span>Sélectionné</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
             </Card>
           )}
