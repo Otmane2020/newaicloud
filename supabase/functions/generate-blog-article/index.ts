@@ -98,22 +98,21 @@ async function generateArticle(
             inventory_quantity,
             category,
             product_type,
-            vendor,
-            tags,
-            description,
-            body_html,
-            image_url,
-            store_id,
-            seller_id,
             smart_material,
             smart_color_name,
             smart_weight,
             smart_height,
             smart_width,
-            smart_length
+            smart_length,
+            description,
+            product_images!inner (
+              src,
+              alt_text,
+              position
+            )
           `)
           .in("id", productIds)
-          .eq("seller_id", user_id);
+          .order("product_images.position", { ascending: true });
 
         if (error) {
           console.error("❌ Error fetching products:", error);
