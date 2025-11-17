@@ -685,12 +685,11 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
     return { score: 100, issues };
   }
   
-  // CRITICAL: Must use article.seo_title (not article.title) for second parameter
-  // to match ArticleManagement.tsx calculation (lines 242-250), which is the authoritative reference
+  // blog_articles doesn't have seo_title column, use title for both parameters
   articles.forEach(article => {
     const articleScore = calculateArticleSeoScore(
       article.title,
-      article.seo_title, // ArticleManagement uses seo_title
+      article.title, // Use title (blog_articles has no seo_title column)
       article.meta_description || '',
       article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
       !!article.featured_image,
