@@ -1225,40 +1225,61 @@ export function SeoAuditDashboard() {
                             <h4 className="font-bold text-lg mb-2">{issue.title}</h4>
                             <p className="text-sm text-muted-foreground leading-relaxed">{issue.description}</p>
                         </div>
-                        {issue.count && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-4 bg-primary/10 hover:bg-primary/20 border-primary/30 font-semibold"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Détermine l'onglet et le filtre en fonction de la catégorie
-                              const categoryMap: Record<string, { tab: string; filter?: string }> = {
-                                'produits': { tab: 'products', filter: 'poor' },
-                                'products': { tab: 'products', filter: 'poor' },
-                                'collections': { tab: 'collections', filter: 'poor' },
-                                'images': { tab: 'alt', filter: 'poor' },
-                                'alt': { tab: 'alt', filter: 'poor' },
-                                'tags': { tab: 'tags', filter: 'poor' },
-                                'articles': { tab: 'articles', filter: 'poor' },
-                                'pages': { tab: 'pages', filter: 'poor' },
-                                'content': { tab: 'articles', filter: 'poor' }, // Content = articles + pages
-                                'technical': { tab: 'products', filter: 'poor' }, // Technical issues généralement liés aux produits
-                                'homepage': { tab: 'homepage' },
-                              };
-                              
-                              const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products', filter: 'poor' };
-                              const url = mapping.filter 
-                                ? `/seo?tab=${mapping.tab}&filter=${mapping.filter}`
-                                : `/seo?tab=${mapping.tab}`;
-                              
-                              navigate(url);
-                            }}
-                          >
-                            <ArrowRight className="w-4 h-4 mr-1" />
-                            {issue.count} élément{issue.count > 1 ? "s" : ""}
-                          </Button>
-                        )}
+                        {(() => {
+                          // Calculer le nombre d'éléments concernés selon la catégorie
+                          let count = issue.count;
+                          if (!count && stats) {
+                            const categoryLower = issue.category?.toLowerCase() || '';
+                            if (categoryLower.includes('produit') || categoryLower === 'products') {
+                              count = stats.products?.total || 0;
+                            } else if (categoryLower.includes('collection')) {
+                              count = stats.collections?.total || 0;
+                            } else if (categoryLower.includes('image') || categoryLower === 'alt') {
+                              count = stats.images?.total || 0;
+                            } else if (categoryLower.includes('article')) {
+                              count = stats.articles?.total || 0;
+                            } else if (categoryLower.includes('page')) {
+                              count = stats.pages?.total || 0;
+                            } else if (categoryLower.includes('tag')) {
+                              count = stats.products?.total || 0;
+                            }
+                          }
+                          
+                          return count > 0 ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="ml-4 bg-primary/10 hover:bg-primary/20 border-primary/30 font-semibold"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Détermine l'onglet et le filtre en fonction de la catégorie
+                                const categoryMap: Record<string, { tab: string; filter?: string }> = {
+                                  'produits': { tab: 'products', filter: 'poor' },
+                                  'products': { tab: 'products', filter: 'poor' },
+                                  'collections': { tab: 'collections', filter: 'poor' },
+                                  'images': { tab: 'alt', filter: 'poor' },
+                                  'alt': { tab: 'alt', filter: 'poor' },
+                                  'tags': { tab: 'products', filter: 'poor' },
+                                  'articles': { tab: 'articles', filter: 'poor' },
+                                  'pages': { tab: 'pages', filter: 'poor' },
+                                  'content': { tab: 'articles', filter: 'poor' }, // Content = articles + pages
+                                  'technical': { tab: 'products', filter: 'poor' }, // Technical issues généralement liés aux produits
+                                  'homepage': { tab: 'audit-dashboard', filter: 'homepage' },
+                                };
+                                
+                                const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products', filter: 'poor' };
+                                const url = mapping.filter 
+                                  ? `/seo?tab=${mapping.tab}&filter=${mapping.filter}`
+                                  : `/seo?tab=${mapping.tab}`;
+                                
+                                navigate(url);
+                              }}
+                            >
+                              <ArrowRight className="w-4 h-4 mr-1" />
+                              {count} élément{count > 1 ? "s" : ""}
+                            </Button>
+                          ) : null;
+                        })()}
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4 mt-4">
