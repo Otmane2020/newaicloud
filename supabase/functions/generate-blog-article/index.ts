@@ -1416,7 +1416,7 @@ RÈGLES DE CRÉATION :
         messages: [
           {
             role: "system",
-            content: "Expert en rédaction e-commerce et création de contenu HTML professionnel.",
+            content: "Expert en rédaction e-commerce. Tu génères UNIQUEMENT du contenu textuel en JSON, sans toucher au HTML.",
           },
           { role: "user", content: prompt },
         ],
@@ -1429,21 +1429,98 @@ RÈGLES DE CRÉATION :
     }
 
     const result = await aiResponse.json();
-    let content = result.choices[0].message.content.trim();
+    let aiContent = result.choices[0].message.content.trim();
 
-    console.log("✅ [GEMINI] Article généré");
+    console.log("✅ [GEMINI] Contenu textuel généré");
     
-    // ✅ VALIDATION POST-GÉNÉRATION - Vérifier les placeholders restants
-    const placeholderRegex = /\[([^\]]+)\.\.\.\]/g;
+    // ✅ EXTRACTION DU JSON
+    // Nettoyer les balises markdown si présentes
+    aiContent = aiContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    
+    let textBlocks;
+    try {
+      textBlocks = JSON.parse(aiContent);
+      console.log("✅ [JSON] Parsing réussi");
+    } catch (parseError) {
+      console.error("❌ [JSON] Erreur de parsing:", parseError);
+      console.error("Contenu reçu:", aiContent.substring(0, 500));
+      throw new Error("Impossible de parser la réponse JSON de Gemini");
+    }
+    
+    // ✅ CRÉATION DU TEMPLATE HTML AVEC PLACEHOLDERS 
+    // (On récupère le template HTML déjà généré dans le prompt précédent)
+    const contentTemplate = `<!DOCTYPE html>
+<html lang="${language}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${optimizedTitle}</title>
+</head>
+<body>
+  <article>
+    <h1>${optimizedTitle}</h1>
+    <section>
+      <h2>${lang.intro}</h2>
+      <div>[INTRODUCTION]</div>
+    </section>
+    <section>
+      <h2>${lang.criteria}</h2>
+      <h3>Qualité</h3>
+      <div>[CRITERES_QUALITE]</div>
+      <h3>Prix</h3>
+      <div>[CRITERES_PRIX]</div>
+      <h3>Design</h3>
+      <div>[CRITERES_DESIGN]</div>
+    </section>
+    ${hasProducts ? `<section>${productCardsHtml}</section>` : ''}
+    <section>
+      <h2>${lang.comparison}</h2>
+      <div>[COMPARATIF]</div>
+    </section>
+    <section>
+      <h2>${lang.advice}</h2>
+      <div>[CONSEILS]</div>
+    </section>
+    <section>
+      <h2>${lang.faq}</h2>
+      <div>[FAQ_1]</div>
+      <div>[FAQ_2]</div>
+      <div>[FAQ_3]</div>
+      <div>[FAQ_4]</div>
+    </section>
+    <section>
+      <h2>${lang.conclusion}</h2>
+      <div>[CONCLUSION]</div>
+    </section>
+  </article>
+</body>
+</html>`;
+
+    // ✅ REMPLACEMENT DES PLACEHOLDERS DANS LE TEMPLATE HTML
+    let content = contentTemplate
+      .replace('[INTRODUCTION]', textBlocks.INTRODUCTION || '')
+      .replace('[CRITERES_QUALITE]', textBlocks.CRITERES_QUALITE || '')
+      .replace('[CRITERES_PRIX]', textBlocks.CRITERES_PRIX || '')
+      .replace('[CRITERES_DESIGN]', textBlocks.CRITERES_DESIGN || '')
+      .replace('[COMPARATIF]', textBlocks.COMPARATIF || '')
+      .replace('[CONSEILS]', textBlocks.CONSEILS || '')
+      .replace('[FAQ_1]', textBlocks.FAQ_1 || '')
+      .replace('[FAQ_2]', textBlocks.FAQ_2 || '')
+      .replace('[FAQ_3]', textBlocks.FAQ_3 || '')
+      .replace('[FAQ_4]', textBlocks.FAQ_4 || '')
+      .replace('[CONCLUSION]', textBlocks.CONCLUSION || '');
+    
+    console.log("✅ [HTML] Placeholders remplacés");
+    
+    // ✅ VALIDATION - Vérifier qu'il ne reste pas de placeholders
+    const placeholderRegex = /\[(INTRODUCTION|CRITERES_|COMPARATIF|CONSEILS|FAQ_|CONCLUSION)\]/g;
     const remainingPlaceholders = content.match(placeholderRegex);
     
     if (remainingPlaceholders && remainingPlaceholders.length > 0) {
-      console.warn(`⚠️ [VALIDATION] ${remainingPlaceholders.length} placeholders détectés`);
+      console.warn(`⚠️ [VALIDATION] ${remainingPlaceholders.length} placeholders non remplacés:`, remainingPlaceholders);
       
-      // Nettoyer les placeholders les plus communs
+      // Nettoyer les placeholders restants
       content = content
-        .replace(/\[introduction engageante.*?\]/gi, '')
-        .replace(/\[texte.*?\]/gi, '')
         .replace(/\[contenu.*?\]/gi, '')
         .replace(/\[description.*?\]/gi, '');
       
