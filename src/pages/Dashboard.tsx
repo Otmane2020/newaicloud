@@ -565,8 +565,8 @@ export default function Dashboard() {
           icon={Sparkles}
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
-          badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}% traités par IA` : '0%'}
-          subtitle={stats.avgOptimizedScore > 0 ? `Score moyen : ${stats.avgOptimizedScore}/100` : `${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
+          badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}% ${t.dashboard.cards.aiProcessed}` : '0%'}
+          subtitle={stats.avgOptimizedScore > 0 ? `${t.dashboard.cards.avgScore} ${stats.avgOptimizedScore}/100` : `${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
         />
         <MetricCard
           title={t.dashboard.cards.toOptimize}
@@ -600,7 +600,7 @@ export default function Dashboard() {
           icon={DollarSign}
           gradient="from-purple-500 to-purple-600"
           iconBg="bg-purple-500/10 text-purple-600"
-          subtitle={stats.avgOptimizedScore > 0 ? `Basé sur score SEO moyen de ${stats.avgOptimizedScore}/100` : `${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% ${t.dashboard.cards.ofCatalog}`}
+          subtitle={stats.avgOptimizedScore > 0 ? `${t.dashboard.cards.basedOnSeoAvg} ${stats.avgOptimizedScore}/100` : `${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% ${t.dashboard.cards.ofCatalog}`}
         />
         <MetricCard
           title={t.dashboard.cards.activeStores}

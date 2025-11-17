@@ -416,9 +416,15 @@ export function AdvancedAnalytics() {
   };
 
   const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) {
+      return {
+        value: current > 0 ? "∞" : "0",
+        isPositive: current > 0
+      };
+    }
     const change = ((current - previous) / previous) * 100;
     return {
-      value: Math.abs(Math.round(change)),
+      value: Math.abs(Math.round(change)).toString(),
       isPositive: change > 0
     };
   };
