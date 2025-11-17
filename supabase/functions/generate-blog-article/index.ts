@@ -308,6 +308,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     // ✅ LOG FINAL du résultat
     console.log(`📊 [PRODUCTS] Résultat final: ${products.length} produits disponibles`);
+    console.log('📦 Nombre de produits à intégrer:', products.length);
 
     const hasProducts = products && products.length > 0;
 
@@ -392,6 +393,57 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         storeUrl = `https://${storeUrl}`;
       }
     }
+
+    console.log('🔗 Store URL utilisée:', storeUrl || 'Non définie');
+
+    // Fonction pour générer les cartes produits HTML complètes
+    const generateProductCards = (products: any[], storeUrl: string) => {
+      return products.map(product => {
+        const hasPromotion = product.compare_at_price && product.compare_at_price > product.price;
+        const discount = hasPromotion 
+          ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
+          : 0;
+        
+        const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : '#';
+        
+        // Galerie d'images
+        const images = product.images || [];
+        const mainImage = product.image_url || (images.length > 0 ? images[0].src : '/placeholder.jpg');
+        const galleryHtml = images.length <= 1
+          ? `<img src="${mainImage}" alt="${product.title}" class="product-main-image" loading="lazy">`
+          : images.length <= 4
+          ? `<div class="product-gallery">${images.slice(0, 4).map((img: any) => `
+              <img src="${img.src}" alt="${img.alt || product.title}" class="gallery-image" loading="lazy">
+            `).join('')}</div>`
+          : `<div class="product-carousel">
+              ${images.map((img: any, idx: number) => `
+                <img src="${img.src}" alt="${img.alt || product.title}" class="carousel-image ${idx === 0 ? 'active' : ''}" loading="lazy">
+              `).join('')}
+              <button class="carousel-prev">‹</button>
+              <button class="carousel-next">›</button>
+            </div>`;
+        
+        return `
+          <div class="product-card">
+            ${hasPromotion ? `<div class="promotion-badge">-${discount}%</div>` : ''}
+            <a href="${productUrl}" target="_blank" rel="noopener" class="product-link">
+              ${galleryHtml}
+              <h3 class="product-title">${product.title}</h3>
+              <div class="product-price">
+                ${hasPromotion ? `<span class="old-price">${product.compare_at_price.toFixed(2)} ${product.currency_code || '€'}</span>` : ''}
+                <span class="current-price">${product.price.toFixed(2)} ${product.currency_code || '€'}</span>
+              </div>
+              ${product.body_html ? `<p class="product-description">${product.body_html.replace(/<[^>]*>/g, '').substring(0, 150)}...</p>` : ''}
+              <button class="product-cta">Voir le produit →</button>
+            </a>
+          </div>
+        `;
+      }).join('');
+    };
+
+    const productCardsHtml = hasProducts 
+      ? generateProductCards(products, storeUrl)
+      : '<p class="no-products">Aucun produit sélectionné pour cet article.</p>';
 
     // Récupération des pages Shopify réelles pour netlinking
     let shopifyPages: any[] = [];
