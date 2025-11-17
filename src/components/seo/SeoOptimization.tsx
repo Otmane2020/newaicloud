@@ -911,7 +911,7 @@ export function SeoOptimization() {
               className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
             >
               <Sparkles className="w-5 h-5" />
-              {t.seo.optimization.startOptimization}
+              {notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization}
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>

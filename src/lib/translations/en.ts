@@ -2388,6 +2388,7 @@ export const translations = {
       aiOptimized: "AI-optimized",
       optimized: "optimized",
       startOptimization: "Start Optimization",
+      allOptimized: "Already Optimized",
       visionAI: {
         badge: "Optimized by Vision AI (Image Analysis)",
         description: "AI analyzes your images",
