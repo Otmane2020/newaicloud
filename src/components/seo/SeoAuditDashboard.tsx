@@ -32,7 +32,6 @@ import {
   calculateArticlesSeoScore,
   calculateImagesSeoScore,
   calculateTagsSeoScore,
-  calculateHomepageSeoScore,
 } from "@/lib/seoQuality";
 import { useTranslation } from "@/lib/language";
 
@@ -113,8 +112,10 @@ export function SeoAuditDashboard() {
         })),
         supabase
           .from("homepage_seo")
-          .select("seo_title, seo_description")
+          .select("last_audit")
           .eq("user_id", user?.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle()
       ]);
 
@@ -156,7 +157,9 @@ export function SeoAuditDashboard() {
           score: calculateTagsSeoScore(products)
         },
         homepage: {
-          score: calculateHomepageSeoScore(homepageSeo)
+          // Use last_audit.score like Dashboard does
+          // @ts-ignore - Json type causes deep recursion, safe to ignore here
+          score: homepageSeo?.last_audit?.score || 0
         }
       });
     } catch (error) {
