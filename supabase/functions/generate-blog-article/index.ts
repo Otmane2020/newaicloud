@@ -35,11 +35,11 @@ serve(async (req) => {
       opportunityData,
       formData,
       articleConfig,
-      storeId,
+      store_id,
       selectedProducts = []
     } = requestData;
 
-    if (!storeId) {
+    if (!store_id) {
       throw new Error('store_id is required');
     }
 
@@ -47,7 +47,7 @@ serve(async (req) => {
     const { data: connection, error: connError } = await supabaseClient
       .from('shopify_connections')
       .select('*')
-      .eq('id', storeId)
+      .eq('id', store_id)
       .single();
 
     if (connError || !connection) {
@@ -230,7 +230,7 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.
       .from('blog_articles')
       .insert({
         user_id: user.id,
-        store_id: storeId,
+        store_id: store_id,
         title,
         content: finalHtml,
         meta_description: metaDescription,
