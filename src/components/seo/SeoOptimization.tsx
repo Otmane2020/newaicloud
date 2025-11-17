@@ -254,6 +254,24 @@ export function SeoOptimization() {
   // Count all products that are not AI-optimized (enrichment_status !== "enriched")
   const notEnrichedCount = products.filter((p) => p.enrichment_status !== "enriched").length;
   const enrichedCount = products.filter((p) => p.enrichment_status === "enriched").length;
+  
+  // 🔍 DEBUG: Check why notEnrichedCount might be 0
+  console.log('🔍 [PRODUCTS_COUNT_DEBUG]', {
+    totalProducts: products.length,
+    notEnrichedCount,
+    enrichedCount,
+    sampleStatuses: products.slice(0, 5).map(p => ({
+      id: p.id,
+      title: p.title?.substring(0, 30),
+      enrichment_status: p.enrichment_status,
+      optimization_count: p.optimization_count
+    })),
+    allStatuses: products.reduce((acc, p) => {
+      acc[p.enrichment_status || 'null'] = (acc[p.enrichment_status || 'null'] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  });
+  
   const pendingSyncCount = products.filter(
     (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
   ).length;
@@ -907,7 +925,16 @@ export function SeoOptimization() {
             </div>
             <Button
               size="lg"
-              onClick={handleGenerateAll}
+              onClick={() => {
+                console.log('🔘 [BUTTON_CLICKED]', {
+                  notEnrichedCount,
+                  loading,
+                  generating,
+                  totalProducts: products.length,
+                  buttonDisabled: generating || loading || notEnrichedCount === 0
+                });
+                handleGenerateAll();
+              }}
               disabled={generating || loading || notEnrichedCount === 0}
               className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
             >
