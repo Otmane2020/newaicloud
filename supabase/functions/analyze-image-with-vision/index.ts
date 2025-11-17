@@ -103,57 +103,53 @@ serve(async (req) => {
       ? `\nContexte produit : ${productContext.title || ''} ${productContext.category || ''} ${productContext.type || ''}`
       : '';
 
-    const visionPrompt = `Analyse cette image produit et extrait les attributs visuels suivants en français.${contextInfo}
+    const visionPrompt = `Analyse cette image produit de manière technique et précise.${contextInfo}
+
+INSTRUCTIONS CRITIQUES :
+1. DIMENSIONS : Si des dimensions sont visibles (sur emballage, étiquette, schéma technique, règle visible), extrais-les EXACTEMENT
+2. POIDS : Si le poids est visible (sur emballage, étiquette), extrais-le EXACTEMENT
+3. MATÉRIAUX : Identifie VISUELLEMENT les matériaux (grain du bois, reflets métalliques, texture du tissu)
+4. FINITION : Décris la finition visible (vernis mat/brillant, peinture, métal brossé, etc.)
+5. COULEURS : Liste les couleurs réelles visibles, pas les noms de produits
 
 Réponds UNIQUEMENT avec un objet JSON valide contenant :
 {
   "visualAttributes": {
-    "primaryColor": "couleur dominante principale",
-    "secondaryColors": ["couleur 2", "couleur 3"],
-    "materials": ["matériau 1", "matériau 2"],
-    "style": "style/design (moderne, scandinave, industriel, vintage, classique, etc.)",
-    "room": "contexte/pièce si visible (salon, chambre, cuisine, bureau, etc.)",
-    "mood": "ambiance/atmosphère (chaleureux, élégant, minimaliste, cosy, contemporain, etc.)",
-    "technicalDetails": ["détail technique 1", "détail technique 2"],
+    "primaryColor": "couleur dominante réelle vue",
+    "secondaryColors": ["couleur 2 visible", "couleur 3 visible"],
+    "materials": ["matériau identifié visuellement 1", "matériau 2"],
+    "style": "style/design (moderne, scandinave, industriel, vintage, classique, contemporain)",
+    "room": "contexte/pièce si visible (salon, chambre, cuisine, bureau, extérieur)",
+    "mood": "ambiance (chaleureux, élégant, minimaliste, cosy, luxueux, rustique)",
+    "finish": "finition visible (vernis mat, brillant, peinture, laqué, brossé, brut)",
+    "texture": "texture visible (lisse, rugueux, grain fin, grain épais, tissé)",
+    "technicalDetails": ["détail technique visible 1", "détail 2"],
     "technicalDimensions": {
-      "weight": "poids si visible sur l'image ou l'emballage (ex: 5.2 kg)",
-      "length": "longueur si visible (ex: 120 cm)",
-      "width": "largeur si visible (ex: 80 cm)",
-      "height": "hauteur si visible (ex: 75 cm)"
+      "height": "hauteur EXACTE si visible (avec unité, e.g., '80cm')",
+      "width": "largeur EXACTE si visible (avec unité)",
+      "length": "longueur EXACTE si visible (avec unité)",
+      "depth": "profondeur EXACTE si visible (avec unité)",
+      "diameter": "diamètre EXACT si visible (avec unité)",
+      "weight": "poids EXACT si visible sur emballage/étiquette (avec unité, e.g., '5kg', '2.5kg')",
+      "seatHeight": "hauteur d'assise si applicable et visible",
+      "packageDimensions": "dimensions emballage si visibles"
+    },
+    "visualContext": {
+      "hasPackaging": false,
+      "hasTechnicalSchema": false,
+      "hasRuler": false,
+      "hasLabels": false,
+      "viewAngle": "face/profil/3/4/dessus/dessous"
     }
   },
-  "confidence": 0.95
+  "confidence": 0.85
 }
 
-Instructions :
-- primaryColor : la couleur la plus dominante et visible
-- secondaryColors : 2-3 couleurs complémentaires/secondaires
-- materials : matériaux visibles - SOIS TRÈS PRÉCIS :
-  * Bois (chêne, noyer, teck, pin, hêtre, acajou)
-  * Métaux (acier, laiton, fer forgé, aluminium, cuivre, bronze)
-  * Tissus (lin, coton, velours, polyester, cuir)
-  * Pierres naturelles (marbre, travertin, granit, ardoise, onyx, quartz, terrazzo)
-  * Autres (verre, plastique, béton, résine, céramique, rotin)
-  * NOTE : Distingue bien travertin (nervures horizontales) vs marbre (veinage aléatoire) vs granit (grains fins)
-- style : style de design global
-- room : pièce/contexte si identifiable
-- mood : ambiance/feeling général
-- technicalDimensions : UNIQUEMENT SI l'image est un schéma technique avec des cotes/mesures annotées OU si le poids/dimensions sont visibles sur l'emballage :
-  * EXTRAIT les dimensions EXACTES avec format structuré : {"hauteur_totale": "98cm", "hauteur_assise": "72cm", "largeur": "47cm", "profondeur": "47cm", "diametre": "36cm"}
-  * **IMPORTANT**: Si le POIDS est visible sur l'image (emballage, étiquette, schéma), ajoute {"weight": "5.2 kg"}
-  * **IMPORTANT**: Si les DIMENSIONS sont visibles sur l'emballage ou une étiquette, extrais-les : {"length": "120 cm", "width": "80 cm", "height": "75 cm"}
-  * PRIORITÉ ABSOLUE aux dimensions du schéma technique (ligne de cote avec flèches)
-  * Si pas de schéma technique NI d'info visible sur l'emballage, renvoie null
-- technicalDetails : détails visibles précis (autres que dimensions) :
-  * Pieds en bois massif, nervures du travertin, veinage du marbre, coussins amovibles, finition mate/brillante, texture rugueuse/lisse, etc.
-- confidence : score de confiance entre 0 et 1
-
-⚠️ CRITIQUE : 
-- Si l'image contient un schéma technique avec des dimensions annotées, tu DOIS extraire TOUTES les mesures visibles et les mettre dans technicalDimensions sous format JSON structuré.
-- Si le POIDS est visible sur l'image (carton, étiquette, emballage), tu DOIS l'extraire et l'ajouter dans technicalDimensions: {"weight": "X kg" ou "X lbs"}
-- Si les DIMENSIONS sont visibles textuellement sur l'emballage, extrais-les également.
-
-Sois TRÈS précis et descriptif sur les matériaux, textures ET dimensions/poids. N'invente pas, base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image.`;
+IMPORTANT : 
+- Ne mets une dimension que si elle est RÉELLEMENT VISIBLE sur l'image
+- Si rien n'est visible, laisse technicalDimensions vide {}
+- Le confidence score doit être élevé (>0.8) seulement si dimensions visibles
+- Donne priorité absolue aux données extraites d'étiquettes, emballages, ou schémas techniques`;
 
     // Call Lovable AI with Vision support (higher quota limits)
     const lovableController = new AbortController();
