@@ -1,3 +1,34 @@
+// Type definitions
+interface Product {
+  id?: string;
+  title: string;
+  price: number;
+  compare_at_price?: number;
+  handle?: string;
+  image_url?: string;
+  images?: { src: string }[];
+  category?: string;
+  currency_code?: string;
+  body_html?: string;
+}
+
+interface TemplateConfig {
+  primaryColor: string;
+  primaryColorRgb: string;
+  layout: any; // Can be string or object with maxWidth, tocColumns, productColumns
+  typography: string;
+  products: Product[];
+  storeUrl?: string;
+  title: string;
+  language: any;
+  wordCount: number;
+  collectionTitle?: string;
+  category?: string;
+  keywords: string[];
+  featuredImage?: string;
+  content?: any;
+}
+
 // Nouvelle fonction generateHTMLTemplate améliorée
 export function generateSEOHTMLTemplate(config: TemplateConfig): string {
   const {
@@ -712,7 +743,7 @@ export function generateSEOHTMLTemplate(config: TemplateConfig): string {
     // Schema.org pour les produits
     const productData = ${JSON.stringify(
       products.map((p) => ({
-        name: p.title,
+        name: (p as Product).title,
         price: p.price,
         priceCurrency: p.currency_code || "EUR",
         url: storeUrl ? `${storeUrl}/products/${p.handle}` : "#",
