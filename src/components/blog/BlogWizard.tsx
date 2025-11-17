@@ -416,6 +416,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
     try {
       setGenerating(true);
+      setShowGenerationProgress(true);
 
       if (!user?.id) {
         throw new Error("Utilisateur non connecté");
@@ -425,6 +426,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         toast.error("Aucune boutique sélectionnée. Veuillez sélectionner une boutique.");
         console.error("❌ [WIZARD] store_id manquant");
         setGenerating(false);
+        setShowGenerationProgress(false);
         return;
       }
 
@@ -442,9 +444,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               .map((k) => k.trim())
               .filter(Boolean);
 
-      // Animation de génération
-      toast.loading(t.wizards.blog.generating, { id: "generating" });
-
       const response = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
@@ -460,7 +459,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       if (response.error) throw response.error;
 
-      toast.success(t.wizards.blog.articleGenerated, { id: "generating" });
+      toast.success(t.wizards.blog.articleGenerated);
 
       // Stocker l'article généré et afficher le dialog de résultats
       if (response.data?.article) {
@@ -1016,6 +1015,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           setShowProgressDialog(false);
           onClose();
         }}
+      />
+      <ArticleGenerationProgress 
+        open={showGenerationProgress} 
+        onClose={() => setShowGenerationProgress(false)} 
       />
     </div>
   );
