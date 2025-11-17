@@ -460,6 +460,44 @@ export const translations = {
       title: "No campaigns",
       description: "Start by creating your first advertising landing page",
       cta: "Create my first campaign"
+    },
+    
+    wizard: {
+      title: "Campaign Wizard",
+      description: "Create artistic landing pages for your campaigns",
+      campaignName: "Campaign name *",
+      campaignNamePlaceholder: "Ex: Gallery Element Collection",
+      campaignType: "Campaign type *",
+      product: "Product",
+      productDesc: "Artistic gallery to showcase your products",
+      collection: "Collection",
+      collectionDesc: "Immersive experience for a complete collection",
+      store: "Store",
+      storeDesc: "Artistic presentation of your store universe",
+      selectCollections: "Select collections",
+      selectProducts: "Select products",
+      generating: "Generating store summary...",
+      regenerate: "Regenerate summary",
+      headline: "Main title *",
+      headlinePlaceholder: "Ex: Discover our contemporary art gallery",
+      subheadline: "Subtitle",
+      subheadlinePlaceholder: "Ex: A unique and inspiring selection",
+      cta: "Call-to-Action button text *",
+      ctaPlaceholder: "Ex: Explore the gallery",
+      highlights: "Highlights",
+      addProof: "Add",
+      proofPlaceholder: "Ex: Free delivery",
+      designStyle: "Choose design style",
+      artistic: "Artistic",
+      artisticDesc: "Creative layouts with elegant visual effects",
+      minimal: "Minimal",
+      minimalDesc: "Clean and modern design",
+      bold: "Bold",
+      boldDesc: "Impactful with strong contrasts",
+      cancel: "Cancel",
+      back: "Back",
+      next: "Next",
+      createGallery: "Create gallery"
     }
   },
 
@@ -2830,6 +2868,55 @@ export const translations = {
       images: "images",
       handle: "Handle",
     },
+    import: {
+      importing: "Importing collections..."
+    },
+    loadError: "Error loading collections",
+    optimization: {
+      title: "Collection Optimization",
+      description: "Optimize your collections for better SEO",
+      tabs: {
+        all: "All",
+        notOptimized: "Not optimized",
+        optimized: "Optimized"
+      },
+      messages: {
+        collectionsToOptimize: "{{count}} collections to optimize",
+        collectionsOptimized: "{{count}} collections optimized",
+        allOptimized: "All collections are optimized",
+        noneSelected: "No collections selected",
+        invalidIds: "Invalid collection IDs",
+        optimizationError: "Optimization error: {{message}}",
+        optimizationFailed: "Optimization failed",
+        trialLimitReached: "Trial limit reached",
+        monthlyLimitReached: "Monthly limit reached",
+        alreadyOptimizedTrial: "Collection already optimized",
+        optimizationSuccess: "{{count}} collections optimized successfully"
+      },
+      features: {
+        intelligent: "Intelligent optimization",
+        visibility: "Improved visibility",
+        fast: "Fast processing"
+      },
+      globalScore: "Global SEO Score",
+      optimized: "optimized",
+      optimizeAll: "Optimize All",
+      actions: {
+        syncToShopify: "Sync to Shopify",
+        syncAll: "Sync All"
+      },
+      table: {
+        image: "Image",
+        title: "Title",
+        products: "Products",
+        description: "Description",
+        seoScore: "SEO Score",
+        status: "Status",
+        synced: "Synced",
+        actions: "Actions"
+      }
+    }
+  },
     import: {
       importing: "Importing collections...",
       notAuthenticated: "Not authenticated",
@@ -5725,46 +5812,6 @@ export const translations = {
     }
   },
 
-  // ============= Ads Campaign Wizard =============
-  adsCampaign: {
-    wizard: {
-      title: "Campaign Wizard",
-      description: "Create artistic landing pages for your campaigns",
-      campaignName: "Campaign name *",
-      campaignNamePlaceholder: "Ex: Gallery Element Collection",
-      campaignType: "Campaign type *",
-      product: "Product",
-      productDesc: "Artistic gallery to showcase your products",
-      collection: "Collection",
-      collectionDesc: "Immersive experience for a complete collection",
-      store: "Store",
-      storeDesc: "Artistic presentation of your store universe",
-      selectCollections: "Select collections",
-      selectProducts: "Select products",
-      generating: "Generating store summary...",
-      regenerate: "Regenerate summary",
-      headline: "Main title *",
-      headlinePlaceholder: "Ex: Discover our contemporary art gallery",
-      subheadline: "Subtitle",
-      subheadlinePlaceholder: "Ex: A unique and inspiring selection",
-      cta: "Call-to-Action button text *",
-      ctaPlaceholder: "Ex: Explore the gallery",
-      highlights: "Highlights",
-      addProof: "Add",
-      proofPlaceholder: "Ex: Free delivery",
-      designStyle: "Choose design style",
-      artistic: "Artistic",
-      artisticDesc: "Creative layouts with elegant visual effects",
-      minimal: "Minimal",
-      minimalDesc: "Clean and modern design",
-      bold: "Bold",
-      boldDesc: "Impactful with strong contrasts",
-      cancel: "Cancel",
-      back: "Back",
-      next: "Next",
-      createGallery: "Create gallery"
-    }
-  },
 
   // ============= AI Background Dialog =============
   aiBackground: {
@@ -5797,31 +5844,6 @@ export const translations = {
     generate: "Generate {{count}} image(s)"
   },
 
-  // ============= Collections Optimization =============
-  collections: {
-    searchPlaceholder: "Search collections by title...",
-    optimize: "Optimize",
-    optimizeAll: "Optimize all",
-    optimizeSelection: "Optimize selection ({{count}})",
-    sync: "Sync",
-    syncAll: "Sync all",
-    clickToGenerate: "Click to generate an image with AI",
-    filters: "Filters",
-    allCollections: "All collections",
-    notOptimized: "Not optimized",
-    optimized: "Optimized",
-    pendingSync: "Pending sync",
-    synced: "Synced",
-    viewMode: "View",
-    grid: "Grid",
-    listView: "List",
-    sortBy: "Sort by",
-    titleSort: "Title",
-    seoScore: "SEO score",
-    products: "Products",
-    status: "Status",
-    lastOptimization: "Last optimization"
-  },
 
   // ============= Auto Optimization Dialog =============
   autoOptimization: {
