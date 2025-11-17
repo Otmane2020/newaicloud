@@ -695,6 +695,51 @@ serve(async (req) => {
     
     console.log(`✅ Completed Vision AI analysis: ${imageAnalyses.length}/${imagesToAnalyze.length} images analyzed`);
     
+    // ============ SAVE VISION DATA TO DATABASE ============
+    // Aggregate and save vision attributes from all analyzed images
+    if (imageAnalyses.length > 0) {
+      console.log('💾 Saving Vision AI data to database...');
+      
+      // Merge vision attributes from all images
+      const mergedVisionAttributes = imageAnalyses.reduce((acc: any, analysis: any, index: number) => {
+        // First image is primary
+        if (index === 0) {
+          return analysis;
+        }
+        
+        // Merge materials from subsequent images
+        if (analysis.visualAttributes?.materials) {
+          acc.visualAttributes.materials = [
+            ...(acc.visualAttributes?.materials || []),
+            ...analysis.visualAttributes.materials
+          ].filter((m: string, i: number, arr: string[]) => arr.indexOf(m) === i);
+        }
+        
+        // Take first technical dimensions found
+        if (!acc.visualAttributes?.technicalDimensions && analysis.visualAttributes?.technicalDimensions) {
+          acc.visualAttributes.technicalDimensions = analysis.visualAttributes.technicalDimensions;
+        }
+        
+        return acc;
+      }, imageAnalyses[0]);
+
+      // Update product with vision data
+      const { error: visionUpdateError } = await supabaseAdmin
+        .from('shopify_products')
+        .update({
+          vision_attributes: mergedVisionAttributes.visualAttributes || null,
+          vision_timestamp: new Date().toISOString(),
+          vision_model: 'google/gemini-2.5-flash',
+        })
+        .eq('id', product_id);
+
+      if (visionUpdateError) {
+        console.error('❌ Failed to save vision data:', visionUpdateError);
+      } else {
+        console.log('✅ Vision data saved to database');
+      }
+    }
+    
     // Build comprehensive visual analysis summary
     let visualAnalysis = "";
     if (imageAnalyses.length > 0) {

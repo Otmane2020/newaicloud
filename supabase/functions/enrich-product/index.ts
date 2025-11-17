@@ -151,9 +151,99 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Build AI prompt to detect attributes (NOT SEO fields)
+    // ============ PHASE 1: VISION AI ANALYSIS (HIGHEST PRIORITY) ============
+    console.log('🎨 Phase 1: Vision AI analysis starting...');
+    let visionAttributes: any = null;
+    let visionConfidence = 0;
+
+    // Fetch product images
+    const { data: images, error: imagesError } = await supabase
+      .from('product_images')
+      .select('src, position, alt_text')
+      .eq('product_id', productId)
+      .order('position', { ascending: true })
+      .limit(3);
+
+    if (images && images.length > 0) {
+      console.log(`📸 Found ${images.length} images, analyzing with Gemini Vision...`);
+      
+      // Analyze the first 3 images (main + 2 additional for better coverage)
+      const imageAnalyses = [];
+      for (let i = 0; i < Math.min(images.length, 3); i++) {
+        try {
+          const { data: visionData, error: visionError } = await supabase.functions.invoke(
+            'analyze-image-with-vision',
+            {
+              body: {
+                imageUrl: images[i].src,
+                productContext: {
+                  title: product.title,
+                  category: product.category,
+                  type: product.product_type,
+                }
+              }
+            }
+          );
+
+          if (!visionError && visionData?.visualAttributes) {
+            imageAnalyses.push(visionData);
+            console.log(`✅ Vision analysis ${i + 1}/${images.length} completed (confidence: ${visionData.confidence})`);
+          } else {
+            console.warn(`⚠️ Vision analysis ${i + 1} failed:`, visionError);
+          }
+        } catch (visionErr) {
+          console.warn(`⚠️ Vision analysis ${i + 1} error:`, visionErr);
+        }
+      }
+
+      // Merge vision data from all analyzed images (prioritize first image for main attributes)
+      if (imageAnalyses.length > 0) {
+        visionAttributes = imageAnalyses[0].visualAttributes;
+        visionConfidence = imageAnalyses[0].confidence || 0.5;
+
+        // Merge technical dimensions from all images (take the first non-null value)
+        const allTechDims = imageAnalyses
+          .map((a: any) => a.visualAttributes?.technicalDimensions)
+          .filter((d: any) => d && Object.keys(d).length > 0);
+        
+        if (allTechDims.length > 0) {
+          visionAttributes.technicalDimensions = allTechDims[0];
+        }
+
+        // Aggregate materials from all images
+        const allMaterials = imageAnalyses
+          .flatMap((a: any) => a.visualAttributes?.materials || [])
+          .filter((m: string, i: number, arr: string[]) => arr.indexOf(m) === i);
+        
+        if (allMaterials.length > 0) {
+          visionAttributes.materials = allMaterials;
+        }
+
+        console.log('✅ Vision AI analysis completed:', visionAttributes);
+      } else {
+        console.log('⏭️ No successful vision analyses');
+      }
+    } else {
+      console.log('⏭️ No product images found, skipping Vision AI');
+    }
+
+    // ============ PHASE 2: DEEPSEEK AI COMPLETION (FILLS GAPS) ============
+    console.log('🤖 Phase 2: DeepSeek AI completing missing attributes...');
+
+    // Build prompt that includes vision data and asks DeepSeek to ONLY fill gaps
+    const visionDataSummary = visionAttributes ? `
+DONNÉES VISION AI DISPONIBLES (NE PAS REMPLACER):
+- Couleurs: ${visionAttributes.primaryColor || 'non détecté'}, ${(visionAttributes.secondaryColors || []).join(', ')}
+- Matériaux: ${(visionAttributes.materials || []).join(', ') || 'non détecté'}
+- Style: ${visionAttributes.style || 'non détecté'}
+- Finition: ${visionAttributes.finish || 'non détecté'}
+- Dimensions visibles: ${JSON.stringify(visionAttributes.technicalDimensions || {})}
+` : 'AUCUNE DONNÉE VISION AI DISPONIBLE';
+
     const prompt = `
-Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait TOUS les attributs suivants (PAS de SEO).
+Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait les attributs MANQUANTS.
+
+${visionDataSummary}
 
 PRODUIT:
 - Titre: ${product.title || ''}
@@ -162,7 +252,13 @@ PRODUIT:
 - Catégorie existante: ${product.category || ''}
 - Vendor: ${product.vendor || ''}
 
-INSTRUCTIONS:
+INSTRUCTIONS CRITIQUES:
+1. NE REMPLACE PAS les données Vision AI si elles existent
+2. Complète UNIQUEMENT les attributs manquants ou null
+3. Si Vision AI a détecté des matériaux/couleurs, ne les change pas
+4. Pour les dimensions: SI Vision AI n'a PAS de technicalDimensions, estime des dimensions typiques
+5. Si Vision AI a un poids visible, NE L'ESTIME PAS
+
 Analyse le produit et fournis les informations suivantes:
 
 ATTRIBUTS VISUELS:
@@ -334,20 +430,25 @@ Réponds UNIQUEMENT en JSON valide:
     const { error: updateError } = await supabase
       .from('shopify_products')
       .update({
-        // Visual attributes
-        ai_color: parsedData.ai_color || null,
-        ai_material: parsedData.ai_material || null,
+        // Vision AI attributes (HIGHEST PRIORITY)
+        vision_attributes: visionAttributes || null,
+        vision_timestamp: visionAttributes ? new Date().toISOString() : null,
+        vision_model: visionAttributes ? 'google/gemini-2.5-flash' : null,
+        
+        // Visual attributes (from DeepSeek, unless overridden by Vision)
+        ai_color: visionAttributes?.primaryColor || parsedData.ai_color || null,
+        ai_material: visionAttributes?.materials?.join(', ') || parsedData.ai_material || null,
         ai_shape: parsedData.ai_shape || null,
-        ai_texture: parsedData.ai_texture || null,
+        ai_texture: visionAttributes?.texture || parsedData.ai_texture || null,
         ai_pattern: parsedData.ai_pattern || null,
-        ai_finish: parsedData.ai_finish || null,
+        ai_finish: visionAttributes?.finish || parsedData.ai_finish || null,
         ai_design_elements: parsedData.ai_design_elements || null,
         
         // Vision AI analysis
         ai_vision_analysis: parsedData.ai_vision_analysis || null,
         ai_vision_model: 'deepseek-chat',
         ai_vision_timestamp: new Date().toISOString(),
-        ai_vision_confidence: parsedData.ai_presentation_quality ? parsedData.ai_presentation_quality * 10 : 80,
+        ai_vision_confidence: visionConfidence > 0 ? Math.round(visionConfidence * 100) : (parsedData.ai_presentation_quality ? parsedData.ai_presentation_quality * 10 : 80),
         ai_presentation_quality: parsedData.ai_presentation_quality || null,
         ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
         ai_lighting_type: parsedData.ai_lighting_type || null,
@@ -370,11 +471,17 @@ Réponds UNIQUEMENT en JSON valide:
         smart_seat_height: parsedData.smart_seat_height || null,
         smart_seat_height_unit: parsedData.smart_seat_height_unit || null,
         
+        // SERP tracking
+        specs_source: serpVerified ? 'serp' : (visionAttributes?.technicalDimensions ? 'vision' : 'estimated'),
+        specs_confidence: serpVerified ? specsConfidence : (visionConfidence > 0 ? visionConfidence : 0.5),
+        serp_verified: serpVerified,
+        serp_data: serpData || null,
+        
         // Categorization
         category: parsedData.category || product.category || null,
         sub_category: parsedData.sub_category || null,
-        style: parsedData.style || null,
-        room: parsedData.room || null,
+        style: visionAttributes?.style || parsedData.style || null,
+        room: visionAttributes?.room || parsedData.room || null,
         functionality: parsedData.functionality || null,
         characteristics: parsedData.characteristics || null,
         

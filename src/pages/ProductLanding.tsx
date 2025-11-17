@@ -386,8 +386,28 @@ export default function ProductLanding() {
               {dimensions.length > 0 && (
                 <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200">
                   <Ruler className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-medium">Dimensions</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-gray-500 uppercase font-medium">Dimensions</p>
+                      {product.vision_attributes?.technicalDimensions && Object.keys(product.vision_attributes.technicalDimensions).length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">
+                          <Check className="w-3 h-3" />
+                          Vérifié Vision AI
+                        </span>
+                      )}
+                      {product.serp_verified && !product.vision_attributes?.technicalDimensions && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                          <Check className="w-3 h-3" />
+                          Vérifié SERP
+                        </span>
+                      )}
+                      {!product.vision_attributes?.technicalDimensions && !product.serp_verified && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">
+                          <Info className="w-3 h-3" />
+                          Estimé IA
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-semibold text-gray-900">{dimensions.join(' × ')}</p>
                   </div>
                 </div>

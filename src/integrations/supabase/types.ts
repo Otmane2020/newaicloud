@@ -3711,6 +3711,8 @@ export type Database = {
           vision_analyzed: boolean | null
           vision_attributes: Json | null
           vision_confidence: number | null
+          vision_model: string | null
+          vision_timestamp: string | null
           width: number | null
           width_unit: string | null
         }
@@ -3838,6 +3840,8 @@ export type Database = {
           vision_analyzed?: boolean | null
           vision_attributes?: Json | null
           vision_confidence?: number | null
+          vision_model?: string | null
+          vision_timestamp?: string | null
           width?: number | null
           width_unit?: string | null
         }
@@ -3965,6 +3969,8 @@ export type Database = {
           vision_analyzed?: boolean | null
           vision_attributes?: Json | null
           vision_confidence?: number | null
+          vision_model?: string | null
+          vision_timestamp?: string | null
           width?: number | null
           width_unit?: string | null
         }
