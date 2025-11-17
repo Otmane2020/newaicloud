@@ -33,11 +33,13 @@ export function QuickPress() {
 
   const loadCollections = async () => {
     try {
+      console.log('Loading collections for user:', user?.id);
+      
       const { data, error } = await supabase
         .from('shopify_collections')
-        .select('id, title, product_count')
-        .eq('user_id', user?.id)
-        .order('title');
+        .select('id, title, product_count');
+
+      console.log('Collections query result:', { data, error });
 
       if (error) throw error;
       setCollections(data || []);
