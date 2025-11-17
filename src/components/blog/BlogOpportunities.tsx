@@ -199,7 +199,84 @@ export function BlogOpportunities() {
   };
 
   const handleCreateArticle = async (opp: Opportunity) => {
-    // Open wizard with prefilled opportunity data via URL params
+    if (!selectedStore?.id) {
+      toast.error("Aucune boutique sélectionnée");
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Utilisateur non authentifié");
+      return;
+    }
+
+    if (!canDoAction('optimizations')) {
+      toast.error('Limite d\'optimisations atteinte');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    setGenerating(opp.id);
+    
+    try {
+      toast.info("🚀 Génération automatique de l'article...", {
+        description: `Cela peut prendre 1-2 minutes. ${opp.estimatedWordCount} mots.`,
+        duration: 5000
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-blog-article', {
+        body: {
+          user_id: user.id,
+          store_id: selectedStore.id,
+          category: opp.category,
+          keywords: [...opp.primaryKeywords, ...opp.secondaryKeywords],
+          title: opp.title,
+          articleLength: opp.estimatedWordCount <= 1000 ? "700" : 
+                         opp.estimatedWordCount <= 3000 ? "2000" : "4000",
+          language: "fr",
+          productIds: opp.productIds,
+          collectionTitle: opp.collectionIds?.[0] || "",
+          opportunityData: {
+            opportunityId: opp.id,
+            angle: opp.angle,
+            targetAudience: opp.targetAudience,
+            metaDescription: opp.metaDescription,
+            subCategory: opp.subCategory,
+            type: opp.type,
+            difficulty: opp.difficulty
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.article?.id) {
+        toast.success("✅ Article créé avec succès !", {
+          description: `"${opp.title}" est maintenant disponible`,
+          duration: 6000
+        });
+
+        await refreshLimits();
+        await loadOpportunities();
+        
+        setTimeout(() => {
+          window.location.href = `/blog?subtab=articles&articleId=${data.article.id}`;
+        }, 1000);
+      } else {
+        throw new Error("Article ID manquant dans la réponse");
+      }
+      
+    } catch (error) {
+      console.error('Error generating article:', error);
+      toast.error("Erreur lors de la génération", {
+        description: error.message || "Réessayez plus tard"
+      });
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleCreateWithWizard = (opp: Opportunity) => {
     const params = new URLSearchParams({
       opportunityId: opp.id,
       title: opp.title,
@@ -417,23 +494,32 @@ export function BlogOpportunities() {
                     📝 ~{opp.estimatedWordCount} mots
                   </div>
 
-                  <Button
-                    className="w-full"
-                    onClick={() => handleCreateArticle(opp)}
-                    disabled={generating === opp.id}
-                  >
-                    {generating === opp.id ? (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                        {t.common.loading}
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {t.blog.createNew}
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    <Button 
+                      onClick={() => handleCreateArticle(opp)} 
+                      className="flex-1"
+                      disabled={generating === opp.id}
+                    >
+                      {generating === opp.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Génération...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Créer Auto
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleCreateWithWizard(opp)}
+                      disabled={generating === opp.id}
+                    >
+                      Personnaliser
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
