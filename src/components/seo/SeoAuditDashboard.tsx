@@ -754,7 +754,121 @@ export function SeoAuditDashboard() {
             </CardContent>
           </Card>
 
-          {/* Category Scores - Moved from categories tab */}
+              {/* Synthèse et Actions Rapides */}
+              <Card className="mb-6 border-2 bg-gradient-to-br from-card to-accent/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                    Synthèse et Actions Prioritaires
+                  </CardTitle>
+                  <CardDescription>
+                    Recommandations basées sur votre analyse SEO
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Points forts */}
+                  <div className="p-4 rounded-lg bg-success/10 border border-success/20">
+                    <h4 className="font-semibold text-success mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Points Forts
+                    </h4>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      {(() => {
+                        const strengths = [];
+                        if ((stats?.products?.score || 0) >= 70) strengths.push(`Produits bien optimisés (${stats?.products?.optimized}/${stats?.products?.total})`);
+                        if ((stats?.collections?.score || 0) >= 70) strengths.push(`Collections performantes (${stats?.collections?.optimized}/${stats?.collections?.total})`);
+                        if ((stats?.images?.score || 0) >= 70) strengths.push(`Images correctement décrites (${stats?.images?.optimized}/${stats?.images?.total})`);
+                        if ((stats?.articles?.score || 0) >= 70) strengths.push(`Articles bien structurés (${stats?.articles?.optimized}/${stats?.articles?.total})`);
+                        return strengths.length > 0 ? strengths.map((s, i) => <li key={i}>✓ {s}</li>) : <li>Continuez vos efforts d'optimisation</li>;
+                      })()}
+                    </ul>
+                  </div>
+
+                  {/* Points à améliorer */}
+                  <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
+                    <h4 className="font-semibold text-warning mb-2 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Priorités d'Amélioration
+                    </h4>
+                    <div className="space-y-2">
+                      {(() => {
+                        const priorities = [];
+                        if ((stats?.homepage?.score || 0) < 50) {
+                          priorities.push({
+                            label: "Page d'accueil",
+                            score: stats?.homepage?.score || 0,
+                            action: () => navigate('/seo?tab=audit-dashboard&subtab=homepage')
+                          });
+                        }
+                        if ((stats?.products?.score || 0) < 50) {
+                          priorities.push({
+                            label: "Fiches produits",
+                            score: stats?.products?.score || 0,
+                            action: () => navigate('/seo?tab=products')
+                          });
+                        }
+                        if ((stats?.images?.score || 0) < 50) {
+                          priorities.push({
+                            label: "Images (alt text)",
+                            score: stats?.images?.score || 0,
+                            action: () => navigate('/seo?tab=alt')
+                          });
+                        }
+                        if ((stats?.collections?.score || 0) < 50) {
+                          priorities.push({
+                            label: "Collections",
+                            score: stats?.collections?.score || 0,
+                            action: () => navigate('/seo?tab=collections')
+                          });
+                        }
+                        
+                        return priorities.length > 0 ? (
+                          priorities.slice(0, 3).map((p, i) => (
+                            <Button
+                              key={i}
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-between hover:bg-warning/10"
+                              onClick={p.action}
+                            >
+                              <span className="text-left">
+                                {i + 1}. Optimiser {p.label} <span className="text-xs text-muted-foreground">({p.score}/100)</span>
+                              </span>
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Aucune priorité urgente détectée ✓</p>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Actions Rapides */}
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => navigate('/seo?tab=audit-dashboard&subtab=quick-wins')}
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Voir les Quick Wins
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => navigate('/seo?tab=audit-dashboard&subtab=actions')}
+                    >
+                      <Target className="w-4 h-4 mr-2" />
+                      Plan d'Action Complet
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Category Scores - Moved from categories tab */}
           <div>
             <div className="mb-6">
               <h3 className="text-2xl font-bold mb-2">{t.seoAuditDashboard.categoryDetail.title}</h3>
@@ -877,12 +991,26 @@ export function SeoAuditDashboard() {
                             Page unique
                           </Badge>
                         ) : key === 'tags_score' ? (
-                          <Badge variant="outline" className="text-xs font-semibold">
-                            {stats?.products?.total || 0} produits
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs font-semibold cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/seo?tab=products');
+                            }}
+                          >
+                            {stats?.products?.total || 0} produits →
                           </Badge>
                         ) : totalCount > 0 ? (
-                          <Badge variant="outline" className="text-xs font-semibold">
-                            {optimizedCount}/{totalCount} ✓
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs font-semibold cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(subtab ? `/seo?tab=${tab}&subtab=${subtab}` : `/seo?tab=${tab}`);
+                            }}
+                          >
+                            {optimizedCount}/{totalCount} →
                           </Badge>
                         ) : null}
                       </div>
