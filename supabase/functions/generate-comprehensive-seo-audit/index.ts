@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
       images_score: 0,
       tags_score: 0,
       issues: [] as any[],
+      quick_wins: [] as any[],
       recommendations: [] as any[],
       action_plan: [] as any[]
     };
@@ -158,8 +159,14 @@ Deno.serve(async (req) => {
 
     console.log(`[AUDIT] Global score calculated: ${auditResults.global_score}/100 (average of 7 categories)`);
 
-    // Generate recommendations based on issues
-    auditResults.recommendations = generateRecommendations(auditResults);
+    // Identify Quick Wins (high impact, low effort improvements)
+    const quickWins = identifyQuickWins(products, collections, pages, articles, productImages, homepageSeo);
+    auditResults.quick_wins = quickWins;
+    console.log(`[AUDIT] Identified ${quickWins.length} quick wins`);
+
+    // Generate recommendations based on issues and data
+    auditResults.recommendations = generateRecommendations(auditResults, products, collections, pages, articles, productImages);
+
 
     // Generate action plan
     auditResults.action_plan = auditResults.issues
@@ -831,36 +838,212 @@ function auditTags(products: any[]): { score: number; issues: any[] } {
   return { score: avgScore, issues };
 }
 
-function generateRecommendations(auditResults: any): any[] {
+function identifyQuickWins(products: any[], collections: any[], pages: any[], articles: any[], images: any[], homepageSeo: any): any[] {
+  const quickWins: any[] = [];
+  
+  // Products without SEO title (5 min each, high impact)
+  const productsNoTitle = products.filter(p => !p.seo_title);
+  if (productsNoTitle.length > 0) {
+    quickWins.push({
+      id: 'products_no_title',
+      title: `${productsNoTitle.length} produit${productsNoTitle.length > 1 ? 's' : ''} sans titre SEO`,
+      description: 'Ajoutez des titres SEO pour améliorer le référencement',
+      impact: 8,
+      effort: 'low',
+      timeMinutes: productsNoTitle.length * 5,
+      category: 'products',
+      link: '/seo?tab=products',
+      count: productsNoTitle.length
+    });
+  }
+  
+  // Images without alt text (2 min each, medium impact)
+  const imagesNoAlt = images.filter(img => !img.alt_text || img.alt_text.trim().length === 0);
+  if (imagesNoAlt.length > 0) {
+    quickWins.push({
+      id: 'images_no_alt',
+      title: `${imagesNoAlt.length} image${imagesNoAlt.length > 1 ? 's' : ''} sans texte alternatif`,
+      description: 'Ajoutez des descriptions alt pour l\'accessibilité et le SEO',
+      impact: 6,
+      effort: 'low',
+      timeMinutes: imagesNoAlt.length * 2,
+      category: 'images',
+      link: '/seo?tab=alt',
+      count: imagesNoAlt.length
+    });
+  }
+  
+  // Collections without description (3 min each, high impact)
+  const collectionsNoDesc = collections.filter(c => !c.seo_description);
+  if (collectionsNoDesc.length > 0) {
+    quickWins.push({
+      id: 'collections_no_desc',
+      title: `${collectionsNoDesc.length} collection${collectionsNoDesc.length > 1 ? 's' : ''} sans description SEO`,
+      description: 'Optimisez vos pages de collections pour le référencement',
+      impact: 7,
+      effort: 'low',
+      timeMinutes: collectionsNoDesc.length * 3,
+      category: 'collections',
+      link: '/seo?tab=collections',
+      count: collectionsNoDesc.length
+    });
+  }
+  
+  // Homepage without meta description (5 min, very high impact)
+  if (!homepageSeo?.seo_description) {
+    quickWins.push({
+      id: 'homepage_no_desc',
+      title: 'Page d\'accueil sans meta description',
+      description: 'La description de votre page d\'accueil est cruciale pour le SEO',
+      impact: 10,
+      effort: 'low',
+      timeMinutes: 5,
+      category: 'homepage',
+      link: '/seo?tab=homepage',
+      count: 1
+    });
+  }
+  
+  // Articles ready to publish (1 click, medium impact)
+  const draftArticles = articles.filter(a => a.status === 'draft');
+  if (draftArticles.length > 0) {
+    quickWins.push({
+      id: 'articles_draft',
+      title: `${draftArticles.length} article${draftArticles.length > 1 ? 's' : ''} en brouillon`,
+      description: 'Publiez vos articles pour commencer à générer du trafic',
+      impact: 7,
+      effort: 'low',
+      timeMinutes: 1,
+      category: 'articles',
+      link: '/blog',
+      count: draftArticles.length
+    });
+  }
+  
+  // Pages without SEO title (5 min each, medium impact)
+  const pagesNoTitle = pages.filter(p => !p.seo_title);
+  if (pagesNoTitle.length > 0) {
+    quickWins.push({
+      id: 'pages_no_title',
+      title: `${pagesNoTitle.length} page${pagesNoTitle.length > 1 ? 's' : ''} sans titre SEO`,
+      description: 'Optimisez vos pages statiques pour le référencement',
+      impact: 6,
+      effort: 'low',
+      timeMinutes: pagesNoTitle.length * 5,
+      category: 'pages',
+      link: '/seo?tab=pages',
+      count: pagesNoTitle.length
+    });
+  }
+  
+  // Calculate ROI (impact / effort) and sort
+  return quickWins
+    .map(qw => ({ ...qw, roi: qw.impact / (qw.timeMinutes / 5) }))
+    .sort((a, b) => b.roi - a.roi)
+    .slice(0, 10); // Top 10 quick wins
+}
+
+function generateRecommendations(auditResults: any, products: any[], collections: any[], pages: any[], articles: any[], images: any[]): any[] {
   const recommendations: any[] = [];
-  const criticalIssues = auditResults.issues.filter((i: any) => i.severity === 'high');
   
-  if (criticalIssues.length > 0) {
+  // Category-specific recommendations
+  if (auditResults.products_score < 70 && products.length > 0) {
+    const missingTitle = products.filter(p => !p.seo_title).length;
+    const missingDesc = products.filter(p => !p.seo_description).length;
+    
     recommendations.push({
+      category: 'products',
       priority: 'high',
-      title: 'Corriger les problèmes critiques',
-      description: `${criticalIssues.length} problèmes critiques nécessitent une action immédiate.`,
-      actions: criticalIssues.slice(0, 3).map((i: any) => i.action)
+      title: 'Optimiser les fiches produits',
+      description: `${missingTitle} produits sans titre SEO, ${missingDesc} sans description`,
+      estimatedImpact: '+20% trafic produits',
+      timeEstimate: `${Math.ceil((missingTitle + missingDesc) * 3)} minutes`,
+      difficulty: 'Facile',
+      expectedScoreGain: 15,
+      actions: [
+        { text: 'Ajouter titres SEO manquants', link: '/seo?tab=products', count: missingTitle },
+        { text: 'Compléter descriptions SEO', link: '/seo?tab=products', count: missingDesc },
+        { text: 'Utiliser l\'optimiseur IA', link: '/seo?tab=products' }
+      ]
     });
   }
   
-  if (auditResults.global_score < 50) {
+  if (auditResults.images_score < 70 && images.length > 0) {
+    const noAlt = images.filter(img => !img.alt_text).length;
+    const poorAlt = images.filter(img => img.alt_text && img.alt_text.length < 10).length;
+    
     recommendations.push({
+      category: 'images',
       priority: 'high',
-      title: 'Refonte SEO nécessaire',
-      description: 'Votre score global est faible. Une optimisation globale est recommandée.',
-      actions: ['Utilisez l\'optimiseur automatique', 'Suivez le plan d\'action proposé']
+      title: 'Améliorer les images',
+      description: `${noAlt} images sans alt text, ${poorAlt} avec descriptions trop courtes`,
+      estimatedImpact: '+15% visibilité Google Images',
+      timeEstimate: `${Math.ceil(noAlt * 2)} minutes`,
+      difficulty: 'Facile',
+      expectedScoreGain: 12,
+      actions: [
+        { text: 'Ajouter alt text manquant', link: '/seo?tab=alt', count: noAlt },
+        { text: 'Améliorer alt text existant', link: '/seo?tab=alt', count: poorAlt }
+      ]
     });
   }
   
-  if (auditResults.global_score >= 50 && auditResults.global_score < 80) {
+  if (auditResults.collections_score < 70 && collections.length > 0) {
+    const noDesc = collections.filter(c => !c.seo_description).length;
+    
     recommendations.push({
+      category: 'collections',
       priority: 'medium',
-      title: 'Optimisations ciblées',
-      description: 'Concentrez-vous sur les catégories avec les scores les plus faibles.',
-      actions: ['Identifiez les opportunités rapides', 'Optimisez les contenus prioritaires']
+      title: 'Optimiser les collections',
+      description: `${noDesc} collections sans description SEO`,
+      estimatedImpact: '+10% trafic catégories',
+      timeEstimate: `${Math.ceil(noDesc * 5)} minutes`,
+      difficulty: 'Moyen',
+      expectedScoreGain: 10,
+      actions: [
+        { text: 'Ajouter descriptions manquantes', link: '/seo?tab=collections', count: noDesc }
+      ]
     });
   }
   
-  return recommendations;
+  if (auditResults.articles_score < 70 && articles.length > 0) {
+    const drafts = articles.filter(a => a.status === 'draft').length;
+    const noKeywords = articles.filter(a => !a.keywords || a.keywords.length === 0).length;
+    
+    recommendations.push({
+      category: 'articles',
+      priority: 'medium',
+      title: 'Publier et optimiser le blog',
+      description: `${drafts} articles en attente, ${noKeywords} sans mots-clés`,
+      estimatedImpact: '+25% trafic organique blog',
+      timeEstimate: `${Math.ceil(drafts * 2)} minutes`,
+      difficulty: 'Facile',
+      expectedScoreGain: 18,
+      actions: [
+        { text: 'Publier les brouillons', link: '/blog', count: drafts },
+        { text: 'Ajouter mots-clés', link: '/blog', count: noKeywords }
+      ]
+    });
+  }
+  
+  if (auditResults.homepage_score < 70) {
+    recommendations.push({
+      category: 'homepage',
+      priority: 'high',
+      title: 'Optimiser la page d\'accueil',
+      description: 'Votre vitrine principale nécessite une optimisation',
+      estimatedImpact: '+30% trafic global',
+      timeEstimate: '10 minutes',
+      difficulty: 'Facile',
+      expectedScoreGain: 20,
+      actions: [
+        { text: 'Optimiser titre et description', link: '/seo?tab=homepage' }
+      ]
+    });
+  }
+  
+  return recommendations.sort((a, b) => {
+    const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+    return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+  });
 }

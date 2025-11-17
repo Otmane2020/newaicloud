@@ -21,6 +21,7 @@ import {
   Target,
   List,
   BarChart3,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
@@ -477,7 +478,7 @@ export function SeoAuditDashboard() {
           {activeSubTab === "overview" && (
             <>
               {/* Quick Access Cards */}
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <Card
                   className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-primary/50 bg-gradient-to-br from-card to-primary/5"
                   onClick={() => navigate("/seo?tab=audit-dashboard&subtab=homepage")}
@@ -491,6 +492,24 @@ export function SeoAuditDashboard() {
                     </div>
                     <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{t.seo.audit.quickAccess.homepage}</h3>
                     <p className="text-sm text-muted-foreground">{t.seo.audit.quickAccess.homepageDesc}</p>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-[#22c55e]/50 bg-gradient-to-br from-card to-[#22c55e]/5"
+                  onClick={() => navigate("/seo?tab=audit-dashboard&subtab=quick-wins")}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 rounded-xl bg-[#22c55e]/10 group-hover:bg-[#22c55e]/20 transition-colors">
+                        <Zap className="w-6 h-6 text-[#22c55e]" />
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-[#22c55e] group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-[#22c55e] transition-colors">Quick Wins ⚡</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {audit?.audit_results?.quick_wins?.length || 0} actions rapides à fort impact
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -778,20 +797,27 @@ export function SeoAuditDashboard() {
                   desc: "Score des tags de produits",
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
-                const categoryStats =
-                  stats?.[
-                    tab === "products" && key === "technical_score"
-                      ? "technical"
-                      : tab === "products"
-                        ? "products"
-                        : tab === "collections"
-                          ? "collections"
-                          : tab === "articles"
-                            ? "articles"
-                            : tab === "alt"
-                              ? "images"
-                              : "pages"
-                  ];
+                // Fixed: Map directly by key instead of tab
+                const categoryStats = (() => {
+                  switch (key) {
+                    case 'homepage_score':
+                      return stats?.homepage;
+                    case 'products_score':
+                      return stats?.products;
+                    case 'collections_score':
+                      return stats?.collections;
+                    case 'pages_score':
+                      return stats?.pages;
+                    case 'articles_score':
+                      return stats?.articles;
+                    case 'images_score':
+                      return stats?.images;
+                    case 'tags_score':
+                      return stats?.tags;
+                    default:
+                      return null;
+                  }
+                })();
                 const optimizedCount = categoryStats?.optimized || 0;
                 const totalCount = categoryStats?.total || 0;
                 const score = audit[key] || 0;
@@ -827,11 +853,19 @@ export function SeoAuditDashboard() {
                           {score}
                           <span className="text-lg text-muted-foreground">/100</span>
                         </div>
-                        {totalCount > 0 && (
+                        {key === 'homepage_score' ? (
+                          <Badge variant="outline" className="text-xs font-semibold">
+                            Page unique
+                          </Badge>
+                        ) : key === 'tags_score' ? (
+                          <Badge variant="outline" className="text-xs font-semibold">
+                            {stats?.products?.total || 0} produits
+                          </Badge>
+                        ) : totalCount > 0 ? (
                           <Badge variant="outline" className="text-xs font-semibold">
                             {optimizedCount}/{totalCount} ✓
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
                       <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
                         <div
@@ -863,6 +897,86 @@ export function SeoAuditDashboard() {
               </CardHeader>
               <CardContent>
                 <HomePageSeoAudit />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Quick Wins Section */}
+          {activeSubTab === "quick-wins" && audit?.audit_results?.quick_wins && audit.audit_results.quick_wins.length > 0 && (
+            <Card className="border-2 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-[#22c55e]/5 to-[#16a34a]/5 border-b-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <div className="p-3 rounded-xl bg-[#22c55e]/10">
+                        <Zap className="w-6 h-6 text-[#22c55e]" />
+                      </div>
+                      Quick Wins ⚡ - Actions Rapides à Fort Impact
+                    </CardTitle>
+                    <CardDescription className="mt-2 text-base">
+                      {audit.audit_results.quick_wins.length} opportunités d'amélioration immédiate
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-[#22c55e] text-white text-lg px-4 py-2">
+                    {audit.audit_results.quick_wins.length} actions
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-8">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {audit.audit_results.quick_wins.map((quickWin: any, index: number) => (
+                    <Card
+                      key={index}
+                      className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-[#22c55e]/50 bg-gradient-to-br from-card to-[#22c55e]/5"
+                      onClick={() => navigate(quickWin.link)}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Badge className="bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20">
+                                Impact: {quickWin.impact}/10
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                ⏱️ {quickWin.timeMinutes} min
+                              </Badge>
+                              <Badge variant="outline" className="text-xs font-bold">
+                                ROI: {quickWin.roi.toFixed(1)}
+                              </Badge>
+                            </div>
+                            <h4 className="font-bold text-lg mb-2 group-hover:text-[#22c55e] transition-colors">
+                              {quickWin.title}
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {quickWin.description}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="capitalize">
+                              {quickWin.category}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {quickWin.count} élément{quickWin.count > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-[#22c55e] hover:bg-[#16a34a] text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(quickWin.link);
+                            }}
+                          >
+                            Optimiser <ArrowRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1052,19 +1166,92 @@ export function SeoAuditDashboard() {
                           </div>
                         </div>
 
-                        <div className="space-y-3">
-                          <div className="text-sm font-semibold text-muted-foreground mb-3">Actions à réaliser :</div>
-                          {rec.actions?.map((action: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                <CheckCircle2 className="w-4 h-4 text-primary" />
-                              </div>
-                              <span className="text-sm font-medium leading-relaxed">{action}</span>
+                        <div className="space-y-4">
+                          {/* Description */}
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-4">{rec.description}</p>
+                          
+                          {/* Impact Metrics Grid */}
+                          {(rec.estimatedImpact || rec.timeEstimate || rec.difficulty || rec.expectedScoreGain) && (
+                            <div className="grid md:grid-cols-2 gap-3 mb-4">
+                              {rec.estimatedImpact && (
+                                <div className="p-3 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <TrendingUp className="w-4 h-4 text-[#22c55e]" />
+                                    <span className="text-xs font-bold text-[#22c55e]">Impact attendu</span>
+                                  </div>
+                                  <p className="text-sm font-semibold">{rec.estimatedImpact}</p>
+                                </div>
+                              )}
+                              {rec.timeEstimate && (
+                                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Target className="w-4 h-4 text-primary" />
+                                    <span className="text-xs font-bold text-primary">Temps requis</span>
+                                  </div>
+                                  <p className="text-sm font-semibold">{rec.timeEstimate}</p>
+                                </div>
+                              )}
+                              {rec.difficulty && (
+                                <div className="p-3 rounded-xl bg-[#f59e0b]/10 border border-[#f59e0b]/20">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <BarChart3 className="w-4 h-4 text-[#f59e0b]" />
+                                    <span className="text-xs font-bold text-[#f59e0b]">Difficulté</span>
+                                  </div>
+                                  <p className="text-sm font-semibold">{rec.difficulty}</p>
+                                </div>
+                              )}
+                              {rec.expectedScoreGain && (
+                                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Sparkles className="w-4 h-4 text-primary" />
+                                    <span className="text-xs font-bold text-primary">Gain de score</span>
+                                  </div>
+                                  <p className="text-sm font-semibold">+{rec.expectedScoreGain} points</p>
+                                </div>
+                              )}
                             </div>
-                          ))}
+                          )}
+                          
+                          {/* Actions with direct navigation buttons */}
+                          {rec.actions && rec.actions.length > 0 && (
+                            <>
+                              <div className="text-sm font-semibold text-muted-foreground mb-2">Actions à réaliser :</div>
+                              <div className="space-y-2">
+                                {rec.actions.map((action: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group"
+                                  >
+                                    <div className="flex items-start gap-3 flex-1">
+                                      <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium leading-relaxed">
+                                          {typeof action === 'string' ? action : action.text}
+                                        </p>
+                                        {typeof action === 'object' && action.count && (
+                                          <Badge variant="outline" className="mt-1 text-xs">
+                                            {action.count} élément{action.count > 1 ? 's' : ''}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {typeof action === 'object' && action.link && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => navigate(action.link)}
+                                      >
+                                        <ArrowRight className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
