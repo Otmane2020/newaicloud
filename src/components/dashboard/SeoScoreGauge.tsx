@@ -91,7 +91,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.products,
       description: t.seoGauge.categoryDescriptions.products,
-      value: Math.round(categoryScores.products),
+      value: categoryScores.products,
       max: 100,
       link: "/seo?tab=products",
       key: "products" as const
@@ -99,7 +99,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.collections,
       description: t.seoGauge.categoryDescriptions.collections,
-      value: Math.round(categoryScores.collections),
+      value: categoryScores.collections,
       max: 100,
       link: "/seo?tab=collections",
       key: "collections" as const
@@ -107,7 +107,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.images,
       description: t.seoGauge.categoryDescriptions.images,
-      value: Math.round(categoryScores.images),
+      value: categoryScores.images,
       max: 100,
       link: "/seo?tab=alt",
       key: "images" as const
@@ -115,7 +115,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.pages,
       description: t.seoGauge.categoryDescriptions.pages,
-      value: Math.round(categoryScores.pages),
+      value: categoryScores.pages,
       max: 100,
       link: "/seo?tab=pages",
       key: "pages" as const
@@ -123,7 +123,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.articles,
       description: t.seoGauge.categoryDescriptions.articles,
-      value: Math.round(categoryScores.articles),
+      value: categoryScores.articles,
       max: 100,
       link: "/seo?tab=articles",
       key: "articles" as const
@@ -131,7 +131,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.tags,
       description: t.seoGauge.categoryDescriptions.tags,
-      value: Math.round(categoryScores.tags),
+      value: categoryScores.tags,
       max: 100,
       link: "/seo?tab=tags",
       key: "tags" as const
@@ -139,7 +139,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     {
       name: t.seoGauge.categoryNames.homepage,
       description: t.seoGauge.categoryDescriptions.homepage,
-      value: Math.round(categoryScores.homepage),
+      value: categoryScores.homepage,
       max: 100,
       link: "/seo?tab=homepage",
       key: "homepage" as const
