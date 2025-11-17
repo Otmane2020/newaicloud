@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,13 +34,6 @@ interface ArticleWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collections: any[];
-  selectedCollection: string;
-  products: any[];
-  selectedProducts: string[];
-  suggestedKeywords: string[];
-  selectedKeywords: string[];
-  onToggleProduct: (id: string) => void;
-  onToggleKeyword: (keyword: string) => void;
   userId: string;
   storeId: string;
 }
@@ -63,17 +56,15 @@ export function ArticleWizard({
   open,
   onOpenChange,
   collections,
-  selectedCollection,
-  products,
-  selectedProducts,
-  suggestedKeywords,
-  selectedKeywords,
-  onToggleProduct,
-  onToggleKeyword,
   userId,
   storeId
 }: ArticleWizardProps) {
   const [step, setStep] = useState(1);
+  const [selectedCollection, setSelectedCollection] = useState('');
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [selectedLayout, setSelectedLayout] = useState('editorial');
   const [selectedPalette, setSelectedPalette] = useState('classic');
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
@@ -85,7 +76,108 @@ export function ArticleWizard({
   const [articleId, setArticleId] = useState<string>('');
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
-  const totalSteps = 5;
+  const totalSteps = 6;
+
+  // Load products when collection changes
+  useEffect(() => {
+    if (selectedCollection && open) {
+      loadProducts();
+      generateKeywords();
+    }
+  }, [selectedCollection, open]);
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shopify_products')
+        .select('id, title, price, image_url, category, handle, tags, description')
+        .contains('collection_ids', [selectedCollection])
+        .limit(30);
+
+      if (error) throw error;
+      setProducts(data || []);
+      setSelectedProducts(data?.slice(0, 6).map(p => p.id) || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  const generateKeywords = async () => {
+    try {
+      const { data: products } = await supabase
+        .from('shopify_products')
+        .select('title, tags, category, description')
+        .contains('collection_ids', [selectedCollection])
+        .limit(20);
+
+      const shortPhrases = new Set<string>();
+      const longPhrases = new Set<string>();
+      
+      products?.forEach(product => {
+        // Short keywords (1-2 mots)
+        product.title?.split(' ').forEach((word: string) => {
+          if (word.length > 3) shortPhrases.add(word.toLowerCase());
+        });
+        
+        product.tags?.split(',').forEach((tag: string) => {
+          const cleaned = tag.trim().toLowerCase();
+          if (cleaned.length > 2 && cleaned.split(' ').length <= 2) {
+            shortPhrases.add(cleaned);
+          }
+        });
+        
+        if (product.category) shortPhrases.add(product.category.toLowerCase());
+        
+        // Long keywords (3-5 mots) - extraire des phrases du titre et description
+        const titleWords = product.title?.split(' ') || [];
+        for (let i = 0; i < titleWords.length - 2; i++) {
+          const phrase = titleWords.slice(i, i + 3).join(' ').toLowerCase();
+          if (phrase.length > 10) longPhrases.add(phrase);
+        }
+        
+        // Extraire des phrases de la description
+        if (product.description) {
+          const sentences = product.description.split(/[.!?]/);
+          sentences.slice(0, 3).forEach((sentence: string) => {
+            const words = sentence.trim().split(' ').filter((w: string) => w.length > 2);
+            if (words.length >= 3 && words.length <= 5) {
+              longPhrases.add(words.join(' ').toLowerCase());
+            }
+          });
+        }
+      });
+
+      const allSuggestions = [
+        ...Array.from(shortPhrases).slice(0, 10),
+        ...Array.from(longPhrases).slice(0, 10)
+      ];
+      
+      setSuggestedKeywords(allSuggestions);
+      setSelectedKeywords(allSuggestions.slice(0, 5));
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+    }
+  };
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const toggleKeyword = (keyword: string) => {
+    setSelectedKeywords(prev => 
+      prev.includes(keyword) 
+        ? prev.filter(k => k !== keyword)
+        : [...prev, keyword]
+    );
+  };
+
+  const selectAllKeywords = () => {
+    setSelectedKeywords(suggestedKeywords);
+  };
 
   const addCustomKeyword = () => {
     if (keywordInput.trim() && !customKeywords.includes(keywordInput.trim())) {
@@ -108,7 +200,7 @@ export function ArticleWizard({
     setProgress(0);
     setPreview('');
     setArticleId('');
-    setStep(5);
+    setStep(6);
 
     try {
       setCurrentStep('Analyse des produits...');
@@ -154,7 +246,7 @@ export function ArticleWizard({
     } catch (error: any) {
       console.error('Error generating article:', error);
       toast.error(error.message || 'Erreur lors de la génération');
-      setStep(4);
+      setStep(5);
     } finally {
       setGenerating(false);
     }
@@ -195,17 +287,17 @@ export function ArticleWizard({
         <div className="space-y-6 mt-4">
           {/* Progress Indicator */}
           <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                step > s ? 'bg-primary text-primary-foreground' :
-                step === s ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
-                'bg-muted text-muted-foreground'
-              }`}>
-                {step > s ? <Check className="w-5 h-5" /> : s}
-              </div>
-              {s < 5 && (
+            <div className="flex items-center justify-between mb-4">
+              {[1, 2, 3, 4, 5, 6].map((s) => (
+                <div key={s} className="flex items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                    step > s ? 'bg-primary text-primary-foreground' :
+                    step === s ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    {step > s ? <Check className="w-5 h-5" /> : s}
+                  </div>
+                  {s < 6 && (
                 <div className={`h-1 w-12 mx-2 transition-all ${
                   step > s ? 'bg-primary' : 'bg-muted'
                 }`} />
@@ -218,8 +310,55 @@ export function ArticleWizard({
         </div>
       </Card>
 
-      {/* Step 1: Layout Selection */}
-      {step === 1 && (
+          {/* Step 1: Collection Selection */}
+          {step === 1 && (
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold font-serif">Choisissez une collection</h2>
+                  <p className="text-muted-foreground">Point de départ de votre article</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                {collections.map((collection) => (
+                  <button
+                    key={collection.id}
+                    onClick={() => setSelectedCollection(collection.id)}
+                    className={`p-6 rounded-lg border-2 transition-all text-left hover:shadow-md ${
+                      selectedCollection === collection.id
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
+                    {selectedCollection === collection.id && (
+                      <div className="flex items-center gap-2 text-primary text-sm mt-2">
+                        <Check className="w-4 h-4" />
+                        <span>Sélectionné</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <Button 
+                onClick={() => setStep(2)} 
+                className="w-full" 
+                size="lg"
+                disabled={!selectedCollection}
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continuer
+              </Button>
+            </Card>
+          )}
+
+          {/* Step 2: Layout Selection */}
+          {step === 2 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -248,15 +387,15 @@ export function ArticleWizard({
             ))}
           </div>
 
-          <Button onClick={() => setStep(2)} className="w-full" size="lg">
-            <ArrowRight className="w-4 h-4 mr-2" />
-            Continuer
-          </Button>
-        </Card>
-      )}
+            <Button onClick={() => setStep(3)} className="w-full" size="lg">
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Continuer
+            </Button>
+          </Card>
+        )}
 
-      {/* Step 2: Color Palette */}
-      {step === 2 && (
+        {/* Step 3: Color Palette */}
+        {step === 3 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -294,11 +433,11 @@ export function ArticleWizard({
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={() => setStep(1)} variant="outline" className="flex-1">
+            <Button onClick={() => setStep(2)} variant="outline" className="flex-1">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
-            <Button onClick={() => setStep(3)} className="flex-1">
+            <Button onClick={() => setStep(4)} className="flex-1">
               <ArrowRight className="w-4 h-4 mr-2" />
               Continuer
             </Button>
@@ -306,8 +445,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 3: Products Selection */}
-      {step === 3 && (
+      {/* Step 4: Products Selection */}
+      {step === 4 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -322,12 +461,12 @@ export function ArticleWizard({
           </div>
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-3">
               {products.map((product) => (
                 <div
                   key={product.id}
-                  onClick={() => onToggleProduct(product.id)}
-                  className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:shadow-lg ${
+                  onClick={() => toggleProduct(product.id)}
+                  className={`flex gap-4 cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-lg ${
                     selectedProducts.includes(product.id)
                       ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                       : 'border-border hover:border-primary/50'
@@ -337,16 +476,21 @@ export function ArticleWizard({
                     <img
                       src={product.image_url}
                       alt={product.title}
-                      className="w-full h-32 object-cover rounded mb-2"
+                      className="w-24 h-24 object-cover rounded flex-shrink-0"
                     />
                   )}
-                  <h4 className="font-medium text-sm line-clamp-2 mb-1">{product.title}</h4>
-                  {product.price && (
-                    <p className="text-sm text-primary font-semibold">{product.price}€</p>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-base mb-1 line-clamp-2">{product.title}</h4>
+                    {product.price && (
+                      <p className="text-sm text-primary font-semibold mb-1">{product.price}€</p>
+                    )}
+                    {product.category && (
+                      <p className="text-xs text-muted-foreground">{product.category}</p>
+                    )}
+                  </div>
                   {selectedProducts.includes(product.id) && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center self-center">
+                      <Check className="w-5 h-5 text-white" />
                     </div>
                   )}
                 </div>
@@ -355,11 +499,11 @@ export function ArticleWizard({
           </ScrollArea>
 
           <div className="flex gap-3">
-            <Button onClick={() => setStep(2)} variant="outline" className="flex-1">
+            <Button onClick={() => setStep(3)} variant="outline" className="flex-1">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
-            <Button onClick={() => setStep(4)} className="flex-1" disabled={selectedProducts.length === 0}>
+            <Button onClick={() => setStep(5)} className="flex-1" disabled={selectedProducts.length === 0}>
               <ArrowRight className="w-4 h-4 mr-2" />
               Continuer
             </Button>
@@ -367,8 +511,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 4: Keywords */}
-      {step === 4 && (
+      {/* Step 5: Keywords */}
+      {step === 5 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -382,16 +526,31 @@ export function ArticleWizard({
 
           <div className="space-y-6 mb-6">
             <div>
-              <Label className="text-base font-semibold mb-3 block">Mots-clés suggérés</Label>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-base font-semibold">Mots-clés suggérés</Label>
+                <div className="flex gap-2 items-center">
+                  <Button 
+                    onClick={selectAllKeywords} 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    Tout sélectionner
+                  </Button>
+                  <Badge variant="secondary">{selectedKeywords.length} sélectionnés</Badge>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {suggestedKeywords.map((keyword) => (
                   <Badge
                     key={keyword}
                     variant={selectedKeywords.includes(keyword) ? "default" : "outline"}
-                    className="cursor-pointer text-sm py-1 px-3"
-                    onClick={() => onToggleKeyword(keyword)}
+                    className="cursor-pointer text-sm py-2 px-3 transition-all hover:scale-105"
+                    onClick={() => toggleKeyword(keyword)}
                   >
                     {keyword}
+                    {selectedKeywords.includes(keyword) && (
+                      <Check className="w-3 h-3 ml-1" />
+                    )}
                   </Badge>
                 ))}
               </div>
@@ -427,7 +586,7 @@ export function ArticleWizard({
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={() => setStep(3)} variant="outline" className="flex-1">
+            <Button onClick={() => setStep(4)} variant="outline" className="flex-1">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
@@ -443,8 +602,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 5: Generation & Preview */}
-      {step === 5 && (
+      {/* Step 6: Generation & Preview */}
+      {step === 6 && (
         <div className="space-y-6">
           {generating && (
             <Card className="p-6">
