@@ -481,7 +481,8 @@ function auditHomepage(store: any, homepageSeo: any): { score: number; issues: a
       title: 'Titre SEO manquant ou trop court',
       description: 'Le titre de votre page d\'accueil n\'est pas optimisé.',
       impact: 'Visibilité réduite dans les moteurs de recherche.',
-      action: 'Ajoutez un titre SEO entre 40 et 70 caractères.'
+      action: 'Ajoutez un titre SEO entre 40 et 70 caractères.',
+      count: 1
     });
   }
 
@@ -492,7 +493,8 @@ function auditHomepage(store: any, homepageSeo: any): { score: number; issues: a
       title: 'Meta description manquante',
       description: 'La meta description de votre homepage est absente ou trop courte.',
       impact: 'CTR réduit dans les résultats de recherche.',
-      action: 'Ajoutez une description engageante de 120-160 caractères.'
+      action: 'Ajoutez une description engageante de 120-160 caractères.',
+      count: 1
     });
   }
 
@@ -544,7 +546,8 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
       title: 'Titres dupliqués',
       description: `${duplicateTitles.length} produits ont des titres identiques.`,
       impact: 'Cannibalisation SEO et confusion pour les moteurs de recherche.',
-      action: 'Rendez chaque titre unique et descriptif.'
+      action: 'Rendez chaque titre unique et descriptif.',
+      count: duplicateTitles.length
     });
   }
   
@@ -556,7 +559,8 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
       title: 'Descriptions manquantes',
       description: `${missingDescriptions.length} produits n'ont pas de description SEO.`,
       impact: 'Perte d\'opportunités de ranking sur des mots-clés longue traîne.',
-      action: 'Ajoutez des descriptions détaillées (120-160 caractères).'
+      action: 'Ajoutez des descriptions détaillées (120-160 caractères).',
+      count: missingDescriptions.length
     });
   }
   
@@ -572,7 +576,8 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
       title: 'Titres non optimisés',
       description: `${unoptimizedTitles.length} produits ont des titres trop courts ou trop longs.`,
       impact: 'Réduction du CTR et de la visibilité dans les SERP.',
-      action: 'Optimisez les titres entre 40 et 75 caractères.'
+      action: 'Optimisez les titres entre 40 et 75 caractères.',
+      count: unoptimizedTitles.length
     });
   }
   
@@ -609,7 +614,8 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
       title: 'Descriptions manquantes',
       description: `${missingDescriptions.length} collections sans description.`,
       impact: 'Opportunités SEO manquées pour les pages catégories.',
-      action: 'Ajoutez des descriptions riches en mots-clés.'
+      action: 'Ajoutez des descriptions riches en mots-clés.',
+      count: missingDescriptions.length
     });
   }
   
@@ -621,7 +627,8 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
       title: 'Textes alternatifs manquants',
       description: `${missingImageAlt.length} images de collections sans alt text.`,
       impact: 'Accessibilité réduite et perte d\'opportunités en recherche d\'images.',
-      action: 'Ajoutez des descriptions alt pour toutes les images.'
+      action: 'Ajoutez des descriptions alt pour toutes les images.',
+      count: missingImageAlt.length
     });
   }
   
@@ -658,7 +665,8 @@ function auditPages(pages: any[]): { score: number; issues: any[] } {
       title: 'Titres SEO manquants',
       description: `${missingTitles.length} pages sans titre SEO.`,
       impact: 'Pages invisibles dans les moteurs de recherche.',
-      action: 'Ajoutez un titre unique et descriptif pour chaque page.'
+      action: 'Ajoutez un titre unique et descriptif pour chaque page.',
+      count: missingTitles.length
     });
   }
   
@@ -670,7 +678,8 @@ function auditPages(pages: any[]): { score: number; issues: any[] } {
       title: 'Descriptions manquantes',
       description: `${missingDescriptions.length} pages sans meta description.`,
       impact: 'CTR réduit dans les résultats de recherche.',
-      action: 'Ajoutez des descriptions engageantes (120-160 caractères).'
+      action: 'Ajoutez des descriptions engageantes (120-160 caractères).',
+      count: missingDescriptions.length
     });
   }
   
@@ -709,7 +718,8 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
       title: 'Articles non publiés',
       description: `${articles.length - publishedArticles.length} articles en brouillon.`,
       impact: 'Contenu créé mais non visible pour le SEO.',
-      action: 'Publiez les articles terminés.'
+      action: 'Publiez les articles terminés.',
+      count: articles.length - publishedArticles.length
     });
   }
   
@@ -721,7 +731,8 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
       title: 'Images manquantes',
       description: `${missingImages.length} articles sans image mise en avant.`,
       impact: 'Engagement et partages sociaux réduits.',
-      action: 'Ajoutez une image attractive pour chaque article.'
+      action: 'Ajoutez une image attractive pour chaque article.',
+      count: missingImages.length
     });
   }
   
@@ -733,7 +744,8 @@ function auditArticles(articles: any[]): { score: number; issues: any[] } {
       title: 'Articles non optimisés',
       description: `${unoptimizedArticles.length} articles n'ont jamais été optimisés.`,
       impact: 'Contenu sous-performant en SEO.',
-      action: 'Utilisez l\'optimiseur IA pour améliorer vos articles.'
+      action: 'Utilisez l\'optimiseur IA pour améliorer vos articles.',
+      count: unoptimizedArticles.length
     });
   }
   
@@ -765,7 +777,8 @@ function auditImages(productImages: any[]): { score: number; issues: any[] } {
       title: 'Images sans texte alternatif',
       description: `${imagesWithoutAlt.length} images n'ont pas de texte alternatif.`,
       impact: 'Accessibilité compromise et opportunités SEO images perdues.',
-      action: 'Générez des alt texts avec l\'IA ou ajoutez-les manuellement.'
+      action: 'Générez des alt texts avec l\'IA ou ajoutez-les manuellement.',
+      count: imagesWithoutAlt.length
     });
   }
   
@@ -782,7 +795,8 @@ function auditImages(productImages: any[]): { score: number; issues: any[] } {
       title: 'Alt texts de faible qualité',
       description: `${poorQualityAlt.length} images ont des alt texts trop courts ou trop longs.`,
       impact: 'Efficacité SEO réduite pour la recherche d\'images.',
-      action: 'Optimisez les alt texts entre 15 et 90 caractères.'
+      action: 'Optimisez les alt texts entre 15 et 90 caractères.',
+      count: poorQualityAlt.length
     });
   }
   
@@ -813,7 +827,8 @@ function auditTags(products: any[]): { score: number; issues: any[] } {
       title: 'Produits sans tags',
       description: `${productsWithoutTags.length} produits n'ont aucun tag.`,
       impact: 'Organisation et découvrabilité réduites.',
-      action: 'Ajoutez 3-10 tags pertinents par produit.'
+      action: 'Ajoutez 3-10 tags pertinents par produit.',
+      count: productsWithoutTags.length
     });
   }
   
@@ -830,7 +845,8 @@ function auditTags(products: any[]): { score: number; issues: any[] } {
       title: 'Tags de faible qualité',
       description: `${poorTags.length} produits ont des tags trop courts ou insuffisants.`,
       impact: 'Catégorisation inefficace.',
-      action: 'Utilisez des tags descriptifs de plus de 3 caractères.'
+      action: 'Utilisez des tags descriptifs de plus de 3 caractères.',
+      count: poorTags.length
     });
   }
   
