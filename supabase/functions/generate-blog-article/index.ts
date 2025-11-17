@@ -54,7 +54,16 @@ serve(async (req) => {
 
     // 1. Produits spécifiquement sélectionnés
     if (productIds && productIds.length > 0) {
-      console.log(`[GENERATE-BLOG-ARTICLE] Fetching specific products:`, productIds);
+      // Valider que ce sont des UUIDs valides
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validIds = productIds.filter((id: string) => uuidRegex.test(id));
+      
+      if (validIds.length !== productIds.length) {
+        console.warn(`[GENERATE-BLOG-ARTICLE] Invalid product IDs filtered:`, 
+          productIds.filter((id: string) => !validIds.includes(id)));
+      }
+      
+      console.log(`[GENERATE-BLOG-ARTICLE] Fetching specific products:`, validIds);
       const { data: specificProducts, error: specificError } = await supabaseClient
         .from("shopify_products")
         .select(
@@ -62,11 +71,21 @@ serve(async (req) => {
         )
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
-        .in("id", productIds);
+        .in("id", validIds);
+
+      console.log(`[GENERATE-BLOG-ARTICLE] Query executed:`, {
+        validIds: validIds.length,
+        seller_id: user_id,
+        store_id,
+        found: specificProducts?.length || 0,
+        error: specificError?.message || null
+      });
 
       if (!specificError && specificProducts) {
         products = specificProducts;
-        console.log(`[GENERATE-BLOG-ARTICLE] Found ${products.length} specific products`);
+        console.log(`[GENERATE-BLOG-ARTICLE] ✅ Found ${products.length} specific products`);
+      } else {
+        console.error(`[GENERATE-BLOG-ARTICLE] ❌ Error fetching products:`, specificError);
       }
     }
 
@@ -93,7 +112,7 @@ serve(async (req) => {
 
     // 3. Fallback final: produits récents
     if (products.length === 0) {
-      console.log(`[GENERATE-BLOG-ARTICLE] Fallback: fetching recent products`);
+      console.log(`[GENERATE-BLOG-ARTICLE] ⚠️ Fallback: fetching recent products`);
       const { data: recentProducts, error: recentError } = await supabaseClient
         .from("shopify_products")
         .select(
@@ -102,11 +121,17 @@ serve(async (req) => {
         .eq("seller_id", user_id)
         .eq("store_id", store_id)
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(20);
 
       if (!recentError && recentProducts) {
         products = recentProducts;
-        console.log(`[GENERATE-BLOG-ARTICLE] Found ${products.length} recent products`);
+        console.log(`[GENERATE-BLOG-ARTICLE] ✅ Found ${products.length} recent products`);
+      } else if (recentError) {
+        console.error(`[GENERATE-BLOG-ARTICLE] ❌ Error fetching recent products:`, recentError);
+      }
+      
+      if (products.length === 0) {
+        console.warn(`[GENERATE-BLOG-ARTICLE] ⚠️ CRITICAL: No products found in store ${store_id}`);
       }
     }
 
@@ -179,13 +204,26 @@ PRODUITS À INTÉGRER:
 ${products
   .map(
     (p, i) => `
-${i + 1}. ${p.title}
-   - Prix: ${p.price} ${p.currency_code || "€"} ${p.compare_at_price ? `(Promo: ${p.compare_at_price} ${p.currency_code || "€"})` : ""}
-   - Catégorie: ${p.category || "Non spécifiée"}
-   - Description: ${p.body_html?.replace(/<[^>]*>/g, "").substring(0, 150) || p.description || "Aucune description"}
+${i + 1}. "${p.title}"
+   - Prix actuel: ${p.price} ${p.currency_code || "€"}
+   ${p.compare_at_price ? `- Prix barré: ${p.compare_at_price} ${p.currency_code || "€"} (PROMO -${Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100)}%)` : ''}
+   - URL: ${storeUrl}/products/${p.handle}
+   - Catégorie: ${p.category || p.product_type || "Non spécifiée"}
+   - Type: ${p.product_type || "N/A"}
+   - Vendeur: ${p.vendor || "N/A"}
+   - Description courte: ${p.body_html?.replace(/<[^>]*>/g, "").substring(0, 200) || p.description || "Aucune description"}
+   - Stock: ${p.inventory_quantity || 0} unités
 `,
   )
   .join("")}
+
+**INSTRUCTIONS CRITIQUES:**
+- Mentionne EXACTEMENT les titres de produits tels quels entre guillemets
+- Utilise les VRAIS PRIX indiqués ci-dessus
+- Mets en avant les PROMOTIONS (-X%) s'il y en a
+- Crée des liens contextuels vers les produits avec leurs handles exacts
+- Intègre les informations de stock/disponibilité de manière naturelle
+- Parle des produits de façon authentique et personnalisée
 
 **STRUCTURE OBLIGATOIRE:**
 
@@ -298,9 +336,21 @@ Génère UNIQUEMENT le contenu textuel au format JSON avec ces clés:
               : 0;
 
           const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : "#";
-          const mainImage = product.image_url || product.images?.[0]?.src || "/placeholder.jpg";
-          const productDescription =
-            product.body_html?.replace(/<[^>]*>/g, "").substring(0, 120) || product.description || "";
+          
+          // Fallback intelligent pour l'image
+          const mainImage = product.image_url || 
+                            (product.images && product.images.length > 0 ? product.images[0].src : null) ||
+                            `https://via.placeholder.com/300x300?text=${encodeURIComponent(product.title)}`;
+          
+          // Description enrichie
+          const productDescription = product.body_html?.replace(/<[^>]*>/g, "").substring(0, 150) || 
+                                    product.description?.substring(0, 150) || 
+                                    `Découvrez ${product.title} disponible chez ${storeName}`;
+          
+          // Badge de stock
+          const stockBadge = product.inventory_quantity > 0 
+            ? `<div class="stock-badge in-stock">✓ En stock (${product.inventory_quantity})</div>` 
+            : `<div class="stock-badge limited">⚠ Stock limité</div>`;
 
           return `
           <div class="product-card" itemscope itemtype="https://schema.org/Product">
@@ -308,6 +358,7 @@ Génère UNIQUEMENT le contenu textuel au format JSON avec ces clés:
               ${hasPromotion ? `<span class="discount-badge">-${discount}%</span>` : ""}
               ${index === 0 ? `<span class="featured-badge">⭐ Choix expert</span>` : ""}
             </div>
+            ${stockBadge}
             
             <div class="product-image">
               <a href="${productUrl}" target="_blank" rel="noopener sponsored">
@@ -439,6 +490,10 @@ Génère UNIQUEMENT le contenu textuel au format JSON avec ces clés:
     
     .discount-badge { position: absolute; top: 1rem; right: 1rem; background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 700; z-index: 10; }
     .featured-badge { position: absolute; top: 1rem; left: 1rem; background: #f59e0b; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 700; z-index: 10; }
+    
+    .stock-badge { position: absolute; top: 3.5rem; right: 1rem; padding: 0.375rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; z-index: 10; background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); }
+    .stock-badge.in-stock { color: #10b981; border: 1px solid #10b981; }
+    .stock-badge.limited { color: #f59e0b; border: 1px solid #f59e0b; }
     
     .product-image img { width: 100%; height: 250px; object-fit: cover; transition: transform 0.3s ease; }
     .product-card:hover .product-image img { transform: scale(1.05); }
@@ -598,6 +653,48 @@ Génère UNIQUEMENT le contenu textuel au format JSON avec ces clés:
     } else {
       featuredImage = products[0]?.image_url || null;
     }
+
+    // ✅ VALIDATION DE LA QUALITÉ DE L'ARTICLE
+    const validateArticleQuality = (html: string, productsCount: number) => {
+      const issues = [];
+      
+      if (!html.includes('product-card')) {
+        issues.push('Aucune carte produit détectée');
+      }
+      
+      if (productsCount > 0 && !html.includes('product-price')) {
+        issues.push('Prix des produits manquants');
+      }
+      
+      if (html.length < 5000) {
+        issues.push(`Article trop court (${html.length} caractères)`);
+      }
+      
+      if (!html.includes('</h2>')) {
+        issues.push('Structure de titres manquante');
+      }
+      
+      if (issues.length > 0) {
+        console.warn('[GENERATE-BLOG-ARTICLE] ⚠️ Quality issues detected:', issues);
+      } else {
+        console.log('[GENERATE-BLOG-ARTICLE] ✅ Quality validation passed');
+      }
+      
+      return { 
+        valid: issues.length === 0, 
+        issues,
+        score: Math.max(0, 100 - (issues.length * 25))
+      };
+    };
+
+    const qualityCheck = validateArticleQuality(finalHtml, products.length);
+    console.log('[GENERATE-BLOG-ARTICLE] Quality check:', {
+      valid: qualityCheck.valid,
+      score: qualityCheck.score,
+      htmlLength: finalHtml.length,
+      productCards: (finalHtml.match(/product-card/g) || []).length,
+      h2Count: (finalHtml.match(/<h2>/g) || []).length
+    });
 
     // ✅ SAUVEGARDE DE L'ARTICLE
     const { data: savedArticle, error: saveError } = await supabaseClient
