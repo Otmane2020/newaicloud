@@ -399,6 +399,7 @@ Génère maintenant l'article HTML complet.`;
       article: {
         id: article.id,
         title: articleTitle,
+        content: htmlContent,
         preview: htmlContent.substring(0, 500),
       },
     };
