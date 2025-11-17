@@ -4451,6 +4451,8 @@ export const translations = {
       yearly: "Annuel",
       yearlyDiscount: "-20%",
       perMonth: "/mois",
+      perMonthShort: "/mois",
+      perYear: "/an",
       billedAnnually: "facturé annuellement (soit {{currency}}{{total}}/an)",
       comparisonTitle: "Tableau comparatif des plans",
       comparisonSubtitle: "Comparez toutes les fonctionnalités en détail",
@@ -4459,6 +4461,7 @@ export const translations = {
         annual: "Annuel",
         save20: "-20%",
         billedAnnually: "facturé annuellement",
+        featuresLabel: "Fonctionnalités",
         features: {
           categories: {
             products: "Produits",
