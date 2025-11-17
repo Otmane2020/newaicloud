@@ -30,17 +30,40 @@ function cleanJsonResponse(text: string): string {
   return cleaned.replace(/^```json?\s*|\s*```$/g, '').trim();
 }
 
-function validateAltText(altText: string, minLength = 15, maxLength = 200): boolean {
+function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
   if (!altText || typeof altText !== 'string') {
     return false;
   }
   
   const trimmed = altText.trim();
-  return (
-    trimmed.length >= minLength &&
-    trimmed.length <= maxLength &&
-    !altText.includes('```')
-  );
+  const wordCount = trimmed.split(' ').length;
+  
+  // Vérification de longueur
+  if (trimmed.length < minLength || trimmed.length > maxLength) {
+    console.warn('⚠️ ALT text length invalid:', trimmed.length);
+    return false;
+  }
+  
+  if (wordCount < 6 || wordCount > 16) {
+    console.warn('⚠️ ALT text word count invalid:', wordCount);
+    return false;
+  }
+  
+  // Vérification anti-copie du titre
+  if (productTitle) {
+    const titleWords = productTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const altWords = trimmed.toLowerCase().split(/\s+/);
+    const matchingWords = titleWords.filter(w => altWords.includes(w));
+    
+    // Si plus de 60% des mots significatifs du titre sont dans l'ALT, c'est suspect
+    const matchRatio = titleWords.length > 0 ? matchingWords.length / titleWords.length : 0;
+    if (matchRatio > 0.6) {
+      console.warn('⚠️ ALT text contains too many words from product title:', matchRatio);
+      return false;
+    }
+  }
+  
+  return !altText.includes('```');
 }
 
 // Sleep utility for rate limiting
@@ -115,12 +138,17 @@ Réponds UNIQUEMENT avec un JSON valide :
 }
 
 // Analyze image with Vision AI (Gemini)
-async function callVisionAI(imageUrl: string, productContext: string, titleKeywords: string[], retryCount = 0) {
+async function callVisionAI(imageUrl: string, retryCount = 0) {
   const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
   if (!geminiApiKey) {
     throw new Error('Google Gemini API key not configured');
   }
+
+  console.log('🔍 Calling Vision AI with ZERO context (pure visual analysis)');
+  console.log('📸 Image URL:', imageUrl.substring(0, 80) + '...');
+  console.log('🚫 NO product context passed');
+  console.log('🚫 NO keywords passed');
 
   // Check for placeholder URLs that won't work
   if (imageUrl.includes('placeholder.com') || imageUrl.includes('via.placeholder')) {
@@ -258,7 +286,7 @@ Maintenant, analyse cette image en suivant strictement ces règles.`
       await sleep(retryDelaySeconds * 1000);
       
       // Retry with incremented count
-      return callVisionAI(imageUrl, productContext, [], retryCount + 1);
+      return callVisionAI(imageUrl, retryCount + 1);
     }
     
     throw new Error(`Google Gemini API error: ${response.status} - ${errorText}`);
@@ -579,16 +607,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Step 3: Analyze image with Vision AI + incorporate DeepSeek keywords + SERP visual patterns
-    const enhancedContext = serpImageInsights 
-      ? `${productContext}\n\n🎨 SERP VISUAL PATTERNS:\n` +
-        `Dominant styles: ${serpImageInsights.dominantStyles?.join(', ') || 'N/A'}\n` +
-        `Common angles: ${serpImageInsights.commonAngles?.join(', ') || 'N/A'}\n` +
-        `Color schemes: ${serpImageInsights.colorSchemes?.join(', ') || 'N/A'}\n` +
-        `Aspect ratios: ${serpImageInsights.aspectRatios?.join(', ') || 'N/A'}`
-      : productContext;
+    // Step 3: Analyze image with Vision AI (PURE VISUAL ANALYSIS - NO CONTEXT)
+    // DeepSeek and SERP data are kept for logging/metrics but NOT passed to Vision AI
+    console.log('📊 DeepSeek keywords (for reference only, not used in Vision AI):', titleKeywords);
+    if (serpImageInsights) {
+      console.log('🎨 SERP insights (for reference only, not used in Vision AI):', {
+        dominantStyles: serpImageInsights.dominantStyles,
+        commonAngles: serpImageInsights.commonAngles,
+        colorSchemes: serpImageInsights.colorSchemes,
+      });
+    }
 
-    const visionResponse = await callVisionAI(image.src, enhancedContext, titleKeywords);
+    const visionResponse = await callVisionAI(image.src);
     const visionContent = visionResponse.text;
 
     let altText = "";
@@ -602,9 +632,14 @@ Deno.serve(async (req: Request) => {
       altText = parsed.alt_text || "";
       visualAnalysis = parsed.visual_analysis || "";
       
-      if (!validateAltText(altText)) {
-        throw new Error('ALT text validation failed');
+      // Validate with product title to prevent copying
+      const productTitleForValidation = productContext.split('\n')[0]?.replace(/^Produit:\s*/, '').trim();
+      
+      if (!validateAltText(altText, productTitleForValidation)) {
+        throw new Error('ALT text validation failed (length, word count, or too similar to product title)');
       }
+      
+      console.log('✅ ALT text validated successfully:', altText.substring(0, 50));
     } catch (e) {
       console.error('Failed to parse Vision JSON:', visionContent);
       console.error('Parse error:', e);
