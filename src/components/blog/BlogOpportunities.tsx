@@ -278,8 +278,6 @@ export function BlogOpportunities() {
       setGenerating(null);
       setShowGenerationProgress(false);
     }
-      setShowGenerationProgress(false);
-    }
   };
 
   const handleCreateWithWizard = (opp: Opportunity) => {
