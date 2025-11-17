@@ -271,7 +271,7 @@ export function TagOptimization() {
   // Calculate tag SEO score based on real quality of tags
   const tagSeoScore = products.length > 0 
     ? Math.round(
-        products.reduce((sum, p) => {
+        (products.reduce((sum, p) => {
           const score = calculateTagsScore(p.tags);
           // Debug first few products
           if (products.indexOf(p) < 3) {
@@ -283,8 +283,8 @@ export function TagOptimization() {
             });
           }
           return sum + score;
-        }, 0) / products.length
-      ) * 5 // Multiply by 5 because calculateTagsScore returns max 20, we want out of 100
+        }, 0) / products.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
+      )
     : 0;
   
   console.log('🎯 [TAG SEO SCORE]', {
