@@ -30,6 +30,7 @@ import {
   Palette,
 } from "lucide-react";
 import { ArticleConfigDialog, ArticleConfig } from "./ArticleConfigDialog";
+import { ArticleGenerationProgress } from "./ArticleGenerationProgress";
 import { useStore } from '@/contexts/StoreContext';
 
 interface WizardStep {
@@ -75,13 +76,70 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
 
+  // Fonction pour générer des suggestions de mots-clés basées sur les produits
+  const generateKeywordSuggestions = () => {
+    if (selectedProducts.length === 0) return [];
+    
+    const suggestions: string[] = [];
+    
+    // Mots-clés des titres produits (mots de plus de 3 caractères)
+    selectedProducts.forEach(product => {
+      const words = product.title.toLowerCase().split(' ').filter(w => w.length > 3);
+      suggestions.push(...words.slice(0, 3));
+    });
+    
+    // Mots-clés des catégories
+    const categories = [...new Set(selectedProducts.map(p => p.category).filter(Boolean))];
+    suggestions.push(...categories);
+    
+    // Phrases longues (3 mots consécutifs des titres produits)
+    const longPhrases = selectedProducts.map(p => {
+      const words = p.title.toLowerCase().split(' ');
+      if (words.length >= 3) {
+        return words.slice(0, 3).join(' ');
+      }
+      return null;
+    }).filter(Boolean) as string[];
+    suggestions.push(...longPhrases);
+    
+    // Dédupliquer et limiter à 15 suggestions
+    return [...new Set(suggestions)].slice(0, 15);
+  };
+
+  // Fonction pour ajouter un mot-clé suggéré
+  const addSuggestedKeyword = (keyword: string) => {
+    if (!keywords.includes(keyword)) {
+      setKeywords([...keywords, keyword]);
+    }
+  };
+
+  // Fonction pour sélectionner tous les mots-clés
+  const selectAllKeywords = () => {
+    const allKeywords = [...new Set([...keywords, ...keywordSuggestions])];
+    setKeywords(allKeywords);
+    toast.success(`${keywordSuggestions.length} mots-clés ajoutés`);
+  };
+
+  // Générer suggestions quand produits changent
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      setKeywordSuggestions(generateKeywordSuggestions());
+    } else {
+      setKeywordSuggestions([]);
+    }
+  }, [selectedProducts]);
+
   // Dialog states
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showGenerationProgress, setShowGenerationProgress] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [generatedArticle, setGeneratedArticle] = useState<any>(null);
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
+  
+  // ✅ Phase 4: Suggestions de mots-clés intelligentes
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     collection_ids: [] as string[],
@@ -437,6 +495,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       }
     } finally {
       setGenerating(false);
+      setShowGenerationProgress(false); // ✅ Fermer le pop-up de progression
     }
   };
 
@@ -771,6 +830,47 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                       {t.wizards.blog.add}
                     </Button>
                   </div>
+                  
+                  {/* ✅ Suggestions de mots-clés */}
+                  {keywordSuggestions.length > 0 && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          Suggestions IA ({keywordSuggestions.length})
+                        </h4>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={selectAllKeywords}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          Tout sélectionner
+                        </Button>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {keywordSuggestions.map((suggestion, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-blue-200 transition-colors"
+                            onClick={() => addSuggestedKeyword(suggestion)}
+                          >
+                            {suggestion}
+                            {keywords.includes(suggestion) && (
+                              <Check className="ml-1 h-3 w-3 text-green-600" />
+                            )}
+                          </Badge>
+                        ))}
+                      </div>
+                      
+                      <p className="text-xs text-blue-700 mt-2">
+                        💡 Basé sur vos produits sélectionnés. Cliquez pour ajouter.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {keywords.map((keyword, index) => (
