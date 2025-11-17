@@ -90,18 +90,22 @@ const PricingComparison = () => {
   // Mobile: Cards empilées
   if (isMobile) {
     const plans = ["starter", "pro", "enterprise"];
-    const planNames = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
+    const planNames = { 
+      starter: t.landing.pricing.plans.starter.name, 
+      pro: t.landing.pricing.plans.pro.name, 
+      enterprise: t.landing.pricing.plans.enterprise.name 
+    };
     const currency = getCurrencySymbol(language);
     const planPrices = billingPeriod === 'monthly' 
       ? { 
-          starter: `${currency}9.99/mo`, 
-          pro: `${currency}49 - ${currency}4,900/mo`, 
-          enterprise: `${currency}199 - ${currency}19,900/mo` 
+          starter: `${currency}9.99${t.landing.pricing.perMonth}`, 
+          pro: `${currency}49 - ${currency}4,900${t.landing.pricing.perMonth}`, 
+          enterprise: `${currency}199 - ${currency}19,900${t.landing.pricing.perMonth}` 
         }
       : {
-          starter: `${currency}7.99/mo`,
-          pro: `${currency}39 - ${currency}3,920/mo`,
-          enterprise: `${currency}159 - ${currency}15,920/mo`
+          starter: `${currency}7.99${t.landing.pricing.perMonthShort}`,
+          pro: `${currency}39 - ${currency}3,920${t.landing.pricing.perMonthShort}`,
+          enterprise: `${currency}159 - ${currency}15,920${t.landing.pricing.perMonthShort}`
         };
 
     return (
@@ -169,15 +173,15 @@ const PricingComparison = () => {
   const getPriceDisplay = () => {
     if (billingPeriod === 'monthly') {
       return {
-        starter: { price: `${currency}9.99`, suffix: '/month' },
-        pro: { price: `${currency}49 - ${currency}4,900`, suffix: '/month' },
-        enterprise: { price: `${currency}199 - ${currency}19,900`, suffix: '/month' }
+        starter: { price: `${currency}9.99`, suffix: t.landing.pricing.perMonth },
+        pro: { price: `${currency}49 - ${currency}4,900`, suffix: t.landing.pricing.perMonth },
+        enterprise: { price: `${currency}199 - ${currency}19,900`, suffix: t.landing.pricing.perMonth }
       };
     } else {
       return {
-        starter: { price: `${currency}7.99`, suffix: '/mo', annual: `${currency}95.90/year` },
-        pro: { price: `${currency}39 - ${currency}3,920`, suffix: '/mo', annual: 'billed annually' },
-        enterprise: { price: `${currency}159 - ${currency}15,920`, suffix: '/mo', annual: 'billed annually' }
+        starter: { price: `${currency}7.99`, suffix: t.landing.pricing.perMonthShort, annual: `${currency}95.90${t.landing.pricing.perYear}` },
+        pro: { price: `${currency}39 - ${currency}3,920`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually },
+        enterprise: { price: `${currency}159 - ${currency}15,920`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually }
       };
     }
   };
@@ -212,10 +216,10 @@ const PricingComparison = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="p-4 text-left font-semibold">Features</th>
+                <th className="p-4 text-left font-semibold">{t.landing.pricing.comparison.featuresLabel}</th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <Badge variant="outline">Starter</Badge>
+                  <Badge variant="outline">{t.landing.pricing.plans.starter.name}</Badge>
                   <span className="text-2xl font-bold">{prices.starter.price}</span>
                   <span className="text-xs text-muted-foreground">{prices.starter.suffix}</span>
                   {prices.starter.annual && (
@@ -225,7 +229,7 @@ const PricingComparison = () => {
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <Badge className="bg-primary">Pro</Badge>
+                  <Badge className="bg-primary">{t.landing.pricing.plans.pro.name}</Badge>
                   <span className="text-2xl font-bold">{prices.pro.price}</span>
                   <span className="text-xs text-muted-foreground">{prices.pro.suffix}</span>
                   {prices.pro.annual && (
@@ -235,7 +239,7 @@ const PricingComparison = () => {
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <Badge className="bg-success">Enterprise</Badge>
+                  <Badge className="bg-success">{t.landing.pricing.plans.enterprise.name}</Badge>
                   <span className="text-2xl font-bold">{prices.enterprise.price}</span>
                   <span className="text-xs text-muted-foreground">{prices.enterprise.suffix}</span>
                   {prices.enterprise.annual && (
