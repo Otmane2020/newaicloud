@@ -132,6 +132,48 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
     loadCategories();
   }, []);
 
+  // Détecter les articles orphelins (sans store_id)
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const checkOrphanArticles = async () => {
+      const { data: orphans } = await supabase
+        .from('blog_articles')
+        .select('id, title')
+        .eq('user_id', user.id)
+        .is('store_id', null);
+      
+      if (orphans && orphans.length > 0) {
+        toast.warning(`${orphans.length} article(s) sans boutique détecté(s)`, {
+          description: "Ces articles ne seront pas visibles",
+          action: {
+            label: "Réparer",
+            onClick: () => repairOrphanArticles(orphans)
+          }
+        });
+      }
+    };
+    
+    checkOrphanArticles();
+  }, [user?.id]);
+
+  const repairOrphanArticles = async (orphans: any[]) => {
+    if (!selectedStore?.id) {
+      toast.error("Sélectionnez une boutique pour réparer les articles");
+      return;
+    }
+    
+    for (const article of orphans) {
+      await supabase
+        .from('blog_articles')
+        .update({ store_id: selectedStore.id })
+        .eq('id', article.id);
+    }
+    
+    toast.success(`${orphans.length} article(s) réparé(s)`);
+    loadArticles();
+  };
+
   if (!selectedStore) {
     return (
       <Alert className="m-6">

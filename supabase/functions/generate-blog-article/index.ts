@@ -152,6 +152,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
   try {
     const {
       user_id,
+      store_id,
       category = "Guide",
       keywords = [],
       title,
@@ -163,6 +164,11 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     if (!user_id) {
       throw new Error("user_id is required");
+    }
+
+    if (!store_id) {
+      console.error("❌ store_id manquant");
+      throw new Error("store_id est requis");
     }
 
     // Vérification des limites d'usage
@@ -199,9 +205,10 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
+        .eq("store_id", store_id)
         .in("id", productIds);
 
       if (data && data.length > 0) {
@@ -215,9 +222,10 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
+        .eq("store_id", store_id)
         .or(
           `category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`,
         )
@@ -235,9 +243,10 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       const { data } = await supabaseClient
         .from("shopify_products")
         .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images, currency_code, smart_weight, smart_dimensions",
         )
         .eq("seller_id", user_id)
+        .eq("store_id", store_id)
         .limit(8);
 
       if (data) {
@@ -316,11 +325,11 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     // Récupération de l'URL du store
     let storeUrl = "";
-    if (hasProducts && products[0]?.store_id) {
+    if (store_id) {
       const { data: storeData } = await supabaseClient
         .from("shopify_connections")
         .select("store_url")
-        .eq("id", products[0].store_id)
+        .eq("id", store_id)
         .single();
 
       if (storeData?.store_url) {
@@ -936,51 +945,54 @@ STRUCTURE HTML À SUIVRE :
     <!-- Mode Grille -->
     <div class="product-grid grid-view active">
       ${products
-        .map(
-          (product: any) => `
-      <div class="product-card">
-        <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+        .map((product: any) => {
+          const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`;
+          const images = product.images || [];
+          const currencySymbol = product.currency_code === 'USD' ? '$' : product.currency_code === 'GBP' ? '£' : product.currency_code === 'CAD' ? 'CA$' : '€';
+          const discount = product.compare_at_price && product.compare_at_price > product.price 
+            ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
+            : 0;
+          
+          return `
+      <div class="product-card" style="position: relative;">
+        <a href="${productUrl}" 
            class="product-image-link" 
            target="${storeUrl ? "_blank" : "_self"}">
+          ${discount > 0 ? `<div class="product-badge" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; z-index: 10;">-${discount}%</div>` : ''}
+          
+          ${images.length > 1 ? `
+          <div class="product-gallery" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
+            ${images.slice(0, 4).map((img: any) => `
+            <img src="${img.src}" 
+                 alt="${img.alt || product.title}" 
+                 style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;"
+                 loading="lazy">
+            `).join('')}
+          </div>
+          ` : `
           <img src="${product.image_url || "/placeholder-product.jpg"}" 
                alt="${product.title}" 
                class="product-image"
                loading="lazy">
-          ${
-            product.compare_at_price && product.compare_at_price > product.price
-              ? `
-          <div class="product-badge">Promotion</div>
-          `
-              : ""
-          }
+          `}
         </a>
         <div class="product-info">
           <h3 class="product-name">${product.title}</h3>
           <p class="product-description">${(product.description || "").substring(0, 120)}...</p>
           
           <div class="product-pricing">
-            ${
-              product.compare_at_price && product.compare_at_price > product.price
-                ? `
-            <span class="original-price">${product.compare_at_price} €</span>
-            `
-                : ""
-            }
-            <span class="current-price">${product.price} €</span>
+            ${discount > 0 ? `<span class="original-price">${product.compare_at_price.toFixed(2)} ${currencySymbol}</span>` : ''}
+            <span class="current-price">${product.price.toFixed(2)} ${currencySymbol}</span>
           </div>
           
           <div class="product-meta">
             <div class="stock-status ${product.inventory_quantity > 0 ? "in-stock" : "out-of-stock"}">
-              ${
-                product.inventory_quantity > 0
-                  ? `En stock${product.inventory_quantity > 10 ? "" : ` (${product.inventory_quantity})`}`
-                  : "Rupture"
-              }
+              ${product.inventory_quantity > 0 ? `En stock${product.inventory_quantity > 10 ? "" : ` (${product.inventory_quantity})`}` : "Rupture"}
             </div>
           </div>
           
           <div class="product-actions">
-            <a href="${storeUrl ? `${storeUrl}/products/${product.handle}` : `/products/${product.id}`}" 
+            <a href="${productUrl}" 
                class="product-link"
                target="${storeUrl ? "_blank" : "_self"}">
               Voir le produit
@@ -991,8 +1003,8 @@ STRUCTURE HTML À SUIVRE :
           </div>
         </div>
       </div>
-      `,
-        )
+      `;
+        })
         .join("")}
     </div>
 
@@ -1271,6 +1283,7 @@ RÈGLES DE CRÉATION :
       .insert([
         {
           user_id,
+          store_id,
           title: optimizedTitle,
           content,
           featured_image: featuredImage,

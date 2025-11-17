@@ -363,6 +363,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         throw new Error("Utilisateur non connecté");
       }
 
+      if (!selectedStore?.id) {
+        toast.error("Aucune boutique sélectionnée. Veuillez sélectionner une boutique.");
+        setGenerating(false);
+        return;
+      }
+
       const finalKeywords =
         keywords.length > 0
           ? keywords
@@ -377,6 +383,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const response = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
+          store_id: selectedStore.id,
           collection_ids: formData.collection_ids,
           collectionTitles: formData.collectionTitles,
           keywords: finalKeywords,
