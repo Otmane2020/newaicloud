@@ -73,10 +73,10 @@ export function SeoAuditDashboard() {
 
       // Fetch all data in parallel using the same queries as Dashboard
       const [productsRes, collectionsRes, pagesRes, articlesRes, allImagesRes, homepageRes] = await Promise.all([
+        // NOTE: Only filter by store_id to match TagOptimization.tsx behavior (reference)
         supabase
           .from("shopify_products")
           .select("id, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, enrichment_status")
-          .eq("seller_id", user?.id)
           .eq("store_id", selectedStore.id)
           .range(0, 9999),
         supabase
@@ -97,11 +97,20 @@ export function SeoAuditDashboard() {
           .eq("user_id", user?.id)
           .eq("store_id", selectedStore.id)
           .range(0, 9999),
-        supabase
-          .from("product_images")
-          .select("id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)")
-          .eq("shopify_products.seller_id", user?.id)
-          .eq("shopify_products.store_id", selectedStore.id),
+        // NOTE: Not filtering content_images by store_id/user_id to match SeoAltImage.tsx behavior (reference)
+        Promise.all([
+          supabase
+            .from("product_images")
+            .select("id, alt_text, optimization_count, shopify_products!inner(seller_id, store_id)")
+            .eq("shopify_products.seller_id", user?.id)
+            .eq("shopify_products.store_id", selectedStore.id),
+          supabase
+            .from("content_images")
+            .select("id, alt_text, optimization_count")
+            .range(0, 9999)
+        ]).then(([productImagesRes, contentImagesRes]) => ({
+          data: [...(productImagesRes.data || []), ...(contentImagesRes.data || [])]
+        })),
         supabase
           .from("homepage_seo")
           .select("seo_title, seo_description")
@@ -820,7 +829,8 @@ export function SeoAuditDashboard() {
                 })();
                 const optimizedCount = categoryStats?.optimized || 0;
                 const totalCount = categoryStats?.total || 0;
-                const score = audit[key] || 0;
+                // Use real-time stats score instead of cached audit score
+                const score = categoryStats?.score || 0;
                 const categoryColor = getCategoryColor(score);
 
                 return (
