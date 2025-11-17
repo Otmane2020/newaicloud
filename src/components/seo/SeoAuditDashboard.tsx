@@ -48,6 +48,12 @@ export function SeoAuditDashboard() {
   // Get subtab from URL params, default to "overview"
   const activeSubTab = searchParams.get("subtab") || "overview";
 
+  // Calculate real-time global score from stats (same as Dashboard)
+  const realTimeGlobalScore = stats ? Math.round(
+    (stats.homepage.score + stats.products.score + stats.collections.score + 
+     stats.pages.score + stats.articles.score + stats.images.score + stats.tags.score) / 7
+  ) : (audit?.global_score || 0);
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (selectedStore) {
@@ -575,16 +581,16 @@ export function SeoAuditDashboard() {
                 </CardTitle>
                 <Badge
                   className={`text-lg px-5 py-2 ${
-                    audit.global_score >= 80
+                    realTimeGlobalScore >= 80
                       ? "bg-[#22c55e] text-white"
-                      : audit.global_score >= 60
+                      : realTimeGlobalScore >= 60
                         ? "bg-[#FF8000] text-white"
                         : "bg-[#FF3333] text-white"
                   }`}
                 >
-                  {audit.global_score >= 80
+                  {realTimeGlobalScore >= 80
                     ? t.seoAuditDashboard.scoreLabel.excellent
-                    : audit.global_score >= 60
+                    : realTimeGlobalScore >= 60
                       ? t.seoAuditDashboard.scoreLabel.good
                       : t.seoAuditDashboard.scoreLabel.low}
                 </Badge>
@@ -594,8 +600,8 @@ export function SeoAuditDashboard() {
               <div className="flex items-center justify-between gap-8">
                 <div className="flex-1">
                   <div className="flex items-baseline gap-3 mb-4">
-                    <span className={`text-8xl font-black ${getScoreColor(audit.global_score)}`}>
-                      {audit.global_score}
+                    <span className={`text-8xl font-black ${getScoreColor(realTimeGlobalScore)}`}>
+                      {realTimeGlobalScore}
                     </span>
                     <span className="text-4xl text-muted-foreground font-bold">/100</span>
                   </div>
@@ -616,25 +622,25 @@ export function SeoAuditDashboard() {
                         <div className="relative h-4 bg-muted rounded-full overflow-hidden shadow-inner">
                           <div
                             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                              audit.global_score >= 80
+                              realTimeGlobalScore >= 80
                                 ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
-                                : audit.global_score >= 60
+                                : realTimeGlobalScore >= 60
                                   ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
                                   : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
                             }`}
                             style={{
-                              width: `${audit.global_score}%`,
+                              width: `${realTimeGlobalScore}%`,
                               boxShadow:
-                                audit.global_score >= 80
+                                realTimeGlobalScore >= 80
                                   ? "0 0 10px #22c55e"
-                                  : audit.global_score >= 60
+                                  : realTimeGlobalScore >= 60
                                     ? "0 0 10px #FF8000"
                                     : "0 0 10px #FF3333",
                             }}
                           />
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-primary">{tf('seoAuditDashboard.overview.pointsRemaining', { count: 100 - audit.global_score })}</span>
+                      <span className="text-sm font-bold text-primary">{tf('seoAuditDashboard.overview.pointsRemaining', { count: 100 - realTimeGlobalScore })}</span>
                     </div>
                   </div>
                 </div>
@@ -697,7 +703,7 @@ export function SeoAuditDashboard() {
                         stroke="url(#globalGaugeGradient)"
                         strokeWidth="12"
                         fill="none"
-                        strokeDasharray={`${(audit.global_score / 100) * 528} 528`}
+                        strokeDasharray={`${(realTimeGlobalScore / 100) * 528} 528`}
                         strokeLinecap="round"
                         className="transition-all duration-1500 ease-out"
                         style={{
@@ -705,21 +711,21 @@ export function SeoAuditDashboard() {
                         }}
                       />
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                       <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
-                        {(() => {
-                           const scores = [
-                            audit.homepage_score || 0,
-                            audit.products_score || 0,
-                            audit.collections_score || 0,
-                            audit.pages_score || 0,
-                            audit.articles_score || 0,
-                            audit.images_score || 0,
-                            audit.tags_score || 0
-                          ];
-                          return scores.filter(score => score >= 80).length;
-                        })()}
-                      </div>
+                     <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className={`text-3xl font-black ${getScoreColor(realTimeGlobalScore)}`}>
+                          {(() => {
+                            const scores = [
+                              stats?.homepage?.score || 0,
+                              stats?.products?.score || 0,
+                              stats?.collections?.score || 0,
+                              stats?.pages?.score || 0,
+                              stats?.articles?.score || 0,
+                              stats?.images?.score || 0,
+                              stats?.tags?.score || 0
+                            ];
+                            return scores.filter(score => score >= 80).length;
+                          })()}
+                        </div>
                       <div className="text-xs text-muted-foreground font-semibold">{tf('seoAuditDashboard.overview.categoriesOptimized', { count: 7 })}</div>
                       <div className="text-xs text-muted-foreground">{t.seoAuditDashboard.overview.optimized}</div>
                     </div>
@@ -730,17 +736,17 @@ export function SeoAuditDashboard() {
               {/* Message motivationnel */}
               <div
                 className={`mt-6 p-4 rounded-xl ${
-                  audit.global_score >= 80
+                  realTimeGlobalScore >= 80
                     ? "bg-[#22c55e]/10 border-2 border-[#22c55e]/20"
-                    : audit.global_score >= 60
+                    : realTimeGlobalScore >= 60
                       ? "bg-[#FF8000]/10 border-2 border-[#FF8000]/20"
                       : "bg-[#FF3333]/10 border-2 border-[#FF3333]/20"
                 }`}
               >
                 <p className="text-sm font-semibold">
-                  {audit.global_score >= 80
+                  {realTimeGlobalScore >= 80
                     ? t.seoAuditDashboard.motivational.excellent
-                    : audit.global_score >= 60
+                    : realTimeGlobalScore >= 60
                       ? t.seoAuditDashboard.motivational.good
                       : t.seoAuditDashboard.motivational.low}
                 </p>
