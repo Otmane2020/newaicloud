@@ -365,9 +365,16 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       if (!selectedStore?.id) {
         toast.error("Aucune boutique sélectionnée. Veuillez sélectionner une boutique.");
+        console.error("❌ [WIZARD] store_id manquant");
         setGenerating(false);
         return;
       }
+
+      console.log("📤 [WIZARD] Envoi de la requête de génération:");
+      console.log(`  - user_id: ${user.id}`);
+      console.log(`  - store_id: ${selectedStore.id}`);
+      console.log(`  - productIds: ${selectedProducts.length}`);
+      console.log(`  - collections: ${formData.collection_ids?.length || 0}`);
 
       const finalKeywords =
         keywords.length > 0
