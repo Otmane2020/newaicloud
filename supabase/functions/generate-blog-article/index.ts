@@ -1,1641 +1,1418 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
-
-    const supabase = createClient(supabaseUrl!, supabaseKey!);
-    const requestData = await req.json();
-
-    if (requestData.mode === "auto") {
-      console.log("Mode auto : génération d'articles de campagnes...");
-
-      const now = new Date();
-
-      // Récupérer les campagnes actives qui doivent être exécutées
-      const { data: campaigns, error: campaignError } = await supabase
-        .from("blog_campaigns")
-        .select("*")
-        .eq("is_active", true)
-        .lte("next_execution_at", now.toISOString())
-        .limit(requestData.limit || 10);
-
-      if (campaignError) throw campaignError;
-
-      if (!campaigns?.length) {
-        console.log("Aucune campagne à exécuter pour le moment");
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Aucune campagne à exécuter.",
-            campaigns_checked: 0,
-          }),
-          { status: 200, headers: corsHeaders },
-        );
-      }
-
-      console.log(`${campaigns.length} campagnes à traiter`);
-
-      const results = [];
-      for (const campaign of campaigns) {
-        try {
-          // Récupérer le store_id actif pour ce user
-          const { data: storeData } = await supabase
-            .from("shopify_connections")
-            .select("id")
-            .eq("user_id", campaign.user_id)
-            .eq("is_active", true)
-            .single();
-
-          if (!storeData?.id) {
-            console.error(`❌ Aucun store actif pour user ${campaign.user_id}`);
-            throw new Error("Aucun store actif trouvé");
-          }
-
-          console.log(`[AUTO] Campaign ${campaign.name} - store_id: ${storeData.id}`);
-
-          // Générer l'article avec les paramètres de la campagne
-          const res = await generateSingleArticle(
-            {
-              user_id: campaign.user_id,
-              store_id: storeData.id, // ✅ AJOUT du store_id
-              category: campaign.topic_niche || "Guide",
-              keywords: campaign.keywords || [],
-              title: null,
-              language: "fr",
-              articleLength: "2000",
-            },
-            supabase,
-            lovableApiKey,
-          );
-
-          results.push({
-            campaign_id: campaign.id,
-            campaign_name: campaign.name,
-            ...res,
-          });
-
-          // Mettre à jour la campagne avec la prochaine date d'exécution
-          if (res.success) {
-            const nextExecution = calculateNextExecution(campaign.frequency, now);
-
-            await supabase
-              .from("blog_campaigns")
-              .update({
-                last_generation_date: now.toISOString(),
-                next_execution_at: nextExecution.toISOString(),
-              })
-              .eq("id", campaign.id);
-
-            console.log(`✅ Campagne ${campaign.name} - Prochain article: ${nextExecution.toISOString()}`);
-          }
-        } catch (err) {
-          console.error(`❌ Erreur campagne ${campaign.name}:`, err);
-          results.push({
-            campaign_id: campaign.id,
-            campaign_name: campaign.name,
-            success: false,
-            error: err instanceof Error ? err.message : "Unknown error",
-          });
-        }
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `${results.filter((r) => r.success).length}/${campaigns.length} articles générés.`,
-          results,
-        }),
-        { status: 200, headers: corsHeaders },
-      );
-    }
-
-    function calculateNextExecution(frequency: string, lastExecution: Date): Date {
-      const next = new Date(lastExecution);
-
-      switch (frequency) {
-        case "daily":
-          next.setDate(next.getDate() + 1);
-          break;
-        case "weekly":
-          next.setDate(next.getDate() + 7);
-          break;
-        case "biweekly":
-          next.setDate(next.getDate() + 14);
-          break;
-        case "monthly":
-          next.setMonth(next.getMonth() + 1);
-          break;
-        default:
-          next.setDate(next.getDate() + 7); // Par défaut: hebdomadaire
-      }
-
-      return next;
-    }
-
-    const result = await generateSingleArticle(requestData, supabase, lovableApiKey);
-    return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: corsHeaders },
-    );
-  }
-});
-
-async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
-  try {
-    const {
-      user_id,
-      store_id,
-      category = "Guide",
-      keywords = [],
-      title,
-      articleLength = "2000",
-      language = "fr",
-      collectionTitle = "",
-      productIds = [],
-      opportunityData,
-      articleConfig,
-    } = requestData;
-
-    if (!user_id) {
-      throw new Error("user_id is required");
-    }
-
-    // ✅ VALIDATION STRICTE du store_id
-    if (!store_id || typeof store_id !== 'string' || store_id.trim() === '') {
-      console.error("❌ [VALIDATION] store_id manquant ou invalide:", store_id);
-      throw new Error("store_id est requis et doit être une chaîne non vide");
-    }
-
-    console.log(`📦 [REQUEST] Données reçues:`);
-    console.log(`  - user_id: ${user_id}`);
-    console.log(`  - store_id: ${store_id} (type: ${typeof store_id})`);
-    console.log(`  - productIds: ${productIds?.length || 0} produits`);
-    console.log(`  - keywords: ${keywords?.length || 0} mots-clés`);
-    console.log(`✅ [VALIDATION] store_id validé: ${store_id}`);
-
-    if (opportunityData) {
-      console.log(`📋 [OPPORTUNITY] Using opportunity data: ${title}`);
-      console.log(`  - Angle: ${opportunityData.angle || 'N/A'}`);
-      console.log(`  - Target audience: ${opportunityData.targetAudience || 'N/A'}`);
-    }
-
-    // Vérification des limites d'usage
-    if (authHeader) {
-      console.log("Vérification des limites pour user:", user_id);
-      const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (limitResponse.ok) {
-        const limitCheck = await limitResponse.json();
-        if (!limitCheck?.canUseArticles) {
-          console.log("Limite atteinte pour cet utilisateur");
-          throw new Error("trial_limit_reached: Limite d'essai atteinte. Activez votre abonnement pour continuer.");
-        }
-        console.log("Limites OK, génération en cours");
-      }
-    }
-
-    const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
-    const targetKeywords = keywords.length ? keywords : [category, "guide"];
-
-    console.log(`📝 [GENERATION] Génération article : ${articleTitle} pour user ${user_id}`);
-    console.log(`🏪 [STORE] store_id utilisé: ${store_id}`);
-
-    // Recherche des produits
-    let products: any[] = [];
-
-    console.log(`🔍 [PRODUCTS] Recherche des produits...`);
-    console.log(`  - productIds fournis: ${productIds?.length || 0}`);
-    console.log(`  - category: ${category}`);
-    console.log(`  - store_id: ${store_id}`);
-
-    // Si des IDs de produits spécifiques sont fournis
-    if (productIds && productIds.length > 0) {
-      console.log(`🎯 [PRODUCTS] Recherche de produits spécifiques:`, productIds);
-      const { data, error } = await supabaseClient
-        .from("shopify_products")
-        .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
-        )
-        .eq("seller_id", user_id)
-        .eq("store_id", store_id)
-        .in("id", productIds);
-
-      if (error) console.error(`❌ [PRODUCTS] Erreur récupération produits spécifiques:`, error);
-
-      if (data && data.length > 0) {
-        products = data;
-        console.log(`✅ [PRODUCTS] ${products.length} produits spécifiques trouvés`);
-      } else {
-        console.log(`⚠️ [PRODUCTS] Aucun produit spécifique trouvé avec ces IDs`);
-      }
-    }
-    // Sinon recherche par catégorie
-    else if (category && category !== "Guide" && category !== "Tous produits") {
-      console.log(`📂 [PRODUCTS] Recherche par catégorie: "${category}"`);
-      const { data, error } = await supabaseClient
-        .from("shopify_products")
-        .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
-        )
-        .eq("seller_id", user_id)
-        .eq("store_id", store_id)
-        .or(
-          `category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`,
-        )
-        .limit(12);
-
-      if (error) console.error(`❌ [PRODUCTS] Erreur recherche par catégorie:`, error);
-
-      if (data && data.length > 0) {
-        products = data;
-        console.log(`✅ [PRODUCTS] ${products.length} produits trouvés pour "${category}"`);
-      } else {
-        console.log(`⚠️ [PRODUCTS] Aucun produit trouvé pour "${category}"`);
-      }
-    }
-
-    // ✅ FALLBACK ROBUSTE si aucun produit trouvé
-    if (products.length === 0) {
-      console.log(`🔄 [PRODUCTS] FALLBACK - Récupération des produits récents du store`);
-      const { data, error } = await supabaseClient
-        .from("shopify_products")
-        .select(
-          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, currency_code, smart_weight, smart_dimensions",
-        )
-        .eq("seller_id", user_id)
-        .eq("store_id", store_id)
-        .order("created_at", { ascending: false })
-        .limit(12);
-
-      if (error) console.error(`❌ [PRODUCTS] Erreur fallback:`, error);
-
-      if (data && data.length > 0) {
-        products = data;
-        console.log(`✅ [PRODUCTS] ${products.length} produits récupérés (fallback)`);
-      } else {
-        console.error(`❌ [PRODUCTS] AUCUN PRODUIT trouvé pour store_id: ${store_id}`);
-        console.error(`⚠️ [PRODUCTS] L'article sera générique sans produits`);
-      }
-    }
-
-    // ✅ LOG FINAL du résultat
-    console.log(`📊 [PRODUCTS] Résultat final: ${products.length} produits disponibles`);
-    console.log('📦 Nombre de produits à intégrer:', products.length);
-
-    const hasProducts = products && products.length > 0;
-
-    if (!hasProducts) {
-      console.log("Aucun produit trouvé, génération d'un article générique");
-    }
-
-    // Génération de l'image featured avec OpenAI
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    let featuredImage = "";
-
-    if (openaiKey) {
-      try {
-        console.log("Génération image featured...");
-        const imagePrompt = `Professional e-commerce hero image for an article about ${category}, modern minimalist design, clean background, high quality product photography, blog featured image style, 16:9 ratio`;
-
-        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: imagePrompt,
-            n: 1,
-            size: "1792x1024",
-            quality: "standard",
-          }),
-        });
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          featuredImage = imageData.data[0].url;
-          console.log("Image featured générée avec succès");
-        }
-      } catch (imgErr) {
-        console.error("Erreur génération image:", imgErr);
-      }
-    }
-
-    // Génération du titre optimisé SEO
-    const mainKeyword = keywords.length > 0 ? keywords[0] : category;
-
-    const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Expert SEO spécialisé dans la création de titres percutants et optimisés.",
-          },
-          {
-            role: "user",
-            content: `Crée un titre d'article SEO engageant contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre.`,
-          },
-        ],
-      }),
-    });
-
-    const titleData = await titleResponse.json();
-    const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
-
-    console.log(`Titre optimisé: ${optimizedTitle}`);
-
-    // Récupération de l'URL du store
-    let storeUrl = "";
-    if (store_id) {
-      const { data: storeData } = await supabaseClient
-        .from("shopify_connections")
-        .select("store_url")
-        .eq("id", store_id)
-        .single();
-
-      if (storeData?.store_url) {
-        storeUrl = storeData.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-        storeUrl = `https://${storeUrl}`;
-      }
-    }
-
-    console.log('🔗 Store URL utilisée:', storeUrl || 'Non définie');
-
-    // Fonction pour générer les cartes produits HTML complètes
-    const generateProductCards = (products: any[], storeUrl: string) => {
-      return products.map(product => {
-        const hasPromotion = product.compare_at_price && product.compare_at_price > product.price;
-        const discount = hasPromotion 
-          ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
-          : 0;
-        
-        const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : '#';
-        
-        // Galerie d'images
-        const images = product.images || [];
-        const mainImage = product.image_url || (images.length > 0 ? images[0].src : '/placeholder.jpg');
-        const galleryHtml = images.length <= 1
-          ? `<img src="${mainImage}" alt="${product.title}" class="product-main-image" loading="lazy">`
-          : images.length <= 4
-          ? `<div class="product-gallery">${images.slice(0, 4).map((img: any) => `
-              <img src="${img.src}" alt="${img.alt || product.title}" class="gallery-image" loading="lazy">
-            `).join('')}</div>`
-          : `<div class="product-carousel">
-              ${images.map((img: any, idx: number) => `
-                <img src="${img.src}" alt="${img.alt || product.title}" class="carousel-image ${idx === 0 ? 'active' : ''}" loading="lazy">
-              `).join('')}
-              <button class="carousel-prev">‹</button>
-              <button class="carousel-next">›</button>
-            </div>`;
-        
-        return `
-          <div class="product-card">
-            ${hasPromotion ? `<div class="promotion-badge">-${discount}%</div>` : ''}
-            <a href="${productUrl}" target="_blank" rel="noopener" class="product-link">
-              ${galleryHtml}
-              <h3 class="product-title">${product.title}</h3>
-              <div class="product-price">
-                ${hasPromotion ? `<span class="old-price">${product.compare_at_price.toFixed(2)} ${product.currency_code || '€'}</span>` : ''}
-                <span class="current-price">${product.price.toFixed(2)} ${product.currency_code || '€'}</span>
-              </div>
-              ${product.body_html ? `<p class="product-description">${product.body_html.replace(/<[^>]*>/g, '').substring(0, 150)}...</p>` : ''}
-              <button class="product-cta">Voir le produit →</button>
-            </a>
-          </div>
-        `;
-      }).join('');
-    };
-
-    // ✅ Phase 2: Amélioration de la génération des cartes produits avec carousel complet
-    const generateProductCardsEnhanced = (products: any[], storeUrl: string) => {
-      return products.map(product => {
-        const hasPromotion = product.compare_at_price && product.compare_at_price > product.price;
-        const discount = hasPromotion 
-          ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
-          : 0;
-        
-        const productUrl = storeUrl ? `${storeUrl}/products/${product.handle}` : '#';
-        const images = product.images || [];
-        const mainImage = product.image_url || (images.length > 0 ? images[0].src : '/placeholder.jpg');
-        
-        let galleryHtml = '';
-        
-        if (images.length === 0 || images.length === 1) {
-          galleryHtml = `<img src="${mainImage}" alt="${product.title}" class="product-main-image" loading="lazy">`;
-        } else if (images.length <= 4) {
-          galleryHtml = `<div class="product-gallery-grid">${images.slice(0, 4).map((img: any) => `
-            <img src="${img.src}" alt="${img.alt || product.title}" class="gallery-image" loading="lazy">
-          `).join('')}</div>`;
-        } else {
-          // Carousel complet avec navigation
-          galleryHtml = `
-            <div class="product-carousel" data-product="${product.id}">
-              <div class="carousel-track">
-                ${images.map((img: any, idx: number) => `
-                  <img src="${img.src}" alt="${img.alt || product.title}" class="carousel-image ${idx === 0 ? 'active' : ''}" loading="lazy">
-                `).join('')}
-              </div>
-              <button class="carousel-btn carousel-prev" onclick="prevImage(this)">‹</button>
-              <button class="carousel-btn carousel-next" onclick="nextImage(this)">›</button>
-              <div class="carousel-dots">
-                ${images.map((_: any, idx: number) => `<span class="dot ${idx === 0 ? 'active' : ''}" onclick="goToImage(this, ${idx})"></span>`).join('')}
-              </div>
-            </div>
-          `;
-        }
-        
-        return `
-          <div class="product-card">
-            ${hasPromotion ? `<div class="promotion-badge">-${discount}%</div>` : ''}
-            <a href="${productUrl}" target="_blank" rel="noopener" class="product-link">
-              ${galleryHtml}
-              <div class="product-info">
-                <h3 class="product-title">${product.title}</h3>
-                ${product.category ? `<span class="product-category">${product.category}</span>` : ''}
-                <div class="product-price">
-                  ${hasPromotion ? `<span class="old-price">${product.compare_at_price.toFixed(2)} ${product.currency_code || '€'}</span>` : ''}
-                  <span class="current-price">${product.price.toFixed(2)} ${product.currency_code || '€'}</span>
-                </div>
-                ${product.body_html ? `<p class="product-description">${product.body_html.replace(/<[^>]*>/g, '').substring(0, 120)}...</p>` : ''}
-                <button class="product-cta">Voir le produit →</button>
-              </div>
-            </a>
-          </div>
-        `;
-      }).join('');
-    };
-
-    const productCardsHtml = hasProducts 
-      ? generateProductCardsEnhanced(products, storeUrl)
-      : '<p class="no-products">Aucun produit sélectionné pour cet article.</p>';
-
-    // Récupération des pages Shopify réelles pour netlinking
-    let shopifyPages: any[] = [];
-    if (user_id) {
-      const { data: pagesData } = await supabaseClient
-        .from("shopify_pages")
-        .select("title, handle, body_html")
-        .eq("user_id", user_id)
-        .limit(10);
-
-      if (pagesData && pagesData.length > 0) {
-        shopifyPages = pagesData;
-        console.log(`${shopifyPages.length} pages Shopify trouvées pour netlinking`);
-      }
-    }
-
-    const pagesContext =
-      shopifyPages.length > 0
-        ? `\n\nPAGES SHOPIFY DISPONIBLES POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title} (handle: ${p.handle})`).join("\n")}\n**IMPORTANT: Intègre des liens vers ces pages dans l'article pour améliorer le maillage interne.**`
-        : "";
-
-    // Génération du contenu HTML complet avec présentation améliorée
-    const wordCountTarget = parseInt(articleLength);
-
-    // Configuration de la langue pour le prompt
-    const languageConfig: Record<
-      string,
-      {
-        name: string;
-        toc: string;
-        intro: string;
-        criteria: string;
-        selection: string;
-        comparison: string;
-        advice: string;
-        faq: string;
-        conclusion: string;
-      }
-    > = {
-      fr: {
-        name: "français",
-        toc: "Table des matières",
-        intro: "Introduction",
-        criteria: "Critères essentiels de choix",
-        selection: "Notre sélection de produits",
-        comparison: "Guide d'achat comparatif",
-        advice: "Conseils d'experts",
-        faq: "Questions Fréquentes",
-        conclusion: "Conclusion",
-      },
-      en: {
-        name: "English",
-        toc: "Table of Contents",
-        intro: "Introduction",
-        criteria: "Essential Selection Criteria",
-        selection: "Our Product Selection",
-        comparison: "Buyer's Guide & Comparison",
-        advice: "Expert Tips",
-        faq: "Frequently Asked Questions",
-        conclusion: "Conclusion",
-      },
-      es: {
-        name: "español",
-        toc: "Tabla de contenidos",
-        intro: "Introducción",
-        criteria: "Criterios esenciales de selección",
-        selection: "Nuestra selección de productos",
-        comparison: "Guía de compra comparativa",
-        advice: "Consejos de expertos",
-        faq: "Preguntas Frecuentes",
-        conclusion: "Conclusión",
-      },
-      de: {
-        name: "Deutsch",
-        toc: "Inhaltsverzeichnis",
-        intro: "Einführung",
-        criteria: "Wesentliche Auswahlkriterien",
-        selection: "Unsere Produktauswahl",
-        comparison: "Kaufratgeber & Vergleich",
-        advice: "Expertentipps",
-        faq: "Häufig gestellte Fragen",
-        conclusion: "Fazit",
-      },
-      it: {
-        name: "italiano",
-        toc: "Sommario",
-        intro: "Introduzione",
-        criteria: "Criteri essenziali di scelta",
-        selection: "La nostra selezione di prodotti",
-        comparison: "Guida all'acquisto comparativa",
-        advice: "Consigli degli esperti",
-        faq: "Domande Frequenti",
-        conclusion: "Conclusione",
-      },
-    };
-
-    const lang = languageConfig[language] || languageConfig.fr;
-    const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
-
-    // ✅ Phase 1: Extraction dynamique des couleurs et layout
-    const primaryColor = articleConfig?.colorScheme || "#667eea";
-    const layout: "1-colonne" | "2-colonnes" | "3-colonnes" = articleConfig?.layout || "1-colonne";
-    const style: "magazine" | "blog" | "minimal" = articleConfig?.style || "magazine";
-
-    // Génération du schéma de couleurs dynamique
-    const hexToRgb = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : "102, 126, 234";
-    };
-
-    const colorScheme = {
-      primary: primaryColor,
-      primaryRgb: hexToRgb(primaryColor),
-      text: "#1a1a1a",
-      background: "#ffffff"
-    };
-
-    // Configuration du layout
-    const layoutConfig: Record<"1-colonne" | "2-colonnes" | "3-colonnes", { tocColumns: number; productColumns: number; maxWidth: string }> = {
-      "1-colonne": { tocColumns: 1, productColumns: 1, maxWidth: "800px" },
-      "2-colonnes": { tocColumns: 2, productColumns: 2, maxWidth: "1000px" },
-      "3-colonnes": { tocColumns: 2, productColumns: 3, maxWidth: "1200px" }
-    };
-
-    const currentLayout = layoutConfig[layout] || layoutConfig["1-colonne"];
-
-    // Description du style pour l'IA
-    const styleDescriptions: Record<"magazine" | "blog" | "minimal", string> = {
-      magazine: "Style magazine premium avec visuels riches et ton sophistiqué",
-      blog: "Style blog conversationnel et engageant avec ton amical",
-      minimal: "Style minimaliste et épuré avec ton professionnel direct"
-    };
-
-    const prompt = `Tu es un expert SEO et rédacteur e-commerce. Crée un article professionnel en ${lang.name} d'environ ${wordCountTarget} mots.
-
-**STYLE ÉDITORIAL** : ${styleDescriptions[style]}
-
-**CONFIGURATION VISUELLE** :
-- Couleur principale : ${colorScheme.primary}
-- Layout : ${layout}
-- Ton : ${style === 'blog' ? 'conversationnel et amical' : style === 'minimal' ? 'direct et professionnel' : 'sophistiqué et premium'}
-
-
-SUJET : ${topicInfo}
-MOTS-CLÉS : ${targetKeywords.join(", ")}
-
-**PRODUITS À INTÉGRER** (${products.length}) :
-${products.map((p: any, i: number) => `
-${i + 1}. **${p.title}**
-   - Prix : ${p.price} ${p.currency_code || '€'} ${p.compare_at_price ? `(avant: ${p.compare_at_price} ${p.currency_code || '€'} soit -${Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100)}%)` : ''}
-   - Catégorie : ${p.category || 'Non spécifiée'}
-   - Description : ${p.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || 'Non disponible'}
-   - Lien : ${storeUrl}/products/${p.handle}
-   - Images : ${p.images?.length || 1} image(s)
-`).join('\n')}${pagesContext}
-
-**IMPORTANT** : Les cartes produits HTML sont déjà générées et intégrées dans le template ci-dessous.
-Tu dois UNIQUEMENT rédiger le contenu textuel (introduction, critères, conseils, FAQ).
-Ne modifie PAS les cartes produits déjà présentes.
-
-STRUCTURE HTML À SUIVRE :
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    :root {
-      --color-primary: ${colorScheme.primary};
-      --color-primary-rgb: ${colorScheme.primaryRgb};
-      --color-text: ${colorScheme.text};
-      --color-bg: ${colorScheme.background};
-    }
-
-    .blog-article {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      max-width: ${currentLayout.maxWidth};
-      margin: 0 auto;
-      line-height: 1.7;
-      color: var(--color-text);
-    }
-
-    /* Header et Featured Image */
-    .article-header {
-      text-align: center;
-      margin-bottom: 4rem;
-      position: relative;
-    }
-    
-    .featured-image-container {
-      position: relative;
-      margin-bottom: 2rem;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-    }
-    
-    .featured-image {
-      width: 100%;
-      height: 500px;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-    
-    .featured-image:hover {
-      transform: scale(1.02);
-    }
-    
-    .article-title {
-      font-size: 3rem;
-      font-weight: 800;
-      margin: 2rem 0 1rem;
-      color: #000;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-    }
-
-    /* Table des matières */
-    .toc-container {
-      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%);
-      color: white;
-      padding: 2.5rem;
-      border-radius: 16px;
-      margin: 3rem 0;
-      box-shadow: 0 10px 40px rgba(var(--color-primary-rgb), 0.2);
-    }
-    
-    .toc-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .toc-list {
-      columns: ${currentLayout.tocColumns};
-      gap: 2rem;
-    }
-    
-    .toc-list ol {
-      margin: 0;
-      padding-left: 1rem;
-    }
-    
-    .toc-list li {
-      margin: 0.75rem 0;
-      break-inside: avoid;
-    }
-    
-    .toc-list a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-      transition: opacity 0.2s;
-      display: block;
-      padding: 0.5rem 0;
-    }
-    
-    .toc-list a:hover {
-      opacity: 0.9;
-      text-decoration: underline;
-    }
-
-    /* Sections de contenu */
-    .article-section {
-      margin: 4rem 0;
-      scroll-margin-top: 2rem;
-    }
-    
-    .section-title {
-      font-size: 2.25rem;
-      font-weight: 700;
-      margin: 2.5rem 0 1.5rem;
-      color: #000;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .section-title::before {
-      content: '';
-      width: 4px;
-      height: 2rem;
-      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%);
-      border-radius: 2px;
-    }
-    
-    .subsection-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin: 2rem 0 1rem;
-      color: #2d3748;
-    }
-
-    /* Présentation des produits */
-    .products-section {
-      background: #f8fafc;
-      padding: 3rem;
-      border-radius: 16px;
-      margin: 3rem 0;
-    }
-
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(${currentLayout.productColumns}, 1fr);
-      gap: 2rem;
-      margin-top: 2rem;
-    }
-    
-    .view-toggle {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      justify-content: center;
-    }
-    
-    .view-btn {
-      padding: 0.75rem 1.5rem;
-      border: 2px solid #e2e8f0;
-      background: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    
-    .view-btn.active {
-      background: #667eea;
-      color: white;
-      border-color: #667eea;
-    }
-
-    /* Mode Grille */
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 2rem;
-      margin: 2rem 0;
-    }
-    
-    .product-card {
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      transition: all 0.3s ease;
-      border: 1px solid #e2e8f0;
-    }
-    
-    .product-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    }
-    
-    .product-image-link {
-      display: block;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .product-image {
-      width: 100%;
-      height: 240px;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-    
-    .product-image:hover {
-      transform: scale(1.05);
-    }
-    
-    .product-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #48bb78;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-
-    /* Mode Liste */
-    .product-list {
-      display: none;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    
-    .product-list-item {
-      display: grid;
-      grid-template-columns: 120px 1fr auto;
-      gap: 1.5rem;
-      align-items: center;
-      background: white;
-      padding: 1.5rem;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      transition: all 0.2s;
-    }
-    
-    .product-list-item:hover {
-      border-color: #667eea;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-    }
-    
-    .list-view.active {
-      display: flex;
-    }
-    
-    .grid-view.active {
-      display: grid;
-    }
-
-    .product-info {
-      padding: 1.5rem;
-    }
-    
-    .product-name {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 0.5rem;
-      color: #1a202c;
-    }
-    
-    .product-description {
-      color: #718096;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin: 0.5rem 0;
-    }
-    
-    .product-pricing {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 1rem 0;
-    }
-    
-    .current-price {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #2d3748;
-    }
-    
-    .original-price {
-      font-size: 1.1rem;
-      color: #a0aec0;
-      text-decoration: line-through;
-    }
-    
-    .product-meta {
-      display: flex;
-      gap: 1rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-    }
-    
-    .stock-status {
-      padding: 0.25rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-    
-    .in-stock {
-      background: #c6f6d5;
-      color: #22543d;
-    }
-    
-    .out-of-stock {
-      background: #fed7d7;
-      color: #742a2a;
-    }
-    
-    .product-actions {
-      margin-top: 1.5rem;
-    }
-    
-    .product-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.875rem 1.5rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    
-    .product-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    /* Section FAQ */
-    .faq-section {
-      background: #f7fafc;
-      padding: 3rem;
-      border-radius: 16px;
-      margin: 4rem 0;
-    }
-    
-    .faq-title {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      text-align: center;
-      color: #1a202c;
-    }
-    
-    .faq-item {
-      background: white;
-      border-radius: 12px;
-      margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
-      overflow: hidden;
-    }
-    
-    .faq-question {
-      padding: 1.5rem;
-      font-weight: 600;
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #2d3748;
-    }
-    
-    .faq-answer {
-      padding: 0 1.5rem 1.5rem;
-      color: #4a5568;
-      line-height: 1.6;
-    }
-
-    /* Pages Shopify intégrées */
-    .shopify-pages {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin: 3rem 0;
-    }
-    
-    .page-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      text-align: center;
-      border: 1px solid #e2e8f0;
-      transition: all 0.2s;
-    }
-    
-    .page-card:hover {
-      border-color: #667eea;
-      transform: translateY(-4px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    }
-    
-    .page-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-    
-    .page-title {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #2d3748;
-    }
-    
-    .page-link {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    
-    .page-link:hover {
-      text-decoration: underline;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .article-title { font-size: 2rem; }
-      .toc-list { columns: 1; }
-      .product-grid { grid-template-columns: 1fr; }
-      .product-list-item { grid-template-columns: 1fr; text-align: center; }
-      .view-toggle { flex-wrap: wrap; }
-    }
-  </style>
-</head>
-<body>
-<article class="blog-article">
-  <header class="article-header">
-    ${
-      featuredImage
-        ? `
-    <div class="featured-image-container">
-      <img src="${featuredImage}" alt="${optimizedTitle}" class="featured-image" />
-    </div>
-    `
-        : ""
-    }
-    <h1 class="article-title">${optimizedTitle}</h1>
-  </header>
-
-  <nav class="toc-container">
-    <div class="toc-title">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
-      </svg>
-      ${lang.toc}
-    </div>
-    <div class="toc-list">
-      <ol>
-        <li><a href="#introduction">${lang.intro}</a></li>
-        <li><a href="#criteres">${lang.criteria}</a></li>
-        <li><a href="#produits">${lang.selection}</a></li>
-        <li><a href="#comparaison">${lang.comparison}</a></li>
-        <li><a href="#conseils">${lang.advice}</a></li>
-        <li><a href="#faq">${lang.faq}</a></li>
-        <li><a href="#conclusion">${lang.conclusion}</a></li>
-      </ol>
-    </div>
-  </nav>
-
-  <section id="introduction" class="article-section">
-    <h2 class="section-title">${lang.intro}</h2>
-    <p>[${lang.intro} engageante de 200-250 mots présentant ${topicInfo} et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
-  </section>
-
-  <section id="criteres" class="article-section">
-    <h2 class="section-title">${lang.criteria}</h2>
-    
-    <h3 class="subsection-title">Qualité et durabilité</h3>
-    <p>[Détail des aspects qualité à considérer - 150 mots]</p>
-    
-    <h3 class="subsection-title">Rapport qualité-prix</h3>
-    <p>[Analyse des différentes gammes de prix - 150 mots]</p>
-    
-    <h3 class="subsection-title">Design et fonctionnalités</h3>
-    <p>[Présentation des caractéristiques importantes - 150 mots]</p>
-  </section>
-
-  ${
-    hasProducts
-      ? `
-  <section id="produits" class="products-section">
-    <h2 class="section-title">${lang.selection}${collectionTitle ? ` - ${collectionTitle}` : ""}</h2>
-    
-    <div class="view-toggle">
-      <button class="view-btn active" data-view="grid">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
-          <path d="M3 3h8v8H3zm0 10h8v8H3zm10-10h8v8h-8zm0 10h8v8h-8z"/>
-        </svg>
-        Vue grille
-      </button>
-      <button class="view-btn" data-view="list">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
-          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0 4h2v-2H3v2zm4-8h14v-2H7v2zm0 4h14v-2H7v2zm0 4h14v-2H7v2z"/>
-        </svg>
-        Vue liste
-      </button>
-    </div>
-
-    <!-- Mode Grille avec cartes pré-générées -->
-    <div class="product-grid grid-view active">
-      ${productCardsHtml}
-    </div>
-
-    <!-- Mode Liste avec cartes pré-générées -->
-    <div class="product-list list-view">
-      ${productCardsHtml}
-    </div>
-  </section>
-  `
-      : ""
-  }
-
-  <section id="comparaison" class="article-section">
-    <h2 class="section-title">${lang.comparison}</h2>
-    <p>[Section détaillée de comparaison et d'analyse des produits ${collectionTitle || topicInfo} - 400 mots]</p>
-  </section>
-
-  <section id="conseils" class="article-section">
-    <h2 class="section-title">${lang.advice}</h2>
-    <p>[Recommandations et astuces pratiques pour ${collectionTitle || topicInfo} - 300 mots]</p>
-  </section>
-
-  <!-- Section FAQ -->
-  <section id="faq" class="faq-section">
-    <h2 class="faq-title">${lang.faq}</h2>
-    
-    <div class="faq-item">
-      <div class="faq-question">
-        Quels sont les critères les plus importants à considérer ?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
-      </div>
-      <div class="faq-answer">
-        [Réponse détaillée sur les critères essentiels - 100-150 mots]
-      </div>
-    </div>
-    
-    <div class="faq-item">
-      <div class="faq-question">
-        Quel est le budget moyen recommandé ?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
-      </div>
-      <div class="faq-answer">
-        [Conseils sur les budgets et fourchettes de prix - 100-150 mots]
-      </div>
-    </div>
-    
-    <div class="faq-item">
-      <div class="faq-question">
-        Comment entretenir et prolonger la durée de vie ?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
-      </div>
-      <div class="faq-answer">
-        [Guide d'entretien et maintenance - 100-150 mots]
-      </div>
-    </div>
-    
-    <div class="faq-item">
-      <div class="faq-question">
-        Quelles sont les garanties offertes ?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
-      </div>
-      <div class="faq-answer">
-        [Informations sur les garanties et retours - 100-150 mots]
-      </div>
-    </div>
-  </section>
-
-  <!-- Pages Shopify intégrées -->
-  <div class="shopify-pages">
-    <div class="page-card">
-      <div class="page-icon">📞</div>
-      <h3 class="page-title">Contact</h3>
-      <p>Une question ? Notre équipe vous répond</p>
-      <a href="/contact" class="page-link">Nous contacter</a>
-    </div>
-    
-    <div class="page-card">
-      <div class="page-icon">🚚</div>
-      <h3 class="page-title">Livraison</h3>
-      <p>Informations sur les délais et frais</p>
-      <a href="/pages/shipping" class="page-link">En savoir plus</a>
-    </div>
-    
-    <div class="page-card">
-      <div class="page-icon">↩️</div>
-      <h3 class="page-title">Retours</h3>
-      <p>Notre politique de retour simplifiée</p>
-      <a href="/pages/returns" class="page-link">Découvrir</a>
-    </div>
-    
-    <div class="page-card">
-      <div class="page-icon">❓</div>
-      <h3 class="page-title">Aide</h3>
-      <p>Centre d'aide et support</p>
-      <a href="/pages/help" class="page-link">Accéder</a>
-    </div>
-  </div>
-
-  <section id="conclusion" class="article-section">
-    <h2 class="section-title">${lang.conclusion}</h2>
-    <p>[Synthèse et recommandation finale sur ${collectionTitle || topicInfo} - 200 mots]</p>
-  </section>
-</article>
-
-<script>
-  // Navigation carousel
-  function prevImage(btn) {
-    const carousel = btn.closest('.product-carousel');
-    const images = carousel.querySelectorAll('.carousel-image');
-    const dots = carousel.querySelectorAll('.dot');
-    let currentIdx = Array.from(images).findIndex(img => img.classList.contains('active'));
-    const newIdx = currentIdx === 0 ? images.length - 1 : currentIdx - 1;
-    
-    images.forEach((img, idx) => img.classList.toggle('active', idx === newIdx));
-    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === newIdx));
-  }
-
-  function nextImage(btn) {
-    const carousel = btn.closest('.product-carousel');
-    const images = carousel.querySelectorAll('.carousel-image');
-    const dots = carousel.querySelectorAll('.dot');
-    let currentIdx = Array.from(images).findIndex(img => img.classList.contains('active'));
-    const newIdx = (currentIdx + 1) % images.length;
-    
-    images.forEach((img, idx) => img.classList.toggle('active', idx === newIdx));
-    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === newIdx));
-  }
-
-  function goToImage(dot, idx) {
-    const carousel = dot.closest('.product-carousel');
-    const images = carousel.querySelectorAll('.carousel-image');
-    const dots = carousel.querySelectorAll('.dot');
-    
-    images.forEach((img, i) => img.classList.toggle('active', i === idx));
-    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-  }
-
-  // Toggle vue grille/liste et FAQ
-  document.addEventListener('DOMContentLoaded', function() {
-    const viewButtons = document.querySelectorAll('.view-btn');
-    const gridView = document.querySelector('.grid-view');
-    const listView = document.querySelector('.list-view');
-    
-    viewButtons.forEach(btn => {
-      btn.addEventListener('click', function() {
-        const view = this.dataset.view;
-        
-        // Update active button
-        viewButtons.forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        
-        // Show/hide views
-        if (view === 'grid') {
-          gridView.classList.add('active');
-          listView.classList.remove('active');
-        } else {
-          gridView.classList.remove('active');
-          listView.classList.add('active');
-        }
-      });
-    });
-    
-    // FAQ accordéon
-    const faqQuestions = document.querySelectorAll('.faq-question');
-    faqQuestions.forEach(question => {
-      question.addEventListener('click', function() {
-        const answer = this.nextElementSibling;
-        const isOpen = answer.style.display === 'block';
-        
-        // Close all answers
-        document.querySelectorAll('.faq-answer').forEach(ans => {
-          ans.style.display = 'none';
-        });
-        
-        // Toggle current answer
-        answer.style.display = isOpen ? 'none' : 'block';
-      });
-    });
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProgressDialog, ResultsDialog, SuccessDialog } from "@/components/seo/SeoWorkflowDialogs";
+import { ArticleSyncDialog } from "./ArticleSyncDialog";
+import { useTranslation } from "@/lib/language";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  FileText,
+  Tag,
+  Settings as SettingsIcon,
+  Eye,
+  CheckCircle,
+  Loader2,
+  Search,
+  Package,
+  X,
+  Check,
+  Layers,
+  Palette,
+  Star,
+  Zap,
+  Target,
+  Users,
+  TrendingUp,
+} from "lucide-react";
+import { ArticleConfigDialog, ArticleConfig } from "./ArticleConfigDialog";
+import { ArticleGenerationProgress } from "./ArticleGenerationProgress";
+import { useStore } from "@/contexts/StoreContext";
+
+interface WizardStep {
+  id: number;
+  title: string;
+  icon: typeof FileText;
+  description: string;
+}
+
+interface BlogWizardProps {
+  onClose: () => void;
+  categories: string[];
+}
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  image_url: string;
+  price: number;
+  collection_ids?: string[];
+  handle?: string;
+  product_type?: string;
+  vendor?: string;
+}
+
+interface Collection {
+  id: string;
+  title: string;
+  productCount?: number;
+}
+
+export function BlogWizard({ onClose, categories }: BlogWizardProps) {
+  const { user } = useAuth();
+  const { selectedStore } = useStore();
+  const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [generating, setGenerating] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = useState("");
+
+  // ✅ NOUVEAU: État pour les suggestions de mots-clés IA
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Dialog states
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showGenerationProgress, setShowGenerationProgress] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [generatedArticle, setGeneratedArticle] = useState<any>(null);
+  const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    collection_ids: [] as string[],
+    collectionTitles: [] as string[],
+    keywords: "",
+    productCount: 3,
+    articleLength: "2000" as "700" | "2000" | "4000",
+    articleAngle: "guide" as "guide" | "comparison" | "review" | "tutorial",
+    targetAudience: "general" as "beginner" | "general" | "expert",
   });
-</script>
-</body>
-</html>
 
-**STRUCTURE SEO STRICTE** :
-- 1 seul H1 (titre principal)
-- 3-5 H2 (sections principales) : Introduction, Critères de choix, Notre sélection, Guide d'achat, FAQ, Conclusion
-- Sous chaque H2, 2-4 H3 (sous-sections)
-- Si nécessaire, des H4 sous les H3 pour des détails
-- TOUJOURS du contenu entre un titre et son sous-titre
-- Table des matières cliquable avec ancres
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
-**RÈGLE CRITIQUE** : Tu DOIS remplacer TOUS les placeholders [texte...] par du contenu réel et spécifique. 
-Aucun placeholder ne doit rester dans le HTML final.
+  // Article configuration for visual design
+  const [articleConfig, setArticleConfig] = useState<ArticleConfig>({
+    style: "magazine",
+    layout: "2-colonnes",
+    colorScheme: "#2563eb",
+    contentLength: "2000",
+    includeTOC: true,
+    productDisplay: "grid",
+    typography: "sans-serif",
+    imageIntensity: "medium",
+    includeFAQ: true,
+    includeComparison: true,
+  });
 
-${opportunityData ? `
-**CONTEXTE DE L'OPPORTUNITÉ** :
-- Titre suggéré : ${opportunityData.title}
-- Angle éditorial : ${opportunityData.angle}
-- Audience cible : ${opportunityData.targetAudience}
-- Type d'article : ${opportunityData.type}
-- Catégorie : ${opportunityData.category} ${opportunityData.subCategory ? `> ${opportunityData.subCategory}` : ''}
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-Utilise ces informations pour créer un article aligné avec l'opportunité.
-` : ''}
+  // Steps with translations - Enhanced steps
+  const steps: WizardStep[] = [
+    { 
+      id: 1, 
+      title: t.wizards.blog.steps.topic, 
+      icon: Target, 
+      description: t.wizards.blog.descriptions.topic 
+    },
+    { 
+      id: 2, 
+      title: t.wizards.blog.steps.products, 
+      icon: Package, 
+      description: t.wizards.blog.descriptions.products 
+    },
+    { 
+      id: 3, 
+      title: t.wizards.blog.steps.keywords, 
+      icon: TrendingUp, 
+      description: t.wizards.blog.descriptions.keywords 
+    },
+    { 
+      id: 4, 
+      title: t.wizards.blog.steps.design, 
+      icon: Palette, 
+      description: t.wizards.blog.descriptions.design 
+    },
+    { 
+      id: 5, 
+      title: t.wizards.blog.steps.generate, 
+      icon: Sparkles, 
+      description: t.wizards.blog.descriptions.generate 
+    },
+  ];
 
-RÈGLES DE CRÉATION :
-- LANGUE: Tout le contenu doit être rédigé en ${lang.name}
-- Structure HTML complète et responsive
-- Collection/Catégorie: ${collectionTitle || category}
-- Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
-- Longueur totale : ${wordCountTarget} mots environ
-- Ton professionnel et engageant en ${lang.name}
-- ${hasProducts ? `Utilisation des ${products.length} produits sélectionnés avec liens cliquables vers la boutique` : "Guide informatif générique"}
-- FAQ complète avec 4-6 questions pertinentes en ${lang.name}
-- Tables des matières (H1-H5) bien structurée en ${lang.name}
-- Tags SEO optimisés pour ${collectionTitle || category}
-- Galerie d'images produits avec liens cliquables
-- Retourne le code HTML complet et fonctionnel
+  // ✅ NOUVEAU: Génération de suggestions de mots-clés IA
+  const generateAISuggestions = async (products: Product[]) => {
+    if (products.length === 0) return;
 
-**IMPORTANT** : Remplace tous les textes entre crochets [comme ceci...] par du contenu rédigé et pertinent.`;
-
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Expert en rédaction e-commerce. Tu génères UNIQUEMENT du contenu textuel en JSON, sans toucher au HTML.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const err = await aiResponse.text();
-      throw new Error(`AI Error: ${err}`);
-    }
-
-    const result = await aiResponse.json();
-    let aiContent = result.choices[0].message.content.trim();
-
-    console.log("✅ [GEMINI] Contenu textuel généré");
-    
-    // ✅ EXTRACTION DU JSON
-    // Nettoyer les balises markdown si présentes
-    aiContent = aiContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    
-    let textBlocks;
+    setLoadingSuggestions(true);
     try {
-      textBlocks = JSON.parse(aiContent);
-      console.log("✅ [JSON] Parsing réussi");
-    } catch (parseError) {
-      console.error("❌ [JSON] Erreur de parsing:", parseError);
-      console.error("Contenu reçu:", aiContent.substring(0, 500));
-      throw new Error("Impossible de parser la réponse JSON de Gemini");
-    }
-    
-    // ✅ CRÉATION DU TEMPLATE HTML AVEC PLACEHOLDERS 
-    // (On récupère le template HTML déjà généré dans le prompt précédent)
-    const contentTemplate = `<!DOCTYPE html>
-<html lang="${language}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${optimizedTitle}</title>
-</head>
-<body>
-  <article>
-    <h1>${optimizedTitle}</h1>
-    <section>
-      <h2>${lang.intro}</h2>
-      <div>[INTRODUCTION]</div>
-    </section>
-    <section>
-      <h2>${lang.criteria}</h2>
-      <h3>Qualité</h3>
-      <div>[CRITERES_QUALITE]</div>
-      <h3>Prix</h3>
-      <div>[CRITERES_PRIX]</div>
-      <h3>Design</h3>
-      <div>[CRITERES_DESIGN]</div>
-    </section>
-    ${hasProducts ? `<section>${productCardsHtml}</section>` : ''}
-    <section>
-      <h2>${lang.comparison}</h2>
-      <div>[COMPARATIF]</div>
-    </section>
-    <section>
-      <h2>${lang.advice}</h2>
-      <div>[CONSEILS]</div>
-    </section>
-    <section>
-      <h2>${lang.faq}</h2>
-      <div>[FAQ_1]</div>
-      <div>[FAQ_2]</div>
-      <div>[FAQ_3]</div>
-      <div>[FAQ_4]</div>
-    </section>
-    <section>
-      <h2>${lang.conclusion}</h2>
-      <div>[CONCLUSION]</div>
-    </section>
-  </article>
-</body>
-</html>`;
-
-    // ✅ REMPLACEMENT DES PLACEHOLDERS DANS LE TEMPLATE HTML
-    let content = contentTemplate
-      .replace('[INTRODUCTION]', textBlocks.INTRODUCTION || '')
-      .replace('[CRITERES_QUALITE]', textBlocks.CRITERES_QUALITE || '')
-      .replace('[CRITERES_PRIX]', textBlocks.CRITERES_PRIX || '')
-      .replace('[CRITERES_DESIGN]', textBlocks.CRITERES_DESIGN || '')
-      .replace('[COMPARATIF]', textBlocks.COMPARATIF || '')
-      .replace('[CONSEILS]', textBlocks.CONSEILS || '')
-      .replace('[FAQ_1]', textBlocks.FAQ_1 || '')
-      .replace('[FAQ_2]', textBlocks.FAQ_2 || '')
-      .replace('[FAQ_3]', textBlocks.FAQ_3 || '')
-      .replace('[FAQ_4]', textBlocks.FAQ_4 || '')
-      .replace('[CONCLUSION]', textBlocks.CONCLUSION || '');
-    
-    console.log("✅ [HTML] Placeholders remplacés");
-    
-    // ✅ VALIDATION - Vérifier qu'il ne reste pas de placeholders
-    const placeholderRegex = /\[(INTRODUCTION|CRITERES_|COMPARATIF|CONSEILS|FAQ_|CONCLUSION)\]/g;
-    const remainingPlaceholders = content.match(placeholderRegex);
-    
-    if (remainingPlaceholders && remainingPlaceholders.length > 0) {
-      console.warn(`⚠️ [VALIDATION] ${remainingPlaceholders.length} placeholders non remplacés:`, remainingPlaceholders);
+      const productTitles = products.map(p => p.title).slice(0, 5);
+      const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
       
-      // Nettoyer les placeholders restants
-      content = content
-        .replace(/\[contenu.*?\]/gi, '')
-        .replace(/\[description.*?\]/gi, '');
-      
-      console.log(`🧹 [VALIDATION] Placeholders nettoyés`);
-    } else {
-      console.log("✅ [VALIDATION] Aucun placeholder détecté - HTML propre");
+      const response = await supabase.functions.invoke("generate-keyword-suggestions", {
+        body: {
+          products: productTitles,
+          categories,
+          maxKeywords: 15
+        }
+      });
+
+      if (response.data?.suggestions) {
+        setKeywordSuggestions(response.data.suggestions);
+        toast.success("Suggestions de mots-clés générées par IA");
+      }
+    } catch (error) {
+      console.error("Erreur génération suggestions IA:", error);
+      // Fallback aux suggestions basiques
+      generateFallbackSuggestions(products);
+    } finally {
+      setLoadingSuggestions(false);
     }
+  };
 
-    // Nettoyage du contenu
-    content = content
-      .replace(/```html/g, "")
-      .replace(/```/g, "")
-      .trim();
+  // ✅ Fallback suggestions
+  const generateFallbackSuggestions = (products: Product[]) => {
+    const suggestions: string[] = [];
 
-    // Génération des mots-clés SEO
-    const keywordsResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Expert SEO pour la génération de mots-clés pertinents.",
-          },
-          {
-            role: "user",
-            content: `Génère 8-12 mots-clés SEO pour "${optimizedTitle}". Liste séparée par des virgules.`,
-          },
-        ],
-      }),
+    // Mots-clés des titres
+    products.forEach(product => {
+      const words = product.title.toLowerCase()
+        .split(/[\s\-,]+/)
+        .filter(word => word.length > 3 && !['avec', 'sans', 'pour', 'dans', 'sur'].includes(word))
+        .slice(0, 3);
+      suggestions.push(...words);
     });
 
-    const keywordsData = await keywordsResponse.json();
-    const seoKeywords = keywordsData.choices[0].message.content
-      .trim()
-      .split(",")
-      .map((k: string) => k.trim())
-      .filter(Boolean)
+    // Catégories et types
+    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+    const types = [...new Set(products.map(p => p.product_type).filter(Boolean))];
+    
+    suggestions.push(...categories);
+    suggestions.push(...types);
+
+    // Phrases longues
+    products.forEach(product => {
+      const words = product.title.toLowerCase().split(' ');
+      if (words.length >= 3) {
+        suggestions.push(words.slice(0, 3).join(' '));
+        suggestions.push(words.slice(-3).join(' '));
+      }
+    });
+
+    // Dédupliquer et limiter
+    const uniqueSuggestions = [...new Set(suggestions)]
+      .filter(s => s.length > 2)
       .slice(0, 12);
 
-    // ✅ LOG avant sauvegarde
-    console.log(`💾 [SAVE] Sauvegarde de l'article...`);
-    console.log(`  - user_id: ${user_id}`);
-    console.log(`  - store_id: ${store_id} (CRITICAL - doit être non-null)`);
-    console.log(`  - title: ${optimizedTitle}`);
-    
-    // Sauvegarde de l'article
-    const { data: savedArticle, error: saveError } = await supabaseClient
-      .from("blog_articles")
-      .insert([
-        {
-          user_id,
-          store_id, // ✅ VÉRIFIÉ non-null plus haut
-          title: optimizedTitle,
-          content,
-          featured_image: featuredImage,
-          meta_description: opportunityData?.metaDescription || `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
-          keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
-          status: "draft",
-          source: "ai_generated",
-        },
-      ])
-      .select()
-      .single();
+    setKeywordSuggestions(uniqueSuggestions);
+  };
 
-    if (saveError) {
-      console.error("Erreur sauvegarde:", saveError);
-      throw saveError;
+  // ✅ Sélectionner tous les mots-clés suggérés
+  const selectAllKeywords = () => {
+    const allKeywords = [...new Set([...keywords, ...keywordSuggestions])];
+    setKeywords(allKeywords);
+    toast.success(`${keywordSuggestions.length - keywords.length} mots-clés ajoutés`);
+  };
+
+  // Prefill from URL params (opportunity data)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const opportunityId = params.get("opportunityId");
+
+    if (opportunityId) {
+      // Prefill keywords
+      const primaryKeywords = params.get("primaryKeywords")?.split(",").filter(Boolean) || [];
+      const secondaryKeywords = params.get("secondaryKeywords")?.split(",").filter(Boolean) || [];
+      setKeywords([...primaryKeywords, ...secondaryKeywords]);
+
+      // Prefill estimated word count
+      const estimatedWordCount = params.get("estimatedWordCount");
+      if (estimatedWordCount) {
+        const wordCount = parseInt(estimatedWordCount, 10);
+        if (wordCount <= 1000) {
+          setFormData(prev => ({ ...prev, articleLength: "700" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "700" }));
+        } else if (wordCount <= 3000) {
+          setFormData(prev => ({ ...prev, articleLength: "2000" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "2000" }));
+        } else {
+          setFormData(prev => ({ ...prev, articleLength: "4000" }));
+          setArticleConfig(prev => ({ ...prev, contentLength: "4000" }));
+        }
+      }
+
+      // Prefill collection IDs
+      const collectionIds = params.get("collectionIds")?.split(",").filter(Boolean) || [];
+      if (collectionIds.length > 0) {
+        setFormData(prev => ({ ...prev, collection_ids: collectionIds }));
+      }
+
+      // Prefill product IDs
+      const productIds = params.get("productIds")?.split(",").filter(Boolean) || [];
+      if (productIds.length > 0) {
+        (window as any).__preselectedProductIds = productIds;
+      }
     }
+  }, []);
 
-    // If generated from opportunity, update the opportunity record
-    if (opportunityData?.opportunityId && savedArticle) {
-      await supabaseClient
-        .from("blog_opportunities")
-        .update({ 
-          article_id: savedArticle.id,
-          generated_at: new Date().toISOString()
-        })
-        .eq("id", opportunityData.opportunityId);
+  // Charger les produits et collections
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (user?.id && selectedStore?.id) {
+        fetchProducts();
+        fetchCollections();
+      } else {
+        setProducts([]);
+        setCollections([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [user?.id, selectedStore?.id]);
+
+  // Sélectionner les produits après chargement
+  useEffect(() => {
+    const preselectedIds = (window as any).__preselectedProductIds;
+    if (preselectedIds && products.length > 0) {
+      const productsToSelect = products.filter((p) => preselectedIds.includes(p.id));
+      setSelectedProducts(productsToSelect);
+      delete (window as any).__preselectedProductIds;
     }
+  }, [products]);
 
-    console.log(`Article sauvegardé : ${savedArticle.id}`);
+  // Générer suggestions quand produits changent
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      generateAISuggestions(selectedProducts);
+    } else {
+      setKeywordSuggestions([]);
+    }
+  }, [selectedProducts]);
 
-    // Extraction des données de netlinking
+  const fetchCollections = async () => {
+    if (!user?.id || !selectedStore?.id) return;
+
     try {
-      await supabaseClient.functions.invoke("extract-netlinking-from-articles", {
-        body: { article_ids: [savedArticle.id] },
+      const { data: collectionsData, error: collError } = await supabase
+        .from("shopify_collections")
+        .select("id, title, store_id")
+        .eq("user_id", user.id)
+        .eq("store_id", selectedStore.id)
+        .order("title", { ascending: true });
+
+      if (collError) throw collError;
+
+      if (!collectionsData || collectionsData.length === 0) {
+        setCollections([]);
+        return;
+      }
+
+      // Compter les produits par collection
+      const { data: productsData } = await supabase
+        .from("shopify_products")
+        .select("id, collection_ids")
+        .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id);
+
+      const collectionsWithCount = collectionsData.map((col) => {
+        const count = (productsData || []).filter(
+          (prod) => prod.collection_ids && prod.collection_ids.includes(col.id),
+        ).length;
+        return { ...col, productCount: count };
       });
-      console.log("Netlinking extrait avec succès");
-    } catch (netlinkError) {
-      console.error("Erreur extraction netlinking:", netlinkError);
+
+      const collectionsWithProducts = collectionsWithCount.filter((col) => col.productCount > 0);
+      setCollections(collectionsWithProducts as any);
+
+    } catch (err) {
+      console.error("Error fetching collections:", err);
+      toast.error(t.wizards.blog.loadingError);
+    }
+  };
+
+  const fetchProducts = async () => {
+    if (!user?.id || !selectedStore?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("shopify_products")
+        .select("id, title, description, category, image_url, price, product_type, vendor, collection_ids, handle")
+        .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      setProducts(data || []);
+
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      toast.error(t.wizards.blog.productsLoadingError);
+    }
+  };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCollection =
+      formData.collection_ids.length === 0 ||
+      formData.collection_ids.some((colId) => product.collection_ids?.includes(colId));
+
+    const matchesSearch = !searchTerm || 
+      product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesCollection && matchesSearch;
+  });
+
+  const filteredCollections = collections.filter((col) =>
+    col.title.toLowerCase().includes(collectionSearchTerm.toLowerCase()),
+  );
+
+  const productsInCollection =
+    formData.collection_ids.length > 0
+      ? products.filter((p) => formData.collection_ids.some((colId) => p.collection_ids?.includes(colId))).length
+      : products.length;
+
+  const toggleCollection = (collectionId: string, collectionTitle: string) => {
+    setFormData((prev) => {
+      const isSelected = prev.collection_ids.includes(collectionId);
+      if (isSelected) {
+        return {
+          ...prev,
+          collection_ids: prev.collection_ids.filter((id) => id !== collectionId),
+          collectionTitles: prev.collectionTitles.filter((_, idx) => prev.collection_ids[idx] !== collectionId),
+        };
+      } else {
+        return {
+          ...prev,
+          collection_ids: [...prev.collection_ids, collectionId],
+          collectionTitles: [...prev.collectionTitles, collectionTitle],
+        };
+      }
+    });
+  };
+
+  const addKeyword = () => {
+    const newKeyword = keywordInput.trim();
+    if (newKeyword && !keywords.includes(newKeyword)) {
+      setKeywords([...keywords, newKeyword]);
+      setKeywordInput("");
+      toast.success("Mot-clé ajouté");
+    }
+  };
+
+  const removeKeyword = (keywordToRemove: string) => {
+    setKeywords(keywords.filter((k) => k !== keywordToRemove));
+  };
+
+  const addSuggestedKeyword = (suggestion: string) => {
+    if (!keywords.includes(suggestion)) {
+      setKeywords([...keywords, suggestion]);
+      toast.success("Mot-clé suggéré ajouté");
+    }
+  };
+
+  const handleNext = () => {
+    // Validation selon l'étape
+    if (currentStep === 1 && formData.collection_ids.length === 0) {
+      toast.error("Veuillez sélectionner au moins une collection");
+      return;
+    }
+    
+    if (currentStep === 2 && selectedProducts.length === 0) {
+      toast.error("Veuillez sélectionner au moins un produit");
+      return;
     }
 
-    // Mise à jour du compteur d'usage
-    await supabaseClient.rpc("increment_usage", {
-      p_seller_id: user_id,
-      p_field: "articles_count",
-      p_increment: 1,
-    });
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-    return {
-      success: true,
-      article_id: savedArticle.id,
-      article: savedArticle,
-      featured_image: featuredImage,
-    };
-  } catch (err) {
-    console.error("Erreur génération:", err);
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
-  }
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // ✅ NOUVELLE FONCTION handleGenerate améliorée
+  const handleGenerate = async () => {
+    // Vérification des limites
+    if (!limits?.canUseArticles) {
+      toast.error("Limite d'articles atteinte", {
+        description: `Vous avez utilisé ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles.`
+      });
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    // Validation finale
+    if (selectedProducts.length === 0 && formData.collection_ids.length === 0) {
+      toast.error("Veuillez sélectionner au moins des produits ou une collection");
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      setShowGenerationProgress(true);
+
+      if (!user?.id || !selectedStore?.id) {
+        throw new Error("Utilisateur non connecté ou boutique non sélectionnée");
+      }
+
+      console.log("🚀 [WIZARD] Lancement de la génération:");
+      console.log("  - Produits:", selectedProducts.length);
+      console.log("  - Collections:", formData.collection_ids.length);
+      console.log("  - Mots-clés:", keywords.length);
+      console.log("  - Longueur:", formData.articleLength);
+      console.log("  - Angle:", formData.articleAngle);
+
+      const response = await supabase.functions.invoke("generate-blog-article", {
+        body: {
+          user_id: user.id,
+          store_id: selectedStore.id,
+          collection_ids: formData.collection_ids,
+          collectionTitles: formData.collectionTitles,
+          keywords: keywords,
+          productIds: selectedProducts.map((p) => p.id),
+          articleLength: formData.articleLength,
+          articleConfig: {
+            ...articleConfig,
+            articleAngle: formData.articleAngle,
+            targetAudience: formData.targetAudience,
+          },
+          context: {
+            hasSelectedProducts: selectedProducts.length > 0,
+            hasCollections: formData.collection_ids.length > 0,
+            productCount: selectedProducts.length,
+            collectionCount: formData.collection_ids.length,
+            storeName: selectedStore.name
+          }
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data?.article) {
+        setGeneratedArticle({
+          id: response.data.article.id,
+          title: response.data.article.title,
+          seo_title: response.data.article.seo_title,
+          seo_description: response.data.article.seo_description,
+          content: response.data.article.content,
+          featured_image: response.data.article.featured_image,
+        });
+        setGeneratedArticleId(response.data.article.id);
+        
+        toast.success("🎉 Article généré avec succès !", {
+          description: "Votre contenu SEO optimisé est prêt."
+        });
+        
+        setShowResultsDialog(true);
+      } else {
+        throw new Error("Aucun article généré");
+      }
+    } catch (error: any) {
+      console.error("❌ Erreur génération:", error);
+      
+      if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
+        if (limits?.isTrialing) {
+          toast.error("Limite d'essai atteinte", {
+            description: "Passez à un abonnement pour continuer à générer des articles."
+          });
+        } else {
+          toast.error("Limite mensuelle atteinte", {
+            description: "Votre forfait mensuel est épuisé."
+          });
+        }
+        setShowUpgradeDialog(true);
+      } else {
+        toast.error("Erreur lors de la génération", {
+          description: error.message || "Une erreur est survenue"
+        });
+      }
+    } finally {
+      setGenerating(false);
+      setShowGenerationProgress(false);
+    }
+  };
+
+  const handlePublishToShopify = async () => {
+    if (!generatedArticleId) return;
+
+    setShowSyncDialog(false);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+
+    try {
+      const syncResponse = await supabase.functions.invoke("sync-blog-to-shopify", {
+        body: { articleId: generatedArticleId },
+      });
+
+      if (syncResponse.error) {
+        throw syncResponse.error;
+      } else {
+        setIsOptimizationComplete(true);
+        toast.success("✅ Article publié sur Shopify", {
+          description: "Votre article est maintenant en ligne."
+        });
+      }
+    } catch (error) {
+      console.error("Error publishing to Shopify:", error);
+      toast.error("Erreur lors de la publication");
+    }
+  };
+
+  const handleSkipPublish = () => {
+    setShowResultsDialog(false);
+    onClose();
+  };
+
+  // ✅ Rendu des étapes amélioré
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            {/* Sélection de l'angle éditorial */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Angle éditorial</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: "guide", label: "📚 Guide", description: "Guide complet" },
+                  { value: "comparison", label: "⚖️ Comparatif", description: "Comparaison produits" },
+                  { value: "review", label: "⭐ Avis", description: "Tests et avis" },
+                  { value: "tutorial", label: "🎓 Tutoriel", description: "Guide pratique" },
+                ].map((angle) => (
+                  <button
+                    key={angle.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, articleAngle: angle.value as any })}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      formData.articleAngle === angle.value
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="font-semibold">{angle.label}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{angle.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Audience cible */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Audience cible</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "beginner", label: "👶 Débutant", icon: Users },
+                  { value: "general", label: "👥 Général", icon: Target },
+                  { value: "expert", label: "🎯 Expert", icon: Zap },
+                ].map((audience) => {
+                  const Icon = audience.icon;
+                  return (
+                    <button
+                      key={audience.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, targetAudience: audience.value as any })}
+                      className={`p-4 border-2 rounded-xl text-center transition-all ${
+                        formData.targetAudience === audience.value
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-primary/50"
+                      }`}
+                    >
+                      <Icon className="w-6 h-6 mx-auto mb-2" />
+                      <div className="font-semibold text-sm">{audience.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sélection des collections */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Collections</label>
+              
+              {formData.collection_ids.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {formData.collection_ids.map((colId, idx) => {
+                    const collection = collections.find((c) => c.id === colId);
+                    return (
+                      <Badge key={colId} variant="secondary" className="flex items-center gap-1 py-1">
+                        <Layers className="h-3 w-3" />
+                        {collection?.title || formData.collectionTitles[idx]}
+                        <button
+                          onClick={() => toggleCollection(colId, formData.collectionTitles[idx])}
+                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher une collection..."
+                  value={collectionSearchTerm}
+                  onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="border rounded-lg max-h-[300px] overflow-auto">
+                {collections.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Aucune collection trouvée. Importez d'abord vos collections depuis Shopify.
+                  </div>
+                ) : filteredCollections.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Aucune collection ne correspond à votre recherche.
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredCollections.map((collection) => {
+                      const isSelected = formData.collection_ids.includes(collection.id);
+                      const productCount = collection.productCount || 0;
+
+                      return (
+                        <div
+                          key={collection.id}
+                          onClick={() => toggleCollection(collection.id, collection.title)}
+                          className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
+                            isSelected ? "bg-accent/50" : ""
+                          }`}
+                        >
+                          <div
+                            className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${
+                              isSelected ? "bg-primary border-primary" : "border-input"
+                            }`}
+                          >
+                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                          </div>
+                          <span className="flex-1 text-sm font-medium">{collection.title}</span>
+                          <Badge variant="outline" className="ml-auto">
+                            {productCount} produit(s)
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {formData.collection_ids.length > 0 && (
+                <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  {productsInCollection} produit(s) dans les collections sélectionnées
+                </div>
+              )}
+            </div>
+
+            {/* Longueur de l'article */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Longueur de l'article</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "700", label: "Court", words: "~700 mots", time: "3-4 min" },
+                  { value: "2000", label: "Long", words: "~2000 mots", time: "8-10 min" },
+                  { value: "4000", label: "Complet", words: "~4000 mots", time: "15-20 min" },
+                ].map((length) => (
+                  <button
+                    key={length.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, articleLength: length.value as any })}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      formData.articleLength === length.value
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white border-gray-300 hover:border-primary"
+                    }`}
+                  >
+                    <div className="font-semibold">{length.label}</div>
+                    <div className="text-sm opacity-80">{length.words}</div>
+                    <div className="text-xs opacity-60">{length.time}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            {formData.collection_ids.length > 0 && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <Layers className="w-4 h-4 text-blue-600" />
+                <AlertDescription>
+                  <span className="font-medium">Collections sélectionnées:</span>{" "}
+                  <strong>{formData.collectionTitles.join(", ")}</strong>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Rechercher un produit par nom, description ou catégorie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-blue-900">
+                    {selectedProducts.length} produit(s) sélectionné(s)
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {filteredProducts.length} produit(s) disponible(s)
+                  </p>
+                </div>
+                {selectedProducts.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedProducts([])}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Tout désélectionner
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto">
+              {filteredProducts.map((product) => {
+                const isSelected = selectedProducts.some((p) => p.id === product.id);
+
+                return (
+                  <Card
+                    key={product.id}
+                    className={`p-4 cursor-pointer transition-all border-2 ${
+                      isSelected 
+                        ? "border-primary bg-primary/5" 
+                        : "border-gray-200 hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
+                      } else {
+                        setSelectedProducts([...selectedProducts, product]);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-6 h-6 border-2 rounded flex items-center justify-center ${
+                        isSelected ? "bg-primary border-primary" : "border-gray-300"
+                      }`}>
+                        {isSelected && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                      
+                      <img
+                        src={product.image_url || "/placeholder.svg"}
+                        alt={product.title}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-lg line-clamp-2 mb-1">{product.title}</p>
+                        <p className="text-sm text-gray-600 line-clamp-1 mb-2">{product.description}</p>
+                        
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-lg font-bold text-blue-600">{product.price}€</p>
+                          
+                          {product.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {product.category}
+                            </Badge>
+                          )}
+                          
+                          {product.product_type && (
+                            <Badge variant="outline" className="text-xs">
+                              {product.product_type}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-semibold mb-2">Aucun produit trouvé</p>
+                  <p className="text-sm">
+                    {searchTerm 
+                      ? "Aucun produit ne correspond à votre recherche." 
+                      : "Aucun produit disponible dans les collections sélectionnées."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {selectedProducts.length === 0 && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertDescription className="text-amber-800">
+                  💡 Sélectionnez au moins un produit pour générer un article pertinent.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold mb-3">Gestion des mots-clés</label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ajoutez des mots-clés pertinents pour optimiser le référencement de votre article.
+              </p>
+
+              {/* Suggestions IA */}
+              {keywordSuggestions.length > 0 && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Suggestions IA ({keywordSuggestions.length})
+                      </h4>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Mots-clés générés automatiquement basés sur vos produits
+                      </p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={selectAllKeywords}
+                      disabled={loadingSuggestions}
+                    >
+                      {loadingSuggestions ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
+                      Tout sélectionner
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {keywordSuggestions.map((suggestion, idx) => (
+                      <Badge
+                        key={idx}
+                        variant={keywords.includes(suggestion) ? "default" : "outline"}
+                        className={`cursor-pointer transition-all ${
+                          keywords.includes(suggestion)
+                            ? "bg-primary hover:bg-primary/90"
+                            : "hover:bg-blue-100 hover:text-blue-900"
+                        }`}
+                        onClick={() => addSuggestedKeyword(suggestion)}
+                      >
+                        {suggestion}
+                        {keywords.includes(suggestion) && <Check className="ml-1 h-3 w-3" />}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ajout manuel */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  type="text"
+                  placeholder="Ajouter un mot-clé (ex: produit qualité, guide d'achat...)"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
+                  className="flex-1"
+                />
+                <Button onClick={addKeyword} type="button">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Ajouter
+                </Button>
+              </div>
+            </div>
+
+            {/* Mots-clés sélectionnés */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-semibold">
+                  Mots-clés sélectionnés ({keywords.length})
+                </label>
+                {keywords.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setKeywords([])}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Tout supprimer
+                  </Button>
+                )}
+              </div>
+
+              {keywords.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <Tag className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-500">Aucun mot-clé sélectionné</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Ajoutez des mots-clés pour améliorer le référencement
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg min-h-[80px]">
+                  {keywords.map((keyword, index) => (
+                    <Badge key={index} variant="secondary" className="gap-2 py-1.5 px-3 text-sm">
+                      <Hash className="w-3 h-3" />
+                      {keyword}
+                      <button 
+                        onClick={() => removeKeyword(keyword)}
+                        className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Conseils SEO */}
+            <Alert className="bg-green-50 border-green-200">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <strong>Conseil SEO :</strong> Utilisez 5-10 mots-clés pertinents incluant votre produit principal, 
+                des mots-clés longue traîne et des termes de recherche courants.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <ArticleConfigDialog 
+              config={articleConfig} 
+              onConfigChange={setArticleConfig} 
+            />
+            
+            {/* Aperçu rapide de la configuration */}
+            <Card className="p-4 bg-gradient-to-r from-gray-50 to-blue-50">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Aperçu de la configuration
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Style :</span>
+                  <span className="font-medium ml-2 capitalize">{articleConfig.style}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Layout :</span>
+                  <span className="font-medium ml-2">{articleConfig.layout}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Couleur :</span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded border"
+                      style={{ backgroundColor: articleConfig.colorScheme }}
+                    />
+                    <span className="font-medium">{articleConfig.colorScheme}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Typographie :</span>
+                  <span className="font-medium ml-2">{articleConfig.typography}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            {/* Résumé de la configuration */}
+            <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Récapitulatif de votre article
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Angle éditorial :</span>
+                    <span className="font-semibold capitalize">
+                      {formData.articleAngle === "guide" && "📚 Guide complet"}
+                      {formData.articleAngle === "comparison" && "⚖️ Comparatif"}
+                      {formData.articleAngle === "review" && "⭐ Avis expert"}
+                      {formData.articleAngle === "tutorial" && "🎓 Tutoriel"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Audience :</span>
+                    <span className="font-semibold capitalize">
+                      {formData.targetAudience === "beginner" && "👶 Débutant"}
+                      {formData.targetAudience === "general" && "👥 Général"}
+                      {formData.targetAudience === "expert" && "🎯 Expert"}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Longueur :</span>
+                    <span className="font-semibold">
+                      {formData.articleLength === "700" && "Court (~700 mots)"}
+                      {formData.articleLength === "2000" && "Long (~2000 mots)"}
+                      {formData.articleLength === "4000" && "Complet (~4000 mots)"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Produits :</span>
+                    <span className="font-semibold">{selectedProducts.length} sélectionné(s)</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Collections :</span>
+                    <span className="font-semibold">{formData.collection_ids.length} sélectionnée(s)</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Mots-clés :</span>
+                    <span className="font-semibold">{keywords.length} défini(s)</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Aperçu des produits */}
+              {selectedProducts.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <h4 className="font-semibold mb-2">Produits sélectionnés :</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.slice(0, 5).map((product) => (
+                      <Badge key={product.id} variant="outline" className="text-xs">
+                        {product.title}
+                      </Badge>
+                    ))}
+                    {selectedProducts.length > 5 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{selectedProducts.length - 5} autres...
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Dernières options */}
+            <Card className="p-4">
+              <h4 className="font-semibold mb-3">Options de génération</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Optimisation SEO avancée</p>
+                    <p className="text-sm text-muted-foreground">
+                      Structure optimisée pour le référencement Google
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Activée
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Design mobile-first</p>
+                    <p className="text-sm text-muted-foreground">
+                      Optimisé pour les mobiles et tablettes
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-blue-100 text-blue-800">
+                    Activé
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Structured Data</p>
+                    <p className="text-sm text-muted-foreground">
+                      Balises schema.org pour les rich snippets
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-purple-100 text-purple-800">
+                    Activé
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+
+            {/* Message de confirmation */}
+            <Alert className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              <Sparkles className="w-4 h-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <strong>Prêt à générer !</strong> Votre article sera optimisé pour le référencement 
+                et inclura tous les produits sélectionnés avec un design professionnel.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t.wizards.blog.title}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Créez un article SEO optimisé avec vos produits
+              </p>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Usage limits alert */}
+          {limits && limits.isTrialing && (
+            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+              <AlertDescription className="text-sm">
+                {limits.limitReached.articles ? (
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                    ⚠️ Limite atteinte : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                ) : (
+                  <span>
+                    🚀 Essai gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mb-8">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center relative">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/25"
+                          : isCompleted
+                            ? "bg-green-500 text-white shadow-lg shadow-green-500/25"
+                            : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-6 h-6" />
+                      ) : (
+                        <Icon className="w-6 h-6" />
+                      )}
+                    </div>
+                    <span className={`text-sm mt-2 text-center font-medium ${
+                      isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-gray-500"
+                    }`}>
+                      {step.title}
+                    </span>
+                    {isActive && (
+                      <div className="absolute -bottom-6 w-32 text-xs text-center text-primary font-medium">
+                        {step.description}
+                      </div>
+                    )}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 transition-colors ${
+                      isCompleted ? "bg-green-500" : "bg-gray-200"
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Step Content */}
+          <div className="mb-8 min-h-[400px]">
+            {renderStepContent()}
+          </div>
+
+          {/* Navigation */}
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm p-4 border-t z-10 flex items-center justify-between -mx-6 -mb-6 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={handlePrevious} 
+              disabled={currentStep === 1}
+              className="gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {t.common.previous}
+            </Button>
+
+            {currentStep < steps.length ? (
+              <Button onClick={handleNext} className="gap-2">
+                {t.common.next}
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleGenerate} 
+                disabled={generating}
+                className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Générer l'article SEO
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Dialogs */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="articles"
+        usage={limits?.usage.articles_count}
+        limit={limits?.limits.max_articles}
+      />
+
+      <ResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={
+          generatedArticle
+            ? [
+                {
+                  id: generatedArticle.id,
+                  title: generatedArticle.title,
+                  seo_title: generatedArticle.seo_title,
+                  seo_description: generatedArticle.seo_description,
+                  content: generatedArticle.content,
+                  featured_image: generatedArticle.featured_image,
+                },
+              ]
+            : []
+        }
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          setShowSyncDialog(true);
+        }}
+        onClose={handleSkipPublish}
+      />
+
+      <ArticleSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        article={generatedArticle || { title: "" }}
+        onConfirm={handlePublishToShopify}
+        loading={false}
+      />
+
+      <ProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        type="seo"
+        operation="syncing"
+        current={1}
+        total={1}
+      />
+
+      <SuccessDialog
+        open={isOptimizationComplete && showProgressDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowProgressDialog(false);
+            onClose();
+          }
+        }}
+        type="seo"
+        count={1}
+        onClose={() => {
+          setShowProgressDialog(false);
+          onClose();
+        }}
+      />
+
+      <ArticleGenerationProgress 
+        open={showGenerationProgress} 
+        onClose={() => setShowGenerationProgress(false)} 
+      />
+    </div>
+  );
 }
+
+// Ajouter l'icône Plus manquante
+const Plus = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const Hash = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+  </svg>
+);
