@@ -25,7 +25,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Eye,
-  X
+  X,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -74,6 +75,7 @@ export function ArticleWizard({
   const [currentStep, setCurrentStep] = useState('');
   const [preview, setPreview] = useState<string>('');
   const [articleId, setArticleId] = useState<string>('');
+  const [productSearch, setProductSearch] = useState('');
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 6;
@@ -96,7 +98,7 @@ export function ArticleWizard({
 
       if (error) throw error;
       setProducts(data || []);
-      setSelectedProducts(data?.slice(0, 6).map(p => p.id) || []);
+      setSelectedProducts([]);
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -446,17 +448,45 @@ export function ArticleWizard({
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Package className="w-6 h-6 text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-bold font-serif">Sélection des produits</h2>
               <p className="text-muted-foreground">
                 {selectedProducts.length} produit{selectedProducts.length > 1 ? 's' : ''} sélectionné{selectedProducts.length > 1 ? 's' : ''}
               </p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (selectedProducts.length === products.length) {
+                  setSelectedProducts([]);
+                } else {
+                  setSelectedProducts(products.map(p => p.id));
+                }
+              }}
+            >
+              {selectedProducts.length === products.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+            </Button>
+          </div>
+
+          <div className="mb-4">
+            <Input
+              type="text"
+              placeholder="Rechercher un produit..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              className="w-full"
+            />
           </div>
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
             <div className="space-y-3">
-              {products.map((product) => (
+              {products
+                .filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                )
+                .map((product) => (
                 <div
                   key={product.id}
                   onClick={() => toggleProduct(product.id)}
