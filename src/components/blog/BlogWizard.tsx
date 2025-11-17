@@ -1,3 +1,4 @@
+// src/components/blog/BlogWizard.tsx
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +19,6 @@ import {
   Sparkles,
   FileText,
   Tag,
-  Settings as SettingsIcon,
   Eye,
   CheckCircle,
   Loader2,
@@ -28,10 +28,15 @@ import {
   Check,
   Layers,
   Palette,
+  Star,
+  Zap,
+  Target,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import { ArticleConfigDialog, ArticleConfig } from "./ArticleConfigDialog";
 import { ArticleGenerationProgress } from "./ArticleGenerationProgress";
-import { useStore } from '@/contexts/StoreContext';
+import { useStore } from "@/contexts/StoreContext";
 
 interface WizardStep {
   id: number;
@@ -39,8 +44,6 @@ interface WizardStep {
   icon: typeof FileText;
   description: string;
 }
-
-// Steps will be defined with translations inside the component
 
 interface BlogWizardProps {
   onClose: () => void;
@@ -55,6 +58,9 @@ interface Product {
   image_url: string;
   price: number;
   collection_ids?: string[];
+  handle?: string;
+  product_type?: string;
+  vendor?: string;
 }
 
 interface Collection {
@@ -76,58 +82,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
 
-  // Fonction pour générer des suggestions de mots-clés basées sur les produits
-  const generateKeywordSuggestions = () => {
-    if (selectedProducts.length === 0) return [];
-    
-    const suggestions: string[] = [];
-    
-    // Mots-clés des titres produits (mots de plus de 3 caractères)
-    selectedProducts.forEach(product => {
-      const words = product.title.toLowerCase().split(' ').filter(w => w.length > 3);
-      suggestions.push(...words.slice(0, 3));
-    });
-    
-    // Mots-clés des catégories
-    const categories = [...new Set(selectedProducts.map(p => p.category).filter(Boolean))];
-    suggestions.push(...categories);
-    
-    // Phrases longues (3 mots consécutifs des titres produits)
-    const longPhrases = selectedProducts.map(p => {
-      const words = p.title.toLowerCase().split(' ');
-      if (words.length >= 3) {
-        return words.slice(0, 3).join(' ');
-      }
-      return null;
-    }).filter(Boolean) as string[];
-    suggestions.push(...longPhrases);
-    
-    // Dédupliquer et limiter à 15 suggestions
-    return [...new Set(suggestions)].slice(0, 15);
-  };
-
-  // Fonction pour ajouter un mot-clé suggéré
-  const addSuggestedKeyword = (keyword: string) => {
-    if (!keywords.includes(keyword)) {
-      setKeywords([...keywords, keyword]);
-    }
-  };
-
-  // Fonction pour sélectionner tous les mots-clés
-  const selectAllKeywords = () => {
-    const allKeywords = [...new Set([...keywords, ...keywordSuggestions])];
-    setKeywords(allKeywords);
-    toast.success(`${keywordSuggestions.length} mots-clés ajoutés`);
-  };
-
-  // Générer suggestions quand produits changent
-  useEffect(() => {
-    if (selectedProducts.length > 0) {
-      setKeywordSuggestions(generateKeywordSuggestions());
-    } else {
-      setKeywordSuggestions([]);
-    }
-  }, [selectedProducts]);
+  // État pour les suggestions de mots-clés IA
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Dialog states
   const [showResultsDialog, setShowResultsDialog] = useState(false);
@@ -137,56 +94,157 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [generatedArticle, setGeneratedArticle] = useState<any>(null);
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
-  
-  // ✅ Phase 4: Suggestions de mots-clés intelligentes
-  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     collection_ids: [] as string[],
     collectionTitles: [] as string[],
     keywords: "",
     productCount: 3,
-    articleLength: "700" as "700" | "2000" | "4000",
+    articleLength: "2000" as "700" | "2000" | "4000",
+    articleAngle: "guide" as "guide" | "comparison" | "review" | "tutorial",
+    targetAudience: "general" as "beginner" | "general" | "expert",
   });
+
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
   // Article configuration for visual design
   const [articleConfig, setArticleConfig] = useState<ArticleConfig>({
     style: "magazine",
-    layout: "1-colonne",
-    colorScheme: "#000000",
+    layout: "2-colonnes",
+    colorScheme: "#2563eb",
     contentLength: "2000",
     includeTOC: true,
     productDisplay: "grid",
     typography: "sans-serif",
     imageIntensity: "medium",
+    includeFAQ: true,
+    includeComparison: true,
   });
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  // Steps with translations - Added Design step
+  // Steps with translations - Enhanced steps
   const steps: WizardStep[] = [
-    { id: 1, title: t.wizards.blog.steps.topic, icon: FileText, description: t.wizards.blog.descriptions.topic },
-    { id: 2, title: t.wizards.blog.steps.products, icon: Package, description: t.wizards.blog.descriptions.products },
-    { id: 3, title: t.wizards.blog.steps.keywords, icon: Tag, description: t.wizards.blog.descriptions.keywords },
-    { id: 4, title: t.wizards.blog.steps.design, icon: Palette, description: t.wizards.blog.descriptions.design },
-    { id: 5, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
+    { 
+      id: 1, 
+      title: t.wizards.blog.steps.topic, 
+      icon: Target, 
+      description: t.wizards.blog.descriptions.topic 
+    },
+    { 
+      id: 2, 
+      title: t.wizards.blog.steps.products, 
+      icon: Package, 
+      description: t.wizards.blog.descriptions.products 
+    },
+    { 
+      id: 3, 
+      title: t.wizards.blog.steps.keywords, 
+      icon: TrendingUp, 
+      description: t.wizards.blog.descriptions.keywords 
+    },
+    { 
+      id: 4, 
+      title: t.wizards.blog.steps.design, 
+      icon: Palette, 
+      description: t.wizards.blog.descriptions.design 
+    },
+    { 
+      id: 5, 
+      title: t.wizards.blog.steps.generate, 
+      icon: Sparkles, 
+      description: t.wizards.blog.descriptions.generate 
+    },
   ];
+
+  // Génération de suggestions de mots-clés IA
+  const generateAISuggestions = async (products: Product[]) => {
+    if (products.length === 0) return;
+
+    setLoadingSuggestions(true);
+    try {
+      const productTitles = products.map(p => p.title).slice(0, 5);
+      const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      
+      const response = await supabase.functions.invoke("generate-keyword-suggestions", {
+        body: {
+          products: productTitles,
+          categories,
+          maxKeywords: 15
+        }
+      });
+
+      if (response.data?.suggestions) {
+        setKeywordSuggestions(response.data.suggestions);
+        toast.success("Suggestions de mots-clés générées par IA");
+      }
+    } catch (error) {
+      console.error("Erreur génération suggestions IA:", error);
+      // Fallback aux suggestions basiques
+      generateFallbackSuggestions(products);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Fallback suggestions
+  const generateFallbackSuggestions = (products: Product[]) => {
+    const suggestions: string[] = [];
+
+    // Mots-clés des titres
+    products.forEach(product => {
+      const words = product.title.toLowerCase()
+        .split(/[\s\-,]+/)
+        .filter(word => word.length > 3 && !['avec', 'sans', 'pour', 'dans', 'sur'].includes(word))
+        .slice(0, 3);
+      suggestions.push(...words);
+    });
+
+    // Catégories et types
+    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+    const types = [...new Set(products.map(p => p.product_type).filter(Boolean))];
+    
+    suggestions.push(...categories);
+    suggestions.push(...types);
+
+    // Phrases longues
+    products.forEach(product => {
+      const words = product.title.toLowerCase().split(' ');
+      if (words.length >= 3) {
+        suggestions.push(words.slice(0, 3).join(' '));
+        suggestions.push(words.slice(-3).join(' '));
+      }
+    });
+
+    // Dédupliquer et limiter
+    const uniqueSuggestions = [...new Set(suggestions)]
+      .filter(s => s.length > 2)
+      .slice(0, 12);
+
+    setKeywordSuggestions(uniqueSuggestions);
+  };
+
+  // Sélectionner tous les mots-clés suggérés
+  const selectAllKeywords = () => {
+    const allKeywords = [...new Set([...keywords, ...keywordSuggestions])];
+    setKeywords(allKeywords);
+    toast.success(`${keywordSuggestions.length - keywords.length} mots-clés ajoutés`);
+  };
 
   // Prefill from URL params (opportunity data)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const opportunityId = params.get('opportunityId');
-    
+    const opportunityId = params.get("opportunityId");
+
     if (opportunityId) {
       // Prefill keywords
-      const primaryKeywords = params.get('primaryKeywords')?.split(',').filter(Boolean) || [];
-      const secondaryKeywords = params.get('secondaryKeywords')?.split(',').filter(Boolean) || [];
+      const primaryKeywords = params.get("primaryKeywords")?.split(",").filter(Boolean) || [];
+      const secondaryKeywords = params.get("secondaryKeywords")?.split(",").filter(Boolean) || [];
       setKeywords([...primaryKeywords, ...secondaryKeywords]);
-      
-      // Prefill estimated word count as articleLength
-      const estimatedWordCount = params.get('estimatedWordCount');
+
+      // Prefill estimated word count
+      const estimatedWordCount = params.get("estimatedWordCount");
       if (estimatedWordCount) {
         const wordCount = parseInt(estimatedWordCount, 10);
         if (wordCount <= 1000) {
@@ -200,38 +258,27 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           setArticleConfig(prev => ({ ...prev, contentLength: "4000" }));
         }
       }
-      
+
       // Prefill collection IDs
-      const collectionIds = params.get('collectionIds')?.split(',').filter(Boolean) || [];
+      const collectionIds = params.get("collectionIds")?.split(",").filter(Boolean) || [];
       if (collectionIds.length > 0) {
         setFormData(prev => ({ ...prev, collection_ids: collectionIds }));
       }
-      
-      // Prefill product IDs - will select them once products are loaded
-      const productIds = params.get('productIds')?.split(',').filter(Boolean) || [];
+
+      // Prefill product IDs
+      const productIds = params.get("productIds")?.split(",").filter(Boolean) || [];
       if (productIds.length > 0) {
-        // Store temporarily to select after products are loaded
         (window as any).__preselectedProductIds = productIds;
       }
     }
   }, []);
 
-  // Select products after they're loaded from opportunity
-  useEffect(() => {
-    const preselectedIds = (window as any).__preselectedProductIds;
-    if (preselectedIds && products.length > 0) {
-      const productsToSelect = products.filter(p => preselectedIds.includes(p.id));
-      setSelectedProducts(productsToSelect);
-      delete (window as any).__preselectedProductIds;
-    }
-  }, [products]);
-
+  // Charger les produits et collections
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (user?.id && selectedStore?.id) {
         fetchProducts();
         fetchCollections();
-        setSelectedProducts([]); // Clear selections on store change
       } else {
         setProducts([]);
         setCollections([]);
@@ -241,13 +288,29 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     return () => clearTimeout(timeoutId);
   }, [user?.id, selectedStore?.id]);
 
+  // Sélectionner les produits après chargement
+  useEffect(() => {
+    const preselectedIds = (window as any).__preselectedProductIds;
+    if (preselectedIds && products.length > 0) {
+      const productsToSelect = products.filter((p) => preselectedIds.includes(p.id));
+      setSelectedProducts(productsToSelect);
+      delete (window as any).__preselectedProductIds;
+    }
+  }, [products]);
+
+  // Générer suggestions quand produits changent
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      generateAISuggestions(selectedProducts);
+    } else {
+      setKeywordSuggestions([]);
+    }
+  }, [selectedProducts]);
+
   const fetchCollections = async () => {
     if (!user?.id || !selectedStore?.id) return;
 
     try {
-      console.log("🔍 Chargement des collections pour user:", user.id, "store:", selectedStore.id);
-      
-      // Fetch collections
       const { data: collectionsData, error: collError } = await supabase
         .from("shopify_collections")
         .select("id, title, store_id")
@@ -255,56 +318,30 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         .eq("store_id", selectedStore.id)
         .order("title", { ascending: true });
 
-      if (collError) {
-        console.error("❌ Erreur fetch collections:", collError);
-        throw collError;
-      }
-
-      console.log(`📦 ${collectionsData?.length || 0} collections trouvées`);
+      if (collError) throw collError;
 
       if (!collectionsData || collectionsData.length === 0) {
-        console.log("⚠️ Aucune collection trouvée - l'utilisateur doit d'abord importer depuis Shopify");
         setCollections([]);
-        toast.info("Aucune collection trouvée. Importez d'abord vos collections depuis Shopify.");
         return;
       }
 
-      // Fetch all products once to count by collection
-      const { data: productsData, error: prodError } = await supabase
+      // Compter les produits par collection
+      const { data: productsData } = await supabase
         .from("shopify_products")
         .select("id, collection_ids")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id);
 
-      if (prodError) {
-        console.error("❌ Erreur fetch produits:", prodError);
-        throw prodError;
-      }
-
-      console.log(`📦 ${productsData?.length || 0} produits trouvés`);
-
-      // Count products for each collection
-      const collectionsWithCount = (collectionsData || []).map((col) => {
+      const collectionsWithCount = collectionsData.map((col) => {
         const count = (productsData || []).filter(
-          (prod) => prod.collection_ids && prod.collection_ids.includes(col.id)
+          (prod) => prod.collection_ids && prod.collection_ids.includes(col.id),
         ).length;
-
-        console.log(`  - ${col.title}: ${count} produits`);
-        return {
-          ...col,
-          productCount: count,
-        };
+        return { ...col, productCount: count };
       });
 
-      // Filter collections with products only
       const collectionsWithProducts = collectionsWithCount.filter((col) => col.productCount > 0);
-      console.log(`✅ ${collectionsWithProducts.length} collections avec produits`);
-      
       setCollections(collectionsWithProducts as any);
-      
-      if (collectionsWithProducts.length === 0) {
-        toast.info("Aucune collection avec produits trouvée. Assurez-vous d'avoir des produits assignés à vos collections.");
-      }
+
     } catch (err) {
       console.error("Error fetching collections:", err);
       toast.error(t.wizards.blog.loadingError);
@@ -315,29 +352,17 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (!user?.id || !selectedStore?.id) return;
 
     try {
-      console.log("🔍 Chargement des produits pour user:", user.id, "store:", selectedStore.id);
-      
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, category, image_url, price, product_type, collection_ids, store_id")
+        .select("id, title, description, category, image_url, price, product_type, vendor, collection_ids, handle")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("created_at", { ascending: false })
         .limit(200);
 
-      if (error) {
-        console.error("❌ Erreur fetch produits:", error);
-        throw error;
-      }
-      
-      console.log(`📦 ${data?.length || 0} produits trouvés`);
-      
-      if (!data || data.length === 0) {
-        console.log("⚠️ Aucun produit trouvé - l'utilisateur doit d'abord importer depuis Shopify");
-        toast.info("Aucun produit trouvé. Importez d'abord vos produits depuis Shopify.");
-      }
-      
+      if (error) throw error;
       setProducts(data || []);
+
     } catch (err) {
       console.error("Error fetching products:", err);
       toast.error(t.wizards.blog.productsLoadingError);
@@ -345,36 +370,41 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const filteredProducts = products.filter((product) => {
-    const matchesCollection = formData.collection_ids.length === 0 || 
-      formData.collection_ids.some(colId => product.collection_ids?.includes(colId));
+    const matchesCollection =
+      formData.collection_ids.length === 0 ||
+      formData.collection_ids.some((colId) => product.collection_ids?.includes(colId));
 
-    const matchesSearch = !searchTerm || product.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesCollection && matchesSearch;
   });
 
-  const filteredCollections = collections.filter((col) => 
-    col.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
+  const filteredCollections = collections.filter((col) =>
+    col.title.toLowerCase().includes(collectionSearchTerm.toLowerCase()),
   );
 
-  const productsInCollection = formData.collection_ids.length > 0
-    ? products.filter((p) => formData.collection_ids.some(colId => p.collection_ids?.includes(colId))).length
-    : products.length;
+  const productsInCollection =
+    formData.collection_ids.length > 0
+      ? products.filter((p) => formData.collection_ids.some((colId) => p.collection_ids?.includes(colId))).length
+      : products.length;
 
   const toggleCollection = (collectionId: string, collectionTitle: string) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const isSelected = prev.collection_ids.includes(collectionId);
       if (isSelected) {
         return {
           ...prev,
-          collection_ids: prev.collection_ids.filter(id => id !== collectionId),
-          collectionTitles: prev.collectionTitles.filter((_, idx) => prev.collection_ids[idx] !== collectionId)
+          collection_ids: prev.collection_ids.filter((id) => id !== collectionId),
+          collectionTitles: prev.collectionTitles.filter((_, idx) => prev.collection_ids[idx] !== collectionId),
         };
       } else {
         return {
           ...prev,
           collection_ids: [...prev.collection_ids, collectionId],
-          collectionTitles: [...prev.collectionTitles, collectionTitle]
+          collectionTitles: [...prev.collectionTitles, collectionTitle],
         };
       }
     });
@@ -385,6 +415,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (newKeyword && !keywords.includes(newKeyword)) {
       setKeywords([...keywords, newKeyword]);
       setKeywordInput("");
+      toast.success("Mot-clé ajouté");
     }
   };
 
@@ -392,7 +423,25 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     setKeywords(keywords.filter((k) => k !== keywordToRemove));
   };
 
+  const addSuggestedKeyword = (suggestion: string) => {
+    if (!keywords.includes(suggestion)) {
+      setKeywords([...keywords, suggestion]);
+      toast.success("Mot-clé suggéré ajouté");
+    }
+  };
+
   const handleNext = () => {
+    // Validation selon l'étape
+    if (currentStep === 1 && formData.collection_ids.length === 0) {
+      toast.error("Veuillez sélectionner au moins une collection");
+      return;
+    }
+    
+    if (currentStep === 2 && selectedProducts.length === 0) {
+      toast.error("Veuillez sélectionner au moins un produit");
+      return;
+    }
+
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -405,12 +454,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const handleGenerate = async () => {
-    // Check usage limits - only check articles limit specifically
+    // Vérification des limites
     if (!limits?.canUseArticles) {
-      toast.error("Article limit reached", {
-        description: `You have used ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles. Upgrade to create more.`,
+      toast.error("Limite d'articles atteinte", {
+        description: `Vous avez utilisé ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles.`
       });
       setShowUpgradeDialog(true);
+      return;
+    }
+
+    // Validation finale
+    if (selectedProducts.length === 0 && formData.collection_ids.length === 0) {
+      toast.error("Veuillez sélectionner au moins des produits ou une collection");
       return;
     }
 
@@ -418,31 +473,16 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setGenerating(true);
       setShowGenerationProgress(true);
 
-      if (!user?.id) {
-        throw new Error("Utilisateur non connecté");
+      if (!user?.id || !selectedStore?.id) {
+        throw new Error("Utilisateur non connecté ou boutique non sélectionnée");
       }
 
-      if (!selectedStore?.id) {
-        toast.error("Aucune boutique sélectionnée. Veuillez sélectionner une boutique.");
-        console.error("❌ [WIZARD] store_id manquant");
-        setGenerating(false);
-        setShowGenerationProgress(false);
-        return;
-      }
-
-      console.log("📤 [WIZARD] Envoi de la requête de génération:");
-      console.log(`  - user_id: ${user.id}`);
-      console.log(`  - store_id: ${selectedStore.id}`);
-      console.log(`  - productIds: ${selectedProducts.length}`);
-      console.log(`  - collections: ${formData.collection_ids?.length || 0}`);
-
-      const finalKeywords =
-        keywords.length > 0
-          ? keywords
-          : formData.keywords
-              .split(",")
-              .map((k) => k.trim())
-              .filter(Boolean);
+      console.log("🚀 [WIZARD] Lancement de la génération:");
+      console.log("  - Produits:", selectedProducts.length);
+      console.log("  - Collections:", formData.collection_ids.length);
+      console.log("  - Mots-clés:", keywords.length);
+      console.log("  - Longueur:", formData.articleLength);
+      console.log("  - Angle:", formData.articleAngle);
 
       const response = await supabase.functions.invoke("generate-blog-article", {
         body: {
@@ -450,18 +490,26 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           store_id: selectedStore.id,
           collection_ids: formData.collection_ids,
           collectionTitles: formData.collectionTitles,
-          keywords: finalKeywords,
+          keywords: keywords,
           productIds: selectedProducts.map((p) => p.id),
           articleLength: formData.articleLength,
-          articleConfig,
+          articleConfig: {
+            ...articleConfig,
+            articleAngle: formData.articleAngle,
+            targetAudience: formData.targetAudience,
+          },
+          context: {
+            hasSelectedProducts: selectedProducts.length > 0,
+            hasCollections: formData.collection_ids.length > 0,
+            productCount: selectedProducts.length,
+            collectionCount: formData.collection_ids.length,
+            storeName: selectedStore.name
+          }
         },
       });
 
       if (response.error) throw response.error;
 
-      toast.success(t.wizards.blog.articleGenerated);
-
-      // Stocker l'article généré et afficher le dialog de résultats
       if (response.data?.article) {
         setGeneratedArticle({
           id: response.data.article.id,
@@ -472,29 +520,37 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           featured_image: response.data.article.featured_image,
         });
         setGeneratedArticleId(response.data.article.id);
-        setGenerating(false);
+        
+        toast.success("🎉 Article généré avec succès !", {
+          description: "Votre contenu SEO optimisé est prêt."
+        });
+        
         setShowResultsDialog(true);
       } else {
-        onClose();
+        throw new Error("Aucun article généré");
       }
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("❌ Erreur génération:", error);
+      
       if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
-        // Afficher le bon message selon le statut de l'utilisateur
         if (limits?.isTrialing) {
-          toast.error(t.wizards.blog.trialLimitReached);
-        } else if (limits?.isPaid) {
-          toast.error(t.wizards.blog.monthlyLimitReached);
+          toast.error("Limite d'essai atteinte", {
+            description: "Passez à un abonnement pour continuer à générer des articles."
+          });
         } else {
-          toast.error(t.wizards.blog.trialLimitReached);
+          toast.error("Limite mensuelle atteinte", {
+            description: "Votre forfait mensuel est épuisé."
+          });
         }
         setShowUpgradeDialog(true);
       } else {
-        toast.error(error.message || t.wizards.blog.generationError, { id: "generating" });
+        toast.error("Erreur lors de la génération", {
+          description: error.message || "Une erreur est survenue"
+        });
       }
     } finally {
       setGenerating(false);
-      setShowGenerationProgress(false); // ✅ Fermer le pop-up de progression
+      setShowGenerationProgress(false);
     }
   };
 
@@ -511,17 +567,16 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       });
 
       if (syncResponse.error) {
-        toast.error(t.wizards.blog.publishError);
-        console.error(syncResponse.error);
+        throw syncResponse.error;
       } else {
         setIsOptimizationComplete(true);
-        toast.success(t.wizards.blog.syncComplete, {
-          description: t.wizards.blog.articleSynced,
+        toast.success("✅ Article publié sur Shopify", {
+          description: "Votre article est maintenant en ligne."
         });
       }
     } catch (error) {
       console.error("Error publishing to Shopify:", error);
-      toast.error(t.wizards.blog.syncError);
+      toast.error("Erreur lors de la publication");
     }
   };
 
@@ -530,497 +585,385 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">{t.wizards.blog.title}</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Usage limits alert */}
-          {limits && limits.isTrialing && (
-            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-              <AlertDescription className="text-sm">
-                {limits.limitReached.articles ? (
-                  <span className="text-orange-900 dark:text-orange-100 font-medium">
-                    {t.wizards.blog.limitReached}: {limits.usage.articles_count}/{limits.limits.max_articles}{" "}
-                    {t.wizards.blog.articlesUsed}
-                  </span>
-                ) : (
-                  <span>
-                    {t.wizards.blog.trialUsage}: {limits.usage.articles_count}/{limits.limits.max_articles}{" "}
-                    {t.wizards.blog.articlesUsed}
-                  </span>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = currentStep === step.id;
-              const isCompleted = currentStep > step.id;
-
-              return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        isActive
-                          ? "bg-primary text-white"
-                          : isCompleted
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-200 text-gray-500"
-                      }`}
-                    >
-                      {isCompleted ? <CheckCircle className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
-                    </div>
-                    <span className="text-sm mt-2 text-center">{step.title}</span>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${isCompleted ? "bg-green-600" : "bg-gray-200"}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Step Content */}
-          <div className="mb-8">
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
-                  
-                  {/* Selected collections display */}
-                  {formData.collection_ids.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {formData.collection_ids.map((colId, idx) => {
-                        const collection = collections.find(c => c.id === colId);
-                        return (
-                          <Badge key={colId} variant="secondary" className="flex items-center gap-1">
-                            <Layers className="h-3 w-3" />
-                            {collection?.title || formData.collectionTitles[idx]}
-                            <button
-                              onClick={() => toggleCollection(colId, formData.collectionTitles[idx])}
-                              className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Search input */}
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={t.wizards.blog.searchPlaceholder}
-                      value={collectionSearchTerm}
-                      onChange={(e) => setCollectionSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-
-                  {/* Collections list with checkboxes */}
-                  <div className="border rounded-lg max-h-[300px] overflow-auto">
-                  {collections.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        {collectionSearchTerm 
-                          ? t.wizards.blog.noCollectionFound 
-                          : "Aucune collection trouvée. Importez d'abord vos collections depuis Shopify dans l'onglet Intégration."}
-                      </div>
-                    ) : filteredCollections.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        {t.wizards.blog.noCollectionFound}
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {filteredCollections.map((collection) => {
-                          const isSelected = formData.collection_ids.includes(collection.id);
-                          const productCount = collection.productCount || 0;
-
-                          return (
-                            <div
-                              key={collection.id}
-                              onClick={() => toggleCollection(collection.id, collection.title)}
-                              className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
-                                isSelected ? 'bg-accent/50' : ''
-                              }`}
-                            >
-                              <div className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${
-                                isSelected ? 'bg-primary border-primary' : 'border-input'
-                              }`}>
-                                {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
-                              </div>
-                              <span className="flex-1 text-sm">{collection.title}</span>
-                              <Badge variant="outline" className="ml-auto">
-                                {productCount} produit(s)
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {formData.collection_ids.length > 0 && (
-                    <div className="mt-3 text-sm text-muted-foreground">
-                      {productsInCollection} produit(s) dans les collections sélectionnées
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Longueur de l'article</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: "700" })}
-                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === "700"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white border-gray-300 hover:border-primary"
-                      }`}
-                    >
-                      <div className="font-semibold">Court</div>
-                      <div className="text-sm opacity-80">~700 mots</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: "2000" })}
-                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === "2000"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white border-gray-300 hover:border-primary"
-                      }`}
-                    >
-                      <div className="font-semibold">Long</div>
-                      <div className="text-sm opacity-80">~2000 mots</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: "4000" })}
-                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === "4000"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white border-gray-300 hover:border-primary"
-                      }`}
-                    >
-                      <div className="font-semibold">Large</div>
-                      <div className="text-sm opacity-80">~4000 mots</div>
-                    </button>
-                  </div>
-                </div>
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            {/* Sélection de l'angle éditorial */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Angle éditorial</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: "guide", label: "📚 Guide", description: "Guide complet" },
+                  { value: "comparison", label: "⚖️ Comparatif", description: "Comparaison produits" },
+                  { value: "review", label: "⭐ Avis", description: "Tests et avis" },
+                  { value: "tutorial", label: "🎓 Tutoriel", description: "Guide pratique" },
+                ].map((angle) => (
+                  <button
+                    key={angle.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, articleAngle: angle.value as any })}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      formData.articleAngle === angle.value
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="font-semibold">{angle.label}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{angle.description}</div>
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
 
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                {formData.collection_ids.length > 0 && (
-                  <Alert className="bg-purple-50 border-purple-200">
-                    <Layers className="w-4 h-4 text-purple-600" />
-                    <AlertDescription>
-                      <span className="font-medium">{t.wizards.blog.collection}:</span>{" "}
-                      <strong>{formData.collectionTitles.join(", ")}</strong>
-                    </AlertDescription>
-                  </Alert>
-                )}
+            {/* Audience cible */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Audience cible</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "beginner", label: "👶 Débutant", icon: Users },
+                  { value: "general", label: "👥 Général", icon: Target },
+                  { value: "expert", label: "🎯 Expert", icon: Zap },
+                ].map((audience) => {
+                  const Icon = audience.icon;
+                  return (
+                    <button
+                      key={audience.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, targetAudience: audience.value as any })}
+                      className={`p-4 border-2 rounded-xl text-center transition-all ${
+                        formData.targetAudience === audience.value
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-primary/50"
+                      }`}
+                    >
+                      <Icon className="w-6 h-6 mx-auto mb-2" />
+                      <div className="font-semibold text-sm">{audience.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder={t.wizards.blog.searchPlaceholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-                  <p className="text-sm">
-                    <strong>{selectedProducts.length}</strong> {t.wizards.blog.selected} •{" "}
-                    <strong>{filteredProducts.length}</strong> {t.wizards.blog.products}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto border rounded-lg p-4">
-                  {filteredProducts.map((product) => {
-                    const isSelected = !!selectedProducts.find((p) => p.id === product.id);
-
+            {/* Sélection des collections */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Collections</label>
+              
+              {formData.collection_ids.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {formData.collection_ids.map((colId, idx) => {
+                    const collection = collections.find((c) => c.id === colId);
                     return (
-                      <Card
-                        key={product.id}
-                        className={`p-4 cursor-pointer transition-all ${
-                          isSelected ? "bg-blue-50 border-blue-500" : "hover:bg-gray-50"
-                        }`}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
-                          } else {
-                            setSelectedProducts([...selectedProducts, product]);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-4">
-                          <input type="checkbox" checked={isSelected} readOnly className="w-5 h-5 rounded" />
-                          <img
-                            src={product.image_url || "/placeholder.svg"}
-                            alt={product.title}
-                            className="w-20 h-20 object-cover rounded"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium line-clamp-2">{product.title}</p>
-                            <p className="text-sm text-gray-600 line-clamp-1">{product.description}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm font-semibold text-blue-600">{product.price}€</p>
-                              {product.category && (
-                                <Badge variant="outline" className="text-xs">
-                                  {product.category}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                      <Badge key={colId} variant="secondary" className="flex items-center gap-1 py-1">
+                        <Layers className="h-3 w-3" />
+                        {collection?.title || formData.collectionTitles[idx]}
+                        <button
+                          onClick={() => toggleCollection(colId, formData.collectionTitles[idx])}
+                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
                     );
                   })}
-
-                  {filteredProducts.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>{t.wizards.blog.noProductFound}</p>
-                    </div>
-                  )}
                 </div>
+              )}
 
-                {selectedProducts.length === 0 && (
-                  <Alert>
-                    <AlertDescription>{t.wizards.blog.selectAtLeast}</AlertDescription>
-                  </Alert>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher une collection..."
+                  value={collectionSearchTerm}
+                  onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="border rounded-lg max-h-[300px] overflow-auto">
+                {collections.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Aucune collection trouvée. Importez d'abord vos collections depuis Shopify.
+                  </div>
+                ) : filteredCollections.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Aucune collection ne correspond à votre recherche.
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredCollections.map((collection) => {
+                      const isSelected = formData.collection_ids.includes(collection.id);
+                      const productCount = collection.productCount || 0;
+
+                      return (
+                        <div
+                          key={collection.id}
+                          onClick={() => toggleCollection(collection.id, collection.title)}
+                          className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
+                            isSelected ? "bg-accent/50" : ""
+                          }`}
+                        >
+                          <div
+                            className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${
+                              isSelected ? "bg-primary border-primary" : "border-input"
+                            }`}
+                          >
+                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                          </div>
+                          <span className="flex-1 text-sm font-medium">{collection.title}</span>
+                          <Badge variant="outline" className="ml-auto">
+                            {productCount} produit(s)
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
+
+              {formData.collection_ids.length > 0 && (
+                <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  {productsInCollection} produit(s) dans les collections sélectionnées
+                </div>
+              )}
+            </div>
+
+            {/* Longueur de l'article */}
+            <div>
+              <label className="block text-sm font-semibold mb-3">Longueur de l'article</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "700", label: "Court", words: "~700 mots", time: "3-4 min" },
+                  { value: "2000", label: "Long", words: "~2000 mots", time: "8-10 min" },
+                  { value: "4000", label: "Complet", words: "~4000 mots", time: "15-20 min" },
+                ].map((length) => (
+                  <button
+                    key={length.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, articleLength: length.value as any })}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      formData.articleLength === length.value
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white border-gray-300 hover:border-primary"
+                    }`}
+                  >
+                    <div className="font-semibold">{length.label}</div>
+                    <div className="text-sm opacity-80">{length.words}</div>
+                    <div className="text-xs opacity-60">{length.time}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            {formData.collection_ids.length > 0 && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <Layers className="w-4 h-4 text-blue-600" />
+                <AlertDescription>
+                  <span className="font-medium">Collections sélectionnées:</span>{" "}
+                  <strong>{formData.collectionTitles.join(", ")}</strong>
+                </AlertDescription>
+              </Alert>
             )}
 
-            {currentStep === 3 && (
-              <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Rechercher un produit par nom, description ou catégorie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-2">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.keywordManagement}</label>
-                  <p className="text-xs text-muted-foreground mb-2">{t.wizards.blog.keywordDescription}</p>
-                  
-                  {/* ✅ Suggestions de mots-clés */}
-                  {keywordSuggestions.length > 0 && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-blue-900 flex items-center gap-2">
-                          <Sparkles className="h-4 w-4" />
-                          Suggestions IA ({keywordSuggestions.length})
-                        </h4>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={selectAllKeywords}
-                        >
-                          <Check className="mr-2 h-4 w-4" />
-                          Tout sélectionner
-                        </Button>
+                  <p className="font-semibold text-blue-900">
+                    {selectedProducts.length} produit(s) sélectionné(s)
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {filteredProducts.length} produit(s) disponible(s)
+                  </p>
+                </div>
+                {selectedProducts.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedProducts([])}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Tout désélectionner
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto">
+              {filteredProducts.map((product) => {
+                const isSelected = selectedProducts.some((p) => p.id === product.id);
+
+                return (
+                  <Card
+                    key={product.id}
+                    className={`p-4 cursor-pointer transition-all border-2 ${
+                      isSelected 
+                        ? "border-primary bg-primary/5" 
+                        : "border-gray-200 hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
+                      } else {
+                        setSelectedProducts([...selectedProducts, product]);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-6 h-6 border-2 rounded flex items-center justify-center ${
+                        isSelected ? "bg-primary border-primary" : "border-gray-300"
+                      }`}>
+                        {isSelected && <Check className="w-4 h-4 text-white" />}
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
-                        {keywordSuggestions.map((suggestion, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-blue-200 transition-colors"
-                            onClick={() => addSuggestedKeyword(suggestion)}
-                          >
-                            {suggestion}
-                            {keywords.includes(suggestion) && (
-                              <Check className="ml-1 h-3 w-3 text-green-600" />
-                            )}
-                          </Badge>
-                        ))}
-                      </div>
+                      <img
+                        src={product.image_url || "/placeholder.svg"}
+                        alt={product.title}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
                       
-                      <p className="text-xs text-blue-700 mt-2">
-                        💡 Basé sur vos produits sélectionnés. Cliquez pour ajouter.
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-lg line-clamp-2 mb-1">{product.title}</p>
+                        <p className="text-sm text-gray-600 line-clamp-1 mb-2">{product.description}</p>
+                        
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-lg font-bold text-blue-600">{product.price}€</p>
+                          
+                          {product.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {product.category}
+                            </Badge>
+                          )}
+                          
+                          {product.product_type && (
+                            <Badge variant="outline" className="text-xs">
+                              {product.product_type}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-semibold mb-2">Aucun produit trouvé</p>
+                  <p className="text-sm">
+                    {searchTerm 
+                      ? "Aucun produit ne correspond à votre recherche." 
+                      : "Aucun produit disponible dans les collections sélectionnées."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {selectedProducts.length === 0 && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertDescription className="text-amber-800">
+                  💡 Sélectionnez au moins un produit pour générer un article pertinent.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold mb-3">Gestion des mots-clés</label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ajoutez des mots-clés pertinents pour optimiser le référencement de votre article.
+              </p>
+
+              {/* Suggestions IA */}
+              {keywordSuggestions.length > 0 && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Suggestions IA ({keywordSuggestions.length})
+                      </h4>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Mots-clés générés automatiquement basés sur vos produits
                       </p>
                     </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      placeholder={t.wizards.blog.keywordPlaceholder}
-                      value={keywordInput}
-                      onChange={(e) => setKeywordInput(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
-                    />
-                    <Button onClick={addKeyword} type="button">
-                      {t.wizards.blog.add}
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={selectAllKeywords}
+                      disabled={loadingSuggestions}
+                    >
+                      {loadingSuggestions ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
+                      Tout sélectionner
                     </Button>
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {keywords.map((keyword, index) => (
-                    <Badge key={index} variant="secondary" className="gap-2">
-                      {keyword}
-                      <button onClick={() => removeKeyword(keyword)}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <ArticleConfigDialog config={articleConfig} onConfigChange={setArticleConfig} />
-              </div>
-            )}
-
-            {currentStep === 5 && (
-              <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h3 className="font-semibold mb-4">{t.common.summary}</h3>
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <strong>{t.wizards.blog.collection}:</strong>{" "}
-                      {formData.collectionTitles.length > 0 ? formData.collectionTitles.join(", ") : t.common.none}
-                    </p>
-                    <p>
-                      <strong>{t.wizards.blog.articleLength}:</strong>{" "}
-                      {formData.articleLength === "700"
-                        ? `${t.wizards.blog.short} (~700 ${t.wizards.blog.words})`
-                        : formData.articleLength === "2000"
-                          ? `${t.wizards.blog.medium} (~2000 ${t.wizards.blog.words})`
-                          : `${t.wizards.blog.long} (~4000 ${t.wizards.blog.words})`}
-                    </p>
-                    <p>
-                      <strong>{t.wizards.blog.products}:</strong> {selectedProducts.length}
-                    </p>
-                    <p>
-                      <strong>{t.wizards.blog.keywords}:</strong> {keywords.join(", ")}
-                    </p>
+                  <div className="flex flex-wrap gap-2">
+                    {keywordSuggestions.map((suggestion, idx) => (
+                      <Badge
+                        key={idx}
+                        variant={keywords.includes(suggestion) ? "default" : "outline"}
+                        className={`cursor-pointer transition-all ${
+                          keywords.includes(suggestion)
+                            ? "bg-primary hover:bg-primary/90"
+                            : "hover:bg-blue-100 hover:text-blue-900"
+                        }`}
+                        onClick={() => addSuggestedKeyword(suggestion)}
+                      >
+                        {suggestion}
+                        {keywords.includes(suggestion) && <Check className="ml-1 h-3 w-3" />}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
+              )}
+
+              {/* Ajout manuel */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  type="text"
+                  placeholder="Ajouter un mot-clé (ex: produit qualité, guide d'achat...)"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
+                  className="flex-1"
+                />
+                <Button onClick={addKeyword} type="button">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Ajouter
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Navigation */}
-          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm p-4 border-t z-10 flex items-center justify-between -mx-6 -mb-6 mt-6">
-            <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              {t.common.previous}
-            </Button>
-
-            {currentStep < steps.length ? (
-              <Button onClick={handleNext}>
-                {t.common.next}
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <Button onClick={handleGenerate} disabled={generating}>
-                {generating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t.wizards.blog.generating}
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {t.wizards.blog.generateArticle}
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      <UpgradeDialog
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="articles"
-        usage={limits?.usage.articles_count}
-        limit={limits?.limits.max_articles}
-      />
-
-      {/* Dialogs */}
-      <ResultsDialog
-        open={showResultsDialog}
-        onOpenChange={setShowResultsDialog}
-        type="seo"
-        items={
-          generatedArticle
-            ? [
-                {
-                  id: generatedArticle.id,
-                  title: generatedArticle.title,
-                  seo_title: generatedArticle.seo_title,
-                  seo_description: generatedArticle.seo_description,
-                  content: generatedArticle.content,
-                  featured_image: generatedArticle.featured_image,
-                },
-              ]
-            : []
-        }
-        onSyncClick={() => {
-          setShowResultsDialog(false);
-          setShowSyncDialog(true);
-        }}
-        onClose={handleSkipPublish}
-      />
-
-      <ArticleSyncDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        article={generatedArticle || { title: "" }}
-        onConfirm={handlePublishToShopify}
-        loading={false}
-      />
-
-      <ProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
-        type="seo"
-        operation="syncing"
-        current={1}
-        total={1}
-      />
-
-      <SuccessDialog
-        open={isOptimizationComplete && showProgressDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowProgressDialog(false);
-            onClose();
-          }
-        }}
-        type="seo"
-        count={1}
-        onClose={() => {
-          setShowProgressDialog(false);
-          onClose();
-        }}
-      />
-      <ArticleGenerationProgress 
-        open={showGenerationProgress} 
-        onClose={() => setShowGenerationProgress(false)} 
-      />
-    </div>
-  );
-}
+            {/* Mots-clés sélectionnés */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-semibold">
+                  Mots
