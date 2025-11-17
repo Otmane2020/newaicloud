@@ -35,7 +35,7 @@ export function QuickPress() {
     try {
       const { data, error } = await supabase
         .from('shopify_collections')
-        .select('id, title')
+        .select('id, title, product_count')
         .eq('user_id', user?.id)
         .order('title');
 
