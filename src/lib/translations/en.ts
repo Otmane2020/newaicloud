@@ -2951,6 +2951,62 @@ export const translations = {
     },
   },
 
+  merchantSettings: {
+    title: "Google Shopping Feed Configuration",
+    description: "Configure your XML feed settings for Google Merchant Center",
+    storeName: "Store Name",
+    storeNameHint: "Used in your feed URL",
+    storeNameDesc: "Store name can be used as an alternative identifier in your feed",
+    storeNamePlaceholder: "my-store",
+    autoUpdate: "Auto-update",
+    autoUpdateDesc: "Automatically sync feed with your changes",
+    generateGtin: "Auto-generate GTIN",
+    generateGtinDesc: "Include GTIN codes in the Google Shopping XML feed",
+    gtinFormat: "GTIN Format",
+    gtinCountryHint: "Primary selling country",
+    defaultCurrency: "Default Currency",
+    defaultCondition: "Default Condition",
+    defaultBrand: "Default Brand",
+    defaultBrandPlaceholder: "Your main brand",
+    defaultBrandHint: "Used for products without a specified brand",
+    collectionFiltering: "Collection Filtering",
+    filterMode: "Filter Mode",
+    collectionsToInclude: "Collections to Include",
+    collectionsToExclude: "Collections to Exclude",
+    noCollections: "No collections available",
+    collectionsSelected: "{{count}} collection(s) selected",
+    save: "Save Settings",
+    saved: "Settings saved successfully! 🎉",
+    errorSave: "Error saving settings",
+    errorLoad: "Error loading settings",
+    testFeed: "Test Feed",
+    feedTested: "XML feed tested successfully! ✅",
+    errorTest: "Error testing feed",
+    userNotConnected: "User not connected",
+    invalidXml: "Invalid XML format",
+    filterModes: {
+      all: "All collections",
+      include: "Include only certain collections",
+      exclude: "Exclude certain collections"
+    },
+    conditions: {
+      new: "New",
+      refurbished: "Refurbished",
+      used: "Used"
+    },
+    validation: {
+      storeNameRequired: "Store name is required",
+      storeNameFormat: "Store name can only contain lowercase letters, numbers, and hyphens",
+      storeNameTooShort: "Store name must be at least 3 characters",
+      storeNameTooLong: "Store name cannot exceed 50 characters"
+    },
+    statusBadges: {
+      operational: "✓ Operational",
+      error: "✗ Error",
+      untested: "⏳ Untested"
+    }
+  },
+
   chat: {
     title: "AI Assistant",
     history: "Chat History",
