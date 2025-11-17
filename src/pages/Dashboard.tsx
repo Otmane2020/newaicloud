@@ -161,10 +161,10 @@ export default function Dashboard() {
         .eq('is_active', true);
 
       // First get the exact count of products (without loading all data)
+      // NOTE: Only filter by store_id to match TagOptimization.tsx behavior (reference)
       let countQuery = supabase
         .from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', user?.id);
+        .select('*', { count: 'exact', head: true });
 
       if (selectedStore?.id) {
         countQuery = countQuery.eq('store_id', selectedStore.id);
@@ -175,10 +175,10 @@ export default function Dashboard() {
       if (countError) throw countError;
 
       // Then fetch products data (limited to first 10k for calculations)
+      // NOTE: Only filter by store_id to match TagOptimization.tsx behavior (reference)
       let productsQuery = supabase
         .from('shopify_products')
         .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify, enrichment_status')
-        .eq('seller_id', user?.id)
         .range(0, 9999);
 
       if (selectedStore?.id) {
