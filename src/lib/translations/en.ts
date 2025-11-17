@@ -5711,6 +5711,174 @@ export const translations = {
     connectionNotFound: "Shopify connection not found",
   },
 
+  // ============= Google Search Console (GSC) =============
+  googleSearchConsole: {
+    dateRange: {
+      last7Days: "Last 7 days",
+      last30Days: "Last 30 days",
+      last90Days: "Last 90 days"
+    },
+    domain: {
+      selectPlaceholder: "Select a domain",
+      add: "Add",
+      verified: "✓ Verified"
+    }
+  },
+
+  // ============= Ads Campaign Wizard =============
+  adsCampaign: {
+    wizard: {
+      title: "Campaign Wizard",
+      description: "Create artistic landing pages for your campaigns",
+      campaignName: "Campaign name *",
+      campaignNamePlaceholder: "Ex: Gallery Element Collection",
+      campaignType: "Campaign type *",
+      product: "Product",
+      productDesc: "Artistic gallery to showcase your products",
+      collection: "Collection",
+      collectionDesc: "Immersive experience for a complete collection",
+      store: "Store",
+      storeDesc: "Artistic presentation of your store universe",
+      selectCollections: "Select collections",
+      selectProducts: "Select products",
+      generating: "Generating store summary...",
+      regenerate: "Regenerate summary",
+      headline: "Main title *",
+      headlinePlaceholder: "Ex: Discover our contemporary art gallery",
+      subheadline: "Subtitle",
+      subheadlinePlaceholder: "Ex: A unique and inspiring selection",
+      cta: "Call-to-Action button text *",
+      ctaPlaceholder: "Ex: Explore the gallery",
+      highlights: "Highlights",
+      addProof: "Add",
+      proofPlaceholder: "Ex: Free delivery",
+      designStyle: "Choose design style",
+      artistic: "Artistic",
+      artisticDesc: "Creative layouts with elegant visual effects",
+      minimal: "Minimal",
+      minimalDesc: "Clean and modern design",
+      bold: "Bold",
+      boldDesc: "Impactful with strong contrasts",
+      cancel: "Cancel",
+      back: "Back",
+      next: "Next",
+      createGallery: "Create gallery"
+    }
+  },
+
+  // ============= AI Background Dialog =============
+  aiBackground: {
+    title: "Generate AI Background",
+    forProduct: "for",
+    selectImages: "Select images to process",
+    selectVariant: "Select a variant",
+    selectedCount: "{{count}} product(s) selected",
+    loading: "Loading image gallery...",
+    selectAll: "Select all",
+    deselectAll: "Deselect all",
+    imagesProcessed: "Images that will be processed",
+    chooseVariant: "Choose a variant",
+    configuration: "Configuration",
+    backgroundDesc: "Background description",
+    backgroundPlaceholder: "Ex: minimalist white studio with soft lighting",
+    imageFormat: "Image format",
+    square: "Square (1:1)",
+    portrait: "Portrait (3:4)",
+    landscape: "Landscape (16:9)",
+    presetStyles: "Preset styles",
+    professionalStudio: "Professional Studio",
+    cozyLifestyle: "Cozy Lifestyle",
+    luxuryNature: "Luxury Nature",
+    modernMinimalist: "Modern Minimalist",
+    urbanContemporary: "Urban Contemporary",
+    classicElegance: "Classic Elegance",
+    noImagesSelected: "No images selected. Please select at least one image to process.",
+    cancel: "Cancel",
+    generate: "Generate {{count}} image(s)"
+  },
+
+  // ============= Collections Optimization =============
+  collections: {
+    searchPlaceholder: "Search collections by title...",
+    optimize: "Optimize",
+    optimizeAll: "Optimize all",
+    optimizeSelection: "Optimize selection ({{count}})",
+    sync: "Sync",
+    syncAll: "Sync all",
+    clickToGenerate: "Click to generate an image with AI",
+    filters: "Filters",
+    allCollections: "All collections",
+    notOptimized: "Not optimized",
+    optimized: "Optimized",
+    pendingSync: "Pending sync",
+    synced: "Synced",
+    viewMode: "View",
+    grid: "Grid",
+    listView: "List",
+    sortBy: "Sort by",
+    titleSort: "Title",
+    seoScore: "SEO score",
+    products: "Products",
+    status: "Status",
+    lastOptimization: "Last optimization"
+  },
+
+  // ============= Auto Optimization Dialog =============
+  autoOptimization: {
+    title: "Automatic Optimization",
+    selectActions: "Select the actions you want to perform. The system will automatically optimize all relevant items.",
+    optimizeProducts: "Optimize products",
+    optimizeProductsDesc: "Generate SEO titles and descriptions",
+    optimizeCollections: "Optimize collections",
+    optimizeCollectionsDesc: "SEO enrichment of collections",
+    generateAltTexts: "Generate ALT texts",
+    generateAltTextsDesc: "Alternative texts for images",
+    optimizeArticles: "Optimize articles",
+    optimizeArticlesDesc: "SEO for blog",
+    optimizePages: "Optimize pages",
+    optimizePagesDesc: "SEO for static pages",
+    summary: "Summary",
+    actionsSelected: "{{count}} action(s) selected",
+    itemsToProcess: "{{count}} item(s) to process",
+    estimatedTime: "Estimated time: {{minutes}} min",
+    processing: "Optimizations in progress...",
+    currentAction: "Current action:",
+    results: "Results",
+    successCount: "{{count}} item(s) optimized successfully",
+    errorCount: "{{count}} error(s)",
+    syncReminder: "Don't forget to sync your optimizations with Shopify to make them visible on your store!",
+    cancel: "Cancel",
+    start: "Start Optimization",
+    close: "Close"
+  },
+
+  // ============= Background Dialog =============
+  backgroundDialog: {
+    title: "AI Background Preview",
+    forProduct: "for",
+    preview: "Preview",
+    customPrompt: "Custom prompt (optional)",
+    customPromptPlaceholder: "Describe the desired background...",
+    presets: "Presets",
+    selectPreset: "Choose a preset",
+    professionalStudio: "Professional studio",
+    cozyLifestyle: "Cozy Lifestyle – Modern living room",
+    luxuryNature: "Luxury Nature",
+    modernMinimalist: "Modern Minimalist",
+    urbanContemporary: "Urban Contemporary",
+    classicElegance: "Classic Elegance",
+    noPreview: "No preview available",
+    generating: "Generating...",
+    successStatus: "Generated",
+    errorStatus: "Error",
+    selectToApply: "Select images to apply",
+    selectedImages: "{{count}} selected",
+    regenerate: "Regenerate",
+    apply: "Apply",
+    syncShopify: "Sync with Shopify",
+    cancel: "Cancel"
+  }
+
 };
 
 export type Translations = typeof translations;
