@@ -284,8 +284,8 @@ export function ArticleWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-2xl font-serif flex items-center justify-between">
             <span>Assistant de Création d'Article</span>
             <Button
@@ -298,7 +298,8 @@ export function ArticleWizard({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-6 pb-6">
           {/* Progress Indicator */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -361,15 +362,6 @@ export function ArticleWizard({
                 ))}
               </div>
 
-              <Button 
-                onClick={() => setStep(2)} 
-                className="w-full" 
-                size="lg"
-                disabled={!selectedCollection}
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Continuer
-              </Button>
             </Card>
           )}
 
@@ -403,10 +395,6 @@ export function ArticleWizard({
             ))}
           </div>
 
-            <Button onClick={() => setStep(3)} className="w-full" size="lg">
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Continuer
-            </Button>
           </Card>
         )}
 
@@ -448,16 +436,6 @@ export function ArticleWizard({
             ))}
           </div>
 
-          <div className="flex gap-3">
-            <Button onClick={() => setStep(2)} variant="outline" className="flex-1">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
-            <Button onClick={() => setStep(4)} className="flex-1">
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Continuer
-            </Button>
-          </div>
         </Card>
       )}
 
@@ -514,16 +492,6 @@ export function ArticleWizard({
             </div>
           </ScrollArea>
 
-          <div className="flex gap-3">
-            <Button onClick={() => setStep(3)} variant="outline" className="flex-1">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
-            <Button onClick={() => setStep(5)} className="flex-1" disabled={selectedProducts.length === 0}>
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Continuer
-            </Button>
-          </div>
         </Card>
       )}
 
@@ -593,20 +561,6 @@ export function ArticleWizard({
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button onClick={() => setStep(4)} variant="outline" className="flex-1">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
-            <Button 
-              onClick={generateArticle} 
-              className="flex-1"
-              disabled={allKeywords.length === 0}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Générer l'article
-            </Button>
-          </div>
         </Card>
       )}
 
@@ -637,19 +591,6 @@ export function ArticleWizard({
                     <p className="text-muted-foreground">Prêt à publier</p>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.href = `/blog?subtab=articles&id=${articleId}`}
-                  >
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Voir l'article
-                  </Button>
-                  <Button onClick={publishToShopify}>
-                    <Check className="w-4 h-4 mr-2" />
-                    Publier sur Shopify
-                  </Button>
-                </div>
               </div>
 
               <ScrollArea className="h-[600px] w-full rounded-md border p-6">
@@ -660,8 +601,99 @@ export function ArticleWizard({
               </ScrollArea>
             </Card>
           )}
+          </div>
+        )}
+          </div>
         </div>
-      )}
+
+        {/* Sticky Footer with Navigation */}
+        <div className="sticky bottom-0 border-t bg-background px-6 py-4">
+          {step === 1 && (
+            <Button 
+              onClick={() => setStep(2)} 
+              className="w-full" 
+              size="lg"
+              disabled={!selectedCollection}
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Continuer
+            </Button>
+          )}
+
+          {step === 2 && (
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(1)} variant="outline" className="flex-1" size="lg">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <Button onClick={() => setStep(3)} className="flex-1" size="lg">
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continuer
+              </Button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(2)} variant="outline" className="flex-1" size="lg">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <Button onClick={() => setStep(4)} className="flex-1" size="lg">
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continuer
+              </Button>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(3)} variant="outline" className="flex-1" size="lg">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <Button onClick={() => setStep(5)} className="flex-1" size="lg" disabled={selectedProducts.length === 0}>
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continuer
+              </Button>
+            </div>
+          )}
+
+          {step === 5 && !generating && !preview && (
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(4)} variant="outline" className="flex-1" size="lg">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <Button 
+                onClick={generateArticle} 
+                className="flex-1"
+                size="lg"
+                disabled={allKeywords.length === 0}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Générer l'article
+              </Button>
+            </div>
+          )}
+
+          {step === 6 && preview && (
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                size="lg"
+                onClick={() => window.location.href = `/blog?subtab=articles&id=${articleId}`}
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Voir l'article
+              </Button>
+              <Button onClick={publishToShopify} className="flex-1" size="lg">
+                <Check className="w-4 h-4 mr-2" />
+                Publier sur Shopify
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
