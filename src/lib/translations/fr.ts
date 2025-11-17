@@ -827,7 +827,7 @@ export const translations = {
     productOptimization: "Optimisation Produit",
     titleDescription: "Contenu Produit Optimisé",
     seoOptimization: "Optimisation SEO",
-    blog: "Blog",
+    blog: "SEO Blog",
     aiSearch: "Recherche IA",
     googleShopping: "Google Shopping",
     googleMerchant: "Google Merchant",
