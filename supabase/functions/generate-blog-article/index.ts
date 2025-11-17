@@ -1507,7 +1507,7 @@ RÈGLES DE CRÉATION :
           meta_description: opportunityData?.metaDescription || `Guide complet : ${optimizedTitle}. Comparatif expert, conseils d'achat et sélection des meilleurs produits. Livraison offerte.`,
           keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
           status: "draft",
-          source: "NewAI",
+          source: "ai_generated",
         },
       ])
       .select()
