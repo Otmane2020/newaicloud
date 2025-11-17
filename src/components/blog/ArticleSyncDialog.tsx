@@ -12,16 +12,13 @@ interface ArticleSyncDialogProps {
     title: string;
     seo_title?: string;
     seo_description?: string;
-  } | null; // <-- autorise null
+  };
   onConfirm: () => void;
   loading?: boolean;
 }
 
 export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, loading }: ArticleSyncDialogProps) {
   const { t } = useTranslation();
-
-  // 🔥 Patch anti-crash : si article est null → rien n'afficher
-  if (!article) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +28,6 @@ export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, load
 
         <Card className="p-4">
           <h3 className="font-semibold text-lg mb-3">{article.title}</h3>
-
           {article.seo_title && (
             <div className="mt-3">
               <Badge variant="outline" className="mb-1">
@@ -40,7 +36,6 @@ export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, load
               <p className="text-sm text-muted-foreground">{article.seo_title}</p>
             </div>
           )}
-
           {article.seo_description && (
             <div className="mt-3">
               <Badge variant="outline" className="mb-1">
@@ -55,7 +50,6 @@ export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, load
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1" disabled={loading}>
             {t.common.cancel}
           </Button>
-
           <Button onClick={onConfirm} disabled={loading} className="flex-1 gap-2">
             {loading ? (
               <>
