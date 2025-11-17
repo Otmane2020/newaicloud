@@ -242,7 +242,7 @@ export default function Dashboard() {
       // 4. ARTICLES SCORE
       const { data: articlesData } = await supabase
         .from('blog_articles')
-        .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
+        .select('title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
         .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);

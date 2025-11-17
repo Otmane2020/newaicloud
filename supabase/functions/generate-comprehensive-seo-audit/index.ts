@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
         : supabaseAdmin.from('shopify_collections').select('id, seo_title, title, seo_description, body_html, image_url, image_alt, optimization_count').eq('user_id', user.id),
       // Articles filtered by store_id (strict filter to avoid counting null store_id articles for all stores)
       store?.id
-        ? supabaseAdmin.from('blog_articles').select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
-        : supabaseAdmin.from('blog_articles').select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id),
+        ? supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
+        : supabaseAdmin.from('blog_articles').select('title, meta_description, keywords, featured_image, status, optimization_count').eq('user_id', user.id),
       // Pages filtered by store_id (same as Dashboard line 253)
       store?.id
         ? supabaseAdmin.from('shopify_pages').select('seo_title, title, seo_description, body_html, handle, optimization_count').eq('user_id', user.id).eq('store_id', store.id)
