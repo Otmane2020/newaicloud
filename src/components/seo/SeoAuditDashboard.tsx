@@ -1252,25 +1252,61 @@ export function SeoAuditDashboard() {
                               className="ml-4 bg-primary/10 hover:bg-primary/20 border-primary/30 font-semibold"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Détermine l'onglet et le filtre en fonction de la catégorie
-                                const categoryMap: Record<string, { tab: string; filter?: string }> = {
-                                  'produits': { tab: 'products', filter: 'poor' },
-                                  'products': { tab: 'products', filter: 'poor' },
-                                  'collections': { tab: 'collections', filter: 'poor' },
-                                  'images': { tab: 'alt', filter: 'poor' },
-                                  'alt': { tab: 'alt', filter: 'poor' },
-                                  'tags': { tab: 'products', filter: 'poor' },
-                                  'articles': { tab: 'articles', filter: 'poor' },
-                                  'pages': { tab: 'pages', filter: 'poor' },
-                                  'content': { tab: 'articles', filter: 'poor' }, // Content = articles + pages
-                                  'technical': { tab: 'products', filter: 'poor' }, // Technical issues généralement liés aux produits
-                                  'homepage': { tab: 'audit-dashboard', filter: 'homepage' },
-                                };
+                                // Détermine l'onglet et le filtre en fonction de la catégorie et du titre de l'issue
+                                const categoryLower = issue.category?.toLowerCase() || '';
+                                const titleLower = issue.title?.toLowerCase() || '';
                                 
-                                const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products', filter: 'poor' };
-                                const url = mapping.filter 
-                                  ? `/seo?tab=${mapping.tab}&filter=${mapping.filter}`
-                                  : `/seo?tab=${mapping.tab}`;
+                                let tab = 'products';
+                                let filter = 'poor';
+                                
+                                // Mapping par catégorie et titre spécifique
+                                if (categoryLower.includes('homepage') || categoryLower === 'homepage') {
+                                  tab = 'homepage';
+                                  filter = undefined;
+                                } else if (categoryLower.includes('produit') || categoryLower === 'products') {
+                                  tab = 'products';
+                                  // Filtres spécifiques pour les produits
+                                  if (titleLower.includes('non optimisé') || titleLower.includes('not optimized')) {
+                                    filter = 'not-optimized';
+                                  } else if (titleLower.includes('sans tags') || titleLower.includes('without tags')) {
+                                    filter = 'poor'; // Tags are shown in products with quality filter
+                                  } else {
+                                    filter = 'poor';
+                                  }
+                                } else if (categoryLower.includes('collection')) {
+                                  tab = 'collections';
+                                  filter = 'poor';
+                                } else if (categoryLower.includes('image') || categoryLower === 'images' || categoryLower === 'alt') {
+                                  tab = 'alt';
+                                  // Filtres spécifiques pour les images
+                                  if (titleLower.includes('sans texte alternatif') || titleLower.includes('without alt')) {
+                                    filter = 'poor';
+                                  } else if (titleLower.includes('faible qualité') || titleLower.includes('poor quality')) {
+                                    filter = 'poor';
+                                  } else {
+                                    filter = 'poor';
+                                  }
+                                } else if (categoryLower.includes('article')) {
+                                  tab = 'articles';
+                                  // Filtres spécifiques pour les articles
+                                  if (titleLower.includes('non optimisé') || titleLower.includes('not optimized')) {
+                                    filter = 'poor';
+                                  } else if (titleLower.includes('non publié') || titleLower.includes('unpublished')) {
+                                    filter = 'not-optimized';
+                                  } else {
+                                    filter = 'poor';
+                                  }
+                                } else if (categoryLower.includes('page')) {
+                                  tab = 'pages';
+                                  filter = 'poor';
+                                } else if (categoryLower.includes('tag')) {
+                                  tab = 'tags';
+                                  filter = 'poor';
+                                }
+                                
+                                const url = filter 
+                                  ? `/seo?tab=${tab}&filter=${filter}`
+                                  : `/seo?tab=${tab}`;
                                 
                                 navigate(url);
                               }}
