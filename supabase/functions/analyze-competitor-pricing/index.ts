@@ -17,37 +17,46 @@ interface CompetitorPrice {
 }
 
 async function generateSearchQueries(productTitle: string): Promise<string[]> {
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    console.warn('⚠️ Lovable API key not configured');
+    return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
+  }
 
-  const prompt = `Génère 3 requêtes de recherche Google optimales pour trouver ce produit en ligne:
+  const prompt = `Génère 3 requêtes de recherche Google Shopping optimales pour trouver ce produit et ses prix:
 "${productTitle}"
 
-Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes de caractères, sans markdown:
+Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes:
 ["requête 1", "requête 2", "requête 3"]`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.5,
+        max_tokens: 150,
+      }),
+    });
 
-    if (!response.ok) return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
+    if (!response.ok) {
+      console.warn(`⚠️ Lovable AI error: ${response.status}`);
+      return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
+    }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
     
-    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    const jsonMatch = content?.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const queries = JSON.parse(jsonMatch[0]);
+      console.log(`📝 Generated queries:`, queries);
+      return queries;
     }
     
     return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
@@ -57,174 +66,172 @@ Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes de caractères, sans mark
   }
 }
 
-async function searchCompetitorPrices(
-  productTitle: string, 
-  productImage: string
-): Promise<CompetitorPrice[]> {
-  const GOOGLE_CSE_API_KEY = Deno.env.get("GOOGLE_CSE_API_KEY");
-  const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID");
+// Nouvelle fonction: Recherche avec DataForSEO
+async function searchWithDataForSEO(keyword: string): Promise<PriceData[]> {
+  const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
+  const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
   
-  if (!GOOGLE_CSE_API_KEY || !GOOGLE_CSE_ID) {
-    console.warn("⚠️ Google Custom Search API non configurée");
-    return [];
+  if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
+    throw new Error('DataForSEO non configuré');
   }
 
-  console.log(`🔍 Searching competitors for: ${productTitle}`);
+  console.log(`🔍 DataForSEO: Searching for "${keyword}"`);
 
-  // Generate optimized search queries
-  const queries = await generateSearchQueries(productTitle);
-  console.log(`📝 Generated queries:`, queries);
+  const endpoint = 'https://api.dataforseo.com/v3/serp/google/organic/live/advanced';
+  
+  const payload = [{
+    keyword: keyword,
+    language_code: "fr",
+    location_code: 2250, // France
+    depth: 30,
+  }];
 
-  const allCompetitors: CompetitorPrice[] = [];
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-  // Limit to 2 queries to save quota (100 requests/day max)
-  for (const query of queries.slice(0, 2)) {
-    try {
-      const searchUrl = new URL("https://www.googleapis.com/customsearch/v1");
-      searchUrl.searchParams.set("key", GOOGLE_CSE_API_KEY);
-      searchUrl.searchParams.set("cx", GOOGLE_CSE_ID);
-      searchUrl.searchParams.set("q", query);
-      searchUrl.searchParams.set("num", "10");
-      searchUrl.searchParams.set("gl", "fr"); // France
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ DataForSEO error: ${response.status} - ${errorText}`);
+    throw new Error(`DataForSEO error: ${response.status}`);
+  }
 
-      const response = await fetch(searchUrl.toString());
+  const data = await response.json();
+  
+  if (data.tasks?.[0]?.status_code !== 20000) {
+    console.error('❌ DataForSEO API error:', data.tasks?.[0]?.status_message);
+    throw new Error(data.tasks?.[0]?.status_message || 'DataForSEO error');
+  }
+
+  const items = data.tasks[0].result[0].items || [];
+  console.log(`📦 DataForSEO returned ${items.length} results`);
+
+  const priceData: PriceData[] = [];
+
+  for (const item of items) {
+    const text = `${item.title || ''} ${item.description || ''}`;
+    const priceMatch = text.match(/(\d+[,\s]*\d*)\s*€|€\s*(\d+[,\s]*\d*)/);
+    
+    if (priceMatch) {
+      const priceStr = (priceMatch[1] || priceMatch[2]).replace(/[\s,]/g, '.');
+      const price = parseFloat(priceStr);
       
-      if (!response.ok) {
-        console.error(`❌ Google Search API error: ${response.status}`);
-        if (response.status === 429) {
-          console.warn("⚠️ Quota Google dépassé");
-        }
-        continue;
+      if (!isNaN(price) && price > 1) {
+        priceData.push({
+          price,
+          currency: 'EUR',
+          url: item.url || '',
+          title: item.title || '',
+          imageUrl: item.images?.[0]?.url
+        });
       }
-
-      const data = await response.json();
-      const items = data.items || [];
-
-      console.log(`📦 Found ${items.length} results for: "${query}"`);
-
-      for (const item of items) {
-        // Extract price from snippet or title
-        const text = `${item.title} ${item.snippet}`;
-        const priceMatch = text.match(/(\d+[,\s]*\d*)\s*€|€\s*(\d+[,\s]*\d*)/);
-        
-        if (!priceMatch) continue; // Skip if no price found
-
-        const priceStr = (priceMatch[1] || priceMatch[2]).replace(/[\s,]/g, '.');
-        const price = parseFloat(priceStr);
-        
-        if (isNaN(price) || price < 1) continue; // Invalid price
-
-        // Try to get image from pagemap
-        let imageUrl: string | undefined;
-        try {
-          const pagemap = item.pagemap || {};
-          const cseImage = pagemap.cse_image?.[0]?.src;
-          const metatags = pagemap.metatags?.[0];
-          imageUrl = cseImage || metatags?.["og:image"] || metatags?.["twitter:image"];
-        } catch (e) {
-          // No image found
-        }
-
-        // Compare images if both available
-        let similarity = 0.8; // Default similarity
-        if (productImage && imageUrl) {
-          try {
-            similarity = await compareProductImages(productImage, imageUrl);
-            console.log(`🖼️ Image similarity: ${(similarity * 100).toFixed(0)}% for ${item.link}`);
-          } catch (e) {
-            console.warn("⚠️ Image comparison failed, using default similarity");
-          }
-        }
-
-        // Only keep competitors with good similarity
-        if (similarity >= 0.6) {
-          allCompetitors.push({
-            url: item.link,
-            title: item.title,
-            price,
-            currency: "EUR",
-            similarity,
-            imageUrl,
-            source: new URL(item.link).hostname,
-          });
-        }
-      }
-
-      // Small delay between queries
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-    } catch (error) {
-      console.error(`❌ Error searching for "${query}":`, error);
     }
   }
 
-  // Sort by similarity and remove duplicates
-  const uniqueCompetitors = allCompetitors
-    .filter((c, index, self) => 
-      index === self.findIndex(t => t.url === c.url)
-    )
-    .sort((a, b) => b.similarity - a.similarity);
-
-  console.log(`✅ Total unique competitors found: ${uniqueCompetitors.length}`);
-
-  return uniqueCompetitors;
+  console.log(`✅ Extracted ${priceData.length} prices from DataForSEO`);
+  return priceData;
 }
 
-async function compareProductImages(
+interface PriceData {
+  price: number;
+  currency: string;
+  url: string;
+  title: string;
+  imageUrl?: string;
+}
+
+// Analyse visuelle avec Gemini Vision
+async function analyzeProductWithVision(
   productImage: string,
-  competitorImage: string
-): Promise<number> {
-  if (!productImage || !competitorImage) return 0.8; // Default similarity
+  competitorImages: string[]
+): Promise<{ similarities: number[] }> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.warn('⚠️ Lovable API key not configured');
+    return { similarities: [] };
+  }
 
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) return 0.8;
+  console.log(`🖼️ Analyzing ${competitorImages.length} images with Vision`);
 
-  try {
-    // Fetch images and convert to base64
-    const [img1Response, img2Response] = await Promise.all([
-      fetch(productImage),
-      fetch(competitorImage)
-    ]);
-    
-    const [img1Buffer, img2Buffer] = await Promise.all([
-      img1Response.arrayBuffer(),
-      img2Response.arrayBuffer()
-    ]);
-    
-    const base64Img1 = btoa(String.fromCharCode(...new Uint8Array(img1Buffer)));
-    const base64Img2 = btoa(String.fromCharCode(...new Uint8Array(img2Buffer)));
+  const similarities: number[] = [];
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
+  for (const compImage of competitorImages.slice(0, 5)) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const [prodResp, compResp] = await Promise.all([
+        fetch(productImage, { signal: controller.signal }),
+        fetch(compImage, { signal: controller.signal })
+      ]);
+      clearTimeout(timeoutId);
+
+      if (!prodResp.ok || !compResp.ok) continue;
+
+      const [prodBuffer, compBuffer] = await Promise.all([
+        prodResp.arrayBuffer(),
+        compResp.arrayBuffer()
+      ]);
+
+      if (prodBuffer.byteLength > 5 * 1024 * 1024 || compBuffer.byteLength > 5 * 1024 * 1024) continue;
+
+      const prodBase64 = btoa(String.fromCharCode(...new Uint8Array(prodBuffer)));
+      const compBase64 = btoa(String.fromCharCode(...new Uint8Array(compBuffer)));
+
+      const prodMimeType = prodResp.headers.get('content-type') || 'image/jpeg';
+      const compMimeType = compResp.headers.get('content-type') || 'image/jpeg';
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: "image/jpeg", data: base64Img1 } },
-              { inline_data: { mime_type: "image/jpeg", data: base64Img2 } },
-              { text: "Ces deux produits sont-ils identiques ou très similaires? Réponds uniquement avec un score de 0.0 à 1.0" }
+          model: 'google/gemini-2.5-flash',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${prodMimeType};base64,${prodBase64}` } },
+              { type: 'image_url', image_url: { url: `data:${compMimeType};base64,${compBase64}` } },
+              { type: 'text', text: `Ces 2 produits sont-ils similaires? Réponds avec JSON: {"similarity": 0.85, "reasoning": "court"}` }
             ]
-          }]
+          }],
+          temperature: 0.3,
+          max_tokens: 200,
         }),
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      
+      if (content) {
+        const jsonMatch = content.match(/\{[\s\S]*?\}/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
+          similarities.push(result.similarity || 0.5);
+          console.log(`✅ Similarity: ${(result.similarity * 100).toFixed(0)}%`);
+        }
       }
-    );
 
-    if (!response.ok) return 0.8;
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-    const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    const score = parseFloat(content);
-    
-    return isNaN(score) ? 0.8 : Math.max(0, Math.min(1, score));
-  } catch (error) {
-    console.error("Image comparison error:", error);
-    return 0.8;
+    } catch (error: any) {
+      console.error('⚠️ Vision error:', error.name === 'AbortError' ? 'Timeout' : error.message);
+    }
   }
+
+  return { similarities };
 }
+
+// Supprimé - remplacé par searchWithDataForSEO + analyzeProductWithVision
 
 function calculateNetMargin(
   salesPrice: number,
@@ -240,106 +247,88 @@ function calculateNetMargin(
 
 async function analyzeWithAI(
   productTitle: string,
-  productImage: string,
-  productCost: number,
+  costPrice: number,
   shippingCost: number,
   competitorPrices: CompetitorPrice[],
   taxRate: number
 ): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  
+  const totalCost = costPrice + shippingCost;
+  const minPriceWithMargin = totalCost * 1.3;
 
-  // CRITICAL: Ne calculer un prix QUE si on a de vrais concurrents
-  if (!competitorPrices || competitorPrices.length < 3) {
-    console.warn(`⚠️ Pas assez de concurrents trouvés (${competitorPrices.length}/3 minimum)`);
+  if (!competitorPrices || competitorPrices.length === 0) {
+    const smartPrice = Math.round(minPriceWithMargin * 1.5 * 100) / 100;
     return {
       marketPrice: null,
-      smartPrice: null,
-      reasoning: "Analyse impossible: aucune donnée concurrente trouvée. Intégrez une API de recherche web (SerpAPI) pour obtenir des prix réels.",
+      smartPrice: smartPrice,
+      reasoning: `Prix sans concurrents. Coûts ${totalCost.toFixed(2)}€ + marge 50%.`,
       competitors: []
     };
   }
 
-  // Sort by similarity and take top 10
-  const top10Competitors = competitorPrices
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, 10);
-
-  const avgCompetitorPrice = top10Competitors.reduce((sum, p) => sum + p.price, 0) / top10Competitors.length;
-  
-  const prompt = `Tu es un expert en pricing e-commerce. Analyse ces données et suggère un prix optimal:
-
-Produit: "${productTitle}"
-Prix de revient: ${productCost}€
-Frais de livraison: ${shippingCost}€
-Taux de taxe (TVA): ${taxRate}%
-
-CALCUL MARGE NETTE: (Prix vente - ${shippingCost}€) / ${1 + taxRate/100} - ${productCost}€
-
-Prix concurrents trouvés (${top10Competitors.length}):
-${top10Competitors.map((p, i) => `${i + 1}. ${p.source}: ${p.price.toFixed(2)}€ (similarité: ${(p.similarity * 100).toFixed(0)}%)`).join('\n')}
-
-Prix moyen marché: ${avgCompetitorPrice.toFixed(2)}€
-
-Objectifs:
-1. Assurer une marge nette minimale de 15%
-2. Rester compétitif (idéalement -3% à -5% sous la moyenne marché)
-3. Maximiser le profit sans perdre de clients
-
-Réponds UNIQUEMENT avec un objet JSON (sans markdown):
-{
-  "smartPrice": nombre,
-  "reasoning": "explication courte en 2-3 lignes sur la stratégie de prix"
-}`;
+  if (!LOVABLE_API_KEY) {
+    const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
+    return {
+      marketPrice: avgPrice,
+      smartPrice: Math.max(avgPrice, minPriceWithMargin),
+      reasoning: "Prix moyen marché",
+      competitors: competitorPrices.slice(0, 10)
+    };
+  }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const avgCompetitorPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
+    const top10 = competitorPrices.slice(0, 10);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error("Rate limit atteint. Réessayez dans quelques instants.");
-      }
-      throw new Error(`AI API error: ${response.status}`);
-    }
+    const list = top10.map((c, i) => `${i + 1}. ${c.title.substring(0, 60)} - ${c.price.toFixed(2)}€ (${(c.similarity * 100).toFixed(0)}%)`).join('\n');
+
+    const prompt = `Pricing expert. Recommande prix optimal.
+
+PRODUIT: "${productTitle}"
+COÛTS: ${totalCost.toFixed(2)}€ | Min+30%: ${minPriceWithMargin.toFixed(2)}€
+MARCHÉ: Moy ${avgCompetitorPrice.toFixed(2)}€ | Min ${Math.min(...competitorPrices.map(c => c.price)).toFixed(2)}€ | Max ${Math.max(...competitorPrices.map(c => c.price)).toFixed(2)}€
+
+TOP 10:
+${list}
+
+JSON: {"smartPrice": 89.90, "reasoning": "stratégie"}
+smartPrice ≥ ${minPriceWithMargin.toFixed(2)}€`;
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) throw new Error(`AI error: ${response.status}`);
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!content) throw new Error("No AI response");
+    const content = data.choices?.[0]?.message?.content;
+    const jsonMatch = content?.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) throw new Error("Invalid format");
 
-    let jsonStr = content;
-    const jsonMatch = content.match(/\{[\s\S]*?\}/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[0];
-    }
-
-    const aiResponse = JSON.parse(jsonStr);
+    const aiResponse = JSON.parse(jsonMatch[0]);
+    const finalPrice = Math.max(aiResponse.smartPrice, minPriceWithMargin);
 
     return {
       marketPrice: avgCompetitorPrice,
-      smartPrice: aiResponse.smartPrice,
+      smartPrice: Math.round(finalPrice * 100) / 100,
       reasoning: aiResponse.reasoning,
-      competitors: top10Competitors
+      competitors: top10
     };
   } catch (error) {
-    console.error("AI Analysis error:", error);
-    // PLUS DE FALLBACK - Si l'analyse échoue, on retourne null
+    const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
     return {
-      marketPrice: null,
-      smartPrice: null,
-      reasoning: `Erreur d'analyse IA: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-      competitors: top10Competitors
+      marketPrice: avgPrice,
+      smartPrice: Math.max(avgPrice, minPriceWithMargin),
+      reasoning: `Fallback: moyenne marché`,
+      competitors: competitorPrices.slice(0, 10)
     };
   }
 }
@@ -350,7 +339,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🤖 [ANALYZE-PRICING] Starting AI price analysis...');
+    console.log('🤖 [ANALYZE-PRICING] Enhanced analysis: DataForSEO + Gemini Vision');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -371,7 +360,7 @@ serve(async (req) => {
       throw new Error('No products specified');
     }
 
-    console.log(`📊 Analyzing ${productIds.length} products...`);
+    console.log(`📊 Analyzing ${productIds.length} products with SERP + Vision...`);
 
     const results = [];
 
@@ -405,27 +394,68 @@ serve(async (req) => {
 
         const shippingCost = product.shipping_cost || 5.99;
 
-        console.log(`🔍 Analyzing: ${product.title}`);
+        console.log(`\n🔍 Analyzing: ${product.title}`);
+        console.log(`💰 Costs - Product: ${avgCost}€, Shipping: ${shippingCost}€`);
 
-        // Search competitor prices
-        const competitorPrices = await searchCompetitorPrices(
-          product.title,
-          product.image_url || ''
-        );
+        // Étape 1: Générer requêtes optimisées
+        const queries = await generateSearchQueries(product.title);
 
-        console.log(`📈 Found ${competitorPrices.length} competitor prices`);
+        // Étape 2: Recherche SERP avec DataForSEO
+        const allPriceData: PriceData[] = [];
+        
+        for (const query of queries.slice(0, 2)) {
+          try {
+            const serpPrices = await searchWithDataForSEO(query);
+            allPriceData.push(...serpPrices);
+            await new Promise(resolve => setTimeout(resolve, 1200));
+          } catch (error) {
+            console.error(`❌ DataForSEO failed for "${query}":`, error);
+          }
+        }
 
-        // Analyze with AI
+        console.log(`📈 Total prices found: ${allPriceData.length}`);
+
+        // Étape 3: Analyse visuelle avec Gemini
+        const visionResults: { similarities: number[] } = { similarities: [] };
+        const competitorImages = allPriceData.filter(p => p.imageUrl).map(p => p.imageUrl!);
+
+        if (product.image_url && competitorImages.length > 0) {
+          console.log(`🖼️ Vision analysis for ${competitorImages.length} images`);
+          try {
+            const result = await analyzeProductWithVision(product.image_url, competitorImages);
+            visionResults.similarities = result.similarities;
+            console.log(`✅ Vision: ${visionResults.similarities.length} calculated`);
+          } catch (error) {
+            console.error('⚠️ Vision failed:', error);
+          }
+        }
+
+        // Étape 4: Combiner SERP + Vision
+        const competitorPrices: CompetitorPrice[] = allPriceData
+          .map((data, index) => ({
+            url: data.url,
+            title: data.title,
+            price: data.price,
+            currency: data.currency,
+            similarity: visionResults.similarities[index] || 0.7,
+            imageUrl: data.imageUrl,
+            source: new URL(data.url).hostname
+          }))
+          .filter(c => c.similarity >= 0.5)
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 15);
+
+        console.log(`✅ ${competitorPrices.length} relevant competitors`);
+
+        // Étape 5: Analyse AI finale
         const analysis = await analyzeWithAI(
           product.title,
-          product.image_url || '',
           avgCost,
           shippingCost,
           competitorPrices,
           taxRate || 20
         );
 
-        // Calculate net margin SEULEMENT si smartPrice existe
         const netMargin = analysis.smartPrice 
           ? calculateNetMargin(analysis.smartPrice, avgCost, shippingCost, taxRate || 20)
           : null;
@@ -442,15 +472,17 @@ serve(async (req) => {
           reasoning: analysis.reasoning,
           competitors: analysis.competitors,
           competitorCount: analysis.competitors.length,
+          visionAnalysis: {
+            analyzedImages: visionResults.similarities.length,
+            avgSimilarity: visionResults.similarities.length > 0
+              ? Math.round(visionResults.similarities.reduce((a, b) => a + b, 0) / visionResults.similarities.length * 100) / 100
+              : null
+          }
         });
 
-        if (analysis.smartPrice) {
-          console.log(`✅ ${product.title}: ${analysis.smartPrice}€ (marché: ${analysis.marketPrice?.toFixed(2)}€, marge: ${netMargin?.toFixed(2)}€)`);
-        } else {
-          console.log(`⚠️ ${product.title}: Analyse impossible - pas de concurrents trouvés`);
-        }
+        console.log(`✅ ${product.title}:`);
+        console.log(`   Smart: ${analysis.smartPrice}€, Market: ${analysis.marketPrice?.toFixed(2)}€, Margin: ${netMargin?.toFixed(2)}€`);
 
-        // Small delay to respect rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (error) {
@@ -462,13 +494,17 @@ serve(async (req) => {
       }
     }
 
-    console.log(`🎉 Analysis complete: ${results.length} products processed`);
+    console.log(`\n✅ Analysis complete: ${results.length} products`);
 
     return new Response(
       JSON.stringify({
         success: true,
         results,
-        total: productIds.length,
+        summary: {
+          total: productIds.length,
+          analyzed: results.filter(r => !r.error).length,
+          failed: results.filter(r => r.error).length
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
