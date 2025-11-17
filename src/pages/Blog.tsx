@@ -15,6 +15,7 @@ import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
 import { CampaignWizard } from '@/components/blog/CampaignWizard';
 import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
+import { QuickPress } from '@/components/blog/QuickPress';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -41,7 +42,7 @@ export default function Blog() {
   useEffect(() => {
     const subtab = searchParams.get('subtab');
     
-    if (subtab && ['articles', 'create-article', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
+    if (subtab && ['articles', 'create-article', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings', 'blogging'].includes(subtab)) {
       setActiveSubtab(subtab);
     }
   }, [searchParams]);
@@ -217,8 +218,14 @@ export default function Blog() {
       description: t.blog.submenu.articlesDesc 
     },
     { 
+      id: 'blogging', 
+      label: t.blog.submenu.blogging, 
+      icon: Zap, 
+      description: t.blog.submenu.bloggingDesc 
+    },
+    { 
       id: 'create-article', 
-      label: t.blog.submenu.aiArticles, 
+      label: t.blog.submenu.aiArticles,
       icon: Sparkles, 
       description: t.blog.submenu.aiArticlesDesc 
     },
@@ -730,6 +737,9 @@ export default function Blog() {
           <NetlinkingTable />
         </div>
       )}
+
+      {/* Blogging - Quick Press */}
+      {activeSubtab === 'blogging' && <QuickPress />}
 
       {/* Settings */}
       {activeSubtab === 'settings' && (
