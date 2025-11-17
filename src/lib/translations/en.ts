@@ -2621,6 +2621,8 @@ export const translations = {
     submenu: {
       articles: "Article Management",
       articlesDesc: "List of your articles",
+      blogging: "Quick Press",
+      bloggingDesc: "Rapid article creation",
       aiArticles: "AI Articles",
       aiArticlesDesc: "Create an article with AI",
       campaigns: "AI Campaigns",
