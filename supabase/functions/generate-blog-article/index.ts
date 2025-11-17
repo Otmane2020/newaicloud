@@ -303,61 +303,238 @@ Aucun texte, juste une représentation visuelle du sujet.`;
 - Angle: ${articleAngle || "Guide d'achat"}
 - Layout: ${layout}
 
-**PRODUITS DISPONIBLES**:
+**PRODUITS DISPONIBLES (${products.length} produits)**:
 ${productsContext}
 
 **INSTRUCTIONS CRITIQUES**:
-1. Structure HTML5 sémantique avec <article>, <section>, <header>
-2. Typographie style New York Times: Serif professionnelle, espacements généreux
-3. Layout "${layout}" avec le style approprié
-4. Palette de couleurs: ${colorPalette}
-5. Pour CHAQUE produit, intégration intelligente:
-   ${layout === 'grid' ? '- Grille de produits avec cartes complètes' : 
-     layout === 'story' ? '- Produits intégrés naturellement dans le texte avec hyperliens' :
-     '- Style éditorial avec grandes images'}
-6. NE PAS afficher: stock détaillé, informations techniques excessives
-7. AFFICHER: Prix, caractéristiques clés, lien vers produit
-8. CSS moderne inclus dans <style> avec:
-   ${layoutStyles[layout] || layoutStyles.editorial}
-   :root { ${paletteStyles[colorPalette] || paletteStyles.classic} }
-   - Font: Georgia, Garamond, serif pour le corps
-   - Titres: font-weight: 700
-   - Espacement: line-height: 1.75
-   - Images: Grandes, haute qualité, bien espacées
-9. Contenu RICHE:
-   - Introduction captivante (200 mots)
-   - Sections structurées avec H2/H3
-   - Paragraphes de 3-4 lignes maximum
-   - Produits présentés avec hyperliens: <a href="${storeUrl}/products/[handle]">[nom produit]</a>
-   - FAQ en fin d'article
-10. SEO: Utilise naturellement les mots-clés "${keywords.join('", "')}"
-11. Ton: Journalistique, expert, accessible
 
-**FORMAT DE SORTIE**: HTML pur, prêt à insérer.
+1. **TABLE DES MATIÈRES**: Commence par une table des matières cliquable avec ancres (#section-1, #section-2, etc.)
+
+2. **STRUCTURE HTML5** complète avec:
+   - <article> principal
+   - <nav> pour la table des matières
+   - <section> pour chaque partie
+   - <header> pour les titres de section
+
+3. **TYPOGRAPHIE NEW YORK TIMES**:
+   - Police: Georgia, Garamond, Times New Roman, serif
+   - Titres: font-weight: 700, letter-spacing: -0.02em
+   - Corps: line-height: 1.75, font-size: 18px
+   - Espacements généreux entre sections (60px)
+
+4. **PALETTE DE COULEURS ${colorPalette}** - APPLIQUE CES VARIABLES CSS:
+   :root {
+     ${paletteStyles[colorPalette] || paletteStyles.classic}
+   }
+   - Utilise var(--color-primary) pour les titres
+   - Utilise var(--color-accent) pour les liens et boutons
+   - Utilise var(--color-secondary) pour les backgrounds
+
+5. **LAYOUT "${layout}"** avec styles spécifiques:
+   ${layoutStyles[layout] || layoutStyles.editorial}
+
+6. **GALERIE D'IMAGES CLIQUABLE** pour chaque produit:
+   <div class="product-gallery">
+     <div class="gallery-main">
+       <img src="${products[0]?.image_url || ''}" alt="" class="gallery-image active" data-index="0" onclick="showImage(0)">
+     </div>
+     <div class="gallery-thumbnails">
+       <img src="${products[0]?.image_url || ''}" alt="" class="thumbnail active" onclick="showImage(0)">
+       <!-- Répète pour chaque image produit -->
+     </div>
+   </div>
+   <script>
+   function showImage(index) {
+     document.querySelectorAll('.gallery-image').forEach((img, i) => {
+       img.classList.toggle('active', i === index);
+     });
+     document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+       thumb.classList.toggle('active', i === index);
+     });
+   }
+   </script>
+
+7. **MENTION DE TOUS LES ${products.length} PRODUITS**:
+   - Chaque produit DOIT apparaître dans l'article
+   - Avec son nom cliquable: <a href="${storeUrl}/products/[handle]" style="color: var(--color-accent); font-weight: 600;">[Nom du produit]</a>
+   - Son prix: <span class="product-price" style="color: var(--color-accent); font-weight: 700;">[prix]€</span>
+   - Sa promotion si applicable
+   - Une image dans la galerie
+
+8. **NE PAS AFFICHER**:
+   - Stock détaillé (juste "Disponible" ou "Stock limité")
+   - Informations techniques excessives
+   - Numéros de référence internes
+
+9. **CSS COMPLET INCLUS** dans <style>:
+   <style>
+     ${layoutStyles[layout] || layoutStyles.editorial}
+     
+     :root { ${paletteStyles[colorPalette] || paletteStyles.classic} }
+     
+     body {
+       font-family: Georgia, 'Times New Roman', serif;
+       line-height: 1.75;
+       color: var(--color-primary);
+       background: var(--color-secondary);
+       max-width: 1200px;
+       margin: 0 auto;
+       padding: 40px 20px;
+     }
+     
+     h1, h2, h3 {
+       font-weight: 700;
+       color: var(--color-primary);
+       letter-spacing: -0.02em;
+       margin-top: 60px;
+       margin-bottom: 20px;
+     }
+     
+     h1 { font-size: 48px; }
+     h2 { font-size: 36px; border-bottom: 3px solid var(--color-accent); padding-bottom: 15px; }
+     h3 { font-size: 28px; }
+     
+     a {
+       color: var(--color-accent);
+       text-decoration: none;
+       font-weight: 600;
+       transition: opacity 0.3s;
+     }
+     
+     a:hover { opacity: 0.7; }
+     
+     .toc {
+       background: var(--color-secondary);
+       border: 2px solid var(--color-accent);
+       border-radius: 12px;
+       padding: 30px;
+       margin: 40px 0;
+     }
+     
+     .toc h2 {
+       margin-top: 0;
+       border: none;
+     }
+     
+     .toc ul {
+       list-style: none;
+       padding: 0;
+     }
+     
+     .toc li {
+       margin: 15px 0;
+       font-size: 18px;
+     }
+     
+     .product-gallery {
+       margin: 40px 0;
+       border: 1px solid #e0e0e0;
+       border-radius: 12px;
+       overflow: hidden;
+       background: white;
+     }
+     
+     .gallery-main {
+       position: relative;
+       width: 100%;
+       height: 500px;
+       overflow: hidden;
+     }
+     
+     .gallery-image {
+       position: absolute;
+       width: 100%;
+       height: 100%;
+       object-fit: cover;
+       opacity: 0;
+       transition: opacity 0.5s;
+     }
+     
+     .gallery-image.active {
+       opacity: 1;
+       z-index: 1;
+     }
+     
+     .gallery-thumbnails {
+       display: flex;
+       gap: 10px;
+       padding: 15px;
+       overflow-x: auto;
+     }
+     
+     .thumbnail {
+       width: 100px;
+       height: 100px;
+       object-fit: cover;
+       cursor: pointer;
+       border: 3px solid transparent;
+       border-radius: 8px;
+       transition: all 0.3s;
+     }
+     
+     .thumbnail:hover {
+       border-color: var(--color-accent);
+       transform: scale(1.05);
+     }
+     
+     .thumbnail.active {
+       border-color: var(--color-accent);
+     }
+     
+     .product-price {
+       color: var(--color-accent);
+       font-weight: 700;
+       font-size: 24px;
+     }
+     
+     .product-card {
+       background: white;
+       border: 1px solid #e0e0e0;
+       border-radius: 12px;
+       padding: 30px;
+       margin: 40px 0;
+       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+     }
+     
+     .btn-primary {
+       display: inline-block;
+       background: var(--color-accent);
+       color: white;
+       padding: 15px 30px;
+       border-radius: 8px;
+       font-weight: 600;
+       transition: all 0.3s;
+     }
+     
+     .btn-primary:hover {
+       opacity: 0.9;
+       transform: translateY(-2px);
+     }
+   </style>
+
+10. **CONTENU RICHE**:
+    - Introduction captivante (200 mots)
+    - Table des matières complète
+    - Sections structurées avec H2/H3 (minimum 5 sections)
+    - Chaque section mentionne 1-2 produits avec liens et prix
+    - Galeries d'images pour les produits phares
+    - FAQ en fin d'article (5 questions minimum)
+
+11. **SEO**: Utilise naturellement les mots-clés "${keywords.join('", "')}" dans les titres et le texte
+
+12. **TON**: Journalistique, expert, accessible, enthousiaste
+
+**FORMAT DE SORTIE**: HTML pur et complet, prêt à insérer, commençant par <!DOCTYPE html>
 
 ${layout === 'grid' ? `
 **EXEMPLE GRILLE PRODUIT**:
-<div class="product-grid">
-  <div class="product-card">
-    <img src="[image_url]" alt="[title]" />
-    <h3>[Title]</h3>
-    <p class="price">[price]€</p>
-    <p>[Description courte]</p>
-    <a href="${storeUrl}/products/[handle]" class="btn-primary">Voir le produit</a>
-  </div>
-</div>
+Utilise la structure .product-grid avec cartes complètes incluant images, prix, et liens.
 ` : layout === 'story' ? `
 **EXEMPLE INTÉGRATION STORY**:
-<p>Pour ceux qui recherchent l'élégance, le <a href="${storeUrl}/products/[handle]">[nom produit]</a> 
-représente un choix idéal. Ses [caractéristiques] en font...</p>
+Intègre les produits naturellement dans le récit avec des liens inline vers ${storeUrl}/products/[handle].
 ` : `
 **EXEMPLE ÉDITORIAL**:
-<section class="product-feature">
-  <img src="[image_url]" alt="[title]" class="featured-image" />
-  <h2>[Title]</h2>
-  <p class="lead">[Description riche]</p>
-  <a href="${storeUrl}/products/[handle]">Découvrir ce produit</a>
-</section>
+Présente les produits avec de grandes images en vedette et sections dédiées.
 `}
 
 Commence par <!DOCTYPE html> et génère l'article complet.`;

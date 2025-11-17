@@ -7,6 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   Sparkles, 
   Layout, 
@@ -18,12 +24,15 @@ import {
   Check,
   ArrowLeft,
   ArrowRight,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ArticleWizardProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   collections: any[];
   selectedCollection: string;
   products: any[];
@@ -51,6 +60,8 @@ const COLOR_PALETTES = [
 ];
 
 export function ArticleWizard({
+  open,
+  onOpenChange,
   collections,
   selectedCollection,
   products,
@@ -166,9 +177,24 @@ export function ArticleWizard({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Progress Indicator */}
-      <Card className="p-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-serif flex items-center justify-between">
+            <span>Assistant de Création d'Article</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 mt-4">
+          {/* Progress Indicator */}
+          <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           {[1, 2, 3, 4, 5].map((s) => (
             <div key={s} className="flex items-center">
@@ -469,6 +495,8 @@ export function ArticleWizard({
           )}
         </div>
       )}
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
