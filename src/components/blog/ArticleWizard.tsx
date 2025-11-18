@@ -172,18 +172,24 @@ export function ArticleWizard({
 
   // Load products when collection changes
   useEffect(() => {
-    if (selectedCollection && open && storeId) {
+    if (selectedCollection && open) {
       setProductPage(1);
       loadProducts(1);
     }
-  }, [selectedCollection, open, storeId]);
+  }, [selectedCollection, open]);
   
-  // Filter collections by store_id
-  const filteredCollections = collections.filter(col => col.store_id === storeId);
+  // Afficher toutes les collections passées (déjà filtrées dans Blog.tsx)
+  const filteredCollections = collections;
+  
+  console.log('ArticleWizard - Collections:', {
+    totalCollections: collections.length,
+    storeId,
+    collections: collections.map(c => ({ id: c.id, title: c.title, store_id: c.store_id }))
+  });
 
   // Reload products when search changes (with debounce)
   useEffect(() => {
-    if (selectedCollection && storeId) {
+    if (selectedCollection) {
       const timer = setTimeout(() => {
         setProductPage(1);
         loadProducts(1, productSearch);
@@ -674,7 +680,17 @@ export function ArticleWizard({
 
               {filteredCollections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Aucune collection trouvée. Veuillez importer vos collections Shopify.
+                  <p className="mb-2">Aucune collection trouvée.</p>
+                  {collections.length > 0 ? (
+                    <div className="text-xs space-y-1">
+                      <p>Collections totales: {collections.length}</p>
+                      <p>Store ID actuel: {storeId || 'non défini'}</p>
+                      <p className="text-destructive">Les collections ne correspondent pas au store actuel.</p>
+                      <p>Veuillez vérifier votre connexion Shopify.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs">Veuillez importer vos collections Shopify.</p>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">

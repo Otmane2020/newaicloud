@@ -64,25 +64,57 @@ export default function Blog() {
 
   const loadStoreIdAndCollections = async () => {
     try {
-      const { data: storeData } = await supabase
+      console.log('Loading store and collections for user:', user?.id);
+      
+      const { data: storeData, error: storeError } = await supabase
         .from('shopify_connections')
         .select('id')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
+      
+      console.log('Store data:', { storeData, storeError });
       
       if (storeData) {
         setStoreId(storeData.id);
         
-        // Load collections
-        const { data: collectionsData } = await supabase
+        // Load collections for this store
+        const { data: collectionsData, error: collectionsError } = await supabase
           .from('shopify_collections')
           .select('id, title, products_count, store_id, user_id')
           .eq('user_id', user?.id)
           .eq('store_id', storeData.id)
           .order('title');
         
-        console.log('Collections loaded:', { count: collectionsData?.length, storeId: storeData.id });
+        console.log('Collections loaded:', { 
+          count: collectionsData?.length, 
+          storeId: storeData.id,
+          error: collectionsError,
+          collections: collectionsData?.map(c => ({ id: c.id, title: c.title, store_id: c.store_id }))
+        });
+        
         setCollections(collectionsData || []);
+      } else {
+        console.warn('No store found for user - loading all user collections');
+        
+        // Si pas de store, charger toutes les collections de l'utilisateur
+        const { data: allCollectionsData, error: allCollectionsError } = await supabase
+          .from('shopify_collections')
+          .select('id, title, products_count, store_id, user_id')
+          .eq('user_id', user?.id)
+          .order('title');
+        
+        console.log('All user collections loaded:', { 
+          count: allCollectionsData?.length,
+          error: allCollectionsError,
+          collections: allCollectionsData?.map(c => ({ id: c.id, title: c.title, store_id: c.store_id }))
+        });
+        
+        setCollections(allCollectionsData || []);
+        
+        // Utiliser le store_id de la première collection
+        if (allCollectionsData && allCollectionsData.length > 0) {
+          setStoreId(allCollectionsData[0].store_id);
+        }
       }
     } catch (error) {
       console.error('Error loading store and collections:', error);
