@@ -199,6 +199,11 @@ async function generateArticle(
             .filter(Boolean)
             .join(" x ");
           
+          // ✅ Ajouter les images réelles du produit
+          const images = p.product_images
+            ?.map((img: any, idx: number) => `  ${idx + 1}. ${img.src} (${img.alt_text || 'Image produit'})`)
+            .join("\n") || "Aucune image disponible";
+          
           return `
 **Produit ${i + 1}: ${p.title}**
 - Prix: ${p.price}€ ${promo}
@@ -209,6 +214,8 @@ async function generateArticle(
 - Poids: ${p.smart_weight || "Non spécifié"}
 - Stock: ${p.inventory_quantity > 0 ? `${p.inventory_quantity} unités` : "Stock limité"}
 - Catégorie: ${p.category || p.product_type || "Non spécifiée"}
+**Images**:
+${images}
 `.trim();
         }).join("\n\n")
       : "Aucun produit spécifique disponible - générer un article informatif général";
@@ -227,6 +234,8 @@ async function generateArticle(
         const imagePrompt = `Créez une image de couverture moderne et professionnelle pour un article sur "${articleTitle}". 
 Style: photographie de haute qualité, minimaliste, épurée, professionnelle.
 Thème: ${category} - ${keywords.slice(0, 3).join(', ')}
+Couleurs: harmonieuses et élégantes.
+Format: 1200x630px (format Open Graph).
 Aucun texte, juste une représentation visuelle du sujet.`;
 
         const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -249,14 +258,22 @@ Aucun texte, juste une représentation visuelle du sujet.`;
 
         if (imageResponse.ok) {
           const imageData = await imageResponse.json();
+          console.log("🖼️ Image API response:", JSON.stringify(imageData).substring(0, 200));
+          
           const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
           if (base64Image) {
             featuredImage = base64Image;
-            console.log("✅ Featured image generated with Lovable AI");
+            console.log("✅ Featured image generated successfully (base64 length:", base64Image.length, ")");
+          } else {
+            console.warn("⚠️ No image in API response:", imageData);
           }
+        } else {
+          const errorText = await imageResponse.text();
+          console.error("❌ Image generation failed:", imageResponse.status, errorText);
         }
       } catch (err) {
-        console.warn("⚠️ Could not generate featured image:", err);
+        console.error("❌ Featured image generation error:", err);
+        // Ne pas bloquer la génération d'article si l'image échoue
       }
     }
 
@@ -332,7 +349,12 @@ ${productsContext}
 5. **LAYOUT "${layout}"** avec styles spécifiques:
    ${layoutStyles[layout] || layoutStyles.editorial}
 
-6. **GALERIE D'IMAGES CLIQUABLE** pour chaque produit:
+6. **IMAGES DES PRODUITS** - UTILISE LES URLs FOURNIES CI-DESSUS:
+   - Pour chaque produit, utilise les vraies URLs d'images listées dans le contexte produits
+   - Structure HTML pour images:
+     <img src="[URL_REELLE]" alt="[ALT_TEXT]" style="width: 100%; max-width: 600px; height: auto; border-radius: 12px; margin: 20px 0;">
+   
+7. **GALERIE D'IMAGES CLIQUABLE** pour chaque produit:
    <div class="product-gallery">
      <div class="gallery-main">
        <img src="${products[0]?.image_url || ''}" alt="" class="gallery-image active" data-index="0" onclick="showImage(0)">
