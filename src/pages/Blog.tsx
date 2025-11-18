@@ -42,7 +42,7 @@ export default function Blog() {
   useEffect(() => {
     const subtab = searchParams.get('subtab');
     
-    if (subtab && ['articles', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings', 'blogging'].includes(subtab)) {
+    if (subtab && ['articles', 'create-article', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings', 'blogging'].includes(subtab)) {
       setActiveSubtab(subtab);
     }
   }, [searchParams]);
@@ -224,6 +224,12 @@ export default function Blog() {
       description: t.blog.submenu.bloggingDesc 
     },
     { 
+      id: 'create-article', 
+      label: t.blog.submenu.aiArticles,
+      icon: Sparkles, 
+      description: t.blog.submenu.aiArticlesDesc 
+    },
+    { 
       id: 'campaigns', 
       label: t.blog.submenu.campaigns, 
       icon: CalendarClock, 
@@ -270,7 +276,7 @@ export default function Blog() {
       </div>
 
       {/* Trial Limit Banner for Articles */}
-      {activeSubtab === 'blogging' && limits?.limitReached.articles && (
+      {activeSubtab === 'create-article' && limits?.limitReached.articles && (
         <TrialLimitBanner
           resourceType="articles"
           usage={limits.usage.articles_count || 0}
@@ -339,12 +345,9 @@ export default function Blog() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Button size="lg" onClick={() => {
-                setActiveSubtab('blogging');
-                setSearchParams({ subtab: 'blogging', openWizard: 'true' });
-              }} className="w-full sm:w-auto">
+              <Button size="lg" onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Démarrer l'assistant
+                {t.blog.hero.createArticle.startCreating}
               </Button>
             </div>
           </div>
