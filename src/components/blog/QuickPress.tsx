@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Zap } from 'lucide-react';
@@ -8,9 +9,20 @@ import { ArticleWizard } from './ArticleWizard';
 
 export function QuickPress() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [collections, setCollections] = useState<any[]>([]);
   const [storeId, setStoreId] = useState<string>('');
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  // Auto-open wizard if URL parameter is present
+  useEffect(() => {
+    if (searchParams.get('openWizard') === 'true') {
+      setWizardOpen(true);
+      // Remove the parameter from URL
+      searchParams.delete('openWizard');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     loadStoreId();
