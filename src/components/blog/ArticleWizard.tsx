@@ -34,15 +34,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 
 interface ArticleWizardProps {
   open: boolean;
@@ -110,33 +101,9 @@ export function ArticleWizard({
   const [preview, setPreview] = useState<string>('');
   const [articleId, setArticleId] = useState<string>('');
   const [productSearch, setProductSearch] = useState('');
-  const [suggestedTitle, setSuggestedTitle] = useState<string>('');
-  const [generatingKeywords, setGeneratingKeywords] = useState(false);
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 6;
-
-  // Filter products based on search
-  const filteredProducts = products.filter(product => 
-    product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-    product.category?.toLowerCase().includes(productSearch.toLowerCase())
-  );
-
-  // Pagination for products
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedProducts,
-    goToPage,
-    nextPage,
-    previousPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = usePaginatedSeo({
-    items: filteredProducts,
-    itemsPerPage: 20,
-    cacheKey: 'article-wizard-products'
-  });
 
   // Load products when collection changes
   useEffect(() => {
@@ -165,7 +132,8 @@ export function ArticleWizard({
         .from('shopify_products')
         .select('id, title, price, image_url, category, handle, tags, description')
         .eq('store_id', storeId)
-        .contains('collection_ids', [selectedCollection]);
+        .contains('collection_ids', [selectedCollection])
+        .limit(30);
 
       console.log('Products loaded:', { count: data?.length, error });
 
@@ -180,38 +148,58 @@ export function ArticleWizard({
   const generateKeywords = async () => {
     if (selectedProducts.length === 0) return;
     
-    setGeneratingKeywords(true);
     try {
-      const collectionName = collections.find(c => c.id === selectedCollection)?.title || '';
+      const { data: products } = await supabase
+        .from('shopify_products')
+        .select('title, tags, category, description')
+        .in('id', selectedProducts);
+
+      const shortPhrases = new Set<string>();
+      const longPhrases = new Set<string>();
       
-      const { data, error } = await supabase.functions.invoke('generate-article-keywords', {
-        body: {
-          productIds: selectedProducts,
-          collectionName
+      products?.forEach(product => {
+        // Short keywords (1-2 mots)
+        product.title?.split(' ').forEach((word: string) => {
+          if (word.length > 3) shortPhrases.add(word.toLowerCase());
+        });
+        
+        product.tags?.split(',').forEach((tag: string) => {
+          const cleaned = tag.trim().toLowerCase();
+          if (cleaned.length > 2 && cleaned.split(' ').length <= 2) {
+            shortPhrases.add(cleaned);
+          }
+        });
+        
+        if (product.category) shortPhrases.add(product.category.toLowerCase());
+        
+        // Long keywords (3-5 mots) - extraire des phrases du titre et description
+        const titleWords = product.title?.split(' ') || [];
+        for (let i = 0; i < titleWords.length - 2; i++) {
+          const phrase = titleWords.slice(i, i + 3).join(' ').toLowerCase();
+          if (phrase.length > 10) longPhrases.add(phrase);
+        }
+        
+        // Extraire des phrases de la description
+        if (product.description) {
+          const sentences = product.description.split(/[.!?]/);
+          sentences.slice(0, 3).forEach((sentence: string) => {
+            const words = sentence.trim().split(' ').filter((w: string) => w.length > 2);
+            if (words.length >= 3 && words.length <= 5) {
+              longPhrases.add(words.join(' ').toLowerCase());
+            }
+          });
         }
       });
 
-      if (error) throw error;
-
-      if (data?.success) {
-        const allKeywords = [
-          ...(data.shortKeywords || []),
-          ...(data.longKeywords || [])
-        ];
-        
-        setSuggestedKeywords(allKeywords);
-        setSuggestedTitle(data.articleTitle || '');
-        setSelectedKeywords([]);
-        
-        toast.success('Mots-clés intelligents générés avec succès');
-      } else {
-        throw new Error(data?.error || 'Failed to generate keywords');
-      }
+      const allSuggestions = [
+        ...Array.from(shortPhrases).slice(0, 10),
+        ...Array.from(longPhrases).slice(0, 10)
+      ];
+      
+      setSuggestedKeywords(allSuggestions);
+      setSelectedKeywords([]);
     } catch (error) {
       console.error('Error generating keywords:', error);
-      toast.error('Erreur lors de la génération des mots-clés');
-    } finally {
-      setGeneratingKeywords(false);
     }
   };
 
@@ -562,7 +550,7 @@ export function ArticleWizard({
                     >
                       <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
                       <p className="text-xs text-muted-foreground mb-2">
-                        {collection.products_count || 0} produit{(collection.products_count || 0) !== 1 ? 's' : ''}
+                        {collection.product_count || 0} produit{(collection.product_count || 0) !== 1 ? 's' : ''}
                       </p>
                       {selectedCollection === collection.id && (
                         <div className="flex items-center gap-2 text-primary text-sm mt-2">
@@ -643,12 +631,22 @@ export function ArticleWizard({
 
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
-              {`${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`}
+              {(() => {
+                const filteredProducts = products.filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                );
+                return `${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`;
+              })()}
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
+                const filteredProducts = products.filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                );
                 const filteredIds = filteredProducts.map(p => p.id);
                 const allFilteredSelected = filteredIds.every(id => selectedProducts.includes(id));
                 
@@ -665,7 +663,11 @@ export function ArticleWizard({
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
             <div className="space-y-3">
-              {paginatedProducts
+              {products
+                .filter(product => 
+                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                )
                 .map((product) => (
                 <div
                   key={product.id}
@@ -698,39 +700,9 @@ export function ArticleWizard({
                     </div>
                   )}
                 </div>
-                ))}
+              ))}
             </div>
           </ScrollArea>
-
-          {totalPages > 1 && (
-            <Pagination className="mt-4">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={previousPage}
-                    className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => goToPage(page)}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={nextPage}
-                    className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
 
         </Card>
       )}
@@ -749,83 +721,59 @@ export function ArticleWizard({
           </div>
 
           <div className="space-y-6 mb-6">
-            {/* Titre suggéré */}
-            {suggestedTitle && (
-              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                <Label className="text-sm font-semibold text-primary mb-2 block flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Titre d'article suggéré par l'IA
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-base font-semibold">
+                  Mots-clés suggérés ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
                 </Label>
-                <p className="text-lg font-serif font-bold">{suggestedTitle}</p>
+                <Button onClick={selectAllKeywords} variant="outline" size="sm">
+                  Tout sélectionner
+                </Button>
               </div>
-            )}
-
-            {/* Loading state */}
-            {generatingKeywords && (
-              <div className="flex items-center justify-center gap-3 py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-muted-foreground">Génération de mots-clés intelligents SEO...</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                Cliquez sur un mot-clé pour l'ajouter
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedKeywords
+                  .filter(keyword => !selectedKeywords.includes(keyword))
+                  .map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="outline"
+                    className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform"
+                    onClick={() => toggleKeyword(keyword)}
+                  >
+                    {keyword}
+                  </Badge>
+                ))}
               </div>
-            )}
+            </div>
 
-            {/* Keywords section */}
-            {!generatingKeywords && (
-              <>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-base font-semibold">
-                      Mots-clés suggérés ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
-                    </Label>
-                    <Button onClick={selectAllKeywords} variant="outline" size="sm">
-                      Tout sélectionner
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Mots-clés optimisés SEO générés par l'IA - Cliquez pour ajouter
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedKeywords
-                      .filter(keyword => !selectedKeywords.includes(keyword))
-                      .map((keyword) => (
-                      <Badge
-                        key={keyword}
-                        variant="outline"
-                        className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform"
-                        onClick={() => toggleKeyword(keyword)}
-                      >
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
+            <div>
+              <Label className="text-base font-semibold mb-3 block">Vos mots-clés personnalisés</Label>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addCustomKeyword()}
+                  placeholder="Ex: décoration moderne, tendance 2024..."
+                  className="flex-1"
+                />
+                <Button onClick={addCustomKeyword} variant="outline">Ajouter</Button>
+              </div>
+              {(selectedKeywords.length > 0 || customKeywords.length > 0) && (
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                  {selectedKeywords.map((kw) => (
+                    <Badge key={kw} variant="default" className="text-sm py-1.5 px-3">{kw}</Badge>
+                  ))}
+                  {customKeywords.map((kw) => (
+                    <Badge key={kw} variant="secondary" className="cursor-pointer text-sm py-1.5 px-3 hover:bg-destructive/10" onClick={() => removeCustomKeyword(kw)}>
+                      {kw} ×
+                    </Badge>
+                  ))}
                 </div>
-
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">Vos mots-clés personnalisés</Label>
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      value={keywordInput}
-                      onChange={(e) => setKeywordInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addCustomKeyword()}
-                      placeholder="Ex: décoration moderne, tendance 2024..."
-                      className="flex-1"
-                    />
-                    <Button onClick={addCustomKeyword} variant="outline">Ajouter</Button>
-                  </div>
-                  {(selectedKeywords.length > 0 || customKeywords.length > 0) && (
-                    <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
-                      {selectedKeywords.map((kw) => (
-                        <Badge key={kw} variant="default" className="text-sm py-1.5 px-3">{kw}</Badge>
-                      ))}
-                      {customKeywords.map((kw) => (
-                        <Badge key={kw} variant="secondary" className="cursor-pointer text-sm py-1.5 px-3 hover:bg-destructive/10" onClick={() => removeCustomKeyword(kw)}>
-                          {kw} ×
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
 
         </Card>

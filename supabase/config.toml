@@ -82,9 +82,6 @@ verify_jwt = true
 [functions.generate-blog-article]
 verify_jwt = true
 
-[functions.generate-article-keywords]
-verify_jwt = true
-
 [functions.sync-blog-to-shopify]
 verify_jwt = true
 

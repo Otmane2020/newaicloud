@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Zap } from 'lucide-react';
@@ -12,13 +11,6 @@ export function QuickPress() {
   const [collections, setCollections] = useState<any[]>([]);
   const [storeId, setStoreId] = useState<string>('');
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [searchParams] = useSearchParams();
-
-  useEffect(() => {
-    if (searchParams.get('openWizard') === 'true') {
-      setWizardOpen(true);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     loadStoreId();
@@ -55,7 +47,7 @@ export function QuickPress() {
       
       let query = supabase
         .from('shopify_collections')
-        .select('id, title, products_count')
+        .select('id, title, product_count')
         .eq('user_id', user.id);
       
       // Filter by store if available
