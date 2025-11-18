@@ -77,12 +77,18 @@ const LAYOUTS = [
 ];
 
 const COLOR_PALETTES = [
-  { id: 'neutral', name: 'Neutre Pro', colors: ['#1a1a1a', '#f8f9fa', '#6366f1'] },
-  { id: 'corporate', name: 'Corporate', colors: ['#0f172a', '#f1f5f9', '#3b82f6'] },
-  { id: 'luxury', name: 'Luxe', colors: ['#18181b', '#fafaf9', '#d4af37'] },
-  { id: 'minimal', name: 'Minimaliste', colors: ['#171717', '#fafafa', '#262626'] },
-  { id: 'tech', name: 'Tech', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
+  { id: 'modern', name: 'Moderne', colors: ['#1a1a1a', '#4a4a4a', '#808080', '#c0c0c0', '#e8e8e8'] },
+  { id: 'earth', name: 'Terreux', colors: ['#3d2817', '#6b4423', '#9c8577', '#c9b5a0', '#e8d9cc'] },
+  { id: 'green', name: 'Frais Vert', colors: ['#1b5e20', '#43a047', '#66bb6a', '#81c784', '#a5d6a7'] },
+  { id: 'blue', name: 'Professionnel Bleu', colors: ['#003d82', '#0066cc', '#3399ff', '#66b3ff', '#99ccff'] },
+  { id: 'gold', name: 'Luxe Or', colors: ['#1a1a1a', '#4a4a4a', '#c5a647', '#d4af37', '#f0e68c'] },
+  { id: 'vibrant', name: 'Vibrant', colors: ['#c62828', '#e53935', '#ef5350', '#e57373', '#ef9a9a'] },
   { id: 'custom', name: 'Personnalisé', colors: ['#000000', '#ffffff', '#0066cc'] },
+];
+
+const ARTICLE_LENGTHS = [
+  { value: 700, label: '700 mots', description: 'Article court et concis' },
+  { value: 2000, label: '2000 mots', description: 'Article détaillé et complet' },
 ];
 
 const EDITORIAL_ANGLES = [
@@ -144,10 +150,11 @@ export function ArticleWizard({
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [selectedLayout, setSelectedLayout] = useState('editorial');
-  const [selectedPalette, setSelectedPalette] = useState('neutral');
+  const [selectedPalette, setSelectedPalette] = useState('modern');
   const [customColors, setCustomColors] = useState({ primary: '#000000', secondary: '#ffffff', accent: '#0066cc' });
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [articleLength, setArticleLength] = useState(2000);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
@@ -361,7 +368,7 @@ export function ArticleWizard({
           collectionIds: [selectedCollection],
           keywords: allKeywords,
           category: collectionTitle,
-          articleLength: 2500,
+          articleLength: articleLength,
           layout: selectedLayout,
           colorPalette: selectedPalette,
           customColors: selectedPalette === 'custom' ? customColors : undefined,
@@ -712,7 +719,7 @@ export function ArticleWizard({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             {COLOR_PALETTES.map((palette) => (
               <button
                 key={palette.id}
@@ -723,18 +730,50 @@ export function ArticleWizard({
                     : 'border-border hover:border-primary/50 hover:shadow-md'
                 }`}
               >
-                <div className="flex gap-2 mb-3 justify-center">
-                  {palette.colors.map((color, i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-md shadow-sm"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+                <div className="flex gap-1.5 mb-3 justify-center">
+                  {palette.colors.map((color, i) => {
+                    const isLight = color.toLowerCase() === '#ffffff' || color.toLowerCase() === '#fff' || 
+                                   color.toLowerCase() === '#fafafa' || color.toLowerCase() === '#e8e8e8' ||
+                                   color.toLowerCase() === '#f8f9fa' || color.toLowerCase() === '#c0c0c0' ||
+                                   color.toLowerCase() === '#e8d9cc' || color.toLowerCase() === '#a5d6a7' ||
+                                   color.toLowerCase() === '#99ccff' || color.toLowerCase() === '#f0e68c' ||
+                                   color.toLowerCase() === '#ef9a9a';
+                    return (
+                      <div
+                        key={i}
+                        className={`w-7 h-7 rounded-md shadow-sm ${isLight ? 'border border-gray-300' : ''}`}
+                        style={{ backgroundColor: color }}
+                      />
+                    );
+                  })}
                 </div>
-                <p className="text-sm font-semibold text-center">{palette.name}</p>
+                <p className="text-xs font-medium text-center">{palette.name}</p>
               </button>
             ))}
+          </div>
+
+          {/* Article Length Selection */}
+          <div className="mb-6">
+            <Label className="text-base font-semibold mb-3 block">Longueur de l'article</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {ARTICLE_LENGTHS.map((length) => (
+                <button
+                  key={length.value}
+                  onClick={() => setArticleLength(length.value)}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    articleLength === length.value
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold">{length.label}</span>
+                    {articleLength === length.value && <Check className="w-4 h-4 text-primary" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{length.description}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           {selectedPalette === 'custom' && (

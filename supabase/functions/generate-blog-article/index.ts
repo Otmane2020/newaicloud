@@ -194,9 +194,9 @@ async function generateArticle(
       }
     }
 
-    // Étape 3: Préparer le contexte produits pour l'IA
+    // Étape 3: Préparer le contexte produits pour l'IA avec analyse d'images Gemini Vision
     const productsContext = products.length > 0
-      ? products.map((p, i) => {
+      ? await Promise.all(products.map(async (p, i) => {
           const promo = p.compare_at_price && p.compare_at_price > p.price
             ? `PROMO -${Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100)}%`
             : "";
@@ -207,14 +207,66 @@ async function generateArticle(
           
           // ✅ Gérer les images : product_images OU image_url
           let images = "";
-          if (p.product_images && p.product_images.length > 0) {
-            images = p.product_images
+          let imageAnalysis = "";
+          const productImages = p.product_images && p.product_images.length > 0 
+            ? p.product_images 
+            : p.image_url ? [{ src: p.image_url, alt_text: p.title }] : [];
+          
+          if (productImages.length > 0) {
+            // Analyser les images avec Gemini Vision
+            try {
+              console.log(`📸 Analyzing images for product: ${p.title}`);
+              const imageAnalysisResults = await Promise.all(
+                productImages.slice(0, 3).map(async (img: any, idx: number) => {
+                  try {
+                    const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${apiKey}`,
+                      },
+                      body: JSON.stringify({
+                        model: "google/gemini-2.5-flash",
+                        messages: [
+                          {
+                            role: "user",
+                            content: [
+                              {
+                                type: "text",
+                                text: `Analyse cette image de produit et extrais les informations visuelles détaillées: matériaux visibles, couleurs, finitions, dimensions apparentes, style, contexte d'utilisation. Réponds en JSON avec: {materials: string[], colors: string[], style: string, details: string, dimensions_visible: boolean}`
+                              },
+                              {
+                                type: "image_url",
+                                image_url: { url: img.src }
+                              }
+                            ]
+                          }
+                        ]
+                      }),
+                    });
+
+                    if (visionResponse.ok) {
+                      const visionData = await visionResponse.json();
+                      const analysis = visionData.choices?.[0]?.message?.content || "";
+                      return `Image ${idx + 1} Analysis: ${analysis}`;
+                    }
+                  } catch (err) {
+                    console.warn(`⚠️ Vision analysis failed for image ${idx}:`, err);
+                  }
+                  return "";
+                })
+              );
+              
+              imageAnalysis = imageAnalysisResults.filter(Boolean).join("\n");
+            } catch (err) {
+              console.warn("⚠️ Could not analyze images:", err);
+            }
+
+            images = productImages
               .map((img: any, idx: number) => 
                 `  Image ${idx + 1}: ${img.src}\n  Alt text: ${img.alt_text || 'Image produit'}`
               )
               .join("\n");
-          } else if (p.image_url) {
-            images = `  Image 1: ${p.image_url}\n  Alt text: ${p.title}`;
           } else {
             images = "⚠️ Aucune image disponible pour ce produit";
           }
@@ -231,11 +283,12 @@ async function generateArticle(
 - Catégorie: ${p.category || p.product_type || "Non spécifiée"}
 **Images**:
 ${images}
+${imageAnalysis ? `\n**Analyse Visuelle (Gemini Vision)**:\n${imageAnalysis}` : ''}
 `.trim();
-        }).join("\n\n")
+        })).then(results => results.join("\n\n"))
       : "Aucun produit spécifique disponible - générer un article informatif général";
 
-    console.log("📦 Products context prepared with", products.length, "products");
+    console.log("📦 Products context prepared with", products.length, "products and vision analysis");
 
     // Étape 4: Générer un titre intelligent avec Lovable AI
     let articleTitle = title;
@@ -402,17 +455,18 @@ Aucun texte, juste une représentation visuelle du sujet.`;
 
     // Color palette styles
     const paletteStyles: Record<string, string> = {
-      neutral: `--color-primary: #1a1a1a; --color-secondary: #f8f9fa; --color-accent: #6366f1;`,
-      corporate: `--color-primary: #0f172a; --color-secondary: #f1f5f9; --color-accent: #3b82f6;`,
-      luxury: `--color-primary: #18181b; --color-secondary: #fafaf9; --color-accent: #d4af37;`,
-      minimal: `--color-primary: #171717; --color-secondary: #fafafa; --color-accent: #262626;`,
-      tech: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`,
+      modern: `--color-primary: #1a1a1a; --color-secondary: #4a4a4a; --color-tertiary: #808080; --color-border: #c0c0c0; --color-bg: #e8e8e8;`,
+      earth: `--color-primary: #3d2817; --color-secondary: #6b4423; --color-tertiary: #9c8577; --color-border: #c9b5a0; --color-bg: #e8d9cc;`,
+      green: `--color-primary: #1b5e20; --color-secondary: #43a047; --color-tertiary: #66bb6a; --color-border: #81c784; --color-bg: #a5d6a7;`,
+      blue: `--color-primary: #003d82; --color-secondary: #0066cc; --color-tertiary: #3399ff; --color-border: #66b3ff; --color-bg: #99ccff;`,
+      gold: `--color-primary: #1a1a1a; --color-secondary: #4a4a4a; --color-tertiary: #c5a647; --color-border: #d4af37; --color-bg: #f0e68c;`,
+      vibrant: `--color-primary: #c62828; --color-secondary: #e53935; --color-tertiary: #ef5350; --color-border: #e57373; --color-bg: #ef9a9a;`,
       custom: `--color-primary: #000000; --color-secondary: #ffffff; --color-accent: #0066cc;` // Sera remplacé par customColors
     };
 
     // Si des couleurs personnalisées sont fournies, les utiliser
     const { customColors } = requestData;
-    let finalPaletteStyle = paletteStyles[colorPalette] || paletteStyles.neutral;
+    let finalPaletteStyle = paletteStyles[colorPalette] || paletteStyles.modern;
     
     if (colorPalette === 'custom' && customColors) {
       finalPaletteStyle = `--color-primary: ${customColors.primary}; --color-secondary: ${customColors.secondary}; --color-accent: ${customColors.accent};`;
