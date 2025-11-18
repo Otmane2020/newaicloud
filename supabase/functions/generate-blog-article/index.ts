@@ -66,6 +66,7 @@ async function generateArticle(
       articleAngle,
       layout = "editorial",
       colorPalette = "classic",
+      editorialAngle = "guide",
       generateFeaturedImage = false
     } = requestData;
 
@@ -226,8 +227,27 @@ ${images}
 
     console.log("📦 Products context prepared");
 
-    // Définir le titre de l'article
-    const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
+    // Définir le titre de l'article basé sur l'angle éditorial
+    let articleTitle = title;
+    if (!articleTitle) {
+      const mainKeyword = keywords[0] || category;
+      switch (editorialAngle) {
+        case 'guide':
+          articleTitle = `Guide Complet : ${mainKeyword}`;
+          break;
+        case 'comparatif':
+          articleTitle = `Comparatif ${mainKeyword} : ${products.length} ${category} Analysés`;
+          break;
+        case 'avis':
+          articleTitle = `Notre Avis sur les ${mainKeyword} : Test Complet`;
+          break;
+        case 'tutoriel':
+          articleTitle = `Comment Choisir ${mainKeyword} : Guide Pratique`;
+          break;
+        default:
+          articleTitle = `Guide ${mainKeyword}`;
+      }
+    }
 
     // Étape 4: Générer l'image de couverture avec Lovable AI
     let featuredImage = "";
@@ -320,8 +340,49 @@ Aucun texte, juste une représentation visuelle du sujet.`;
 - Catégorie: ${category}
 - Mots-clés: ${keywords.join(", ")}
 - Public cible: ${targetAudience || "Grand public"}
-- Angle: ${articleAngle || "Guide d'achat"}
+- Angle éditorial: ${editorialAngle}
 - Layout: ${layout}
+
+**ANGLE ÉDITORIAL "${editorialAngle}" - DIRECTIVES SPÉCIFIQUES**:
+
+${editorialAngle === 'guide' ? `
+📚 **GUIDE COMPLET**:
+- Structure: Introduction claire → Sections détaillées → Guide d'achat étape par étape → Conseils d'utilisation → FAQ
+- Ton: Informatif, pédagogique, complet
+- Focus: Expliquer en profondeur, guider le lecteur, donner des conseils d'expert
+- Inclure: Tableau comparatif des caractéristiques, conseils d'entretien, astuces pratiques
+- Longueur: Articles détaillés avec beaucoup d'informations pratiques
+` : ''}
+
+${editorialAngle === 'comparatif' ? `
+🤝 **COMPARATIF PRODUITS**:
+- Structure: Introduction → Méthodologie → Comparaison détaillée produit par produit → Tableau récapitulatif → Verdict final
+- Ton: Objectif, analytique, comparatif
+- Focus: Comparer les caractéristiques, avantages et inconvénients de chaque produit
+- Inclure: Tableau comparatif avec critères (prix, qualité, fonctionnalités, rapport qualité/prix)
+- Format: Listes à puces pour avantages/inconvénients, notation si pertinent
+- Verdict: Recommandation claire pour différents profils d'acheteurs
+` : ''}
+
+${editorialAngle === 'avis' ? `
+⭐ **TESTS ET AVIS**:
+- Structure: Présentation → Test détaillé de chaque produit → Notre avis → Points forts/faibles → Note finale
+- Ton: Critique constructive, honnête, basé sur l'expérience
+- Focus: Donner un avis authentique, partager les impressions d'utilisation
+- Inclure: Points forts (✅) et points faibles (❌) clairement séparés
+- Style: Comme un testeur professionnel qui partage son expérience réelle
+- Conclusion: Recommandation finale claire et verdict sur le rapport qualité/prix
+` : ''}
+
+${editorialAngle === 'tutoriel' ? `
+🎓 **GUIDE PRATIQUE (TUTORIEL)**:
+- Structure: Introduction → Prérequis/Matériel nécessaire → Étapes détaillées → Astuces pro → Conclusion
+- Ton: Pédagogique, étape par étape, encourageant
+- Focus: Guider l'action concrète, enseigner comment faire
+- Format: Étapes numérotées (Étape 1, Étape 2...) avec instructions claires
+- Inclure: Conseils pratiques (💡), Attention/Précautions (⚠️), Astuces de pro (✨)
+- Illustrations: Mentionner les produits nécessaires pour réaliser le tutoriel
+` : ''}
 
 **PRODUITS DISPONIBLES (${products.length} produits)**:
 ${productsContext}
