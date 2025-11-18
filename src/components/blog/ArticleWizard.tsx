@@ -165,8 +165,7 @@ export function ArticleWizard({
         .from('shopify_products')
         .select('id, title, price, image_url, category, handle, tags, description')
         .eq('store_id', storeId)
-        .contains('collection_ids', [selectedCollection])
-        .limit(30);
+        .contains('collection_ids', [selectedCollection]);
 
       console.log('Products loaded:', { count: data?.length, error });
 
