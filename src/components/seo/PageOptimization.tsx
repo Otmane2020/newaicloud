@@ -1058,7 +1058,8 @@ export function PageOptimization() {
               </Select>
             </div>
 
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
             <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
                 <TableHead className="w-12">
@@ -1210,6 +1211,7 @@ export function PageOptimization() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </div>
           
           {/* Pagination */}

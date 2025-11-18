@@ -1876,7 +1876,7 @@ export default function ProductTitleDescription() {
         {/* Products Table/Grid */}
         <Card className="overflow-hidden">
           {viewMode === 'table' ? (
-            <ScrollArea className="h-[600px] scroll-area-viewport">
+            <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
               <TooltipProvider>
                 <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
@@ -2207,7 +2207,7 @@ export default function ProductTitleDescription() {
                   {t.contentOptimization.empty.title}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           ) : (
             /* Grid View */
             <div className="p-4">

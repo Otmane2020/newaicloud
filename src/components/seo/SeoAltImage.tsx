@@ -1230,7 +1230,8 @@ export function SeoAltImage() {
         </div>
       ) : (
         <Card className="overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-muted/50 border-b">
               <tr>
                 <th className="px-4 py-3 text-left w-12">
@@ -1315,6 +1316,7 @@ export function SeoAltImage() {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
 
