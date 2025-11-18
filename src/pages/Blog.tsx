@@ -42,7 +42,7 @@ export default function Blog() {
   useEffect(() => {
     const subtab = searchParams.get('subtab');
     
-    if (subtab && ['articles', 'create-article', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings', 'blogging'].includes(subtab)) {
+    if (subtab && ['articles', 'campaigns', 'monitoring', 'opportunities', 'netlinking', 'settings', 'blogging'].includes(subtab)) {
       setActiveSubtab(subtab);
     }
   }, [searchParams]);
@@ -224,12 +224,6 @@ export default function Blog() {
       description: t.blog.submenu.bloggingDesc 
     },
     { 
-      id: 'create-article', 
-      label: t.blog.submenu.aiArticles,
-      icon: Sparkles, 
-      description: t.blog.submenu.aiArticlesDesc 
-    },
-    { 
       id: 'campaigns', 
       label: t.blog.submenu.campaigns, 
       icon: CalendarClock, 
@@ -276,7 +270,7 @@ export default function Blog() {
       </div>
 
       {/* Trial Limit Banner for Articles */}
-      {activeSubtab === 'create-article' && limits?.limitReached.articles && (
+      {activeSubtab === 'blogging' && limits?.limitReached.articles && (
         <TrialLimitBanner
           resourceType="articles"
           usage={limits.usage.articles_count || 0}
