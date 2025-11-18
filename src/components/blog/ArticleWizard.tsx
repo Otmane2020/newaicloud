@@ -1014,7 +1014,7 @@ export function ArticleWizard({
           )}
 
           {preview && !generating && (
-            <div className="fixed inset-8 bg-background z-50 rounded-xl shadow-2xl border-2 border-primary/20 flex flex-col">
+            <Card className="p-0 overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b bg-card">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -1025,25 +1025,17 @@ export function ArticleWizard({
                     <p className="text-muted-foreground">Article généré avec succès</p>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setPreview("")}
-                  className="h-10 w-10"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
               </div>
 
-              <ScrollArea className="flex-1 p-8 bg-background">
+              <ScrollArea className="h-[calc(100vh-400px)] p-8 bg-muted/30">
                 <div className="max-w-5xl mx-auto">
                   <div 
-                    className="prose prose-xl dark:prose-invert max-w-none font-serif bg-card p-8 rounded-lg shadow-sm"
+                    className="prose prose-xl dark:prose-invert max-w-none font-serif bg-card p-12 rounded-lg shadow-lg"
                     dangerouslySetInnerHTML={{ __html: preview }}
                   />
                 </div>
               </ScrollArea>
-            </div>
+            </Card>
           )}
           </div>
         )}
