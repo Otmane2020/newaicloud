@@ -101,16 +101,20 @@ export function ArticleWizard({
   const [preview, setPreview] = useState<string>('');
   const [articleId, setArticleId] = useState<string>('');
   const [productSearch, setProductSearch] = useState('');
+  const [productPage, setProductPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const PRODUCTS_PER_PAGE = 30;
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 6;
 
   // Load products when collection changes
   useEffect(() => {
-    if (selectedCollection && open) {
-      loadProducts();
+    if (selectedCollection && open && storeId) {
+      setProductPage(1);
+      loadProducts(1);
     }
-  }, [selectedCollection, open]);
+  }, [selectedCollection, open, storeId]);
 
   // Generate keywords when products are selected
   useEffect(() => {
@@ -119,29 +123,52 @@ export function ArticleWizard({
     }
   }, [selectedProducts]);
 
-  const loadProducts = async () => {
+  const loadProducts = async (page: number = 1) => {
     if (!selectedCollection || !storeId) {
       console.log('Cannot load products: missing collection or store_id', { selectedCollection, storeId });
       return;
     }
     
     try {
-      console.log('Loading products for collection:', selectedCollection, 'store:', storeId);
+      console.log('Loading products for collection:', selectedCollection, 'store:', storeId, 'page:', page);
       
+      const from = (page - 1) * PRODUCTS_PER_PAGE;
+      const to = from + PRODUCTS_PER_PAGE - 1;
+      
+      // Get total count
+      const { count } = await supabase
+        .from('shopify_products')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .contains('collection_ids', [selectedCollection]);
+      
+      setTotalProducts(count || 0);
+      
+      // Get products for current page
       const { data, error } = await supabase
         .from('shopify_products')
         .select('id, title, price, image_url, category, handle, tags, description')
         .eq('store_id', storeId)
         .contains('collection_ids', [selectedCollection])
-        .limit(30);
+        .range(from, to)
+        .order('title');
 
-      console.log('Products loaded:', { count: data?.length, error });
+      console.log('Products loaded:', { count: data?.length, total: count, error });
 
       if (error) throw error;
-      setProducts(data || []);
-      setSelectedProducts([]);
+      
+      // Si on est en page 1, remplacer, sinon ajouter (infinite scroll)
+      if (page === 1) {
+        setProducts(data || []);
+        setSelectedProducts([]);
+      } else {
+        setProducts(prev => [...prev, ...(data || [])]);
+      }
+      
+      setProductPage(page);
     } catch (error) {
       console.error('Error loading products:', error);
+      toast.error('Erreur lors du chargement des produits');
     }
   };
 
@@ -703,6 +730,18 @@ export function ArticleWizard({
               ))}
             </div>
           </ScrollArea>
+
+          {/* Bouton Charger plus */}
+          {products.length < totalProducts && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={() => loadProducts(productPage + 1)}
+                variant="outline"
+              >
+                Charger plus de produits ({products.length}/{totalProducts})
+              </Button>
+            </div>
+          )}
 
         </Card>
       )}
