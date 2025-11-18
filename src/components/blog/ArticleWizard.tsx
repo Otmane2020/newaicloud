@@ -34,7 +34,9 @@ import {
   BookOpen,
   Scale,
   Star,
-  GraduationCap
+  GraduationCap,
+  ExternalLink,
+  Upload
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -160,6 +162,8 @@ export function ArticleWizard({
   const [currentStep, setCurrentStep] = useState('');
   const [preview, setPreview] = useState<string>('');
   const [articleId, setArticleId] = useState<string>('');
+  const [syncedToShopify, setSyncedToShopify] = useState(false);
+  const [shopifyArticleUrl, setShopifyArticleUrl] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState('');
   const [productPage, setProductPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -416,15 +420,28 @@ export function ArticleWizard({
   };
 
   const publishToShopify = async () => {
-    if (!articleId) return;
+    if (!articleId || !storeId) return;
 
     try {
-      const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-        body: { articleId }
+      const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { 
+          articleId,
+          shopify_connection_id: storeId
+        }
       });
 
       if (error) throw error;
+
+      setSyncedToShopify(true);
+      if (data?.articleUrl) {
+        setShopifyArticleUrl(data.articleUrl);
+      }
+
       toast.success('Article publié sur Shopify!');
+
+      if (onArticleCreated) {
+        onArticleCreated();
+      }
     } catch (error: any) {
       console.error('Error publishing:', error);
       toast.error('Erreur lors de la publication');
