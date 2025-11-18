@@ -227,25 +227,93 @@ ${images}
 
     console.log("📦 Products context prepared");
 
-    // Définir le titre de l'article basé sur l'angle éditorial
+    // Étape 4: Générer un titre intelligent avec Lovable AI
     let articleTitle = title;
     if (!articleTitle) {
-      const mainKeyword = keywords[0] || category;
-      switch (editorialAngle) {
-        case 'guide':
-          articleTitle = `Guide Complet : ${mainKeyword}`;
-          break;
-        case 'comparatif':
-          articleTitle = `Comparatif ${mainKeyword} : ${products.length} ${category} Analysés`;
-          break;
-        case 'avis':
-          articleTitle = `Notre Avis sur les ${mainKeyword} : Test Complet`;
-          break;
-        case 'tutoriel':
-          articleTitle = `Comment Choisir ${mainKeyword} : Guide Pratique`;
-          break;
-        default:
-          articleTitle = `Guide ${mainKeyword}`;
+      try {
+        console.log("🎯 Generating intelligent title with Lovable AI...");
+        
+        const titlePrompt = `Tu es un expert en rédaction de titres SEO accrocheurs pour des articles de blog e-commerce.
+
+**CONTEXTE**:
+- Boutique: ${storeName}
+- Catégorie: ${category}
+- Angle éditorial: ${editorialAngle}
+- Mots-clés principaux: ${keywords.slice(0, 3).join(", ")}
+- Nombre de produits: ${products.length}
+
+**DIRECTIVES**:
+1. Crée UN SEUL titre d'article optimisé SEO et accrocheur
+2. Le titre doit être entre 50-70 caractères
+3. Intègre naturellement le mot-clé principal
+4. Adapte le ton selon l'angle éditorial:
+   - guide: "Guide Complet" ou "Guide Pratique"
+   - comparatif: "Comparatif" ou "Top X"
+   - avis: "Notre Avis" ou "Test Complet"
+   - tutoriel: "Comment" ou "Guide Pas à Pas"
+5. Rends-le attractif et cliquable
+6. Utilise des chiffres si pertinent (ex: "Top 5", "2024")
+
+**EXEMPLES DE BONS TITRES**:
+- "Guide Complet des Canapés Scandinaves 2024"
+- "Comparatif: Les 5 Meilleures Tables Basses Design"
+- "Notre Avis sur les Lampes LED : Test Complet"
+- "Comment Choisir sa Chaise de Bureau Ergonomique"
+
+Réponds UNIQUEMENT avec le titre, sans guillemets ni formatage.`;
+
+        const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "user",
+                content: titlePrompt
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 100
+          }),
+        });
+
+        if (titleResponse.ok) {
+          const titleData = await titleResponse.json();
+          const generatedTitle = titleData.choices?.[0]?.message?.content?.trim();
+          
+          if (generatedTitle) {
+            articleTitle = generatedTitle;
+            console.log("✅ Intelligent title generated:", articleTitle);
+          } else {
+            throw new Error("No title in response");
+          }
+        } else {
+          throw new Error(`Title generation failed: ${titleResponse.status}`);
+        }
+      } catch (err) {
+        console.warn("⚠️ Failed to generate AI title, using fallback:", err);
+        // Fallback: titre basique si l'IA échoue
+        const mainKeyword = keywords[0] || category;
+        switch (editorialAngle) {
+          case 'guide':
+            articleTitle = `Guide Complet : ${mainKeyword}`;
+            break;
+          case 'comparatif':
+            articleTitle = `Comparatif ${mainKeyword} : ${products.length} ${category} Analysés`;
+            break;
+          case 'avis':
+            articleTitle = `Notre Avis sur les ${mainKeyword} : Test Complet`;
+            break;
+          case 'tutoriel':
+            articleTitle = `Comment Choisir ${mainKeyword} : Guide Pratique`;
+            break;
+          default:
+            articleTitle = `Guide ${mainKeyword}`;
+        }
       }
     }
 
@@ -301,7 +369,7 @@ Aucun texte, juste une représentation visuelle du sujet.`;
       }
     }
 
-    // Étape 5: Générer le contenu HTML avec Gemini
+    // Étape 5: Générer le contenu HTML avec Lovable AI
     
     // Layout-specific styles
     const layoutStyles: Record<string, string> = {
@@ -328,7 +396,10 @@ Aucun texte, juste une représentation visuelle du sujet.`;
       warm: `--color-primary: #8b4513; --color-secondary: #faf0e6; --color-accent: #d2691e;`,
       cool: `--color-primary: #2c3e50; --color-secondary: #ecf0f1; --color-accent: #3498db;`,
       elegant: `--color-primary: #2d2d2d; --color-secondary: #f5f5f5; --color-accent: #c9a961;`,
-      modern: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`
+      modern: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`,
+      sunset: `--color-primary: #ff6b6b; --color-secondary: #ffe66d; --color-accent: #4ecdc4;`,
+      forest: `--color-primary: #2d5016; --color-secondary: #8fbc8f; --color-accent: #f0e68c;`,
+      ocean: `--color-primary: #0d3b66; --color-secondary: #faf0ca; --color-accent: #ee964b;`
     };
     
     const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce, spécialisé dans le style New York Times.
