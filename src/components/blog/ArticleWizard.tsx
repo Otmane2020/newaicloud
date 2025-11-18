@@ -435,40 +435,42 @@ export function ArticleWizard({
 
         <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-6 pb-6">
-          {/* Progress Indicator */}
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="flex items-center justify-between mb-4">
-              {[
-                { num: 1, label: 'Angle' },
-                { num: 2, label: 'Layout' },
-                { num: 3, label: 'Collection' },
-                { num: 4, label: 'Couleurs' },
-                { num: 5, label: 'Produits' },
-                { num: 6, label: 'Mots-clés' },
-                { num: 7, label: 'Génération' }
-              ].map((s, idx) => (
-                <div key={s.num} className="flex items-center">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                      step > s.num ? 'bg-primary text-primary-foreground' :
-                      step === s.num ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      {step > s.num ? <Check className="w-5 h-5" /> : s.num}
+          {/* Progress Indicator - Hidden on preview step */}
+          {step !== 7 && (
+            <div className="p-6 rounded-lg border bg-card">
+              <div className="flex items-center justify-between mb-4">
+                {[
+                  { num: 1, label: 'Angle' },
+                  { num: 2, label: 'Layout' },
+                  { num: 3, label: 'Collection' },
+                  { num: 4, label: 'Couleurs' },
+                  { num: 5, label: 'Produits' },
+                  { num: 6, label: 'Mots-clés' },
+                  { num: 7, label: 'Génération' }
+                ].map((s, idx) => (
+                  <div key={s.num} className="flex items-center">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                        step > s.num ? 'bg-primary text-primary-foreground' :
+                        step === s.num ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {step > s.num ? <Check className="w-5 h-5" /> : s.num}
+                      </div>
+                      <span className={`text-xs mt-1 ${step === s.num ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                        {s.label}
+                      </span>
                     </div>
-                    <span className={`text-xs mt-1 ${step === s.num ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                      {s.label}
-                    </span>
-                  </div>
-                  {idx < 6 && (
-                <div className={`h-1 w-8 mx-2 transition-all ${
-                  step > s.num ? 'bg-primary' : 'bg-muted'
-                }`} />
-              )}
-            </div>
-          ))}
+                    {idx < 6 && (
+                  <div className={`h-1 w-8 mx-2 transition-all ${
+                    step > s.num ? 'bg-primary' : 'bg-muted'
+                  }`} />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
           {/* Step 1: Editorial Angle Selection */}
           {step === 1 && (
@@ -1012,26 +1014,36 @@ export function ArticleWizard({
           )}
 
           {preview && !generating && (
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="fixed inset-8 bg-background z-50 rounded-xl shadow-2xl border-2 border-primary/20 flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b bg-card">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                     <Eye className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold font-serif">Aperçu de l'article</h2>
-                    <p className="text-muted-foreground">Prêt à publier</p>
+                    <p className="text-muted-foreground">Article généré avec succès</p>
                   </div>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setPreview("")}
+                  className="h-10 w-10"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
 
-              <ScrollArea className="h-[600px] w-full rounded-md border p-6">
-                <div 
-                  className="prose prose-lg dark:prose-invert max-w-none font-serif"
-                  dangerouslySetInnerHTML={{ __html: preview }}
-                />
+              <ScrollArea className="flex-1 p-8 bg-background">
+                <div className="max-w-5xl mx-auto">
+                  <div 
+                    className="prose prose-xl dark:prose-invert max-w-none font-serif bg-card p-8 rounded-lg shadow-sm"
+                    dangerouslySetInnerHTML={{ __html: preview }}
+                  />
+                </div>
               </ScrollArea>
-            </Card>
+            </div>
           )}
           </div>
         )}
