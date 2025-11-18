@@ -1995,6 +1995,7 @@ export type Database = {
           last_audit: Json | null
           seo_description: string | null
           seo_title: string | null
+          store_id: string | null
           updated_at: string
           user_id: string
         }
@@ -2004,6 +2005,7 @@ export type Database = {
           last_audit?: Json | null
           seo_description?: string | null
           seo_title?: string | null
+          store_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2013,10 +2015,19 @@ export type Database = {
           last_audit?: Json | null
           seo_description?: string | null
           seo_title?: string | null
+          store_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homepage_seo_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_jobs: {
         Row: {

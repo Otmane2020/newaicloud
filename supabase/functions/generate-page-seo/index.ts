@@ -423,6 +423,34 @@ ${baseContent}`;
       }
 
       console.log('[USAGE] Usage incremented successfully');
+    } else if (isHomepage && connection) {
+      // Save homepage SEO to database
+      console.log('[HOMEPAGE] Saving homepage SEO to database');
+      
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const { error: homepageError } = await supabaseAdmin
+        .from('homepage_seo')
+        .upsert({
+          user_id: user.id,
+          store_id: connection.id,
+          seo_title: seoData.seo_title,
+          seo_description: seoData.seo_description,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,store_id',
+          ignoreDuplicates: false
+        });
+
+      if (homepageError) {
+        console.error('[HOMEPAGE] Error saving homepage SEO:', homepageError);
+        throw homepageError;
+      }
+
+      console.log('[HOMEPAGE] Homepage SEO saved successfully');
     }
 
     return new Response(
