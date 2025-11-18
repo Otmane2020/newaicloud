@@ -97,20 +97,8 @@ export function HomePageSeo() {
         setSeoTitle(data.seo_title);
         setSeoDescription(data.seo_description);
         
-        // Save to database
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('homepage_seo')
-            .upsert({
-              user_id: user.id,
-              seo_title: data.seo_title,
-              seo_description: data.seo_description,
-            }, {
-              onConflict: 'user_id',
-              ignoreDuplicates: false
-            });
-        }
+        // Data is already saved by generate-page-seo function
+        // No need to save again here
         
         toast.success(t.seo.homepage.success.generated);
       }
@@ -130,6 +118,39 @@ export function HomePageSeo() {
 
     setSyncing(true);
     try {
+      // First, save to database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: stores } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const storeId = stores?.id;
+      if (!storeId) throw new Error('No active store found');
+
+      // Save to database before syncing
+      const { error: saveError } = await supabase
+        .from('homepage_seo')
+        .upsert({
+          user_id: user.id,
+          store_id: storeId,
+          seo_title: seoTitle,
+          seo_description: seoDescription,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,store_id',
+          ignoreDuplicates: false
+        });
+
+      if (saveError) throw saveError;
+
+      // Then sync to Shopify
       const { data, error } = await supabase.functions.invoke('sync-homepage-seo', {
         body: { 
           seoTitle,
