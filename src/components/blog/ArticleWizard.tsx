@@ -81,6 +81,9 @@ const COLOR_PALETTES = [
   { id: 'cool', name: 'Frais', colors: ['#2c3e50', '#ecf0f1', '#3498db'] },
   { id: 'elegant', name: 'Élégant', colors: ['#2d2d2d', '#f5f5f5', '#c9a961'] },
   { id: 'modern', name: 'Moderne', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
+  { id: 'sunset', name: 'Coucher de Soleil', colors: ['#ff6b6b', '#ffe66d', '#4ecdc4'] },
+  { id: 'forest', name: 'Forêt Naturelle', colors: ['#2d5016', '#8fbc8f', '#f0e68c'] },
+  { id: 'ocean', name: 'Océan Profond', colors: ['#0d3b66', '#faf0ca', '#ee964b'] },
 ];
 
 const EDITORIAL_ANGLES = [
@@ -713,7 +716,7 @@ export function ArticleWizard({
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
             {COLOR_PALETTES.map((palette) => (
               <button
                 key={palette.id}
