@@ -753,22 +753,13 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                           </p>
                         </div>
                       </td>
-                      <td className="p-3 hidden lg:table-cell" colSpan={2}>
-                        <div className="max-w-md">
-                          {(article.seo_title || article.title) && article.meta_description ? (
-                            <GoogleSearchPreview
-                              title={article.seo_title || article.title}
-                              description={article.meta_description}
-                              url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, domain)}
-                              compact={true}
-                            />
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              <X className="w-3 h-3 mr-1" />
-                              Not optimized
-                            </Badge>
-                          )}
-                        </div>
+                      <td className="p-3" colSpan={2}>
+                        <GoogleSearchPreview
+                          title={article.seo_title || article.title}
+                          description={article.meta_description || "En attente d'optimisation SEO"}
+                          url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, domain)}
+                          compact={true}
+                        />
                       </td>
                       <td className="p-3 hidden xl:table-cell">
                         {(() => {
