@@ -13,9 +13,14 @@ export function QuickPress() {
   const [wizardOpen, setWizardOpen] = useState(false);
 
   useEffect(() => {
-    loadCollections();
     loadStoreId();
   }, [user]);
+
+  useEffect(() => {
+    if (user?.id && storeId) {
+      loadCollections();
+    }
+  }, [user, storeId]);
 
   const loadStoreId = async () => {
     try {
