@@ -15,6 +15,7 @@ import { CampaignWizard } from '@/components/blog/CampaignWizard';
 import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { QuickPress } from '@/components/blog/QuickPress';
+import { ArticleWizard } from '@/components/blog/ArticleWizard';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -31,7 +32,10 @@ export default function Blog() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [storeId, setStoreId] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -54,8 +58,35 @@ export default function Blog() {
   useEffect(() => {
     if (user) {
       loadData();
+      loadStoreIdAndCollections();
     }
   }, [user]);
+
+  const loadStoreIdAndCollections = async () => {
+    try {
+      const { data: storeData } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (storeData) {
+        setStoreId(storeData.id);
+        
+        // Load collections
+        const { data: collectionsData } = await supabase
+          .from('shopify_collections')
+          .select('id, title, product_count')
+          .eq('user_id', user?.id)
+          .eq('store_id', storeData.id)
+          .order('title');
+        
+        setCollections(collectionsData || []);
+      }
+    } catch (error) {
+      console.error('Error loading store and collections:', error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -345,8 +376,7 @@ export default function Blog() {
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => {
-                setSearchParams({ subtab: 'blogging', openWizard: 'true' });
-                setActiveSubtab('blogging');
+                setWizardOpen(true);
               }} className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
                 {t.blog.hero.createArticle.startCreating}
@@ -579,8 +609,7 @@ export default function Blog() {
               <Button 
                 size="lg" 
                 onClick={() => {
-                  setSearchParams({ subtab: 'blogging', openWizard: 'true' });
-                  setActiveSubtab('blogging');
+                  setWizardOpen(true);
                 }} 
                 disabled={loading}
                 className="mt-4 sm:mt-6 w-full sm:w-auto text-lg px-8 py-6"
@@ -831,6 +860,16 @@ export default function Blog() {
         open={showCampaignWizard}
         onOpenChange={setShowCampaignWizard}
         onSuccess={loadData}
+      />
+
+      {/* Article Wizard Modal */}
+      <ArticleWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        collections={collections}
+        userId={user?.id || ''}
+        storeId={storeId}
+        onArticleCreated={loadData}
       />
     </div>
   );
