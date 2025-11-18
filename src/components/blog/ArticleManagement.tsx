@@ -125,8 +125,6 @@ export function ArticleManagement() {
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
     ? selectedStore.public_domain
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
-    ? 'example.com'
     : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
@@ -251,10 +249,10 @@ export function ArticleManagement() {
   };
 
   const getSeoScoreBadge = (score: number) => {
-    if (score >= 80) return { variant: 'default' as const, label: t.blog.management.score.excellent, color: 'bg-green-500' };
-    if (score >= 60) return { variant: 'secondary' as const, label: t.blog.management.score.good, color: 'bg-orange-500' };
-    if (score >= 40) return { variant: 'outline' as const, label: t.blog.management.score.medium, color: 'bg-orange-400' };
-    return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'bg-red-500' };
+    if (score >= 80) return { variant: 'default' as const, label: t.blog.management.score.excellent, color: 'text-green-600' };
+    if (score >= 60) return { variant: 'secondary' as const, label: t.blog.management.score.good, color: 'text-orange-600' };
+    if (score >= 40) return { variant: 'outline' as const, label: t.blog.management.score.medium, color: 'text-orange-500' };
+    return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'text-red-600' };
   };
 
 const handleOptimizeArticle = async (articleId: string) => {
@@ -1026,7 +1024,7 @@ const handleOptimizeArticle = async (articleId: string) => {
                         <GoogleSearchPreview
                           title={article.seo_title || article.title}
                           description={article.meta_description}
-                          url={buildPublicUrl(`/blogs/news/${article.handle}`, storeDomain)}
+                          url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, storeDomain)}
                           compact
                         />
                       ) : (
@@ -1036,13 +1034,35 @@ const handleOptimizeArticle = async (articleId: string) => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={scoreBadge.variant} className="whitespace-nowrap">
-                          <span className={scoreBadge.color}>{seoScore}/100</span>
-                        </Badge>
-                        {article.optimization_count && article.optimization_count > 0 && (
-                          <Sparkles className="w-3 h-3 text-primary flex-shrink-0" />
-                        )}
+                      <div className="flex flex-col items-start gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-2xl font-bold ${scoreBadge.color}`}>
+                            {Math.round(seoScore)}%
+                          </span>
+                          {article.optimization_count && article.optimization_count > 0 && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                if (!canDoAction('articles')) {
+                                  toast.error("Limite d'articles atteinte");
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
+                                handleOptimizeArticle(article.id);
+                              }}
+                              disabled={optimizing}
+                              className="h-6 w-6 p-0 hover:bg-primary/10"
+                              title="Re-optimize with AI"
+                            >
+                              <Sparkles className="w-3 h-3 text-primary" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-green-600" />
+                          <span className="text-xs text-muted-foreground">{scoreBadge.label}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
