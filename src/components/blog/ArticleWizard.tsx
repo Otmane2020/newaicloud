@@ -30,7 +30,11 @@ import {
   Grid3x3,
   Image,
   FileText,
-  LayoutGrid
+  LayoutGrid,
+  BookOpen,
+  Scale,
+  Star,
+  GraduationCap
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -79,6 +83,41 @@ const COLOR_PALETTES = [
   { id: 'modern', name: 'Moderne', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
 ];
 
+const EDITORIAL_ANGLES = [
+  {
+    id: 'guide',
+    name: 'Guide',
+    description: 'Guide complet',
+    icon: BookOpen,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50 hover:bg-blue-100'
+  },
+  {
+    id: 'comparatif',
+    name: 'Comparatif',
+    description: 'Comparaison produits',
+    icon: Scale,
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-50 hover:bg-orange-100'
+  },
+  {
+    id: 'avis',
+    name: 'Avis',
+    description: 'Tests et avis',
+    icon: Star,
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-50 hover:bg-yellow-100'
+  },
+  {
+    id: 'tutoriel',
+    name: 'Tutoriel',
+    description: 'Guide pratique',
+    icon: GraduationCap,
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-50 hover:bg-purple-100'
+  }
+];
+
 export function ArticleWizard({ 
   open, 
   onOpenChange, 
@@ -88,6 +127,7 @@ export function ArticleWizard({
   onArticleCreated
 }: ArticleWizardProps) {
   const [step, setStep] = useState(1);
+  const [selectedAngle, setSelectedAngle] = useState('guide');
   const [selectedCollection, setSelectedCollection] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -108,7 +148,7 @@ export function ArticleWizard({
   const PRODUCTS_PER_PAGE = 50;
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   // Load products when collection changes
   useEffect(() => {
@@ -117,6 +157,9 @@ export function ArticleWizard({
       loadProducts(1);
     }
   }, [selectedCollection, open, storeId]);
+  
+  // Filter collections by store_id
+  const filteredCollections = collections.filter(col => col.store_id === storeId);
 
   // Reload products when search changes (with debounce)
   useEffect(() => {
@@ -292,11 +335,11 @@ export function ArticleWizard({
       return;
     }
 
-    setGenerating(true);
+      setGenerating(true);
     setProgress(0);
     setPreview('');
     setArticleId('');
-    setStep(6);
+    setStep(7);
 
     try {
       setCurrentStep('🔍 Analyse des produits sélectionnés...');
@@ -327,6 +370,7 @@ export function ArticleWizard({
           articleLength: 2500,
           layout: selectedLayout,
           colorPalette: selectedPalette,
+          editorialAngle: selectedAngle,
           generateFeaturedImage: true,
         }
       });
@@ -357,7 +401,7 @@ export function ArticleWizard({
     } catch (error: any) {
       console.error('Error generating article:', error);
       toast.error(error.message || 'Erreur lors de la génération');
-      setStep(5);
+      setStep(6);
     } finally {
       setGenerating(false);
     }
@@ -401,12 +445,13 @@ export function ArticleWizard({
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               {[
-                { num: 1, label: 'Layout' },
-                { num: 2, label: 'Collection' },
-                { num: 3, label: 'Couleurs' },
-                { num: 4, label: 'Produits' },
-                { num: 5, label: 'Mots-clés' },
-                { num: 6, label: 'Génération' }
+                { num: 1, label: 'Angle' },
+                { num: 2, label: 'Layout' },
+                { num: 3, label: 'Collection' },
+                { num: 4, label: 'Couleurs' },
+                { num: 5, label: 'Produits' },
+                { num: 6, label: 'Mots-clés' },
+                { num: 7, label: 'Génération' }
               ].map((s, idx) => (
                 <div key={s.num} className="flex items-center">
                   <div className="flex flex-col items-center">
@@ -421,7 +466,7 @@ export function ArticleWizard({
                       {s.label}
                     </span>
                   </div>
-                  {idx < 5 && (
+                  {idx < 6 && (
                 <div className={`h-1 w-8 mx-2 transition-all ${
                   step > s.num ? 'bg-primary' : 'bg-muted'
                 }`} />
@@ -431,8 +476,55 @@ export function ArticleWizard({
         </div>
       </Card>
 
-          {/* Step 1: Layout Selection */}
+          {/* Step 1: Editorial Angle Selection */}
           {step === 1 && (
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold font-serif">Angle éditorial</h2>
+              <p className="text-muted-foreground">Choisissez le type d'article que vous souhaitez créer</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {EDITORIAL_ANGLES.map((angle) => {
+              const Icon = angle.icon;
+              return (
+                <button
+                  key={angle.id}
+                  onClick={() => setSelectedAngle(angle.id)}
+                  className={`group relative p-6 rounded-lg border-2 transition-all hover:shadow-md ${
+                    selectedAngle === angle.id
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                      : `border-border ${angle.bgColor}`
+                  }`}
+                >
+                  {selectedAngle === angle.id && (
+                    <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className={`w-14 h-14 rounded-full ${angle.bgColor} flex items-center justify-center`}>
+                      <Icon className={`w-7 h-7 ${angle.color}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1 font-serif">{angle.name}</h3>
+                      <p className="text-sm text-muted-foreground">{angle.description}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+          {/* Step 2: Layout Selection */}
+          {step === 2 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -570,8 +662,8 @@ export function ArticleWizard({
           </Card>
         )}
 
-          {/* Step 2: Collection Selection */}
-          {step === 2 && (
+          {/* Step 3: Collection Selection */}
+          {step === 3 && (
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -583,13 +675,13 @@ export function ArticleWizard({
                 </div>
               </div>
 
-              {collections.length === 0 ? (
+              {filteredCollections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Aucune collection trouvée. Veuillez importer vos collections Shopify.
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                  {collections.map((collection) => (
+                  {filteredCollections.map((collection) => (
                     <button
                       key={collection.id}
                       onClick={() => setSelectedCollection(collection.id)}
@@ -617,8 +709,8 @@ export function ArticleWizard({
             </Card>
           )}
 
-        {/* Step 3: Color Palette */}
-        {step === 3 && (
+        {/* Step 4: Color Palette */}
+        {step === 4 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -658,8 +750,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 4: Products Selection */}
-      {step === 4 && (
+      {/* Step 5: Products Selection */}
+      {step === 5 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -813,8 +905,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 5: Keywords */}
-      {step === 5 && (
+      {/* Step 6: Keywords */}
+      {step === 6 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -885,8 +977,8 @@ export function ArticleWizard({
         </Card>
       )}
 
-      {/* Step 6: Generation & Preview */}
-      {step === 6 && (
+      {/* Step 7: Generation & Preview */}
+      {step === 7 && (
         <div className="space-y-6">
           {generating && (
             <Card className="p-6">
