@@ -425,6 +425,7 @@ export type Database = {
           meta_description: string | null
           optimization_count: number | null
           published_at: string | null
+          seo_title: string | null
           shopify_article_id: number | null
           shopify_blog_id: string | null
           source: string | null
@@ -450,6 +451,7 @@ export type Database = {
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
+          seo_title?: string | null
           shopify_article_id?: number | null
           shopify_blog_id?: string | null
           source?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
+          seo_title?: string | null
           shopify_article_id?: number | null
           shopify_blog_id?: string | null
           source?: string | null
@@ -4625,6 +4628,15 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: number
       }
+      get_orphan_articles: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          store_id: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4644,6 +4656,13 @@ export type Database = {
           new_count: number
           old_count: number
           user_id: string
+        }[]
+      }
+      repair_orphan_articles: {
+        Args: { p_store_id: string; p_user_id: string }
+        Returns: {
+          article_ids: string[]
+          repaired_count: number
         }[]
       }
       reset_monthly_usage_counters: { Args: never; Returns: undefined }
