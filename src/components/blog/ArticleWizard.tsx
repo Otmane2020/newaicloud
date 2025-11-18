@@ -701,7 +701,7 @@ export function ArticleWizard({
                     >
                       <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
                       <p className="text-xs text-muted-foreground mb-2">
-                        {collection.product_count || 0} produit{(collection.product_count || 0) !== 1 ? 's' : ''}
+                        {collection.products_count || 0} produit{(collection.products_count || 0) !== 1 ? 's' : ''}
                       </p>
                       {selectedCollection === collection.id && (
                         <div className="flex items-center gap-2 text-primary text-sm mt-2">

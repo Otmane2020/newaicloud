@@ -76,11 +76,12 @@ export default function Blog() {
         // Load collections
         const { data: collectionsData } = await supabase
           .from('shopify_collections')
-          .select('id, title, product_count')
+          .select('id, title, products_count, store_id, user_id')
           .eq('user_id', user?.id)
           .eq('store_id', storeData.id)
           .order('title');
         
+        console.log('Collections loaded:', { count: collectionsData?.length, storeId: storeData.id });
         setCollections(collectionsData || []);
       }
     } catch (error) {
