@@ -1344,7 +1344,7 @@ export function SeoOptimization() {
       {/* Products Table */}
       {viewMode === "list" ? (
         <Card className="overflow-hidden">
-          <div className="max-h-[600px] overflow-y-auto">
+          <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>

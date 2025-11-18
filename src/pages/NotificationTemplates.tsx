@@ -181,7 +181,8 @@ export default function NotificationTemplates() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t.notificationTemplates.name}</TableHead>
@@ -253,6 +254,7 @@ export default function NotificationTemplates() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
