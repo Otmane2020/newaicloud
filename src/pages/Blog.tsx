@@ -345,7 +345,7 @@ export default function Blog() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Button size="lg" onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
+              <Button size="lg" onClick={() => setActiveSubtab('blogging')} className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
                 {t.blog.hero.createArticle.startCreating}
               </Button>
