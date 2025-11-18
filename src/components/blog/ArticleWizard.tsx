@@ -89,32 +89,40 @@ const EDITORIAL_ANGLES = [
     name: 'Guide',
     description: 'Guide complet',
     icon: BookOpen,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50 hover:bg-blue-100'
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    hoverBg: 'hover:bg-blue-100',
+    borderColor: 'border-blue-200'
   },
   {
     id: 'comparatif',
     name: 'Comparatif',
     description: 'Comparaison produits',
     icon: Scale,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50 hover:bg-orange-100'
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50',
+    hoverBg: 'hover:bg-amber-100',
+    borderColor: 'border-amber-200'
   },
   {
     id: 'avis',
     name: 'Avis',
     description: 'Tests et avis',
     icon: Star,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-50 hover:bg-yellow-100'
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50',
+    hoverBg: 'hover:bg-yellow-100',
+    borderColor: 'border-yellow-200'
   },
   {
     id: 'tutoriel',
     name: 'Tutoriel',
     description: 'Guide pratique',
     icon: GraduationCap,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-50 hover:bg-purple-100'
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    hoverBg: 'hover:bg-purple-100',
+    borderColor: 'border-purple-200'
   }
 ];
 
@@ -498,8 +506,8 @@ export function ArticleWizard({
                   onClick={() => setSelectedAngle(angle.id)}
                   className={`group relative p-6 rounded-lg border-2 transition-all hover:shadow-md ${
                     selectedAngle === angle.id
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : `border-border ${angle.bgColor}`
+                      ? `border-primary bg-primary/5 ring-2 ring-primary/20`
+                      : `border-border ${angle.hoverBg}`
                   }`}
                 >
                   {selectedAngle === angle.id && (
@@ -508,7 +516,7 @@ export function ArticleWizard({
                     </div>
                   )}
                   <div className="flex flex-col items-center text-center gap-3">
-                    <div className={`w-14 h-14 rounded-full ${angle.bgColor} flex items-center justify-center`}>
+                    <div className={`w-14 h-14 rounded-full ${angle.bgColor} flex items-center justify-center border-2 ${angle.borderColor}`}>
                       <Icon className={`w-7 h-7 ${angle.color}`} />
                     </div>
                     <div>
@@ -1026,7 +1034,7 @@ export function ArticleWizard({
               onClick={() => setStep(2)} 
               className="w-full" 
               size="lg"
-              disabled={!selectedLayout}
+              disabled={!selectedAngle}
             >
               <ArrowRight className="w-4 h-4 mr-2" />
               Continuer
@@ -1039,7 +1047,7 @@ export function ArticleWizard({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
-              <Button onClick={() => setStep(3)} className="flex-1" size="lg" disabled={!selectedCollection}>
+              <Button onClick={() => setStep(3)} className="flex-1" size="lg" disabled={!selectedLayout}>
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Continuer
               </Button>
@@ -1052,7 +1060,7 @@ export function ArticleWizard({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
-              <Button onClick={() => setStep(4)} className="flex-1" size="lg">
+              <Button onClick={() => setStep(4)} className="flex-1" size="lg" disabled={!selectedCollection}>
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Continuer
               </Button>
@@ -1065,16 +1073,29 @@ export function ArticleWizard({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
-              <Button onClick={() => setStep(5)} className="flex-1" size="lg" disabled={selectedProducts.length === 0}>
+              <Button onClick={() => setStep(5)} className="flex-1" size="lg">
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Continuer
               </Button>
             </div>
           )}
 
-          {step === 5 && !generating && !preview && (
+          {step === 5 && (
             <div className="flex gap-3">
               <Button onClick={() => setStep(4)} variant="outline" className="flex-1" size="lg">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <Button onClick={() => setStep(6)} className="flex-1" size="lg" disabled={selectedProducts.length === 0}>
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continuer
+              </Button>
+            </div>
+          )}
+
+          {step === 6 && !generating && !preview && (
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(5)} variant="outline" className="flex-1" size="lg">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
@@ -1090,7 +1111,7 @@ export function ArticleWizard({
             </div>
           )}
 
-          {step === 6 && preview && (
+          {step === 7 && preview && (
             <div className="flex gap-3">
               <Button
                 variant="outline"
