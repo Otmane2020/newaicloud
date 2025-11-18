@@ -123,9 +123,12 @@ export function ArticleManagement() {
   const [indexingArticle, setIndexingArticle] = useState<string | null>(null);
 
   // Get store domain with automatic fetching and caching
+  // Priority: public_domain (non-myshopify) > public_domain (myshopify) > store_url > fallback
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
     ? selectedStore.public_domain
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
+    : selectedStore?.public_domain
+      ? selectedStore.public_domain
+      : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
