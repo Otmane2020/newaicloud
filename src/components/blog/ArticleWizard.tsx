@@ -1005,8 +1005,8 @@ export function ArticleWizard({
             <Card className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{currentStep}</span>
-                  <span className="text-sm text-muted-foreground">{progress}%</span>
+                  <span className="text-sm font-medium animate-pulse">{currentStep}</span>
+                  <span className="text-sm text-muted-foreground animate-fade-in">{progress}%</span>
                 </div>
                 <Progress value={progress} showPercentage={false} className="h-3" />
               </div>
