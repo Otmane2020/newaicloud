@@ -1010,19 +1010,12 @@ const handleOptimizeArticle = async (articleId: string) => {
                             )}
                           </div>
                           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                            {article.seo_title && article.meta_description ? (
-                              <GoogleSearchPreview
-                                title={article.seo_title || article.title}
-                                description={article.meta_description}
-                                url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, storeDomain)}
-                                compact
-                              />
-                            ) : (
-                              <>
-                                <p className="font-medium text-sm line-clamp-2 break-words">{article.title}</p>
-                                <p className="text-xs text-muted-foreground">Not optimized</p>
-                              </>
-                            )}
+                            <GoogleSearchPreview
+                              title={article.seo_title || article.title}
+                              description={article.meta_description || 'Cet article n\'a pas encore été optimisé pour le SEO.'}
+                              url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, storeDomain)}
+                              compact
+                            />
                             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
                               {article.source === 'ai' ? 'AI' : article.source === 'shopify' ? 'SHOPIFY' : 'MANUAL'}
                             </p>
