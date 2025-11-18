@@ -44,45 +44,94 @@ Deno.serve(async (req) => {
 
     console.log(`[SYNC-HOMEPAGE] Using store: ${connection.store_url}`);
 
-    // Utiliser l'API REST Admin pour mettre à jour le SEO du shop
-    const apiUrl = `https://${connection.store_url}/admin/api/2025-01/shop.json`;
+    // Get shop ID first
+    const shopUrl = `https://${connection.store_url}/admin/api/2025-01/shop.json`;
+    const shopResponse = await fetch(shopUrl, {
+      method: 'GET',
+      headers: {
+        'X-Shopify-Access-Token': connection.access_token,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!shopResponse.ok) {
+      const errorText = await shopResponse.text();
+      console.error(`[SYNC-HOMEPAGE] Failed to get shop:`, errorText);
+      throw new Error(`Failed to get shop: ${shopResponse.status} - ${errorText}`);
+    }
+
+    const shopData = await shopResponse.json();
+    const shopId = shopData.shop.id;
+    console.log(`[SYNC-HOMEPAGE] Got shop ID: ${shopId}`);
+
+    // Update metafields using GraphQL Admin API (more reliable for metafields)
+    const graphqlUrl = `https://${connection.store_url}/admin/api/2025-01/graphql.json`;
     
-    console.log(`[SYNC-HOMEPAGE] Updating shop SEO via API: ${apiUrl}`);
+    const mutation = `
+      mutation UpdateShopMetafields($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields {
+            id
+            namespace
+            key
+            value
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      metafields: [
+        {
+          ownerId: `gid://shopify/Shop/${shopId}`,
+          namespace: 'global',
+          key: 'title_tag',
+          value: seoTitle,
+          type: 'single_line_text_field'
+        },
+        {
+          ownerId: `gid://shopify/Shop/${shopId}`,
+          namespace: 'global',
+          key: 'description_tag',
+          value: seoDescription,
+          type: 'multi_line_text_field'
+        }
+      ]
+    };
+
+    console.log(`[SYNC-HOMEPAGE] Updating shop metafields via GraphQL`);
     
-    const response = await fetch(apiUrl, {
-      method: 'PUT',
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
       headers: {
         'X-Shopify-Access-Token': connection.access_token,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        shop: {
-          metafields: [
-            {
-              namespace: 'global',
-              key: 'title_tag',
-              value: seoTitle,
-              type: 'single_line_text_field'
-            },
-            {
-              namespace: 'global',
-              key: 'description_tag',
-              value: seoDescription,
-              type: 'multi_line_text_field'
-            }
-          ]
-        }
+        query: mutation,
+        variables
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[SYNC-HOMEPAGE] Failed to update shop:`, errorText);
+      console.error(`[SYNC-HOMEPAGE] GraphQL request failed:`, errorText);
       throw new Error(`Failed to update shop SEO: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('[SYNC-HOMEPAGE] Shop SEO successfully updated');
+    
+    if (result.data?.metafieldsSet?.userErrors?.length > 0) {
+      const errors = result.data.metafieldsSet.userErrors;
+      console.error(`[SYNC-HOMEPAGE] Metafield errors:`, errors);
+      throw new Error(`Metafield update failed: ${errors.map((e: any) => e.message).join(', ')}`);
+    }
+
+    console.log('[SYNC-HOMEPAGE] Shop SEO metafields successfully updated');
     
     // Sauvegarder dans la table homepage_seo
     const supabaseAdmin = createClient(
