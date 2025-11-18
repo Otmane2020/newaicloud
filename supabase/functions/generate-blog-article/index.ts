@@ -307,29 +307,45 @@ ${imageAnalysis ? `\n**Analyse Visuelle (Gemini Vision)**:\n${imageAnalysis}` : 
 
 **RÈGLES STRICTES** (IMPÉRATIF):
 1. Maximum ABSOLU: 55 caractères (pas un de plus !)
-2. Format simple: "[Préfixe]: [Mot-clé] + [Valeur ajoutée]"
-3. UN SEUL mot-clé maximum dans le titre
-4. AUCUNE liste entre parenthèses (pas de "(couleurs, matériaux, etc.)")
-5. AUCUN bourrage de mots-clés
-6. Style direct et professionnel
+2. Format naturel et engageant en français
+3. AUCUNE formule générique "X Parfait" ou "X Idéal"
+4. AUCUNE liste entre parenthèses
+5. Style conversationnel et professionnel
+6. Intégrer l'année en cours (2025) si pertinent
 
-**FORMULES EFFICACES**:
-- "Guide [Mot-clé] [Année]"
-- "Comment Choisir [Mot-clé]"
-- "Top [X] [Mot-clé]"
-- "[Mot-clé]: Le Guide Complet"
-- "Comparatif [Mot-clé]"
+**FORMULES RECOMMANDÉES** selon l'angle éditorial:
 
-**EXEMPLES PARFAITS** (à suivre):
-✅ "Buffet Baroque: Guide d'Achat 2024" (38 chars)
-✅ "Comment Choisir Votre Buffet Baroque" (37 chars)
-✅ "Top 5 Buffets Baroques Luxe" (29 chars)
-✅ "Canapé Scandinave: Guide Complet" (33 chars)
+GUIDE:
+- "Comment Choisir [Produit]: Le Guide"
+- "[Produit]: Guide d'Achat 2025"
+- "Votre Guide [Produit] Complet"
+- "Bien Choisir Son [Produit]"
 
-**EXEMPLES INTERDITS** (à éviter absolument):
-❌ "Buffet Baroque Laqué: Guide (Marbre, Blanc, Noir)" (52 chars mais liste!)
-❌ "Le Meilleur Buffet Baroque en Marbre et Chrome" (48 chars mais bourrage)
-❌ "Buffet Baroque Luxe: Tout Savoir sur les Modèles" (51 chars mais vague)
+COMPARATIF:
+- "Top ${Math.min(products.length, 10)} [Produit] 2025"
+- "[Produit]: Comparatif Détaillé"
+- "Meilleurs [Produit]: Notre Sélection"
+
+AVIS:
+- "[Produit]: Notre Avis Complet"
+- "Test & Avis [Produit]"
+- "[Produit]: Ce Qu'il Faut Savoir"
+
+TUTORIEL:
+- "Installer Votre [Produit]: Guide"
+- "Utiliser [Produit] Comme un Pro"
+- "[Produit]: Mode d'Emploi"
+
+**EXEMPLES PARFAITS**:
+✅ "Comment Choisir Votre Canapé Velours" (37 chars)
+✅ "Buffet Baroque: Guide d'Achat 2025" (35 chars)
+✅ "Top 5 Canapés Scandinaves 2025" (31 chars)
+✅ "Table Basse Marbre: Notre Avis" (31 chars)
+
+**EXEMPLES INTERDITS**:
+❌ "Guide: Canapé Velours Anthracite Parfait"
+❌ "Le Meilleur Buffet Baroque (Marbre, Blanc)"
+❌ "Canapé Parfait Pour Votre Salon"
 
 Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sans explication.`;
 
@@ -385,23 +401,23 @@ Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sa
         }
       } catch (err) {
         console.warn("⚠️ Failed to generate AI title, using fallback:", err);
-        // Fallback: titre basique si l'IA échoue
+        // Fallback: titre naturel si l'IA échoue
         const mainKeyword = keywords[0] || category;
         switch (editorialAngle) {
           case 'guide':
-            articleTitle = `Guide ${mainKeyword} 2024`;
+            articleTitle = `Comment Choisir Votre ${mainKeyword}`;
             break;
           case 'comparatif':
-            articleTitle = `Top ${products.length} ${category}`;
+            articleTitle = `Top ${Math.min(products.length, 10)} ${mainKeyword} 2025`;
             break;
           case 'avis':
-            articleTitle = `Avis ${mainKeyword}`;
+            articleTitle = `${mainKeyword}: Notre Avis Complet`;
             break;
           case 'tutoriel':
-            articleTitle = `Comment Choisir ${mainKeyword}`;
+            articleTitle = `${mainKeyword}: Mode d'Emploi Complet`;
             break;
           default:
-            articleTitle = `Guide ${mainKeyword}`;
+            articleTitle = `${mainKeyword}: Guide d'Achat 2025`;
         }
       }
     }
