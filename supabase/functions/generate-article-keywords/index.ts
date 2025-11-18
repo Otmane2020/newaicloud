@@ -27,7 +27,7 @@ serve(async (req) => {
     // Récupérer les produits
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
-      .select('title, tags, category, product_type, description, smart_material, smart_color_name')
+      .select('title, tags, category, product_type, description, material, color, brand, vendor')
       .in('id', productIds);
 
     if (productsError) throw productsError;
@@ -38,8 +38,9 @@ serve(async (req) => {
     const productsContext = products.map(p => `
 - ${p.title}
   Catégorie: ${p.category || p.product_type || 'N/A'}
-  Matériau: ${p.smart_material || 'N/A'}
-  Couleur: ${p.smart_color_name || 'N/A'}
+  Matériau: ${p.material || 'N/A'}
+  Couleur: ${p.color || 'N/A'}
+  Marque: ${p.brand || p.vendor || 'N/A'}
   Tags: ${p.tags || 'N/A'}
   Description: ${p.description?.substring(0, 200) || 'N/A'}
     `.trim()).join('\n\n');
