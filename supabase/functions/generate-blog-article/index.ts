@@ -199,10 +199,14 @@ async function generateArticle(
             .filter(Boolean)
             .join(" x ");
           
-          // ✅ Ajouter les images réelles du produit
-          const images = p.product_images
-            ?.map((img: any, idx: number) => `  ${idx + 1}. ${img.src} (${img.alt_text || 'Image produit'})`)
-            .join("\n") || "Aucune image disponible";
+          // ✅ Formater les images de manière très explicite pour Gemini
+          const images = p.product_images && p.product_images.length > 0
+            ? p.product_images
+                .map((img: any, idx: number) => 
+                  `  Image ${idx + 1}: ${img.src}\n  Alt text: ${img.alt_text || 'Image produit'}`
+                )
+                .join("\n") 
+            : "⚠️ Aucune image disponible pour ce produit - NE PAS AFFICHER D'IMAGE";
           
           return `
 **Produit ${i + 1}: ${p.title}**
@@ -349,31 +353,60 @@ ${productsContext}
 5. **LAYOUT "${layout}"** avec styles spécifiques:
    ${layoutStyles[layout] || layoutStyles.editorial}
 
-6. **IMAGES DES PRODUITS** - UTILISE LES URLs FOURNIES CI-DESSUS:
-   - Pour chaque produit, utilise les vraies URLs d'images listées dans le contexte produits
-   - Structure HTML pour images:
-     <img src="[URL_REELLE]" alt="[ALT_TEXT]" style="width: 100%; max-width: 600px; height: auto; border-radius: 12px; margin: 20px 0;">
+6. **IMAGES DES PRODUITS - CRITIQUEMENT IMPORTANT**:
+   ⚠️ TU DOIS UTILISER UNIQUEMENT LES URLs D'IMAGES LISTÉES DANS LE CONTEXTE PRODUITS CI-DESSUS
+   ⚠️ NE JAMAIS GÉNÉRER DE PLACEHOLDERS (via.placeholder.com, example.com, etc.)
+   ⚠️ NE JAMAIS INVENTER D'URLs
+   ⚠️ NE JAMAIS UTILISER DE TEMPLATE LITERALS COMME \${...}
    
-7. **GALERIE D'IMAGES CLIQUABLE** pour chaque produit:
+   Pour chaque produit dans l'article :
+   - Copie EXACTEMENT l'URL d'image du contexte produits (section **Images**)
+   - Utilise cette structure HTML :
+     <img src="https://cdn.shopify.com/..." alt="Description précise" style="width: 100%; max-width: 600px; height: auto; border-radius: 12px; margin: 20px 0;">
+   
+   Exemple :
+   Si le contexte dit "Image 1: https://cdn.shopify.com/s/files/abc123.jpg"
+   Alors écris EXACTEMENT :
+   <img src="https://cdn.shopify.com/s/files/abc123.jpg" alt="Image principale" style="width: 100%; max-width: 600px; height: auto; border-radius: 12px; margin: 20px 0;">
+
+7. **GALERIE D'IMAGES CLIQUABLE** :
+   Pour créer une galerie avec PLUSIEURS images d'un produit :
+   - Utilise TOUTES les URLs d'images du contexte de ce produit
+   - Copie EXACTEMENT les URLs du contexte
+   - Structure :
    <div class="product-gallery">
      <div class="gallery-main">
-       <img src="${products[0]?.image_url || ''}" alt="" class="gallery-image active" data-index="0" onclick="showImage(0)">
+       <img src="[COPIE_URL_IMAGE_1_DU_CONTEXTE]" alt="[ALT_1]" class="gallery-image active">
+       <img src="[COPIE_URL_IMAGE_2_DU_CONTEXTE]" alt="[ALT_2]" class="gallery-image">
+       <img src="[COPIE_URL_IMAGE_3_DU_CONTEXTE]" alt="[ALT_3]" class="gallery-image">
      </div>
      <div class="gallery-thumbnails">
-       <img src="${products[0]?.image_url || ''}" alt="" class="thumbnail active" onclick="showImage(0)">
-       <!-- Répète pour chaque image produit -->
+       <img src="[COPIE_URL_IMAGE_1_DU_CONTEXTE]" alt="[ALT_1]" class="thumbnail active" onclick="showImage(0)">
+       <img src="[COPIE_URL_IMAGE_2_DU_CONTEXTE]" alt="[ALT_2]" class="thumbnail" onclick="showImage(1)">
+       <img src="[COPIE_URL_IMAGE_3_DU_CONTEXTE]" alt="[ALT_3]" class="thumbnail" onclick="showImage(2)">
      </div>
    </div>
+   
+   JavaScript pour la galerie (à inclure UNE SEULE FOIS dans le HTML) :
    <script>
    function showImage(index) {
-     document.querySelectorAll('.gallery-image').forEach((img, i) => {
+     const images = document.querySelectorAll('.gallery-image');
+     const thumbs = document.querySelectorAll('.thumbnail');
+     images.forEach((img, i) => {
        img.classList.toggle('active', i === index);
      });
-     document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+     thumbs.forEach((thumb, i) => {
        thumb.classList.toggle('active', i === index);
      });
    }
    </script>
+
+**RAPPEL CRITIQUE - IMAGES** :
+Les URLs d'images des produits sont listées ci-dessus dans le contexte produits.
+Tu DOIS copier ces URLs EXACTEMENT comme elles apparaissent.
+NE GÉNÈRE JAMAIS de placeholders (via.placeholder.com, example.com, etc.).
+NE JAMAIS UTILISER DE VARIABLES - copie les URLs complètes.
+Si aucune image n'est disponible pour un produit, n'affiche PAS d'image pour ce produit.
 
 7. **MENTION DE TOUS LES ${products.length} PRODUITS**:
    - Chaque produit DOIT apparaître dans l'article
@@ -600,6 +633,20 @@ Commence par <!DOCTYPE html> et génère l'article complet.`;
       .replace(/```html\n?/g, "")
       .replace(/```\n?/g, "")
       .trim();
+
+    console.log("Generated article length:", htmlContent.length);
+    
+    // ✅ Vérifier que le HTML ne contient pas de placeholders
+    if (htmlContent.includes('via.placeholder.com') || 
+        htmlContent.includes('example.com') ||
+        htmlContent.includes('${')) {
+      console.warn('⚠️ Generated HTML contains placeholder images or template literals!');
+      console.warn('HTML preview:', htmlContent.substring(0, 1000));
+    }
+
+    // ✅ Compter les images réelles
+    const imageMatches = htmlContent.match(/<img[^>]+src="https:\/\/cdn\.shopify\.com[^"]*"/g);
+    console.log(`✅ Found ${imageMatches?.length || 0} real Shopify images in generated HTML`);
 
     // Extraire la meta description
     let metaDescription = "";
