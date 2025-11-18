@@ -181,6 +181,9 @@ verify_jwt = true
 [functions.sync-collection-image-to-shopify]
 verify_jwt = true
 
+[functions.generate-article-keywords]
+verify_jwt = true
+
 [functions.search-similar-products-specs]
 verify_jwt = true
 memory_limit_mb = 512

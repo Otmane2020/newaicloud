@@ -153,6 +153,8 @@ export function ArticleWizard({
   const [productSearch, setProductSearch] = useState('');
   const [productPage, setProductPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [suggestedTitle, setSuggestedTitle] = useState<string>('');
+  const [generatingKeywords, setGeneratingKeywords] = useState(false);
   const PRODUCTS_PER_PAGE = 50;
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
@@ -249,58 +251,39 @@ export function ArticleWizard({
   const generateKeywords = async () => {
     if (selectedProducts.length === 0) return;
     
+    setGeneratingKeywords(true);
     try {
-      const { data: products } = await supabase
-        .from('shopify_products')
-        .select('title, tags, category, description')
-        .in('id', selectedProducts);
-
-      const shortPhrases = new Set<string>();
-      const longPhrases = new Set<string>();
+      const collectionName = collections.find(c => c.id === selectedCollection)?.title || '';
       
-      products?.forEach(product => {
-        // Short keywords (1-2 mots)
-        product.title?.split(' ').forEach((word: string) => {
-          if (word.length > 3) shortPhrases.add(word.toLowerCase());
-        });
-        
-        product.tags?.split(',').forEach((tag: string) => {
-          const cleaned = tag.trim().toLowerCase();
-          if (cleaned.length > 2 && cleaned.split(' ').length <= 2) {
-            shortPhrases.add(cleaned);
-          }
-        });
-        
-        if (product.category) shortPhrases.add(product.category.toLowerCase());
-        
-        // Long keywords (3-5 mots) - extraire des phrases du titre et description
-        const titleWords = product.title?.split(' ') || [];
-        for (let i = 0; i < titleWords.length - 2; i++) {
-          const phrase = titleWords.slice(i, i + 3).join(' ').toLowerCase();
-          if (phrase.length > 10) longPhrases.add(phrase);
-        }
-        
-        // Extraire des phrases de la description
-        if (product.description) {
-          const sentences = product.description.split(/[.!?]/);
-          sentences.slice(0, 3).forEach((sentence: string) => {
-            const words = sentence.trim().split(' ').filter((w: string) => w.length > 2);
-            if (words.length >= 3 && words.length <= 5) {
-              longPhrases.add(words.join(' ').toLowerCase());
-            }
-          });
+      const { data, error } = await supabase.functions.invoke('generate-article-keywords', {
+        body: {
+          productIds: selectedProducts,
+          collectionName
         }
       });
 
-      const allSuggestions = [
-        ...Array.from(shortPhrases).slice(0, 10),
-        ...Array.from(longPhrases).slice(0, 10)
-      ];
-      
-      setSuggestedKeywords(allSuggestions);
-      setSelectedKeywords([]);
+      if (error) throw error;
+
+      if (data?.success) {
+        // Combiner les mots-clés courts et longs
+        const allKeywords = [
+          ...(data.shortKeywords || []),
+          ...(data.longKeywords || [])
+        ];
+        
+        setSuggestedKeywords(allKeywords);
+        setSuggestedTitle(data.articleTitle || '');
+        setSelectedKeywords([]);
+        
+        toast.success('Mots-clés intelligents générés avec DeepSeek AI');
+      } else {
+        throw new Error(data?.error || 'Failed to generate keywords');
+      }
     } catch (error) {
       console.error('Error generating keywords:', error);
+      toast.error('Erreur lors de la génération des mots-clés');
+    } finally {
+      setGeneratingKeywords(false);
     }
   };
 
@@ -927,36 +910,59 @@ export function ArticleWizard({
           </div>
 
           <div className="space-y-6 mb-6">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label className="text-base font-semibold">
-                  Mots-clés suggérés ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
+            {/* Titre suggéré */}
+            {suggestedTitle && (
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <Label className="text-sm font-semibold text-primary mb-2 block flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Titre d'article suggéré par l'IA
                 </Label>
-                <Button onClick={selectAllKeywords} variant="outline" size="sm">
-                  Tout sélectionner
-                </Button>
+                <p className="text-lg font-serif font-bold">{suggestedTitle}</p>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Cliquez sur un mot-clé pour l'ajouter
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedKeywords
-                  .filter(keyword => !selectedKeywords.includes(keyword))
-                  .map((keyword) => (
-                  <Badge
-                    key={keyword}
-                    variant="outline"
-                    className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform"
-                    onClick={() => toggleKeyword(keyword)}
-                  >
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            )}
 
-            <div>
-              <Label className="text-base font-semibold mb-3 block">Vos mots-clés personnalisés</Label>
+            {/* Loading state */}
+            {generatingKeywords && (
+              <div className="flex items-center justify-center gap-3 py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <p className="text-muted-foreground">Génération de mots-clés intelligents avec DeepSeek AI...</p>
+              </div>
+            )}
+
+            {/* Keywords section */}
+            {!generatingKeywords && (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Mots-clés suggérés par l'IA ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
+                    </Label>
+                    <Button onClick={selectAllKeywords} variant="outline" size="sm">
+                      Tout sélectionner
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Mots-clés courts et phrases longues optimisés SEO - Cliquez pour ajouter
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedKeywords
+                      .filter(keyword => !selectedKeywords.includes(keyword))
+                      .map((keyword) => (
+                      <Badge
+                        key={keyword}
+                        variant="outline"
+                        className="cursor-pointer text-sm py-1.5 px-3 hover:scale-105 transition-transform hover:bg-primary/10"
+                        onClick={() => toggleKeyword(keyword)}
+                      >
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Vos mots-clés personnalisés</Label>
               <div className="flex gap-2 mb-3">
                 <Input
                   value={keywordInput}
@@ -978,8 +984,10 @@ export function ArticleWizard({
                     </Badge>
                   ))}
                 </div>
-              )}
-            </div>
+                )}
+              </div>
+              </>
+            )}
           </div>
 
         </Card>
