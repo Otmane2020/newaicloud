@@ -463,19 +463,84 @@ Aucun texte, juste une représentation visuelle du sujet.`;
     // Layout-specific styles
     const layoutStyles: Record<string, string> = {
       editorial: `
-        .article-container { max-width: 800px; margin: 0 auto; font-family: 'Georgia', serif; }
-        .product-card { margin: 40px 0; padding: 30px; border-left: 4px solid #333; }
-        .product-image { width: 100%; max-width: 600px; margin: 20px auto; }
+        /* Editorial Layout - Images en vedette */
+        .editorial-image {
+          width: 100%;
+          max-width: 800px;
+          height: auto;
+          display: block;
+          margin: 30px auto;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .product-card {
+          margin: 60px 0;
+          padding: 40px;
+          border-left: 4px solid var(--color-accent);
+          background: white;
+        }
       `,
       grid: `
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .product-card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; transition: transform 0.3s; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        /* Grid Layout - Cartes uniformes */
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 30px;
+          margin: 40px 0;
+        }
+        .product-card {
+          border: 1px solid #e0e0e0;
+          border-radius: 12px;
+          padding: 20px;
+          transition: all 0.3s;
+          background: white;
+        }
+        .product-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .grid-image {
+          width: 100%;
+          aspect-ratio: 1/1;
+          object-fit: cover;
+          border-radius: 8px;
+          margin-bottom: 15px;
+        }
       `,
       story: `
-        .story-section { margin: 60px 0; }
-        .product-inline { display: inline-block; margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
-        .story-text { line-height: 1.8; font-size: 18px; }
+        /* Story Layout - Images flottantes alternées */
+        .story-section {
+          margin: 60px 0;
+          overflow: auto;
+        }
+        .story-image-left {
+          float: left;
+          width: 45%;
+          max-width: 400px;
+          margin: 0 30px 20px 0;
+          border-radius: 12px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .story-image-right {
+          float: right;
+          width: 45%;
+          max-width: 400px;
+          margin: 0 0 20px 30px;
+          border-radius: 12px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .story-text {
+          line-height: 1.8;
+          font-size: 18px;
+        }
+        @media (max-width: 768px) {
+          .story-image-left, .story-image-right {
+            float: none;
+            width: 100%;
+            max-width: 100%;
+            margin: 20px 0;
+          }
+        }
       `
     };
 
@@ -500,59 +565,143 @@ Aucun texte, juste une représentation visuelle du sujet.`;
     
     const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce, spécialisé dans le style New York Times.
 
-**MISSION**: Génère un article HTML complet de ${articleLength} mots sur le sujet "${articleTitle}".
+**MISSION CRITIQUE**: Génère un article HTML complet de EXACTEMENT ${articleLength} mots sur le sujet "${articleTitle}".
+
+⚠️ **LONGUEUR OBLIGATOIRE: ${articleLength} MOTS** ⚠️
+${articleLength === '700' ? '📝 Article COURT et CONCIS (700 mots): Focus sur l\'essentiel, 3-4 sections max, style direct et impactant.' : ''}
+${articleLength === '2000' ? '📚 Article APPROFONDI (2000 mots): Analyse détaillée, 6-8 sections, contenu expert, exemples multiples.' : ''}
 
 **CONTEXTE**:
 - Boutique: ${storeName}
 - Catégorie: ${category}
 - Mots-clés: ${keywords.join(", ")}
 - Public cible: ${targetAudience || "Grand public"}
-- Angle éditorial: ${editorialAngle}
-- Layout: ${layout}
+- **Angle éditorial: ${editorialAngle}** ⚠️ RESPECTER STRICTEMENT
+- **Layout: ${layout}** ⚠️ APPLIQUER STRICTEMENT
 
-**ANGLE ÉDITORIAL "${editorialAngle}" - DIRECTIVES SPÉCIFIQUES**:
+**🎯 ANGLE ÉDITORIAL "${editorialAngle}" - DIRECTIVES IMPÉRATIVES**:
 
 ${editorialAngle === 'guide' ? `
-📚 **GUIDE COMPLET**:
-- Structure: Introduction claire → Sections détaillées → Guide d'achat étape par étape → Conseils d'utilisation → FAQ
-- Ton: Informatif, pédagogique, complet
-- Focus: Expliquer en profondeur, guider le lecteur, donner des conseils d'expert
-- Inclure: Tableau comparatif des caractéristiques, conseils d'entretien, astuces pratiques
-- Longueur: Articles détaillés avec beaucoup d'informations pratiques
+📚 **GUIDE COMPLET** (STRUCTURE OBLIGATOIRE):
+1. Introduction pédagogique (150 mots)
+2. Pourquoi ce guide est important
+3. Section 1: Comprendre les bases
+4. Section 2: Critères de choix détaillés
+5. Section 3: Comparatif produits avec tableau
+6. Section 4: Guide d'achat pas à pas
+7. Section 5: Conseils d'entretien et utilisation
+8. FAQ (minimum 5 questions)
+- Ton: Pédagogique, professeur bienveillant
+- Inclure: Tableaux comparatifs, listes à puces, encadrés conseils
 ` : ''}
 
 ${editorialAngle === 'comparatif' ? `
-🤝 **COMPARATIF PRODUITS**:
-- Structure: Introduction → Méthodologie → Comparaison détaillée produit par produit → Tableau récapitulatif → Verdict final
-- Ton: Objectif, analytique, comparatif
-- Focus: Comparer les caractéristiques, avantages et inconvénients de chaque produit
-- Inclure: Tableau comparatif avec critères (prix, qualité, fonctionnalités, rapport qualité/prix)
-- Format: Listes à puces pour avantages/inconvénients, notation si pertinent
-- Verdict: Recommandation claire pour différents profils d'acheteurs
+🤝 **COMPARATIF PRODUITS** (STRUCTURE OBLIGATOIRE):
+1. Introduction: Méthodologie de test (100 mots)
+2. Présentation des critères d'évaluation
+3. Produit 1: Analyse détaillée (avantages ✅ / inconvénients ❌)
+4. Produit 2: Analyse détaillée (avantages ✅ / inconvénients ❌)
+5. [Répéter pour chaque produit]
+6. Tableau comparatif récapitulatif
+7. Verdict final et recommandations
+- Ton: Objectif, analytique, comme un testeur pro
+- Inclure: Tableau avec notation, listes ✅/❌, verdicts clairs
 ` : ''}
 
 ${editorialAngle === 'avis' ? `
-⭐ **TESTS ET AVIS**:
-- Structure: Présentation → Test détaillé de chaque produit → Notre avis → Points forts/faibles → Note finale
-- Ton: Critique constructive, honnête, basé sur l'expérience
-- Focus: Donner un avis authentique, partager les impressions d'utilisation
-- Inclure: Points forts (✅) et points faibles (❌) clairement séparés
-- Style: Comme un testeur professionnel qui partage son expérience réelle
-- Conclusion: Recommandation finale claire et verdict sur le rapport qualité/prix
+⭐ **TEST & AVIS** (STRUCTURE OBLIGATOIRE):
+1. Introduction: Présentation du test (80 mots)
+2. Première impression / Déballage
+3. Test détaillé de chaque produit:
+   - Points forts ✅ (3-5 points)
+   - Points faibles ❌ (2-3 points)
+   - Note /10
+4. Comparaison avec concurrents
+5. Notre verdict final
+6. Pour qui est-ce fait ?
+- Ton: Honnête, comme un ami qui conseille
+- Inclure: Notes, encadrés avis, recommandations personnalisées
 ` : ''}
 
 ${editorialAngle === 'tutoriel' ? `
-🎓 **GUIDE PRATIQUE (TUTORIEL)**:
-- Structure: Introduction → Prérequis/Matériel nécessaire → Étapes détaillées → Astuces pro → Conclusion
-- Ton: Pédagogique, étape par étape, encourageant
-- Focus: Guider l'action concrète, enseigner comment faire
-- Format: Étapes numérotées (Étape 1, Étape 2...) avec instructions claires
-- Inclure: Conseils pratiques (💡), Attention/Précautions (⚠️), Astuces de pro (✨)
-- Illustrations: Mentionner les produits nécessaires pour réaliser le tutoriel
+🎓 **TUTORIEL PRATIQUE** (STRUCTURE OBLIGATOIRE):
+1. Introduction: Ce que vous allez apprendre (80 mots)
+2. Prérequis et matériel nécessaire (liste)
+3. **Étape 1**: [Action] - Instructions précises
+4. **Étape 2**: [Action] - Instructions précises
+5. [Répéter pour chaque étape numérotée]
+6. Astuces de pro ✨
+7. Erreurs à éviter ⚠️
+8. Conclusion et prochaines étapes
+- Ton: Coach encourageant, instructions claires
+- Inclure: Étapes numérotées, encadrés 💡/⚠️/✨
+` : ''}
+
+**📐 LAYOUT "${layout}" - STRUCTURE VISUELLE IMPOSÉE**:
+
+${layout === 'editorial' ? `
+📰 **LAYOUT ÉDITORIAL**:
+- Structure: Article classique avec grandes images en vedette
+- Images: 1 grande image par produit (max-width: 800px), centrée
+- Placement: Image APRÈS le titre de section, AVANT le texte descriptif
+- Style: Espacé, aéré, typographie élégante
+- Exemple:
+  <section>
+    <h2>Produit Premium</h2>
+    <img src="[URL]" class="editorial-image" alt="...">
+    <p>Description détaillée...</p>
+  </section>
+` : ''}
+
+${layout === 'grid' ? `
+🎛️ **LAYOUT GRILLE**:
+- Structure: Grille de cartes produits (2-3 colonnes)
+- Images: Taille égale dans chaque carte (aspect-ratio: 1/1)
+- Placement: Image EN HAUT de chaque carte
+- Style: Cards compactes avec hover effects
+- Exemple:
+  <div class="product-grid">
+    <div class="product-card">
+      <img src="[URL]" class="grid-image" alt="...">
+      <h3>Titre</h3>
+      <p>Description courte</p>
+      <span class="price">Prix</span>
+    </div>
+  </div>
+` : ''}
+
+${layout === 'story' ? `
+📖 **LAYOUT STORYTELLING**:
+- Structure: Images intégrées dans le récit
+- Images: Variées (inline à gauche/droite, alternées)
+- Placement: Images inline avec text-wrap, alternance gauche/droite
+- Style: Fluidité narrative, images flottantes
+- Exemple:
+  <img src="[URL]" class="story-image-left" alt="...">
+  <p>Texte qui entoure l'image...</p>
+  <img src="[URL]" class="story-image-right" alt="...">
+  <p>Suite du récit...</p>
 ` : ''}
 
 **PRODUITS DISPONIBLES (${products.length} produits)**:
 ${productsContext}
+
+**📸 INSTRUCTIONS IMAGES - POSITIONNEMENT INTELLIGENT AVEC VISION AI**:
+
+⚠️ **UTILISE L'ANALYSE VISION AI CI-DESSUS POUR**:
+1. **Choisir la meilleure image principale** pour chaque produit (celle qui montre le mieux le produit)
+2. **Positionner intelligemment** selon le layout:
+   - Editorial: Grande image vedette après le titre
+   - Grid: Image carrée en haut de carte
+   - Story: Images alternées gauche/droite selon le flow narratif
+3. **Créer des galeries** pour produits avec multiples angles de vue
+4. **Adapter les alt texts** selon l'analyse visuelle (matériaux, couleurs, style détectés)
+
+⚠️ **RÈGLES ABSOLUES IMAGES**:
+- COPIER EXACTEMENT les URLs du contexte produits ci-dessus
+- NE JAMAIS utiliser via.placeholder.com, example.com, ou \${...}
+- Si pas d'image: ne pas afficher d'image pour ce produit
+- Format: <img src="[URL_EXACTE_DU_CONTEXTE]" alt="[ALT_DESCRIPTIF]" class="[CLASS_SELON_LAYOUT]">
 
 **INSTRUCTIONS CRITIQUES**:
 
@@ -829,21 +978,22 @@ Commence par <!DOCTYPE html> et génère l'article complet.`;
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Tu es un expert en rédaction d'articles SEO pour e-commerce. Tu génères du HTML pur et moderne."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 16000,
-      }),
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: `Tu es un expert en rédaction d'articles SEO pour e-commerce. Tu génères du HTML pur et moderne.
+IMPÉRATIF: Respecte EXACTEMENT la longueur demandée (${articleLength} mots), le layout (${layout}), et l'angle éditorial (${editorialAngle}).`
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: articleLength === '700' ? 8000 : 20000, // Ajusté selon la longueur
+        }),
     });
 
     if (!aiResponse.ok) {
