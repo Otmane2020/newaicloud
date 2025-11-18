@@ -98,8 +98,8 @@ async function generateArticle(
             inventory_quantity,
             category,
             product_type,
-            smart_material,
-            smart_color_name,
+            ai_material,
+            ai_color,
             smart_weight,
             smart_height,
             smart_width,
@@ -144,8 +144,8 @@ async function generateArticle(
             image_url,
             store_id,
             seller_id,
-            smart_material,
-            smart_color_name,
+            ai_material,
+            ai_color,
             smart_weight,
             smart_height,
             smart_width,
@@ -208,8 +208,8 @@ async function generateArticle(
 **Produit ${i + 1}: ${p.title}**
 - Prix: ${p.price}€ ${promo}
 - URL: ${storeUrl}/products/${p.handle}
-- Matériau: ${p.smart_material || "Non spécifié"}
-- Couleur: ${p.smart_color_name || "Non spécifiée"}
+- Matériau: ${p.ai_material || "Non spécifié"}
+- Couleur: ${p.ai_color || "Non spécifiée"}
 - Dimensions: ${dims || "Non spécifiées"}
 - Poids: ${p.smart_weight || "Non spécifié"}
 - Stock: ${p.inventory_quantity > 0 ? `${p.inventory_quantity} unités` : "Stock limité"}

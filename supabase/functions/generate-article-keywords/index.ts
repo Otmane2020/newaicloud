@@ -27,7 +27,7 @@ serve(async (req) => {
     // Récupérer les produits avec leurs attributs AI
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
-      .select('title, tags, category, product_type, description, ai_material, ai_color, brand, vendor')
+      .select('title, tags, category, product_type, description, ai_material, ai_color, vendor')
       .in('id', productIds);
 
     if (productsError) throw productsError;
@@ -40,7 +40,7 @@ serve(async (req) => {
   Catégorie: ${p.category || p.product_type || 'N/A'}
   Matériau: ${p.ai_material || 'N/A'}
   Couleur: ${p.ai_color || 'N/A'}
-  Marque: ${p.brand || p.vendor || 'N/A'}
+  Marque: ${p.vendor || 'N/A'}
   Tags: ${p.tags || 'N/A'}
   Description: ${p.description?.substring(0, 200) || 'N/A'}
     `.trim()).join('\n\n');
