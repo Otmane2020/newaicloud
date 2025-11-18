@@ -105,7 +105,7 @@ export function ArticleWizard({
   const [productSearch, setProductSearch] = useState('');
   const [productPage, setProductPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const PRODUCTS_PER_PAGE = 30;
+  const PRODUCTS_PER_PAGE = 50;
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 6;
@@ -118,6 +118,17 @@ export function ArticleWizard({
     }
   }, [selectedCollection, open, storeId]);
 
+  // Reload products when search changes (with debounce)
+  useEffect(() => {
+    if (selectedCollection && storeId) {
+      const timer = setTimeout(() => {
+        setProductPage(1);
+        loadProducts(1, productSearch);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [productSearch]);
+
   // Generate keywords when products are selected
   useEffect(() => {
     if (selectedProducts.length > 0) {
@@ -125,33 +136,44 @@ export function ArticleWizard({
     }
   }, [selectedProducts]);
 
-  const loadProducts = async (page: number = 1) => {
+  const loadProducts = async (page: number = 1, search: string = productSearch) => {
     if (!selectedCollection || !storeId) {
       console.log('Cannot load products: missing collection or store_id', { selectedCollection, storeId });
       return;
     }
     
     try {
-      console.log('Loading products for collection:', selectedCollection, 'store:', storeId, 'page:', page);
+      console.log('Loading products for collection:', selectedCollection, 'store:', storeId, 'page:', page, 'search:', search);
       
       const from = (page - 1) * PRODUCTS_PER_PAGE;
       const to = from + PRODUCTS_PER_PAGE - 1;
       
-      // Get total count
-      const { count } = await supabase
+      // Build query with search
+      let query = supabase
         .from('shopify_products')
         .select('id', { count: 'exact', head: true })
         .eq('store_id', storeId)
         .contains('collection_ids', [selectedCollection]);
       
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,category.ilike.%${search}%`);
+      }
+      
+      const { count } = await query;
       setTotalProducts(count || 0);
       
       // Get products for current page
-      const { data, error } = await supabase
+      let dataQuery = supabase
         .from('shopify_products')
         .select('id, title, price, image_url, category, handle, tags, description')
         .eq('store_id', storeId)
-        .contains('collection_ids', [selectedCollection])
+        .contains('collection_ids', [selectedCollection]);
+      
+      if (search) {
+        dataQuery = dataQuery.or(`title.ilike.%${search}%,category.ilike.%${search}%`);
+      }
+      
+      const { data, error } = await dataQuery
         .range(from, to)
         .order('title');
 
@@ -162,7 +184,6 @@ export function ArticleWizard({
       // Si on est en page 1, remplacer, sinon ajouter (infinite scroll)
       if (page === 1) {
         setProducts(data || []);
-        setSelectedProducts([]);
       } else {
         setProducts(prev => [...prev, ...(data || [])]);
       }
@@ -649,56 +670,42 @@ export function ArticleWizard({
             </div>
           </div>
 
-          <div className="mb-4">
-            <Input
-              type="text"
-              placeholder="Rechercher un produit..."
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              className="w-full"
-            />
+          <div className="mb-4 sticky top-0 bg-background z-10 pb-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Rechercher un produit..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="w-full pl-9"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
-              {(() => {
-                const filteredProducts = products.filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                );
-                return `${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`;
-              })()}
+              {selectedProducts.length} produit{selectedProducts.length !== 1 ? 's' : ''} sélectionné{selectedProducts.length !== 1 ? 's' : ''} sur {totalProducts}
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                const filteredProducts = products.filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                );
-                const filteredIds = filteredProducts.map(p => p.id);
-                const allFilteredSelected = filteredIds.every(id => selectedProducts.includes(id));
-                
-                if (allFilteredSelected) {
-                  setSelectedProducts(selectedProducts.filter(id => !filteredIds.includes(id)));
+                const allSelected = products.every(p => selectedProducts.includes(p.id));
+                if (allSelected) {
+                  setSelectedProducts(selectedProducts.filter(id => !products.map(p => p.id).includes(id)));
                 } else {
-                  setSelectedProducts([...new Set([...selectedProducts, ...filteredIds])]);
+                  setSelectedProducts([...new Set([...selectedProducts, ...products.map(p => p.id)])]);
                 }
               }}
             >
-              Tout sélectionner
+              {products.every(p => selectedProducts.includes(p.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
             </Button>
           </div>
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
             <div className="space-y-3">
-              {products
-                .filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                )
-                .map((product) => (
+              {products.map((product) => (
                 <div
                   key={product.id}
                   onClick={() => toggleProduct(product.id)}
@@ -734,15 +741,72 @@ export function ArticleWizard({
             </div>
           </ScrollArea>
 
-          {/* Bouton Charger plus */}
-          {products.length < totalProducts && (
-            <div className="flex justify-center mt-6">
-              <Button
-                onClick={() => loadProducts(productPage + 1)}
-                variant="outline"
-              >
-                Charger plus de produits ({products.length}/{totalProducts})
-              </Button>
+          {/* Pagination moderne */}
+          {totalProducts > PRODUCTS_PER_PAGE && (
+            <div className="flex flex-col items-center gap-4 mt-6">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    const newPage = Math.max(1, productPage - 1);
+                    setProductPage(newPage);
+                    loadProducts(newPage, productSearch);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  disabled={productPage === 1}
+                >
+                  Précédent
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, Math.ceil(totalProducts / PRODUCTS_PER_PAGE)) }, (_, i) => {
+                    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+                    let pageNum;
+                    
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (productPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (productPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = productPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        onClick={() => {
+                          setProductPage(pageNum);
+                          loadProducts(pageNum, productSearch);
+                        }}
+                        variant={productPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className="w-10"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  onClick={() => {
+                    const newPage = Math.min(Math.ceil(totalProducts / PRODUCTS_PER_PAGE), productPage + 1);
+                    setProductPage(newPage);
+                    loadProducts(newPage, productSearch);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  disabled={productPage >= Math.ceil(totalProducts / PRODUCTS_PER_PAGE)}
+                >
+                  Suivant
+                </Button>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Page {productPage} sur {Math.ceil(totalProducts / PRODUCTS_PER_PAGE)} ({totalProducts} produits au total)
+              </p>
             </div>
           )}
 
