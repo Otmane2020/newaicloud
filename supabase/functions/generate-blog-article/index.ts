@@ -88,6 +88,7 @@ async function generateArticle(
       if (productIds && productIds.length > 0) {
         console.log("🔍 Fetching specific products:", productIds);
         
+        // Utiliser un LEFT JOIN pour inclure les produits même sans images
         const { data, error } = await supabase
           .from("shopify_products")
           .select(`
@@ -106,20 +107,24 @@ async function generateArticle(
             smart_width,
             smart_length,
             description,
-            product_images!inner (
+            image_url,
+            product_images (
               src,
               alt_text,
               position
             )
           `)
-          .in("id", productIds)
-          .order("product_images.position", { ascending: true });
+          .in("id", productIds);
 
         if (error) {
           console.error("❌ Error fetching products:", error);
         } else if (data && data.length > 0) {
           products = data;
-          console.log(`✅ Found ${products.length} products`);
+          console.log(`✅ Found ${products.length} products with images:`, data.map((p: any) => ({
+            title: p.title,
+            imageCount: p.product_images?.length || 0,
+            hasImageUrl: !!p.image_url
+          })));
         }
       }
       
@@ -189,7 +194,7 @@ async function generateArticle(
       }
     }
 
-    // Étape 3: Préparer le contexte produits pour Gemini
+    // Étape 3: Préparer le contexte produits pour l'IA
     const productsContext = products.length > 0
       ? products.map((p, i) => {
           const promo = p.compare_at_price && p.compare_at_price > p.price
@@ -200,14 +205,19 @@ async function generateArticle(
             .filter(Boolean)
             .join(" x ");
           
-          // ✅ Formater les images de manière très explicite pour Gemini
-          const images = p.product_images && p.product_images.length > 0
-            ? p.product_images
-                .map((img: any, idx: number) => 
-                  `  Image ${idx + 1}: ${img.src}\n  Alt text: ${img.alt_text || 'Image produit'}`
-                )
-                .join("\n") 
-            : "⚠️ Aucune image disponible pour ce produit - NE PAS AFFICHER D'IMAGE";
+          // ✅ Gérer les images : product_images OU image_url
+          let images = "";
+          if (p.product_images && p.product_images.length > 0) {
+            images = p.product_images
+              .map((img: any, idx: number) => 
+                `  Image ${idx + 1}: ${img.src}\n  Alt text: ${img.alt_text || 'Image produit'}`
+              )
+              .join("\n");
+          } else if (p.image_url) {
+            images = `  Image 1: ${p.image_url}\n  Alt text: ${p.title}`;
+          } else {
+            images = "⚠️ Aucune image disponible pour ce produit";
+          }
           
           return `
 **Produit ${i + 1}: ${p.title}**
@@ -225,7 +235,7 @@ ${images}
         }).join("\n\n")
       : "Aucun produit spécifique disponible - générer un article informatif général";
 
-    console.log("📦 Products context prepared");
+    console.log("📦 Products context prepared with", products.length, "products");
 
     // Étape 4: Générer un titre intelligent avec Lovable AI
     let articleTitle = title;
