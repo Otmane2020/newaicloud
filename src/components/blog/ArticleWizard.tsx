@@ -436,7 +436,7 @@ export function ArticleWizard({
         <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-6 pb-6">
           {/* Progress Indicator */}
-          <Card className="p-6">
+          <div className="p-6 rounded-lg border bg-card">
             <div className="flex items-center justify-between mb-4">
               {[
                 { num: 1, label: 'Angle' },
@@ -468,7 +468,7 @@ export function ArticleWizard({
             </div>
           ))}
         </div>
-      </Card>
+      </div>
 
           {/* Step 1: Editorial Angle Selection */}
           {step === 1 && (
