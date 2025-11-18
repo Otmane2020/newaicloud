@@ -10,7 +10,6 @@ import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { BlogWizard } from '@/components/blog/BlogWizard';
 import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
 import { CampaignWizard } from '@/components/blog/CampaignWizard';
 import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
@@ -31,7 +30,7 @@ export default function Blog() {
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showWizard, setShowWizard] = useState(false);
+  
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -345,7 +344,10 @@ export default function Blog() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Button size="lg" onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
+              <Button size="lg" onClick={() => {
+                setSearchParams({ subtab: 'blogging', openWizard: 'true' });
+                setActiveSubtab('blogging');
+              }} className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
                 {t.blog.hero.createArticle.startCreating}
               </Button>
@@ -572,7 +574,10 @@ export default function Blog() {
 
               <Button 
                 size="lg" 
-                onClick={() => setShowWizard(true)} 
+                onClick={() => {
+                  setSearchParams({ subtab: 'blogging', openWizard: 'true' });
+                  setActiveSubtab('blogging');
+                }} 
                 disabled={loading}
                 className="mt-4 sm:mt-6 w-full sm:w-auto"
               >
@@ -815,17 +820,6 @@ export default function Blog() {
             )}
           </Card>
         </div>
-      )}
-
-      {/* Blog Wizard Modal */}
-      {showWizard && (
-        <BlogWizard
-          onClose={() => {
-            setShowWizard(false);
-            loadData();
-          }}
-          categories={categories}
-        />
       )}
 
       {/* Campaign Wizard Modal */}
