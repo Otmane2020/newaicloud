@@ -65,7 +65,7 @@ async function generateArticle(
       targetAudience,
       articleAngle,
       layout = "editorial",
-      colorPalette = "classic",
+      colorPalette = "neutral",
       editorialAngle = "guide",
       generateFeaturedImage = false
     } = requestData;
@@ -402,15 +402,21 @@ Aucun texte, juste une représentation visuelle du sujet.`;
 
     // Color palette styles
     const paletteStyles: Record<string, string> = {
-      classic: `--color-primary: #1a1a1a; --color-secondary: #ffffff; --color-accent: #4a90e2;`,
-      warm: `--color-primary: #8b4513; --color-secondary: #faf0e6; --color-accent: #d2691e;`,
-      cool: `--color-primary: #2c3e50; --color-secondary: #ecf0f1; --color-accent: #3498db;`,
-      elegant: `--color-primary: #2d2d2d; --color-secondary: #f5f5f5; --color-accent: #c9a961;`,
-      modern: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`,
-      sunset: `--color-primary: #ff6b6b; --color-secondary: #ffe66d; --color-accent: #4ecdc4;`,
-      forest: `--color-primary: #2d5016; --color-secondary: #8fbc8f; --color-accent: #f0e68c;`,
-      ocean: `--color-primary: #0d3b66; --color-secondary: #faf0ca; --color-accent: #ee964b;`
+      neutral: `--color-primary: #1a1a1a; --color-secondary: #f8f9fa; --color-accent: #6366f1;`,
+      corporate: `--color-primary: #0f172a; --color-secondary: #f1f5f9; --color-accent: #3b82f6;`,
+      luxury: `--color-primary: #18181b; --color-secondary: #fafaf9; --color-accent: #d4af37;`,
+      minimal: `--color-primary: #171717; --color-secondary: #fafafa; --color-accent: #262626;`,
+      tech: `--color-primary: #0a0a0a; --color-secondary: #ffffff; --color-accent: #00d4aa;`,
+      custom: `--color-primary: #000000; --color-secondary: #ffffff; --color-accent: #0066cc;` // Sera remplacé par customColors
     };
+
+    // Si des couleurs personnalisées sont fournies, les utiliser
+    const { customColors } = requestData;
+    let finalPaletteStyle = paletteStyles[colorPalette] || paletteStyles.neutral;
+    
+    if (colorPalette === 'custom' && customColors) {
+      finalPaletteStyle = `--color-primary: ${customColors.primary}; --color-secondary: ${customColors.secondary}; --color-accent: ${customColors.accent};`;
+    }
     
     const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce, spécialisé dans le style New York Times.
 
@@ -484,9 +490,9 @@ ${productsContext}
    - Corps: line-height: 1.75, font-size: 18px
    - Espacements généreux entre sections (60px)
 
-4. **PALETTE DE COULEURS ${colorPalette}** - APPLIQUE CES VARIABLES CSS:
+ 4. **PALETTE DE COULEURS ${colorPalette}** - APPLIQUE CES VARIABLES CSS:
    :root {
-     ${paletteStyles[colorPalette] || paletteStyles.classic}
+     ${finalPaletteStyle}
    }
    - Utilise var(--color-primary) pour les titres
    - Utilise var(--color-accent) pour les liens et boutons
@@ -566,7 +572,7 @@ Si aucune image n'est disponible pour un produit, n'affiche PAS d'image pour ce 
    <style>
      ${layoutStyles[layout] || layoutStyles.editorial}
      
-     :root { ${paletteStyles[colorPalette] || paletteStyles.classic} }
+     :root { ${finalPaletteStyle} }
      
      body {
        font-family: Georgia, 'Times New Roman', serif;
