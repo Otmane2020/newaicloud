@@ -1009,17 +1009,7 @@ const handleOptimizeArticle = async (articleId: string) => {
                               <ImageIcon className="w-4 h-4 text-muted-foreground" />
                             )}
                           </div>
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <p className="font-medium text-sm line-clamp-2 break-words">{article.title}</p>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                              {article.source === 'ai' ? 'AI' : article.source === 'shopify' ? 'SHOPIFY' : 'MANUAL'}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Right: Google Preview + SEO Score */}
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                             {article.seo_title && article.meta_description ? (
                               <GoogleSearchPreview
                                 title={article.seo_title || article.title}
@@ -1028,10 +1018,14 @@ const handleOptimizeArticle = async (articleId: string) => {
                                 compact
                               />
                             ) : (
-                              <div className="text-sm text-muted-foreground py-2">
-                                Not optimized
-                              </div>
+                              <>
+                                <p className="font-medium text-sm line-clamp-2 break-words">{article.title}</p>
+                                <p className="text-xs text-muted-foreground">Not optimized</p>
+                              </>
                             )}
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
+                              {article.source === 'ai' ? 'AI' : article.source === 'shopify' ? 'SHOPIFY' : 'MANUAL'}
+                            </p>
                           </div>
                         </div>
                       </div>
