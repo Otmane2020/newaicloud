@@ -51,30 +51,37 @@ Produit ${i + 1}:
       .join("\n");
 
     // Call Lovable AI to generate intelligent keywords
-    const prompt = `Tu es un expert SEO e-commerce. Génère des mots-clés optimisés pour un article de blog sur ces produits de la collection "${collectionName}".
+    const prompt = `Tu es un expert SEO e-commerce. Génère des mots-clés ULTRA-CIBLÉS et PERTINENTS pour un article de blog sur ces produits de la collection "${collectionName}".
 
 PRODUITS:
 ${productsContext}
 
-TÂCHE:
-1. **Mots-clés courts** (3-5 mots): Génère 8-10 mots-clés courts pertinents, concis et SEO-friendly
-   - Exemples: "canapé angle velours", "mobilier moderne", "décoration salon"
+OBJECTIF: Générer des mots-clés de HAUTE QUALITÉ qui convertissent vraiment (pas de remplissage générique).
+
+TÂCHE - SOYEZ SÉLECTIF:
+
+1. **Mots-clés courts** (2-4 mots): Génère SEULEMENT 4-5 mots-clés ULTRA-PERTINENTS
+   ✅ BONS: "buffet baroque laqué", "meuble marbre noir", "buffet pieds dorés"
+   ❌ ÉVITER: mots-clés génériques comme "décoration intérieure", "mobilier salon"
    
-2. **Phrases longues** (6-12 mots): Génère 5-7 phrases longues (longue traîne SEO) naturelles et conversationnelles
-   - Exemples: "comment choisir un canapé d'angle pour petit salon", "meilleurs canapés modulables 2025 guide complet"
+2. **Phrases longues** (6-10 mots): Génère SEULEMENT 3-4 phrases CIBLÉES avec INTENTION D'ACHAT CLAIRE
+   ✅ BONS: "buffet baroque laqué marbre noir 180 cm", "choisir buffet pieds chrome ou dorés"
+   ❌ ÉVITER: questions vagues comme "où acheter un buffet", comparatifs trop longs
 
-3. **Titre d'article**: Génère 1 titre SEO accrocheur et optimisé pour cet article
+3. **Titre d'article**: Génère 1 titre SEO accrocheur (max 55 caractères)
 
-RÈGLES:
-- Mots-clés en français, naturels et conversationnels
-- Orientés intention d'achat et recherche informationnelle
-- Pas de répétitions, variés et complémentaires
-- Focus sur les bénéfices et caractéristiques des produits
+RÈGLES STRICTES:
+- QUALITÉ > QUANTITÉ (mieux vaut 4 excellents mots-clés que 10 médiocres)
+- Chaque mot-clé doit être SPÉCIFIQUE au produit (marque, matériau, style, couleur)
+- ÉVITER les mots-clés génériques ("décoration", "salon", "intérieur", "acheter")
+- ÉVITER les répétitions (ne pas répéter les mêmes mots dans plusieurs keywords)
+- Focus EXCLUSIF sur les caractéristiques UNIQUES des produits
+- Chaque keyword doit être ACTIONNABLE et refléter une INTENTION D'ACHAT
 
 Réponds UNIQUEMENT au format JSON strict suivant:
 {
-  "shortKeywords": ["mot-clé 1", "mot-clé 2", ...],
-  "longKeywords": ["phrase longue 1", "phrase longue 2", ...],
+  "shortKeywords": ["mot-clé 1", "mot-clé 2", "mot-clé 3", "mot-clé 4"],
+  "longKeywords": ["phrase longue 1", "phrase longue 2", "phrase longue 3"],
   "articleTitle": "Titre d'article SEO"
 }`;
 
