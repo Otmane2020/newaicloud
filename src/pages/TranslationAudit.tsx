@@ -20,6 +20,8 @@ interface TranslationIssue {
   severity: 'error' | 'warning' | 'info';
   recommendation?: string;
   translationKey?: string;
+  value?: string;
+  line?: number;
 }
 
 const TranslationAudit = () => {
@@ -36,6 +38,72 @@ const TranslationAudit = () => {
     coveragePercent: 0,
   });
   const { toast } = useToast();
+
+  // Helper functions to detect mixed languages
+  const isProbablyFrench = (text: string): boolean => {
+    if (text.length < 3) return false;
+    const hasAccents = /[àâäéèêëïîôùûüÿçœæ]/i.test(text);
+    const frenchWords = /\b(le|la|les|un|une|des|de|du|et|ou|dans|sur|avec|pour|par|est|sont|à|au|aux|ce|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses)\b/i;
+    return hasAccents || frenchWords.test(text);
+  };
+
+  const isProbablyEnglish = (text: string): boolean => {
+    if (text.length < 3) return false;
+    if (/[àâäéèêëïîôùûüÿçœæ]/i.test(text)) return false;
+    const englishWords = /\b(the|a|an|and|or|in|on|at|to|for|of|with|by|from|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|should|could|may|might|can|this|that|these|those)\b/i;
+    return englishWords.test(text);
+  };
+
+  const getAllTranslationValues = (obj: any, prefix = ''): Array<{ key: string; value: string }> => {
+    const results: Array<{ key: string; value: string }> = [];
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      if (typeof value === 'string') {
+        results.push({ key: fullKey, value });
+      } else if (typeof value === 'object' && value !== null) {
+        results.push(...getAllTranslationValues(value, fullKey));
+      }
+    }
+    return results;
+  };
+
+  const checkMixedLanguages = (): TranslationIssue[] => {
+    const issues: TranslationIssue[] = [];
+    
+    // Check EN translations for French text
+    const enValues = getAllTranslationValues(enTranslations);
+    enValues.forEach(({ key, value }) => {
+      if (isProbablyFrench(value) && value.length > 10) {
+        issues.push({
+          component: 'Translation File',
+          file: 'src/lib/translations/en.ts',
+          issue: `French text detected in English translation`,
+          severity: 'error',
+          translationKey: key,
+          value: value,
+          recommendation: 'Replace with proper English translation'
+        });
+      }
+    });
+    
+    // Check FR translations for English text
+    const frValues = getAllTranslationValues(frTranslations);
+    frValues.forEach(({ key, value }) => {
+      if (isProbablyEnglish(value) && value.length > 10 && !isProbablyFrench(value)) {
+        issues.push({
+          component: 'Translation File',
+          file: 'src/lib/translations/fr.ts',
+          issue: `English text detected in French translation`,
+          severity: 'error',
+          translationKey: key,
+          value: value,
+          recommendation: 'Replace with proper French translation'
+        });
+      }
+    });
+    
+    return issues;
+  };
 
   useEffect(() => {
     runAudit();
@@ -78,7 +146,13 @@ const TranslationAudit = () => {
         });
       });
 
-      // 2. Scan for hardcoded strings in components
+      // 2. Check for mixed languages
+      console.log("🔍 Checking for mixed languages...");
+      const mixedLanguages = checkMixedLanguages();
+      console.log(`Found ${mixedLanguages.length} mixed language issues`);
+      foundIssues.push(...mixedLanguages);
+
+      // 3. Scan for hardcoded strings in components
       console.log("🔍 Scanning components for hardcoded strings...");
       const hardcodedStrings = await scanForHardcodedStrings();
       console.log(`Found ${hardcodedStrings.length} hardcoded strings`);
@@ -683,8 +757,14 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
     );
   };
 
+  const getMixedLanguages = () => {
+    return issues.filter(i => 
+      i.issue.includes('French text detected') || i.issue.includes('English text detected')
+    );
+  };
+
   const getActionableIssues = () => {
-    return getMissingTranslations().length + getExtraKeys().length + getHardcodedStrings().length;
+    return getMissingTranslations().length + getExtraKeys().length + getHardcodedStrings().length + getMixedLanguages().length;
   };
 
   const copyMissingTranslationsCode = () => {
@@ -1081,7 +1161,7 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
                 </DialogHeader>
                 
                 <Tabs defaultValue="missing" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="missing" className="relative">
                       Missing Keys
                       {getMissingTranslations().length > 0 && (
@@ -1095,6 +1175,14 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
                       {getExtraKeys().length > 0 && (
                         <Badge className="ml-2 px-1.5 py-0 text-xs" variant="default">
                           {getExtraKeys().length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="mixed" className="relative">
+                      Mixed FR/EN
+                      {getMixedLanguages().length > 0 && (
+                        <Badge className="ml-2 px-1.5 py-0 text-xs" variant="destructive">
+                          {getMixedLanguages().length}
                         </Badge>
                       )}
                     </TabsTrigger>
@@ -1206,6 +1294,74 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
                                       Add to EN
                                     </Button>
                                   </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="mixed" className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg border border-destructive">
+                      <p className="text-sm text-muted-foreground">
+                        French text detected in English file or English text in French file
+                      </p>
+                    </div>
+                    
+                    <ScrollArea className="h-[400px] w-full pr-4">
+                      {getMixedLanguages().length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-40 text-center">
+                          <CheckCircle2 className="w-12 h-12 text-success mb-2" />
+                          <p className="text-muted-foreground">No mixed language issues!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {getMixedLanguages().map((issue, index) => (
+                            <Card key={index} className="border-destructive">
+                              <CardContent className="pt-4">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <Badge variant="destructive" className="text-xs">
+                                      {issue.file.includes('en.ts') ? 'French in EN file' : 'English in FR file'}
+                                    </Badge>
+                                    <code className="text-xs text-muted-foreground font-mono">
+                                      {issue.file}
+                                    </code>
+                                  </div>
+                                  
+                                  {issue.translationKey && (
+                                    <div className="flex items-center justify-between bg-muted p-2 rounded">
+                                      <code className="text-xs font-mono">
+                                        {issue.translationKey}
+                                      </code>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(issue.translationKey || '');
+                                          toast({ title: "Key copied!" });
+                                        }}
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                  
+                                  {issue.value && (
+                                    <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                                      <p className="text-xs text-muted-foreground mb-1">Current value:</p>
+                                      <p className="text-sm font-mono">"{issue.value}"</p>
+                                    </div>
+                                  )}
+                                  
+                                  {issue.recommendation && (
+                                    <div className="bg-muted p-3 rounded-md">
+                                      <p className="text-xs text-muted-foreground mb-1">💡 Recommendation:</p>
+                                      <p className="text-sm">{issue.recommendation}</p>
+                                    </div>
+                                  )}
                                 </div>
                               </CardContent>
                             </Card>

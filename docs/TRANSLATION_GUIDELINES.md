@@ -1,10 +1,61 @@
-# Guide de Traduction / Translation Guidelines
+# Translation Guidelines
 
-## 🌍 Principe de base / Basic principle
+This document outlines the translation system and best practices for ensuring all user-facing text is properly translated in both French (FR) and English (EN).
 
-**TOUJOURS** créer les traductions FR et EN simultanément lors de toute modification de code contenant du texte.
+## Core Principle
 
-**ALWAYS** create FR and EN translations simultaneously when modifying any code containing text.
+**ALL user-facing text MUST be translated simultaneously in both French and English.**
+
+## Translation Audit System
+
+### Running the Translation Audit
+
+To check for translation issues, you have two options:
+
+1. **CLI Tool**: Run `npm run translations:check` in your terminal (coming soon)
+2. **UI Tool**: Navigate to `/translation-audit` in the application
+
+### Types of Issues Detected
+
+The audit system detects four main types of translation issues:
+
+1. **Missing Keys**: Keys present in one language file but not in the other
+2. **Extra Keys**: Keys that exist in one language but are unused
+3. **Mixed Language Values**: French text in `en.ts` or English text in `fr.ts` (🆕 NEW!)
+4. **Hardcoded Text**: Text directly coded in components instead of using `useTranslation()`
+
+### Mandatory Audit Before Release
+
+**IMPORTANT**: Before any major release or deployment, you MUST:
+1. Open the Translation Audit page (`/translation-audit`)
+2. Click "Re-run Audit"
+3. Fix ALL errors (red) and warnings (orange)
+4. Download and review the error-only report
+5. Verify that critical pages work in both FR and EN
+
+### Detecting Mixed Language Values
+
+The audit system now automatically detects when:
+- French text (with accents or French words) appears in `en.ts`
+- English text (common English words, no accents) appears in `fr.ts`
+
+**Example of errors to avoid:**
+
+```typescript
+// ❌ WRONG - French in en.ts
+export const translations = {
+  buttons: {
+    save: "Enregistrer" // French word in English file!
+  }
+}
+
+// ✅ CORRECT
+export const translations = {
+  buttons: {
+    save: "Save"
+  }
+}
+```
 
 ---
 
