@@ -34,6 +34,15 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface ArticleWizardProps {
   open: boolean;
@@ -106,6 +115,28 @@ export function ArticleWizard({
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 6;
+
+  // Filter products based on search
+  const filteredProducts = products.filter(product => 
+    product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+    product.category?.toLowerCase().includes(productSearch.toLowerCase())
+  );
+
+  // Pagination for products
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedProducts,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: filteredProducts,
+    itemsPerPage: 20,
+    cacheKey: 'article-wizard-products'
+  });
 
   // Load products when collection changes
   useEffect(() => {
@@ -613,22 +644,12 @@ export function ArticleWizard({
 
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
-              {(() => {
-                const filteredProducts = products.filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                );
-                return `${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`;
-              })()}
+              {`${selectedProducts.length} produit${selectedProducts.length !== 1 ? 's' : ''} sélectionné${selectedProducts.length !== 1 ? 's' : ''} sur ${filteredProducts.length}`}
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                const filteredProducts = products.filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                );
                 const filteredIds = filteredProducts.map(p => p.id);
                 const allFilteredSelected = filteredIds.every(id => selectedProducts.includes(id));
                 
@@ -645,11 +666,7 @@ export function ArticleWizard({
 
           <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-6">
             <div className="space-y-3">
-              {products
-                .filter(product => 
-                  product.title.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  product.category?.toLowerCase().includes(productSearch.toLowerCase())
-                )
+              {paginatedProducts
                 .map((product) => (
                 <div
                   key={product.id}
@@ -682,9 +699,39 @@ export function ArticleWizard({
                     </div>
                   )}
                 </div>
-              ))}
+                ))}
             </div>
           </ScrollArea>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-4">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={previousPage}
+                    className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={nextPage}
+                    className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
 
         </Card>
       )}
