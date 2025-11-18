@@ -954,13 +954,11 @@ const handleOptimizeArticle = async (articleId: string) => {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="w-20">Image</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="min-w-[400px]">Aperçu Google</TableHead>
-                <TableHead className="w-32">
+                <TableHead>Article</TableHead>
+                <TableHead className="text-right w-32">
                   <button
                     onClick={handleSeoScoreSortToggle}
-                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                    className="flex items-center gap-1 hover:text-primary transition-colors ml-auto"
                   >
                     {t.blog.management.table.seoScore}
                     {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
@@ -968,9 +966,7 @@ const handleOptimizeArticle = async (articleId: string) => {
                     {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
                   </button>
                 </TableHead>
-                <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-40">Sync Status</TableHead>
-                <TableHead className="w-32 text-right">Actions</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -989,162 +985,103 @@ const handleOptimizeArticle = async (articleId: string) => {
                         onCheckedChange={() => handleSelectArticle(article.id)}
                       />
                     </TableCell>
-                    <TableCell>
-                      <div 
-                        className="w-16 h-16 rounded-md bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-purple-300 group relative"
-                        onClick={() => {
-                          setSelectedArticleForImage(article);
-                          setShowImageDialog(true);
-                        }}
-                        title="Cliquer pour générer une image avec Gemini AI"
-                      >
-                        {article.featured_image ? (
-                          <img 
-                            src={article.featured_image} 
-                            alt={article.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <>
-                            <ImageIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
-                              <Sparkles className="w-3 h-3 text-white" />
-                            </div>
-                          </>
-                        )}
+                    <TableCell className="w-full">
+                      <div className="flex items-start gap-4">
+                        {/* Left: Image + Title + Brand */}
+                        <div className="flex items-start gap-3 min-w-[200px]">
+                          <div 
+                            className="relative w-12 h-12 bg-background rounded overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 border"
+                            onClick={() => {
+                              setSelectedArticleForImage(article);
+                              setShowImageDialog(true);
+                            }}
+                          >
+                            {article.featured_image ? (
+                              <img 
+                                src={article.featured_image} 
+                                alt={article.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <p className="font-medium text-sm line-clamp-2 break-words">{article.title}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                              {article.source === 'ai' ? 'AI' : article.source === 'shopify' ? 'SHOPIFY' : 'MANUAL'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right: Google Preview + SEO Score */}
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="flex-1 min-w-0">
+                            {article.seo_title && article.meta_description ? (
+                              <GoogleSearchPreview
+                                title={article.seo_title || article.title}
+                                description={article.meta_description}
+                                url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, storeDomain)}
+                                compact
+                              />
+                            ) : (
+                              <div className="text-sm text-muted-foreground py-2">
+                                Not optimized
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="max-w-[200px]">
-                        <p className="font-medium line-clamp-2">{article.title}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {article.seo_title && article.meta_description ? (
-                        <GoogleSearchPreview
-                          title={article.seo_title || article.title}
-                          description={article.meta_description}
-                          url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, storeDomain)}
-                          compact
-                        />
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Not optimized
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col items-start gap-1">
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className={`text-2xl font-bold ${scoreBadge.color}`}>
+                          <span className={`text-3xl font-bold ${scoreBadge.color}`}>
                             {Math.round(seoScore)}%
                           </span>
-                          {article.optimization_count && article.optimization_count > 0 && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                if (!canDoAction('articles')) {
-                                  toast.error("Limite d'articles atteinte");
-                                  setShowUpgradeDialog(true);
-                                  return;
-                                }
-                                handleOptimizeArticle(article.id);
-                              }}
-                              disabled={optimizing}
-                              className="h-6 w-6 p-0 hover:bg-primary/10"
-                              title="Re-optimize with AI"
-                            >
-                              <Sparkles className="w-3 h-3 text-primary" />
-                            </Button>
-                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              if (!canDoAction('articles')) {
+                                toast.error("Limite d'articles atteinte");
+                                setShowUpgradeDialog(true);
+                                return;
+                              }
+                              handleOptimizeArticle(article.id);
+                            }}
+                            disabled={optimizing}
+                            className="h-7 w-7 p-0 hover:bg-primary/10"
+                            title="Re-optimize with AI"
+                          >
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          </Button>
                         </div>
                         <div className="flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3 text-green-600" />
-                          <span className="text-xs text-muted-foreground">{scoreBadge.label}</span>
+                          <CheckCircle className={`w-3 h-3 ${scoreBadge.color.replace('text-', '')}`} />
+                          <span className={`text-xs font-medium ${scoreBadge.color}`}>{scoreBadge.label}</span>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
-                        {article.status === 'published' ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Published
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-3 h-3 mr-1" />
-                            Draft
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {article.last_synced_at ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 cursor-help">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Synced
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">
-                                Last synced: {new Date(article.last_synced_at).toLocaleString()}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : article.shopify_blog_id ? (
-                        <Badge variant="secondary" className="bg-yellow-600 text-white">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Pending
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Not synced
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
                           size="sm"
-                          variant="default"
-                          onClick={() => {
-                            if (!canDoAction('articles')) {
-                              toast.error("Limite d'articles atteinte");
-                              setShowUpgradeDialog(true);
-                              return;
-                            }
-                            handleOptimizeArticle(article.id);
-                          }}
-                          disabled={optimizing}
-                          title="Optimize"
-                          className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
-                          className="hover:bg-gray-50"
+                          title="Preview"
                         >
-                          <Eye className="w-5 h-5" />
+                          <Eye className="w-4 h-4" />
                         </Button>
                         {article.status === 'draft' && (
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => handleSyncArticle(article.id)}
                             disabled={syncing}
-                            className="hover:bg-green-50"
+                            title="Sync to Shopify"
                           >
-                            <Upload className="w-5 h-5 text-green-600" />
+                            <Upload className="w-4 h-4 text-green-600" />
                           </Button>
                         )}
                         <Button
@@ -1152,13 +1089,12 @@ const handleOptimizeArticle = async (articleId: string) => {
                           variant="ghost"
                           onClick={() => handleRequestIndexing(article.id, article.title)}
                           disabled={indexingArticle === article.id}
-                          title="Soumettre à Google Search Console"
-                          className="hover:bg-blue-50"
+                          title="Submit to Google Search Console"
                         >
                           {indexingArticle === article.id ? (
-                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                            <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
                           ) : (
-                            <Share2 className="w-5 h-5 text-blue-600" />
+                            <Share2 className="w-4 h-4 text-blue-600" />
                           )}
                         </Button>
                       </div>
