@@ -534,40 +534,44 @@ export default function Blog() {
 
           <Card className="p-4 sm:p-6 md:p-8">
             <div className="max-w-2xl mx-auto text-center space-y-4 sm:space-y-6">
-              <div className="p-3 sm:p-4 bg-primary/5 rounded-lg inline-block">
-                <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 text-primary mx-auto" />
+              <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl inline-block">
+                <Zap className="w-12 h-12 sm:w-16 sm:h-16 text-white mx-auto" />
               </div>
               
               <div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                  Article Creation Assistant
+                <h3 className="text-2xl sm:text-3xl font-bold mb-2">
+                  Quick Press Pro
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Our AI guides you to create an optimized article in 3 steps: 
-                  topic selection, content generation, and SEO optimization
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Créez des articles professionnels optimisés SEO en quelques clics
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-xl mx-auto">
+                  Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout,
+                  personnalisation des couleurs, sélection des produits, et génération d'un article complet
+                  avec images, table des matières et galeries interactives.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4">
-                <div className="p-3 sm:p-4 border rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary mb-2">1</div>
-                  <div className="font-medium mb-1 text-sm sm:text-base">Topic & Keywords</div>
+                <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
+                  <div className="text-2xl mb-3">✨</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">Design Professionnel</div>
                   <div className="text-xs text-muted-foreground">
-                    Define your theme
+                    3 layouts et 5 palettes de couleurs inspirés des plus grands magazines
                   </div>
                 </div>
-                <div className="p-3 sm:p-4 border rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary mb-2">2</div>
-                  <div className="font-medium mb-1 text-sm sm:text-base">AI Generation</div>
+                <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
+                  <div className="text-2xl mb-3">📸</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">Galeries Interactives</div>
                   <div className="text-xs text-muted-foreground">
-                    AI writes your article
+                    Images cliquables et galeries élégantes pour tous vos produits
                   </div>
                 </div>
-                <div className="p-3 sm:p-4 border rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-primary mb-2">3</div>
-                  <div className="font-medium mb-1 text-sm sm:text-base">Publication</div>
+                <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
+                  <div className="text-2xl mb-3">🎯</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">SEO Optimisé</div>
                   <div className="text-xs text-muted-foreground">
-                    Publish on Shopify
+                    Mots-clés intelligents, meta descriptions et structure parfaite
                   </div>
                 </div>
               </div>
@@ -579,10 +583,10 @@ export default function Blog() {
                   setActiveSubtab('blogging');
                 }} 
                 disabled={loading}
-                className="mt-4 sm:mt-6 w-full sm:w-auto"
+                className="mt-4 sm:mt-6 w-full sm:w-auto text-lg px-8 py-6"
               >
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Launch Creation Assistant
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                Démarrer l'assistant
               </Button>
             </div>
           </Card>
@@ -744,7 +748,7 @@ export default function Blog() {
       )}
 
       {/* Blogging - Quick Press */}
-      {activeSubtab === 'blogging' && <QuickPress />}
+      {activeSubtab === 'blogging' && <QuickPress onArticleCreated={loadData} />}
 
       {/* Settings */}
       {activeSubtab === 'settings' && (

@@ -41,6 +41,7 @@ interface ArticleWizardProps {
   collections: any[];
   userId: string;
   storeId: string;
+  onArticleCreated?: () => void;
 }
 
 const LAYOUTS = [
@@ -78,12 +79,13 @@ const COLOR_PALETTES = [
   { id: 'modern', name: 'Moderne', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
 ];
 
-export function ArticleWizard({
-  open,
-  onOpenChange,
-  collections,
-  userId,
-  storeId
+export function ArticleWizard({ 
+  open, 
+  onOpenChange, 
+  collections, 
+  userId, 
+  storeId,
+  onArticleCreated
 }: ArticleWizardProps) {
   const [step, setStep] = useState(1);
   const [selectedCollection, setSelectedCollection] = useState('');
@@ -327,6 +329,7 @@ export function ArticleWizard({
         setProgress(100);
         setCurrentStep('✅ Article généré avec succès!');
         toast.success('Article créé avec succès!');
+        onArticleCreated?.(); // Notify parent that article was created
       } else {
         throw new Error('Erreur lors de la génération');
       }

@@ -7,7 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArticleWizard } from './ArticleWizard';
 
-export function QuickPress() {
+interface QuickPressProps {
+  onArticleCreated?: () => void;
+}
+
+export function QuickPress({ onArticleCreated }: QuickPressProps = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [collections, setCollections] = useState<any[]>([]);
@@ -141,6 +145,7 @@ export function QuickPress() {
         collections={collections}
         userId={user?.id || ''}
         storeId={storeId}
+        onArticleCreated={onArticleCreated}
       />
     </>
   );
