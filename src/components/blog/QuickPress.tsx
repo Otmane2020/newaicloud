@@ -47,7 +47,7 @@ export function QuickPress() {
       
       let query = supabase
         .from('shopify_collections')
-        .select('id, title, product_count')
+        .select('id, title, products_count')
         .eq('user_id', user.id);
       
       // Filter by store if available
