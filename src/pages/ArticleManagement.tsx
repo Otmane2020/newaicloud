@@ -36,6 +36,9 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { GoogleSearchPreview } from '@/components/seo/GoogleSearchPreview';
+import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
+import { useStoreDomain } from '@/hooks/useStoreDomain';
 
 interface Article {
   id: string;
@@ -61,6 +64,7 @@ export interface ArticleManagementRef {
 const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   const { user } = useAuth();
   const { selectedStore } = useStore();
+  const { domain } = useStoreDomain();
   const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -742,26 +746,15 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                           </p>
                         </div>
                       </td>
-                      <td className="p-3 hidden lg:table-cell">
-                        <div className="max-w-xs">
-                          {article.meta_description ? (
-                            <p className="text-sm line-clamp-2 font-medium">
-                              {article.title}
-                            </p>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              <X className="w-3 h-3 mr-1" />
-                              Not defined
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 hidden md:table-cell">
-                        <div className="max-w-xs">
-                          {article.meta_description ? (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {article.meta_description}
-                            </p>
+                      <td className="p-3 hidden lg:table-cell" colSpan={2}>
+                        <div className="max-w-md">
+                          {article.title && article.meta_description ? (
+                            <GoogleSearchPreview
+                              title={article.title}
+                              description={article.meta_description}
+                              url={buildPublicUrl(domain, `/blogs/news/${article.shopify_article_id || 'article'}`)}
+                              compact={true}
+                            />
                           ) : (
                             <Badge variant="outline" className="text-xs">
                               <X className="w-3 h-3 mr-1" />
