@@ -421,15 +421,8 @@ export function ArticleWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-serif flex items-center justify-between">
-            <span>Assistant de Création d'Article</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="w-5 h-5" />
-            </Button>
+          <DialogTitle className="text-2xl font-serif">
+            Assistant de Création d'Article
           </DialogTitle>
         </DialogHeader>
 
@@ -1014,28 +1007,26 @@ export function ArticleWizard({
           )}
 
           {preview && !generating && (
-            <Card className="p-0 overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b bg-card">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Eye className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold font-serif">Aperçu de l'article</h2>
-                    <p className="text-muted-foreground">Article généré avec succès</p>
-                  </div>
+            <div className="flex flex-col h-full">
+              <div className="flex items-center gap-3 p-6 border-b bg-gradient-to-r from-primary/5 to-accent/5">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-serif">Aperçu de l'article</h3>
+                  <p className="text-sm text-muted-foreground">Prêt à être publié</p>
                 </div>
               </div>
 
-              <ScrollArea className="h-[calc(100vh-400px)] p-8 bg-muted/30">
-                <div className="max-w-5xl mx-auto">
+              <ScrollArea className="flex-1">
+                <div className="p-8">
                   <div 
-                    className="prose prose-xl dark:prose-invert max-w-none font-serif bg-card p-12 rounded-lg shadow-lg"
+                    className="prose prose-lg dark:prose-invert max-w-4xl mx-auto bg-background/50 backdrop-blur-sm p-8 rounded-xl shadow-sm border"
                     dangerouslySetInnerHTML={{ __html: preview }}
                   />
                 </div>
               </ScrollArea>
-            </Card>
+            </div>
           )}
           </div>
         )}
