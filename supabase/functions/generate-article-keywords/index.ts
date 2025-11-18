@@ -24,7 +24,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Récupérer les produits
+    // Récupérer les produits avec leurs attributs AI
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
       .select('title, tags, category, product_type, description, ai_material, ai_color, brand, vendor')
