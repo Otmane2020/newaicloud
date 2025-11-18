@@ -3,11 +3,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 interface TranslationIssue {
-  type: 'missing_key' | 'extra_key' | 'hardcoded_text' | 'missing_hook';
+  type: 'missing_key' | 'extra_key' | 'hardcoded_text' | 'missing_hook' | 'mixed_language_value';
   severity: 'high' | 'medium' | 'low';
   file: string;
   line?: number;
   message: string;
+  key?: string;
+  value?: string;
 }
 
 const issues: TranslationIssue[] = [];
@@ -90,11 +92,118 @@ function checkMissingTranslations() {
   });
 }
 
+// Helper functions to detect mixed languages
+function isProbablyFrench(text: string): boolean {
+  if (text.length < 3) return false;
+  
+  // Check for French accents
+  const hasAccents = /[àâäéèêëïîôùûüÿçœæ]/i.test(text);
+  
+  // Common French words/patterns
+  const frenchWords = /\b(le|la|les|un|une|des|de|du|et|ou|dans|sur|avec|pour|par|est|sont|à|au|aux|ce|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses)\b/i;
+  
+  return hasAccents || frenchWords.test(text);
+}
+
+function isProbablyEnglish(text: string): boolean {
+  if (text.length < 3) return false;
+  
+  // Should not have French accents
+  if (/[àâäéèêëïîôùûüÿçœæ]/i.test(text)) return false;
+  
+  // Common English words
+  const englishWords = /\b(the|a|an|and|or|in|on|at|to|for|of|with|by|from|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|should|could|may|might|can|this|that|these|those)\b/i;
+  
+  return englishWords.test(text);
+}
+
+// Extract all translation values from an object
+function getAllTranslationValues(obj: any, prefix = ''): Array<{ key: string; value: string }> {
+  const results: Array<{ key: string; value: string }> = [];
+  
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    
+    if (typeof value === 'string') {
+      results.push({ key: fullKey, value });
+    } else if (typeof value === 'object' && value !== null) {
+      results.push(...getAllTranslationValues(value, fullKey));
+    }
+  }
+  
+  return results;
+}
+
+// Check for mixed languages in translation files
+function checkMixedLanguages() {
+  const { frContent, enContent } = loadTranslations();
+  
+  // Parse translation objects (simplified - we'll extract values from the file content)
+  const enValues = getAllTranslationValuesFromContent(enContent, 'en');
+  const frValues = getAllTranslationValuesFromContent(frContent, 'fr');
+  
+  // Check EN file for French text
+  enValues.forEach(({ key, value, line }) => {
+    if (isProbablyFrench(value) && value.length > 10) {
+      issues.push({
+        type: 'mixed_language_value',
+        severity: 'high',
+        file: 'src/lib/translations/en.ts',
+        line,
+        message: `French text detected in English translation: "${value}"`,
+        key,
+        value
+      });
+    }
+  });
+  
+  // Check FR file for English text
+  frValues.forEach(({ key, value, line }) => {
+    if (isProbablyEnglish(value) && value.length > 10 && !isProbablyFrench(value)) {
+      issues.push({
+        type: 'mixed_language_value',
+        severity: 'high',
+        file: 'src/lib/translations/fr.ts',
+        line,
+        message: `English text detected in French translation: "${value}"`,
+        key,
+        value
+      });
+    }
+  });
+}
+
+// Extract translation values from file content with line numbers
+function getAllTranslationValuesFromContent(content: string, lang: string): Array<{ key: string; value: string; line: number }> {
+  const results: Array<{ key: string; value: string; line: number }> = [];
+  const lines = content.split('\n');
+  
+  lines.forEach((line, index) => {
+    // Match lines like: key: "value" or key: 'value'
+    const match = line.match(/^\s*(\w+):\s*["']([^"']+)["']/);
+    if (match) {
+      const [, key, value] = match;
+      results.push({ 
+        key, 
+        value, 
+        line: index + 1 
+      });
+    }
+  });
+  
+  return results;
+}
+
 // Scan component files for hardcoded text and missing useTranslation
 function scanComponentFiles() {
-  const componentsDir = path.join(process.cwd(), 'src/components');
+  const dirsToScan = [
+    path.join(process.cwd(), 'src/components'),
+    path.join(process.cwd(), 'src/pages')
+  ];
   
   function scanDirectory(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    
     const files = fs.readdirSync(dir);
     
     files.forEach(file => {
@@ -184,13 +293,14 @@ function scanComponentFiles() {
     }
   }
   
-  scanDirectory(componentsDir);
+  dirsToScan.forEach(dir => scanDirectory(dir));
 }
 
 // Main validation
 console.log('🔍 Validating translations...\n');
 
 checkMissingTranslations();
+checkMixedLanguages();
 scanComponentFiles();
 
 // Report results
@@ -200,10 +310,12 @@ if (issues.length === 0) {
 } else {
   console.log(`⚠️  Found ${issues.length} translation issues:\n`);
   
-  // Group by severity
+  // Group by severity and type
   const highIssues = issues.filter(i => i.severity === 'high');
   const mediumIssues = issues.filter(i => i.severity === 'medium');
   const lowIssues = issues.filter(i => i.severity === 'low');
+  
+  const mixedLanguageIssues = issues.filter(i => i.type === 'mixed_language_value');
   
   if (highIssues.length > 0) {
     console.log(`🔴 High Priority (${highIssues.length}):`);
@@ -233,7 +345,8 @@ if (issues.length === 0) {
   console.log(`  Total issues: ${issues.length}`);
   console.log(`  High priority: ${highIssues.length}`);
   console.log(`  Medium priority: ${mediumIssues.length}`);
-  console.log(`  Low priority: ${lowIssues.length}\n`);
+  console.log(`  Low priority: ${lowIssues.length}`);
+  console.log(`  Mixed language values: ${mixedLanguageIssues.length}\n`);
   
   process.exit(1);
 }
