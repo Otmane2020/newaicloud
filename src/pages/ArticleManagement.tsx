@@ -55,6 +55,8 @@ interface Article {
   source: string | null;
   featured_image: string | null;
   optimization_count: number;
+  seo_title?: string | null;
+  handle?: string | null;
 }
 
 export interface ArticleManagementRef {
@@ -162,20 +164,25 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   }, [user?.id]);
 
   const repairOrphanArticles = async (orphans: any[]) => {
-    if (!selectedStore?.id) {
+    if (!selectedStore?.id || !user?.id) {
       toast.error("Sélectionnez une boutique pour réparer les articles");
       return;
     }
     
-    for (const article of orphans) {
-      await supabase
-        .from('blog_articles')
-        .update({ store_id: selectedStore.id })
-        .eq('id', article.id);
+    try {
+      const { data, error } = await supabase.rpc('repair_orphan_articles', {
+        p_user_id: user.id,
+        p_store_id: selectedStore.id
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`${data?.[0]?.repaired_count || 0} article(s) réparé(s)`);
+      loadArticles();
+    } catch (error) {
+      console.error('Error repairing orphan articles:', error);
+      toast.error("Erreur lors de la réparation des articles");
     }
-    
-    toast.success(`${orphans.length} article(s) réparé(s)`);
-    loadArticles();
   };
 
   if (!selectedStore) {
@@ -209,7 +216,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
     const matchesQuality = qualityFilter === 'all' || (() => {
       const seoScore = calculateArticleSeoScore(
         article.title,
-        article.title,
+        article.seo_title || article.title,
         article.meta_description || '',
         article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
         !!article.featured_image,
@@ -748,11 +755,11 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                       </td>
                       <td className="p-3 hidden lg:table-cell" colSpan={2}>
                         <div className="max-w-md">
-                          {article.title && article.meta_description ? (
+                          {(article.seo_title || article.title) && article.meta_description ? (
                             <GoogleSearchPreview
-                              title={article.title}
+                              title={article.seo_title || article.title}
                               description={article.meta_description}
-                              url={buildPublicUrl(domain, `/blogs/news/${article.shopify_article_id || 'article'}`)}
+                              url={buildPublicUrl(`/blogs/news/${article.handle || article.title.toLowerCase().replace(/\s+/g, '-')}`, domain)}
                               compact={true}
                             />
                           ) : (
@@ -767,7 +774,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                         {(() => {
                           const seoScore = calculateArticleSeoScore(
                             article.title,
-                            article.title,
+                            article.seo_title || article.title,
                             article.meta_description,
                             article.keywords,
                             !!article.featured_image,
