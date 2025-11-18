@@ -77,14 +77,12 @@ const LAYOUTS = [
 ];
 
 const COLOR_PALETTES = [
-  { id: 'classic', name: 'Classique', colors: ['#1a1a1a', '#ffffff', '#4a90e2'] },
-  { id: 'warm', name: 'Chaleureux', colors: ['#8b4513', '#faf0e6', '#d2691e'] },
-  { id: 'cool', name: 'Frais', colors: ['#2c3e50', '#ecf0f1', '#3498db'] },
-  { id: 'elegant', name: 'Élégant', colors: ['#2d2d2d', '#f5f5f5', '#c9a961'] },
-  { id: 'modern', name: 'Moderne', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
-  { id: 'sunset', name: 'Coucher de Soleil', colors: ['#ff6b6b', '#ffe66d', '#4ecdc4'] },
-  { id: 'forest', name: 'Forêt Naturelle', colors: ['#2d5016', '#8fbc8f', '#f0e68c'] },
-  { id: 'ocean', name: 'Océan Profond', colors: ['#0d3b66', '#faf0ca', '#ee964b'] },
+  { id: 'neutral', name: 'Neutre Pro', colors: ['#1a1a1a', '#f8f9fa', '#6366f1'] },
+  { id: 'corporate', name: 'Corporate', colors: ['#0f172a', '#f1f5f9', '#3b82f6'] },
+  { id: 'luxury', name: 'Luxe', colors: ['#18181b', '#fafaf9', '#d4af37'] },
+  { id: 'minimal', name: 'Minimaliste', colors: ['#171717', '#fafafa', '#262626'] },
+  { id: 'tech', name: 'Tech', colors: ['#0a0a0a', '#ffffff', '#00d4aa'] },
+  { id: 'custom', name: 'Personnalisé', colors: ['#000000', '#ffffff', '#0066cc'] },
 ];
 
 const EDITORIAL_ANGLES = [
@@ -146,7 +144,8 @@ export function ArticleWizard({
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [selectedLayout, setSelectedLayout] = useState('editorial');
-  const [selectedPalette, setSelectedPalette] = useState('classic');
+  const [selectedPalette, setSelectedPalette] = useState('neutral');
+  const [customColors, setCustomColors] = useState({ primary: '#000000', secondary: '#ffffff', accent: '#0066cc' });
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -365,6 +364,7 @@ export function ArticleWizard({
           articleLength: 2500,
           layout: selectedLayout,
           colorPalette: selectedPalette,
+          customColors: selectedPalette === 'custom' ? customColors : undefined,
           editorialAngle: selectedAngle,
           generateFeaturedImage: true,
         }
@@ -708,34 +708,105 @@ export function ArticleWizard({
             </div>
             <div>
               <h2 className="text-2xl font-bold font-serif">Palette de couleurs</h2>
-              <p className="text-muted-foreground">Choisissez l'ambiance visuelle</p>
+              <p className="text-muted-foreground">Choisissez des couleurs professionnelles</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             {COLOR_PALETTES.map((palette) => (
               <button
                 key={palette.id}
                 onClick={() => setSelectedPalette(palette.id)}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedPalette === palette.id
-                    ? 'border-primary ring-4 ring-primary/20'
-                    : 'border-border hover:border-primary/50'
+                    ? 'border-primary ring-4 ring-primary/20 shadow-lg'
+                    : 'border-border hover:border-primary/50 hover:shadow-md'
                 }`}
               >
-                <div className="flex gap-1 mb-2">
+                <div className="flex gap-2 mb-3 justify-center">
                   {palette.colors.map((color, i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded"
+                      className="w-10 h-10 rounded-md shadow-sm"
                       style={{ backgroundColor: color }}
                     />
                   ))}
                 </div>
-                <p className="text-sm font-medium text-center">{palette.name}</p>
+                <p className="text-sm font-semibold text-center">{palette.name}</p>
               </button>
             ))}
           </div>
+
+          {selectedPalette === 'custom' && (
+            <div className="mt-6 p-6 bg-muted/50 rounded-lg border-2 border-dashed border-border">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Palette className="w-5 h-5" />
+                Couleurs personnalisées
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Couleur principale</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={customColors.primary}
+                      onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={customColors.primary}
+                      onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
+                      placeholder="#000000"
+                      className="flex-1"
+                      pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Couleur secondaire</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={customColors.secondary}
+                      onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={customColors.secondary}
+                      onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
+                      placeholder="#ffffff"
+                      className="flex-1"
+                      pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Couleur accent</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={customColors.accent}
+                      onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={customColors.accent}
+                      onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
+                      placeholder="#0066cc"
+                      className="flex-1"
+                      pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                💡 Astuce : Utilisez des codes hexadécimaux (#000000) pour des couleurs précises
+              </p>
+            </div>
+          )}
 
         </Card>
       )}
