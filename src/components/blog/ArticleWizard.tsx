@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { responsiveDialogClasses } from '@/lib/dialogUtils';
 
 interface ArticleWizardProps {
   open: boolean;
@@ -1007,26 +1008,57 @@ export function ArticleWizard({
           )}
 
           {preview && !generating && (
-            <div className="flex flex-col h-full">
-              <div className="flex items-center gap-3 p-6 border-b bg-gradient-to-r from-primary/5 to-accent/5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold font-serif">Aperçu de l'article</h3>
-                  <p className="text-sm text-muted-foreground">Prêt à être publié</p>
-                </div>
-              </div>
+            <Dialog open={true} onOpenChange={() => setPreview("")}>
+              <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] p-0`}>
+                <DialogHeader className="px-6 pt-6 pb-4 border-b">
+                  <DialogTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold font-serif">Aperçu de l'article</h3>
+                      <p className="text-sm text-muted-foreground font-normal">Prêt à être publié sur Shopify</p>
+                    </div>
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <ScrollArea className="h-[calc(90vh-180px)] px-8 py-6">
+                  <div className="max-w-5xl mx-auto">
+                    <div 
+                      className="prose prose-xl dark:prose-invert max-w-none font-serif"
+                      dangerouslySetInnerHTML={{ __html: preview }}
+                    />
+                  </div>
+                </ScrollArea>
 
-              <ScrollArea className="flex-1">
-                <div className="p-8">
-                  <div 
-                    className="prose prose-lg dark:prose-invert max-w-4xl mx-auto bg-background/50 backdrop-blur-sm p-8 rounded-xl shadow-sm border"
-                    dangerouslySetInnerHTML={{ __html: preview }}
-                  />
+                <div className="flex gap-3 p-6 border-t bg-muted/10">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                    onClick={() => {
+                      setPreview("");
+                      setStep(1);
+                    }}
+                  >
+                    Créer un autre article
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                    onClick={() => window.location.href = `/blog?subtab=articles&id=${articleId}`}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Voir l'article
+                  </Button>
+                  <Button onClick={publishToShopify} className="flex-1" size="lg">
+                    <Check className="w-4 h-4 mr-2" />
+                    Publier sur Shopify
+                  </Button>
                 </div>
-              </ScrollArea>
-            </div>
+              </DialogContent>
+            </Dialog>
           )}
           </div>
         )}
@@ -1113,24 +1145,6 @@ export function ArticleWizard({
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Générer l'article
-              </Button>
-            </div>
-          )}
-
-          {step === 7 && preview && (
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                size="lg"
-                onClick={() => window.location.href = `/blog?subtab=articles&id=${articleId}`}
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Voir l'article
-              </Button>
-              <Button onClick={publishToShopify} className="flex-1" size="lg">
-                <Check className="w-4 h-4 mr-2" />
-                Publier sur Shopify
               </Button>
             </div>
           )}
