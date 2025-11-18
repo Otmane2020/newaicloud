@@ -296,34 +296,42 @@ ${imageAnalysis ? `\n**Analyse Visuelle (Gemini Vision)**:\n${imageAnalysis}` : 
       try {
         console.log("🎯 Generating intelligent title with Lovable AI...");
         
-        const titlePrompt = `Tu es un expert en rédaction de titres SEO accrocheurs pour des articles de blog e-commerce.
+        const titlePrompt = `Tu es un expert en rédaction de titres SEO concis et percutants pour des articles de blog e-commerce.
 
 **CONTEXTE**:
 - Boutique: ${storeName}
 - Catégorie: ${category}
 - Angle éditorial: ${editorialAngle}
-- Mots-clés principaux: ${keywords.slice(0, 3).join(", ")}
+- Mot-clé principal: ${keywords[0] || category}
 - Nombre de produits: ${products.length}
 
-**DIRECTIVES**:
-1. Crée UN SEUL titre d'article optimisé SEO et accrocheur
-2. Le titre doit être entre 50-70 caractères
-3. Intègre naturellement le mot-clé principal
-4. Adapte le ton selon l'angle éditorial:
-   - guide: "Guide Complet" ou "Guide Pratique"
-   - comparatif: "Comparatif" ou "Top X"
-   - avis: "Notre Avis" ou "Test Complet"
-   - tutoriel: "Comment" ou "Guide Pas à Pas"
-5. Rends-le attractif et cliquable
-6. Utilise des chiffres si pertinent (ex: "Top 5", "2024")
+**RÈGLES STRICTES** (IMPÉRATIF):
+1. Maximum ABSOLU: 55 caractères (pas un de plus !)
+2. Format simple: "[Préfixe]: [Mot-clé] + [Valeur ajoutée]"
+3. UN SEUL mot-clé maximum dans le titre
+4. AUCUNE liste entre parenthèses (pas de "(couleurs, matériaux, etc.)")
+5. AUCUN bourrage de mots-clés
+6. Style direct et professionnel
 
-**EXEMPLES DE BONS TITRES**:
-- "Guide Complet des Canapés Scandinaves 2024"
-- "Comparatif: Les 5 Meilleures Tables Basses Design"
-- "Notre Avis sur les Lampes LED : Test Complet"
-- "Comment Choisir sa Chaise de Bureau Ergonomique"
+**FORMULES EFFICACES**:
+- "Guide [Mot-clé] [Année]"
+- "Comment Choisir [Mot-clé]"
+- "Top [X] [Mot-clé]"
+- "[Mot-clé]: Le Guide Complet"
+- "Comparatif [Mot-clé]"
 
-Réponds UNIQUEMENT avec le titre, sans guillemets ni formatage.`;
+**EXEMPLES PARFAITS** (à suivre):
+✅ "Buffet Baroque: Guide d'Achat 2024" (38 chars)
+✅ "Comment Choisir Votre Buffet Baroque" (37 chars)
+✅ "Top 5 Buffets Baroques Luxe" (29 chars)
+✅ "Canapé Scandinave: Guide Complet" (33 chars)
+
+**EXEMPLES INTERDITS** (à éviter absolument):
+❌ "Buffet Baroque Laqué: Guide (Marbre, Blanc, Noir)" (52 chars mais liste!)
+❌ "Le Meilleur Buffet Baroque en Marbre et Chrome" (48 chars mais bourrage)
+❌ "Buffet Baroque Luxe: Tout Savoir sur les Modèles" (51 chars mais vague)
+
+Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sans explication.`;
 
         const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -335,22 +343,40 @@ Réponds UNIQUEMENT avec le titre, sans guillemets ni formatage.`;
             model: "google/gemini-2.5-flash",
             messages: [
               {
+                role: "system",
+                content: "Tu es un expert en rédaction de titres SEO ultra-concis. Tu retournes UNIQUEMENT le titre, sans guillemets ni explications. Maximum 55 caractères."
+              },
+              {
                 role: "user",
                 content: titlePrompt
               }
             ],
-            temperature: 0.8,
-            max_tokens: 100
+            temperature: 0.7,
+            max_tokens: 80
           }),
         });
 
         if (titleResponse.ok) {
           const titleData = await titleResponse.json();
-          const generatedTitle = titleData.choices?.[0]?.message?.content?.trim();
+          let generatedTitle = titleData.choices?.[0]?.message?.content?.trim();
           
           if (generatedTitle) {
+            // Nettoyage agressif
+            generatedTitle = generatedTitle
+              .replace(/^["']|["']$/g, '')
+              .replace(/^\*\*|\*\*$/g, '')
+              .replace(/^Titre\s*:\s*/i, '')
+              .replace(/\(.*?\)/g, '') // Supprimer tout entre parenthèses
+              .trim();
+            
+            // Validation stricte de longueur
+            if (generatedTitle.length > 55) {
+              console.warn(`⚠️ Title too long (${generatedTitle.length} chars), truncating...`);
+              generatedTitle = generatedTitle.substring(0, 52) + '...';
+            }
+            
             articleTitle = generatedTitle;
-            console.log("✅ Intelligent title generated:", articleTitle);
+            console.log(`✅ Intelligent title generated: "${articleTitle}" (${articleTitle.length} chars)`);
           } else {
             throw new Error("No title in response");
           }
@@ -363,16 +389,16 @@ Réponds UNIQUEMENT avec le titre, sans guillemets ni formatage.`;
         const mainKeyword = keywords[0] || category;
         switch (editorialAngle) {
           case 'guide':
-            articleTitle = `Guide Complet : ${mainKeyword}`;
+            articleTitle = `Guide ${mainKeyword} 2024`;
             break;
           case 'comparatif':
-            articleTitle = `Comparatif ${mainKeyword} : ${products.length} ${category} Analysés`;
+            articleTitle = `Top ${products.length} ${category}`;
             break;
           case 'avis':
-            articleTitle = `Notre Avis sur les ${mainKeyword} : Test Complet`;
+            articleTitle = `Avis ${mainKeyword}`;
             break;
           case 'tutoriel':
-            articleTitle = `Comment Choisir ${mainKeyword} : Guide Pratique`;
+            articleTitle = `Comment Choisir ${mainKeyword}`;
             break;
           default:
             articleTitle = `Guide ${mainKeyword}`;
