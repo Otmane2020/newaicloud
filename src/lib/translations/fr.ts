@@ -1,4 +1,10 @@
 export const translations = {
+  // ============= Offre promotionnelle =============
+  announcement: {
+    limitedSale: "Offre limitée jusqu'à 30% de RÉDUCTION",
+    checkOut: "Découvrir"
+  },
+
   // ============= Landing Page Configuration =============
   landingConfig: {
     title: "Configuration de la Landing Page",
@@ -3211,10 +3217,10 @@ export const translations = {
       chooseTier: "Choisir un niveau"
     },
     infoFooter: {
-      starterOnly: "✨ Plan Starter uniquement : 14 jours d'essai gratuit avec limites réduites",
-      cardRequired: "💳 Carte bancaire requise • Annulez à tout moment pendant l'essai sans frais",
-      proEnterprise: "💡 Plans Pro et Enterprise : paiement immédiat, pas d'essai gratuit",
-      cancelAnytime: "🔒 Annulez à tout moment avant la fin de l'essai"
+      starterOnly: "✨ Plan Starter : Commencez avec les fonctionnalités IA essentielles",
+      cardRequired: "💳 Carte bancaire requise • Annulez à tout moment",
+      proEnterprise: "💡 Plans Pro et Enterprise : Meilleur rapport qualité-prix avec facturation annuelle",
+      cancelAnytime: "🔒 Annulez à tout moment"
     }
   },
 
@@ -4044,7 +4050,7 @@ export const translations = {
     description: "Testez toutes les fonctionnalités pendant 14 jours",
     duration: "14 jours",
     startButton: "Commencer l'essai gratuit",
-    ctaPrimary: "Essai gratuit 14 jours",
+    ctaPrimary: "Commencer l'essai gratuit",
     trustBanner: {
       cancelAnytime: "Annulation à tout moment"
     },
@@ -4353,7 +4359,7 @@ export const translations = {
       titleHighlight: "Machine à Trafic",
       titleEnd: "avec l'IA",
       subtitle: "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
-      ctaPrimary: "Essai gratuit — 14 jours gratuits",
+      ctaPrimary: "Commencer l'essai gratuit",
       ctaSecondary: "Voir la démo",
       setupTime: "Installation en 5 minutes",
     },
@@ -4550,8 +4556,7 @@ export const translations = {
         starter: {
           name: "Starter",
           description: "Pour les petites boutiques souhaitant découvrir la puissance de l'IA",
-          trial: "Essai gratuit de 14 jours",
-          cta: "Commencer l'essai gratuit",
+          cta: "Commencer",
           highlight: "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
           badge: "",
           promo: "",
@@ -4569,7 +4574,7 @@ export const translations = {
         pro: {
           name: "Pro",
           description: "Pour les boutiques en croissance",
-          cta: "Essayer gratuitement",
+          cta: "Commencer",
           highlight: "L'équilibre parfait entre puissance, automatisation et évolutivité.",
           badge: "Plus populaire 🔥",
           promo: "Obtenez 20% de réduction avec PROMO LIMITÉE",
@@ -4589,7 +4594,7 @@ export const translations = {
         enterprise: {
           name: "Enterprise",
           description: "Pour les grandes boutiques et agences",
-          cta: "Nous contacter",
+          cta: "Commencer",
           highlight: "Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.",
           badge: "",
           promo: "Obtenez 30% de réduction avec PROMO LIMITÉE",
@@ -4615,7 +4620,7 @@ export const translations = {
     },
     cta: {
       title: "Prêt à transformer votre boutique ?",
-      subtitle: "Commencez votre essai gratuit de 14 jours dès aujourd'hui.",
+      subtitle: "Commencez votre essai gratuit dès aujourd'hui.",
       button: "Commencer l'essai gratuit",
     },
     contact: {

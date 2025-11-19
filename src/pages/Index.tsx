@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
 import PricingComparison from "@/components/PricingComparison";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { ContactForm } from "@/components/ContactForm";
@@ -49,6 +50,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <AnnouncementBar />
       <PublicHeader />
       
       {/* Hero Section */}
@@ -354,11 +356,6 @@ const Index = () => {
                     {planConfig.isTrial && (
                       <p className="text-sm text-success mt-1 font-semibold">
                         {t.trial.duration}
-                      </p>
-                    )}
-                    {planConfig.key === 'starter' && !planConfig.isTrial && 'trial' in plan && plan.trial && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {plan.trial}
                       </p>
                     )}
                     {plan.promo && (

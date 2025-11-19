@@ -1,4 +1,10 @@
 export const translations = {
+  // ============= Announcement Bar =============
+  announcement: {
+    limitedSale: "Limited-time Sale up to 30% OFF",
+    checkOut: "Check Out"
+  },
+
   // ============= Landing Page Configuration =============
   landingConfig: {
     title: "Landing Page Configuration",
@@ -3201,10 +3207,10 @@ export const translations = {
       chooseTier: "Choose a tier"
     },
     infoFooter: {
-      starterOnly: "✨ Starter Plan only: 14 days free trial with reduced limits",
-      cardRequired: "💳 Credit card required • Cancel anytime during trial at no cost",
-      proEnterprise: "💡 Pro and Enterprise plans: immediate payment, no free trial",
-      cancelAnytime: "🔒 Cancel anytime before the end of the trial"
+      starterOnly: "✨ Starter Plan: Get started with essential AI features",
+      cardRequired: "💳 Credit card required • Cancel anytime",
+      proEnterprise: "💡 Pro and Enterprise plans: Best value with annual billing",
+      cancelAnytime: "🔒 Cancel anytime"
     }
   },
 
@@ -3959,13 +3965,13 @@ export const translations = {
     daysLeft: "{{days}} days left in your trial",
     activateSubscription: "Activate Subscription",
     daysRemaining: "{{days}} days remaining",
-    title: "Free Trial",
-    free: "FREE",
-    noCreditCard: "No credit card required",
-    description: "Test all features for 14 days",
-    duration: "14 days",
-    startButton: "Start Free Trial",
-    ctaPrimary: "14 Days Free Trial",
+      title: "Free Trial",
+      free: "FREE",
+      noCreditCard: "No credit card required",
+      description: "Test all features for 14 days",
+      duration: "14 days",
+      startButton: "Start Free Trial",
+      ctaPrimary: "Start Free Trial",
     trustBanner: {
       cancelAnytime: "Cancel anytime"
     },
@@ -4274,7 +4280,7 @@ export const translations = {
       titleHighlight: "Traffic Machine",
       titleEnd: "With AI",
       subtitle: "Automate SEO optimization, generate high-quality content, and boost your organic traffic. Get your first results in under 5 minutes.",
-      ctaPrimary: "Start Free Trial — 14 Days Free",
+      ctaPrimary: "Start Free Trial",
       ctaSecondary: "Watch Demo",
       setupTime: "Setup in 5 minutes",
     },
@@ -4471,8 +4477,7 @@ export const translations = {
         starter: {
           name: "Starter",
           description: "For small stores wanting to discover the power of AI",
-          trial: "14-day free trial",
-          cta: "Start Free Trial",
+          cta: "Get Started",
           highlight: "Enjoy the power of AI with essential features and quotas tailored to your start.",
           badge: "",
           promo: "",
@@ -4489,9 +4494,9 @@ export const translations = {
         },
         pro: {
           name: "Pro",
-          description: "For growing stores",
-          cta: "Try for free",
-          highlight: "The perfect balance between power, automation, and scalability.",
+          description: "For stores with advanced growth needs",
+          cta: "Get Started",
+          highlight: "Maximize your SEO performance with powerful AI-driven workflows and scalable solutions.",
           badge: "Most Popular 🔥",
           promo: "Get 20% discount with LIMITED PROMO",
           features: [
@@ -4510,7 +4515,7 @@ export const translations = {
         enterprise: {
           name: "Enterprise",
           description: "For large stores and agencies",
-          cta: "Contact us",
+          cta: "Get Started",
           highlight: "Fully managed AI suite with high quotas, API access, and personal support.",
           badge: "",
           promo: "Get 30% discount with LIMITED PROMO",
@@ -4536,7 +4541,7 @@ export const translations = {
     },
     cta: {
       title: "Ready to transform your store?",
-      subtitle: "Start your 14-day free trial today.",
+      subtitle: "Start your free trial today.",
       button: "Start Free Trial",
     },
     contact: {
