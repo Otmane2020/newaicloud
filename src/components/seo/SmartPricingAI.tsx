@@ -76,6 +76,7 @@ interface ProductVariant {
   smart_price?: number | null;
   ai_reasoning?: string | null;
   competitors?: CompetitorPrice[];
+  selected?: boolean;
 }
 
 interface ProductPricing {
@@ -250,6 +251,7 @@ export function SmartPricingAI() {
             option2: v.option2 || null,
             option3: v.option3 || null,
             image_url: v.image_url || null,
+            selected: false,
           }));
 
           const firstVariant = variants[0];
@@ -372,6 +374,20 @@ export function SmartPricingAI() {
 
   const toggleProductSelection = (productId: string) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, selected: !p.selected } : p)));
+  };
+
+  const toggleVariantSelection = (productId: string, variantId: string) => {
+    setProducts((prev) => prev.map((p) => {
+      if (p.id === productId) {
+        return {
+          ...p,
+          variants: p.variants.map((v) => 
+            v.id === variantId ? { ...v, selected: !v.selected } : v
+          )
+        };
+      }
+      return p;
+    }));
   };
 
   const generateSku = async (variantId: string, productTitle: string) => {
@@ -1627,7 +1643,7 @@ export function SmartPricingAI() {
       <Card className="overflow-hidden border-0 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/30 border-b-2 border-border">
+            <thead className="bg-muted/30 border-b-2 border-border sticky top-0 z-10">
               <tr>
                 <th className="p-3 text-left w-12">
                   <Checkbox
@@ -2131,7 +2147,12 @@ export function SmartPricingAI() {
                       
                       return (
                       <tr key={`${product.id}-variant-${idx}`} className="bg-muted/10 border-b border-dashed border-border/50 hover:bg-muted/20">
-                        <td className="p-3 pl-6"></td>
+                        <td className="p-3 pl-6">
+                          <Checkbox 
+                            checked={variant.selected || false}
+                            onCheckedChange={() => toggleVariantSelection(product.id, variant.id)}
+                          />
+                        </td>
                         
                         <td className="p-3 pl-6">
                           <div className="flex items-center gap-3">
