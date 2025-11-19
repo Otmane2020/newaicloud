@@ -86,12 +86,12 @@ export function HomePageSeoAudit() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const timeoutId = setTimeout(async () => {
+    const loadData = async () => {
       if (selectedStore?.id) {
-        await checkShopifyConnection();
+        const connectionExists = await checkShopifyConnection();
         await loadLastAudit();
-        // Auto-import data if not already present
-        if (hasConnection) {
+        // Auto-import data if connection exists
+        if (connectionExists) {
           await autoImportData();
         }
       } else {
@@ -99,10 +99,11 @@ export function HomePageSeoAudit() {
         setSeoTitle('');
         setSeoDescription('');
       }
-    }, 200);
+    };
 
+    const timeoutId = setTimeout(loadData, 200);
     return () => clearTimeout(timeoutId);
-  }, [selectedStore?.id, hasConnection]);
+  }, [selectedStore?.id]);
 
   const loadLastAudit = async () => {
     if (!selectedStore?.id) {
@@ -146,15 +147,18 @@ export function HomePageSeoAudit() {
     }
   };
 
-  const checkShopifyConnection = async () => {
+  const checkShopifyConnection = async (): Promise<boolean> => {
     if (!selectedStore?.id) {
       setHasConnection(false);
-      return;
+      return false;
     }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setHasConnection(false);
+        return false;
+      }
 
       const { data, error } = await supabase
         .from('shopify_connections')
@@ -165,9 +169,13 @@ export function HomePageSeoAudit() {
         .maybeSingle();
 
       if (error) throw error;
-      setHasConnection(!!data);
+      const hasConn = !!data;
+      setHasConnection(hasConn);
+      return hasConn;
     } catch (error) {
       console.error('Error checking connection:', error);
+      setHasConnection(false);
+      return false;
     }
   };
 
@@ -244,8 +252,27 @@ export function HomePageSeoAudit() {
             const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
             const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
             
-            if (titleMatch) setSeoTitle(titleMatch[1].trim());
-            if (metaMatch) setSeoDescription(metaMatch[1].trim());
+            const importedTitle = titleMatch ? titleMatch[1].trim() : '';
+            const importedDescription = metaMatch ? metaMatch[1].trim() : '';
+            
+            // Update local state
+            if (importedTitle) setSeoTitle(importedTitle);
+            if (importedDescription) setSeoDescription(importedDescription);
+            
+            // Save to database
+            if (importedTitle || importedDescription) {
+              await supabase
+                .from('homepage_seo')
+                .upsert({
+                  user_id: user.id,
+                  store_id: selectedStore.id,
+                  seo_title: importedTitle || existingData?.seo_title,
+                  seo_description: importedDescription || existingData?.seo_description,
+                  updated_at: new Date().toISOString()
+                }, {
+                  onConflict: 'user_id,store_id'
+                });
+            }
           }
         }
 
@@ -256,6 +283,10 @@ export function HomePageSeoAudit() {
             types: ['homepage']
           }
         });
+      } else {
+        // Data exists, just update local state
+        if (existingData.seo_title) setSeoTitle(existingData.seo_title);
+        if (existingData.seo_description) setSeoDescription(existingData.seo_description);
       }
     } catch (error) {
       console.error('Auto-import error:', error);
