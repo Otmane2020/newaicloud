@@ -6,12 +6,15 @@ import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AutoImportPrompt } from "@/components/AutoImportPrompt";
+import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useStore } from "@/contexts/StoreContext";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { stores, loading: storesLoading } = useStore();
   const isMobile = useIsMobile();
 
   if (loading) {
@@ -50,6 +53,11 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <LimitWarningBanner />
+            {!storesLoading && stores.length === 0 && (
+              <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-3">
+                <NoStoreConnectedPrompt />
+              </div>
+            )}
             <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full">
               {children}
             </div>
