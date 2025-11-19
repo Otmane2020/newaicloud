@@ -68,7 +68,7 @@ import { StoreSelector } from "@/components/StoreSelector";
 // Removed - now defined with seoSubItems
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile: sidebarIsMobile, openMobile, toggleSidebar } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
@@ -210,6 +210,12 @@ export function AppSidebar() {
     return currentPath === path;
   };
 
+  const handleNavClick = () => {
+    if ((sidebarIsMobile || isMobile) && openMobile) {
+      toggleSidebar();
+    }
+  };
+
   const isChatActive =
     currentPath.startsWith("/chat") ||
     currentPath === "/product-source" ||
@@ -228,7 +234,7 @@ export function AppSidebar() {
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
       {/* Logo Header */}
       <div className="border-b p-3 sm:p-4 space-y-3">
-        <NavLink to="/dashboard" className="flex items-center gap-2 group transition-transform hover:scale-105">
+        <NavLink to="/dashboard" onClick={handleNavClick} className="flex items-center gap-2 group transition-transform hover:scale-105">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
           </div>
@@ -248,12 +254,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                  <NavLink to={item.url}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </NavLink>
-                </SidebarMenuButton>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <NavLink to={item.url} onClick={handleNavClick}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
 
@@ -271,12 +277,12 @@ export function AppSidebar() {
                     <SidebarMenuSub>
                       {productOptimizationSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
+                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                          <NavLink to={subItem.url} onClick={handleNavClick}>
+                            <subItem.icon className="h-4 w-4" />
+                            <span>{subItem.title}</span>
+                          </NavLink>
+                        </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
                     </SidebarMenuSub>
@@ -299,7 +305,7 @@ export function AppSidebar() {
                       {seoSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
                               <span>{subItem.title}</span>
                             </NavLink>
@@ -321,7 +327,7 @@ export function AppSidebar() {
                             <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
                               {auditSubItems.map((auditItem) => (
                                 <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
-                                  <NavLink to={auditItem.url}>
+                                  <NavLink to={auditItem.url} onClick={handleNavClick}>
                                     <auditItem.icon className="h-3 w-3" />
                                     <span>{auditItem.title}</span>
                                   </NavLink>
@@ -361,7 +367,7 @@ export function AppSidebar() {
                       {blogSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
                               <span>{subItem.title}</span>
                             </NavLink>
@@ -400,7 +406,7 @@ export function AppSidebar() {
                       {merchantSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
                               <span>{subItem.title}</span>
                             </NavLink>
@@ -428,7 +434,7 @@ export function AppSidebar() {
                         {googleAdsSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <NavLink to={subItem.url}>
+                              <NavLink to={subItem.url} onClick={handleNavClick}>
                                 <subItem.icon className="h-4 w-4" />
                                 <span>{subItem.title}</span>
                               </NavLink>
@@ -457,7 +463,7 @@ export function AppSidebar() {
                         {chatSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <NavLink to={subItem.url}>
+                              <NavLink to={subItem.url} onClick={handleNavClick}>
                                 <subItem.icon className="h-4 w-4" />
                                 <span>{subItem.title}</span>
                               </NavLink>
@@ -472,8 +478,8 @@ export function AppSidebar() {
 
               {/* Smart Pricing AI - Main Menu Item */}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isPricingActive}>
-                  <NavLink to="/pricing" className="relative">
+        <SidebarMenuButton asChild isActive={isPricingActive}>
+          <NavLink to="/pricing" className="relative" onClick={handleNavClick}>
                     <CreditCard className="h-4 w-4" />
                     <span>Smart Pricing AI</span>
                     <Badge className="ml-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[10px] px-1.5 py-0 h-4 animate-pulse">
@@ -495,10 +501,10 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {accountSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
+                        {accountSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
                               <span>{subItem.title}</span>
                             </NavLink>
@@ -550,7 +556,16 @@ export function AppSidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => {
+                  if ((sidebarIsMobile || isMobile) && openMobile) {
+                    toggleSidebar();
+                  }
+                  signOut();
+                }}
+              >
                 <LogOut className="h-4 w-4" />
                 {state === "expanded" && <span>{t.navigation.logout}</span>}
               </Button>
