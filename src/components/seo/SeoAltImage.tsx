@@ -192,6 +192,7 @@ export function SeoAltImage() {
         const { data: pageData, error: pageError } = await supabase
           .from('content_images')
           .select('*')
+          .eq('store_id', selectedStore.id)
           .range(start, end)
           .order('content_id', { ascending: true })
           .order('position', { ascending: true });
@@ -229,12 +230,13 @@ export function SeoAltImage() {
         (contentImagesData || []).map(async (img) => {
           let product: Product = { id: img.content_id, title: t.seo.altImage.unknownContent };
 
-          // Fetch content details based on type
+          // Fetch content details based on type with store_id filter
           if (img.content_type === 'collection') {
             const { data } = await supabase
               .from('shopify_collections')
               .select('id, title, handle')
               .eq('id', img.content_id)
+              .eq('store_id', selectedStore.id)
               .maybeSingle();
             if (data) product = { ...data, title: `📚 ${data.title}` };
           } else if (img.content_type === 'page') {
@@ -242,6 +244,7 @@ export function SeoAltImage() {
               .from('shopify_pages')
               .select('id, title, handle')
               .eq('id', img.content_id)
+              .eq('store_id', selectedStore.id)
               .maybeSingle();
             if (data) product = { ...data, title: `📄 ${data.title}` };
           } else if (img.content_type === 'article') {
@@ -249,6 +252,7 @@ export function SeoAltImage() {
               .from('blog_articles')
               .select('id, title')
               .eq('id', img.content_id)
+              .eq('store_id', selectedStore.id)
               .maybeSingle();
             if (data) product = { ...data, title: `📰 ${data.title}` };
           } else if (img.content_type === 'homepage') {

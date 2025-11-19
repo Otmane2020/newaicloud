@@ -118,11 +118,12 @@ export function SeoAltImageList() {
 
       if (imagesError) throw imagesError;
 
-      // Fetch homepage images
+      // Fetch homepage images filtered by store
       const { data: homepageImagesData, error: homepageError } = await supabase
         .from('homepage_images')
         .select('*')
         .eq('user_id', user?.id)
+        .eq('store_id', selectedStore.id)
         .order('position', { ascending: true });
 
       if (homepageError) console.error('Homepage images error:', homepageError);
