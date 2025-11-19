@@ -30,6 +30,7 @@ import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { AIRecommendations } from '@/components/dashboard/AIRecommendations';
 import { AdvancedAnalytics } from '@/components/dashboard/AdvancedAnalytics';
 import { OnboardingTour } from '@/components/OnboardingTour';
+import { NoStoreConnectedPrompt } from '@/components/NoStoreConnectedPrompt';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
 import { useGoogleShoppingScore } from '@/hooks/useGoogleShoppingScore';
@@ -81,7 +82,7 @@ interface Stats {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { selectedStore } = useStore();
+  const { selectedStore, stores } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
@@ -528,6 +529,9 @@ export default function Dashboard() {
         onOpenChange={setShowUpgradeDialog}
         limitType={trialStatus.limitType as 'optimizations' | 'articles' | 'chat' | 'shopifySearch'}
       />
+      
+      {/* Bannière: Aucune boutique connectée */}
+      {stores.length === 0 && <NoStoreConnectedPrompt />}
       
       {/* Hero Section avec Welcome Banner */}
       <div className="relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-3 sm:p-4 md:p-6 lg:p-8 shadow-xl animate-fade-in">
