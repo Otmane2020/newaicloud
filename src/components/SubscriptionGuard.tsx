@@ -263,9 +263,14 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   }
 
   // SECURITY: Vérifier strictement l'abonnement avec stripe_customer_id OBLIGATOIRE
-  // CRITICAL: Ne JAMAIS accepter 'trialing' sans stripe_customer_id
-  if (profile?.subscription_status === 'trialing' && !profile.stripe_customer_id) {
-    console.error('🚨 SECURITY ALERT: Trial without Stripe customer ID detected!', {
+  // CRITICAL: Ne JAMAIS accepter 'trialing' sans stripe_customer_id ET sans trial_ends_at
+  // Les free trials valides ont trial_ends_at défini même sans stripe_customer_id
+  if (
+    profile?.subscription_status === 'trialing' && 
+    !profile.stripe_customer_id &&
+    !profile.trial_ends_at // Only reset trials without an end date
+  ) {
+    console.error('🚨 SECURITY ALERT: Invalid trial detected (no Stripe ID and no end date)!', {
       userId: user?.id,
       email: user?.email,
       status: profile.subscription_status,

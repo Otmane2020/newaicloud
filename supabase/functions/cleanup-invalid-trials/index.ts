@@ -19,12 +19,14 @@ serve(async (req) => {
   try {
     console.log('🧹 Starting cleanup-invalid-trials');
 
-    // Trouver tous les profils avec 'trialing' SANS stripe_customer_id
+    // Trouver tous les profils avec 'trialing' SANS stripe_customer_id ET SANS trial_ends_at
+    // Les free trials valides ont trial_ends_at défini
     const { data: invalidProfiles, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, email, subscription_status, stripe_customer_id')
+      .select('id, email, subscription_status, stripe_customer_id, trial_ends_at')
       .eq('subscription_status', 'trialing')
-      .is('stripe_customer_id', null);
+      .is('stripe_customer_id', null)
+      .is('trial_ends_at', null);
 
     if (fetchError) throw fetchError;
 
