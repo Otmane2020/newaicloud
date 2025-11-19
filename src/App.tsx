@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
+import { LanguageProvider } from "@/lib/language";
 import { AIAssistant } from "@/components/AIAssistant";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { ShopifyConnectPrompt } from "@/components/ShopifyConnectPrompt";
@@ -82,11 +83,12 @@ function AppQuotaMonitor() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <StoreProvider>
-            <AppQuotaMonitor />
+    <LanguageProvider>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <StoreProvider>
+              <AppQuotaMonitor />
             <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
@@ -441,6 +443,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 
