@@ -227,6 +227,38 @@ export function BlogOpportunities() {
         duration: 5000
       });
 
+      // Auto-select layout based on opportunity type
+      const layoutMap: Record<Opportunity['type'], string> = {
+        comparison: "magazine",
+        guide: "classic",
+        niche: "modern",
+        tutorial: "classic",
+        selection: "magazine"
+      };
+
+      // Auto-select color palette based on category/difficulty
+      const colorPaletteMap: Record<string, string> = {
+        lifestyle: "sunset",
+        tech: "ocean",
+        fashion: "forest",
+        home: "lavender",
+        sports: "sunset",
+        beauty: "rose"
+      };
+
+      // Map editorial angle from opportunity type
+      const editorialAngleMap: Record<Opportunity['type'], string> = {
+        comparison: "comparison",
+        guide: "guide",
+        niche: "guide",
+        tutorial: "tutorial",
+        selection: "selection"
+      };
+
+      const layout = layoutMap[opp.type] || "classic";
+      const colorPalette = colorPaletteMap[opp.category?.toLowerCase()] || "ocean";
+      const editorialAngle = editorialAngleMap[opp.type] || "guide";
+
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user.id,
@@ -239,6 +271,11 @@ export function BlogOpportunities() {
           language: "fr",
           productIds: opp.productIds,
           collectionTitle: opp.collectionIds?.[0] || "",
+          // ✨ NEW: Add ArticleWizard-quality parameters
+          layout: layout,
+          colorPalette: colorPalette,
+          editorialAngle: editorialAngle,
+          generateFeaturedImage: true,
           opportunityData: {
             opportunityId: opp.id,
             angle: opp.angle,
