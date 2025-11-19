@@ -531,7 +531,7 @@ export default function Dashboard() {
       />
       
       {/* Bannière: Aucune boutique connectée */}
-      {stores.length === 0 && <NoStoreConnectedPrompt />}
+      {!loading && stores.length === 0 && <NoStoreConnectedPrompt />}
       
       {/* Hero Section avec Welcome Banner */}
       <div className="relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-3 sm:p-4 md:p-6 lg:p-8 shadow-xl animate-fade-in">
