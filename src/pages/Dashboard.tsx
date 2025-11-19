@@ -82,7 +82,9 @@ interface Stats {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { selectedStore, stores } = useStore();
+  const { selectedStore, stores, loading: storesLoading } = useStore();
+  
+  console.log('🔍 [Dashboard] Auth user:', !!user, 'Stores:', stores.length, 'Loading:', storesLoading);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
@@ -531,7 +533,7 @@ export default function Dashboard() {
       />
       
       {/* Bannière: Aucune boutique connectée */}
-      {!loading && stores.length === 0 && <NoStoreConnectedPrompt />}
+      {!storesLoading && stores.length === 0 && <NoStoreConnectedPrompt />}
       
       {/* Hero Section avec Welcome Banner */}
       <div className="relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-3 sm:p-4 md:p-6 lg:p-8 shadow-xl animate-fade-in">
