@@ -70,24 +70,27 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
         return;
       }
 
-      // 2. Tester les credentials via l'API Shopify
+      // 2. Tester les credentials via edge function (pour éviter CORS)
       const cleanShopName = shopName.trim().replace('.myshopify.com', '');
       const shopDomain = `${cleanShopName}.myshopify.com`;
       
-      const authHeader = btoa(`${apiKey}:${apiSecret}`);
-      const testResponse = await fetch(`https://${shopDomain}/admin/api/2024-01/shop.json`, {
-        headers: {
-          'Authorization': `Basic ${authHeader}`,
-          'Content-Type': 'application/json'
+      console.log('📞 Testing credentials for:', shopDomain);
+      
+      const { data: testData, error: testError } = await supabase.functions.invoke('test-shopify-credentials', {
+        body: {
+          shopDomain,
+          apiKey,
+          accessToken: apiSecret
         }
       });
       
-      if (!testResponse.ok) {
-        throw new Error(t.wizards.shopify.invalidCredentials);
+      if (testError || !testData?.success) {
+        console.error('❌ Credential test failed:', testError || testData?.error);
+        throw new Error(testData?.error || t.wizards.shopify.invalidCredentials);
       }
 
-      const testData = await testResponse.json();
-      const verifiedShopDomain = testData.shop?.myshopify_domain || shopDomain;
+      console.log('✅ Credentials valid for shop:', testData.shop?.name);
+      const verifiedShopDomain = testData.shop?.domain || shopDomain;
 
       // 3. Insérer la nouvelle connexion
       const { error: insertError } = await supabase.from("shopify_connections").insert({
@@ -188,22 +191,38 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="shopName">Nom de la boutique</Label>
+                <Label htmlFor="shopName" className="text-base font-semibold">
+                  1️⃣ Nom de la boutique
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Entrez le nom de votre boutique Shopify
+                </p>
                 <div className="flex gap-2 items-center">
                   <Input
                     id="shopName"
                     value={shopName}
                     onChange={(e) => setShopName(e.target.value)}
                     placeholder="ma-boutique"
+                    className="flex-1"
                   />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap font-mono">
                     .myshopify.com
                   </span>
                 </div>
+                {shopName && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Domaine complet: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
+                  </p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="apiKey">API Key</Label>
+                <Label htmlFor="apiKey" className="text-base font-semibold">
+                  2️⃣ API Key
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Votre clé API Shopify
+                </p>
                 <Input
                   id="apiKey"
                   type="password"
@@ -214,7 +233,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               </div>
 
               <div>
-                <Label htmlFor="apiSecret">Admin API Access Token</Label>
+                <Label htmlFor="apiSecret" className="text-base font-semibold">
+                  3️⃣ Admin API Access Token
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Votre token d'accès API Admin
+                </p>
                 <Input
                   id="apiSecret"
                   type="password"
