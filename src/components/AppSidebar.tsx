@@ -302,7 +302,7 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {seoSubItems.map((subItem) => (
+                      {seoSubItems.filter(subItem => subItem.key !== "automation" || isTestAccount).map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url} onClick={handleNavClick}>
