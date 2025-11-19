@@ -5914,7 +5914,26 @@ export const translations = {
     apply: "Appliquer",
     syncShopify: "Synchroniser avec Shopify",
     cancel: "Annuler"
-  }
+  },
+
+  optimizationConsumption: {
+    title: "Utiliser mes optimisations",
+    article: "Créer cet article pour 10 optimisations ?",
+    campaignMonthly: "Créer cette campagne pour 10 optimisations ?",
+    campaignWeekly: "Créer cette campagne pour 40 optimisations ?",
+    campaignDaily: "Créer cette campagne pour 300 optimisations ?",
+    currentBalance: "Solde actuel",
+    afterAction: "Après cette action",
+    cost: "Coût de cette action",
+    optimizations: "optimisations",
+    insufficient: "Solde insuffisant",
+    upgradeRequired: "Veuillez upgrader votre plan pour continuer",
+    lowBalance: "Votre solde d'optimisations est faible. Envisagez un upgrade",
+    cancel: "Annuler",
+    confirm: "Confirmer et créer",
+    upgrade: "Upgrader mon plan",
+    processing: "En cours...",
+  },
 
 };
 

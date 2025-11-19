@@ -4411,6 +4411,8 @@ export type Database = {
           created_at: string | null
           id: string
           month: string
+          optimizations_consumed_for_articles: number | null
+          optimizations_consumed_for_campaigns: number | null
           optimizations_count: number | null
           products_count: number | null
           seller_id: string
@@ -4425,6 +4427,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           month: string
+          optimizations_consumed_for_articles?: number | null
+          optimizations_consumed_for_campaigns?: number | null
           optimizations_count?: number | null
           products_count?: number | null
           seller_id: string
@@ -4439,6 +4443,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           month?: string
+          optimizations_consumed_for_articles?: number | null
+          optimizations_consumed_for_campaigns?: number | null
           optimizations_count?: number | null
           products_count?: number | null
           seller_id?: string
