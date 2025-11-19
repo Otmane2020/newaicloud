@@ -25,6 +25,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const { t } = useTranslation();
 
   const [showApiForm, setShowApiForm] = useState(false);
+  const [shopName, setShopName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
@@ -37,7 +38,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   };
 
   const handleManualConnect = async () => {
-    if (!apiKey.trim() || !apiSecret.trim()) {
+    if (!shopName.trim() || !apiKey.trim() || !apiSecret.trim()) {
       toast.error(t.wizards.shopify.fillAllFields);
       return;
     }
@@ -70,20 +71,29 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       }
 
       // 2. Tester les credentials via l'API Shopify
-      const testResponse = await fetch(`https://${apiKey}:${apiSecret}@shopify.com/admin/api/2024-01/shop.json`);
+      const cleanShopName = shopName.trim().replace('.myshopify.com', '');
+      const shopDomain = `${cleanShopName}.myshopify.com`;
+      
+      const authHeader = btoa(`${apiKey}:${apiSecret}`);
+      const testResponse = await fetch(`https://${shopDomain}/admin/api/2024-01/shop.json`, {
+        headers: {
+          'Authorization': `Basic ${authHeader}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!testResponse.ok) {
         throw new Error(t.wizards.shopify.invalidCredentials);
       }
 
       const testData = await testResponse.json();
-      const shopDomain = testData.shop?.myshopify_domain || testData.shop?.domain;
+      const verifiedShopDomain = testData.shop?.myshopify_domain || shopDomain;
 
       // 3. Insérer la nouvelle connexion
       const { error: insertError } = await supabase.from("shopify_connections").insert({
         user_id: user.id,
-        store_url: shopDomain,
-        store_name: shopDomain?.replace('.myshopify.com', ''),
+        store_url: verifiedShopDomain,
+        store_name: verifiedShopDomain?.replace('.myshopify.com', ''),
         api_key: apiKey,
         access_token: apiSecret,
         connection_type: "api_keys",
@@ -101,6 +111,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       onOpenChange(false);
       
       // Réinitialiser le formulaire
+      setShopName("");
       setApiKey("");
       setApiSecret("");
       setShowApiForm(false);
@@ -176,6 +187,21 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             </Collapsible>
 
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="shopName">Nom de la boutique</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="shopName"
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    placeholder="ma-boutique"
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    .myshopify.com
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="apiKey">API Key</Label>
                 <Input
