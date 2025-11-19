@@ -229,32 +229,47 @@ export default function Dashboard() {
       const productsScore = calculateProductsSeoScore(products || []);
 
       // 2. COLLECTIONS SCORE
-      const { data: collections } = await supabase
+      let collectionsQuery = supabase
         .from('shopify_collections')
         .select('id, seo_title, title, seo_description, body_html, image_url, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
+      
+      if (selectedStore?.id) {
+        collectionsQuery = collectionsQuery.eq('store_id', selectedStore.id);
+      }
+      
+      const { data: collections } = await collectionsQuery;
       
       const collectionsScore = calculateCollectionsSeoScore(collections || []);
 
       // 3. PAGES SCORE
-      const { data: pagesData } = await supabase
+      let pagesQuery = supabase
         .from('shopify_pages')
         .select('seo_title, title, seo_description, body_html, handle, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
+      
+      if (selectedStore?.id) {
+        pagesQuery = pagesQuery.eq('store_id', selectedStore.id);
+      }
+      
+      const { data: pagesData } = await pagesQuery;
 
       const pagesScore = calculatePagesSeoScore(pagesData || []);
 
-      // 4. ARTICLES SCORE
-      const { data: articlesData } = await supabase
+      // 4. ARTICLES SCORE - strict store_id filter to match ArticleManagement.tsx
+      let articlesQuery = supabase
         .from('blog_articles')
         .select('title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('user_id', user?.id)
-        .eq('store_id', selectedStore?.id || '')
         .range(0, 9999);
+      
+      if (selectedStore?.id) {
+        articlesQuery = articlesQuery.eq('store_id', selectedStore.id);
+      }
+      
+      const { data: articlesData } = await articlesQuery;
 
       const articlesScore = calculateArticlesSeoScore(articlesData || []);
 
@@ -271,12 +286,18 @@ export default function Dashboard() {
           .eq('shopify_products.store_id', selectedStore.id)
           .range(0, 9999);
 
-      // Fetch content images (articles, pages, collections, homepage)
-        // NOTE: Not filtering by store_id/user_id to match SeoAltImage.tsx behavior (reference)
-        const { data: contentImages } = await supabase
+      // Fetch content images (articles, pages, collections, homepage) - MUST filter by user_id and store_id
+        let contentImagesQuery = supabase
           .from('content_images')
           .select('id, alt_text, optimization_count')
+          .eq('user_id', user?.id)
           .range(0, 9999);
+        
+        if (selectedStore?.id) {
+          contentImagesQuery = contentImagesQuery.eq('store_id', selectedStore.id);
+        }
+        
+        const { data: contentImages } = await contentImagesQuery;
 
         // Combine both types of images for score calculation (same as SeoAltImage.tsx)
         const allImages = [...(productImages || []), ...(contentImages || [])];
@@ -298,14 +319,14 @@ export default function Dashboard() {
 
       const homepageScore = homepageData?.last_audit?.score || 0;
 
-      // Build articles query with optional store filter
+      // Build articles count query - strict store_id filter to match ArticleManagement.tsx
       let articlesCountQuery = supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
 
       if (selectedStore?.id) {
-        articlesCountQuery = articlesCountQuery.or(`store_id.eq.${selectedStore.id},store_id.is.null`);
+        articlesCountQuery = articlesCountQuery.eq('store_id', selectedStore.id);
       }
 
       const { count: articlesCount } = await articlesCountQuery;
@@ -359,11 +380,10 @@ export default function Dashboard() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // Build old products query with optional store filter
+      // Build old products query - MUST match main products query filter
       let oldProductsQuery = supabase
         .from('shopify_products')
         .select('id, seo_title, seo_description, optimization_count')
-        .eq('seller_id', user?.id)
         .lt('created_at', thirtyDaysAgo.toISOString());
 
       if (selectedStore?.id) {
