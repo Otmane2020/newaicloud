@@ -117,7 +117,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       onOpenChange(open);
       if (!open) setShowApiForm(false);
     }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         {!showApiForm ? (
           <div className="flex flex-col items-center gap-8 py-8">
             <img 
@@ -150,7 +150,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 p-2">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -165,10 +165,15 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               </DialogTitle>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Comment générer vos clés API</p>
-              <ShopifyTokenGuide />
-            </div>
+            <Collapsible defaultOpen>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
+                <HelpCircle className="h-4 w-4" />
+                Comment générer vos clés API
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <ShopifyTokenGuide />
+              </CollapsibleContent>
+            </Collapsible>
 
             <div className="space-y-4">
               <div>
