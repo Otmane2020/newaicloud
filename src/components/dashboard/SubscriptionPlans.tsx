@@ -262,6 +262,11 @@ export function SubscriptionPlans() {
   };
 
   const isCurrentPlan = (planId: string) => {
+    // For trial plan, ignore billing period check since trial has no billing period
+    if (planId === 'trial') {
+      return currentPlanId === planId;
+    }
+    // For paid plans, check both plan ID and billing period
     return currentPlanId === planId && currentBillingPeriod === billingPeriod;
   };
 
