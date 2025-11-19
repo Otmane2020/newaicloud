@@ -2,7 +2,7 @@ export const translations = {
   // ============= Offre promotionnelle =============
   announcement: {
     limitedSale: "Offre limitée jusqu'à 30% de RÉDUCTION",
-    checkOut: "Découvrir"
+    checkOut: "Découvrir",
   },
 
   // ============= Landing Page Configuration =============
@@ -10,7 +10,7 @@ export const translations = {
     title: "Configuration de la Landing Page",
     description: "Choisissez le style et le format",
     forProduct: "Pour",
-    
+
     visualStyle: {
       title: "Style visuel",
       modern: "Moderne",
@@ -18,9 +18,9 @@ export const translations = {
       scandinavian: "Scandinave",
       premium: "Premium",
       neutral: "Neutre",
-      colorful: "Coloré"
+      colorful: "Coloré",
     },
-    
+
     layout: {
       title: "Layout de la page",
       oneColumn: "1 Colonne",
@@ -31,10 +31,10 @@ export const translations = {
         oneColumn: "Centré, idéal mobile",
         twoColumns: "Image + Texte",
         heroLeft: "Image dominante à gauche",
-        heroRight: "Image dominante à droite"
-      }
+        heroRight: "Image dominante à droite",
+      },
     },
-    
+
     colorPalette: {
       title: "Palette de couleurs",
       modern: "Moderne",
@@ -49,12 +49,12 @@ export const translations = {
         earth: "Tons marron et beige naturels",
         luxuryGold: "Noir avec accents dorés",
         freshGreen: "Vert forêt à vert pastel",
-        vibrant: "Rouge intense et énergique"
+        vibrant: "Rouge intense et énergique",
       },
       useCustom: "Utiliser une couleur personnalisée",
-      selected: "Couleur sélectionnée"
+      selected: "Couleur sélectionnée",
     },
-    
+
     vendor: {
       title: "Gestion de la marque (Vendor)",
       description: "Choisissez comment définir la marque du produit pour la landing page",
@@ -64,31 +64,32 @@ export const translations = {
       extractTitleDesc: "Détecter automatiquement la marque depuis le titre du produit",
       generateAI: "Générer avec l'IA",
       generateAIDesc: "Créer un nom de marque optimisé avec l'IA",
-      extractExample: "Ex:"
+      extractExample: "Ex:",
     },
-    
+
     contentLength: {
       title: "Longueur du contenu",
       short: "Courte (400 mots)",
       medium: "Moyenne (800 mots)",
-      long: "Longue (1500 mots)"
+      long: "Longue (1500 mots)",
     },
-    
+
     customHighlights: {
       title: "Points forts personnalisés",
       description: "Ajoutez des informations spécifiques à mettre en avant (max 500 caractères)",
-      placeholder: "Exemple: Fabrication artisanale française\nGarantie satisfait ou remboursé 30 jours\nMatériaux éco-responsables certifiés",
-      tip: "💡 Un point fort par ligne - Max 5 lignes recommandé"
+      placeholder:
+        "Exemple: Fabrication artisanale française\nGarantie satisfait ou remboursé 30 jours\nMatériaux éco-responsables certifiés",
+      tip: "💡 Un point fort par ligne - Max 5 lignes recommandé",
     },
-    
+
     buttons: {
       cancel: "Annuler",
       confirm: "Confirmer",
       generate: "Générer",
-      resetPreferences: "Réinitialiser les préférences"
-    }
+      resetPreferences: "Réinitialiser les préférences",
+    },
   },
-  
+
   landingGeneration: {
     preparing: "Préparation de la génération...",
     resolving: "Résolution de la marque/vendor...",
@@ -98,13 +99,13 @@ export const translations = {
     finalizing: "Finalisation du rendu HTML...",
     syncing: "Synchronisation avec Shopify...",
     initializing: "Initialisation de la génération...",
-    
+
     success: {
       generated: "Landing page générée avec succès !",
       synced: "Landing page synchronisée sur Shopify",
-      available: "Page disponible sur :"
+      available: "Page disponible sur :",
     },
-    
+
     errors: {
       noContent: "Aucun contenu à télécharger",
       noContentSync: "Aucun contenu à synchroniser",
@@ -113,9 +114,9 @@ export const translations = {
       rateLimit: "Limite de requêtes atteinte. Veuillez réessayer plus tard.",
       paymentRequired: "Crédits IA épuisés. Contactez le support pour plus d'informations.",
       limitReached: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
-      noGenerated: "Aucun contenu généré. Essayez avec un autre style ou layout."
+      noGenerated: "Aucun contenu généré. Essayez avec un autre style ou layout.",
     },
-    
+
     preview: {
       title: "Aperçu de la Landing Page",
       description: "Utilisez les boutons ci-dessous pour prévisualiser, télécharger ou synchroniser.",
@@ -125,48 +126,52 @@ export const translations = {
       syncShopify: "Sync Shopify",
       synchronizing: "Synchronisation...",
       downloaded: "HTML téléchargé avec succès !",
-      syncInProgress: "Synchronisation vers Shopify en cours..."
-    }
+      syncInProgress: "Synchronisation vers Shopify en cours...",
+    },
   },
 
   // ============= Product Media Optimization =============
   mediaOptimization: {
     title: "Optimisation d'images produits",
-    description: "Optimisez vos images produits avec l'IA. Toutes les versions sont sauvegardées dans l'historique et peuvent être restaurées.",
-    
+    description:
+      "Optimisez vos images produits avec l'IA. Toutes les versions sont sauvegardées dans l'historique et peuvent être restaurées.",
+
     stats: {
       totalImages: "Images totales",
       products: "Produits",
       savedVersions: "Versions sauvegardées",
-      hdResolution: "Résolution HD"
+      hdResolution: "Résolution HD",
     },
-    
+
     tabs: {
       whiteBg: "Fond Blanc",
       aiBg: "Arrière-plan IA",
-      history: "Historique"
+      history: "Historique",
     },
-    
+
     whiteBg: {
       title: "Génération de Fond Blanc HD",
-      description: "Générez des photos produits professionnelles sur fond blanc pur en résolution 2000x2000px. Parfait pour Google Shopping et marketplaces.",
+      description:
+        "Générez des photos produits professionnelles sur fond blanc pur en résolution 2000x2000px. Parfait pour Google Shopping et marketplaces.",
       generate: "Générer",
-      generating: "Génération..."
+      generating: "Génération...",
     },
-    
+
     aiBg: {
       title: "Génération d'Arrière-plans IA",
-      description: "Générez 4 variantes d'arrière-plans créatifs pour vos produits. L'IA centre automatiquement le produit.",
+      description:
+        "Générez 4 variantes d'arrière-plans créatifs pour vos produits. L'IA centre automatiquement le produit.",
       promptLabel: "Prompt personnalisé (optionnel)",
       promptPlaceholder: "Ex: Luxueux, lifestyle moderne, ambiance chaleureuse...",
-      variants: "4 Variantes"
+      variants: "4 Variantes",
     },
-    
+
     history: {
       selectImage: "Sélectionnez une image",
-      selectImageDesc: "Cliquez sur une image dans les onglets \"Fond Blanc\" ou \"Arrière-plan IA\" pour voir son historique d'optimisations."
+      selectImageDesc:
+        'Cliquez sur une image dans les onglets "Fond Blanc" ou "Arrière-plan IA" pour voir son historique d\'optimisations.',
     },
-    
+
     preview: {
       title: "Fond Blanc HD - Résolution 2000x2000px",
       description: "Comparez l'image originale avec le fond blanc généré",
@@ -175,82 +180,86 @@ export const translations = {
       downloadHD: "Télécharger HD (2000px)",
       apply: "Appliquer",
       cancel: "Annuler",
-      downloadStarted: "Téléchargement HD démarré (2000x2000px)"
+      downloadStarted: "Téléchargement HD démarré (2000x2000px)",
     },
-    
+
     errors: {
       limitReached: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
       generation: "Erreur lors de la génération du fond blanc",
-      aiGeneration: "Erreur lors de la génération des arrière-plans IA"
-    }
+      aiGeneration: "Erreur lors de la génération des arrière-plans IA",
+    },
   },
 
   // ============= Product Content Optimization =============
   contentOptimization: {
     title: "Contenu Produit Optimisé",
-    subtitle: "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle",
-    description: "Générez des descriptions HTML professionnelles avec titres structurés (H1, H2, H3), intégration automatique des photos produits et mise en page optimisée pour mobile et moteurs de recherche.",
-    infoAlert: "Créez des descriptions HTML riches avec titres structurés (H1, H2, H3), médias intégrés et mise en page professionnelle pour séduire vos clients et améliorer votre référencement naturel.",
-    
+    subtitle:
+      "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle",
+    description:
+      "Générez des descriptions HTML professionnelles avec titres structurés (H1, H2, H3), intégration automatique des photos produits et mise en page optimisée pour mobile et moteurs de recherche.",
+    infoAlert:
+      "Créez des descriptions HTML riches avec titres structurés (H1, H2, H3), médias intégrés et mise en page professionnelle pour séduire vos clients et améliorer votre référencement naturel.",
+
     hero: {
       title: "Contenu Produit Optimisé",
-      description: "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle"
+      description:
+        "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle",
     },
-    
+
     stats: {
       totalProducts: "Total produits",
       optimized: "Optimisés",
       notOptimized: "Non optimisés",
       toSync: "À synchroniser",
-      synchronized: "Synchronisés"
+      synchronized: "Synchronisés",
     },
-    
+
     search: {
-      placeholder: "Rechercher un produit..."
+      placeholder: "Rechercher un produit...",
     },
-    
+
     table: {
       headers: {
         image: "Image",
         title: "Titre",
         description: "Description",
         status: "Statut",
-        actions: "Actions"
+        actions: "Actions",
       },
       status: {
         premiumContent: "Contenu Premium",
         basicContent: "Contenu Basique",
-        toOptimize: "À optimiser"
+        toOptimize: "À optimiser",
       },
       noOptimizedDesc: "Aucune description optimisée",
-      original: "Original"
+      original: "Original",
     },
-    
+
     tooltips: {
       optimize: "Optimiser",
       whiteBg: "Fond blanc",
       aiBg: "Arrière-plan IA",
       view: "Visualiser",
       generateLanding: "Générer Landing Page IA",
-      sync: "Synchroniser"
+      sync: "Synchroniser",
     },
-    
+
     alerts: {
       whiteBg: "Fond blanc : Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.",
-      aiBg: "Arrière-plan IA : Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle."
+      aiBg: "Arrière-plan IA : Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle.",
     },
-    
+
     dialogs: {
       whiteBg: {
         title: "Configuration Fond Blanc",
         description: "Choisissez quelle photo de la galerie vous souhaitez retravailler",
-        imageSelection: "Sélection de la photo à retravailler"
+        imageSelection: "Sélection de la photo à retravailler",
       },
       optimizationConfirm: {
-        optimizing: "Optimisation des produits sélectionnés..."
-      }
+        optimizing: "Optimisation des produits sélectionnés...",
+      },
     },
-    
+
     toasts: {
       limitReached: "Limite d'optimisations atteinte",
       productsSynced: "produit(s) synchronisé(s)",
@@ -259,9 +268,9 @@ export const translations = {
       noProductToSync: "Aucun produit optimisé à synchroniser",
       noSelectedProduct: "Aucun produit sélectionné à synchroniser",
       syncError: "Erreur lors de la synchronisation",
-      notOptimizedYet: "Ce produit n'a pas encore été optimisé"
+      notOptimizedYet: "Ce produit n'a pas encore été optimisé",
     },
-    
+
     templates: {
       label: "Style de description",
       ecommerce: "E-commerce",
@@ -270,18 +279,18 @@ export const translations = {
       descriptions: {
         ecommerce: "Style direct et persuasif avec focus sur les bénéfices client",
         luxury: "Ton sophistiqué et élégant avec narration raffinée",
-        technical: "Langage précis et professionnel avec spécifications détaillées"
-      }
+        technical: "Langage précis et professionnel avec spécifications détaillées",
+      },
     },
-    
+
     badges: {
       existingDesc: "Description existante",
       noDesc: "Pas de description",
       photos: "photo",
       photosPlural: "photos",
-      noImage: "Pas d'image"
+      noImage: "Pas d'image",
     },
-    
+
     buttons: {
       optimizeAll: "Optimiser tout",
       syncAll: "Synchroniser tout",
@@ -292,9 +301,9 @@ export const translations = {
       optimizing: "Optimisation...",
       generating: "Génération...",
       synchronizing: "Synchronisation...",
-      generate: "Générer Contenu Premium"
+      generate: "Générer Contenu Premium",
     },
-    
+
     preview: {
       title: "Aperçu Contenu Premium",
       generating: "Génération en cours avec analyse Vision IA...",
@@ -305,28 +314,28 @@ export const translations = {
       mobile: "Mobile",
       view360: "Vue 360°",
       apply: "Appliquer",
-      cancel: "Annuler"
+      cancel: "Annuler",
     },
-    
+
     qualityScore: {
       label: "Score de qualité",
       excellent: "Excellente qualité - Structure complète et contenu riche optimisé",
       good: "Bonne qualité - Quelques améliorations possibles",
-      medium: "Qualité moyenne - Ajoutez plus de contenu et de structure"
+      medium: "Qualité moyenne - Ajoutez plus de contenu et de structure",
     },
-    
+
     sync: {
       title: "Synchronisation Shopify",
       description: "Application et synchronisation automatique vers Shopify...",
       complete: "Synchronisation Shopify terminée",
-      error: "Erreur lors de la synchronisation"
+      error: "Erreur lors de la synchronisation",
     },
-    
+
     empty: {
       title: "Aucun produit trouvé",
-      description: "Importez des produits depuis Shopify pour commencer"
+      description: "Importez des produits depuis Shopify pour commencer",
     },
-    
+
     errors: {
       generation: "Erreur lors de la génération",
       application: "Erreur lors de l'application",
@@ -334,8 +343,8 @@ export const translations = {
       limitTrialing: "Limite du plan actuel atteinte. Passez à un plan payant pour continuer.",
       limitPaid: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.",
       creditsExhausted: "Crédits IA épuisés",
-      creditsExhaustedDesc: "Contactez le support pour plus d'informations."
-    }
+      creditsExhaustedDesc: "Contactez le support pour plus d'informations.",
+    },
   },
 
   // ============= Page Optimization =============
@@ -344,29 +353,29 @@ export const translations = {
       status: {
         all: "Toutes",
         optimized: "Optimisées",
-        notOptimized: "Non optimisées"
+        notOptimized: "Non optimisées",
       },
       sync: {
         all: "Toutes",
         synced: "Synchronisées",
-        notSynced: "Non synchronisées"
+        notSynced: "Non synchronisées",
       },
       quality: {
         all: "Tous scores",
         excellent: "Excellent",
         good: "Bon",
         medium: "Moyen",
-        poor: "Faible"
-      }
+        poor: "Faible",
+      },
     },
-    
+
     stats: {
       totalPages: "Pages totales",
       optimized: "Optimisées",
       notOptimized: "Non optimisées",
-      globalScore: "Score SEO Global"
+      globalScore: "Score SEO Global",
     },
-    
+
     buttons: {
       import: "Importer les pages",
       importing: "Import...",
@@ -375,9 +384,9 @@ export const translations = {
       syncAll: "Tout synchroniser",
       syncSelected: "Sync sélection",
       selectAll: "Tout sélectionner",
-      viewFilters: "Filtres"
+      viewFilters: "Filtres",
     },
-    
+
     table: {
       page: "Page",
       status: "Statut",
@@ -391,9 +400,9 @@ export const translations = {
       never: "Jamais",
       optimize: "Optimiser",
       reoptimize: "Ré-optimiser",
-      syncAction: "Synchroniser"
+      syncAction: "Synchroniser",
     },
-    
+
     toasts: {
       userNotConnected: "Utilisateur non connecté",
       errorLoading: "Erreur lors du chargement des pages",
@@ -412,62 +421,62 @@ export const translations = {
       onlyAiPages: "Seules les pages AI-optimisées peuvent être synchronisées",
       limitReached: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
       limitTrialing: "Limite du plan actuel atteinte. Passez à un plan payant pour continuer.",
-      limitPaid: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur."
+      limitPaid: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.",
     },
-    
+
     empty: {
       title: "Aucune page",
-      description: "Importez vos pages Shopify pour commencer"
-    }
+      description: "Importez vos pages Shopify pour commencer",
+    },
   },
 
   // ============= Ads Campaign =============
   adsCampaign: {
     title: "Campagnes Publicitaires",
     description: "Créez des landing pages attractives pour vos campagnes publicitaires",
-    
+
     buttons: {
       new: "Nouvelle Campagne",
       view: "Voir",
       copy: "Copier le lien",
       duplicate: "Dupliquer",
-      delete: "Supprimer"
+      delete: "Supprimer",
     },
-    
+
     types: {
       product: "Produit",
       collection: "Collection",
-      store: "Boutique"
+      store: "Boutique",
     },
-    
+
     status: {
       active: "Actif",
       paused: "En pause",
-      draft: "Brouillon"
+      draft: "Brouillon",
     },
-    
+
     details: {
       createdOn: "Créé le",
       products: "Produits:",
       collections: "Collections:",
-      cta: "CTA:"
+      cta: "CTA:",
     },
-    
+
     toasts: {
       deleted: "Campagne supprimée",
       deleteError: "Erreur lors de la suppression",
       duplicated: "Campagne dupliquée",
       duplicateError: "Erreur lors de la duplication",
       linkCopied: "Lien copié",
-      campaignError: "Erreur lors du chargement des campagnes"
+      campaignError: "Erreur lors du chargement des campagnes",
     },
-    
+
     empty: {
       title: "Aucune campagne",
       description: "Commencez par créer votre première landing page publicitaire",
-      cta: "Créer ma première campagne"
+      cta: "Créer ma première campagne",
     },
-    
+
     wizard: {
       title: "Assistant de Campagne",
       description: "Créez des landing pages artistiques pour vos campagnes",
@@ -503,8 +512,8 @@ export const translations = {
       cancel: "Annuler",
       back: "Retour",
       next: "Suivant",
-      createGallery: "Créer la galerie"
-    }
+      createGallery: "Créer la galerie",
+    },
   },
 
   // ============= Ads Campaign Wizard =============
@@ -515,27 +524,27 @@ export const translations = {
       messaging: "Message et CTA",
       design: "Style de design",
       highlights: "Points forts",
-      review: "Révision"
+      review: "Révision",
     },
-    
+
     step1: {
       nameLabel: "Nom de la campagne *",
       namePlaceholder: "Ex: Galerie Collection Élément",
       typeLabel: "Type de campagne *",
       product: {
         title: "Produit",
-        description: "Galerie artistique pour mettre en valeur vos produits"
+        description: "Galerie artistique pour mettre en valeur vos produits",
       },
       collection: {
         title: "Collection",
-        description: "Expérience immersive pour une collection complète"
+        description: "Expérience immersive pour une collection complète",
       },
       store: {
         title: "Boutique",
-        description: "Présentation artistique de votre univers boutique"
-      }
+        description: "Présentation artistique de votre univers boutique",
+      },
     },
-    
+
     step2: {
       storeSummary: {
         title: "Résumé de votre boutique",
@@ -545,13 +554,13 @@ export const translations = {
         edit: "Modifier le résumé",
         placeholder: "Résumé de votre boutique...",
         error: "Aucune boutique Shopify connectée",
-        success: "Résumé généré avec succès"
+        success: "Résumé généré avec succès",
       },
       collections: {
         title: "Sélectionner les collections",
         loading: "Chargement...",
         empty: "Aucune collection disponible",
-        selected: "sélectionnée(s)"
+        selected: "sélectionnée(s)",
       },
       products: {
         title: "Sélectionner les produits",
@@ -559,57 +568,57 @@ export const translations = {
         allProducts: "Tous vos produits",
         loading: "Chargement...",
         empty: "Aucun produit disponible",
-        selected: "sélectionné(s)"
-      }
+        selected: "sélectionné(s)",
+      },
     },
-    
+
     step3: {
       headline: {
         label: "Titre principal *",
-        placeholder: "Ex: Découvrez notre nouvelle collection"
+        placeholder: "Ex: Découvrez notre nouvelle collection",
       },
       subheadline: {
         label: "Sous-titre",
-        placeholder: "Ex: Des produits d'exception pour sublimer votre intérieur"
+        placeholder: "Ex: Des produits d'exception pour sublimer votre intérieur",
       },
       cta: {
         label: "Texte du bouton CTA *",
-        placeholder: "Ex: Voir la collection"
-      }
+        placeholder: "Ex: Voir la collection",
+      },
     },
-    
+
     step4: {
       title: "Choisissez le style de votre landing page",
       description: "Ce style influencera le design et l'ambiance générale",
       artistic: {
         title: "Artistique",
-        description: "Design créatif avec animations et effets visuels"
+        description: "Design créatif avec animations et effets visuels",
       },
       minimal: {
         title: "Minimaliste",
-        description: "Design épuré et élégant, focus sur le produit"
+        description: "Design épuré et élégant, focus sur le produit",
       },
       bold: {
         title: "Audacieux",
-        description: "Design impactant avec typographie forte"
-      }
+        description: "Design impactant avec typographie forte",
+      },
     },
-    
+
     step5: {
       title: "Points forts (optionnel)",
       description: "Ajoutez jusqu'à 3 arguments de vente",
       placeholder: "Ex: Livraison gratuite",
       add: "Ajouter",
-      remove: "Retirer"
+      remove: "Retirer",
     },
-    
+
     buttons: {
       back: "Retour",
       next: "Suivant",
       create: "Créer la campagne",
-      creating: "Création..."
+      creating: "Création...",
     },
-    
+
     errors: {
       selectType: "Veuillez sélectionner un type de campagne",
       enterName: "Veuillez donner un nom à votre campagne",
@@ -617,9 +626,9 @@ export const translations = {
       selectProduct: "Veuillez sélectionner au moins un produit",
       fillRequired: "Veuillez remplir tous les champs obligatoires",
       mustBeConnected: "Vous devez être connecté",
-      creationError: "Erreur lors de la création de la campagne"
+      creationError: "Erreur lors de la création de la campagne",
     },
-    
+
     toasts: {
       creating: "Création de votre landing page artistique...",
       shopifyCreating: "Création de la page Shopify...",
@@ -628,8 +637,8 @@ export const translations = {
       success: "Campagne créée avec succès !",
       landingGenerated: "Landing page artistique générée",
       viewAction: "Voir",
-      shopifyAction: "Voir sur Shopify"
-    }
+      shopifyAction: "Voir sur Shopify",
+    },
   },
 
   // ============= AI Background Config =============
@@ -637,25 +646,25 @@ export const translations = {
     title: "Configuration de l'arrière-plan IA",
     description: "Personnalisez les paramètres de génération pour",
     products: "produit(s)",
-    
+
     parameters: {
       title: "Paramètres de génération",
       format: {
         label: "Format d'image",
         square: "Carré (1:1)",
         portrait: "Portrait (3:4)",
-        landscape: "Paysage (4:3)"
+        landscape: "Paysage (4:3)",
       },
       imageType: {
         label: "Type d'image",
         primary: {
           title: "Image Principale",
-          description: "Produit centré et bien visible"
+          description: "Produit centré et bien visible",
         },
         secondary: {
           title: "Image Secondaire",
-          description: "Photo d'ambiance lifestyle"
-        }
+          description: "Photo d'ambiance lifestyle",
+        },
       },
       similarity: {
         label: "Ressemblance à l'original",
@@ -663,16 +672,16 @@ export const translations = {
         close: "✓ Proche (70%)",
         medium: "⚖️ Équilibré (50%)",
         creative: "🎨 Créatif (30%)",
-        veryCreative: "✨ Très créatif (10%)"
-      }
+        veryCreative: "✨ Très créatif (10%)",
+      },
     },
-    
+
     imageSelection: {
       title: "Sélection de la photo à retravailler",
       main: "Principal",
-      gallery: "#"
+      gallery: "#",
     },
-    
+
     presets: {
       label: "Style prédéfini",
       placeholder: "Choisir un style...",
@@ -681,19 +690,19 @@ export const translations = {
       minimal: "⚪ Minimaliste moderne",
       lifestyle: "🏠 Lifestyle chaleureux",
       urban: "🏙️ Urbain contemporain",
-      elegant: "✨ Élégance classique"
+      elegant: "✨ Élégance classique",
     },
-    
+
     customPrompt: {
       label: "Ou créez votre propre prompt (en anglais)",
       placeholder: "Ex: Place this product on a wooden table with natural sunlight...",
-      tip: "💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance"
+      tip: "💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance",
     },
-    
+
     buttons: {
       cancel: "Annuler",
-      generate: "Générer les arrière-plans"
-    }
+      generate: "Générer les arrière-plans",
+    },
   },
 
   // ============= Optimization Config Dialog =============
@@ -701,53 +710,53 @@ export const translations = {
     title: "Configuration de l'optimisation",
     description: "Personnalisez le style et la structure du contenu HTML pour",
     products: "produit(s)",
-    
+
     imageSelection: {
       label: "Photo à analyser",
       main: "Principale",
-      gallery: "Galerie"
+      gallery: "Galerie",
     },
-    
+
     customDescription: {
       label: "Informations supplémentaires (optionnel)",
       placeholder: "Ex: Matière premium, fabriqué en France, garantie 5 ans, inclut accessoires...",
-      hint: "Ces détails seront intégrés dans la description générée"
+      hint: "Ces détails seront intégrés dans la description générée",
     },
-    
+
     style: {
       label: "Style de description",
       modern: "Moderne - Design épuré et minimaliste",
       elegant: "Élégant - Sophistiqué et raffiné",
       professional: "Professionnel - Sobre et direct",
-      creative: "Créatif - Audacieux et original"
+      creative: "Créatif - Audacieux et original",
     },
-    
+
     layout: {
       label: "Structure du contenu",
       compact: "Compact - Présentation concise",
       detailed: "Détaillé - Sections riches",
-      story: "Histoire - Narration engageante"
+      story: "Histoire - Narration engageante",
     },
-    
+
     colorScheme: {
       label: "Palette de couleurs",
       vibrant: "Vibrant - Couleurs vives",
       pastel: "Pastel - Tons doux",
       monochrome: "Monochrome - Noir & blanc",
-      warm: "Chaleureux - Tons chauds"
+      warm: "Chaleureux - Tons chauds",
     },
-    
+
     contentLength: {
       label: "Longueur du contenu",
       short: "Court - Essentiel (~500 mots)",
       medium: "Moyen - Équilibré (~1000 mots)",
-      long: "Long - Détaillé (~2000 mots)"
+      long: "Long - Détaillé (~2000 mots)",
     },
-    
+
     buttons: {
       cancel: "Annuler",
-      launch: "Lancer l'optimisation"
-    }
+      launch: "Lancer l'optimisation",
+    },
   },
 
   aiAssistant: {
@@ -755,12 +764,12 @@ export const translations = {
     subtitle: "En ligne et prêt à vous aider",
     welcome: "Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider aujourd'hui ?",
     placeholder: "Tapez votre message...",
-    error: "Désolé, j'ai rencontré une erreur. Veuillez réessayer."
+    error: "Désolé, j'ai rencontré une erreur. Veuillez réessayer.",
   },
   notFound: {
     title: "Page non trouvée",
     description: "La page que vous recherchez n'existe pas ou a été déplacée.",
-    backHome: "Retour à l'accueil"
+    backHome: "Retour à l'accueil",
   },
   currency: {
     usd: "USD",
@@ -769,7 +778,7 @@ export const translations = {
     symbolEur: "€",
     monthly: "/month",
     yearly: "/year",
-    save: "Save"
+    save: "Save",
   },
   common: {
     error: "Erreur",
@@ -825,7 +834,7 @@ export const translations = {
     impossible: "Impossible",
     dataRefreshed: "Données actualisées",
   },
-  
+
   navigation: {
     main: "Navigation",
     dashboard: "Tableau de bord",
@@ -863,7 +872,7 @@ export const translations = {
     settings: "Paramètres",
     translations: "Traductions",
     refresh: "Actualiser",
-    
+
     // SEO Submenu - Detailed
     seoSubmenu: {
       products: "Produits",
@@ -876,7 +885,7 @@ export const translations = {
       automation: "Automatisation",
       audit: "Audit SEO",
     },
-    
+
     // SEO Audit Submenu
     auditSubmenu: {
       overview: "Vue d'ensemble",
@@ -885,7 +894,7 @@ export const translations = {
       actionPlan: "Plan d'action",
       reports: "Rapports",
     },
-    
+
     // Blog Submenu
     blogSubmenu: {
       articles: "Articles IA",
@@ -894,21 +903,21 @@ export const translations = {
       netlinking: "Maillage",
       settings: "Paramètres",
     },
-    
+
     // Google Shopping Submenu
     shoppingSubmenu: {
       feed: "Flux XML",
       settings: "Paramètres",
       synchronization: "Synchronisation",
     },
-    
+
     // Google Merchant Submenu
     merchantSubmenu: {
       feed: "Flux XML",
       settings: "Paramètres",
       synchronization: "Synchronisation",
     },
-    
+
     // Chat Submenu
     chatSubmenu: {
       assistant: "Assistant Chat",
@@ -920,7 +929,7 @@ export const translations = {
       settings: "Paramètres Chat",
       smartPricing: "Prix Intelligent IA",
     },
-    
+
     // Account Submenu
     accountSubmenu: {
       profile: "Mon Profil",
@@ -929,7 +938,7 @@ export const translations = {
       billing: "Facturation",
     },
   },
-  
+
   googleShopping: {
     title: "Google Shopping - Optimisation IA",
     description: "Optimisez vos produits avec l'IA pour maximiser leur visibilité sur Google Shopping",
@@ -941,7 +950,8 @@ export const translations = {
     },
     guide: {
       quickOptimization: "Guide d'optimisation rapide",
-      steps: "1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser",
+      steps:
+        "1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser",
       shopifyGuide: "Guide Shopify",
       description: "Gérez et optimisez vos attributs Google Shopping pour améliorer la visibilité de vos produits",
     },
@@ -1006,7 +1016,7 @@ export const translations = {
       noProductsToExport: "Aucun produit à exporter",
     },
   },
-  
+
   googleMerchant: {
     title: "Google Merchant Center",
     subtitle: "Synchronisez vos produits avec Google Shopping pour maximiser votre visibilité",
@@ -1027,7 +1037,8 @@ export const translations = {
     },
     alerts: {
       enrichData: "Enrichissez vos données Google Shopping",
-      enrichDescription: "Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
+      enrichDescription:
+        "Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
     },
     feedUrl: {
       title: "URL du Flux XML",
@@ -1056,7 +1067,8 @@ export const translations = {
         daily: "Quotidienne",
         weekly: "Hebdomadaire",
       },
-      howItWorks: "Comment ça marche : La synchronisation automatique récupère les mises à jour de vos produits depuis Shopify (prix, stock, descriptions) et met à jour votre flux Google Shopping. Les modifications sont détectées automatiquement selon la fréquence choisie.",
+      howItWorks:
+        "Comment ça marche : La synchronisation automatique récupère les mises à jour de vos produits depuis Shopify (prix, stock, descriptions) et met à jour votre flux Google Shopping. Les modifications sont détectées automatiquement selon la fréquence choisie.",
     },
     integration: {
       title: "Intégration Google Merchant Center",
@@ -1088,20 +1100,20 @@ export const translations = {
       subtitle: "Performances et statistiques détaillées",
       errorLoading: "Impossible de charger l'historique des synchronisations",
       noSyncs: "Aucune synchronisation trouvée pour cette période",
-      
+
       periods: {
         last7days: "7 derniers jours",
         last30days: "30 derniers jours",
         last90days: "90 derniers jours",
       },
-      
+
       status: {
         completed: "Réussi",
         failed: "Échoué",
         running: "En cours",
         pending: "En attente",
       },
-      
+
       stats: {
         totalSyncs: "Total Syncs",
         successRate: "Taux de Succès",
@@ -1110,7 +1122,7 @@ export const translations = {
         successful: "réussis",
         failed: "échoués",
       },
-      
+
       charts: {
         syncDuration: "Durée des Synchronisations (secondes)",
         productsSync: "Produits Synchronisés",
@@ -1120,7 +1132,7 @@ export const translations = {
         products: "Produits",
         success: "Succès",
       },
-      
+
       history: {
         title: "Historique Détaillé",
         sync: "Sync",
@@ -1130,7 +1142,7 @@ export const translations = {
       },
     },
   },
-  
+
   googleAds: {
     title: "Google Ads",
     subtitle: "Gérez vos campagnes Google Ads",
@@ -1159,7 +1171,7 @@ export const translations = {
       firstCampaign: "Créez votre première campagne",
       firstCampaignDesc: "L'IA vous aidera à créer des campagnes optimisées automatiquement",
       createWithAI: "Créer avec l'IA",
-      
+
       upcomingFeatures: {
         title: "Fonctionnalités à venir",
         feature1: "Création automatique de campagnes basée sur vos produits",
@@ -1170,18 +1182,19 @@ export const translations = {
     },
     optimization: {
       title: "Optimisation",
-      
+
       metrics: {
         currentROAS: "ROAS Actuel",
         conversionRate: "Taux de Conversion",
         avgCPC: "CPC Moyen",
         qualityScore: "Score de Qualité",
       },
-      
+
       roasTitle: "Optimisation ROAS par IA",
       optimizeAuto: "Optimisez automatiquement vos campagnes",
-      optimizeAutoDesc: "L'IA analysera vos performances et optimisera automatiquement vos enchères, budgets et ciblages pour maximiser votre retour sur investissement",
-      
+      optimizeAutoDesc:
+        "L'IA analysera vos performances et optimisera automatiquement vos enchères, budgets et ciblages pour maximiser votre retour sur investissement",
+
       automaticOptimizations: {
         title: "Optimisations automatiques",
         feature1: "Ajustement automatique des enchères selon les performances",
@@ -1200,25 +1213,25 @@ export const translations = {
     },
     tracking: {
       title: "Configuration du suivi des conversions",
-      
+
       purchaseTracking: {
         title: "Suivi des achats",
         description: "Suivez automatiquement les conversions d'achat sur votre site",
         action: "Configurer",
       },
-      
+
       googleTag: {
         title: "Tag Google Ads",
         description: "Installez le tag de conversion Google Ads sur votre site",
         action: "Obtenir le code",
       },
-      
+
       customEvents: {
         title: "Événements personnalisés",
         description: "Créez des conversions personnalisées pour vos objectifs spécifiques",
         action: "Créer un événement",
       },
-      
+
       trackingFeatures: {
         title: "Fonctionnalités de tracking",
         feature1: "Tracking automatique des conversions e-commerce",
@@ -1228,7 +1241,7 @@ export const translations = {
       },
     },
   },
-  
+
   searchConsole: {
     products: {
       title: "Analyse des Produits",
@@ -1272,20 +1285,20 @@ export const translations = {
       underDevelopmentDesc: "La gestion complète des sitemaps sera bientôt disponible",
     },
   },
-  
+
   smartPricing: {
     title: "Prix Intelligent IA",
     subtitle: "Gestion intelligente des prix avec analyse IA",
     badge: "NOUVEAU",
     description: "Gérez vos prix, remises et marges par collection avec synchronisation Shopify instantanée",
-    
+
     taxConfig: {
       title: "Configuration des Taxes",
       description: "Définissez le taux de taxe (TVA) pour calculer automatiquement les marges nettes",
       label: "Taux de taxe :",
-      appliedInfo: "{{rate}}% appliqué aux calculs de marge nette"
+      appliedInfo: "{{rate}}% appliqué aux calculs de marge nette",
     },
-    
+
     bulkOperations: {
       title: "Opérations en masse",
       allCollections: "Toutes les collections",
@@ -1294,22 +1307,22 @@ export const translations = {
       percentage: "Pourcentage (%)",
       amount: "Montant",
       value: "Valeur (€)",
-      apply: "Appliquer"
+      apply: "Appliquer",
     },
-    
+
     filters: {
       searchPlaceholder: "Rechercher un produit...",
       allCollections: "Toutes les collections",
-      showMissingSku: "Afficher uniquement les produits sans SKU"
+      showMissingSku: "Afficher uniquement les produits sans SKU",
     },
-    
+
     stats: {
       totalProducts: "Produits",
       averageMargin: "Marge moyenne",
       totalValue: "Valeur totale",
-      selected: "sélectionné(s)"
+      selected: "sélectionné(s)",
     },
-    
+
     table: {
       product: "Produit",
       sku: "SKU",
@@ -1325,9 +1338,9 @@ export const translations = {
       netMarginPercent: "Marge Nette (%)",
       marketPrice: "Market Price",
       smartPrice: "Smart Price",
-      actions: "Actions"
+      actions: "Actions",
     },
-    
+
     buttons: {
       analyzeAll: "Analyser les prix (IA)",
       importCosts: "Importer coûts Shopify",
@@ -1338,9 +1351,9 @@ export const translations = {
       syncSelection: "Sync Sélection",
       syncAll: "Sync Tout",
       generateSku: "Générer",
-      applySmartPrice: "Appliquer Smart Price"
+      applySmartPrice: "Appliquer Smart Price",
     },
-    
+
     messages: {
       noProducts: "Aucun produit trouvé",
       importPrompt: "Importez vos produits depuis Shopify pour commencer",
@@ -1351,24 +1364,24 @@ export const translations = {
       errorLoading: "Erreur lors du chargement",
       noVariantFound: "Aucune variante trouvée pour ce produit",
       seeVariants: "Voir variants",
-      showingProducts: "Affichage de {{start}}-{{end}} sur {{total}} produits"
+      showingProducts: "Affichage de {{start}}-{{end}} sur {{total}} produits",
     },
-    
+
     tooltips: {
       syncProduct: "Synchroniser ce produit avec Shopify",
       marketPriceSources: "Sources utilisées pour le calcul",
       aiReasoning: "Raisonnement IA",
       topCompetitors: "Top 10 Concurrents",
-      noCompetitors: "Aucune source concurrente trouvée pour ce produit"
+      noCompetitors: "Aucune source concurrente trouvée pour ce produit",
     },
-    
+
     variants: {
       label: "Variant",
       count: "{{count}} variants",
       notAnalyzed: "Non analysé",
-      notCalculated: "Non calculé"
+      notCalculated: "Non calculé",
     },
-    
+
     errors: {
       loadData: "Erreur lors du chargement des données",
       save: "Erreur lors de la sauvegarde",
@@ -1376,14 +1389,14 @@ export const translations = {
       notDeployed: "La fonction d'import n'est pas encore déployée",
       analysis: "Fonction d'analyse non déployée",
     },
-    
+
     success: {
       bulkApplied: "Modification appliquée avec succès",
       costsImported: "Import terminé : {{count}} coûts importés",
       shippingImported: "Frais de livraison Shopify importés",
       analysisComplete: "Analyse terminée : {{count}} produit(s)",
     },
-    
+
     prompts: {
       importCosts: "Import des coûts en cours...",
       importShipping: "Import des frais de livraison...",
@@ -1420,7 +1433,7 @@ export const translations = {
         shopifySearch: "Recherche IA Shopify",
         chatResponses: "Réponses Chat IA",
         campaigns: "Campagnes auto",
-      }
+      },
     },
     plans: {
       title: "Choisissez Votre Offre",
@@ -1451,12 +1464,13 @@ export const translations = {
         chatResponsesPerMonth: "réponses chat/mois",
         shopifyStores: "boutique(s) Shopify",
         seoAutomation: "Automatisation SEO",
-        prioritySupport: "Support prioritaire"
+        prioritySupport: "Support prioritaire",
       },
       errors: {
-        missingConfig: "Le plan \"{{planName}}\" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.",
+        missingConfig:
+          'Le plan "{{planName}}" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.',
         genericError: "Impossible de traiter la demande",
-      }
+      },
     },
     metrics: {
       totalProducts: "Total Produits",
@@ -1563,21 +1577,21 @@ export const translations = {
       templates: "Templates",
       emailStats: "Stats Emails",
       analytics: "Analytics",
-      logout: "Déconnexion"
+      logout: "Déconnexion",
     },
     toasts: {
       logoutSuccess: {
         title: "Déconnexion réussie",
-        description: "À bientôt !"
+        description: "À bientôt !",
       },
       logoutError: {
         title: "Erreur",
-        description: "Impossible de se déconnecter"
+        description: "Impossible de se déconnecter",
       },
       loginSuccess: {
         title: "Connexion réussie",
         description: "Bienvenue dans le panel d'administration",
-      }
+      },
     },
     emailStats: {
       title: "Statistiques Emails",
@@ -1586,7 +1600,7 @@ export const translations = {
         last7: "7 derniers jours",
         last14: "14 derniers jours",
         last30: "30 derniers jours",
-        last90: "90 derniers jours"
+        last90: "90 derniers jours",
       },
       exportButton: "Export CSV",
       cards: {
@@ -1597,7 +1611,7 @@ export const translations = {
         responseTime: "Temps réponse",
         average: "Moyenne",
         ofTotal: "du total",
-        replied: "répondus"
+        replied: "répondus",
       },
       charts: {
         dailyVolume: "Volume quotidien",
@@ -1605,14 +1619,14 @@ export const translations = {
         topSenders: "Top 10 Expéditeurs",
         sent: "Envoyés",
         received: "Reçus",
-        replied: "Répondus"
+        replied: "Répondus",
       },
       table: {
         email: "Email",
         count: "Nombre",
         replies: "Réponses",
         rate: "Taux",
-        avgTime: "Temps moy (h)"
+        avgTime: "Temps moy (h)",
       },
       csv: {
         title: "Statistiques Emails",
@@ -1632,8 +1646,8 @@ export const translations = {
         replied: "Répondus",
         topSenders: "Top expéditeurs",
         number: "Nombre",
-        responses: "Réponses"
-      }
+        responses: "Réponses",
+      },
     },
     emailTemplates: {
       title: "Templates d'Emails",
@@ -1649,13 +1663,13 @@ export const translations = {
         variablesHelp: "Utilisez {{variable}} dans le contenu pour les remplacer automatiquement",
         variablesPlaceholder: "Séparées par des virgules: nom, email, plan, subject",
         bodyText: "Corps du message (texte)",
-        bodyHtml: "Corps du message (HTML optionnel)"
+        bodyHtml: "Corps du message (HTML optionnel)",
       },
       categories: {
         general: "Général",
         onboarding: "Onboarding",
         support: "Support",
-        sales: "Ventes"
+        sales: "Ventes",
       },
       buttons: {
         cancel: "Annuler",
@@ -1665,7 +1679,7 @@ export const translations = {
         preview: "Aperçu",
         edit: "Éditer",
         duplicate: "Dupliquer",
-        delete: "Supprimer"
+        delete: "Supprimer",
       },
       usageCount: "Utilisé {count} fois",
       toasts: {
@@ -1677,14 +1691,14 @@ export const translations = {
         deleted: "Template supprimé",
         deleteError: "Impossible de supprimer le template",
         duplicated: "Template dupliqué",
-        duplicateError: "Impossible de dupliquer le template"
+        duplicateError: "Impossible de dupliquer le template",
       },
       preview: {
         title: "Aperçu",
         subject: "Sujet",
         htmlPreview: "Aperçu HTML",
-        body: "Corps du message"
-      }
+        body: "Corps du message",
+      },
     },
     userActivity: {
       title: "Historique des activités",
@@ -1695,7 +1709,7 @@ export const translations = {
         store: "Boutique",
         allStores: "Toutes les boutiques",
         page: "Page",
-        allPages: "Toutes les pages"
+        allPages: "Toutes les pages",
       },
       stats: {
         total: "Total",
@@ -1707,10 +1721,10 @@ export const translations = {
         thisMonth: "Ce mois",
         last30Days: "30 derniers jours",
         topPages: "Pages les plus visitées",
-        topActions: "Actions les plus fréquentes"
+        topActions: "Actions les plus fréquentes",
       },
-      noActivities: "Aucune activité trouvée"
-    }
+      noActivities: "Aucune activité trouvée",
+    },
   },
 
   account: {
@@ -1770,7 +1784,8 @@ export const translations = {
     },
     billing: {
       title: "Portail de facturation",
-      description: "Gérez vos moyens de paiement, consultez vos factures et mettez à jour vos informations de facturation",
+      description:
+        "Gérez vos moyens de paiement, consultez vos factures et mettez à jour vos informations de facturation",
       descriptionActive: "Votre plan est actif et opérationnel",
       descriptionInactive: "Gérez votre abonnement et consultez votre historique de paiement",
       openPortal: "Ouvrir le portail de facturation",
@@ -1786,7 +1801,7 @@ export const translations = {
       renewalDate: "Date de renouvellement",
       noSubscription: "Aucun abonnement actif",
       choosePlan: "Choisir un plan",
-      activateFullPlan: "Activer le plan complet",
+      activateFullPlan: "Activer le plan Starter",
       changePlan: "Changer de plan",
       manageSubscription: "Gérer l'abonnement",
       activating: "Activation...",
@@ -1797,28 +1812,28 @@ export const translations = {
   },
 
   referral: {
-    title: 'Gagnez 100+ optimisations',
-    subtitle: 'Parrainez vos amis et gagnez des optimisations gratuites',
-    shareButton: 'Partager',
-    dialogTitle: 'Partagez et gagnez',
-    dialogSubtitle: 'et gagnez des optimisations gratuites',
-    howItWorks: 'Comment ça marche :',
-    step1: 'Partagez votre lien d\'invitation',
-    step2: 'Ils s\'inscrivent et reçoivent',
-    step2Credits: '100 optimisations gratuites',
-    step3: 'Vous recevez',
-    step3Credits: '100 optimisations',
-    step3Condition: 'une fois qu\'ils publient leur premier site',
-    linkTitle: 'Votre lien d\'invitation :',
-    usedBy: 'utilisé par',
-    users: 'utilisateurs',
-    user: 'utilisateur',
-    copyButton: 'Copier le lien',
-    copied: 'Copié!',
-    linkCopied: 'Lien copié !',
-    successfulReferrals: 'Parrainages réussis',
-    creditsEarned: 'Optimisations gagnées',
-    viewTerms: 'Voir les Conditions Générales',
+    title: "Gagnez 100+ optimisations",
+    subtitle: "Parrainez vos amis et gagnez des optimisations gratuites",
+    shareButton: "Partager",
+    dialogTitle: "Partagez et gagnez",
+    dialogSubtitle: "et gagnez des optimisations gratuites",
+    howItWorks: "Comment ça marche :",
+    step1: "Partagez votre lien d'invitation",
+    step2: "Ils s'inscrivent et reçoivent",
+    step2Credits: "100 optimisations gratuites",
+    step3: "Vous recevez",
+    step3Credits: "100 optimisations",
+    step3Condition: "une fois qu'ils publient leur premier site",
+    linkTitle: "Votre lien d'invitation :",
+    usedBy: "utilisé par",
+    users: "utilisateurs",
+    user: "utilisateur",
+    copyButton: "Copier le lien",
+    copied: "Copié!",
+    linkCopied: "Lien copié !",
+    successfulReferrals: "Parrainages réussis",
+    creditsEarned: "Optimisations gagnées",
+    viewTerms: "Voir les Conditions Générales",
   },
 
   seoGauge: {
@@ -1833,7 +1848,7 @@ export const translations = {
     scoreLabels: {
       excellent: "Excellent",
       good: "Bon",
-      needsImprovement: "À améliorer"
+      needsImprovement: "À améliorer",
     },
     categoryNames: {
       homepage: "Page d'accueil",
@@ -1842,7 +1857,7 @@ export const translations = {
       pages: "Pages",
       articles: "Articles",
       images: "Images",
-      tags: "Tags"
+      tags: "Tags",
     },
     categoryDescriptions: {
       homepage: "Titre et description de votre page d'accueil",
@@ -1851,17 +1866,23 @@ export const translations = {
       pages: "Pages personnalisées",
       articles: "Articles de blog",
       images: "Textes alternatifs",
-      tags: "Optimisation des tags produits"
+      tags: "Optimisation des tags produits",
     },
     recommendations: {
-      homepage: "Optimisez le titre et la description de votre page d'accueil pour attirer plus de visiteurs qualifiés. Un bon SEO homepage peut augmenter votre trafic de 20-30%.",
-      products: "Enrichissez vos fiches produits avec des titres et descriptions optimisés. Un meilleur SEO produit augmente directement les conversions.",
-      collections: "Optimisez vos collections pour mieux ranker sur les recherches de catégories. Les pages collections sont des points d'entrée clés.",
-      pages: "Optimisez vos pages personnalisées pour une meilleure visibilité. Des pages bien optimisées renforcent votre socle SEO.",
-      articles: "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
-      images: "Ajoutez des textes alternatifs descriptifs à toutes vos images. Les images peuvent représenter jusqu'à 20% du trafic organique.",
-      tags: "Optimisez vos tags produits pour améliorer la catégorisation. Des tags bien structurés améliorent la découvrabilité et le SEO."
-    }
+      homepage:
+        "Optimisez le titre et la description de votre page d'accueil pour attirer plus de visiteurs qualifiés. Un bon SEO homepage peut augmenter votre trafic de 20-30%.",
+      products:
+        "Enrichissez vos fiches produits avec des titres et descriptions optimisés. Un meilleur SEO produit augmente directement les conversions.",
+      collections:
+        "Optimisez vos collections pour mieux ranker sur les recherches de catégories. Les pages collections sont des points d'entrée clés.",
+      pages:
+        "Optimisez vos pages personnalisées pour une meilleure visibilité. Des pages bien optimisées renforcent votre socle SEO.",
+      articles:
+        "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
+      images:
+        "Ajoutez des textes alternatifs descriptifs à toutes vos images. Les images peuvent représenter jusqu'à 20% du trafic organique.",
+      tags: "Optimisez vos tags produits pour améliorer la catégorisation. Des tags bien structurés améliorent la découvrabilité et le SEO.",
+    },
   },
 
   advancedAnalytics: {
@@ -1870,25 +1891,25 @@ export const translations = {
     periods: {
       sevenDays: "7 jours",
       thirtyDays: "30 jours",
-      ninetyDays: "90 jours"
+      ninetyDays: "90 jours",
     },
     buttons: {
       pdf: "PDF",
-      excel: "Excel"
+      excel: "Excel",
     },
     kpis: {
       products: "produits",
       optimizations: "optimisations",
       articles: "articles",
-      seoScore: "Score SEO"
+      seoScore: "Score SEO",
     },
     comparison: {
-      vsPreviousPeriod: "vs période précédente"
+      vsPreviousPeriod: "vs période précédente",
     },
     tabs: {
       trends: "Tendances",
       heatmap: "Heatmap SEO",
-      predictions: "Prédictions IA"
+      predictions: "Prédictions IA",
     },
     charts: {
       metricsEvolution: "Evolution des Métriques",
@@ -1903,7 +1924,7 @@ export const translations = {
       expected: "estimées",
       estimatedOptimizations: "Optimisations estimées",
       expectedSeoScore: "Score SEO prévu",
-      thirtyDayProjection: "Projection à 30 jours"
+      thirtyDayProjection: "Projection à 30 jours",
     },
     categories: {
       products: "Produits",
@@ -1911,13 +1932,13 @@ export const translations = {
       blog: "Blog",
       images: "Images",
       technical: "Technique",
-      content: "Contenu"
+      content: "Contenu",
     },
     loading: "Chargement des analytics...",
     loadError: "Impossible de charger les analytics",
     exportInProgress: "Export en cours",
     generatingPdf: "Génération du rapport PDF...",
-    generatingExcel: "Génération du fichier Excel..."
+    generatingExcel: "Génération du fichier Excel...",
   },
 
   seo: {
@@ -1941,15 +1962,18 @@ export const translations = {
       errorLoading: "Erreur lors du chargement des images",
       noSelection: "Aucune image sélectionnée",
       limitReached: "Limite atteinte. Seulement {{count}} images seront optimisées.",
-      generatedWithErrors: "{{success}} textes ALT générés, {{errors}} erreurs. Certaines images ont un produit supprimé.",
+      generatedWithErrors:
+        "{{success}} textes ALT générés, {{errors}} erreurs. Certaines images ont un produit supprimé.",
       allHaveAlt: "Toutes les images ont déjà un texte ALT",
       quotaReached: "Quota atteint: {{used}}/{{max}} optimisations utilisées",
       monthlyLimitReached: "Limite mensuelle d'optimisations atteinte",
       quotaLimited: "Quota limité: {{remaining}}/{{total}} images seront optimisées",
       upgradeForMore: "Passez à un plan payant pour optimiser les images restantes",
       limitReachedThisMonth: "Limite atteinte: seulement {{remaining}}/{{total}} images seront optimisées ce mois-ci",
-      optimizedWithRemaining: "{{success}} images optimisées. {{remaining}} images restantes - Passez à un plan payant pour continuer",
-      optimizedWaitingNext: "{{success}} images optimisées ce mois-ci. {{remaining}} images en attente du prochain cycle",
+      optimizedWithRemaining:
+        "{{success}} images optimisées. {{remaining}} images restantes - Passez à un plan payant pour continuer",
+      optimizedWaitingNext:
+        "{{success}} images optimisées ce mois-ci. {{remaining}} images en attente du prochain cycle",
       stats: {
         toOptimize: "À optimiser",
         emptyAlt: "Texte ALT vide",
@@ -1959,20 +1983,21 @@ export const translations = {
         aiOptimizedOnly: "Optimisé IA uniquement",
         synchronized: "Synchronisé",
         syncedToShopify: "Synchronisé avec Shopify",
-        clickToView: "Cliquez pour voir"
+        clickToView: "Cliquez pour voir",
       },
       info: {
         emptyImages: "{{count}} images sans ALT text",
         aiOptimizedImages: "{{count}} images AI-optimisées",
         toSyncImages: "{{count}} images à synchroniser",
-        syncedImages: "{{count}} images synchronisées"
-      }
+        syncedImages: "{{count}} images synchronisées",
+      },
     },
     homepage: {
       title: "SEO Page d'Accueil",
       description: "Optimisez votre page d'accueil Shopify pour les moteurs de recherche",
       connectShopifyFirst: "Veuillez d'abord connecter votre boutique Shopify pour utiliser cette fonctionnalité",
-      bannerDescription: "Optimisez le SEO de votre page d'accueil Shopify. Créez une première impression inoubliable et boostez votre taux de conversion.",
+      bannerDescription:
+        "Optimisez le SEO de votre page d'accueil Shopify. Créez une première impression inoubliable et boostez votre taux de conversion.",
       badges: {
         smartAI: "IA Intelligente",
         showcasePage: "Page vitrine",
@@ -1984,7 +2009,8 @@ export const translations = {
         syncToShopify: "Synchroniser avec Shopify",
         syncing: "Synchronisation...",
       },
-      alertDescription: "Optimisez les balises meta de votre page d'accueil pour améliorer la visibilité dans les moteurs de recherche",
+      alertDescription:
+        "Optimisez les balises meta de votre page d'accueil pour améliorer la visibilité dans les moteurs de recherche",
       fields: {
         seoTitle: "Titre SEO",
         titlePlaceholder: "Entrez le titre de votre page d'accueil...",
@@ -2007,17 +2033,19 @@ export const translations = {
       },
       altGuide: {
         title: "Guide : Modifier les ALT Texts Homepage",
-        description: "Instructions complètes pour mettre à jour manuellement les textes ALT de votre page d'accueil Shopify",
+        description:
+          "Instructions complètes pour mettre à jour manuellement les textes ALT de votre page d'accueil Shopify",
         sections: {
           limitation: {
             title: "⚠️ Pourquoi cette limitation ?",
-            description: "Les images de votre homepage sont intégrées dans votre thème Shopify (banners, sliders, sections).",
+            description:
+              "Les images de votre homepage sont intégrées dans votre thème Shopify (banners, sliders, sections).",
             note: "💡 L'API Shopify ne permet pas de modifier ces images via une app. Vous devez les modifier manuellement dans le Theme Editor.",
           },
           export: {
             title: "1️⃣ Exporter les ALT texts générés",
             steps: [
-              "Cliquez sur le bouton <strong>\"Export Homepage ALT\"</strong> ci-dessus",
+              'Cliquez sur le bouton <strong>"Export Homepage ALT"</strong> ci-dessus',
               "Le fichier téléchargé contient : <ul class='list-disc pl-5 mt-2'><li>L'URL de chaque image</li><li>Le texte ALT actuel</li><li>Le nouveau texte ALT optimisé par l'IA</li></ul>",
             ],
             csvHeaders: ["URL Image", "ALT Actuel", "Nouveau ALT", "Section"],
@@ -2031,7 +2059,7 @@ export const translations = {
                 title: "Accéder au Theme Editor",
                 instructions: [
                   "Allez dans <strong>Shopify Admin → Boutique en ligne → Thèmes</strong>",
-                  "Cliquez sur <strong>\"Personnaliser\"</strong> sur votre thème actif",
+                  'Cliquez sur <strong>"Personnaliser"</strong> sur votre thème actif',
                 ],
               },
               {
@@ -2045,16 +2073,14 @@ export const translations = {
                 title: "Mettre à jour les ALT texts",
                 instructions: [
                   "Pour chaque image, cliquez dessus dans l'éditeur",
-                  "Cherchez le champ <strong>\"Texte alternatif\"</strong> ou <strong>\"ALT text\"</strong>",
+                  'Cherchez le champ <strong>"Texte alternatif"</strong> ou <strong>"ALT text"</strong>',
                   "Remplacez par le nouveau texte ALT du fichier CSV",
                   "Répétez pour toutes les images",
                 ],
               },
               {
                 title: "Sauvegarder",
-                instructions: [
-                  "Cliquez sur <strong>\"Enregistrer\"</strong> en haut à droite du Theme Editor",
-                ],
+                instructions: ['Cliquez sur <strong>"Enregistrer"</strong> en haut à droite du Theme Editor'],
               },
             ],
           },
@@ -2069,7 +2095,7 @@ export const translations = {
             ],
             dontTitle: "❌ À ÉVITER :",
             dontList: [
-              "ALT texts génériques (\"image\", \"photo\", \"banner\")",
+              'ALT texts génériques ("image", "photo", "banner")',
               "Bourrage de mots-clés",
               "Textes trop longs (>125 caractères)",
               "Laisser les ALT texts vides",
@@ -2077,17 +2103,18 @@ export const translations = {
           },
           rescan: {
             title: "3️⃣ Re-scanner après modification",
-            description: "Une fois vos modifications terminées dans Shopify : <ul class='list-disc pl-5 mt-2'><li>Retournez sur cette page</li><li>Cliquez sur <strong>\"Re-scan Homepage\"</strong></li><li>Vérifiez que votre score SEO s'améliore ✅</li></ul>",
+            description:
+              "Une fois vos modifications terminées dans Shopify : <ul class='list-disc pl-5 mt-2'><li>Retournez sur cette page</li><li>Cliquez sur <strong>\"Re-scan Homepage\"</strong></li><li>Vérifiez que votre score SEO s'améliore ✅</li></ul>",
           },
         },
       },
     },
     articleLanding: {
       errors: {
-        loadArticle: "Erreur lors du chargement de l'article"
+        loadArticle: "Erreur lors du chargement de l'article",
       },
       toasts: {
-        linkCopied: "Lien copié !"
+        linkCopied: "Lien copié !",
       },
       loading: "Chargement de l'article...",
       notFound: "Article non trouvé",
@@ -2101,24 +2128,24 @@ export const translations = {
       keywords: "mots-clés",
       published: "Publié",
       draft: "Brouillon",
-      shareLabel: "Partager :"
+      shareLabel: "Partager :",
     },
     productSource: {
       errors: {
         loadProducts: "Erreur lors du chargement des produits",
         enrichProduct: "Erreur lors de l'enrichissement",
-        deleteProducts: "Erreur lors de la suppression"
+        deleteProducts: "Erreur lors de la suppression",
       },
       success: {
         dataExported: "Données exportées avec succès",
         productEnriched: "Produit enrichi avec succès !",
         csvExported: "Export CSV réussi",
-        productsDeleted: "{{count}} produit(s) supprimé(s)"
+        productsDeleted: "{{count}} produit(s) supprimé(s)",
       },
       info: {
         allEnriched: "Tous les produits sont déjà enrichis",
         noSelection: "Aucun produit sélectionné",
-        enriching: "Enrichissement de {{count}} produit(s)..."
+        enriching: "Enrichissement de {{count}} produit(s)...",
       },
       title: "Source Produits (Catalogue Enrichi)",
       subtitle: "Tous vos produits avec données IA complètes",
@@ -2129,13 +2156,13 @@ export const translations = {
         enriching: "Enrichissement...",
         exportCSV: "Export CSV",
         exportJSON: "Export JSON",
-        refresh: "Actualiser"
+        refresh: "Actualiser",
       },
       stats: {
         totalProducts: "Total Produits",
         enrichmentRate: "Taux d'enrichissement",
         averageQuality: "Qualité Moyenne",
-        visionAIActive: "Vision AI Actif"
+        visionAIActive: "Vision AI Actif",
       },
       filters: {
         selectAll: "Tout sélectionner ({{selected}}/{{total}})",
@@ -2145,8 +2172,8 @@ export const translations = {
         pending: "En attente",
         error: "Erreur",
         allCategories: "Toutes les catégories",
-        displayed: "{{count}} produit(s) affiché(s)"
-      }
+        displayed: "{{count}} produit(s) affiché(s)",
+      },
     },
     chat: {
       greeting: "Bonjour ! Je suis votre conseiller commercial. Comment puis-je vous aider aujourd'hui ?",
@@ -2161,7 +2188,7 @@ export const translations = {
         auth: "Erreur d'authentification. Reconnectez-vous.",
         config: "Service IA non configuré. Contactez le support.",
         search: "Aucun produit trouvé. Essayez d'autres termes.",
-        generic: "Une erreur est survenue. Réessayez."
+        generic: "Une erreur est survenue. Réessayez.",
       },
       fallback: "Désolé, je rencontre un problème technique. Veuillez réessayer.",
       title: "AI Smart Chat",
@@ -2180,7 +2207,7 @@ export const translations = {
           bottomRight: "Bas droite",
           bottomLeft: "Bas gauche",
           topRight: "Haut droite",
-          topLeft: "Haut gauche"
+          topLeft: "Haut gauche",
         },
         welcomeMessage: "Message d'accueil",
         integrationCode: "Code d'intégration Shopify",
@@ -2191,17 +2218,18 @@ export const translations = {
           step3: "Cliquez sur Modifier le code",
           step4: "Ouvrez theme.liquid",
           step5: "Collez le code juste avant la balise </body>",
-          step6: "Sauvegardez"
-        }
+          step6: "Sauvegardez",
+        },
       },
       copiedToClipboard: "Code copié dans le presse-papier !",
       you: "Vous",
       assistant: "Assistant",
       enrichmentWarning: {
         title: "Améliorez la fonction chat en intégrant vos produits",
-        description: "Enrichissement actuel : {{percentage}}%. Enrichissez vos produits pour des recommandations plus précises.",
-        action: "Commencer l'enrichissement"
-      }
+        description:
+          "Enrichissement actuel : {{percentage}}%. Enrichissez vos produits pour des recommandations plus précises.",
+        action: "Commencer l'enrichissement",
+      },
     },
     chatRobot: {
       title: "NewAI Robot",
@@ -2214,7 +2242,7 @@ export const translations = {
       subtitle: "Appuyez sur le microphone pour commencer à parler",
       you: "Vous",
       robot: "Robot",
-      processing: "Traitement en cours..."
+      processing: "Traitement en cours...",
     },
     subscription: {
       title: "Plans d'abonnement",
@@ -2227,7 +2255,8 @@ export const translations = {
       products: "Produits",
       articlesPerMonth: "Articles/mois",
       stores: "Boutiques",
-      limitReachedMessage: "💡 Vous avez atteint les limites de votre plan actuel. Choisissez un plan supérieur ci-dessous pour continuer.",
+      limitReachedMessage:
+        "💡 Vous avez atteint les limites de votre plan actuel. Choisissez un plan supérieur ci-dessous pour continuer.",
       currentPlanBadge: "Plan actuel",
       recommendedPlanBadge: "Plan recommandé",
       bestValueBadge: "Meilleur rapport qualité-prix",
@@ -2245,23 +2274,23 @@ export const translations = {
       enterpriseLarge: "Pour les grandes opérations",
       errors: {
         loadPlans: "Erreur lors du chargement des plans",
-        createCheckout: "Erreur lors de la création de la session de paiement"
+        createCheckout: "Erreur lors de la création de la session de paiement",
       },
       plans: {
         starter: {
           name: "Starter",
-          description: "Pour les boutiques en croissance"
+          description: "Pour les boutiques en croissance",
         },
         pro: {
           name: "Pro",
-          description: "Pour les boutiques en croissance"
+          description: "Pour les boutiques en croissance",
         },
         enterprise: {
           name: "Enterprise",
           description: "Pour les grandes opérations",
-          bestValue: "Meilleur rapport qualité-prix"
-        }
-      }
+          bestValue: "Meilleur rapport qualité-prix",
+        },
+      },
     },
     tags: {
       loadError: "Erreur lors du chargement des produits",
@@ -2295,8 +2324,8 @@ export const translations = {
         toOptimize: "Non optimisé",
         optimized: "Optimisé",
         toSync: "À synchroniser",
-        synced: "Synchronisé"
-      }
+        synced: "Synchronisé",
+      },
     },
     imagePreview: {
       whiteBackground: {
@@ -2304,27 +2333,29 @@ export const translations = {
         description: "Comparez l'image originale avec la version optimisée en 2000x2000px",
         original: "Original",
         optimized: "Fond Blanc HD",
-      }
+      },
     },
     banners: {
       pages: {
         title: "Gestion SEO des Pages",
-        description: "Optimisez vos pages Shopify avec le SEO propulsé par l'IA. Améliorez vos balises méta et boostez votre classement.",
+        description:
+          "Optimisez vos pages Shopify avec le SEO propulsé par l'IA. Améliorez vos balises méta et boostez votre classement.",
         seoOptimized: "Optimisé SEO",
         betterRankings: "Meilleur Classement",
         aiEnhanced: "Amélioré par IA",
         seoScore: "Score SEO",
-        optimizeBtn: "Optimiser Pages"
+        optimizeBtn: "Optimiser Pages",
       },
       articles: {
         title: "Gestion SEO des Articles",
-        description: "Optimisez vos articles de blog avec le SEO propulsé par l'IA. Améliorez titres, méta descriptions, et boostez votre trafic organique de 40%.",
+        description:
+          "Optimisez vos articles de blog avec le SEO propulsé par l'IA. Améliorez titres, méta descriptions, et boostez votre trafic organique de 40%.",
         seoOptimized: "Optimisé SEO",
         trafficBoost: "+40% Trafic",
         aiEnhanced: "Amélioré par IA",
         seoScore: "Score SEO",
-        optimizeBtn: "Optimiser Articles"
-      }
+        optimizeBtn: "Optimiser Articles",
+      },
     },
     submenu: {
       products: "Produits",
@@ -2345,7 +2376,7 @@ export const translations = {
       relaunchAudit: "Relancer l'audit",
       analyzing: "Analyse en cours...",
       lastAudit: "Dernier audit",
-      
+
       subtabs: {
         overview: "Vue d'ensemble",
         homepage: "Page d'accueil",
@@ -2353,7 +2384,7 @@ export const translations = {
         actions: "Plan d'action",
         reports: "Rapports",
       },
-      
+
       quickAccess: {
         title: "Accès Rapide",
         homepage: "Page d'accueil",
@@ -2363,7 +2394,7 @@ export const translations = {
         actions: "Plan d'action",
         actionsDesc: "{{count}} actions recommandées",
       },
-      
+
       noAudit: {
         title: "Aucun audit pour le moment",
         description: "Lancez votre premier audit SEO complet pour identifier les opportunités d'optimisation",
@@ -2379,14 +2410,14 @@ export const translations = {
         cta: "Prêt à optimiser votre SEO ?",
         ctaDesc: "Lancez votre premier audit maintenant",
       },
-      
+
       overview: {
         title: "Vue d'ensemble de l'audit",
         globalScore: "Score SEO Global",
         categoryScores: "Scores par Catégorie",
         viewDetails: "Voir les détails",
       },
-      
+
       categories: {
         homepage: "Page d'accueil",
         products: "Produits",
@@ -2395,7 +2426,7 @@ export const translations = {
         images: "Images",
         technical: "Technique",
       },
-      
+
       score: {
         excellent: "Excellent",
         good: "Bon",
@@ -2403,7 +2434,7 @@ export const translations = {
         poor: "Faible",
         outOf: "sur",
       },
-      
+
       issues: {
         title: "Problèmes Détectés",
         category: "Catégorie",
@@ -2416,7 +2447,7 @@ export const translations = {
         medium: "Moyenne",
         low: "Basse",
       },
-      
+
       actions: {
         title: "Plan d'Action",
         step: "Étape",
@@ -2428,7 +2459,8 @@ export const translations = {
     },
     optimization: {
       title: "Optimisation SEO",
-      subtitle: "Générez des titres et descriptions optimisés automatiquement pour améliorer votre SEO et augmenter vos conversions de 40%.",
+      subtitle:
+        "Générez des titres et descriptions optimisés automatiquement pour améliorer votre SEO et augmenter vos conversions de 40%.",
       smartSeo: "SEO Intelligent",
       visibility: "+40% visibilité",
       fastGeneration: "Génération rapide",
@@ -2442,7 +2474,8 @@ export const translations = {
         badge: "Optimisé par Vision AI (Analyse d'images)",
         description: "L'IA analyse vos images",
         features: "couleurs, matériaux, styles",
-        fullDescription: "pour générer automatiquement des descriptions SEO optimisées. Détecte les couleurs, matériaux, styles et enrichit votre contenu pour maximiser votre visibilité sur Google."
+        fullDescription:
+          "pour générer automatiquement des descriptions SEO optimisées. Détecte les couleurs, matériaux, styles et enrichit votre contenu pour maximiser votre visibilité sur Google.",
       },
       notAiOptimized: "Non optimisé par IA",
       aiOptimizedLabel: "Optimisé par IA",
@@ -2513,7 +2546,7 @@ export const translations = {
       someAlreadyOptimized: "Certains produits ont déjà été optimisés ce mois-ci avec votre plan actuel.",
       noOptimizedProductsSelected: "Aucun produit optimisé sélectionné pour la synchronisation",
       allOptimizedSynced: "Tous les produits optimisés sont déjà synchronisés",
-      noProductsToSynchronize: "Aucun produit à synchroniser"
+      noProductsToSynchronize: "Aucun produit à synchroniser",
     },
     googleSearchConsole: {
       title: "Google Search Console",
@@ -2527,7 +2560,8 @@ export const translations = {
     pages: {
       title: "Pages SEO",
       subtitle: "Optimisation intelligente IA",
-      description: "Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité.",
+      description:
+        "Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité.",
       hero: {
         seoAutomated: "SEO Automatisé",
         completePages: "Pages Complètes",
@@ -2651,30 +2685,30 @@ export const translations = {
         all: "Tous",
         draft: "Brouillon",
         published: "Publié",
-        shopifySynced: "Synchronisé"
+        shopifySynced: "Synchronisé",
       },
       status: {
         optimized: "Optimisé",
         notOptimized: "Non optimisé",
-        all: "Tous les statuts"
+        all: "Tous les statuts",
       },
       sync: {
         synced: "Synchronisé",
         notSynced: "Non synchronisé",
-        all: "Toutes les syncs"
+        all: "Toutes les syncs",
       },
       quality: {
         all: "Toutes qualités",
         excellent: "Excellent",
         good: "Bon",
         medium: "Moyen",
-        poor: "Faible"
+        poor: "Faible",
       },
       score: {
         excellent: "Excellent",
         good: "Bon",
         medium: "Moyen",
-        poor: "Faible"
+        poor: "Faible",
       },
       actions: {
         optimizeSelected: "Optimiser sélection",
@@ -2683,7 +2717,7 @@ export const translations = {
         selectAll: "Tout sélectionner",
         refresh: "Actualiser",
         generateImage: "Générer image",
-        optimize: "Optimiser"
+        optimize: "Optimiser",
       },
       messages: {
         optimizationSuccess: "Article optimisé !",
@@ -2700,68 +2734,74 @@ export const translations = {
         generating: "Génération de l'article...",
         generationSuccess: "Article généré avec succès !",
         generationError: "Erreur lors de la génération",
-        syncing: "Synchronisation avec Shopify..."
+        syncing: "Synchronisation avec Shopify...",
       },
       viewMode: {
         grid: "Grille",
-        list: "Liste"
+        list: "Liste",
       },
       filters: {
         search: "Rechercher des articles...",
         status: "Statut",
         sync: "Synchronisation",
-        quality: "Qualité"
+        quality: "Qualité",
       },
       table: {
         title: "Titre",
         seoScore: "Score SEO",
         status: "Statut",
-        actions: "Actions"
+        actions: "Actions",
       },
       globalScore: {
         title: "Score SEO Global des Articles",
         subtitle: "Moyenne des scores SEO de tous les articles",
         articles: "articles",
-        article: "article"
-      }
+        article: "article",
+      },
     },
     hero: {
       articles: {
-        description: "Consultez, modifiez et gérez tous vos articles de blog. Suivez leur statut et publiez-les sur votre boutique Shopify.",
+        description:
+          "Consultez, modifiez et gérez tous vos articles de blog. Suivez leur statut et publiez-les sur votre boutique Shopify.",
         count: "Articles",
-        seoReady: "Prêt pour le SEO"
+        seoReady: "Prêt pour le SEO",
       },
       createArticle: {
         title: "Générateur d'articles IA",
-        description: "Laissez notre IA créer des articles optimisés SEO en quelques minutes. Choisissez simplement votre sujet et vos mots-clés, et regardez la magie opérer.",
+        description:
+          "Laissez notre IA créer des articles optimisés SEO en quelques minutes. Choisissez simplement votre sujet et vos mots-clés, et regardez la magie opérer.",
         aiPowered: "Alimenté par l'IA",
         seoOptimized: "Optimisé SEO",
         startCreating: "Commencer à Créer",
       },
       campaigns: {
         title: "Campagnes de contenu automatisées",
-        description: "Planifiez et automatisez votre création de contenu. Configurez des campagnes pour publier des articles régulièrement et maintenir une présence constante.",
+        description:
+          "Planifiez et automatisez votre création de contenu. Configurez des campagnes pour publier des articles régulièrement et maintenir une présence constante.",
         campaignsCount: "Campagnes",
         automated: "Automatisé",
         newCampaign: "Nouvelle Campagne",
       },
       opportunities: {
         title: "Opportunités de contenu",
-        description: "Découvrez des sujets tendance et des idées de contenu basées sur votre catalogue de produits. L'IA analyse votre boutique pour suggérer les meilleurs articles à écrire.",
+        description:
+          "Découvrez des sujets tendance et des idées de contenu basées sur votre catalogue de produits. L'IA analyse votre boutique pour suggérer les meilleurs articles à écrire.",
         smartSuggestions: "Suggestions intelligentes",
         aiDriven: "Piloté par l'IA",
         configure: "Configurer",
       },
       netlinking: {
         title: "Stratégie de maillage interne",
-        description: "Boostez votre SEO avec un maillage interne intelligent. Gérez les liens produits dans les articles et créez du contenu optimisé pour le netlinking.",
+        description:
+          "Boostez votre SEO avec un maillage interne intelligent. Gérez les liens produits dans les articles et créez du contenu optimisé pour le netlinking.",
         linkManagement: "Gestion des liens",
         seoBoost: "Boost SEO",
         createLinkingArticle: "Créer un article de linking",
       },
       settings: {
         title: "Configuration du Blog",
-        description: "Configurez la génération automatique d'opportunités de contenu, définissez les préférences et personnalisez la façon dont l'IA crée des articles pour votre boutique.",
+        description:
+          "Configurez la génération automatique d'opportunités de contenu, définissez les préférences et personnalisez la façon dont l'IA crée des articles pour votre boutique.",
       },
     },
     dialogs: {
@@ -2777,7 +2817,7 @@ export const translations = {
         imageSaved: "Image enregistrée mais article non mis à jour",
         altGenerated: "✨ ALT généré et synchronisé avec Shopify!",
         altOptimized: "✨ ALT optimisé généré avec succès!",
-        errorOptimize: "Erreur lors de l'optimisation"
+        errorOptimize: "Erreur lors de l'optimisation",
       },
       opportunities: {
         errorLoading: "Erreur lors du chargement initial des opportunités",
@@ -2791,7 +2831,7 @@ export const translations = {
         generated: 'Article "{{title}}" généré avec succès !',
         errorGenerate: "Erreur lors de la génération de l'article",
         analyzing: "Analyse du catalogue en cours...",
-        patience: "Patience, cela peut prendre jusqu'à 30 secondes"
+        patience: "Patience, cela peut prendre jusqu'à 30 secondes",
       },
       netlinking: {
         errorLoading: "Erreur lors du chargement",
@@ -2802,7 +2842,7 @@ export const translations = {
         analyzeAll: "Analyser tous les articles",
         loading: "Chargement...",
         noLinks: "Aucun lien détecté",
-        autoDetect: "Les liens seront automatiquement détectés lors de la génération d'articles"
+        autoDetect: "Les liens seront automatiquement détectés lors de la génération d'articles",
       },
       replaceLink: {
         title: "Remplacer le lien brisé",
@@ -2819,10 +2859,10 @@ export const translations = {
           verified: "URL vérifiée avec succès",
           urlAccessible: "L'URL semble accessible",
           replaced: "Lien remplacé avec succès",
-          error: "Erreur lors du remplacement du lien"
-        }
-      }
-    }
+          error: "Erreur lors du remplacement du lien",
+        },
+      },
+    },
   },
 
   products: {
@@ -2861,7 +2901,8 @@ export const translations = {
     noCollections: "Aucune collection trouvée",
     empty: {
       title: "Aucune collection",
-      description: "Utilisez le bouton 'Tout Importer' dans l'onglet Intégration pour importer vos collections depuis Shopify",
+      description:
+        "Utilisez le bouton 'Tout Importer' dans l'onglet Intégration pour importer vos collections depuis Shopify",
     },
     optimizeSeo: "Optimiser SEO",
     syncToShopify: "Synchroniser avec Shopify",
@@ -2908,7 +2949,8 @@ export const translations = {
     syncing: "Synchronisation...",
     optimization: {
       title: "Optimisation des Collections",
-      description: "Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec Vision AI",
+      description:
+        "Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec Vision AI",
       optimizeAll: "Tout Optimiser",
       optimizeSelected: "Optimiser la Sélection",
       globalScore: "Score SEO Global",
@@ -2924,7 +2966,7 @@ export const translations = {
         seoScore: "Score SEO",
         status: "Statut",
         synced: "Synchronisé",
-        actions: "Actions"
+        actions: "Actions",
       },
       features: {
         intelligent: "SEO Intelligent",
@@ -3000,24 +3042,24 @@ export const translations = {
     filterModes: {
       all: "Toutes les collections",
       include: "Inclure uniquement certaines collections",
-      exclude: "Exclure certaines collections"
+      exclude: "Exclure certaines collections",
     },
     conditions: {
       new: "Neuf",
       refurbished: "Reconditionné",
-      used: "Occasion"
+      used: "Occasion",
     },
     validation: {
       storeNameRequired: "Le nom de la boutique est requis",
       storeNameFormat: "Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets",
       storeNameTooShort: "Le nom de la boutique doit contenir au moins 3 caractères",
-      storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères"
+      storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères",
     },
     statusBadges: {
       operational: "✓ Opérationnel",
       error: "✗ Erreur",
-      untested: "⏳ Non testé"
-    }
+      untested: "⏳ Non testé",
+    },
   },
 
   shopping: {
@@ -3058,7 +3100,7 @@ export const translations = {
       title: "Gestion des Commandes",
       description: "Suivez et gérez vos commandes Shopify",
       comingSoon: "Bientôt Disponible",
-      comingSoonDesc: "La gestion des commandes sera bientôt disponible"
+      comingSoonDesc: "La gestion des commandes sera bientôt disponible",
     },
     knowledgeBase: {
       title: "Base de Connaissances",
@@ -3093,7 +3135,7 @@ export const translations = {
         pickup: "📦 Points Relais",
         payment: "💳 Paiement",
         support: "📱 Support",
-        general: "ℹ️ Général"
+        general: "ℹ️ Général",
       },
       suggested: "Questions suggérées",
       testChat: "Tester le chat",
@@ -3113,8 +3155,8 @@ export const translations = {
         paymentMethods: "Quels modes de paiement acceptez-vous ?",
         paymentMethodsAnswer: "Nous acceptons les cartes bancaires, Visa, Mastercard, PayPal et virement bancaire.",
         contactSupport: "Comment vous contacter ?",
-        contactSupportAnswer: "Vous pouvez nous contacter par email ou téléphone du lundi au vendredi."
-      }
+        contactSupportAnswer: "Vous pouvez nous contacter par email ou téléphone du lundi au vendredi.",
+      },
     },
     settingsPage: {
       title: "Paramètres du Chat",
@@ -3124,20 +3166,20 @@ export const translations = {
         description: "Personnalisez le nom de votre conseiller commercial",
         label: "Nom de l'assistant",
         placeholder: "Nicolas",
-        hint: "Ce nom sera affiché dans le chat et utilisé dans les conversations"
+        hint: "Ce nom sera affiché dans le chat et utilisé dans les conversations",
       },
       assistantStyle: {
         title: "Style de l'assistant",
-        description: "Choisissez la personnalité de votre conseiller"
+        description: "Choisissez la personnalité de votre conseiller",
       },
       responseSettings: {
         title: "Paramètres de réponse",
-        description: "Personnalisez la tonalité et la longueur"
+        description: "Personnalisez la tonalité et la longueur",
       },
       save: "Enregistrer les paramètres",
       saved: "Paramètres sauvegardés avec succès !",
-      error: "Erreur lors de la sauvegarde des paramètres"
-    }
+      error: "Erreur lors de la sauvegarde des paramètres",
+    },
   },
 
   auth: {
@@ -3180,26 +3222,26 @@ export const translations = {
     billing: {
       monthly: "Mensuel",
       yearly: "Annuel",
-      save: "Économisez jusqu'à 20%"
+      save: "Économisez jusqu'à 20%",
     },
     trial: {
       available: "💳 Essai gratuit disponible sur le plan Starter",
       freeTrial: "🎁 {{days}} jours d'essai gratuit",
       startTrial: "Commencer l'essai gratuit",
-      cardRequired: "💳 Carte requise • Premier paiement le {{date}}"
+      cardRequired: "💳 Carte requise • Premier paiement le {{date}}",
     },
     verification: {
       title: "Vérification de votre abonnement",
       checking: "Nous vérifions votre paiement avec Stripe...",
       verifyNow: "Vérifier maintenant",
       success: "Abonnement vérifié avec succès !",
-      activated: "Votre abonnement a été activé avec succès !"
+      activated: "Votre abonnement a été activé avec succès !",
     },
     errors: {
       loadingPlans: "Erreur lors du chargement des plans",
       mustBeConnected: "Vous devez être connecté",
       noActiveSubscription: "Aucun abonnement actif trouvé. Veuillez contacter le support.",
-      paymentError: "Erreur lors de la création du paiement"
+      paymentError: "Erreur lors de la création du paiement",
     },
     planFeatures: {
       unlimited: "Illimité",
@@ -3214,15 +3256,15 @@ export const translations = {
       bestValue: "Meilleur Rapport Qualité-Prix",
       forGrowth: "Pour les boutiques en croissance",
       forEnterprise: "Pour les grandes boutiques et agences",
-      chooseTier: "Choisir un niveau"
+      chooseTier: "Choisir un niveau",
     },
     infoFooter: {
       starterOnly: "✨ Plan Starter : Commencez avec les fonctionnalités IA essentielles",
       cardRequired: "💳 Carte bancaire requise • Annulez à tout moment",
       proEnterprise: "💡 Plans Pro et Enterprise : Meilleur rapport qualité-prix avec facturation annuelle",
-      cancelAnytime: "🔒 Annulez à tout moment"
+      cancelAnytime: "🔒 Annulez à tout moment",
     },
-    choosePlanAfterTrial: "Choisissez votre plan après l'essai"
+    choosePlanAfterTrial: "Choisissez votre plan après l'essai",
   },
 
   merchant: {
@@ -3274,8 +3316,9 @@ export const translations = {
       formatValue: "XML Google Shopping",
       enrichment: {
         title: "Enrichissez vos données Google Shopping",
-        description: "Optimisez vos produits avec les catégories Google, les GTIN et le background blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
-        action: "Optimiser maintenant"
+        description:
+          "Optimisez vos produits avec les catégories Google, les GTIN et le background blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
+        action: "Optimiser maintenant",
       },
       url: {
         title: "URL du Flux XML",
@@ -3286,15 +3329,16 @@ export const translations = {
         preview: "Prévisualiser le flux",
         note: {
           title: "Note :",
-          description: "Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe."
-        }
+          description:
+            "Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe.",
+        },
       },
       actions: {
         optimizeAll: "Tout Optimiser",
         testFeed: "Tester le Flux",
         regenerate: "Régénérer le XML",
         downloadXML: "Télécharger le XML",
-        exportCSV: "Exporter en CSV"
+        exportCSV: "Exporter en CSV",
       },
       status: {
         operational: "Opérationnel",
@@ -3302,18 +3346,18 @@ export const translations = {
         testing: "Test en cours",
         notTested: "Non Testé",
         never: "Jamais",
-        generating: "Génération du fichier CSV..."
+        generating: "Génération du fichier CSV...",
       },
       success: {
         regenerated: "Flux XML régénéré avec succès ! 🎉",
-        exported: "{{count}} produits exportés en CSV ! 📊"
+        exported: "{{count}} produits exportés en CSV ! 📊",
       },
       errors: {
         invalidFormat: "Format XML invalide",
         unknown: "Erreur inconnue",
         regenerateFailed: "Erreur lors de la régénération du flux",
         noProducts: "Aucun produit à exporter",
-        exportFailed: "Erreur lors de l'export CSV"
+        exportFailed: "Erreur lors de l'export CSV",
       },
       csv: {
         headers: {
@@ -3329,27 +3373,27 @@ export const translations = {
           gtin: "GTIN",
           mpn: "MPN",
           condition: "État",
-          whiteBackground: "Background Blanc IA"
+          whiteBackground: "Background Blanc IA",
         },
         inStock: "en stock",
         outOfStock: "rupture de stock",
         yes: "Oui",
-        no: "Non"
+        no: "Non",
       },
       info: {
         format: {
           title: "Format",
-          description: "Flux XML Google Shopping conforme aux spécifications officielles"
+          description: "Flux XML Google Shopping conforme aux spécifications officielles",
         },
         update: {
           title: "Mise à jour",
-          description: "Flux mis à jour automatiquement en temps réel"
+          description: "Flux mis à jour automatiquement en temps réel",
         },
         schedule: {
           title: "Planification",
-          description: "Synchronisation automatique quotidienne"
-        }
-      }
+          description: "Synchronisation automatique quotidienne",
+        },
+      },
     },
     settings: {
       title: "Configuration du Flux Google Shopping",
@@ -3387,28 +3431,27 @@ export const translations = {
       filterModes: {
         all: "Toutes les collections",
         include: "Inclure uniquement certaines collections",
-        exclude: "Exclure certaines collections"
+        exclude: "Exclure certaines collections",
       },
       conditions: {
         new: "Neuf",
         refurbished: "Reconditionné",
-        used: "Occasion"
+        used: "Occasion",
       },
       validation: {
         storeNameRequired: "Le nom de la boutique est requis",
         storeNameFormat: "Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets",
         storeNameTooShort: "Le nom de la boutique doit contenir au moins 3 caractères",
-        storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères"
+        storeNameTooLong: "Le nom de la boutique ne peut pas dépasser 50 caractères",
       },
       statusBadges: {
         operational: "✓ Opérationnel",
         error: "✗ Erreur",
-        untested: "⏳ Non testé"
-      }
-    }
+        untested: "⏳ Non testé",
+      },
+    },
   },
 
-  
   seoAuditDashboard: {
     title: "Tableau de bord Audit SEO",
     subtitle: "Analyse complète de votre visibilité en ligne",
@@ -3425,7 +3468,7 @@ export const translations = {
       excellent: "🎯 Excellent",
       good: "📈 Bon",
       average: "⚠️ Moyen",
-      low: "🚨 Faible"
+      low: "🚨 Faible",
     },
     overview: {
       title: "Score SEO Global",
@@ -3434,17 +3477,17 @@ export const translations = {
       progression: "PROGRESSION",
       pointsRemaining: "{{count}} pts restants",
       categoriesOptimized: "sur {{count}} catégories",
-      optimized: "optimisées"
+      optimized: "optimisées",
     },
     motivational: {
       excellent: "🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !",
       good: "👍 Bon score ! Quelques optimisations supplémentaires vous permettront d'atteindre l'excellence.",
       average: "💪 Score moyen ! Suivez nos recommandations pour améliorer significativement votre visibilité.",
-      low: "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO."
+      low: "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO.",
     },
     categoryDetail: {
       title: "Détail par Catégorie",
-      subtitle: "Cliquez sur une catégorie pour accéder aux optimisations correspondantes"
+      subtitle: "Cliquez sur une catégorie pour accéder aux optimisations correspondantes",
     },
     quickAccess: {
       homepage: "Page d'accueil",
@@ -3452,7 +3495,7 @@ export const translations = {
       issues: "Problèmes Détectés",
       issuesDesc: "{{count}} problèmes à corriger",
       actionPlan: "Plan d'action",
-      actionPlanDesc: "{{count}} actions prioritaires"
+      actionPlanDesc: "{{count}} actions prioritaires",
     },
     categories: {
       homepage: "Page d'accueil",
@@ -3460,7 +3503,7 @@ export const translations = {
       collections: "Collections",
       content: "Contenu",
       images: "Images",
-      technical: "Technique"
+      technical: "Technique",
     },
     categoryDescriptions: {
       homepage: "Titre et meta description",
@@ -3468,11 +3511,11 @@ export const translations = {
       collections: "Pages collections",
       content: "Articles et pages",
       images: "Textes alternatifs",
-      technical: "Configuration Shopify"
+      technical: "Configuration Shopify",
     },
     homepageSection: {
       title: "Analyse Homepage SEO",
-      subtitle: "Optimisation détaillée de votre page d'accueil"
+      subtitle: "Optimisation détaillée de votre page d'accueil",
     },
     issuesSection: {
       title: "Problèmes Détectés",
@@ -3495,7 +3538,7 @@ export const translations = {
       completed: "Terminé",
       actionPlan: "Plan d'action",
       priorityActions: "{{count}} actions prioritaires",
-    }
+    },
   },
 
   // Google Console Navigation
@@ -3562,7 +3605,7 @@ export const translations = {
       },
     },
   },
-  
+
   // Media History
   mediaHistoryPage: {
     title: "Historique Media",
@@ -3594,7 +3637,7 @@ export const translations = {
       prompt: "Prompt",
     },
   },
-  
+
   // Navigation items
   mediaHistory: "Historique des images IA",
   usageLimits: "Limites d'utilisation",
@@ -3643,7 +3686,7 @@ export const translations = {
       digest: "Résumé quotidien",
       digestDesc: "Recevez un email récapitulatif de vos tâches SEO chaque jour",
       hour: "Heure d'envoi",
-      hourDesc: "Choisissez l'heure à laquelle vous souhaitez recevoir votre résumé"
+      hourDesc: "Choisissez l'heure à laquelle vous souhaitez recevoir votre résumé",
     },
     categories: {
       title: "Catégories de Notifications",
@@ -3657,7 +3700,7 @@ export const translations = {
       images: "🖼️ Images",
       imagesDesc: "Notifications pour l'optimisation des textes ALT des images",
       homepage: "🏠 Page d'accueil",
-      homepageDesc: "Notifications pour l'optimisation SEO de la page d'accueil"
+      homepageDesc: "Notifications pour l'optimisation SEO de la page d'accueil",
     },
     loading: "Chargement...",
     saving: "Sauvegarde...",
@@ -3673,7 +3716,7 @@ export const translations = {
     weeklyReport: "Rapport Hebdomadaire",
     saveSettings: "Enregistrer les Paramètres",
   },
-  
+
   // Notification Templates Page
   notificationTemplates: {
     title: "Templates de Notifications",
@@ -3691,9 +3734,9 @@ export const translations = {
     loadError: "Erreur de chargement",
     updateSuccess: "Paramètres mis à jour",
     updateError: "Erreur de mise à jour",
-    statusUpdated: "Statut mis à jour"
+    statusUpdated: "Statut mis à jour",
   },
-  
+
   // Product Optimization Page
   productOptimization: {
     selectOne: "Veuillez sélectionner au moins un produit",
@@ -3704,18 +3747,18 @@ export const translations = {
     deleteWarning: "Cette action est irréversible et supprimera définitivement le produit de Shopify.",
     deleting: "Suppression...",
     delete: "Supprimer",
-    cancel: "Annuler"
+    cancel: "Annuler",
   },
-  
+
   // Shopify Install Page
   shopifyInstall: {
     title: "Installation Shopify",
     errorTitle: "Erreur d'installation",
     connecting: "Connexion à Shopify en cours...",
     redirecting: "Redirection vers la page d'installation...",
-    waitingAuth: "Vous allez être redirigé vers Shopify pour autoriser l'application..."
+    waitingAuth: "Vous allez être redirigé vers Shopify pour autoriser l'application...",
   },
-  
+
   // Usage Audit Page
   usageAudit: {
     title: "Audit des Quotas",
@@ -3723,7 +3766,7 @@ export const translations = {
     refresh: "Actualiser",
     anomalies: {
       title: "Anomalies détectées",
-      severity: "sévérité"
+      severity: "sévérité",
     },
     cleanup: {
       title: "Nettoyage des données orphelines",
@@ -3731,21 +3774,21 @@ export const translations = {
       run: "Lancer le nettoyage",
       running: "Nettoyage en cours...",
       results: "Résultats du dernier nettoyage :",
-      deleted: "supprimés"
+      deleted: "supprimés",
     },
     history: {
       title: "Historique des variations",
       subtitle: "Suivez toutes les modifications de vos compteurs d'usage",
       all: "Tous",
-      noHistory: "Aucun historique disponible"
+      noHistory: "Aucun historique disponible",
     },
     fields: {
       products: "Produits",
       stores: "Boutiques",
       optimizations: "Optimisations",
       articles: "Articles",
-      chat: "Chat"
-    }
+      chat: "Chat",
+    },
   },
 
   admin: {
@@ -3778,12 +3821,12 @@ export const translations = {
     errors: {
       loadData: "Erreur lors du chargement des données",
       updatePlan: "Erreur lors de la mise à jour du plan",
-      updateStatus: "Erreur lors de la mise à jour du statut"
+      updateStatus: "Erreur lors de la mise à jour du statut",
     },
     success: {
       planUpdated: "Plan mis à jour avec succès",
-      statusUpdated: "Statut mis à jour avec succès"
-    }
+      statusUpdated: "Statut mis à jour avec succès",
+    },
   },
 
   articles: {
@@ -3839,19 +3882,19 @@ export const translations = {
       autoFilled: "Vos informations seront automatiquement pré-remplies",
       step1: {
         title: "Authentifiez-vous",
-        description: "Créez un compte ou connectez-vous en 30 secondes"
+        description: "Créez un compte ou connectez-vous en 30 secondes",
       },
       step2: {
         title: "Redirection automatique",
-        description: "Vous serez redirigé vers la connexion de votre boutique"
+        description: "Vous serez redirigé vers la connexion de votre boutique",
       },
       step3: {
         title: "Connexion en un clic",
-        description: "Validez simplement les informations pré-remplies"
+        description: "Validez simplement les informations pré-remplies",
       },
       createAccount: "Créer un compte gratuitement",
       alreadyHaveAccount: "J'ai déjà un compte",
-      secureConnection: "🔒 Connexion sécurisée • ⚡ Configuration en 2 minutes • 🎯 Boutique automatiquement détectée"
+      secureConnection: "🔒 Connexion sécurisée • ⚡ Configuration en 2 minutes • 🎯 Boutique automatiquement détectée",
     },
     sync: {
       mode: {
@@ -3859,11 +3902,13 @@ export const translations = {
         description: "Choisissez comment gérer le contenu optimisé par l'IA",
         smart: {
           title: "Smart (Recommandé)",
-          description: "Protège le contenu optimisé par l'IA. Ne remplace QUE le contenu non-optimisé. Idéal pour préserver vos optimisations SEO tout en récupérant les nouvelles données.",
+          description:
+            "Protège le contenu optimisé par l'IA. Ne remplace QUE le contenu non-optimisé. Idéal pour préserver vos optimisations SEO tout en récupérant les nouvelles données.",
         },
         full: {
           title: "Full",
-          description: "Écrase TOUT le contenu avec les données Shopify. ⚠️ Vous perdrez toutes les optimisations IA (titres, descriptions, ALT texts). Utilisez uniquement si vous voulez un reset complet.",
+          description:
+            "Écrase TOUT le contenu avec les données Shopify. ⚠️ Vous perdrez toutes les optimisations IA (titres, descriptions, ALT texts). Utilisez uniquement si vous voulez un reset complet.",
         },
       },
       contentTypes: {
@@ -3929,7 +3974,8 @@ export const translations = {
     store: {
       metadata: {
         title: "Métadonnées de la Boutique",
-        description: "Ces informations améliorent la génération SEO par l'IA en fournissant un contexte précis sur votre activité.",
+        description:
+          "Ces informations améliorent la génération SEO par l'IA en fournissant un contexte précis sur votre activité.",
         fields: {
           label: "Nom Commercial",
           category: "Secteur d'Activité",
@@ -3949,7 +3995,8 @@ export const translations = {
         hints: {
           label: "Nom affiché publiquement (utilisé pour le SEO et l'IA)",
           category: "Aide l'IA à cibler les bons mots-clés SEO pour votre secteur",
-          description: "Description courte de votre boutique et de ses valeurs (utilisée par l'IA pour personnaliser les contenus)",
+          description:
+            "Description courte de votre boutique et de ses valeurs (utilisée par l'IA pour personnaliser les contenus)",
         },
         button: "Enregistrer les Métadonnées",
         toasts: {
@@ -4010,7 +4057,8 @@ export const translations = {
     upgradePlan: "Améliorer le Plan",
     browser: {
       requestTitle: "Restez Informé avec les Notifications en Temps Réel",
-      requestDescription: "Activez les notifications du navigateur pour recevoir des mises à jour instantanées sur vos optimisations SEO, la progression de la synchronisation et les alertes importantes.",
+      requestDescription:
+        "Activez les notifications du navigateur pour recevoir des mises à jour instantanées sur vos optimisations SEO, la progression de la synchronisation et les alertes importantes.",
       benefit1: "Alertes instantanées pour les optimisations terminées",
       benefit2: "Mises à jour en temps réel de la synchronisation",
       benefit3: "Ne manquez jamais d'opportunités SEO importantes",
@@ -4024,7 +4072,8 @@ export const translations = {
   subscription: {
     invalidTrial: {
       title: "Action Requise : Validation de Paiement",
-      description: "Votre abonnement est dans un état invalide. Vous avez un plan payant mais le paiement n'a pas été effectué.",
+      description:
+        "Votre abonnement est dans un état invalide. Vous avez un plan payant mais le paiement n'a pas été effectué.",
       clickBelow: "Cliquez sur le bouton ci-dessous pour compléter le paiement et activer votre abonnement.",
       button: "Valider Mon Paiement",
       processing: "Traitement en cours...",
@@ -4046,7 +4095,7 @@ export const translations = {
       optimizationsPerMonth: "optimisations SEO/mois",
       articlesPerMonth: "articles/mois",
       chatResponsesPerMonth: "réponses chat/mois",
-    }
+    },
   },
 
   collection: {
@@ -4057,7 +4106,8 @@ export const translations = {
 
   trial: {
     limitReached: "Limite du plan actuel atteinte",
-    usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{resourceType}} de votre plan actuel. Passez au plan supérieur pour continuer.",
+    usageMessage:
+      "Vous avez utilisé {{usage}} sur {{limit}} {{resourceType}} de votre plan actuel. Passez au plan supérieur pour continuer.",
     activateMyPlan: "Passer au Plan Supérieur",
     warningTitle: "Essai bientôt terminé",
     daysLeft: "{{days}} jours restants dans votre essai",
@@ -4071,18 +4121,18 @@ export const translations = {
     startButton: "Commencer l'essai gratuit",
     ctaPrimary: "Commencer l'essai gratuit",
     trustBanner: {
-      cancelAnytime: "Annulation à tout moment"
+      cancelAnytime: "Annulation à tout moment",
     },
     features: {
       optimizations: "50 optimisations SEO",
       article: "1 article IA",
-      duration: "14 jours d'essai complet"
+      duration: "14 jours d'essai complet",
     },
     endsOn: "Se termine le",
     upgradeToPaid: "Passer à un plan payant",
     expiringSoon: "Votre essai se termine bientôt",
     expiringMessage: "Votre essai se termine dans {{days}} jours. Choisissez un plan pour continuer.",
-    upgradeNow: "Upgrader maintenant"
+    upgradeNow: "Upgrader maintenant",
   },
 
   footer: {
@@ -4116,19 +4166,21 @@ export const translations = {
       autoImportImpossible: "Import automatique impossible",
       credentialsNotReloaded: "Les credentials n'ont pas pu être rechargés. Veuillez réessayer dans quelques secondes.",
       errorSaving: "Erreur lors de l'enregistrement de la connexion",
-      confirmDelete: "Êtes-vous sûr de vouloir supprimer cette connexion ? Vous devrez la recréer pour importer des produits.",
+      confirmDelete:
+        "Êtes-vous sûr de vouloir supprimer cette connexion ? Vous devrez la recréer pour importer des produits.",
       connectionDeleted: "Connexion supprimée avec succès",
       errorDeleting: "Erreur lors de la suppression",
       connectFirst: "Veuillez d'abord connecter votre boutique",
       cannotLoadData: "Impossible de charger les données de connexion",
       credentialsMissing: "Credentials manquants",
-      reconnectRequired: "Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.",
+      reconnectRequired:
+        "Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.",
       apiKeyMissing: "API Key manquante",
       apiKeyRequired: "Votre connexion doit être mise à jour. Veuillez la recréer avec vos identifiants API complets.",
       invalidToken: "Token API invalide ou manquant. Veuillez reconnecter votre boutique Shopify.",
       authError: "Erreur d'authentification. Veuillez vérifier votre token API.",
-      errorImporting: "Erreur lors de l'import des produits"
-    }
+      errorImporting: "Erreur lors de l'import des produits",
+    },
   },
 
   adminPanel: {
@@ -4306,7 +4358,7 @@ export const translations = {
       subscriptionActivated: "Abonnement activé !",
       subscriptionActivatedMessage: "Votre abonnement est maintenant actif",
       welcomeBonus: "Bonus de bienvenue !",
-      welcomeBonusMessage: "Crédits bonus ajoutés à votre compte"
+      welcomeBonusMessage: "Crédits bonus ajoutés à votre compte",
     },
     error: {
       generic: "Une erreur s'est produite",
@@ -4316,18 +4368,18 @@ export const translations = {
       deleting: "Erreur lors de la suppression",
       payment: "Erreur lors de la création du paiement",
       sync: "Erreur de synchronisation",
-      portal: "Erreur lors de l'ouverture du portail d'abonnement"
+      portal: "Erreur lors de l'ouverture du portail d'abonnement",
     },
     info: {
       processing: "Traitement en cours...",
       importing: "Importation en cours...",
-      generating: "Génération en cours..."
+      generating: "Génération en cours...",
     },
     warning: {
       limitReached: "Limite atteinte",
       trialExpired: "Essai expiré",
       paymentCancelled: "Paiement annulé",
-      paymentCancelledMessage: "Votre paiement a été annulé"
+      paymentCancelledMessage: "Votre paiement a été annulé",
     },
     savedSuccessfully: "Enregistré avec succès",
     deletedSuccessfully: "Supprimé avec succès",
@@ -4377,7 +4429,8 @@ export const translations = {
       title: "Transformez votre boutique Shopify en",
       titleHighlight: "Machine à Trafic",
       titleEnd: "avec l'IA",
-      subtitle: "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
+      subtitle:
+        "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
       ctaPrimary: "Commencer l'essai gratuit",
       ctaSecondary: "Voir la démo",
       setupTime: "Installation en 5 minutes",
@@ -4412,22 +4465,26 @@ export const translations = {
       items: [
         {
           title: "Analyse automatique des balises Meta",
-          description: "L'IA analyse et optimise tous vos titres meta, descriptions et mots-clés pour une visibilité maximale",
+          description:
+            "L'IA analyse et optimise tous vos titres meta, descriptions et mots-clés pour une visibilité maximale",
           tags: ["SEO", "Automatisation", "Analytique"],
         },
         {
           title: "Optimisation ALT des images",
-          description: "L'IA Vision avancée analyse visuellement vos images produits et génère des textes ALT contextuels optimisés SEO basés sur le contenu réel et les détails produits",
+          description:
+            "L'IA Vision avancée analyse visuellement vos images produits et génère des textes ALT contextuels optimisés SEO basés sur le contenu réel et les détails produits",
           tags: ["IA Vision", "Analyse d'images", "Reconnaissance visuelle"],
         },
         {
           title: "Génération de contenu SEO",
-          description: "Créez des descriptions produits et articles de blog de haute qualité, optimisés SEO qui se classent",
+          description:
+            "Créez des descriptions produits et articles de blog de haute qualité, optimisés SEO qui se classent",
           tags: ["Contenu", "Rédaction IA", "Blog"],
         },
         {
           title: "Système de tags intelligent",
-          description: "Taggage automatique basé sur l'IA pour une meilleure organisation et découvrabilité des produits",
+          description:
+            "Taggage automatique basé sur l'IA pour une meilleure organisation et découvrabilité des produits",
           tags: ["Tags", "Organisation"],
         },
         {
@@ -4453,7 +4510,8 @@ export const translations = {
           role: "Propriétaire boutique de mode",
         },
         {
-          quote: "J'économise plus de 15 heures par semaine sur le SEO. Le ROI est incroyable. Meilleur investissement pour ma boutique.",
+          quote:
+            "J'économise plus de 15 heures par semaine sur le SEO. Le ROI est incroyable. Meilleur investissement pour ma boutique.",
           author: "Marcus Johnson",
           role: "Vendeur d'électronique",
         },
@@ -4497,7 +4555,8 @@ export const translations = {
     pricing: {
       badge: "Tarifs",
       title: "Plans et tarifs",
-      subtitle: "Choisissez le plan adapté à la taille de votre boutique. Tous les plans incluent l'intégration Shopify et un support dédié.",
+      subtitle:
+        "Choisissez le plan adapté à la taille de votre boutique. Tous les plans incluent l'intégration Shopify et un support dédié.",
       monthly: "Mensuel",
       yearly: "Annuel",
       yearlyDiscount: "-20%",
@@ -4521,7 +4580,7 @@ export const translations = {
             ai: "IA",
             integrationsTools: "Intégrations & Outils",
             netlinkingBlog: "Netlinking & Blog",
-            supportPerformance: "Support & Performance"
+            supportPerformance: "Support & Performance",
           },
           items: {
             maximumProducts: "Produits maximum",
@@ -4550,9 +4609,9 @@ export const translations = {
             emailSupport: "Support par email",
             prioritySupport: "Support prioritaire",
             dedicatedAccountManager: "Gestionnaire de compte dédié",
-            apiAccess: "Accès API"
-          }
-        }
+            apiAccess: "Accès API",
+          },
+        },
       },
       plans: {
         trial: {
@@ -4576,7 +4635,8 @@ export const translations = {
           name: "Starter",
           description: "Pour les petites boutiques souhaitant découvrir la puissance de l'IA",
           cta: "Commencer",
-          highlight: "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
+          highlight:
+            "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
           badge: "",
           promo: "",
           features: [
@@ -4714,7 +4774,8 @@ export const translations = {
     title: "Politique de Confidentialité",
     lastUpdated: "Dernière mise à jour",
     dataCollection: "Collecte des Données",
-    dataCollectionDesc: "Nous collectons les informations que vous nous fournissez directement lors de la création de votre compte, y compris votre nom, adresse e-mail et les informations relatives à votre boutique Shopify. Nous collectons également automatiquement certaines informations sur votre utilisation de nos services.",
+    dataCollectionDesc:
+      "Nous collectons les informations que vous nous fournissez directement lors de la création de votre compte, y compris votre nom, adresse e-mail et les informations relatives à votre boutique Shopify. Nous collectons également automatiquement certaines informations sur votre utilisation de nos services.",
     dataUsage: "Utilisation des Données",
     dataUsageIntro: "Vos données sont utilisées pour :",
     dataUsage1: "Fournir et améliorer nos services d'optimisation SEO",
@@ -4722,7 +4783,8 @@ export const translations = {
     dataUsage3: "Communiquer avec vous concernant votre compte",
     dataUsage4: "Assurer la sécurité et prévenir la fraude",
     dataProtection: "Protection des Données",
-    dataProtectionDesc: "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos données personnelles contre tout accès non autorisé, modification, divulgation ou destruction. Vos données sont stockées sur des serveurs sécurisés et chiffrées en transit.",
+    dataProtectionDesc:
+      "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos données personnelles contre tout accès non autorisé, modification, divulgation ou destruction. Vos données sont stockées sur des serveurs sécurisés et chiffrées en transit.",
     yourRights: "Vos Droits",
     yourRightsIntro: "Conformément au RGPD, vous disposez des droits suivants :",
     right1: "Droit d'accès à vos données personnelles",
@@ -4731,24 +4793,29 @@ export const translations = {
     right4: "Droit à la portabilité de vos données",
     right5: "Droit d'opposition au traitement",
     contact: "Contact",
-    contactDesc: "Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, vous pouvez nous contacter à l'adresse :",
-    disclaimer: "Nous nous réservons le droit de modifier cette politique à tout moment. Toute modification sera publiée sur cette page avec une date de mise à jour révisée.",
+    contactDesc:
+      "Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, vous pouvez nous contacter à l'adresse :",
+    disclaimer:
+      "Nous nous réservons le droit de modifier cette politique à tout moment. Toute modification sera publiée sur cette page avec une date de mise à jour révisée.",
   },
 
   terms: {
     title: "Conditions Générales d'Utilisation",
     lastUpdated: "Dernière mise à jour",
     acceptance: "Acceptation des Conditions",
-    acceptanceDesc: "En accédant et en utilisant NewAI, vous acceptez d'être lié par ces conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services. Votre utilisation continue de la plateforme constitue votre acceptation de toute modification de ces conditions.",
+    acceptanceDesc:
+      "En accédant et en utilisant NewAI, vous acceptez d'être lié par ces conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services. Votre utilisation continue de la plateforme constitue votre acceptation de toute modification de ces conditions.",
     services: "Services Fournis",
-    servicesDesc: "NewAI fournit une plateforme d'optimisation SEO alimentée par l'intelligence artificielle pour les boutiques Shopify, incluant :",
+    servicesDesc:
+      "NewAI fournit une plateforme d'optimisation SEO alimentée par l'intelligence artificielle pour les boutiques Shopify, incluant :",
     service1: "Génération automatique de descriptions de produits optimisées",
     service2: "Optimisation des balises meta et alt texts",
     service3: "Création d'articles de blog SEO-friendly",
     service4: "Intégration Google Merchant Center",
     service5: "Assistant IA pour l'optimisation e-commerce",
     pricing: "Tarification et Paiement",
-    pricingDesc: "Nous proposons plusieurs plans d'abonnement avec différentes fonctionnalités et limites d'utilisation :",
+    pricingDesc:
+      "Nous proposons plusieurs plans d'abonnement avec différentes fonctionnalités et limites d'utilisation :",
     pricing1: "Les frais d'abonnement sont facturés mensuellement ou annuellement",
     pricing2: "Les paiements sont traités via Stripe de manière sécurisée",
     pricing3: "Les tarifs peuvent être modifiés avec un préavis de 30 jours",
@@ -4761,17 +4828,21 @@ export const translations = {
     prohibited4: "Contourner les limitations d'utilisation de votre plan",
     prohibited5: "Reproduire, dupliquer ou copier notre technologie",
     limitation: "Limitation de Responsabilité",
-    limitationDesc: "NewAI est fourni \"en l'état\" sans garantie d'aucune sorte. Nous ne garantissons pas que le service sera ininterrompu ou exempt d'erreurs. En aucun cas, nous ne serons responsables des dommages indirects, consécutifs ou spéciaux résultant de l'utilisation ou de l'impossibilité d'utiliser nos services.",
+    limitationDesc:
+      "NewAI est fourni \"en l'état\" sans garantie d'aucune sorte. Nous ne garantissons pas que le service sera ininterrompu ou exempt d'erreurs. En aucun cas, nous ne serons responsables des dommages indirects, consécutifs ou spéciaux résultant de l'utilisation ou de l'impossibilité d'utiliser nos services.",
     intellectual: "Propriété Intellectuelle",
-    intellectualDesc: "Tout le contenu généré par NewAI vous appartient. Cependant, nous conservons tous les droits sur notre plateforme, algorithmes, et technologie. Vous nous accordez une licence pour utiliser votre contenu uniquement dans le but de fournir nos services.",
+    intellectualDesc:
+      "Tout le contenu généré par NewAI vous appartient. Cependant, nous conservons tous les droits sur notre plateforme, algorithmes, et technologie. Vous nous accordez une licence pour utiliser votre contenu uniquement dans le but de fournir nos services.",
     termination: "Résiliation",
-    terminationDesc: "Vous pouvez résilier votre compte à tout moment depuis vos paramètres. Nous nous réservons le droit de suspendre ou résilier votre compte en cas de violation de ces conditions. En cas de résiliation, vous perdrez l'accès à vos données après 30 jours.",
+    terminationDesc:
+      "Vous pouvez résilier votre compte à tout moment depuis vos paramètres. Nous nous réservons le droit de suspendre ou résilier votre compte en cas de violation de ces conditions. En cas de résiliation, vous perdrez l'accès à vos données après 30 jours.",
     disclaimer: "Ces conditions sont régies par les lois françaises. Pour toute question :",
   },
 
   blogPage: {
     title: "Blog NewAI",
-    subtitle: "Découvrez comment l'IA révolutionne le SEO e-commerce, Google Merchant Center et l'assistance intelligente aux ventes",
+    subtitle:
+      "Découvrez comment l'IA révolutionne le SEO e-commerce, Google Merchant Center et l'assistance intelligente aux ventes",
     searchPlaceholder: "Rechercher des articles...",
     allArticles: "Tous les Articles",
     loading: "Chargement des articles...",
@@ -4781,9 +4852,11 @@ export const translations = {
     noArticles: "Aucun article ne correspond à votre recherche",
     backToArticles: "Retour aux Articles",
     ctaTitle: "Prêt à Transformer Votre Boutique ?",
-    ctaDescription: "Rejoignez des centaines de commerçants qui utilisent NewAI pour automatiser leur SEO et booster leurs ventes.",
+    ctaDescription:
+      "Rejoignez des centaines de commerçants qui utilisent NewAI pour automatiser leur SEO et booster leurs ventes.",
     ctaMainTitle: "Prêt à Booster Votre E-commerce avec l'IA ?",
-    ctaMainDescription: "Rejoignez des centaines de commerçants qui automatisent leur SEO et multiplient leurs ventes avec NewAI",
+    ctaMainDescription:
+      "Rejoignez des centaines de commerçants qui automatisent leur SEO et multiplient leurs ventes avec NewAI",
     startTrial: "Commencer l'Essai Gratuit",
     learnMore: "En Savoir Plus",
     articleNotFound: "Article introuvable",
@@ -4871,11 +4944,12 @@ export const translations = {
     upgrade: {
       limitReached: {
         title: "🎯 Limite Atteinte",
-        description: "Vous avez atteint la limite {{limitType}} du plan gratuit. Passez au plan Starter maintenant pour continuer (paiement immédiat)."
+        description:
+          "Vous avez atteint la limite {{limitType}} du plan gratuit. Passez au plan Starter maintenant pour continuer (paiement immédiat).",
       },
       trialExpired: {
         title: "⏰ Limite Atteinte",
-        description: "Vous avez atteint la limite de votre plan actuel. Passez au plan Starter pour continuer."
+        description: "Vous avez atteint la limite de votre plan actuel. Passez au plan Starter pour continuer.",
       },
       activateNow: "Activer maintenant",
       manageSub: "Gérer l'abonnement",
@@ -4893,8 +4967,8 @@ export const translations = {
           chatResponses: "50 réponses Chat IA / mois",
           stores: "1 boutique Shopify connectée",
           automation: "Automation basique",
-          support: "Support par e-mail"
-        }
+          support: "Support par e-mail",
+        },
       },
       activateMyPlan: "Activer mon abonnement",
       activateSubscription: "Activer l'abonnement",
@@ -4912,11 +4986,11 @@ export const translations = {
         articles: "Articles IA",
         chat: "Réponses Chat",
         shopifySearch: "Recherches Shopify",
-        campaigns: "Campagnes IA"
+        campaigns: "Campagnes IA",
       },
       usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{type}}",
       activatePlan: "Activer le plan",
-      maybeLater: "Plus tard"
+      maybeLater: "Plus tard",
     },
     trialLimit: {
       title: "🚀 Passez au plan supérieur",
@@ -4940,7 +5014,7 @@ export const translations = {
           support: "Support prioritaire",
         },
       },
-    }
+    },
   },
 
   banners: {
@@ -4959,14 +5033,15 @@ export const translations = {
         searches: "recherches Shopify",
         products: "produits",
         stores: "boutiques",
-        campaigns: "campagnes"
-      }
-    }
+        campaigns: "campagnes",
+      },
+    },
   },
 
   homepageAudit: {
     title: "Audit SEO & Optimisation",
-    subtitle: "Analysez le SEO de votre page d'accueil, générez des balises meta optimisées et synchronisez avec Shopify",
+    subtitle:
+      "Analysez le SEO de votre page d'accueil, générez des balises meta optimisées et synchronisez avec Shopify",
     toasts: {
       auditLoaded: "Audit chargé",
       auditLoadedDesc: "Dernier audit chargé automatiquement",
@@ -5017,7 +5092,8 @@ export const translations = {
       quickActions: "Actions Rapides",
       seoOptimization: "Optimisation SEO",
       importOptimizeSync: "Importez le SEO actuel, optimisez avec l'IA et synchronisez avec Shopify",
-      importBeforeOptimize: "Importez le SEO actuel de votre page d'accueil, puis optimisez-le avec l'IA avant de synchroniser",
+      importBeforeOptimize:
+        "Importez le SEO actuel de votre page d'accueil, puis optimisez-le avec l'IA avant de synchroniser",
     },
     elements: {
       titleTag: "Balise Title",
@@ -5163,7 +5239,8 @@ export const translations = {
       title: "Gestion des Commandes",
       description: "Gérez les commandes clients via l'assistant IA",
       comingSoon: "Bientôt Disponible",
-      comingSoonDesc: "Cette fonctionnalité sera bientôt disponible pour vous aider à gérer les commandes clients directement via le chat IA.",
+      comingSoonDesc:
+        "Cette fonctionnalité sera bientôt disponible pour vous aider à gérer les commandes clients directement via le chat IA.",
     },
   },
 
@@ -5379,7 +5456,7 @@ export const translations = {
     messages: {
       productOptimized: "{{count}} produit(s) optimisé(s) avec succès",
       blogArticlePublished: "Nouvel article de blog publié : {{title}}",
-      campaignLaunched: "Campagne \"{{name}}\" lancée avec succès",
+      campaignLaunched: 'Campagne "{{name}}" lancée avec succès',
       limitReached: "Vous avez atteint {{percent}}% de votre limite {{limitType}}",
       trialEnding: "Votre essai se termine dans {{days}} jours",
       subscriptionExpired: "Votre abonnement a expiré",
@@ -5493,28 +5570,28 @@ export const translations = {
       connectShopify: {
         title: "Connectez votre boutique Shopify",
         description: "Synchronisez vos produits en 1 clic",
-        action: "Connecter"
+        action: "Connecter",
       },
       optimizeProduct: {
         title: "Optimisez votre premier produit",
         description: "Améliorez le SEO d'un produit en 30 secondes",
-        action: "Optimiser"
+        action: "Optimiser",
       },
       createArticle: {
         title: "Créez votre premier article de blog",
         description: "Générez du contenu optimisé SEO avec l'IA",
-        action: "Créer"
+        action: "Créer",
       },
       enableAutoOptimizations: {
         title: "Activez les optimisations automatiques",
         description: "Laissez l'IA travailler pour vous",
-        action: "Activer"
+        action: "Activer",
       },
       viewStatistics: {
         title: "Consultez vos premières statistiques",
         description: "Suivez l'impact de vos optimisations",
-        action: "Voir"
-      }
+        action: "Voir",
+      },
     },
     progress: "Progression",
     completed: "complétées",
@@ -5603,49 +5680,49 @@ export const translations = {
         generate: "Créer l'article",
       },
       design: {
-      visualStyle: {
-        title: "Style visuel",
-        magazine: "Magazine",
-        moderne: "Moderne",
-        minimaliste: "Minimaliste",
-        editorial: "Éditorial",
-        premium: "Premium",
-        coloré: "Coloré",
-        descriptions: {
-          magazine: "Typographie large, images immersives, grille multi-colonnes",
-          moderne: "Gradients subtils, ombres douces, palette sobre",
-          minimaliste: "Espace blanc, typographie épurée, sans décoration",
-          editorial: "Style journal premium, typographie serif, citations",
-          premium: "Or/noir, typographie élégante, détails raffinés",
-          coloré: "Palette vibrante, dégradés audacieux, énergique",
-        },
-      },
-      layout: {
-        title: "Layout de la page",
-        oneColumn: "1 Colonne",
-        twoColumns: "2 Colonnes",
-        hero: "Hero",
-        fullWidth: "Pleine largeur",
-        descriptions: {
-          oneColumn: "Centré, mobile-first",
-          twoColumns: "Sidebar + contenu",
-          hero: "Image plein écran + contenu",
-          fullWidth: "Sections alternées",
-        },
-      },
-      colorPalette: {
-        title: "Palette de couleurs",
-        custom: "Couleur personnalisée",
-        selected: "Sélectionnée",
-        palettes: {
+        visualStyle: {
+          title: "Style visuel",
+          magazine: "Magazine",
           moderne: "Moderne",
-          bleuPro: "Bleu Pro",
-          terreux: "Terreux",
-          luxeOr: "Luxe Or",
-          vertFrais: "Vert Frais",
-          vibrant: "Vibrant",
+          minimaliste: "Minimaliste",
+          editorial: "Éditorial",
+          premium: "Premium",
+          coloré: "Coloré",
+          descriptions: {
+            magazine: "Typographie large, images immersives, grille multi-colonnes",
+            moderne: "Gradients subtils, ombres douces, palette sobre",
+            minimaliste: "Espace blanc, typographie épurée, sans décoration",
+            editorial: "Style journal premium, typographie serif, citations",
+            premium: "Or/noir, typographie élégante, détails raffinés",
+            coloré: "Palette vibrante, dégradés audacieux, énergique",
+          },
         },
-      },
+        layout: {
+          title: "Layout de la page",
+          oneColumn: "1 Colonne",
+          twoColumns: "2 Colonnes",
+          hero: "Hero",
+          fullWidth: "Pleine largeur",
+          descriptions: {
+            oneColumn: "Centré, mobile-first",
+            twoColumns: "Sidebar + contenu",
+            hero: "Image plein écran + contenu",
+            fullWidth: "Sections alternées",
+          },
+        },
+        colorPalette: {
+          title: "Palette de couleurs",
+          custom: "Couleur personnalisée",
+          selected: "Sélectionnée",
+          palettes: {
+            moderne: "Moderne",
+            bleuPro: "Bleu Pro",
+            terreux: "Terreux",
+            luxeOr: "Luxe Or",
+            vertFrais: "Vert Frais",
+            vibrant: "Vibrant",
+          },
+        },
         typography: {
           title: "Typographie",
           sansSerif: "Sans-Serif",
@@ -5722,7 +5799,7 @@ export const translations = {
         spanish: "Espagnol",
         german: "Allemand",
         italian: "Italien",
-      }
+      },
     },
     campaign: {
       title: "Nouvelle Campagne",
@@ -5861,7 +5938,8 @@ export const translations = {
       oauth: "OAuth (Recommandé)",
       apiKeys: "Clés API",
       oauthQuick: "Connexion rapide en 1 clic ⚡",
-      oauthDescription: "Pas besoin de créer des clés API manuellement. Shopify gérera l'authentification de manière sécurisée.",
+      oauthDescription:
+        "Pas besoin de créer des clés API manuellement. Shopify gérera l'authentification de manière sécurisée.",
       connectWithOAuth: "Connecter avec Shopify OAuth",
       redirecting: "Redirection...",
       apiKey: "API Key",
@@ -5885,15 +5963,16 @@ export const translations = {
     },
     browser: {
       requestTitle: "Restez Informé avec les Notifications",
-      requestDescription: "Activez les notifications pour recevoir des alertes instantanées sur les opportunités SEO, les mises à jour et les tâches importantes.",
+      requestDescription:
+        "Activez les notifications pour recevoir des alertes instantanées sur les opportunités SEO, les mises à jour et les tâches importantes.",
       benefit1: "Soyez notifié des opportunités SEO instantanément",
       benefit2: "Ne manquez jamais une mise à jour importante",
       benefit3: "Recevez des rappels pour les tâches en attente",
       allow: "Activer les Notifications",
       later: "Plus Tard",
       enabled: "Notifications activées avec succès !",
-      denied: "Les notifications ont été bloquées. Vous pouvez les activer plus tard dans les paramètres."
-    }
+      denied: "Les notifications ont été bloquées. Vous pouvez les activer plus tard dans les paramètres.",
+    },
   },
 
   chatSettings: {
@@ -5914,13 +5993,13 @@ export const translations = {
     dateRange: {
       last7Days: "7 derniers jours",
       last30Days: "30 derniers jours",
-      last90Days: "90 derniers jours"
+      last90Days: "90 derniers jours",
     },
     domain: {
       selectPlaceholder: "Sélectionner un domaine",
       add: "Ajouter",
-      verified: "✓ Vérifié"
-    }
+      verified: "✓ Vérifié",
+    },
   },
 
   // ============= AI Background Dialog =============
@@ -5951,14 +6030,14 @@ export const translations = {
     classicElegance: "Élégance Classique",
     noImagesSelected: "Aucune image sélectionnée. Veuillez sélectionner au moins une image à traiter.",
     cancel: "Annuler",
-    generate: "Générer {{count}} image(s)"
+    generate: "Générer {{count}} image(s)",
   },
-
 
   // ============= Auto Optimization Dialog =============
   autoOptimization: {
     title: "Optimisation Automatique",
-    selectActions: "Sélectionnez les actions que vous souhaitez effectuer. Le système optimisera automatiquement tous les éléments concernés.",
+    selectActions:
+      "Sélectionnez les actions que vous souhaitez effectuer. Le système optimisera automatiquement tous les éléments concernés.",
     optimizeProducts: "Optimiser les produits",
     optimizeProductsDesc: "Génération de titres et descriptions SEO",
     optimizeCollections: "Optimiser les collections",
@@ -5978,10 +6057,11 @@ export const translations = {
     results: "Résultats",
     successCount: "{{count}} élément(s) optimisé(s) avec succès",
     errorCount: "{{count}} erreur(s)",
-    syncReminder: "N'oubliez pas de synchroniser vos optimisations avec Shopify pour les rendre visibles sur votre boutique !",
+    syncReminder:
+      "N'oubliez pas de synchroniser vos optimisations avec Shopify pour les rendre visibles sur votre boutique !",
     cancel: "Annuler",
     start: "Démarrer l'optimisation",
-    close: "Fermer"
+    close: "Fermer",
   },
 
   // ============= Background Dialog =============
@@ -6008,7 +6088,7 @@ export const translations = {
     regenerate: "Régénérer",
     apply: "Appliquer",
     syncShopify: "Synchroniser avec Shopify",
-    cancel: "Annuler"
+    cancel: "Annuler",
   },
 
   optimizationConsumption: {
@@ -6029,7 +6109,6 @@ export const translations = {
     upgrade: "Upgrader mon plan",
     processing: "En cours...",
   },
-
 };
 
 export type Translations = typeof translations;
