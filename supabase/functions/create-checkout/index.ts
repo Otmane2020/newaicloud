@@ -355,9 +355,21 @@ serve(async (req) => {
       console.log('💰 Using pre-discounted yearly price (20% discount already applied in price)');
     }
 
+    // Vérifier si l'utilisateur a déjà utilisé son trial à vie
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('has_used_trial')
+      .eq('id', user.id)
+      .single();
+    
+    const hasUsedTrial = profileData?.has_used_trial || false;
+    console.log(`🎁 User trial status: has_used_trial=${hasUsedTrial}`);
+
     // Déterminer la configuration du trial
-    // IMPORTANT: Stripe n'accepte PAS trial_period_days: 0
-    // Pour un paiement immédiat, on doit OMETTRE trial_period_days complètement
+    // RÈGLES:
+    // 1. Stripe n'accepte PAS trial_period_days: 0 - on doit OMETTRE ce champ pour paiement immédiat
+    // 2. Trial UNIQUEMENT si: !hasUsedTrial && plan.trial_days > 0 && !force_immediate_payment && !hasActiveTrial
+    // 3. Starter plan a trial_days = 0, donc PAS de trial possible
     if (force_immediate_payment) {
       // Paiement forcé immédiat (limite atteinte OU upgrade depuis trial) - PAS de trial
       console.log('💳 Force immediate payment - no trial period (PAYMENT REQUIRED NOW)');
@@ -386,7 +398,7 @@ serve(async (req) => {
         // trial_period_days omis = paiement immédiat
       };
     } else if (hasActiveTrial && billing_period === 'yearly') {
-      // Trial actif + abonnement annuel = paiement immédiat (simplifié)
+      // Trial actif + abonnement annuel = paiement immédiat
       console.log('💳 Active trial with yearly plan - immediate payment');
       sessionConfig.subscription_data = {
         metadata: {
@@ -396,28 +408,15 @@ serve(async (req) => {
           upgraded_from_trial: 'true',
           forced_payment: 'false'
         }
-        // Pas de trial_period_days ni trial_end = paiement immédiat
       };
     } else {
-      // Nouveau user sans trial actif = appliquer le trial du plan
-      const trialDays = plan.trial_days ?? 14; // Use nullish coalescing to handle 0 correctly
+      // Nouveau user ou user avec trial expiré
+      const trialDays = plan.trial_days ?? 0;
       
-      if (trialDays === 0) {
-        // Pas de trial pour ce plan - paiement immédiat
-        console.log(`💳 No trial for plan "${plan.name}" - immediate payment`);
-        sessionConfig.subscription_data = {
-          metadata: {
-            user_id: user.id,
-            plan_id: plan_id,
-            billing_period: billing_period,
-            upgraded_from_trial: 'false',
-            forced_payment: 'false'
-          }
-          // trial_period_days omis = paiement immédiat
-        };
-      } else {
-        // Appliquer le trial du plan
-        console.log(`🎁 New subscription - apply ${trialDays} days trial`);
+      // RÈGLE: Trial UNIQUEMENT si l'utilisateur ne l'a JAMAIS utilisé ET le plan offre un trial
+      if (trialDays > 0 && !hasUsedTrial) {
+        // Appliquer le trial ET marquer comme utilisé
+        console.log(`🎁 FIRST TIME TRIAL - Applying ${trialDays} days trial for user (lifetime trial)`);
         sessionConfig.subscription_data = {
           trial_period_days: trialDays,
           metadata: {
@@ -425,8 +424,36 @@ serve(async (req) => {
             plan_id: plan_id,
             billing_period: billing_period,
             upgraded_from_trial: 'false',
-            forced_payment: 'false'
+            forced_payment: 'false',
+            first_trial: 'true'
           }
+        };
+        
+        // Marquer le trial comme utilisé (une seule fois dans la vie de l'utilisateur)
+        await supabase
+          .from('profiles')
+          .update({ has_used_trial: true })
+          .eq('id', user.id);
+        
+        console.log('✅ User marked as has_used_trial=true (lifetime trial claimed)');
+      } else {
+        // Pas de trial: soit déjà utilisé, soit plan sans trial (Starter)
+        if (hasUsedTrial) {
+          console.log(`💳 User already used their lifetime trial - immediate payment`);
+        } else if (trialDays === 0) {
+          console.log(`💳 Plan "${plan.name}" has no trial (trial_days=0) - immediate payment`);
+        }
+        
+        sessionConfig.subscription_data = {
+          metadata: {
+            user_id: user.id,
+            plan_id: plan_id,
+            billing_period: billing_period,
+            upgraded_from_trial: 'false',
+            forced_payment: 'false',
+            trial_already_used: hasUsedTrial ? 'true' : 'false'
+          }
+          // trial_period_days omis = paiement immédiat
         };
       }
     }

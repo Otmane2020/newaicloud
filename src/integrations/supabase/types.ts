@@ -2797,6 +2797,7 @@ export type Database = {
           google_oauth_token: string | null
           google_refresh_token: string | null
           google_token_expires_at: string | null
+          has_used_trial: boolean | null
           id: string
           onboarding_completed: boolean | null
           preferred_language: string | null
@@ -2828,6 +2829,7 @@ export type Database = {
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null
+          has_used_trial?: boolean | null
           id: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
@@ -2859,6 +2861,7 @@ export type Database = {
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null
+          has_used_trial?: boolean | null
           id?: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
