@@ -194,20 +194,6 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initial
         p_increment: 1,
       });
 
-      // Automatically fetch and update public domain from Shopify
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await supabase.functions.invoke('refresh-shopify-domains', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          });
-        }
-      } catch (domainError) {
-        console.error('[SHOPIFY-WIZARD] Failed to refresh domain:', domainError);
-      }
-
       toast.success(t.wizards.shopify.storeConnectedSuccess);
       await refreshLimits();
 
