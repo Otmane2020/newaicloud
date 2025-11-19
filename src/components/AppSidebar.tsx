@@ -170,7 +170,7 @@ export function AppSidebar() {
       try {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("current_plan_id")
+          .select("current_plan_id, subscription_status")
           .eq("id", user.id)
           .single();
 
@@ -186,10 +186,14 @@ export function AppSidebar() {
 
           console.log("📋 Plan data:", plan);
           console.log("❌ Plan error:", planError);
-          console.log("✅ Setting userPlan to:", plan?.name);
 
-          // Fallback for Trial if plan not found
-          const displayName = plan?.name || (profile.current_plan_id === 'trial' ? 'Trial' : 'Free');
+          // Check if user is in trial
+          const isTrialing = profile.subscription_status === 'trialing' || profile.current_plan_id === 'trial';
+          
+          // Display trial name if in trial, otherwise display plan name
+          const displayName = isTrialing ? t.trial.title : (plan?.name || 'Free');
+          
+          console.log("✅ Setting userPlan to:", displayName);
           setUserPlan(displayName);
         } else {
           console.log("⚠️ No current_plan_id in profile");
