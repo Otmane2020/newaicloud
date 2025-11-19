@@ -4011,6 +4011,7 @@ export type Database = {
           last_export_at: string | null
           last_import_at: string | null
           next_import_at: string | null
+          store_id: string | null
           updated_at: string
           user_id: string
         }
@@ -4026,6 +4027,7 @@ export type Database = {
           last_export_at?: string | null
           last_import_at?: string | null
           next_import_at?: string | null
+          store_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -4041,6 +4043,7 @@ export type Database = {
           last_export_at?: string | null
           last_import_at?: string | null
           next_import_at?: string | null
+          store_id?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -25,6 +25,7 @@ import { fr } from "date-fns/locale";
 import { SimpleSyncProgress } from "./SyncProgressDialog";
 import { SyncResultDialog } from "./SyncResultDialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useStore } from "@/contexts/StoreContext";
 
 // Types et constantes
 interface Timezone {
@@ -101,7 +102,7 @@ const SCHEDULE_HOURS = Array.from({ length: 24 }, (_, i) => ({
 }));
 
 // Hook personnalisé pour la gestion des données
-const useSyncData = () => {
+const useSyncData = (storeId?: string) => {
   const [settings, setSettings] = useState<SyncSettings | null>(null);
   const [history, setHistory] = useState<SyncHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,12 +112,16 @@ const useSyncData = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !storeId) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("shopify_sync_settings")
         .select("*")
         .eq("user_id", user.id)
+        .eq("store_id", storeId)
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") throw error;
@@ -124,6 +129,7 @@ const useSyncData = () => {
       if (data) {
         setSettings(data as SyncSettings);
       } else {
+        // Create default settings for this store
         const defaultSettings: Partial<SyncSettings> = {
           import_frequency: "manual",
           import_schedule_hour: 9,
@@ -131,11 +137,16 @@ const useSyncData = () => {
           import_types: ["products", "collections", "pages", "articles", "images"],
           export_auto_enabled: false,
           export_after_optimization: true,
+          timezone: "Europe/Paris",
         };
 
         const { data: newSettings } = await supabase
           .from("shopify_sync_settings")
-          .insert({ ...defaultSettings, user_id: user.id })
+          .insert({ 
+            ...defaultSettings, 
+            user_id: user.id,
+            store_id: storeId,
+          })
           .select()
           .single();
 
@@ -156,9 +167,9 @@ const useSyncData = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !storeId) return;
 
-      // Nettoyer les synchronisations bloquées
+      // Nettoyer les synchronisations bloquées pour ce store
       await supabase
         .from("sync_history")
         .update({
@@ -167,6 +178,7 @@ const useSyncData = () => {
           error_message: "Sync bloquée",
         })
         .eq("user_id", user.id)
+        .eq("store_id", storeId)
         .eq("status", "running")
         .lt("started_at", new Date(Date.now() - 10 * 60 * 1000).toISOString());
 
@@ -174,6 +186,7 @@ const useSyncData = () => {
         .from("sync_history")
         .select("*")
         .eq("user_id", user.id)
+        .eq("store_id", storeId)
         .order("started_at", { ascending: false })
         .limit(10);
 
@@ -383,73 +396,51 @@ const ScheduleSettings = ({
 };
 
 const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
-  if (!settings || settings.import_frequency === "manual") return null;
-
-  const now = new Date();
-  let nextDate: Date | null = null;
-
-  if (settings.next_import_at) {
-    const dbDate = new Date(settings.next_import_at);
-    if (dbDate > now) {
-      nextDate = dbDate;
-    }
+  if (!settings || settings.import_frequency === "manual") {
+    return null;
   }
 
-  if (!nextDate) {
-    const base = new Date();
-    const hour = settings.import_schedule_hour ?? 9;
-    const day = settings.import_schedule_day ?? 1;
-
-    switch (settings.import_frequency) {
-      case "hourly":
-        base.setHours(base.getHours() + 1, 0, 0, 0);
-        nextDate = base;
-        break;
-      case "daily": {
-        base.setHours(hour, 0, 0, 0);
-        if (base <= now) base.setDate(base.getDate() + 1);
-        nextDate = base;
-        break;
-      }
-      case "weekly": {
-        base.setHours(hour, 0, 0, 0);
-        const currentDay = base.getDay();
-        const targetDay = day; // 0=dimanche ... 6=samedi
-        let diff = (targetDay - currentDay + 7) % 7;
-        if (diff === 0 && base <= now) diff = 7;
-        base.setDate(base.getDate() + diff);
-        nextDate = base;
-        break;
-      }
-      case "monthly": {
-        base.setDate(day);
-        base.setHours(hour, 0, 0, 0);
-        if (base <= now) base.setMonth(base.getMonth() + 1);
-        nextDate = base;
-        break;
-      }
-    }
-  }
-
-  if (!nextDate) return null;
-
-  const localDate = nextDate;
-
-  return (
-    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-      <div className="flex items-center gap-3">
-        <Calendar className="w-5 h-5 text-primary" />
-        <div>
-          <p className="font-medium text-sm">Prochaine synchronisation</p>
-          <p className="text-sm text-muted-foreground">
-            {format(localDate, "d MMM yyyy 'à' HH:mm", { locale: fr })}
-          </p>
+  if (!settings.next_import_at) {
+    return (
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">Prochaine synchronisation</Label>
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Sera calculée après la première synchronisation
+          </span>
         </div>
       </div>
-      <Badge variant="secondary">
-        <Clock className="w-3 h-3 mr-1" />
-        Planifiée
-      </Badge>
+    );
+  }
+
+  const nextSync = new Date(settings.next_import_at);
+  const now = new Date();
+  const isPast = nextSync < now;
+  const frequencyLabel = {
+    hourly: "toutes les heures",
+    daily: "quotidienne",
+    weekly: "hebdomadaire",
+    monthly: "mensuelle",
+  }[settings.import_frequency] || settings.import_frequency;
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-semibold">Prochaine synchronisation</Label>
+      <div className={`flex items-center gap-2 p-3 rounded-lg ${isPast ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-blue-500/10 border border-blue-500/20'}`}>
+        <Calendar className={`w-4 h-4 ${isPast ? 'text-orange-500' : 'text-blue-500'}`} />
+        <div className="flex-1">
+          <p className="text-sm font-medium">
+            {format(nextSync, "d MMM yyyy 'à' HH:mm", { locale: fr })}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Fréquence : {frequencyLabel} • Fuseau : {settings.timezone || "Europe/Paris"}
+          </p>
+        </div>
+        <Badge variant={isPast ? "destructive" : "default"} className="ml-auto">
+          {isPast ? "En retard" : "Planifiée"}
+        </Badge>
+      </div>
     </div>
   );
 };
@@ -540,7 +531,9 @@ const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
 );
 
 export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncing: boolean) => void }) {
-  const { settings, history, loading, setSettings, loadSettings, loadHistory } = useSyncData();
+  const { selectedStore } = useStore();
+  const storeId = selectedStore?.id;
+  const { settings, history, loading, setSettings, loadSettings, loadHistory } = useSyncData(storeId);
   const [saving, setSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMode, setSyncMode] = useState<"full" | "smart">("smart");
@@ -571,7 +564,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
   }, []);
 
   const saveSettings = async () => {
-    if (!settings) return;
+    if (!settings || !storeId) return;
 
     setSaving(true);
     try {
@@ -580,55 +573,20 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Calculate next import time in UTC
-      let next_import_at: string | null = null;
-      
-      if (settings.import_frequency !== "manual") {
-        const now = new Date();
-        
-        switch (settings.import_frequency) {
-          case "hourly":
-            next_import_at = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-            break;
-          case "daily":
-            const nextDaily = new Date(now);
-            nextDaily.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
-            if (nextDaily <= now) {
-              nextDaily.setUTCDate(nextDaily.getUTCDate() + 1);
-            }
-            next_import_at = nextDaily.toISOString();
-            break;
-          case "weekly":
-            const nextWeekly = new Date(now);
-            nextWeekly.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
-            const daysUntilTarget = ((settings.import_schedule_day || 1) - nextWeekly.getUTCDay() + 7) % 7;
-            nextWeekly.setUTCDate(nextWeekly.getUTCDate() + (daysUntilTarget || 7));
-            next_import_at = nextWeekly.toISOString();
-            break;
-          case "monthly":
-            const nextMonthly = new Date(now);
-            nextMonthly.setUTCDate(settings.import_schedule_day || 1);
-            nextMonthly.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
-            if (nextMonthly <= now) {
-              nextMonthly.setUTCMonth(nextMonthly.getUTCMonth() + 1);
-            }
-            next_import_at = nextMonthly.toISOString();
-            break;
-        }
-      }
-
+      // Don't calculate next_import_at on client - let backend handle it
       const { error } = await supabase
         .from("shopify_sync_settings")
         .update({ 
           ...settings, 
           import_types: selectedTypes,
-          next_import_at 
+          store_id: storeId,
         })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("store_id", storeId);
 
       if (error) throw error;
 
-      // Reload settings to get the updated next_import_at
+      // Reload settings to get the backend-calculated next_import_at
       await loadSettings();
       
       toast.success("Paramètres enregistrés avec succès");
@@ -653,13 +611,17 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
-      // Récupérer les credentials Shopify
+      // Récupérer les credentials Shopify pour le store sélectionné
+      if (!storeId) {
+        throw new Error("Aucune boutique sélectionnée");
+      }
+
       // @ts-ignore - Avoiding deep type instantiation error
       const connectionQuery = await supabase
         .from('shopify_connections')
         .select('store_url, access_token, id')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .eq('id', storeId)
         .single();
 
       const shopifyConnection = connectionQuery.data;
@@ -674,7 +636,6 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
         .replace(/^https?:\/\//, '')
         .replace(/\.myshopify\.com.*$/, '');
       const authToken = shopifyConnection.access_token;
-      const storeId = shopifyConnection.id;
 
       // Compter les éléments existants AVANT la synchronisation
       const beforeCounts: Record<string, number> = {};
@@ -742,11 +703,12 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
         }
       }
 
-      // Créer l'entrée d'historique
+      // Créer l'entrée d'historique avec store_id
       const { data: entry, error: historyError } = await supabase
         .from("sync_history")
         .insert({
           user_id: user.id,
+          store_id: storeId,
           sync_type: "import",
           content_types: selectedTypes,
           status: "running",
