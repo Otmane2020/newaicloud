@@ -65,7 +65,7 @@ const Index = () => {
               {t.landing.hero.badge}
             </Badge>
             
-            <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white max-w-4xl leading-tight px-4">
               {t.landing.hero.title}{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
                 {t.landing.hero.titleHighlight}
@@ -73,32 +73,32 @@ const Index = () => {
               {t.landing.hero.titleEnd}
             </h1>
             
-            <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl text-gray-300 px-4">
               {t.landing.hero.subtitle}
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group bg-success hover:bg-success/90 shadow-glow text-success-foreground" onClick={() => navigate('/auth?mode=signup&plan=trial')}>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 w-full sm:w-auto px-4">
+              <Button size="lg" className="group bg-success hover:bg-success/90 shadow-glow text-success-foreground w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup&plan=trial')}>
                 {t.trial.ctaPrimary}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
+              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto">
                 <Play className="mr-2 w-5 h-5" />
                 {t.landing.hero.ctaSecondary}
               </Button>
             </div>
             
-            <div className="flex flex-col items-center gap-3 pt-4">
-              <Badge variant="outline" className="border-success text-success bg-success/10 px-4 py-1.5">
+            <div className="flex flex-col items-center gap-3 pt-4 px-4">
+              <Badge variant="outline" className="border-success text-success bg-success/10 px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
                 {t.trial.noCreditCard}
               </Badge>
-              <div className="flex items-center gap-6 text-sm text-gray-300">
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-300">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-success" />
+                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                   <span>{t.landing.hero.setupTime}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-success" />
+                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                   <span>{t.trial.trustBanner.cancelAnytime}</span>
                 </div>
               </div>
@@ -119,32 +119,32 @@ const Index = () => {
       )}
 
       {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">{t.landing.howItWorks.badge}</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.howItWorks.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+      <section className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
+          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">{t.landing.howItWorks.badge}</Badge>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.howItWorks.title}</h2>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             {t.landing.howItWorks.subtitle}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {t.landing.howItWorks.steps.map((step: any, index: number) => (
             <div key={index} className="relative">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
-                  {index === 0 && <ShoppingBag className="w-8 h-8 text-white" />}
-                  {index === 1 && <Search className="w-8 h-8 text-white" />}
-                  {index === 2 && <Sparkles className="w-8 h-8 text-white" />}
-                  {index === 3 && <TrendingUp className="w-8 h-8 text-white" />}
+              <div className="text-center space-y-4 px-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
+                  {index === 0 && <ShoppingBag className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
+                  {index === 1 && <Search className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
+                  {index === 2 && <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
+                  {index === 3 && <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
                 </div>
                 <div className="relative">
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                  <div className="absolute -top-3 -right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs sm:text-sm">
                     {index + 1}
                   </div>
-                  <h3 className="text-xl font-bold">{step.title}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold">{step.title}</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">{step.description}</p>
+                <p className="text-muted-foreground text-xs sm:text-sm">{step.description}</p>
               </div>
               {index < 3 && (
                 <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-transparent" />
@@ -155,29 +155,29 @@ const Index = () => {
       </section>
 
       {/* Key Features Section */}
-      <section id="features" className="container mx-auto px-4 py-24 bg-gradient-subtle">
-          <div className="text-center mb-16 space-y-4">
-            <Badge variant="outline" className="border-primary text-primary">{t.landing.features.badge}</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">{t.landing.features.title}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+      <section id="features" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">
+          <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
+            <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">{t.landing.features.badge}</Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.features.title}</h2>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               {t.landing.features.subtitle}
             </p>
           </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {t.landing.features.items.map((feature: any, index: number) => {
             const icons = [Search, ImageIcon, FileText, Tags, BarChart3, Sparkles];
             const FeatureIcon = icons[index];
             return (
               <Card 
                 key={index}
-                className="p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
+                className="p-5 sm:p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow">
-                  <FeatureIcon className="w-6 h-6 text-white" />
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
+                  <FeatureIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground mb-4">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground text-sm sm:text-base mb-4">{feature.description}</p>
                 <div className="flex flex-wrap gap-2">
                   {feature.tags.map((tag: string, i: number) => (
                     <Badge key={i} variant="secondary" className="text-xs">
@@ -192,31 +192,31 @@ const Index = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-success text-success">{t.landing.testimonials.badge}</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.testimonials.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+      <section className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
+          <Badge variant="outline" className="border-success text-success text-xs sm:text-sm">{t.landing.testimonials.badge}</Badge>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.testimonials.title}</h2>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             {t.landing.testimonials.subtitle}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {t.landing.testimonials.items.map((testimonial: any, index: number) => (
-            <Card key={index} className="p-6 space-y-4 border-2 hover:border-primary/30 transition-colors">
-              <div className="flex gap-1">
+            <Card key={index} className="p-5 sm:p-6 space-y-3 sm:space-y-4 border-2 hover:border-primary/30 transition-colors">
+              <div className="flex gap-0.5 sm:gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                  <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-primary text-primary" />
                 ))}
               </div>
-              <p className="text-muted-foreground italic">"{testimonial.quote}"</p>
-              <div className="flex items-center gap-3 pt-4 border-t">
-                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
+              <p className="text-muted-foreground italic text-sm sm:text-base">"{testimonial.quote}"</p>
+              <div className="flex items-center gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {testimonial.author[0]}
                 </div>
-                <div>
-                  <p className="font-semibold">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm sm:text-base truncate">{testimonial.author}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{testimonial.role}</p>
                 </div>
               </div>
             </Card>
@@ -225,45 +225,45 @@ const Index = () => {
       </section>
 
       {/* Benefits Section */}
-      <section id="benefits" className="container mx-auto px-4 py-24 bg-gradient-subtle">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <Badge variant="outline" className="border-success text-success">{t.landing.benefits.badge}</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">
+      <section id="benefits" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">
+        <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
+          <div className="space-y-4 sm:space-y-6 px-4">
+            <Badge variant="outline" className="border-success text-success text-xs sm:text-sm">{t.landing.benefits.badge}</Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
               {t.landing.benefits.title}
             </h2>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base sm:text-lg">
               {t.landing.benefits.subtitle}
             </p>
             
-            <div className="space-y-4 pt-4">
+            <div className="space-y-3 sm:space-y-4 pt-4">
               {t.landing.benefits.items.map((benefit: any, index: number) => (
-                <div key={index} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+                <div key={index} className="flex items-start gap-2 sm:gap-3">
+                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-success flex-shrink-0 mt-0.5 sm:mt-1" />
                   <div>
-                    <p className="font-semibold">{benefit.title}</p>
-                    <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                    <p className="font-semibold text-sm sm:text-base">{benefit.title}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{benefit.description}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <Button size="lg" className="mt-6" onClick={() => navigate('/auth?mode=signup')}>
+            <Button size="lg" className="mt-4 sm:mt-6 w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup')}>
               {t.landing.benefits.cta}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
 
-          <div className="relative">
+          <div className="relative px-4">
             <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20" />
-            <Card className="relative p-8 space-y-6 border-2 border-primary/20">
-              <div className="grid grid-cols-2 gap-6">
+            <Card className="relative p-6 sm:p-8 space-y-4 sm:space-y-6 border-2 border-primary/20">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
                 {t.landing.benefits.stats.map((stat: any, index: number) => (
-                  <div key={index} className="space-y-2">
-                    <p className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                  <div key={index} className="space-y-1 sm:space-y-2">
+                    <p className="text-3xl sm:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                       {stat.value}
                     </p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -273,22 +273,22 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">
-            <Globe className="w-4 h-4 mr-2" />
+      <section id="pricing" className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
+          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">
+            <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.landing.pricing.badge}
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.pricing.title}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.pricing.title}</h2>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             {t.landing.pricing.subtitle}
           </p>
           
           {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center gap-4 pt-4">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 pt-4">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors ${
                 billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -296,17 +296,17 @@ const Index = () => {
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors relative ${
                 billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {t.landing.pricing.yearly}
-              <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.yearlyDiscount}</Badge>
+              <Badge className="absolute -top-2 -right-2 bg-success text-[10px] sm:text-xs px-1 sm:px-2">{t.landing.pricing.yearlyDiscount}</Badge>
             </button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto mb-16">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto mb-12 sm:mb-16">
           {[
             { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
             { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
