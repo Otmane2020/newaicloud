@@ -3959,6 +3959,26 @@ export const translations = {
     daysLeft: "{{days}} days left in your trial",
     activateSubscription: "Activate Subscription",
     daysRemaining: "{{days}} days remaining",
+    title: "Free Trial",
+    free: "FREE",
+    noCreditCard: "No credit card required",
+    description: "Test all features for 14 days",
+    duration: "14 days",
+    startButton: "Start Free Trial",
+    ctaPrimary: "14 Days Free Trial",
+    trustBanner: {
+      cancelAnytime: "Cancel anytime"
+    },
+    features: {
+      optimizations: "50 SEO optimizations",
+      article: "1 AI article",
+      duration: "14 days full trial"
+    },
+    endsOn: "Ends on",
+    upgradeToPaid: "Upgrade to Paid Plan",
+    expiringSoon: "Your trial is ending soon",
+    expiringMessage: "Your trial ends in {{days}} days. Choose a plan to continue.",
+    upgradeNow: "Upgrade Now"
   },
 
   footer: {

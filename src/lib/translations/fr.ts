@@ -4038,6 +4038,26 @@ export const translations = {
     daysLeft: "{{days}} jours restants dans votre essai",
     activateSubscription: "Activer l'Abonnement",
     daysRemaining: "{{days}} jours restants",
+    title: "Essai Gratuit",
+    free: "GRATUIT",
+    noCreditCard: "Sans carte bancaire",
+    description: "Testez toutes les fonctionnalités pendant 14 jours",
+    duration: "14 jours",
+    startButton: "Commencer l'essai gratuit",
+    ctaPrimary: "Essai gratuit 14 jours",
+    trustBanner: {
+      cancelAnytime: "Annulation à tout moment"
+    },
+    features: {
+      optimizations: "50 optimisations SEO",
+      article: "1 article IA",
+      duration: "14 jours d'essai complet"
+    },
+    endsOn: "Se termine le",
+    upgradeToPaid: "Passer à un plan payant",
+    expiringSoon: "Votre essai se termine bientôt",
+    expiringMessage: "Votre essai se termine dans {{days}} jours. Choisissez un plan pour continuer.",
+    upgradeNow: "Upgrader maintenant"
   },
 
   footer: {
