@@ -43,11 +43,6 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
-  const limitMessage = tf('dialogs.limit.usageMessage', { 
-    usage: usage || 0, 
-    limit: limit || 0, 
-    type: limitTitle 
-  });
 
   // Cleanup subscription listener when dialog closes
   useEffect(() => {
@@ -306,9 +301,31 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     if (filteredPlans.length > 0 && !filteredPlans.find(p => p.id === selectedPlanId)) {
       setSelectedPlanId(filteredPlans[0].id);
     }
-  }, [planTier, filteredPlans]);
+  }, [planTier, filteredPlans, selectedPlanId]);
 
   const selectedPlan = filteredPlans.find(p => p.id === selectedPlanId);
+  
+  // Get the limit for the selected plan based on limitType
+  const getSelectedPlanLimit = () => {
+    if (!selectedPlan) return limit || 0;
+    
+    switch (limitType) {
+      case 'optimizations':
+        return selectedPlan.max_optimizations_monthly;
+      case 'articles':
+        return selectedPlan.max_articles_monthly;
+      case 'chat':
+        return selectedPlan.max_chat_responses_monthly;
+      default:
+        return limit || 0;
+    }
+  };
+  
+  const limitMessage = tf('dialogs.limit.usageMessage', { 
+    usage: usage || 0, 
+    limit: getSelectedPlanLimit(), 
+    type: limitTitle 
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
