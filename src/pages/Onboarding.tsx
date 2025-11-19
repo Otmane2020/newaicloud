@@ -353,7 +353,7 @@ export default function Onboarding() {
           }
         }
 
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => navigate('/dashboard?show_shopify_prompt=true'), 1500);
       }
     } catch (error) {
       console.error('💥 Error activating trial:', error);

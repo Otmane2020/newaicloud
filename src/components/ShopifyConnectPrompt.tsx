@@ -17,38 +17,48 @@ import { ShopifyConnectionWizard } from './integration/ShopifyConnectionWizard';
 export function ShopifyConnectPrompt() {
   const [open, setOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
   const { user } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
     const checkShopifyConnection = async () => {
-      if (!user || hasChecked) return;
+      if (!user) return;
+
+      // Check for URL parameter to force show
+      const searchParams = new URLSearchParams(location.search);
+      const forceShow = searchParams.get('show_shopify_prompt') === 'true';
+
+      // Session-based check to avoid spamming (1 hour cooldown)
+      const skipKey = `shopify_prompt_checked_${user.id}`;
+      const lastCheck = sessionStorage.getItem(skipKey);
+      
+      if (!forceShow && lastCheck && Date.now() - parseInt(lastCheck) < 3600000) {
+        return; // Already checked within last hour
+      }
 
       // Show on important pages where users might need Shopify
       const allowedPaths = ['/', '/auth', '/dashboard', '/account', '/products', '/seo', '/integration'];
       const isAllowedPath = allowedPaths.includes(location.pathname);
       
-      if (!isAllowedPath) {
-        setHasChecked(true);
+      if (!isAllowedPath && !forceShow) {
         return;
       }
 
-      try {
-        // Always check for store connection - no localStorage check
-        // This means the popup will show every time if no store is connected
+      // Add delay to ensure DB has updated after trial activation
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // CRITICAL: Check if user has completed Stripe checkout (has active subscription)
+      try {
+        // Check if user has completed checkout (has active subscription)
         const { data: profile } = await supabase
           .from('profiles')
           .select('subscription_status')
           .eq('id', user.id)
           .single();
 
-        // Only show if user has completed checkout (active or trialing)
-        if (!profile || !['active', 'trialing'].includes(profile.subscription_status)) {
-          console.log('⏳ User has not completed Stripe checkout yet, skipping popup');
-          setHasChecked(true);
+        // Only show if user has completed checkout (active or trialing) or forced
+        if (!forceShow && (!profile || !['active', 'trialing'].includes(profile.subscription_status))) {
+          console.log('⏳ User has not completed checkout yet, skipping popup');
+          sessionStorage.setItem(skipKey, Date.now().toString());
           return;
         }
 
@@ -60,22 +70,22 @@ export function ShopifyConnectPrompt() {
           .eq('is_active', true);
 
         if (!stores || stores.length === 0) {
-          console.log('✅ Checkout completed + No store connected, showing welcome popup');
+          console.log('✅ No store connected, showing welcome popup');
           setOpen(true);
-          // No localStorage - popup will show every time until store is connected
         } else {
           console.log('ℹ️ Shopify store already connected, skipping popup');
         }
         
-        setHasChecked(true);
+        // Mark as checked in session
+        sessionStorage.setItem(skipKey, Date.now().toString());
       } catch (error) {
         console.error('❌ Error checking Shopify connection:', error);
-        setHasChecked(true);
+        sessionStorage.setItem(skipKey, Date.now().toString());
       }
     };
 
     checkShopifyConnection();
-  }, [user, hasChecked, location.pathname]);
+  }, [user, location.pathname, location.search]);
 
   const handleBegin = () => {
     setOpen(false);
