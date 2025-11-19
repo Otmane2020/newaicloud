@@ -2082,6 +2082,36 @@ export type Database = {
           },
         ]
       }
+      integration_failures: {
+        Row: {
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          error_type: string
+          id: string
+          integration_type: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type: string
+          id?: string
+          integration_type: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type?: string
+          id?: string
+          integration_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       landing_page_history: {
         Row: {
           created_at: string
@@ -4605,6 +4635,12 @@ export type Database = {
         Returns: Json
       }
       cleanup_expired_gsc_cache: { Args: never; Returns: undefined }
+      cleanup_expired_shopify_tokens: {
+        Args: never
+        Returns: {
+          deleted_count: number
+        }[]
+      }
       cleanup_old_vision_cache: { Args: never; Returns: undefined }
       cleanup_orphaned_data: {
         Args: never

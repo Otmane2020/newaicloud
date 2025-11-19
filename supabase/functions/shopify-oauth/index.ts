@@ -136,7 +136,7 @@ serve(async (req) => {
         console.log("[SHOPIFY-OAUTH] Flow pre-auth détecté, création pending connection");
         
         const pendingToken = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h (Phase 1A)
 
         await supabase.from("shopify_pending_connections").insert({
           shop_url: shop,

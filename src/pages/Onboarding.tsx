@@ -279,10 +279,11 @@ export default function Onboarding() {
           await claimShopifyConnection(shopifyPending);
         }
         
-        toast.success(t.onboarding.verification.success);
-        setTimeout(() => {
-          navigate('/dashboard?show_shopify_prompt=true');
-        }, 1500);
+      toast.success(t.onboarding.verification.success);
+      // Phase 1C: Augmenter le délai de 1.5s à 5s pour laisser l'import démarrer
+      setTimeout(() => {
+        navigate('/dashboard?show_shopify_prompt=true');
+      }, 5000);
       } else {
         console.warn('⚠️ [CHECK-SUBSCRIPTION] No active subscription found');
         toast.error(t.onboarding.errors.noActiveSubscription);
@@ -296,7 +297,7 @@ export default function Onboarding() {
   };
 
   const claimShopifyConnection = async (pendingToken: string) => {
-    console.log('🔗 [CHECK-SUBSCRIPTION] Claiming Shopify connection before redirect');
+    console.log('🔗 [CHECK-SUBSCRIPTION] Claiming Shopify connection before redirect', { pendingToken });
     
     try {
       const { data: claimData, error: claimError } = await supabase.functions.invoke(
@@ -304,8 +305,46 @@ export default function Onboarding() {
         { body: { pendingToken } }
       );
       
+      console.log('🔗 [CHECK-SUBSCRIPTION] Claim response:', { claimData, claimError });
+      
+      // Phase 1B: Vérifier si le token est expiré AVANT d'essayer
+      if (claimError || claimData?.error === 'Token expired' || claimData?.error === 'Invalid or expired token') {
+        console.error('❌ [CHECK-SUBSCRIPTION] Token expired or invalid:', claimData);
+        
+        // Log l'échec dans integration_failures
+        await supabase.from('integration_failures').insert({
+          user_id: user?.id,
+          integration_type: 'shopify',
+          error_type: 'token_expired',
+          error_message: claimData?.error || claimError?.message,
+          context: { pendingToken }
+        });
+        
+        toast.error(
+          "Votre connexion Shopify a expiré (24h). Veuillez réinstaller l'application Shopify.",
+          {
+            duration: 10000,
+            action: {
+              label: "Réinstaller",
+              onClick: () => window.open('https://apps.shopify.com/newai-sale', '_blank')
+            }
+          }
+        );
+        return;
+      }
+      
       if (claimError) {
         console.error('❌ [CHECK-SUBSCRIPTION] Shopify claim error:', claimError);
+        
+        // Log l'échec
+        await supabase.from('integration_failures').insert({
+          user_id: user?.id,
+          integration_type: 'shopify',
+          error_type: 'claim_exception',
+          error_message: claimError.message,
+          context: { pendingToken }
+        });
+        
         throw claimError;
       }
       
@@ -314,8 +353,19 @@ export default function Onboarding() {
         toast.success(t.sync.shopifyConnected);
         toast.info(t.sync.autoImport, { duration: 5000 });
         
-        // ✅ Attendre 3 secondes pour que l'import démarre
+        // Phase 1C: Attendre 3 secondes pour que l'import démarre
         await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        console.error('❌ [CHECK-SUBSCRIPTION] Claim failed:', claimData);
+        
+        // Log l'échec
+        await supabase.from('integration_failures').insert({
+          user_id: user?.id,
+          integration_type: 'shopify',
+          error_type: 'claim_failed',
+          error_message: JSON.stringify(claimData),
+          context: { pendingToken }
+        });
       }
     } catch (claimError) {
       console.error('❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:', claimError);
