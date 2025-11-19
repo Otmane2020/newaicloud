@@ -258,7 +258,20 @@ export const useShopifySync = () => {
           }
         } catch (error: any) {
           console.error(`❌ [SYNC ${type.toUpperCase()} EXCEPTION]`, error);
-          errorMessages.push(`${type}: ${error.message}`);
+          
+          // Better error messaging
+          let errorMsg = `${type}: `;
+          if (error.message?.includes('FunctionsRelayError')) {
+            errorMsg += 'Edge function non disponible ou non déployée';
+          } else if (error.message?.includes('timeout')) {
+            errorMsg += 'Timeout après 3 minutes';
+          } else if (error.message?.includes('Failed to send')) {
+            errorMsg += `Impossible d'invoquer la fonction - ${error.message}`;
+          } else {
+            errorMsg += error.message || 'Erreur inconnue';
+          }
+          
+          errorMessages.push(errorMsg);
           importResults[type] = 0;
         }
       }
