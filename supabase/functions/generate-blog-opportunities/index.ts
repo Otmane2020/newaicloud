@@ -471,10 +471,58 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
 
     console.log('[OPPS] Opportunities enriched with matched products and collections');
 
+    // 5. SAVE TO DATABASE WITH CACHE (24h expiration)
+    const cacheExpiresAt = new Date();
+    cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24);
+    
+    console.log('[OPPS] Saving opportunities to database with cache...');
+    
+    // First, clear old cached opportunities for this store
+    if (storeId) {
+      await supabaseAdmin
+        .from('blog_opportunities')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('store_id', storeId)
+        .eq('is_cached', true);
+    }
+    
+    // Insert new opportunities
+    const opportunitiesToInsert = opportunitiesWithProducts.map((opp: any) => ({
+      user_id: user.id,
+      store_id: storeId || null,
+      article_title: opp.title,
+      intro_excerpt: opp.description,
+      meta_description: opp.metaDescription,
+      type: opp.type,
+      difficulty: opp.difficulty,
+      estimated_word_count: opp.estimatedWordCount,
+      seo_opportunity_score: opp.seoScore,
+      primary_keywords: opp.primaryKeywords,
+      secondary_keywords: opp.secondaryKeywords,
+      product_ids: opp.productIds,
+      is_cached: true,
+      cache_expires_at: cacheExpiresAt.toISOString(),
+      last_refreshed_at: new Date().toISOString(),
+      generated_at: new Date().toISOString(),
+    }));
+    
+    const { error: insertError } = await supabaseAdmin
+      .from('blog_opportunities')
+      .insert(opportunitiesToInsert);
+    
+    if (insertError) {
+      console.error('[OPPS] Error saving opportunities:', insertError);
+      // Continue anyway, return opportunities even if save failed
+    } else {
+      console.log(`[OPPS] Successfully saved ${opportunitiesToInsert.length} opportunities to cache`);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         opportunities: opportunitiesWithProducts,
+        cached: true,
         stats: {
           totalProducts: products.length,
           totalCollections: collections?.length || 0,

@@ -167,6 +167,10 @@ export function BlogOpportunities() {
           seoScore: opp.seo_opportunity_score || 0,
           difficulty: opp.difficulty || 'medium',
           productIds: opp.product_ids || [],
+          collectionIds: [], // Will be populated if needed
+          angle: opp.type,
+          targetAudience: '',
+          subCategory: ''
         }));
         setOpportunities(formattedOps);
         setLoading(false);
@@ -203,19 +207,7 @@ export function BlogOpportunities() {
       
       const opportunities = await analyzeAndGenerateOpportunities(products, user.id || '');
       
-      // Save with cache enabled (24h expiration)
-      const cacheExpiresAt = new Date();
-      cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24);
-      
-      await supabase
-        .from('blog_opportunities')
-        .update({
-          is_cached: true,
-          cache_expires_at: cacheExpiresAt.toISOString(),
-          last_refreshed_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-      
+      // Edge function now handles caching automatically
       setOpportunities(opportunities);
       toast.success(tf('blog.dialogs.opportunities.detected', { count: opportunities.length }));
       
@@ -391,11 +383,21 @@ export function BlogOpportunities() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      // Clear cache to force regeneration
-      await supabase
-        .from('blog_opportunities')
-        .update({ is_cached: false, cache_expires_at: null })
-        .eq('user_id', user.id);
+      // Clear cache to force regeneration - delete instead of update
+      if (selectedStore?.id) {
+        await supabase
+          .from('blog_opportunities')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('store_id', selectedStore.id)
+          .eq('is_cached', true);
+      } else {
+        await supabase
+          .from('blog_opportunities')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('is_cached', true);
+      }
 
       toast.info(t.blog.dialogs.opportunities.analyzing, {
         description: t.blog.dialogs.opportunities.patience,
