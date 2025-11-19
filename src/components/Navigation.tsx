@@ -123,9 +123,8 @@ export function Navigation() {
             .single();
 
           if (plan) {
-            const planName = profile.subscription_status === 'trialing' 
-              ? `${plan.name} (Trial)` 
-              : plan.name;
+            const isTrialing = profile.subscription_status === 'trialing';
+            const planName = isTrialing ? t.trial.title : plan.name;
             setUserPlan(planName);
           }
         }

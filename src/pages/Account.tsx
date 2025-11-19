@@ -64,7 +64,7 @@ export default function Account() {
         {planName && (
           <Badge variant="secondary" className="mt-2">
             <Sparkles className="w-3 h-3 mr-1" />
-            {planName}{isTrialing && ` (${t.account.trial})`}
+            {isTrialing ? t.trial.title : planName}
           </Badge>
         )}
       </div>

@@ -16,6 +16,7 @@ interface Plan {
   price_yearly: number;
   stripe_price_id_monthly: string;
   stripe_price_id_yearly: string;
+  isTrial?: boolean;
 }
 
 export function CurrentPlanCard() {
@@ -61,10 +62,13 @@ export function CurrentPlanCard() {
         if (plan) {
           const isTrialing = profileData.subscription_status === 'trialing';
           const isTrial = plan.id === 'trial';
-        setCurrentPlan({
-          ...plan,
-          name: isTrial ? t.trial.title : (isTrialing ? `${plan.name} ${t.subscription.trial}` : plan.name)
-        });
+          const isTrialPlan = isTrial || isTrialing;
+
+          setCurrentPlan({
+            ...plan,
+            name: isTrialPlan ? t.trial.title : plan.name,
+            isTrial: isTrialPlan,
+          });
           
           // Set billing period from subscription data or default to monthly
           const period = subscriptionData?.billing_period;
@@ -173,11 +177,13 @@ export function CurrentPlanCard() {
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              {currentPlan.name.includes('Trial') ? t.account.subscription.expiresOn : t.account.subscription.renewalDate}: {new Date(subscriptionEnd).toLocaleDateString()}
+              {(currentPlan as Plan & { isTrial?: boolean }).isTrial
+                ? t.account.subscription.expiresOn
+                : t.account.subscription.renewalDate}: {new Date(subscriptionEnd).toLocaleDateString()}
             </div>
           )}
 
-          {currentPlan.name.includes('Trial') && (
+          {(currentPlan as Plan & { isTrial?: boolean }).isTrial && (
             <Button 
               onClick={handleUpgradeToFullPlan}
               disabled={upgradeLoading}
