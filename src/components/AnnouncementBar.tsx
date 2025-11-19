@@ -13,24 +13,28 @@ export const AnnouncementBar = () => {
   return (
     <div className="bg-gradient-dark border-b border-primary/20 backdrop-blur-sm relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary-light/10 to-primary/10 animate-pulse" />
-      <div className="container mx-auto flex items-center justify-center gap-3 py-3 px-4 relative z-10">
-        <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-        <span className="text-sm md:text-base font-medium text-foreground">
-          {t.announcement.limitedSale}
-        </span>
-        <button
-          onClick={() => navigate('/auth?mode=signup')}
-          className="px-4 py-1.5 rounded-lg bg-gradient-primary text-white font-semibold text-sm hover:shadow-glow transition-all hover:scale-105"
-        >
-          {t.announcement.checkOut}
-        </button>
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 py-3 pr-8 sm:pr-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary animate-pulse flex-shrink-0" />
+            <span className="text-xs sm:text-sm md:text-base font-medium text-white">
+              {t.announcement.limitedSale}
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/auth?mode=signup')}
+            className="px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-primary text-white font-semibold text-xs sm:text-sm hover:shadow-glow transition-all hover:scale-105 whitespace-nowrap"
+          >
+            {t.announcement.checkOut}
+          </button>
+        </div>
       </div>
       <button
         onClick={() => setIsVisible(false)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 hover:bg-muted rounded-full p-1.5 transition-colors z-20"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 hover:bg-white/10 rounded-full p-1.5 transition-colors z-20"
         aria-label="Close announcement"
       >
-        <X className="w-4 h-4 text-muted-foreground" />
+        <X className="w-4 h-4 text-white/70 hover:text-white" />
       </button>
     </div>
   );
