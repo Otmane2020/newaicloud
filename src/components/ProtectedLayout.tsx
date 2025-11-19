@@ -5,6 +5,7 @@ import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AutoImportPrompt } from "@/components/AutoImportPrompt";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,6 +29,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <SubscriptionGuard>
       <SidebarProvider>
+        <AutoImportPrompt />
         <div className="min-h-screen flex w-full bg-gray-50 overflow-x-hidden">
           <AppSidebar />
           <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
