@@ -353,7 +353,6 @@ async function analyzeProductWithVision(
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content;
-      
       if (content) {
         const jsonMatch = content.match(/\{[\s\S]*?\}/);
         if (jsonMatch) {
@@ -364,13 +363,99 @@ async function analyzeProductWithVision(
       }
 
       await new Promise(resolve => setTimeout(resolve, 800));
-
     } catch (error: any) {
       console.error('⚠️ Vision error:', error.name === 'AbortError' ? 'Timeout' : error.message);
     }
   }
 
   return { similarities };
+}
+
+interface ImagePriceRange {
+  minPrice: number | null;
+  maxPrice: number | null;
+  segment?: string;
+}
+
+// Estimation de la gamme de prix à partir de la photo (simulation recherche par image)
+async function estimatePriceRangeFromImage(
+  productImage: string,
+  productTitle: string
+): Promise<ImagePriceRange | null> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.warn('⚠️ Lovable API key not configured for image price range');
+    return null;
+  }
+
+  try {
+    console.log('🖼️ Estimating price range from product image...');
+
+    const imgResp = await fetch(productImage);
+    if (!imgResp.ok) {
+      console.warn('⚠️ Cannot fetch product image for price estimation');
+      return null;
+    }
+
+    const buffer = await imgResp.arrayBuffer();
+    if (buffer.byteLength > 5 * 1024 * 1024) {
+      console.warn('⚠️ Product image too large for price estimation');
+      return null;
+    }
+
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const mimeType = imgResp.headers.get('content-type') || 'image/jpeg';
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+            {
+              type: 'text',
+              text: `Ce produit est potentiellement HAUT DE GAMME.
+Titre: "${productTitle}"
+
+Simule une recherche Google par photo (Google Lens) pour des produits SIMILAIRES.
+Devine la GAMME DE PRIX réaliste en euros pour ce type de produit sur le marché français.
+
+Réponds UNIQUEMENT avec un JSON de la forme:
+{"segment": "milieu de gamme" | "haut de gamme" | "luxe", "minPrice": 500, "maxPrice": 1200}`,
+            },
+          ],
+        }],
+        temperature: 0.3,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('⚠️ AI price range estimation failed with status', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content as string | undefined;
+    const jsonMatch = content?.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    const minPrice = typeof parsed.minPrice === 'number' ? parsed.minPrice : null;
+    const maxPrice = typeof parsed.maxPrice === 'number' ? parsed.maxPrice : null;
+
+    console.log('✅ Image-based price range:', parsed);
+    return { minPrice, maxPrice, segment: parsed.segment };
+  } catch (error) {
+    console.error('⚠️ Image price range estimation error:', error);
+    return null;
+  }
 }
 
 // Supprimé - remplacé par searchWithDataForSEO + analyzeProductWithVision
@@ -552,7 +637,17 @@ serve(async (req) => {
         console.log(`\n🔍 Analyzing: ${product.title}`);
         console.log(`💰 Costs - Product: ${avgCost}€, Shipping: ${shippingCost}€`);
 
-        // Étape 1: Générer requêtes optimisées
+        // Estimation de la gamme de prix à partir de la PHOTO (simulation recherche par image)
+        let imagePriceRange: ImagePriceRange | null = null;
+        if (product.image_url) {
+          try {
+            imagePriceRange = await estimatePriceRangeFromImage(product.image_url, product.title);
+          } catch (error) {
+            console.error('⚠️ Image price range estimation failed:', error);
+          }
+        }
+
+        // Étape 1: Générer requêtes optimisées (titre + contexte global)
         const queries = await generateSearchQueries(product.title);
 
         // Étape 2: PRIORITÉ - Recherche Google Shopping avec DataForSEO (le plus précis pour le pricing)
@@ -619,23 +714,44 @@ serve(async (req) => {
           }
         }
 
-        // Étape 5: Combiner Shopping + Image Search + SERP + Vision
+        // Étape 5: Combiner Shopping + Image Search + SERP + Vision + estimation prix par photo
         const competitorPrices: CompetitorPrice[] = uniquePrices
-          .map((data, index) => ({
-            url: data.url,
-            title: data.title,
-            price: data.price,
-            currency: data.currency,
+          .map((data, index) => {
             // Prioriser les résultats Shopping (0.95) > Image Search (0.8) > SERP (0.7)
-            similarity: visionResults.similarities[index] || 
-                       (data.source === 'shopping' ? 0.95 : 
-                        data.source === 'image_search' ? 0.8 : 0.7),
-            imageUrl: data.imageUrl,
-            source: `${new URL(data.url).hostname}${
-              data.source === 'shopping' ? ' 🛍️' : 
-              data.source === 'image_search' ? ' 🖼️' : ''
-            }`
-          }))
+            let baseSimilarity = visionResults.similarities[index] ||
+              (data.source === 'shopping' ? 0.95 :
+               data.source === 'image_search' ? 0.8 : 0.7);
+
+            // Ajuster la similarité selon la fourchette de prix estimée à partir de la PHOTO
+            if (imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice) {
+              const min = imagePriceRange.minPrice;
+              const max = imagePriceRange.maxPrice;
+
+              if (data.price < min * 0.5) {
+                // Beaucoup moins cher que ce que la photo suggère → probablement entrée/milieu de gamme
+                baseSimilarity *= 0.4;
+              } else if (data.price < min) {
+                // Un peu en dessous de la gamme attendue
+                baseSimilarity *= 0.7;
+              } else if (data.price >= min && data.price <= max * 1.2) {
+                // Dans ou proche de la fourchette attendue → booster légèrement
+                baseSimilarity *= 1.1;
+              }
+            }
+
+            return {
+              url: data.url,
+              title: data.title,
+              price: data.price,
+              currency: data.currency,
+              similarity: Math.min(1, baseSimilarity),
+              imageUrl: data.imageUrl,
+              source: `${new URL(data.url).hostname}${
+                data.source === 'shopping' ? ' 🛍️' : 
+                data.source === 'image_search' ? ' 🖼️' : ''
+              }`
+            } as CompetitorPrice;
+          })
           .filter(c => c.similarity >= 0.5)
           .sort((a, b) => b.similarity - a.similarity)
           .slice(0, 15);
