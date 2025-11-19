@@ -160,34 +160,62 @@ Deno.serve(async (req) => {
         
         // Build rich context from real content + products + collections
         const storeLabel = connection.store_label || connection.store_name || 'Boutique';
-        const storeCategory = connection.store_category || 'E-commerce';
+        
+        // Detect store category from products if not set
+        let storeCategory = connection.store_category;
+        if (!storeCategory && topProducts && topProducts.length > 0) {
+          // Extract most common product types/categories
+          const productTypes = topProducts.map((p: any) => p.product_type || p.category).filter(Boolean);
+          if (productTypes.length > 0) {
+            // Use the first product type as category hint
+            storeCategory = productTypes[0];
+          }
+        }
+        storeCategory = storeCategory || 'E-commerce';
+        
         const storeDescription = connection.store_description || '';
         
+        // Build comprehensive product context
+        const productContext = topProducts && topProducts.length > 0
+          ? topProducts.map((p: any) => {
+              const parts = [p.title];
+              if (p.vendor) parts.push(`Marque: ${p.vendor}`);
+              if (p.product_type) parts.push(`Type: ${p.product_type}`);
+              if (p.category) parts.push(`Catégorie: ${p.category}`);
+              return parts.join(' | ');
+            }).join('\n')
+          : 'Aucun produit trouvé';
+        
         textContent = `
-BOUTIQUE E-COMMERCE :
-- Nom commercial : ${storeLabel}
-- Secteur : ${storeCategory}
-- Description : ${storeDescription}
+BOUTIQUE E-COMMERCE RÉELLE :
+- Nom EXACT de la boutique : ${storeLabel}
+- URL de la boutique : ${connection.store_url}
+- Secteur d'activité détecté : ${storeCategory}
+${storeDescription ? `- Description : ${storeDescription}` : ''}
 ${connection.store_phone ? `- Téléphone : ${connection.store_phone}` : ''}
 ${connection.store_address ? `- Adresse : ${connection.store_address}` : ''}
 
-CONTENU ACTUEL DE LA PAGE D'ACCUEIL :
+⚠️ IMPORTANT : Tu DOIS utiliser UNIQUEMENT les informations ci-dessus. N'invente RIEN.
+
+CONTENU RÉEL DE LA PAGE D'ACCUEIL :
 - Titre actuel : "${elements.title}"
 - H1 actuel : "${elements.h1 || 'Aucun H1 détecté'}"
 - H2s principaux : ${elements.h2s.join(', ') || 'Aucun'}
 - Meta description actuelle : "${elements.metaDescription || 'Aucune'}"
-- Mots-clés détectés : ${elements.topKeywords.join(', ')}
+- Mots-clés détectés dans le contenu : ${elements.topKeywords.join(', ')}
 
-PRODUITS POPULAIRES :
-${topProducts?.map((p: any) => `- ${p.title} (${p.category || p.product_type || 'N/A'})`).join('\n') || 'Aucun produit trouvé'}
+PRODUITS RÉELS DE LA BOUTIQUE (NE PAS INVENTER) :
+${productContext}
 
-COLLECTIONS :
+COLLECTIONS RÉELLES :
 ${collections?.map((c: any) => `- ${c.title}${c.seo_description ? ': ' + c.seo_description.substring(0, 100) : ''}`).join('\n') || 'Aucune collection'}
 
-TAGS PRINCIPAUX : ${topTags.join(', ') || 'Aucun'}
+TAGS PRINCIPAUX RÉELS : ${topTags.join(', ') || 'Aucun'}
 
-EXTRAIT DU CONTENU :
+EXTRAIT DU CONTENU RÉEL DE LA PAGE :
 ${elements.bodyText}
+
+⚠️ RAPPEL CRITIQUE : Base-toi UNIQUEMENT sur les données ci-dessus. Le SEO doit refléter EXACTEMENT les produits et l'activité réelle de ${storeLabel}.
         `.trim();
       }
       
@@ -350,7 +378,10 @@ ${baseContent}`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'Tu es un expert SEO. Réponds uniquement en JSON valide sans markdown.' },
+          { 
+            role: 'system', 
+            content: `Tu es un expert SEO. Tu DOIS analyser précisément les données fournies et générer du SEO qui reflète EXACTEMENT l'activité réelle. N'invente JAMAIS de contenu. Réponds uniquement en JSON valide sans markdown.` 
+          },
           { role: 'user', content: prompt }
         ],
       }),

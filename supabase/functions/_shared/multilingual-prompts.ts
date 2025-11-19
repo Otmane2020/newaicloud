@@ -101,10 +101,12 @@ NE PAS OUBLIER le champ seo_description, c'est crucial pour le SEO !`,
 
 ${data.textContent}
 
+⚠️ RÈGLE ABSOLUE : Tu DOIS analyser et utiliser UNIQUEMENT les informations fournies ci-dessus. N'INVENTE RIEN. Si la boutique vend des meubles, écris sur des meubles. Si elle vend des vêtements, écris sur des vêtements. Respecte EXACTEMENT l'activité réelle.
+
 OBJECTIF: Créer un titre SEO et une meta description qui:
-1. Incluent naturellement le nom de la boutique
-2. Mentionnent le secteur d'activité
-3. Intègrent 1-2 mots-clés parmi les tags principaux ou produits détectés
+1. Incluent EXACTEMENT le nom de la boutique tel que fourni (ne pas inventer un nom)
+2. Mentionnent PRÉCISÉMENT le secteur d'activité basé sur les PRODUITS RÉELS listés
+3. Intègrent 1-2 mots-clés ISSUS des produits ou tags RÉELS détectés
 4. Créent l'urgence avec un appel à l'action
 5. Se démarquent de la concurrence
 
@@ -112,6 +114,7 @@ RÈGLES STRICTES :
 - Titre SEO : Exactement 50-60 caractères
 - Meta Description : Exactement 150-160 caractères, engageant avec chiffre ou bénéfice concret
 - Utilise des power words (Découvrez, Profitez, Exclusive, Premium, etc.)
+- ⚠️ Base-toi UNIQUEMENT sur les produits RÉELS mentionnés dans le contexte
 - Mentionne un avantage compétitif (livraison gratuite, garantie, qualité, choix, etc.)
 
 FORMAT JSON strict uniquement (sans markdown):
