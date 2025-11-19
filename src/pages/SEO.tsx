@@ -22,10 +22,11 @@ import { calculateArticleSeoScore, calculateDetailedSeoScore } from '@/lib/seoQu
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
+import { NoStoreConnectedPrompt } from '@/components/NoStoreConnectedPrompt';
 
 export default function SEO() {
   const { t } = useTranslation();
-  const { selectedStore } = useStore();
+  const { selectedStore, stores, loading: storesLoading } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
   const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
@@ -180,6 +181,9 @@ export default function SEO() {
           <span className="truncate">{t.seo.clearCache}</span>
         </Button>
       </div>
+
+      {/* Aucune boutique connectée */}
+      {!storesLoading && stores.length === 0 && <NoStoreConnectedPrompt />}
 
       {/* Tab Content - Navigation via sidebar uniquement */}
       <div className="mt-6">
