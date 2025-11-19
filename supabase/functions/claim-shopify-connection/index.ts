@@ -7,13 +7,25 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("[CLAIM-SHOPIFY] 🚀 Function invoked", {
+    method: req.method,
+    hasAuthHeader: !!req.headers.get("Authorization"),
+    timestamp: new Date().toISOString()
+  });
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
+    console.log("[CLAIM-SHOPIFY] 🔐 Authorization check", {
+      hasAuthHeader: !!authHeader,
+      authHeaderPreview: authHeader ? authHeader.substring(0, 20) + "..." : "none"
+    });
+    
     if (!authHeader) {
+      console.error("[CLAIM-SHOPIFY] ❌ Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -38,6 +50,13 @@ serve(async (req) => {
 
     const { pendingToken } = await req.json();
 
+    console.log("[CLAIM-SHOPIFY] 📦 Request payload", {
+      hasPendingToken: !!pendingToken,
+      pendingTokenPreview: pendingToken ? pendingToken.substring(0, 10) + "..." : "none",
+      userId: user.id,
+      userEmail: user.email
+    });
+
     if (!pendingToken) {
       console.error("[CLAIM-SHOPIFY] ❌ Missing pendingToken in request");
       return new Response(
@@ -48,6 +67,7 @@ serve(async (req) => {
 
     console.log("[CLAIM-SHOPIFY] 🔗 Starting claim process", {
       userId: user.id,
+      userEmail: user.email,
       pendingToken,
       timestamp: new Date().toISOString()
     });
@@ -78,13 +98,30 @@ serve(async (req) => {
     });
 
     // Vérifier l'expiration
-    if (new Date(pending.expires_at) < new Date()) {
+    const expiresAt = new Date(pending.expires_at);
+    const now = new Date();
+    const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+    const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
+    
+    console.log("[CLAIM-SHOPIFY] ⏰ Token expiration check", {
+      expiresAt: pending.expires_at,
+      now: now.toISOString(),
+      hoursUntilExpiry: hoursUntilExpiry.toFixed(2),
+      isExpired: timeUntilExpiry < 0
+    });
+
+    if (timeUntilExpiry < 0) {
       console.error("[CLAIM-SHOPIFY] ❌ Token expired:", {
         expiresAt: pending.expires_at,
-        now: new Date().toISOString()
+        now: now.toISOString(),
+        expiredSinceHours: Math.abs(hoursUntilExpiry).toFixed(2)
       });
       return new Response(
-        JSON.stringify({ error: "Token expired" }),
+        JSON.stringify({ 
+          error: "Token expired",
+          message: "The installation token has expired. Please reinstall the app from your Shopify Partner Dashboard.",
+          expiredSince: Math.abs(hoursUntilExpiry).toFixed(2) + " hours ago"
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
