@@ -14,26 +14,12 @@ export function ShopifyIntegrationTabs() {
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [prefilledShop, setPrefilledShop] = useState<string | null>(null);
 
-  // Handle OAuth callback messages and shop pre-fill
+  // Handle OAuth callback messages
   useEffect(() => {
     const success = searchParams.get('success');
     const error = searchParams.get('error');
     const shop = searchParams.get('shop');
-
-    // Si un nom de boutique est passé en paramètre, le pré-remplir et ouvrir le dialog
-    if (shop && !success && !error) {
-      setPrefilledShop(shop);
-      setShowDialog(true);
-      toast.success("Bienvenue !", {
-        description: `Connectons votre boutique ${shop}`,
-      });
-      // Nettoyer le paramètre shop de l'URL
-      searchParams.delete("shop");
-      setSearchParams(searchParams);
-      return;
-    }
 
     if (success === 'true') {
       toast.success(`Store connected successfully! 🎉`, {
@@ -114,14 +100,6 @@ export function ShopifyIntegrationTabs() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {prefilledShop && (
-            <Alert>
-              <ShoppingBag className="h-4 w-4" />
-              <AlertDescription>
-                Prêt à connecter votre boutique <strong>{prefilledShop}</strong>. Cliquez sur "Connecter la boutique" dans le formulaire.
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
 
@@ -131,18 +109,11 @@ export function ShopifyIntegrationTabs() {
 
       <ShopifyConnectionWizard 
         open={showDialog} 
-        onOpenChange={(open) => {
-          setShowDialog(open);
-          if (!open) {
-            setPrefilledShop(null);
-          }
-        }}
+        onOpenChange={setShowDialog}
         onSuccess={() => {
           setShowDialog(false);
-          setPrefilledShop(null);
           setRefreshKey(prev => prev + 1);
         }}
-        initialShopDomain={prefilledShop || undefined}
       />
     </div>
   );
