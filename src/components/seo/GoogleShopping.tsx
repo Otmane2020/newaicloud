@@ -53,6 +53,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { useGoogleTaxonomyImport } from '@/hooks/useGoogleTaxonomyImport';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
 import {
   Pagination,
   PaginationContent,
@@ -88,6 +89,7 @@ export function GoogleShopping() {
   const { t } = useTranslation();
   const { selectedStore } = useStore();
   const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
+  const { limits } = useUsageLimits();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -1351,6 +1353,9 @@ export function GoogleShopping() {
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
         limitType="optimizations"
+        usage={limits?.usage.optimizations_count || 0}
+        limit={limits?.limits.max_optimizations || 0}
+        currentPlan={limits?.currentPlanId || 'Trial'}
       />
     </div>
   );
