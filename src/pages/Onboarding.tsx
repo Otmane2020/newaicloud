@@ -301,7 +301,7 @@ export default function Onboarding() {
   // REMOVED: handleStartTrial - Now using Stripe Checkout for ALL plans including Starter trial
   // This ensures mandatory credit card collection and proper trial activation via Stripe webhook
 
-  const handleSelectPlan = async (planId: string) => {
+  const handleSelectPlan = async (planId: string, isTrial: boolean = false) => {
     if (!user) {
       toast.error(t.onboarding.errors.mustBeConnected);
       return;
@@ -309,7 +309,7 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle);
+      console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle, 'trial:', isTrial);
       
       // Check if user has active subscription
       const { data: subscription } = await supabase
@@ -562,8 +562,83 @@ export default function Onboarding() {
           </div>
         </div>
 
-        {/* Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-8 max-w-6xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2">
+      {/* Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2">
+          {/* Free Trial Plan - Always first */}
+          <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
+              {language === 'fr' ? 'GRATUIT' : 'FREE'}
+            </div>
+            
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
+              <Star className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-bold mb-2">
+              {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
+            </h3>
+            <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
+              {language === 'fr' ? '14 jours gratuits' : '14 days free'}
+            </Badge>
+            
+            <div className="mb-4">
+              <div className="text-3xl sm:text-4xl font-bold mb-1">
+                {getCurrencySymbol(language)}0
+                <span className="text-base sm:text-lg text-muted-foreground font-normal">
+                  /{t.onboarding.billing.monthly}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t.onboarding.trial.cardRequired.split('•')[0]} • {language === 'fr' ? 'Annulez à tout moment' : 'Cancel anytime'}
+              </p>
+            </div>
+
+            <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{language === 'fr' ? '100 produits' : '100 products'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{language === 'fr' ? '1 Boutique connectée' : '1 Connected store'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{language === 'fr' ? '100 optimisations' : '100 optimizations'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{language === 'fr' ? '5 articles' : '5 articles'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{language === 'fr' ? '100 réponses chat' : '100 chat responses'}</span>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+              onClick={() => handleSelectPlan('starter', true)}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {language === 'fr' ? 'Chargement...' : 'Loading...'}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {t.onboarding.trial.startTrial}
+                </>
+              )}
+            </Button>
+            
+            <p className="text-[10px] text-center text-muted-foreground mt-2">
+              {language === 'fr' ? 'Choisissez votre plan après l\'essai' : 'Choose your plan after trial'}
+            </p>
+          </Card>
+
           {/* Starter Plan */}
           {(() => {
             const starterPlan = plans.find(p => p.id === 'starter');
