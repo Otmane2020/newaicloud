@@ -71,6 +71,10 @@ interface ProductVariant {
   option2: string | null;
   option3: string | null;
   image_url: string | null;
+  market_price?: number | null;
+  smart_price?: number | null;
+  ai_reasoning?: string | null;
+  competitors?: CompetitorPrice[];
 }
 
 interface ProductPricing {
@@ -123,6 +127,7 @@ export function SmartPricingAI() {
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [analyzingPrices, setAnalyzingPrices] = useState(false);
+  const [analyzingVariant, setAnalyzingVariant] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
   const [selectedVendor, setSelectedVendor] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
@@ -575,6 +580,62 @@ export function SmartPricingAI() {
       });
     } finally {
       setImporting(false);
+    }
+  };
+
+  const analyzeVariantPricing = async (productId: string, variantId: string) => {
+    try {
+      setAnalyzingVariant(variantId);
+      
+      const toastId = toast.loading("🤖 Analyse IA de la variante...", {
+        description: "Recherche des prix concurrents par photo et calcul du prix optimal",
+      });
+
+      const { data, error } = await supabase.functions.invoke("analyze-competitor-pricing", {
+        body: {
+          productIds: [productId],
+          variantId: variantId,
+          taxRate,
+        },
+      });
+
+      if (error) {
+        console.error("Erreur analyse variante:", error);
+        toast.error("Erreur lors de l'analyse de la variante", { id: toastId });
+        return;
+      }
+
+      if (data?.results?.[0]) {
+        const result = data.results[0];
+        
+        setProducts(prev => prev.map(p => {
+          if (p.id === productId) {
+            return {
+              ...p,
+              variants: p.variants.map(v => {
+                if (v.id === variantId) {
+                  return {
+                    ...v,
+                    market_price: result.marketPrice,
+                    smart_price: result.smartPrice,
+                    ai_reasoning: result.reasoning,
+                    competitors: result.competitors || []
+                  };
+                }
+                return v;
+              })
+            };
+          }
+          return p;
+        }));
+
+        toast.success(`✅ Analyse terminée - Prix conseillé: ${result.smartPrice?.toFixed(2)}€`, { id: toastId });
+      }
+    } catch (error) {
+      console.error("Erreur analyse variante:", error);
+      toast.error("Erreur lors de l'analyse de la variante");
+    } finally {
+      setAnalyzingVariant(null);
     }
   };
 
@@ -2133,9 +2194,51 @@ export function SmartPricingAI() {
                           </Badge>
                         </td>
                         
-                        <td className="hidden lg:table-cell p-3"></td>
-                        <td className="hidden lg:table-cell p-3"></td>
-                        <td className="p-3"></td>
+                        <td className="hidden lg:table-cell p-3 text-right">
+                          {variant.market_price && (
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                              {formatPrice(variant.market_price)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="hidden lg:table-cell p-3 text-right">
+                          {variant.smart_price && (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs text-green-600 dark:text-green-400 font-bold">
+                                {formatPrice(variant.smart_price)}
+                              </span>
+                              {variant.ai_reasoning && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" className="max-w-xs">
+                                      <p className="text-xs whitespace-pre-wrap">{variant.ai_reasoning}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => analyzeVariantPricing(product.id, variant.id)}
+                            disabled={analyzingVariant === variant.id}
+                            className="h-7 px-2 gap-1 hover:bg-purple-600/10"
+                            title="Analyser le prix avec l'IA"
+                          >
+                            {analyzingVariant === variant.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                            ) : (
+                              <Calculator className="w-3.5 h-3.5 text-purple-600" />
+                            )}
+                            <span className="text-xs">IA</span>
+                          </Button>
+                        </td>
                       </tr>
                     );
                   });

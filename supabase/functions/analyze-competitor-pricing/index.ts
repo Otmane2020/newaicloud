@@ -594,20 +594,20 @@ serve(async (req) => {
 
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { productIds, taxRate } = await req.json();
+    const { productIds, variantId, taxRate = 0 } = await req.json();
 
     if (!productIds || productIds.length === 0) {
       throw new Error('No products specified');
     }
 
-    console.log(`📊 Analyzing ${productIds.length} products with SERP + Vision...`);
+    console.log(`📊 Analyzing ${productIds.length} products${variantId ? ' (variant-specific)' : ''} with SERP + Vision...`);
 
     const results = [];
 
     for (const productId of productIds) {
       try {
         // Get product details
-        const { data: product, error: productError } = await supabase
+        let query = supabase
           .from('shopify_products')
           .select(`
             id,
@@ -616,16 +616,191 @@ serve(async (req) => {
             price,
             cost_price,
             shipping_cost,
-            product_variants!product_id(cost_price)
+            product_variants!product_id(id, cost_price, price, image_url, title, option1, option2, option3)
           `)
-          .eq('id', productId)
-          .single();
+          .eq('id', productId);
+
+        const { data: product, error: productError } = await query.single();
 
         if (productError || !product) {
           console.warn(`⚠️ Product ${productId} not found`);
           continue;
         }
 
+        // Si on analyse une variante spécifique
+        if (variantId) {
+          const variant = ((product as any).product_variants || []).find((v: any) => v.id === variantId);
+          
+          if (!variant) {
+            console.warn(`⚠️ Variant ${variantId} not found`);
+            continue;
+          }
+
+          console.log(`\n🔍 Analyzing variant: ${product.title} - ${variant.option1}${variant.option2 ? ' / ' + variant.option2 : ''}${variant.option3 ? ' / ' + variant.option3 : ''}`);
+          
+          const variantTitle = `${product.title} ${variant.option1 || ''} ${variant.option2 || ''} ${variant.option3 || ''}`.trim();
+          const variantImageUrl = variant.image_url || product.image_url;
+          const variantPrice = variant.price;
+          const variantCost = variant.cost_price || 0;
+          const shippingCost = product.shipping_cost || 5.99;
+
+          console.log(`💰 Costs - Variant: ${variantCost}€, Shipping: ${shippingCost}€`);
+
+          // Estimation de la gamme de prix à partir de la PHOTO (simulation recherche par image)
+          let imagePriceRange: ImagePriceRange | null = null;
+          if (variantImageUrl) {
+            try {
+              imagePriceRange = await estimatePriceRangeFromImage(variantImageUrl, variantTitle);
+            } catch (error) {
+              console.error('⚠️ Image price range estimation failed:', error);
+            }
+          }
+
+          // Étape 1: Générer requêtes optimisées pour la variante
+          const queries = await generateSearchQueries(variantTitle);
+
+          // Étape 2: PRIORITÉ - Recherche Google Shopping avec DataForSEO
+          const allPriceData: PriceData[] = [];
+          
+          console.log('🛍️ Starting DataForSEO Google Shopping Search (Priority)...');
+          for (const query of queries.slice(0, 2)) {
+            try {
+              const shoppingPrices = await searchWithDataForSEOShopping(query);
+              shoppingPrices.forEach(p => p.source = 'shopping');
+              allPriceData.push(...shoppingPrices);
+              console.log(`✅ Found ${shoppingPrices.length} prices from Shopping for "${query}"`);
+              await new Promise(resolve => setTimeout(resolve, 1200));
+            } catch (error) {
+              console.error(`❌ DataForSEO Shopping failed for "${query}":`, error);
+            }
+          }
+
+          // Étape 3: Recherche par image
+          if (variantImageUrl) {
+            console.log('🖼️ Starting Google Image Search (complementary)...');
+            try {
+              const imageResults = await searchWithGoogleImages(variantImageUrl, variantTitle);
+              allPriceData.push(...imageResults);
+              await new Promise(resolve => setTimeout(resolve, 800));
+            } catch (error) {
+              console.error('❌ Google Image Search failed:', error);
+            }
+          }
+
+          // Étape 4: Recherche SERP organique (fallback)
+          for (const query of queries.slice(0, 1)) {
+            try {
+              const serpPrices = await searchWithDataForSEO(query);
+              serpPrices.forEach(p => p.source = 'serp');
+              allPriceData.push(...serpPrices);
+              await new Promise(resolve => setTimeout(resolve, 1200));
+            } catch (error) {
+              console.error(`❌ DataForSEO Organic failed for "${query}":`, error);
+            }
+          }
+
+          // Dédupliquer par URL
+          const uniquePrices = Array.from(
+            new Map(allPriceData.map(p => [p.url, p])).values()
+          );
+
+          console.log(`📈 Total unique prices found: ${uniquePrices.length}`);
+
+          // Analyse visuelle
+          const visionResults: { similarities: number[] } = { similarities: [] };
+          const competitorImages = uniquePrices.filter(p => p.imageUrl).map(p => p.imageUrl!);
+
+          if (variantImageUrl && competitorImages.length > 0) {
+            console.log(`🖼️ Vision analysis for ${competitorImages.length} images`);
+            try {
+              const result = await analyzeProductWithVision(variantImageUrl, competitorImages);
+              visionResults.similarities = result.similarities;
+              console.log(`✅ Vision: ${visionResults.similarities.length} calculated`);
+            } catch (error) {
+              console.error('⚠️ Vision failed:', error);
+            }
+          }
+
+          // Combiner les résultats
+          const competitorPrices: CompetitorPrice[] = uniquePrices
+            .map((data, index) => {
+              let baseSimilarity = visionResults.similarities[index] ||
+                (data.source === 'shopping' ? 0.95 :
+                 data.source === 'image_search' ? 0.8 : 0.7);
+
+              if (imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice) {
+                const min = imagePriceRange.minPrice;
+                const max = imagePriceRange.maxPrice;
+
+                if (data.price < min * 0.7) {
+                  baseSimilarity *= 0.4;
+                } else if (data.price < min) {
+                  baseSimilarity *= 0.7;
+                } else if (data.price >= min && data.price <= max * 1.2) {
+                  baseSimilarity *= 1.1;
+                }
+              }
+
+              return {
+                url: data.url,
+                title: data.title,
+                price: data.price,
+                currency: data.currency,
+                similarity: Math.min(baseSimilarity, 1.0),
+                imageUrl: data.imageUrl,
+                source: `${data.source}${
+                  data.source === 'shopping' ? ' 🛍️' : 
+                  data.source === 'image_search' ? ' 🖼️' : ''
+                }`
+              } as CompetitorPrice;
+            })
+            .filter(c => c.similarity >= 0.5)
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, 15);
+
+          console.log(`✅ ${competitorPrices.length} relevant competitors`);
+
+          // Analyse AI finale
+          const analysis = await analyzeWithAI(
+            variantTitle,
+            variantCost,
+            shippingCost,
+            competitorPrices,
+            taxRate || 20
+          );
+
+          const netMargin = analysis.smartPrice 
+            ? calculateNetMargin(analysis.smartPrice, variantCost, shippingCost, taxRate || 20)
+            : null;
+
+          results.push({
+            productId: productId,
+            variantId: variantId,
+            title: variantTitle,
+            currentPrice: variantPrice,
+            costPrice: variantCost,
+            shippingCost,
+            marketPrice: analysis.marketPrice,
+            smartPrice: analysis.smartPrice,
+            netMargin: netMargin ? Math.round(netMargin * 100) / 100 : null,
+            reasoning: analysis.reasoning,
+            competitors: analysis.competitors,
+            competitorCount: analysis.competitors.length,
+            visionAnalysis: {
+              analyzedImages: visionResults.similarities.length,
+              avgSimilarity: visionResults.similarities.length > 0
+                ? Math.round(visionResults.similarities.reduce((a, b) => a + b, 0) / visionResults.similarities.length * 100) / 100
+                : null
+            }
+          });
+
+          console.log(`✅ ${variantTitle}:`);
+          console.log(`   Smart: ${analysis.smartPrice}€, Market: ${analysis.marketPrice?.toFixed(2)}€, Margin: ${netMargin?.toFixed(2)}€`);
+
+          continue;
+        }
+
+        // Sinon, analyse du produit normal (code existant)
         // Get average cost if multiple variants
         const variants = (product as any).product_variants || [];
         const avgCost = variants.length > 0
