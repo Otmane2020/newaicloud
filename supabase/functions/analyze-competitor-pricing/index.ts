@@ -66,7 +66,74 @@ Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes:
   }
 }
 
-// Nouvelle fonction: Recherche avec DataForSEO
+// Nouvelle fonction: Recherche Google Shopping avec DataForSEO
+async function searchWithDataForSEOShopping(keyword: string): Promise<PriceData[]> {
+  const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
+  const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
+  
+  if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
+    throw new Error('DataForSEO non configuré');
+  }
+
+  console.log(`🛍️ DataForSEO Shopping: Searching for "${keyword}"`);
+
+  const endpoint = 'https://api.dataforseo.com/v3/merchant/google/products/live/advanced';
+  
+  const payload = [{
+    keyword: keyword,
+    location_code: 2250, // France
+    language_code: "fr",
+    depth: 20,
+  }];
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic ' + btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ DataForSEO Shopping error: ${response.status} - ${errorText}`);
+    throw new Error(`DataForSEO Shopping error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.tasks?.[0]?.status_code !== 20000) {
+    console.error('❌ DataForSEO Shopping API error:', data.tasks?.[0]?.status_message);
+    throw new Error(data.tasks?.[0]?.status_message || 'DataForSEO Shopping error');
+  }
+
+  const items = data.tasks[0].result[0].items || [];
+  console.log(`🛒 DataForSEO Shopping returned ${items.length} products`);
+
+  const priceData: PriceData[] = [];
+
+  for (const item of items) {
+    const price = item.price || item.price_value;
+    const currency = item.currency || 'EUR';
+    
+    if (price && item.url) {
+      priceData.push({
+        price: parseFloat(price),
+        currency: currency,
+        url: item.url,
+        title: item.title || keyword,
+        imageUrl: item.thumbnail || item.image,
+        source: 'shopping'
+      });
+    }
+  }
+
+  console.log(`✅ Extracted ${priceData.length} prices from DataForSEO Shopping`);
+  return priceData;
+}
+
+// Recherche SERP organique avec DataForSEO
 async function searchWithDataForSEO(keyword: string): Promise<PriceData[]> {
   const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
   const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
@@ -75,7 +142,7 @@ async function searchWithDataForSEO(keyword: string): Promise<PriceData[]> {
     throw new Error('DataForSEO non configuré');
   }
 
-  console.log(`🔍 DataForSEO: Searching for "${keyword}"`);
+  console.log(`🔍 DataForSEO Organic: Searching for "${keyword}"`);
 
   const endpoint = 'https://api.dataforseo.com/v3/serp/google/organic/live/advanced';
   
@@ -143,7 +210,7 @@ interface PriceData {
   url: string;
   title: string;
   imageUrl?: string;
-  source?: 'serp' | 'image_search';
+  source?: 'serp' | 'image_search' | 'shopping';
 }
 
 // Google Image Search for visual product matching
@@ -356,18 +423,31 @@ async function analyzeWithAI(
     const avgCompetitorPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
     const top10 = competitorPrices.slice(0, 10);
 
-    const list = top10.map((c, i) => `${i + 1}. ${c.title.substring(0, 60)} - ${c.price.toFixed(2)}€ (${(c.similarity * 100).toFixed(0)}%)`).join('\n');
+    const list = top10.map((c, i) => {
+      const sourceEmoji = c.source?.includes('🛍️') ? '[SHOPPING]' : c.source?.includes('🖼️') ? '[IMAGE]' : '[SERP]';
+      return `${i + 1}. ${sourceEmoji} ${c.title.substring(0, 50)} - ${c.price.toFixed(2)}€ (${(c.similarity * 100).toFixed(0)}%)`;
+    }).join('\n');
 
-    const prompt = `Pricing expert. Recommande prix optimal.
+    const shoppingCount = top10.filter(c => c.source?.includes('🛍️')).length;
+    const imageCount = top10.filter(c => c.source?.includes('🖼️')).length;
+
+    const prompt = `Expert pricing. Recommande prix optimal pour produit HAUT DE GAMME.
 
 PRODUIT: "${productTitle}"
 COÛTS: ${totalCost.toFixed(2)}€ | Min+30%: ${minPriceWithMargin.toFixed(2)}€
 MARCHÉ: Moy ${avgCompetitorPrice.toFixed(2)}€ | Min ${Math.min(...competitorPrices.map(c => c.price)).toFixed(2)}€ | Max ${Math.max(...competitorPrices.map(c => c.price)).toFixed(2)}€
 
-TOP 10:
+SOURCES DE PRIX (par fiabilité):
+- 🛍️ Google Shopping (${shoppingCount}): HAUTE FIABILITÉ - prix réels produits similaires
+- 🖼️ Image Search (${imageCount}): FIABILITÉ MOYENNE - basé sur visuel
+- SERP organique: FAIBLE FIABILITÉ - peut inclure produits gamme différente
+
+TOP 10 CONCURRENTS:
 ${list}
 
-JSON: {"smartPrice": 89.90, "reasoning": "stratégie"}
+⚠️ IMPORTANT: Privilégie les prix [SHOPPING] qui sont les plus précis pour ce type de produit.
+
+JSON: {"smartPrice": 89.90, "reasoning": "stratégie concise"}
 smartPrice ≥ ${minPriceWithMargin.toFixed(2)}€`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -475,11 +555,26 @@ serve(async (req) => {
         // Étape 1: Générer requêtes optimisées
         const queries = await generateSearchQueries(product.title);
 
-        // Étape 2: Recherche par image avec Google Custom Search
+        // Étape 2: PRIORITÉ - Recherche Google Shopping avec DataForSEO (le plus précis pour le pricing)
         const allPriceData: PriceData[] = [];
         
+        console.log('🛍️ Starting DataForSEO Google Shopping Search (Priority)...');
+        for (const query of queries.slice(0, 2)) {
+          try {
+            const shoppingPrices = await searchWithDataForSEOShopping(query);
+            // Mark Shopping results with highest priority
+            shoppingPrices.forEach(p => p.source = 'shopping');
+            allPriceData.push(...shoppingPrices);
+            console.log(`✅ Found ${shoppingPrices.length} prices from Shopping for "${query}"`);
+            await new Promise(resolve => setTimeout(resolve, 1200));
+          } catch (error) {
+            console.error(`❌ DataForSEO Shopping failed for "${query}":`, error);
+          }
+        }
+
+        // Étape 3: Recherche par image avec Google Custom Search (complémentaire)
         if (product.image_url) {
-          console.log('🖼️ Starting Google Image Search...');
+          console.log('🖼️ Starting Google Image Search (complementary)...');
           try {
             const imageResults = await searchWithGoogleImages(product.image_url, product.title);
             allPriceData.push(...imageResults);
@@ -489,16 +584,16 @@ serve(async (req) => {
           }
         }
 
-        // Étape 3: Recherche SERP avec DataForSEO
-        for (const query of queries.slice(0, 2)) {
+        // Étape 4: Recherche SERP organique avec DataForSEO (fallback)
+        for (const query of queries.slice(0, 1)) {
           try {
             const serpPrices = await searchWithDataForSEO(query);
-            // Mark SERP results
+            // Mark SERP results with lower priority
             serpPrices.forEach(p => p.source = 'serp');
             allPriceData.push(...serpPrices);
             await new Promise(resolve => setTimeout(resolve, 1200));
           } catch (error) {
-            console.error(`❌ DataForSEO failed for "${query}":`, error);
+            console.error(`❌ DataForSEO Organic failed for "${query}":`, error);
           }
         }
 
@@ -507,7 +602,7 @@ serve(async (req) => {
           new Map(allPriceData.map(p => [p.url, p])).values()
         );
 
-        console.log(`📈 Total unique prices found: ${uniquePrices.length} (${allPriceData.filter(p => p.source === 'image_search').length} from images, ${allPriceData.filter(p => p.source === 'serp').length} from SERP)`);
+        console.log(`📈 Total unique prices found: ${uniquePrices.length} (${allPriceData.filter(p => p.source === 'shopping').length} from Shopping, ${allPriceData.filter(p => p.source === 'image_search').length} from images, ${allPriceData.filter(p => p.source === 'serp').length} from SERP)`);
 
         // Étape 4: Analyse visuelle avec Gemini
         const visionResults: { similarities: number[] } = { similarities: [] };
@@ -524,16 +619,22 @@ serve(async (req) => {
           }
         }
 
-        // Étape 5: Combiner Image Search + SERP + Vision
+        // Étape 5: Combiner Shopping + Image Search + SERP + Vision
         const competitorPrices: CompetitorPrice[] = uniquePrices
           .map((data, index) => ({
             url: data.url,
             title: data.title,
             price: data.price,
             currency: data.currency,
-            similarity: visionResults.similarities[index] || (data.source === 'image_search' ? 0.8 : 0.7),
+            // Prioriser les résultats Shopping (0.95) > Image Search (0.8) > SERP (0.7)
+            similarity: visionResults.similarities[index] || 
+                       (data.source === 'shopping' ? 0.95 : 
+                        data.source === 'image_search' ? 0.8 : 0.7),
             imageUrl: data.imageUrl,
-            source: `${new URL(data.url).hostname}${data.source === 'image_search' ? ' 🖼️' : ''}`
+            source: `${new URL(data.url).hostname}${
+              data.source === 'shopping' ? ' 🛍️' : 
+              data.source === 'image_search' ? ' 🖼️' : ''
+            }`
           }))
           .filter(c => c.similarity >= 0.5)
           .sort((a, b) => b.similarity - a.similarity)
