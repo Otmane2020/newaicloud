@@ -203,15 +203,41 @@ export function GoogleMerchantIntegration() {
         `width=${width},height=${height},left=${left},top=${top}`
       );
       
-      if (!popup) {
-        toast.error(t.errors.generic);
+      // ✅ Détection robuste de popup bloquée
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        console.warn('⚠️ [GOOGLE-MERCHANT] Popup blocked, offering fallback');
+        toast.error(
+          "Popup bloquée ! Autorisez les popups pour ce site, puis réessayez.",
+          { 
+            duration: 7000,
+            action: {
+              label: "Ouvrir dans cet onglet",
+              onClick: () => {
+                window.location.href = urlData.url;
+              }
+            }
+          }
+        );
         return;
       }
+      
+      console.log('✅ [GOOGLE-MERCHANT] Popup opened, waiting for OAuth callback');
+      
+      // ✅ Vérifier toutes les 500ms si la popup est fermée
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          console.log('ℹ️ [GOOGLE-MERCHANT] Popup closed by user');
+          toast.info("Connexion annulée");
+        }
+      }, 500);
       
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
         
         if (event.data.type === 'GOOGLE_MERCHANT_OAUTH_CODE' && event.data.code) {
+          clearInterval(checkClosed);
           console.log('[GoogleMerchant] 🔵 Received OAuth code');
           window.removeEventListener('message', handleMessage);
           

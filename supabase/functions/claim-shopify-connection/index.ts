@@ -39,13 +39,18 @@ serve(async (req) => {
     const { pendingToken } = await req.json();
 
     if (!pendingToken) {
+      console.error("[CLAIM-SHOPIFY] ❌ Missing pendingToken in request");
       return new Response(
         JSON.stringify({ error: "Missing pendingToken" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("[CLAIM-SHOPIFY] Claiming connection for user:", user.id, "with token:", pendingToken);
+    console.log("[CLAIM-SHOPIFY] 🔗 Starting claim process", {
+      userId: user.id,
+      pendingToken,
+      timestamp: new Date().toISOString()
+    });
 
     // Récupérer la connexion en attente
     const { data: pending, error: fetchError } = await supabase
@@ -56,16 +61,28 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !pending) {
-      console.error("[CLAIM-SHOPIFY] Pending connection not found:", fetchError);
+      console.error("[CLAIM-SHOPIFY] ❌ Pending connection not found:", {
+        error: fetchError,
+        pendingToken
+      });
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("[CLAIM-SHOPIFY] ✅ Found pending connection:", {
+      shopUrl: pending.shop_url,
+      commercialName: pending.commercial_name,
+      expiresAt: pending.expires_at
+    });
+
     // Vérifier l'expiration
     if (new Date(pending.expires_at) < new Date()) {
-      console.error("[CLAIM-SHOPIFY] Token expired");
+      console.error("[CLAIM-SHOPIFY] ❌ Token expired:", {
+        expiresAt: pending.expires_at,
+        now: new Date().toISOString()
+      });
       return new Response(
         JSON.stringify({ error: "Token expired" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -87,12 +104,18 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error("[CLAIM-SHOPIFY] Error creating connection:", insertError);
+      console.error("[CLAIM-SHOPIFY] ❌ Error creating connection:", {
+        error: insertError,
+        userId: user.id,
+        shopUrl: pending.shop_url
+      });
       return new Response(
         JSON.stringify({ error: "Failed to create connection", details: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("[CLAIM-SHOPIFY] ✅ Connection created in database");
 
     // Marquer la connexion en attente comme réclamée
     await supabase
@@ -100,10 +123,16 @@ serve(async (req) => {
       .update({ is_claimed: true })
       .eq("pending_token", pendingToken);
 
-    console.log("[CLAIM-SHOPIFY] Connection successfully claimed for", pending.shop_url);
+    console.log("[CLAIM-SHOPIFY] ✅ Connection successfully claimed", {
+      shopUrl: pending.shop_url,
+      userId: user.id
+    });
 
     // 🆕 Déclencher l'import automatique des 10 premiers produits
-    console.log("[CLAIM-SHOPIFY] 🚀 Triggering auto-import of first 10 products");
+    console.log("[CLAIM-SHOPIFY] 🚀 Triggering auto-import of first 10 products", {
+      shopUrl: pending.shop_url,
+      accessToken: pending.access_token ? "***present***" : "missing"
+    });
 
     try {
       const shopName = pending.shop_url.replace('.myshopify.com', '');

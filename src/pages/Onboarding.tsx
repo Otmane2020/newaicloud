@@ -83,50 +83,11 @@ export default function Onboarding() {
     checkExistingSubscription();
     loadPlans();
     
-    // Check if user is returning from checkout
+    // ✅ Gérer le retour de checkout Stripe
+    // Le claim Shopify sera fait dans handleCheckSubscription
     if (searchParams.get('checkout') === 'success') {
+      console.log('🔄 [ONBOARDING] Checkout success detected, checking subscription');
       handleCheckSubscription();
-      
-      // Après checkout réussi, vérifier si on doit claim une connexion Shopify
-      const shopifyPending = searchParams.get('shopify_pending');
-      if (shopifyPending && !claimingShopify) {
-        console.log('🔗 Claiming Shopify connection after trial setup');
-        setClaimingShopify(true);
-        
-        const claimConnection = async () => {
-          try {
-            const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
-              body: { pendingToken: shopifyPending }
-            });
-
-            if (error) throw error;
-
-            if (data?.success) {
-              toast.success(t.sync.shopifyConnected);
-              
-              // Show import toast
-              toast.info(t.sync.autoImport, { 
-                duration: 5000,
-              });
-              
-              // Wait 3 seconds for import to complete
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              
-              // Redirect to dashboard to see imported products
-              navigate('/dashboard', { replace: true });
-            } else {
-              throw new Error('Failed to claim connection');
-            }
-          } catch (error) {
-            console.error('Failed to claim Shopify connection:', error);
-            toast.error(t.sync.connectionFailed);
-          } finally {
-            setClaimingShopify(false);
-          }
-        };
-
-        claimConnection();
-      }
     }
   }, [user, navigate, searchParams]);
 
@@ -260,18 +221,24 @@ export default function Onboarding() {
 
   const handleCheckSubscription = async () => {
     setCheckingSubscription(true);
+    
     try {
-      console.log('🔍 Checking subscription status...');
+      console.log('🔍 [CHECK-SUBSCRIPTION] Starting subscription check', {
+        hasShopifyPending: !!searchParams.get('shopify_pending'),
+        shopifyPendingValue: searchParams.get('shopify_pending'),
+        checkoutSuccess: searchParams.get('checkout') === 'success',
+        userId: user?.id
+      });
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        console.log('⚠️ No valid session for subscription check');
+        console.log('⚠️ [CHECK-SUBSCRIPTION] No valid session');
         toast.error('Session expired. Please log in again.');
         return;
       }
       
-      // First try check-subscription
+      // 1. Vérifier l'abonnement
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -279,35 +246,80 @@ export default function Onboarding() {
       });
       
       if (error) {
-        console.error('❌ Error checking subscription:', error);
+        console.error('❌ [CHECK-SUBSCRIPTION] Error checking subscription:', error);
         // Fallback: try fix-stuck-subscriptions
-        console.log('🔧 Attempting to fix stuck subscription...');
+        console.log('🔧 [CHECK-SUBSCRIPTION] Attempting to fix stuck subscription...');
         const { data: fixData, error: fixError } = await supabase.functions.invoke('fix-stuck-subscriptions');
         
         if (fixError) {
           throw fixError;
         }
         
-        console.log('✅ Fix result:', fixData);
+        console.log('✅ [CHECK-SUBSCRIPTION] Fix result:', fixData);
         
         if (fixData?.fixed > 0) {
+          // 2. Avant de rediriger, claim Shopify si nécessaire
+          const shopifyPending = searchParams.get('shopify_pending');
+          if (shopifyPending) {
+            await claimShopifyConnection(shopifyPending);
+          }
+          
           toast.success(t.onboarding.verification.activated);
-          setTimeout(() => navigate('/dashboard'), 1500);
+          setTimeout(() => navigate('/dashboard?show_shopify_prompt=true'), 1500);
           return;
         }
       }
       
       if (data?.subscribed) {
+        console.log('✅ [CHECK-SUBSCRIPTION] Subscription verified');
+        
+        // 2. ✅ AVANT de rediriger, claim Shopify si nécessaire
+        const shopifyPending = searchParams.get('shopify_pending');
+        if (shopifyPending) {
+          await claimShopifyConnection(shopifyPending);
+        }
+        
         toast.success(t.onboarding.verification.success);
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => {
+          navigate('/dashboard?show_shopify_prompt=true');
+        }, 1500);
       } else {
+        console.warn('⚠️ [CHECK-SUBSCRIPTION] No active subscription found');
         toast.error(t.onboarding.errors.noActiveSubscription);
       }
     } catch (error) {
-      console.error('💥 Error checking subscription:', error);
+      console.error('❌ [CHECK-SUBSCRIPTION] Error:', error);
       toast.error(t.onboarding.errors.paymentError);
     } finally {
       setCheckingSubscription(false);
+    }
+  };
+
+  const claimShopifyConnection = async (pendingToken: string) => {
+    console.log('🔗 [CHECK-SUBSCRIPTION] Claiming Shopify connection before redirect');
+    
+    try {
+      const { data: claimData, error: claimError } = await supabase.functions.invoke(
+        'claim-shopify-connection',
+        { body: { pendingToken } }
+      );
+      
+      if (claimError) {
+        console.error('❌ [CHECK-SUBSCRIPTION] Shopify claim error:', claimError);
+        throw claimError;
+      }
+      
+      if (claimData?.success) {
+        console.log('✅ [CHECK-SUBSCRIPTION] Shopify connection claimed successfully');
+        toast.success(t.sync.shopifyConnected);
+        toast.info(t.sync.autoImport, { duration: 5000 });
+        
+        // ✅ Attendre 3 secondes pour que l'import démarre
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    } catch (claimError) {
+      console.error('❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:', claimError);
+      toast.error(t.sync.connectionFailed);
     }
   };
 
