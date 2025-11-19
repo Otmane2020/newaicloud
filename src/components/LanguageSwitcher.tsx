@@ -43,7 +43,7 @@ export function LanguageSwitcher() {
               : 'hover:bg-accent/50'
           }`}
         >
-          <span className="text-sm font-bold mr-3 px-2 py-1 bg-primary/10 rounded">EN</span>
+          <span className="text-xl mr-3">🇬🇧</span>
           <span className="flex-1">English</span>
           {language === 'en' && <span className="ml-2 text-lg">✓</span>}
         </DropdownMenuItem>
@@ -55,7 +55,7 @@ export function LanguageSwitcher() {
               : 'hover:bg-accent/50'
           }`}
         >
-          <span className="text-sm font-bold mr-3 px-2 py-1 bg-primary/10 rounded">FR</span>
+          <span className="text-xl mr-3">🇫🇷</span>
           <span className="flex-1">Français</span>
           {language === 'fr' && <span className="ml-2 text-lg">✓</span>}
         </DropdownMenuItem>
