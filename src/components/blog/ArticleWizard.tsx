@@ -49,6 +49,16 @@ interface ArticleWizardProps {
   userId: string;
   storeId: string;
   onArticleCreated?: () => void;
+  initialData?: {
+    title?: string;
+    collectionId?: string;
+    productIds?: string[];
+    keywords?: string[];
+    angle?: string;
+    wordCount?: number;
+    metaDescription?: string;
+  };
+  autoGenerate?: boolean;
 }
 
 const LAYOUTS = [
@@ -142,7 +152,9 @@ export function ArticleWizard({
   collections, 
   userId, 
   storeId,
-  onArticleCreated
+  onArticleCreated,
+  initialData,
+  autoGenerate = false
 }: ArticleWizardProps) {
   const [step, setStep] = useState(1);
   const [selectedAngle, setSelectedAngle] = useState('guide');
@@ -173,6 +185,35 @@ export function ArticleWizard({
 
   const allKeywords = [...selectedKeywords, ...customKeywords];
   const totalSteps = 7;
+
+  // Initialize with opportunity data
+  useEffect(() => {
+    if (initialData && open) {
+      if (initialData.collectionId) setSelectedCollection(initialData.collectionId);
+      if (initialData.productIds) setSelectedProducts(initialData.productIds);
+      if (initialData.keywords) {
+        setSelectedKeywords(initialData.keywords.slice(0, 3));
+        setCustomKeywords(initialData.keywords.slice(3));
+      }
+      if (initialData.angle) {
+        const angleMap: Record<string, string> = {
+          'guide': 'guide',
+          'comparison': 'comparatif',
+          'tutorial': 'tutoriel',
+          'selection': 'avis'
+        };
+        setSelectedAngle(angleMap[initialData.angle] || 'guide');
+      }
+      if (initialData.wordCount) setArticleLength(initialData.wordCount);
+      if (initialData.title) setSuggestedTitle(initialData.title);
+      
+      // If auto-generate, skip to final step
+      if (autoGenerate) {
+        setStep(7);
+        setTimeout(() => generateArticle(), 1000);
+      }
+    }
+  }, [initialData, open, autoGenerate]);
 
   // Load products when collection changes
   useEffect(() => {
