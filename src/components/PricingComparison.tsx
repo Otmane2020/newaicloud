@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import React, { useState } from "react";
@@ -68,10 +69,10 @@ const PricingComparison = () => {
     {
       category: t.landing.pricing.comparison.features.categories.supportPerformance,
       items: [
-        { name: t.landing.pricing.comparison.features.items.emailSupport, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.prioritySupport, starter: false, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.dedicatedAccountManager, starter: false, pro: false, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.apiAccess, starter: false, pro: false, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.emailSupport, trial: false, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.prioritySupport, trial: false, starter: false, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.dedicatedAccountManager, trial: false, starter: false, pro: false, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.apiAccess, trial: false, starter: false, pro: false, enterprise: true },
       ]
     }
   ];
@@ -255,6 +256,13 @@ const PricingComparison = () => {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="p-4 text-left font-semibold">{t.landing.pricing.comparison.featuresLabel}</th>
+                <th className="p-4 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Badge className="bg-success">{t.trial.title}</Badge>
+                    <span className="text-2xl font-bold">0{currency}</span>
+                    <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
+                  </div>
+                </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">{t.landing.pricing.plans.starter.name}</Badge>
@@ -291,7 +299,7 @@ const PricingComparison = () => {
             {features.map((category, categoryIndex) => (
               <React.Fragment key={`cat-${categoryIndex}`}>
                 <tr className="bg-muted/30">
-                  <td colSpan={4} className="p-3 font-semibold text-sm">
+                  <td colSpan={5} className="p-3 font-semibold text-sm">
                     {category.category}
                   </td>
                 </tr>
@@ -301,28 +309,8 @@ const PricingComparison = () => {
                     className="border-b hover:bg-muted/20 transition-colors"
                   >
                     <td className="p-4 text-sm">{item.name}</td>
-                  <td key={item.name + '-trial'} className="p-4 text-center">
-                    {typeof item.trial === 'boolean' ? (
-                      item.trial ? (
-                        <CheckCircle2 className="w-5 h-5 text-success mx-auto" />
-                      ) : (
-                        <X className="w-5 h-5 text-muted-foreground mx-auto" />
-                      )
-                    ) : (
-                      <span className="text-sm font-medium">{item.trial}</span>
-                    )}
-                  </td>
-                  <td key={item.name + '-starter'} className="p-4 text-center">
-                    {typeof item.starter === 'boolean' ? (
-                      item.starter ? (
-                        <CheckCircle2 className="w-5 h-5 text-success mx-auto" />
-                      ) : (
-                        <X className="w-5 h-5 text-muted-foreground mx-auto" />
-                      )
-                    ) : (
-                      <span className="text-sm font-medium">{item.starter}</span>
-                    )}
-                  </td>
+                    <td className="p-4 text-center">{renderValue(item.trial)}</td>
+                    <td className="p-4 text-center">{renderValue(item.starter)}</td>
                     <td className="p-4 text-center">{renderValue(item.pro)}</td>
                     <td className="p-4 text-center">{renderValue(item.enterprise)}</td>
                   </tr>
@@ -333,7 +321,7 @@ const PricingComparison = () => {
         </table>
       </div>
     </Card>
-    </div>
+  </div>
   );
 };
 
