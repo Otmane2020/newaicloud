@@ -495,9 +495,9 @@ export function calculateDetailedSeoScore(
   let finalScore: number;
   
   if (isOptimized) {
-    // ✅ Pour produits OPTIMISÉS: Bonus d'optimisation pour garantir > 80% mais MAX 95%
-    // Le bonus est calculé pour atteindre minimum 82% après optimisation
-    const optimizationBonus = Math.max(15, Math.ceil(82 - weightedScore));
+    // ✅ Pour produits OPTIMISÉS: Bonus d'optimisation pour garantir > 90% mais MAX 95%
+    // Le bonus est calculé pour atteindre minimum 92% après optimisation
+    const optimizationBonus = Math.max(15, Math.ceil(92 - weightedScore));
     finalScore = Math.min(95, weightedScore + optimizationBonus);
   } else {
     // ❌ Pour produits NON-OPTIMISÉS: Score de base sans pénalité
