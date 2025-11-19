@@ -4457,6 +4457,7 @@ export const translations = {
           cta: "Start Free Trial",
           highlight: "Full access to all Pro features for 14 days. No credit card required.",
           badge: "🎁 Free",
+          promo: "",
           features: [
             "50 AI SEO optimizations",
             "1 AI article",
@@ -4474,6 +4475,7 @@ export const translations = {
           cta: "Start Free Trial",
           highlight: "Enjoy the power of AI with essential features and quotas tailored to your start.",
           badge: "",
+          promo: "",
           features: [
             "100 analyzed products",
             "100 AI SEO optimizations / month (titles, meta, ALT, tags)",
@@ -4491,6 +4493,7 @@ export const translations = {
           cta: "Try for free",
           highlight: "The perfect balance between power, automation, and scalability.",
           badge: "Most Popular 🔥",
+          promo: "Get 20% discount with LIMITED PROMO",
           features: [
             "1,000 analyzed products",
             "500 AI SEO optimizations / month",
@@ -4510,6 +4513,7 @@ export const translations = {
           cta: "Contact us",
           highlight: "Fully managed AI suite with high quotas, API access, and personal support.",
           badge: "",
+          promo: "Get 30% discount with LIMITED PROMO",
           features: [
             "Unlimited products",
             "2,000 AI SEO optimizations / month",

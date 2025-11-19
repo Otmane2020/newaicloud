@@ -4536,6 +4536,7 @@ export const translations = {
           cta: "Commencer l'essai gratuit",
           highlight: "Accès complet à toutes les fonctionnalités Pro pendant 14 jours. Aucune carte de crédit requise.",
           badge: "🎁 Gratuit",
+          promo: "",
           features: [
             "50 optimisations SEO IA",
             "1 article IA",
@@ -4553,6 +4554,7 @@ export const translations = {
           cta: "Commencer l'essai gratuit",
           highlight: "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
           badge: "",
+          promo: "",
           features: [
             "100 produits analysés",
             "100 optimisations SEO IA / mois (titres, meta, ALT, tags)",
@@ -4570,6 +4572,7 @@ export const translations = {
           cta: "Essayer gratuitement",
           highlight: "L'équilibre parfait entre puissance, automatisation et évolutivité.",
           badge: "Plus populaire 🔥",
+          promo: "Obtenez 20% de réduction avec PROMO LIMITÉE",
           features: [
             "1 000 produits analysés",
             "500 optimisations SEO IA / mois",
@@ -4589,6 +4592,7 @@ export const translations = {
           cta: "Nous contacter",
           highlight: "Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.",
           badge: "",
+          promo: "Obtenez 30% de réduction avec PROMO LIMITÉE",
           features: [
             "Produits illimités",
             "2 000 optimisations SEO IA / mois",

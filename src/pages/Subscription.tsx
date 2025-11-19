@@ -445,6 +445,16 @@ const Subscription = () => {
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{selectedProPlan.price_monthly}{currency}</span>
                       <span className="text-muted-foreground text-sm sm:text-base">{t.seo.subscription.perMonth}</span>
                     </div>
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
+                      <p className="text-xs sm:text-sm font-medium">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 20% de réduction avec' : 'Get 20% discount with'}
+                        </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5 md:pt-6 border-t">
@@ -541,6 +551,16 @@ const Subscription = () => {
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}{currency}</span>
                       <span className="text-muted-foreground text-sm sm:text-base">{t.seo.subscription.perMonth}</span>
+                    </div>
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
+                      <p className="text-xs sm:text-sm font-medium">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 30% de réduction avec' : 'Get 30% discount with'}
+                        </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
                     </div>
                   </div>
 
