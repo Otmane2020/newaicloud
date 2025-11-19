@@ -43,6 +43,13 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
+  
+  // Message for CURRENT plan usage (not selected plan)
+  const currentLimitMessage = tf('dialogs.limit.usageMessage', { 
+    usage: usage || 0, 
+    limit: limit || 0, 
+    type: limitTitle 
+  });
 
   // Cleanup subscription listener when dialog closes
   useEffect(() => {
@@ -305,7 +312,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
   const selectedPlan = filteredPlans.find(p => p.id === selectedPlanId);
   
-  // Get the limit for the selected plan based on limitType
+  // Get the limit for the selected NEW plan based on limitType
   const getSelectedPlanLimit = () => {
     if (!selectedPlan) return limit || 0;
     
@@ -321,8 +328,9 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     }
   };
   
-  const limitMessage = tf('dialogs.limit.usageMessage', { 
-    usage: usage || 0, 
+  // Message for SELECTED plan (to show what they'll get)
+  const selectedPlanLimitMessage = tf('dialogs.limit.usageMessage', { 
+    usage: 0, // New plan starts at 0
     limit: getSelectedPlanLimit(), 
     type: limitTitle 
   });
@@ -339,7 +347,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
               {t.dialogs.upgrade.youReachedLimit} <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
             </p>
             <p className="text-sm text-orange-800 dark:text-orange-200">
-              {limitTitle}: {limitMessage}
+              {limitTitle}: {currentLimitMessage}
             </p>
           </div>
           
