@@ -191,13 +191,8 @@ export default function Dashboard() {
 
       const optimizedProducts = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0).length || 0;
       
-      // Calculate pending optimization: products that need optimization based on enrichment status
-      const pendingProducts = products?.filter((p: any) => 
-        p.enrichment_status === 'pending' || 
-        p.enrichment_status === 'not_optimised' || 
-        !p.optimization_count || 
-        p.optimization_count === 0
-      ).length || 0;
+      // Calculate pending optimization: products that need optimization (same logic as TagOptimization "to_optimize")
+      const pendingProducts = products?.filter((p: any) => !p.optimization_count || p.optimization_count === 0).length || 0;
       
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       
@@ -395,11 +390,19 @@ export default function Dashboard() {
       const oldTotalProducts = oldProducts?.length || 0;
       const oldOptimizedProducts = oldProducts?.filter(p => p.seo_title && p.seo_description).length || 0;
       
-      const { count: oldArticlesCount } = await supabase
-        .from('blog_articles')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id)
-        .lt('created_at', thirtyDaysAgo.toISOString());
+      const { count: oldArticlesCount } = await (() => {
+        let query = supabase
+          .from('blog_articles')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user?.id)
+          .lt('created_at', thirtyDaysAgo.toISOString());
+
+        if (selectedStore?.id) {
+          query = query.eq('store_id', selectedStore.id);
+        }
+
+        return query;
+      })();
       
       // Get previous SEO audit for comparison
       const { data: previousAudit } = await supabase
