@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { seoTitle, seoDescription } = await req.json();
+    const { seoTitle, seoDescription, storeId } = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -27,18 +27,18 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    console.log(`[SYNC-HOMEPAGE] Syncing homepage SEO for user ${user.id}`);
+    console.log(`[SYNC-HOMEPAGE] Syncing homepage SEO for user ${user.id}, store ${storeId}`);
 
-    // Récupérer la connexion Shopify active
+    // Récupérer la connexion Shopify pour le store sélectionné
     const { data: connection, error: connError } = await supabaseClient
       .from('shopify_connections')
       .select('*')
+      .eq('id', storeId)
       .eq('user_id', user.id)
-      .eq('is_active', true)
       .single();
 
     if (connError || !connection) {
-      console.error('[SYNC-HOMEPAGE] No active Shopify connection found');
+      console.error('[SYNC-HOMEPAGE] No Shopify connection found for store:', storeId);
       throw new Error('No active Shopify connection. Please connect your store first.');
     }
 

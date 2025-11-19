@@ -336,7 +336,8 @@ export function HomePageSeoAudit() {
         const syncResult = await supabase.functions.invoke('sync-homepage-seo', {
           body: { 
             seoTitle: data.seo_title,
-            seoDescription: data.seo_description
+            seoDescription: data.seo_description,
+            storeId: selectedStore.id
           }
         });
 
@@ -549,7 +550,8 @@ export function HomePageSeoAudit() {
       const { data, error } = await supabase.functions.invoke('sync-homepage-seo', {
         body: { 
           seoTitle,
-          seoDescription
+          seoDescription,
+          storeId: selectedStore.id
         }
       });
 
