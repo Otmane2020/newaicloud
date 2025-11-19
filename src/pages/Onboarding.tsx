@@ -721,7 +721,7 @@ export default function Onboarding() {
                 </Button>
                 
                 <p className="text-[10px] text-center text-muted-foreground mt-2">
-                  {language === 'fr' ? 'Choisissez votre plan après l\'essai' : 'Choose your plan after trial'}
+                  {t.onboarding.choosePlanAfterTrial}
                 </p>
               </Card>
             );
