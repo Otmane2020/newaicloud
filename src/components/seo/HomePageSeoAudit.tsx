@@ -372,43 +372,17 @@ export function HomePageSeoAudit() {
         contentLength: result.elements.contentLength
       };
 
-      let prompt = '';
-      
-      if (elementType === 'title') {
-        prompt = `Génère un titre SEO optimisé (max 60 caractères) pour une page d'accueil e-commerce. 
-        Contexte: URL=${pageContext.url}, H2s existants=${pageContext.h2s.join(', ')}. 
-        Le titre doit être accrocheur, contenir des mots-clés pertinents et inciter au clic. Réponds UNIQUEMENT avec le titre, sans guillemets ni explication.`;
-      } else if (elementType === 'metaDescription') {
-        prompt = `Génère une meta description SEO optimisée (max 160 caractères) pour une page d'accueil e-commerce. 
-        Contexte: URL=${pageContext.url}, Titre=${pageContext.existingTitle}, H2s=${pageContext.h2s.join(', ')}. 
-        La description doit être engageante, contenir des mots-clés et inciter à visiter le site. Réponds UNIQUEMENT avec la description, sans guillemets ni explication.`;
-      } else {
-        prompt = `Génère un H1 (titre principal) optimisé SEO (max 70 caractères) pour une page d'accueil e-commerce. 
-        Contexte: URL=${pageContext.url}, Titre=${pageContext.existingTitle}, H2s=${pageContext.h2s.join(', ')}. 
-        Le H1 doit être clair, descriptif et contenir le mot-clé principal. Réponds UNIQUEMENT avec le H1, sans guillemets ni explication.`;
-      }
-
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
-        })
+      const { data, error } = await supabase.functions.invoke('generate-homepage-seo-element', {
+        body: { 
+          elementType,
+          pageContext
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to generate content');
+      if (error) throw error;
+      if (!data?.generatedText) throw new Error('No text generated');
 
-      const data = await response.json();
-      const generatedText = data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+      const generatedText = data.generatedText;
 
       // Afficher le résultat dans un toast avec possibilité de copier
       const elementName = elementType === 'title' ? 'Titre SEO' : 
