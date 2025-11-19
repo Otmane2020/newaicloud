@@ -382,11 +382,58 @@ const ScheduleSettings = ({
   );
 };
 
-const NextSyncDisplay = ({ nextImportAt }: { nextImportAt: string | null }) => {
-  if (!nextImportAt) return null;
+const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
+  if (!settings || settings.import_frequency === "manual") return null;
 
-  // Convertir l'heure UTC en heure locale
-  const localDate = new Date(nextImportAt);
+  const now = new Date();
+  let nextDate: Date | null = null;
+
+  if (settings.next_import_at) {
+    const dbDate = new Date(settings.next_import_at);
+    if (dbDate > now) {
+      nextDate = dbDate;
+    }
+  }
+
+  if (!nextDate) {
+    const base = new Date();
+    const hour = settings.import_schedule_hour ?? 9;
+    const day = settings.import_schedule_day ?? 1;
+
+    switch (settings.import_frequency) {
+      case "hourly":
+        base.setHours(base.getHours() + 1, 0, 0, 0);
+        nextDate = base;
+        break;
+      case "daily": {
+        base.setHours(hour, 0, 0, 0);
+        if (base <= now) base.setDate(base.getDate() + 1);
+        nextDate = base;
+        break;
+      }
+      case "weekly": {
+        base.setHours(hour, 0, 0, 0);
+        const currentDay = base.getDay();
+        const targetDay = day; // 0=dimanche ... 6=samedi
+        let diff = (targetDay - currentDay + 7) % 7;
+        if (diff === 0 && base <= now) diff = 7;
+        base.setDate(base.getDate() + diff);
+        nextDate = base;
+        break;
+      }
+      case "monthly": {
+        base.setDate(day);
+        base.setHours(hour, 0, 0, 0);
+        if (base <= now) base.setMonth(base.getMonth() + 1);
+        nextDate = base;
+        break;
+      }
+    }
+  }
+
+  if (!nextDate) return null;
+
+  const localDate = nextDate;
 
   return (
     <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
@@ -874,7 +921,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
           </div>
 
           <ScheduleSettings settings={settings} setSettings={setSettings} />
-          <NextSyncDisplay nextImportAt={settings?.next_import_at || null} />
+          <NextSyncDisplay settings={settings} />
           <AutoExportSettings settings={settings} setSettings={setSettings} />
 
           {/* Bouton d'enregistrement */}
