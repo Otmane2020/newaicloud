@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useTranslation } from '@/lib/language';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,7 @@ export function CollectionImageDialog({
   collection,
   onImageUpdated 
 }: CollectionImageDialogProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<'popular' | 'ai' | 'upload' | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
