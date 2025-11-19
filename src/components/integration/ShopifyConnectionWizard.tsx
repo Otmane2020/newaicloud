@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
 
 interface ShopifyConnectionWizardProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface ShopifyConnectionWizardProps {
 export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initialShopDomain }: ShopifyConnectionWizardProps) {
   const [step, setStep] = useState<1 | 2>(initialShopDomain ? 2 : 1);
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { refreshStores } = useStore();
   const { t } = useTranslation();
 
   // Step 1 data
@@ -196,19 +198,19 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initial
 
       toast.success(t.wizards.shopify.storeConnectedSuccess);
       await refreshLimits();
+      
+      // Refresh stores in StoreContext to update the store selector
+      await refreshStores();
+      
+      // Set flag to trigger import dialog automatically
+      localStorage.setItem("shopify_trigger_import", "true");
+      localStorage.setItem("shopify_store_name", commercialName.trim());
 
       if (onSuccess) {
         onSuccess();
       } else {
         onOpenChange(false);
         resetForm();
-        
-        // Trigger import dialog automatically after store connection
-        localStorage.setItem("shopify_just_connected", "true");
-        localStorage.setItem("shopify_store_name", commercialName.trim());
-        localStorage.setItem("shopify_trigger_import", "true"); // New flag to trigger import
-        
-        setTimeout(() => window.location.reload(), 1000);
       }
     } catch (error: any) {
       console.error("Manual connection error:", error);
