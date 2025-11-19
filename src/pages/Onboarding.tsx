@@ -300,9 +300,27 @@ export default function Onboarding() {
     console.log('🔗 [CHECK-SUBSCRIPTION] Claiming Shopify connection before redirect', { pendingToken });
     
     try {
+      // Get current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.error('[CHECK-SUBSCRIPTION] No session access token available');
+        toast.error(t.sync.connectionFailed, {
+          description: "Please log in again to continue."
+        });
+        return;
+      }
+
+      console.log('[CHECK-SUBSCRIPTION] Calling claim function with auth token');
+
       const { data: claimData, error: claimError } = await supabase.functions.invoke(
         'claim-shopify-connection',
-        { body: { pendingToken } }
+        { 
+          body: { pendingToken },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
       );
       
       console.log('🔗 [CHECK-SUBSCRIPTION] Claim response:', { claimData, claimError });
@@ -311,25 +329,35 @@ export default function Onboarding() {
       if (claimError || claimData?.error === 'Token expired' || claimData?.error === 'Invalid or expired token') {
         console.error('❌ [CHECK-SUBSCRIPTION] Token expired or invalid:', claimData);
         
+        // Check if it's a token expiration error
+        const errorMessage = claimError?.message || claimData?.error || '';
+        
         // Log l'échec dans integration_failures
         await supabase.from('integration_failures').insert({
           user_id: user?.id,
           integration_type: 'shopify',
           error_type: 'token_expired',
-          error_message: claimData?.error || claimError?.message,
+          error_message: errorMessage,
           context: { pendingToken }
         });
         
-        toast.error(
-          "Votre connexion Shopify a expiré (24h). Veuillez réinstaller l'application Shopify.",
-          {
-            duration: 10000,
-            action: {
-              label: "Réinstaller",
-              onClick: () => window.open('https://apps.shopify.com/newai-sale', '_blank')
+        if (errorMessage.includes('expired') || errorMessage.includes('Token expired')) {
+          toast.error(
+            "Votre connexion Shopify a expiré (24h). Veuillez réinstaller l'application Shopify.",
+            {
+              duration: 10000,
+              action: {
+                label: "Réinstaller",
+                onClick: () => window.open('https://apps.shopify.com/newai-sale', '_blank')
+              }
             }
-          }
-        );
+          );
+        } else {
+          toast.error(t.sync.connectionFailed, {
+            description: errorMessage || "Please try again or contact support."
+          });
+        }
+        
         return;
       }
       
