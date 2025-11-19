@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useStore } from '@/contexts/StoreContext';
 import {
   Table,
   TableBody,
@@ -85,6 +86,7 @@ interface Product {
 export function GoogleShopping() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
   const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -139,6 +141,12 @@ export function GoogleShopping() {
   };
 
   const fetchProducts = async () => {
+    if (!selectedStore) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -170,6 +178,7 @@ export function GoogleShopping() {
             google_white_background,
             seo_synced_to_shopify
           `)
+          .eq('store_id', selectedStore.id)
           .range(start, end)
           .order('title', { ascending: true });
         
@@ -202,7 +211,7 @@ export function GoogleShopping() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [selectedStore?.id]);
 
   const filteredProducts = products.filter((product) => {
     if (!searchTerm) return true;
