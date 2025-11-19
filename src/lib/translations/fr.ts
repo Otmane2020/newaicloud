@@ -820,6 +820,7 @@ export const translations = {
     optimize: "Optimiser",
     refresh: "Actualiser",
     view: "Voir",
+    upgrade: "Améliorer",
     download: "Télécharger",
     upload: "Téléverser",
     connect: "Connecter",
@@ -833,6 +834,16 @@ export const translations = {
     import: "Importer",
     impossible: "Impossible",
     dataRefreshed: "Données actualisées",
+  },
+  
+  planNames: {
+    "Free Trial": "Essai Gratuit",
+    "trial": "Essai Gratuit",
+    "Starter": "Démarrage",
+    "Pro": "Pro",
+    "Business": "Business",
+    "Enterprise": "Entreprise",
+    "Free": "Gratuit",
   },
 
   navigation: {

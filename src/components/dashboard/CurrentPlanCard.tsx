@@ -159,7 +159,9 @@ export function CurrentPlanCard() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
+              <h3 className="text-xl font-semibold">
+                {(t.planNames as any)[currentPlan.name] || currentPlan.name}
+              </h3>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">{t.account.subscription.currentPlan}</p>
                 {billingPeriod === 'yearly' && (
