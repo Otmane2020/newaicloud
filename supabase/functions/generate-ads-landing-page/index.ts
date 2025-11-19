@@ -113,8 +113,90 @@ serve(async (req) => {
       };
     }) || [];
 
+    // Function to get design style instructions based on campaign design_style
+    const getDesignStyleInstructions = (designStyle: string) => {
+      switch (designStyle) {
+        case 'artistic':
+          return `
+### STYLE ARTISTIQUE (Galerie Premium)
+**Identité visuelle:**
+- Palette sophistiquée : Noir profond (#0A0A0A), Or rosé (#D4AF37), Blanc cassé (#FAFAF8)
+- Typographie élégante : Playfair Display pour les titres, Lato pour le corps
+- Espacement généreux : padding 80px entre sections
+- Animations subtiles : transitions 0.4s ease, hover effects élégants
+
+**Mise en page:**
+- Hero plein écran avec overlay gradient noir/transparent
+- Produits en grille asymétrique (type Pinterest)
+- Images grandes et haute qualité avec zoom au hover
+- CTA minimalistes avec bordures fines et animations fluides
+- Sections avec backgrounds alternés (noir/blanc cassé)
+
+**Effets visuels:**
+- Box-shadows douces : 0 8px 32px rgba(0,0,0,0.12)
+- Border-radius subtils : 8px
+- Hover effects: transform scale(1.02), brightness(1.1)
+`;
+
+        case 'minimal':
+          return `
+### STYLE MINIMALISTE (Clean & Modern)
+**Identité visuelle:**
+- Palette épurée : Blanc pur (#FFFFFF), Gris foncé (#2C2C2C), Accent bleu (#4A90E2)
+- Typographie moderne : Inter ou Roboto, tailles cohérentes
+- Espacement réduit : padding 40px, marges optimisées
+- Animations discrètes : transitions 0.2s ease
+
+**Mise en page:**
+- Hero simple avec texte centré et image d'ambiance
+- Grille de produits régulière et alignée (3-4 cols)
+- Cartes produits blanches avec bordures fines (#E0E0E0)
+- CTA solides avec couleurs franches
+- Typographie hiérarchisée (H1: 48px, H2: 32px, body: 16px)
+
+**Effets visuels:**
+- Pas de shadows lourdes, seulement borders
+- Border-radius minimes : 4px
+- Hover effects simples: underline, color change
+`;
+
+        case 'bold':
+          return `
+### STYLE AUDACIEUX (Impact Maximum)
+**Identité visuelle:**
+- Palette vibrante : Rouge vif (#E74C3C), Jaune éclatant (#F39C12), Noir (#000000)
+- Typographie imposante : Montserrat Bold, tailles XXL
+- Espacements dramatiques : sections pleine largeur
+- Animations dynamiques : transitions 0.3s cubic-bezier
+
+**Mise en page:**
+- Hero immersif avec video/image plein écran et overlay coloré
+- Produits en grille large avec badges promos XXL
+- Images vibrantes avec filtres de contraste élevé
+- CTA géants avec gradients et ombres portées
+- Sections colorées alternées avec backgrounds saturés
+
+**Effets visuels:**
+- Box-shadows marquées : 0 12px 40px rgba(0,0,0,0.3)
+- Border-radius audacieux : 16px
+- Hover effects dramatiques: scale(1.05), rotate(2deg)
+- Badges promos animés avec pulse effects
+`;
+
+        default:
+          return ''; // Fallback to Amazon-style default
+      }
+    };
+
+    // Get design instructions based on campaign style
+    const designInstructions = getDesignStyleInstructions(campaign.design_style || 'artistic');
+
     // Amazon-style e-commerce landing page prompt
-    const prompt = `You are an expert e-commerce conversion specialist. Create a COMPLETE, SELF-CONTAINED HTML landing page optimized for maximum conversions, inspired by Amazon's proven design patterns.
+    const prompt = `You are an expert e-commerce conversion specialist. Create a COMPLETE, SELF-CONTAINED HTML landing page optimized for maximum conversions.
+
+${designInstructions}
+
+${!designInstructions ? '## BASE DESIGN (Amazon-inspired):' : '## APPLY THE DESIGN STYLE ABOVE, then follow these requirements:'}
 
 ## CRITICAL REQUIREMENTS - READ CAREFULLY:
 
