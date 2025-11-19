@@ -365,7 +365,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-500">{stats.trialing}</div>
-                <p className="text-xs text-muted-foreground mt-1">En période d'essai</p>
+                <p className="text-xs text-muted-foreground mt-1">En période d'Essai</p>
               </CardContent>
             </Card>
 

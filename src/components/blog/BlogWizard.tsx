@@ -1224,7 +1224,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   </span>
                 ) : (
                   <span>
-                    🚀 Essai gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                    🚀 Essai Gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
                   </span>
                 )}
               </AlertDescription>

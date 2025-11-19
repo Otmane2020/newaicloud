@@ -1120,7 +1120,7 @@ export function CollectionOptimization() {
               </span>
             ) : (
               <span>
-                📊 Essai gratuit: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
+                📊 Essai Gratuit: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
               </span>
             )}
           </AlertDescription>

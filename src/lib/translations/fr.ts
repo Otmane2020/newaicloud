@@ -3225,9 +3225,9 @@ export const translations = {
       save: "Économisez jusqu'à 20%",
     },
     trial: {
-      available: "💳 Essai gratuit disponible sur le plan Starter",
-      freeTrial: "🎁 {{days}} jours d'essai gratuit",
-      startTrial: "Commencer l'essai gratuit",
+      available: "💳 Essai Gratuit disponible sur le plan Starter",
+      freeTrial: "🎁 {{days}} jours d'Essai Gratuit",
+      startTrial: "Commencer l'Essai Gratuit",
       cardRequired: "💳 Carte requise • Premier paiement le {{date}}",
     },
     verification: {
@@ -4617,7 +4617,7 @@ export const translations = {
         trial: {
           name: "Essai Gratuit",
           description: "Testez toutes les fonctionnalités pendant 14 jours",
-          cta: "Commencer l'essai gratuit",
+          cta: "Commencer l'Essai Gratuit",
           highlight: "Accès complet à toutes les fonctionnalités Pro pendant 14 jours. Aucune carte de crédit requise.",
           badge: "🎁 Gratuit",
           promo: "",
@@ -5019,9 +5019,9 @@ export const translations = {
 
   banners: {
     limitWarning: {
-      limitReached: "⚠️ Limite d'essai atteinte pour : {{limitTypes}}",
+      limitReached: "⚠️ Limite d'Essai atteinte pour : {{limitTypes}}",
       monthlyLimitReached: "Limite mensuelle atteinte. Passez à un plan supérieur pour continuer.",
-      approaching: "📊 Vous approchez de vos limites d'essai gratuit",
+      approaching: "📊 Vous approchez de vos limites d'Essai Gratuit",
       activateNow: "Activer maintenant",
       upgradeNow: "Upgrader maintenant",
       viewPlans: "Voir les plans",
@@ -5458,7 +5458,7 @@ export const translations = {
       blogArticlePublished: "Nouvel article de blog publié : {{title}}",
       campaignLaunched: 'Campagne "{{name}}" lancée avec succès',
       limitReached: "Vous avez atteint {{percent}}% de votre limite {{limitType}}",
-      trialEnding: "Votre essai se termine dans {{days}} jours",
+      trialEnding: "Votre Essai se termine dans {{days}} jours",
       subscriptionExpired: "Votre abonnement a expiré",
       syncComplete: "Synchronisation Shopify terminée avec succès",
       syncError: "Échec de la synchronisation Shopify - vérifiez votre connexion",
@@ -5526,7 +5526,7 @@ export const translations = {
       emailSendFailed: "Échec de l'envoi de l'email",
       paymentRequired: "Paiement requis pour accéder à cette fonctionnalité",
       subscriptionInactive: "Abonnement non actif",
-      trialExpired: "Période d'essai expirée",
+      trialExpired: "Période d'Essai expirée",
       maintenanceMode: "Service temporairement indisponible pour maintenance",
     },
     success: {
@@ -5778,7 +5778,7 @@ export const translations = {
       generationError: "Erreur lors de la génération",
       loadingError: "Erreur lors du chargement des collections",
       productsLoadingError: "Erreur lors du chargement des produits",
-      trialLimitReached: "Limite d'essai atteinte. Activez votre abonnement pour continuer.",
+      trialLimitReached: "Limite d'Essai atteinte. Activez votre abonnement pour continuer.",
       monthlyLimitReached: "Limite mensuelle d'articles atteinte. Passez à un plan supérieur.",
       publishToShopify: "Publier sur Shopify",
       syncComplete: "Synchronisation terminée !",
@@ -5790,9 +5790,9 @@ export const translations = {
       seoTitle: "Titre SEO",
       seoDescription: "Description SEO",
       content: "Contenu",
-      trialUsage: "Utilisation essai",
+      trialUsage: "Utilisation Essai",
       articlesUsed: "articles utilisés",
-      limitReached: "⚠️ Limite d'essai atteinte",
+      limitReached: "⚠️ Limite d'Essai atteinte",
       languages: {
         french: "Français",
         english: "Anglais",
