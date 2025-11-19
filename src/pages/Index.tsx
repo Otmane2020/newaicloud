@@ -361,6 +361,18 @@ const Index = () => {
                         {plan.trial}
                       </p>
                     )}
+                    {plan.promo && (
+                      <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
+                        <p className="text-sm font-medium">
+                          <span className="text-pink-600 dark:text-pink-400">
+                            {plan.promo.split('avec')[0]}
+                          </span>
+                          <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                            {plan.promo.split('avec')[1]}
+                          </span>
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Button 
