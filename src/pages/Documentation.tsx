@@ -976,10 +976,10 @@ const Documentation = () => {
             </Card>
 
             <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-8 text-center">
-              <h3 className="text-2xl font-bold mb-4">Prêt à Commencer ?</h3>
-              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Toutes ces fonctionnalités sont disponibles dès maintenant. Commencez votre essai gratuit de 14 jours et transformez votre boutique Shopify avec l'intelligence artificielle.
-              </p>
+            <h3 className="text-2xl font-bold mb-4">Prêt à Commencer ?</h3>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Toutes ces fonctionnalités sont disponibles dès maintenant. Commencez votre Essai Gratuit de 14 jours et transformez votre boutique Shopify avec l'intelligence artificielle.
+            </p>
               <Button size="lg" onClick={() => navigate('/auth?mode=signup')} className="group">
                 Démarrer l'Essai Gratuit
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

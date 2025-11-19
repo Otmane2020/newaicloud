@@ -389,7 +389,7 @@ export default function Onboarding() {
 
       if (data?.success) {
         toast.success(language === 'fr' 
-          ? 'Essai gratuit activé ! Redirection...' 
+          ? 'Essai Gratuit activé ! Redirection...' 
           : 'Free trial activated! Redirecting...'
         );
         
@@ -420,7 +420,7 @@ export default function Onboarding() {
     } catch (error) {
       console.error('💥 Error activating trial:', error);
       toast.error(language === 'fr'
-        ? 'Erreur lors de l\'activation de l\'essai gratuit'
+        ? 'Erreur lors de l\'activation de l\'Essai Gratuit'
         : 'Error activating free trial'
       );
     } finally {
@@ -710,7 +710,7 @@ export default function Onboarding() {
                   {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
                 </h3>
                 <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
-                  {language === 'fr' ? '14 jours gratuits' : '14 days free'}
+                  {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
                 </Badge>
                 
                 <div className="mb-4">
