@@ -224,69 +224,72 @@ export function HomePageSeoAudit() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !selectedStore?.id) return;
 
-      // Check if data already exists
-      const { data: existingData } = await supabase
-        .from('homepage_seo')
-        .select('seo_title, seo_description')
+      // Always fetch current Shopify SEO to keep it up-to-date
+      const { data: store } = await supabase
+        .from('shopify_connections')
+        .select('store_url')
         .eq('user_id', user.id)
-        .eq('store_id', selectedStore.id)
-        .maybeSingle();
+        .eq('id', selectedStore.id)
+        .single();
 
-      // Only auto-import if data doesn't exist
-      if (!existingData?.seo_title || !existingData?.seo_description) {
-        // Silently import current SEO
-        const { data: store } = await supabase
-          .from('shopify_connections')
-          .select('store_url')
-          .eq('user_id', user.id)
-          .eq('id', selectedStore.id)
-          .single();
+      if (store) {
+        const response = await fetch(`https://${store.store_url}`, {
+          headers: { 'Accept': 'text/html' },
+        });
 
-        if (store) {
-          const response = await fetch(`https://${store.store_url}`, {
-            headers: { 'Accept': 'text/html' },
-          });
-
-          if (response.ok) {
-            const html = await response.text();
-            const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-            const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
-            
-            const importedTitle = titleMatch ? titleMatch[1].trim() : '';
-            const importedDescription = metaMatch ? metaMatch[1].trim() : '';
-            
-            // Update local state
-            if (importedTitle) setSeoTitle(importedTitle);
-            if (importedDescription) setSeoDescription(importedDescription);
-            
-            // Save to database
-            if (importedTitle || importedDescription) {
-              await supabase
-                .from('homepage_seo')
-                .upsert({
-                  user_id: user.id,
-                  store_id: selectedStore.id,
-                  seo_title: importedTitle || existingData?.seo_title,
-                  seo_description: importedDescription || existingData?.seo_description,
-                  updated_at: new Date().toISOString()
-                }, {
-                  onConflict: 'user_id,store_id'
-                });
-            }
+        if (response.ok) {
+          const html = await response.text();
+          const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+          const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+          
+          const importedTitle = titleMatch ? titleMatch[1].trim() : '';
+          const importedDescription = metaMatch ? metaMatch[1].trim() : '';
+          
+          // Get existing data to preserve AI-optimized versions if they exist
+          const { data: existingData } = await supabase
+            .from('homepage_seo')
+            .select('seo_title, seo_description')
+            .eq('user_id', user.id)
+            .eq('store_id', selectedStore.id)
+            .maybeSingle();
+          
+          // Update local state with existing data or imported data
+          setSeoTitle(existingData?.seo_title || importedTitle);
+          setSeoDescription(existingData?.seo_description || importedDescription);
+          
+          // Save imported Shopify data to database if not already optimized
+          if ((importedTitle || importedDescription) && !existingData) {
+            await supabase
+              .from('homepage_seo')
+              .upsert({
+                user_id: user.id,
+                store_id: selectedStore.id,
+                seo_title: importedTitle,
+                seo_description: importedDescription,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id,store_id'
+              });
           }
         }
+      }
 
-        // Silently import homepage images
-        await supabase.functions.invoke('import-content-images', {
+      // Always import homepage images
+      try {
+        const { data: importData, error: importError } = await supabase.functions.invoke('import-content-images', {
           body: { 
             storeId: selectedStore.id,
             types: ['homepage']
           }
         });
-      } else {
-        // Data exists, just update local state
-        if (existingData.seo_title) setSeoTitle(existingData.seo_title);
-        if (existingData.seo_description) setSeoDescription(existingData.seo_description);
+        
+        if (importError) {
+          console.error('Error importing homepage images:', importError);
+        } else {
+          console.log('Homepage images imported successfully:', importData);
+        }
+      } catch (imageError) {
+        console.error('Failed to import homepage images:', imageError);
       }
     } catch (error) {
       console.error('Auto-import error:', error);
