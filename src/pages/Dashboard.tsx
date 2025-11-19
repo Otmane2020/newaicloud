@@ -189,15 +189,15 @@ export default function Dashboard() {
 
       if (productsError) throw productsError;
 
-      const optimizedProducts = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0).length || 0;
+      const optimizedProducts = products?.filter((p: any) => p.enrichment_status === 'enriched').length || 0;
       
-      // Calculate pending optimization: products that need optimization (same logic as TagOptimization "to_optimize")
-      const pendingProducts = products?.filter((p: any) => !p.optimization_count || p.optimization_count === 0).length || 0;
+      // Calculate pending optimization: products that are NOT enriched (same logic as SeoOptimization "not-optimized")
+      const pendingProducts = products?.filter((p: any) => p.enrichment_status !== 'enriched').length || 0;
       
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       
-      // Calculate average SEO score of optimized products
-      const optimizedProductsList = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0) || [];
+      // Calculate average SEO score of optimized products (enriched status)
+      const optimizedProductsList = products?.filter((p: any) => p.enrichment_status === 'enriched') || [];
       const avgOptimizedScore = optimizedProductsList.length > 0
         ? Math.round(
             optimizedProductsList.reduce((sum: number, p: any) => {
@@ -378,7 +378,7 @@ export default function Dashboard() {
       // Build old products query - MUST match main products query filter
       let oldProductsQuery = supabase
         .from('shopify_products')
-        .select('id, seo_title, seo_description, optimization_count')
+        .select('id, seo_title, seo_description, optimization_count, enrichment_status')
         .lt('created_at', thirtyDaysAgo.toISOString());
 
       if (selectedStore?.id) {
@@ -388,7 +388,7 @@ export default function Dashboard() {
       const { data: oldProducts } = await oldProductsQuery;
       
       const oldTotalProducts = oldProducts?.length || 0;
-      const oldOptimizedProducts = oldProducts?.filter(p => p.seo_title && p.seo_description).length || 0;
+      const oldOptimizedProducts = oldProducts?.filter(p => p.enrichment_status === 'enriched').length || 0;
       
       const { count: oldArticlesCount } = await (() => {
         let query = supabase
