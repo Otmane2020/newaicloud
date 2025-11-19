@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ interface Collection {
 
 export function GoogleMerchantSettings() {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -57,20 +59,20 @@ export function GoogleMerchantSettings() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedStore) {
       loadSettings();
       loadCollections();
     }
-  }, [user]);
+  }, [user, selectedStore?.id]);
 
   const loadCollections = async () => {
-    if (!user) return;
+    if (!user || !selectedStore) return;
 
     try {
       const { data, error } = await supabase
         .from("shopify_collections")
         .select("id, title")
-        .eq("user_id", user.id)
+        .eq("store_id", selectedStore.id)
         .order("title");
 
       if (error) throw error;
