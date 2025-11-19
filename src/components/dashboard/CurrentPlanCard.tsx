@@ -38,7 +38,7 @@ export function CurrentPlanCard() {
       // Récupérer d'abord les données du profil Supabase
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('current_plan_id, subscription_status, trial_ends_at')
+        .select('current_plan_id, subscription_status, trial_ends_at, created_at')
         .eq('id', user?.id)
         .single();
 
@@ -60,9 +60,10 @@ export function CurrentPlanCard() {
         
         if (plan) {
           const isTrialing = profileData.subscription_status === 'trialing';
+          const isTrial = plan.id === 'trial';
           setCurrentPlan({
             ...plan,
-            name: isTrialing ? `${plan.name} (Trial)` : plan.name
+            name: isTrial ? t.trial.title : (isTrialing ? `${plan.name} (Trial)` : plan.name)
           });
           
           // Set billing period from subscription data or default to monthly
@@ -82,9 +83,14 @@ export function CurrentPlanCard() {
           
           if (stripeData?.subscription_end) {
             setSubscriptionEnd(stripeData.subscription_end);
-          } else if (isTrialing && profileData.trial_ends_at) {
+          } else if ((isTrialing || plan.id === 'trial') && profileData.trial_ends_at) {
             // Fallback to trial_ends_at if in trial
             setSubscriptionEnd(profileData.trial_ends_at);
+          } else if (plan.id === 'trial' && profileData.created_at) {
+            // Calculate trial end for Trial plan (14 days from creation)
+            const trialEnd = new Date(profileData.created_at);
+            trialEnd.setDate(trialEnd.getDate() + 14);
+            setSubscriptionEnd(trialEnd.toISOString());
           } else if (subscriptionData?.current_period_end) {
             // Fallback to local subscription data
             setSubscriptionEnd(subscriptionData.current_period_end);

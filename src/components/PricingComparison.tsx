@@ -15,54 +15,54 @@ const PricingComparison = () => {
     {
       category: t.landing.pricing.comparison.features.categories.products,
       items: [
-        { name: t.landing.pricing.comparison.features.items.maximumProducts, starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
-        { name: t.landing.pricing.comparison.features.items.shopifyImport, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.multiStoreManagement, starter: "1", pro: "3", enterprise: "5 - 500" },
+        { name: t.landing.pricing.comparison.features.items.maximumProducts, trial: "10", starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
+        { name: t.landing.pricing.comparison.features.items.shopifyImport, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.multiStoreManagement, trial: "1", starter: "1", pro: "3", enterprise: "5 - 500" },
       ]
     },
     {
       category: t.landing.pricing.comparison.features.categories.seoOptimizations,
       items: [
-        { name: t.landing.pricing.comparison.features.items.monthlyOptimizations, starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
-        { name: t.landing.pricing.comparison.features.items.automaticOptimization, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.syncToShopify, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.seoQualityAnalysis, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.altTextGeneration, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.monthlyOptimizations, trial: "50", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
+        { name: t.landing.pricing.comparison.features.items.automaticOptimization, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.syncToShopify, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoQualityAnalysis, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.altTextGeneration, trial: true, starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: t.landing.pricing.comparison.features.categories.aiImageGeneration,
       items: [
-        { name: t.landing.pricing.comparison.features.items.altImageVision, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.landingProductPage, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.imageWhiteBackground, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.generateBackground, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.altImageVision, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.landingProductPage, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.imageWhiteBackground, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.generateBackground, trial: true, starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: t.landing.pricing.comparison.features.categories.ai,
       items: [
-        { name: t.landing.pricing.comparison.features.items.aiArticlesPerMonth, starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
-        { name: t.landing.pricing.comparison.features.items.aiChatPerMonth, starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
-        { name: t.landing.pricing.comparison.features.items.aiCampaignsBlog, starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
-        { name: t.landing.pricing.comparison.features.items.aiVisionImages, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.aiArticlesPerMonth, trial: "1", starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
+        { name: t.landing.pricing.comparison.features.items.aiChatPerMonth, trial: "50", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
+        { name: t.landing.pricing.comparison.features.items.aiCampaignsBlog, trial: "0", starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
+        { name: t.landing.pricing.comparison.features.items.aiVisionImages, trial: true, starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: t.landing.pricing.comparison.features.categories.integrationsTools,
       items: [
-        { name: t.landing.pricing.comparison.features.items.googleSearchConsole, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.googleShoppingFeed, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.seoAudit, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.productSync, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.googleSearchConsole, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.googleShoppingFeed, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoAudit, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.productSync, trial: true, starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: t.landing.pricing.comparison.features.categories.netlinkingBlog,
       items: [
-        { name: t.landing.pricing.comparison.features.items.seoOpportunities, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.blogSyncToShopify, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.netlinkingAnalysis, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoOpportunities, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.blogSyncToShopify, trial: true, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.netlinkingAnalysis, trial: true, starter: true, pro: true, enterprise: true },
       ]
     },
     {
@@ -109,27 +109,65 @@ const PricingComparison = () => {
         };
 
     return (
-      <div className="space-y-4">
-        {/* Billing Toggle */}
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <button
-            onClick={() => setBillingPeriod('monthly')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.landing.pricing.comparison.monthly}
-          </button>
-          <button
-            onClick={() => setBillingPeriod('annual')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-              billingPeriod === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.landing.pricing.comparison.annual}
-            <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.comparison.save20}</Badge>
-          </button>
-        </div>
+      <div className="py-12 px-4 bg-background">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.landing.pricing.comparison.monthly}
+            </button>
+            <button
+              onClick={() => setBillingPeriod('annual')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
+                billingPeriod === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.landing.pricing.comparison.annual}
+              <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.comparison.save20}</Badge>
+            </button>
+          </div>
+
+          {/* Trial Plan Card - Mobile */}
+          <Card className="border-2 border-success bg-success/5">
+            <CardHeader>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-2xl font-bold">{t.trial.title}</h3>
+                <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
+              </div>
+              <Badge variant="outline" className="border-success text-success w-fit">{t.trial.noCreditCard}</Badge>
+              <div className="text-3xl font-bold mt-4">0{currency}</div>
+              <p className="text-sm text-muted-foreground">{t.trial.duration}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {features.map((category) => (
+                <div key={category.category}>
+                  <h4 className="font-semibold mb-2">{category.category}</h4>
+                  {category.items.map((item) => (
+                    <div key={item.name} className="flex items-start gap-2 mb-2">
+                      {typeof item.trial === 'boolean' ? (
+                        item.trial ? (
+                          <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                        ) : (
+                          <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+                        )
+                      ) : (
+                        <span className="text-sm font-medium text-success">{item.trial}</span>
+                      )}
+                      <span className="text-sm text-muted-foreground">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <Button className="w-full bg-success hover:bg-success/90 text-success-foreground" onClick={() => window.location.href = '/auth?mode=signup&plan=trial'}>
+                {t.trial.startButton}
+              </Button>
+            </CardContent>
+          </Card>
 
         {plans.map((plan) => (
           <Card key={plan} className="overflow-hidden">
@@ -263,7 +301,28 @@ const PricingComparison = () => {
                     className="border-b hover:bg-muted/20 transition-colors"
                   >
                     <td className="p-4 text-sm">{item.name}</td>
-                    <td className="p-4 text-center">{renderValue(item.starter)}</td>
+                  <td key={item.name + '-trial'} className="p-4 text-center">
+                    {typeof item.trial === 'boolean' ? (
+                      item.trial ? (
+                        <CheckCircle2 className="w-5 h-5 text-success mx-auto" />
+                      ) : (
+                        <X className="w-5 h-5 text-muted-foreground mx-auto" />
+                      )
+                    ) : (
+                      <span className="text-sm font-medium">{item.trial}</span>
+                    )}
+                  </td>
+                  <td key={item.name + '-starter'} className="p-4 text-center">
+                    {typeof item.starter === 'boolean' ? (
+                      item.starter ? (
+                        <CheckCircle2 className="w-5 h-5 text-success mx-auto" />
+                      ) : (
+                        <X className="w-5 h-5 text-muted-foreground mx-auto" />
+                      )
+                    ) : (
+                      <span className="text-sm font-medium">{item.starter}</span>
+                    )}
+                  </td>
                     <td className="p-4 text-center">{renderValue(item.pro)}</td>
                     <td className="p-4 text-center">{renderValue(item.enterprise)}</td>
                   </tr>

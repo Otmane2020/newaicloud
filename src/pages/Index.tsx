@@ -76,8 +76,8 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group bg-primary hover:bg-primary/90 shadow-glow" onClick={() => navigate('/auth?mode=signup')}>
-                {t.landing.hero.ctaPrimary}
+              <Button size="lg" className="group bg-success hover:bg-success/90 shadow-glow text-success-foreground" onClick={() => navigate('/auth?mode=signup&plan=trial')}>
+                {t.trial.ctaPrimary}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
@@ -86,9 +86,20 @@ const Index = () => {
               </Button>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-gray-300 pt-2">
-              <CheckCircle2 className="w-4 h-4 text-success" />
-              <span>{t.landing.hero.setupTime}</span>
+            <div className="flex flex-col items-center gap-3 pt-4">
+              <Badge variant="outline" className="border-success text-success bg-success/10 px-4 py-1.5">
+                {t.trial.noCreditCard}
+              </Badge>
+              <div className="flex items-center gap-6 text-sm text-gray-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-success" />
+                  <span>{t.landing.hero.setupTime}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-success" />
+                  <span>{t.trial.trustBanner.cancelAnytime}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
