@@ -59,6 +59,7 @@ export function GoogleAdsIntegration() {
 
   const connectWithGoogle = async () => {
     try {
+      console.log('🔗 [GOOGLE-ADS] Starting OAuth connection');
       const redirectUri = `${window.location.origin}/google-ads?tab=integration`;
       
       const scopes = [
@@ -74,8 +75,11 @@ export function GoogleAdsIntegration() {
       });
       
       if (urlError || !urlData?.url) {
+        console.error('❌ [GOOGLE-ADS] Failed to generate OAuth URL:', urlError);
         throw new Error('Failed to generate OAuth URL');
       }
+      
+      console.log('✅ [GOOGLE-ADS] OAuth URL generated');
       
       const width = 600;
       const height = 700;
@@ -88,16 +92,44 @@ export function GoogleAdsIntegration() {
         `width=${width},height=${height},left=${left},top=${top}`
       );
       
-      if (!popup) {
-        toast.error(t.errors.generic);
+      // ✅ Détection robuste de popup bloquée
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        console.warn('⚠️ [GOOGLE-ADS] Popup blocked, offering fallback');
+        toast.error(
+          "Popup bloquée ! Autorisez les popups pour ce site, puis réessayez.",
+          { 
+            duration: 7000,
+            action: {
+              label: "Ouvrir dans cet onglet",
+              onClick: () => {
+                window.location.href = urlData.url;
+              }
+            }
+          }
+        );
         return;
       }
+      
+      console.log('✅ [GOOGLE-ADS] Popup opened, waiting for OAuth callback');
+      
+      // ✅ Vérifier toutes les 500ms si la popup est fermée
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          console.log('ℹ️ [GOOGLE-ADS] Popup closed by user');
+          toast.info("Connexion annulée");
+        }
+      }, 500);
       
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
         
         if (event.data.type === 'GOOGLE_ADS_OAUTH_CODE' && event.data.code) {
+          clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
+          
+          console.log('🔑 [GOOGLE-ADS] Received OAuth code, exchanging for token');
           
           const { data, error } = await supabase.functions.invoke('google-ads-oauth-token', {
             body: {
@@ -107,11 +139,12 @@ export function GoogleAdsIntegration() {
           });
           
           if (error || !data?.success) {
-            console.error('Error exchanging code:', error);
+            console.error('❌ [GOOGLE-ADS] Error exchanging code:', error);
             toast.error(t.googleAds.integration.errors.connect);
             return;
           }
           
+          console.log('✅ [GOOGLE-ADS] Successfully connected');
           toast.success(t.googleAds.integration.success.connected);
           checkGoogleAdsConnection();
         }
@@ -120,11 +153,12 @@ export function GoogleAdsIntegration() {
       window.addEventListener('message', handleMessage);
       
       setTimeout(() => {
+        clearInterval(checkClosed);
         window.removeEventListener('message', handleMessage);
       }, 5 * 60 * 1000);
       
     } catch (error) {
-      console.error('Error connecting to Google:', error);
+      console.error('❌ [GOOGLE-ADS] Error connecting to Google Ads:', error);
       toast.error(t.googleAds.integration.errors.connect);
     }
   };
