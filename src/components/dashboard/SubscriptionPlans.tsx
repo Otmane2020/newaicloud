@@ -301,6 +301,7 @@ export function SubscriptionPlans() {
   };
 
   // Group plans by category
+  const trialPlan = plans.find(p => p.id === 'trial');
   const starterPlan = plans.find(p => p.id === 'starter');
   const proPlans = plans.filter(p => 
     p.id.startsWith('pro-')
@@ -336,6 +337,70 @@ export function SubscriptionPlans() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
+        {/* Trial Plan */}
+        {trialPlan && (
+          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(trialPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
+            {isCurrentPlan(trialPlan.id) && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                {t.dashboard.plans.currentPlan}
+              </Badge>
+            )}
+            
+            <div className="space-y-6 flex-1">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">{trialPlan.name}</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">{trialPlan.description}</p>
+              </div>
+              
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold">€0</span>
+                  <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-6 border-t">
+                <div className="flex items-start gap-2 text-sm">
+                  <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{trialPlan.max_products} {t.dashboard.plans.features.products}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{trialPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{trialPlan.max_articles_monthly || 0} {t.dashboard.plans.features.articles}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>0 {t.dashboard.plans.features.campaigns}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{trialPlan.max_chat_responses_monthly || 0} {t.dashboard.plans.features.chatResponses}</span>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              className="w-full mt-6"
+              variant={isCurrentPlan(trialPlan.id) ? "outline" : "default"}
+              onClick={() => handleSelectPlan(trialPlan.id)}
+              disabled={isCurrentPlan(trialPlan.id) || checkoutLoading === trialPlan.id}
+            >
+              {checkoutLoading === trialPlan.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                getButtonText(trialPlan.id)
+              )}
+            </Button>
+          </Card>
+        )}
+
         {/* Starter Plan */}
         {starterPlan && (
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
