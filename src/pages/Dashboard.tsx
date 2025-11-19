@@ -190,6 +190,15 @@ export default function Dashboard() {
       if (productsError) throw productsError;
 
       const optimizedProducts = products?.filter((p: any) => p.optimization_count && p.optimization_count > 0).length || 0;
+      
+      // Calculate pending optimization: products that need optimization based on enrichment status
+      const pendingProducts = products?.filter((p: any) => 
+        p.enrichment_status === 'pending' || 
+        p.enrichment_status === 'not_optimised' || 
+        !p.optimization_count || 
+        p.optimization_count === 0
+      ).length || 0;
+      
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       
       // Calculate average SEO score of optimized products
@@ -387,7 +396,7 @@ export default function Dashboard() {
       setStats({
         totalProducts,
         optimizedProducts,
-        pendingOptimization: totalProducts - optimizedProducts,
+        pendingOptimization: pendingProducts,
         totalArticles: articlesCount || 0,
         totalValue,
         seoScore,
