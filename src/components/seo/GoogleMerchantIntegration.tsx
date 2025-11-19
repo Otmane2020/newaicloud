@@ -252,9 +252,37 @@ export function GoogleMerchantIntegration() {
           });
           
           if (error || !data?.success) {
-            console.error('[GoogleMerchant] ❌ Error exchanging code:', error);
-            console.error('[GoogleMerchant] ❌ Response data:', data);
-            toast.error(t.googleMerchant.integration.errors.connect);
+            console.error('[GoogleMerchant] ❌ Error exchanging code:', error, data);
+            
+            // Phase 2B: Messages d'erreur détaillés
+            const errorMessage = error?.message || data?.error || 'Unknown error';
+            
+            if (errorMessage.includes('redirect_uri_mismatch')) {
+              toast.error(
+                "❌ Configuration incorrecte : L'URL de redirection ne correspond pas. Contactez le support.",
+                { duration: 10000 }
+              );
+            } else if (errorMessage.includes('access_denied')) {
+              toast.error("Vous avez refusé l'accès à Google Merchant Center.");
+            } else if (errorMessage.includes('invalid_client')) {
+              toast.error("Identifiants Google invalides. Veuillez contacter le support.");
+            } else if (errorMessage.includes('Content API')) {
+              toast.error(
+                "❌ L'API Google Content n'est pas activée. Activez-la dans Google Cloud Console.",
+                { duration: 10000 }
+              );
+            } else {
+              toast.error(`Échec de connexion Google Merchant: ${errorMessage}`);
+            }
+            
+            // Log l'échec
+            await supabase.from('integration_failures').insert({
+              integration_type: 'google_merchant',
+              error_type: 'oauth_exchange_failed',
+              error_message: errorMessage,
+              context: { error, data }
+            });
+            
             return;
           }
           
