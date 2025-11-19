@@ -59,6 +59,7 @@ import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConf
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
+import { ImportConfirmDialog } from "@/components/integration/ImportConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -197,6 +198,7 @@ export default function ProductTitleDescription() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [showVariantConfirmDialog, setShowVariantConfirmDialog] = useState(false);
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   // White background variant states
@@ -349,6 +351,13 @@ export default function ProductTitleDescription() {
       setLoading(false);
     }
   };
+
+  // Afficher automatiquement le popup d'import si aucune donnée n'est présente
+  useEffect(() => {
+    if (!loading && products.length === 0 && selectedStore) {
+      setShowImportDialog(true);
+    }
+  }, [loading, products.length, selectedStore]);
 
   const filteredProducts = products.filter((product) => {
     // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
@@ -3084,6 +3093,17 @@ export default function ProductTitleDescription() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportConfirmDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onConfirm={() => {
+          setShowImportDialog(false);
+          navigate('/dashboard');
+          toast.info("Veuillez vous rendre dans 'Boutiques Shopify' pour importer vos données");
+        }}
+        storeName={selectedStore?.store_name || ''}
+      />
     </div>
   );
 }
