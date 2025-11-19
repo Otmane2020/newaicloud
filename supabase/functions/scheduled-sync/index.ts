@@ -81,16 +81,24 @@ Deno.serve(async (req) => {
       const userId = setting.user_id;
       const lastImport = setting.last_import_at ? new Date(setting.last_import_at) : null;
       
-      // Récupérer les credentials Shopify
+      const storeId = setting.store_id;
+      
+      // Skip if no store_id (legacy data)
+      if (!storeId) {
+        console.error(`[SCHEDULED-SYNC] No store_id for user ${userId}, skipping`);
+        continue;
+      }
+
+      // Récupérer les credentials Shopify pour ce store spécifique
       const { data: shopifyConnection } = await supabase
         .from('shopify_connections')
         .select('store_url, access_token, id')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .eq('id', storeId)
         .single();
 
       if (!shopifyConnection) {
-        console.error(`[SCHEDULED-SYNC] No active Shopify connection for user ${userId}`);
+        console.error(`[SCHEDULED-SYNC] No active Shopify connection for user ${userId}, store ${storeId}`);
         continue;
       }
 
@@ -99,7 +107,6 @@ Deno.serve(async (req) => {
         .replace(/^https?:\/\//, '')
         .replace(/\.myshopify\.com.*$/, '');
       const authToken = shopifyConnection.access_token;
-      const storeId = shopifyConnection.id;
       const syncMode = setting.sync_mode || 'smart';
       
       let shouldSync = false;
@@ -127,11 +134,12 @@ Deno.serve(async (req) => {
       if (shouldSync) {
         console.log(`[SCHEDULED-SYNC] Starting sync for user ${userId} (${reason})`);
 
-        // Create sync history entry
+        // Create sync history entry with store_id
         const { data: historyEntry, error: historyError } = await supabase
           .from('sync_history')
           .insert({
             user_id: userId,
+            store_id: storeId,
             sync_type: 'import',
             content_types: setting.import_types || [],
             status: 'running',
@@ -224,14 +232,15 @@ Deno.serve(async (req) => {
           now
         );
 
-        // Update last import AND next import timestamps
+        // Update last import AND next import timestamps for this specific store
         await supabase
           .from('shopify_sync_settings')
           .update({ 
             last_import_at: new Date().toISOString(),
             next_import_at: nextImportDate.toISOString()
           })
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .eq('store_id', storeId);
 
         console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: ${totalImported} items, ${duration}ms`);
         console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
