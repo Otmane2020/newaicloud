@@ -190,8 +190,12 @@ export function AppSidebar() {
           // Check if user is in trial
           const isTrialing = profile.subscription_status === 'trialing' || profile.current_plan_id === 'trial';
           
-          // Display trial name if in trial, otherwise display plan name
-          const displayName = isTrialing ? t.trial.title : (plan?.name || 'Free');
+          // Get plan name and translate it
+          const planName = plan?.name || 'Free';
+          const translatedPlanName = (t.planNames as any)[planName] || planName;
+          
+          // Display trial name if in trial, otherwise display translated plan name
+          const displayName = isTrialing ? t.trial.title : translatedPlanName;
           
           console.log("✅ Setting userPlan to:", displayName);
           setUserPlan(displayName);
@@ -539,7 +543,7 @@ export function AppSidebar() {
                       {userPlan || t.common.loading}
                     </span>
                     <span className="text-white/90 text-xs font-normal" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      (Upgrade)
+                      ({t.common.upgrade})
                     </span>
                   </NavLink>
                   <div className="flex items-center gap-2 text-muted-foreground">
