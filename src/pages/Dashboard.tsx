@@ -69,6 +69,7 @@ interface Stats {
   connectedStores: number;
   productsWithImages: number;
   productsWithoutAlt: number;
+  currency: string;
   // Trends (comparison with previous period)
   trends: {
     products: number;
@@ -106,6 +107,7 @@ export default function Dashboard() {
     connectedStores: 0,
     productsWithImages: 0,
     productsWithoutAlt: 0,
+    currency: 'EUR',
     trends: {
       products: 0,
       optimizations: 0,
@@ -178,7 +180,7 @@ export default function Dashboard() {
       // NOTE: Only filter by store_id to match TagOptimization.tsx behavior (reference)
       let productsQuery = supabase
         .from('shopify_products')
-        .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify, enrichment_status')
+        .select('id, price, seo_title, title, seo_description, vendor, image_url, tags, optimization_count, store_id, seo_synced_to_shopify, enrichment_status, currency')
         .range(0, 9999);
 
       if (selectedStore?.id) {
@@ -188,6 +190,9 @@ export default function Dashboard() {
       const { data: products, error: productsError } = await productsQuery;
 
       if (productsError) throw productsError;
+      
+      // Detect currency from first product with currency info
+      const storeCurrency = products?.find(p => p.currency)?.currency || 'EUR';
 
       const optimizedProducts = products?.filter((p: any) => p.enrichment_status === 'enriched').length || 0;
       
@@ -428,6 +433,7 @@ export default function Dashboard() {
         connectedStores: connectedStores || 0,
         productsWithImages,
         productsWithoutAlt: imagesWithoutAlt || 0,
+        currency: storeCurrency,
         trends: {
           products: totalProducts - oldTotalProducts,
           optimizations: optimizedProducts - oldOptimizedProducts,
@@ -628,7 +634,7 @@ export default function Dashboard() {
         />
         <MetricCard
           title={t.dashboard.cards.optimizedValue}
-          value={formatCurrency(stats.totalValue * (stats.avgOptimizedScore / 100))}
+          value={formatCurrency(stats.totalValue * (stats.avgOptimizedScore / 100), stats.currency === 'USD' ? '$' : '€')}
           icon={DollarSign}
           gradient="from-purple-500 to-purple-600"
           iconBg="bg-purple-500/10 text-purple-600"
