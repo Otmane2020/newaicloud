@@ -477,7 +477,8 @@ async function analyzeWithAI(
   costPrice: number,
   shippingCost: number,
   competitorPrices: CompetitorPrice[],
-  taxRate: number
+  taxRate: number,
+  imagePriceRange: ImagePriceRange | null = null
 ): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   
@@ -520,7 +521,12 @@ async function analyzeWithAI(
 
 PRODUIT: "${productTitle}"
 COÛTS: ${totalCost.toFixed(2)}€ | Min+30%: ${minPriceWithMargin.toFixed(2)}€
-MARCHÉ: Moy ${avgCompetitorPrice.toFixed(2)}€ | Min ${Math.min(...competitorPrices.map(c => c.price)).toFixed(2)}€ | Max ${Math.max(...competitorPrices.map(c => c.price)).toFixed(2)}€
+MARCHÉ: Moy ${avgCompetitorPrice.toFixed(2)}€ | Min ${Math.min(...competitorPrices.map(c => c.price)).toFixed(2)}€ | Max ${Math.max(...competitorPrices.map(c => c.price)).toFixed(2)}€${imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice ? `
+
+🎯 ANALYSE IMAGE (Google Lens):
+Segment détecté: ${imagePriceRange.segment?.toUpperCase() || 'NON DÉFINI'}
+Gamme de prix estimée: ${imagePriceRange.minPrice.toFixed(2)}€ - ${imagePriceRange.maxPrice.toFixed(2)}€
+⚠️ Cette estimation basée sur l'image du produit indique le niveau de gamme et la fourchette de prix attendue.` : ''}
 
 SOURCES DE PRIX (par fiabilité):
 - 🛍️ Google Shopping (${shoppingCount}): HAUTE FIABILITÉ - prix réels produits similaires
@@ -530,9 +536,14 @@ SOURCES DE PRIX (par fiabilité):
 TOP 10 CONCURRENTS:
 ${list}
 
-⚠️ IMPORTANT: Privilégie les prix [SHOPPING] qui sont les plus précis pour ce type de produit.
+⚠️ RÈGLES DE PRICING HAUT DE GAMME:
+1. Privilégie les prix [SHOPPING] qui sont les plus précis${imagePriceRange && imagePriceRange.segment ? `
+2. Le segment détecté "${imagePriceRange.segment}" suggère un positionnement ${imagePriceRange.segment === 'luxe' ? 'très premium' : imagePriceRange.segment === 'haut de gamme' ? 'haut de gamme' : 'standard'}` : ''}
+3. Pour un produit HAUT DE GAMME, le prix doit être significativement au-dessus de la moyenne
+4. Vise les concurrents dans la fourchette HAUTE (top 30%)${imagePriceRange && imagePriceRange.maxPrice ? `
+5. Prix conseillé entre ${(imagePriceRange.minPrice || 0).toFixed(2)}€ et ${imagePriceRange.maxPrice.toFixed(2)}€ selon analyse image` : ''}
 
-JSON: {"smartPrice": 89.90, "reasoning": "stratégie concise"}
+JSON: {"smartPrice": 89.90, "reasoning": "Positionnement haut de gamme: [analyse des concurrents haut de gamme] + [justification du prix]"}
 smartPrice ≥ ${minPriceWithMargin.toFixed(2)}€`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -766,7 +777,8 @@ serve(async (req) => {
             variantCost,
             shippingCost,
             competitorPrices,
-            taxRate || 20
+            taxRate || 20,
+            imagePriceRange
           );
 
           const netMargin = analysis.smartPrice 
@@ -939,7 +951,8 @@ serve(async (req) => {
           avgCost,
           shippingCost,
           competitorPrices,
-          taxRate || 20
+          taxRate || 20,
+          imagePriceRange
         );
 
         const netMargin = analysis.smartPrice 
