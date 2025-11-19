@@ -820,7 +820,7 @@ export const translations = {
     optimize: "Optimiser",
     refresh: "Actualiser",
     view: "Voir",
-    upgrade: "Améliorer",
+    upgrade: "Upgrade",
     download: "Télécharger",
     upload: "Téléverser",
     connect: "Connecter",
