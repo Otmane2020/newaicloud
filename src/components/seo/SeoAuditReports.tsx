@@ -472,7 +472,7 @@ export function SeoAuditReports() {
     ...(latestReport?.audit_results?.global || {}),
     stats: latestReport?.audit_results?.global?.stats || {
       pagesAnalyzed: 0,
-      averageScore: 82,
+      averageScore: 92,
       titleOptimized: 89,
       metaMissing: 12,
       altGenerated: 78,
@@ -482,7 +482,7 @@ export function SeoAuditReports() {
     evolution: latestReport?.audit_results?.global?.evolution || [
       { month: 'Janvier', score: 72 },
       { month: 'Février', score: 76 },
-      { month: 'Mars', score: 82 },
+      { month: 'Mars', score: 92 },
     ],
   };
 
