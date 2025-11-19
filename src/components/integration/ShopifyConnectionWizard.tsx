@@ -183,7 +183,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your API Key"
+                  placeholder="abc123def456ghi789jkl012mno345pq"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   type="password"
                   value={apiSecret}
                   onChange={(e) => setApiSecret(e.target.value)}
-                  placeholder="Enter your Admin API Token"
+                  placeholder="shpat_xx11yy22zz33aa44bb55cc66dd77ee88"
                 />
               </div>
             </div>
