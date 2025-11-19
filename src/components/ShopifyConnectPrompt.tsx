@@ -37,7 +37,7 @@ export function ShopifyConnectPrompt() {
       }
 
       // Show on important pages where users might need Shopify
-      const allowedPaths = ['/', '/auth', '/dashboard', '/account', '/products', '/seo', '/integration'];
+      const allowedPaths = ['/dashboard', '/account', '/products', '/seo', '/integration'];
       const isAllowedPath = allowedPaths.includes(location.pathname);
       
       if (!isAllowedPath && !forceShow) {
