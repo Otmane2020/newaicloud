@@ -307,12 +307,18 @@ export default function Dashboard() {
       // 6. TAGS SCORE  
       const tagsScore = calculateTagsSeoScore(products || []);
 
-      // 7. HOMEPAGE SCORE
-      // @ts-ignore - Json type causes deep recursion, safe to ignore here
-      const { data: homepageData }: any = await supabase
+      // 7. HOMEPAGE SCORE - filtered by store
+      let homepageSeoQuery = supabase
         .from('homepage_seo')
         .select('last_audit')
-        .eq('user_id', user?.id)
+        .eq('user_id', user?.id);
+      
+      if (selectedStore?.id) {
+        homepageSeoQuery = homepageSeoQuery.eq('store_id', selectedStore.id);
+      }
+      
+      // @ts-ignore - Json type causes deep recursion, safe to ignore here
+      const { data: homepageData }: any = await homepageSeoQuery
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -409,19 +415,25 @@ export default function Dashboard() {
         return query;
       })();
       
-      // Get previous SEO audit for comparison
-      const { data: previousAudit } = await supabase
+      // Get previous SEO audit for comparison - filtered by store
+      let prevAuditQuery = supabase
         .from('seo_audit_reports')
         .select('global_score')
         .eq('user_id', user?.id)
-        .lt('created_at', thirtyDaysAgo.toISOString())
+        .lt('created_at', thirtyDaysAgo.toISOString());
+      
+      if (selectedStore?.id) {
+        prevAuditQuery = prevAuditQuery.eq('store_id', selectedStore.id);
+      }
+      
+      const { data: previousAudit } = await prevAuditQuery
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
       
       const oldSeoScore = previousAudit?.global_score || seoScore;
       
-      setStats({
+      const statsData = {
         totalProducts,
         optimizedProducts,
         pendingOptimization: pendingProducts,
@@ -440,7 +452,24 @@ export default function Dashboard() {
           articles: (articlesCount || 0) - (oldArticlesCount || 0),
           seoScore: seoScore - oldSeoScore
         }
+      };
+
+      // Dashboard Stats Verification - ensure all numbers match their reference tabs
+      console.log('📊 Dashboard Stats Verification', {
+        storeId: selectedStore?.id,
+        storeName: selectedStore?.store_name,
+        counts: {
+          totalProducts,
+          optimizedProducts,
+          pendingOptimization: pendingProducts,
+          totalArticles: articlesCount,
+        },
+        seoScores: seoCategories,
+        trends: statsData.trends,
+        currency: storeCurrency,
       });
+
+      setStats(statsData);
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
