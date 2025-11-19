@@ -2276,31 +2276,113 @@ export function SmartPricingAI() {
                         </td>
                         
                         <td className="hidden lg:table-cell p-3 text-right">
-                          {variant.market_price && (
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                              {formatPrice(variant.market_price)}
-                            </span>
+                          {variant.market_price ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium cursor-help">
+                                    {formatPrice(variant.market_price)}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md p-4">
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold">📊 Prix du marché</p>
+                                    {variant.competitors && variant.competitors.length > 0 && (
+                                      <div className="border-t pt-2">
+                                        <p className="text-xs font-semibold mb-2">🔗 Concurrents :</p>
+                                        <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                                          {variant.competitors.slice(0, 10).map((comp, idx) => (
+                                            <a
+                                              key={idx}
+                                              href={comp.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex flex-col gap-0.5 p-2 rounded hover:bg-muted/50 transition-colors border border-border text-left"
+                                            >
+                                              <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-medium text-primary truncate">
+                                                  {comp.source}
+                                                </span>
+                                                <span className="text-xs font-bold whitespace-nowrap">
+                                                  {comp.price.toFixed(2)} {comp.currency}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span className="truncate">{comp.title}</span>
+                                                <Badge variant="outline" className="text-xs px-1 py-0">
+                                                  {Math.round(comp.similarity * 100)}% similaire
+                                                </Badge>
+                                              </div>
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Non analysé</span>
                           )}
                         </td>
                         <td className="hidden lg:table-cell p-3 text-right">
-                          {variant.smart_price && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-xs text-green-600 dark:text-green-400 font-bold">
-                                {formatPrice(variant.smart_price)}
-                              </span>
-                              {variant.ai_reasoning && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" className="max-w-xs">
-                                      <p className="text-xs whitespace-pre-wrap">{variant.ai_reasoning}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
+                          {variant.smart_price ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Badge variant="secondary" className="gap-1 text-xs">
+                                      🤖 Analysé
+                                    </Badge>
+                                    <div className="text-xs font-bold text-purple-600 dark:text-purple-400 cursor-help">
+                                      {formatPrice(variant.smart_price)}
+                                    </div>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md p-4">
+                                  <div className="space-y-3">
+                                    <div>
+                                      <p className="text-xs font-semibold mb-1">🤖 Raisonnement IA :</p>
+                                      <p className="text-xs text-muted-foreground">{variant.ai_reasoning}</p>
+                                    </div>
+                                    {variant.competitors && variant.competitors.length > 0 && (
+                                      <div className="border-t pt-3">
+                                        <p className="text-xs font-semibold mb-2">🔗 Top 10 Concurrents :</p>
+                                        <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                                          {variant.competitors.slice(0, 10).map((comp, idx) => (
+                                            <a
+                                              key={idx}
+                                              href={comp.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex flex-col gap-0.5 p-2 rounded hover:bg-muted/50 transition-colors border border-border text-left"
+                                            >
+                                              <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-medium text-primary truncate">
+                                                  {comp.source}
+                                                </span>
+                                                <span className="text-xs font-bold whitespace-nowrap">
+                                                  {comp.price.toFixed(2)} {comp.currency}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span className="truncate">{comp.title}</span>
+                                                <Badge variant="outline" className="text-xs px-1 py-0">
+                                                  {Math.round(comp.similarity * 100)}% similaire
+                                                </Badge>
+                                              </div>
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Non calculé</span>
                           )}
                         </td>
                         <td className="p-3">
