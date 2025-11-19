@@ -4591,6 +4591,54 @@ export type Database = {
         }
         Relationships: []
       }
+      variant_pricing_analyses: {
+        Row: {
+          ai_reasoning: string | null
+          competitors: Json | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          market_price: number | null
+          net_margin: number | null
+          net_margin_percentage: number | null
+          product_id: string
+          smart_price: number | null
+          updated_at: string | null
+          user_id: string
+          variant_id: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          competitors?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          market_price?: number | null
+          net_margin?: number | null
+          net_margin_percentage?: number | null
+          product_id: string
+          smart_price?: number | null
+          updated_at?: string | null
+          user_id: string
+          variant_id: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          competitors?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          market_price?: number | null
+          net_margin?: number | null
+          net_margin_percentage?: number | null
+          product_id?: string
+          smart_price?: number | null
+          updated_at?: string | null
+          user_id?: string
+          variant_id?: string
+        }
+        Relationships: []
+      }
       vision_ai_cache: {
         Row: {
           analysis_result: string

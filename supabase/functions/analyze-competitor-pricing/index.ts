@@ -478,7 +478,8 @@ async function analyzeWithAI(
   shippingCost: number,
   competitorPrices: CompetitorPrice[],
   taxRate: number,
-  imagePriceRange: ImagePriceRange | null = null
+  imagePriceRange: ImagePriceRange | null = null,
+  productType: string | null = null
 ): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   
@@ -605,7 +606,7 @@ serve(async (req) => {
 
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { productIds, variantId, taxRate = 0 } = await req.json();
+    const { productIds, variantId, taxRate = 0, debugImageOnly = false } = await req.json();
 
     if (!productIds || productIds.length === 0) {
       throw new Error('No products specified');
@@ -627,6 +628,7 @@ serve(async (req) => {
             price,
             cost_price,
             shipping_cost,
+            product_type,
             product_variants!product_id(id, cost_price, price, image_url, title, option1, option2, option3)
           `)
           .eq('id', productId);
@@ -665,6 +667,16 @@ serve(async (req) => {
             } catch (error) {
               console.error('⚠️ Image price range estimation failed:', error);
             }
+          }
+
+          // Si mode debug image only, retourner uniquement l'estimation
+          if (debugImageOnly) {
+            results.push({
+              productId,
+              variantId,
+              imagePriceRange: imagePriceRange || { minPrice: null, maxPrice: null, segment: 'N/A' }
+            });
+            continue;
           }
 
           // Étape 1: Générer requêtes optimisées pour la variante

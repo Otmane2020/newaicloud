@@ -51,6 +51,7 @@ import { useTranslation } from "@/lib/language";
 import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
 import { useStore } from "@/contexts/StoreContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ImagePriceDebugDialog } from "@/components/seo/ImagePriceDebugDialog";
 
 interface CompetitorPrice {
   url: string;
@@ -151,6 +152,18 @@ export function SmartPricingAI() {
   const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
   const [showWhiteBgPreview, setShowWhiteBgPreview] = useState(false);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  const [imageDebugDialog, setImageDebugDialog] = useState<{
+    open: boolean;
+    data: {
+      productTitle?: string;
+      variantTitle?: string;
+      imageUrl?: string;
+      segment?: string;
+      minPrice?: number | null;
+      maxPrice?: number | null;
+      error?: string;
+    } | null;
+  }>({ open: false, data: null });
 
   useEffect(() => {
     fetchData();
