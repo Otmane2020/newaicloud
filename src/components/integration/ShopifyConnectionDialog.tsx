@@ -35,16 +35,34 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       return;
     }
 
-    // ✅ Check store limit
-    if (!limits?.canAddShopifyStore) {
-      toast.error('Store limit reached', {
-        description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
-      });
-      return;
-    }
-
     try {
       setOauthLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Vérification directe du nombre réel de boutiques
+      const { data: currentStores, error: countError } = await supabase
+        .from("shopify_connections")
+        .select("id", { count: 'exact' })
+        .eq("user_id", user.id);
+
+      if (countError) {
+        console.error('Error counting stores:', countError);
+        throw new Error("Error checking store limits");
+      }
+
+      const currentStoreCount = currentStores?.length || 0;
+      const maxStores = limits?.limits?.max_shopify_stores || 1;
+
+      // ✅ Check store limit with real count
+      if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
+        toast.error('Store limit reached', {
+          description: `You have reached the maximum number of stores (${currentStoreCount}/${maxStores}). Upgrade your plan to add more stores.`,
+        });
+        setOauthLoading(false);
+        return;
+      }
 
       // Nettoyer le nom de la boutique
       let cleanShopName = oauthShopName.trim()
@@ -93,11 +111,26 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       console.log('Cleaned store name:', cleanStoreName);
 
-      // ✅ 1. FIRST: Check store limit (before checking if store exists)
-      if (!limits?.canAddShopifyStore) {
+      // Vérification directe du nombre réel de boutiques
+      const { data: currentStores, error: countError } = await supabase
+        .from("shopify_connections")
+        .select("id", { count: 'exact' })
+        .eq("user_id", user.id);
+
+      if (countError) {
+        console.error('Error counting stores:', countError);
+        throw new Error("Error checking store limits");
+      }
+
+      const currentStoreCount = currentStores?.length || 0;
+      const maxStores = limits?.limits?.max_shopify_stores || 1;
+
+      // ✅ 1. FIRST: Check store limit with real count (before checking if store exists)
+      if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
         toast.error('Store limit reached', {
-          description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
+          description: `You have reached the maximum number of stores (${currentStoreCount}/${maxStores}). Upgrade your plan to add more stores.`,
         });
+        setManualLoading(false);
         return;
       }
 

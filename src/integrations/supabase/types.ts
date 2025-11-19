@@ -4717,6 +4717,10 @@ export type Database = {
         }[]
       }
       reset_monthly_usage_counters: { Args: never; Returns: undefined }
+      sync_shopify_stores_count: {
+        Args: { p_user_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

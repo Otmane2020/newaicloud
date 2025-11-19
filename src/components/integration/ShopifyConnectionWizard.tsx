@@ -43,19 +43,35 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       return;
     }
 
-    if (!limits?.canAddShopifyStore) {
-      toast.error(t.wizards.shopify.storeLimit, {
-        description: t.wizards.shopify.storeLimitDescription,
-      });
-      return;
-    }
-
     setManualLoading(true);
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error(t.wizards.shopify.mustBeConnected);
+
+      // Vérification directe du nombre réel de boutiques dans la base
+      const { data: currentStores, error: countError } = await supabase
+        .from("shopify_connections")
+        .select("id", { count: 'exact' })
+        .eq("user_id", user.id);
+
+      if (countError) {
+        console.error('Error counting stores:', countError);
+        throw new Error(t.wizards.shopify.manualConnectionError);
+      }
+
+      const currentStoreCount = currentStores?.length || 0;
+      const maxStores = limits?.limits?.max_shopify_stores || 1;
+
+      // Vérifier la limite du plan
+      if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
+        toast.error(t.wizards.shopify.storeLimit, {
+          description: `${t.wizards.shopify.storeLimitDescription} (${currentStoreCount}/${maxStores})`,
+        });
+        setManualLoading(false);
+        return;
+      }
 
       // 1. Vérifier si le store n'existe pas déjà
       const { data: existingStore } = await supabase
