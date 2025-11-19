@@ -4451,6 +4451,22 @@ export const translations = {
         }
       },
       plans: {
+        trial: {
+          name: "Free Trial",
+          description: "Test all features for 14 days",
+          cta: "Start Free Trial",
+          highlight: "Full access to all Pro features for 14 days. No credit card required.",
+          badge: "🎁 Free",
+          features: [
+            "50 AI SEO optimizations",
+            "1 AI article",
+            "Full access to Pro features",
+            "14-day free trial",
+            "No credit card required",
+            "1 Shopify store connected",
+            "Email support",
+          ],
+        },
         starter: {
           name: "Starter",
           description: "For small stores wanting to discover the power of AI",

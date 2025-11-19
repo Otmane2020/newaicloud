@@ -304,13 +304,14 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+        <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto mb-16">
           {[
+            { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true },
             { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false },
             { key: 'pro', priceMonthly: 49, priceYearly: 39, yearlyTotal: 468, icon: "🟠", featured: true },
             { key: 'enterprise', priceMonthly: 199, priceYearly: 159, yearlyTotal: 1908, icon: "🔵", featured: false }
           ].map((planConfig, index) => {
-            const plan = t.landing.pricing.plans[planConfig.key as 'starter' | 'pro' | 'enterprise'];
+            const plan = t.landing.pricing.plans[planConfig.key as 'trial' | 'starter' | 'pro' | 'enterprise'];
             const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
             
             return (
@@ -333,15 +334,29 @@ const Index = () => {
                   
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
-                      <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                      {planConfig.isTrial ? (
+                        <>
+                          <span className="text-5xl font-bold">{getCurrencySymbol(language)}0</span>
+                          <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
+                          <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                        </>
+                      )}
                     </div>
-                    {billingCycle === 'yearly' && (
+                    {!planConfig.isTrial && billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
                         {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
                       </p>
                     )}
-                    {planConfig.key === 'starter' && 'trial' in plan && plan.trial && (
+                    {planConfig.isTrial && (
+                      <p className="text-sm text-success mt-1 font-semibold">
+                        {t.trial.duration}
+                      </p>
+                    )}
+                    {planConfig.key === 'starter' && !planConfig.isTrial && 'trial' in plan && plan.trial && (
                       <p className="text-sm text-muted-foreground mt-1">
                         {plan.trial}
                       </p>
@@ -352,7 +367,7 @@ const Index = () => {
                     className="w-full" 
                     variant={planConfig.featured ? "default" : "outline"}
                     size="lg"
-                    onClick={() => navigate('/auth?mode=signup')}
+                    onClick={() => navigate(planConfig.isTrial ? '/auth?mode=signup&plan=trial' : '/auth?mode=signup')}
                   >
                     {plan.cta}
                     <ArrowRight className="ml-2 w-4 h-4" />
