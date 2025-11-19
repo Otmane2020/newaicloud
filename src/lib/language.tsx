@@ -60,6 +60,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     try {
       localStorage.setItem('app-language', language);
       document.documentElement.lang = language;
+      document.documentElement.setAttribute('data-language', language);
     } catch {}
   }, [language]);
 

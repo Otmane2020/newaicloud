@@ -7,9 +7,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export function LanguageSwitcher() {
   const { language, setLanguage } = useTranslation();
+  const { toast } = useToast();
+
+  const handleLanguageChange = (lang: 'en' | 'fr') => {
+    console.log('🌐 Changing language to:', lang);
+    setLanguage(lang);
+    toast({
+      title: lang === 'en' ? 'Language changed' : 'Langue changée',
+      description: lang === 'en' ? 'Interface is now in English' : 'Interface est maintenant en Français',
+    });
+  };
 
   return (
     <DropdownMenu>
@@ -25,7 +36,7 @@ export function LanguageSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 p-2">
         <DropdownMenuItem 
-          onClick={() => setLanguage('en')}
+          onClick={() => handleLanguageChange('en')}
           className={`rounded-lg cursor-pointer transition-all ${
             language === 'en' 
               ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold' 
@@ -37,7 +48,7 @@ export function LanguageSwitcher() {
           {language === 'en' && <span className="ml-2 text-lg">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onClick={() => setLanguage('fr')}
+          onClick={() => handleLanguageChange('fr')}
           className={`rounded-lg cursor-pointer transition-all ${
             language === 'fr' 
               ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold' 
