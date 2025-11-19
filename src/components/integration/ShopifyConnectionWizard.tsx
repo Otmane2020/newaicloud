@@ -91,6 +91,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
       console.log('✅ Credentials valid for shop:', testData.shop?.name);
       const verifiedShopDomain = testData.shop?.domain || shopDomain;
+      const commercialShopName = testData.shop?.name || shopName;
 
       // Check permissions
       const permissions = testData.permissions || {};
@@ -105,7 +106,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const { error: insertError } = await supabase.from("shopify_connections").insert({
         user_id: user.id,
         store_url: verifiedShopDomain,
-        store_name: verifiedShopDomain?.replace('.myshopify.com', ''),
+        store_name: commercialShopName,
         api_key: apiKey,
         access_token: apiSecret,
         connection_type: "api_keys",
