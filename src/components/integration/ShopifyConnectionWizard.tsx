@@ -120,35 +120,32 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       <DialogContent className="max-w-md">
         {!showApiForm ? (
           <div className="flex flex-col items-center gap-8 py-8">
-            <div className="flex items-center gap-3">
-              <img 
-                src={shopifyLogo} 
-                alt="Shopify" 
-                className="h-20 w-20"
-              />
-              <span className="text-5xl font-bold">shopify</span>
-            </div>
+            <img 
+              src={shopifyLogo} 
+              alt="Shopify" 
+              className="h-24 w-24"
+            />
 
-            <h2 className="text-4xl font-semibold text-center">
-              Welcome back
+            <h2 className="text-3xl font-semibold text-center">
+              Connectez votre boutique Shopify
             </h2>
 
             <div className="w-full max-w-sm space-y-3">
               <Button
                 onClick={handleConnectWithShopify}
-                className="w-full h-14 text-lg bg-black hover:bg-black/90 text-white rounded-lg"
+                className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
                 size="lg"
               >
-                Continue with OAuth
+                Connecter votre boutique
               </Button>
 
               <Button
                 onClick={() => setShowApiForm(true)}
                 variant="outline"
-                className="w-full h-14 text-lg border-2 border-black text-black hover:bg-black/5 rounded-lg"
+                className="w-full h-14 text-lg border-2 rounded-lg"
                 size="lg"
               >
-                Continue with API
+                Connexion avec clés API
               </Button>
             </div>
           </div>
@@ -164,19 +161,14 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <DialogTitle className="text-xl">
-                Connect with API Keys
+                Connexion avec clés API
               </DialogTitle>
             </div>
 
-            <Collapsible>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <HelpCircle className="h-4 w-4" />
-                How to generate API keys
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-2">
-                <ShopifyTokenGuide />
-              </CollapsibleContent>
-            </Collapsible>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Comment générer vos clés API</p>
+              <ShopifyTokenGuide />
+            </div>
 
             <div className="space-y-4">
               <div>
