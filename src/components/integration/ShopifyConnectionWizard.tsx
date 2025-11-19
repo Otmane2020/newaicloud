@@ -92,7 +92,16 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       console.log('✅ Credentials valid for shop:', testData.shop?.name);
       const verifiedShopDomain = testData.shop?.domain || shopDomain;
 
-      // 3. Insérer la nouvelle connexion
+      // Check permissions
+      const permissions = testData.permissions || {};
+      const missingPermissions: string[] = [];
+      
+      if (!permissions.products) missingPermissions.push('Produits');
+      if (!permissions.collections) missingPermissions.push('Collections');
+      if (!permissions.pages) missingPermissions.push('Pages');
+      if (!permissions.articles) missingPermissions.push('Articles');
+
+      // 3. Insérer la nouvelle connexion avec les permissions
       const { error: insertError } = await supabase.from("shopify_connections").insert({
         user_id: user.id,
         store_url: verifiedShopDomain,
@@ -100,9 +109,18 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
         api_key: apiKey,
         access_token: apiSecret,
         connection_type: "api_keys",
+        available_scopes: permissions,
       });
 
       if (insertError) throw insertError;
+
+      // Show warning if permissions are missing
+      if (missingPermissions.length > 0) {
+        toast.warning('Permissions limitées détectées', {
+          description: `Accès manquant: ${missingPermissions.join(', ')}. Certaines fonctionnalités seront désactivées. Vérifiez les permissions API dans Shopify Admin.`,
+          duration: 8000
+        });
+      }
 
       toast.success("Store connected successfully!");
 
