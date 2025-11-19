@@ -2066,24 +2066,55 @@ export function SmartPricingAI() {
                       )}
                     </td>
                     <td className="p-3 text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => syncSingleProduct(product.id)}
-                              disabled={syncing}
-                              className="gap-1 h-8 px-2"
-                            >
-                              <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">Synchroniser ce produit avec Shopify</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <div className="flex items-center gap-1 justify-center">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => analyzeVariantPricing(product.id, product.variants[0]?.id || product.id)}
+                                disabled={analyzingVariant === (product.variants[0]?.id || product.id)}
+                                className="h-7 px-2 gap-1 hover:bg-purple-600/10"
+                              >
+                                {analyzingVariant === (product.variants[0]?.id || product.id) ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                                ) : (
+                                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                                )}
+                                <span className="text-xs">IA</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Analyser le prix avec l'IA</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => syncSingleProduct(product.id)}
+                                disabled={syncing}
+                                className="h-7 px-2 gap-1 hover:bg-green-600/10"
+                              >
+                                {syncing ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-green-600" />
+                                ) : (
+                                  <RefreshCw className="w-3.5 h-3.5 text-green-600" />
+                                )}
+                                <span className="text-xs">Sync</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Synchroniser ce produit avec Shopify</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </td>
                   </tr>
 
