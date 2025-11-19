@@ -69,14 +69,23 @@ export function SubscriptionPlans() {
         .order('display_order', { ascending: true });
       
       if (plansData) {
-        // Filter only plans with valid Stripe price IDs
+        // Filter plans - include Trial (free) and plans with valid Stripe price IDs
         const validPlans = plansData.filter(plan => {
+          // Always include Trial plan (no Stripe required)
+          if (plan.id === 'trial') return true;
+          
           const monthlyId = plan.stripe_price_id_monthly || '';
           const yearlyId = plan.stripe_price_id_yearly || '';
           
-          // Check if at least one price ID is valid (real Stripe IDs are longer than 15 chars)
-          const hasValidMonthly = monthlyId.startsWith('price_') && monthlyId.length > 15;
-          const hasValidYearly = yearlyId.startsWith('price_') && yearlyId.length > 15;
+          const hasValidMonthly = monthlyId.startsWith('price_') && 
+            !monthlyId.includes('monthly') && 
+            !monthlyId.includes('pro_') && 
+            !monthlyId.includes('enterprise_');
+          
+          const hasValidYearly = yearlyId.startsWith('price_') && 
+            !yearlyId.includes('yearly') && 
+            !yearlyId.includes('pro_') && 
+            !yearlyId.includes('enterprise_');
           
           return hasValidMonthly || hasValidYearly;
         });
@@ -126,6 +135,12 @@ export function SubscriptionPlans() {
         title: t.errors.required,
         variant: "destructive",
       });
+      return;
+    }
+
+    // Special handling for Trial plan - no Stripe checkout needed
+    if (planId === 'trial') {
+      navigate('/auth?mode=signup&plan=trial');
       return;
     }
 
