@@ -3211,7 +3211,8 @@ export const translations = {
       cardRequired: "💳 Credit card required • Cancel anytime",
       proEnterprise: "💡 Pro and Enterprise plans: Best value with annual billing",
       cancelAnytime: "🔒 Cancel anytime"
-    }
+    },
+    choosePlanAfterTrial: "Choose your plan after trial"
   },
 
   merchant: {
@@ -3955,6 +3956,24 @@ export const translations = {
         error: "Error generating payment session",
       },
     },
+    changePlan: "Change Your Plan",
+    choosePlan: "Choose Your Plan",
+    popular: "Popular",
+    bestValue: "Best Value",
+    perMonth: "/month",
+    trial: "(Trial)",
+    features: {
+      products: "products",
+      optimizationsPerMonth: "SEO optimizations/month",
+      articlesPerMonth: "articles/month",
+      chatResponsesPerMonth: "chat responses/month",
+    }
+  },
+
+  collection: {
+    usePopularProduct: "Use popular product image",
+    autoSelectDescription: "Automatically selects image from most stocked product",
+    cancel: "Cancel",
   },
 
   trial: {
@@ -5471,7 +5490,38 @@ export const translations = {
         title: "Shopify Integration",
         description: "Connect your Shopify store to get started",
       },
+      connectShopify: {
+        title: "Connect your Shopify store",
+        description: "Sync your products in 1 click",
+        action: "Connect"
+      },
+      optimizeProduct: {
+        title: "Optimize your first product",
+        description: "Improve product SEO in 30 seconds",
+        action: "Optimize"
+      },
+      createArticle: {
+        title: "Create your first blog article",
+        description: "Generate AI-optimized SEO content",
+        action: "Create"
+      },
+      enableAutoOptimizations: {
+        title: "Enable automatic optimizations",
+        description: "Let AI work for you",
+        action: "Enable"
+      },
+      viewStatistics: {
+        title: "View your first statistics",
+        description: "Track the impact of your optimizations",
+        action: "View"
+      }
     },
+    progress: "Progress",
+    completed: "completed",
+    quickWins: "Quick Wins",
+    recommended: "Recommended",
+    allCompleted: "🎉 Congratulations! You've completed all the essential steps.",
+    dismiss: "Dismiss",
     navigation: {
       next: "Next",
       previous: "Previous",

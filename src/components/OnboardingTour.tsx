@@ -30,48 +30,48 @@ export function OnboardingTour() {
   const [steps, setSteps] = useState<OnboardingStep[]>([
     {
       id: 'connect_shopify',
-      title: language === 'fr' ? 'Connectez votre boutique Shopify' : 'Connect your Shopify store',
-      description: language === 'fr' ? 'Synchronisez vos produits en 1 clic' : 'Sync your products in 1 click',
+      title: t.onboardingTour.steps.connectShopify.title,
+      description: t.onboardingTour.steps.connectShopify.description,
       icon: Target,
-      action: language === 'fr' ? 'Connecter' : 'Connect',
+      action: t.onboardingTour.steps.connectShopify.action,
       route: '/integration',
       completed: false,
       quickWin: true
     },
     {
       id: 'optimize_first_product',
-      title: language === 'fr' ? 'Optimisez votre premier produit' : 'Optimize your first product',
-      description: language === 'fr' ? 'Améliorez le SEO d\'un produit en 30 secondes' : 'Improve product SEO in 30 seconds',
+      title: t.onboardingTour.steps.optimizeProduct.title,
+      description: t.onboardingTour.steps.optimizeProduct.description,
       icon: Sparkles,
-      action: language === 'fr' ? 'Optimiser' : 'Optimize',
+      action: t.onboardingTour.steps.optimizeProduct.action,
       route: '/seo',
       completed: false,
       quickWin: true
     },
     {
       id: 'generate_article',
-      title: language === 'fr' ? 'Créez votre premier article de blog' : 'Create your first blog article',
-      description: language === 'fr' ? 'Générez du contenu optimisé SEO avec l\'IA' : 'Generate AI-optimized SEO content',
+      title: t.onboardingTour.steps.createArticle.title,
+      description: t.onboardingTour.steps.createArticle.description,
       icon: FileText,
-      action: language === 'fr' ? 'Créer' : 'Create',
+      action: t.onboardingTour.steps.createArticle.action,
       route: '/blog',
       completed: false
     },
     {
       id: 'setup_automation',
-      title: language === 'fr' ? 'Activez les optimisations automatiques' : 'Enable automatic optimizations',
-      description: language === 'fr' ? 'Laissez l\'IA travailler pour vous' : 'Let AI work for you',
+      title: t.onboardingTour.steps.enableAutoOptimizations.title,
+      description: t.onboardingTour.steps.enableAutoOptimizations.description,
       icon: Zap,
-      action: language === 'fr' ? 'Activer' : 'Enable',
+      action: t.onboardingTour.steps.enableAutoOptimizations.action,
       route: '/seo',
       completed: false
     },
     {
       id: 'view_analytics',
-      title: language === 'fr' ? 'Consultez vos premières statistiques' : 'View your first statistics',
-      description: language === 'fr' ? 'Suivez l\'impact de vos optimisations' : 'Track the impact of your optimizations',
+      title: t.onboardingTour.steps.viewStatistics.title,
+      description: t.onboardingTour.steps.viewStatistics.description,
       icon: BarChart3,
-      action: language === 'fr' ? 'Voir' : 'View',
+      action: t.onboardingTour.steps.viewStatistics.action,
       route: '/dashboard',
       completed: false
     }

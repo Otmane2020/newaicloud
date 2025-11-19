@@ -27,7 +27,7 @@ interface Plan {
 
 export function SubscriptionManagement() {
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -224,17 +224,17 @@ export function SubscriptionManagement() {
       {/* Plans Comparison */}
       <div>
         <h2 className="text-2xl font-bold mb-6">
-          {currentPlan ? 'Change Your Plan' : 'Choose Your Plan'}
+          {currentPlan ? t.subscription.changePlan : t.subscription.choosePlan}
         </h2>
         
         <div className="grid md:grid-cols-3 gap-6">
           {plans.map((plan) => {
             const isCurrentPlan = currentPlan?.id === plan.id;
             const features = [
-              `${plan.max_products} produits`,
-              `${plan.max_optimizations_monthly} optimisations SEO/mois`,
-              `${plan.max_articles_monthly} articles/mois`,
-              `${plan.max_chat_responses_monthly} réponses chat/mois`,
+              `${plan.max_products} ${t.subscription.features.products}`,
+              `${plan.max_optimizations_monthly} ${t.subscription.features.optimizationsPerMonth}`,
+              `${plan.max_articles_monthly} ${t.subscription.features.articlesPerMonth}`,
+              `${plan.max_chat_responses_monthly} ${t.subscription.features.chatResponsesPerMonth}`,
             ];
 
             return (
@@ -246,12 +246,12 @@ export function SubscriptionManagement() {
               >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                    Populaire
+                    {t.subscription.popular}
                   </Badge>
                 )}
                 {plan.best_value && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-success">
-                    Meilleure valeur
+                    {t.subscription.bestValue}
                   </Badge>
                 )}
 
@@ -262,7 +262,7 @@ export function SubscriptionManagement() {
                   <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold">${plan.price_monthly}</span>
-                    <span className="text-muted-foreground">/mois</span>
+                    <span className="text-muted-foreground">{t.subscription.perMonth}</span>
                   </div>
                 </div>
 

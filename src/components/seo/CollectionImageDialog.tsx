@@ -487,9 +487,9 @@ export function CollectionImageDialog({
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold mb-1">Utiliser l'image du produit le plus populaire</h3>
+                <h3 className="font-semibold mb-1">{t.collection.usePopularProduct}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Sélectionne automatiquement l'image du produit avec le plus de stock dans cette collection
+                  {t.collection.autoSelectDescription}
                 </p>
               </div>
             </div>
@@ -500,7 +500,7 @@ export function CollectionImageDialog({
                   variant="outline"
                   onClick={handleClose}
                 >
-                  Annuler
+                  {t.collection.cancel}
                 </Button>
                 <Button 
                   onClick={handleUsePopularProduct}

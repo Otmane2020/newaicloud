@@ -61,10 +61,10 @@ export function CurrentPlanCard() {
         if (plan) {
           const isTrialing = profileData.subscription_status === 'trialing';
           const isTrial = plan.id === 'trial';
-          setCurrentPlan({
-            ...plan,
-            name: isTrial ? t.trial.title : (isTrialing ? `${plan.name} (Trial)` : plan.name)
-          });
+        setCurrentPlan({
+          ...plan,
+          name: isTrial ? t.trial.title : (isTrialing ? `${plan.name} ${t.subscription.trial}` : plan.name)
+        });
           
           // Set billing period from subscription data or default to monthly
           const period = subscriptionData?.billing_period;

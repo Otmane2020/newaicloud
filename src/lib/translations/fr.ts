@@ -3221,7 +3221,8 @@ export const translations = {
       cardRequired: "💳 Carte bancaire requise • Annulez à tout moment",
       proEnterprise: "💡 Plans Pro et Enterprise : Meilleur rapport qualité-prix avec facturation annuelle",
       cancelAnytime: "🔒 Annulez à tout moment"
-    }
+    },
+    choosePlanAfterTrial: "Choisissez votre plan après l'essai"
   },
 
   merchant: {
@@ -4034,6 +4035,24 @@ export const translations = {
         error: "Erreur lors de la génération de la session de paiement",
       },
     },
+    changePlan: "Changer de Plan",
+    choosePlan: "Choisir Votre Plan",
+    popular: "Populaire",
+    bestValue: "Meilleure Valeur",
+    perMonth: "/mois",
+    trial: "(Essai)",
+    features: {
+      products: "produits",
+      optimizationsPerMonth: "optimisations SEO/mois",
+      articlesPerMonth: "articles/mois",
+      chatResponsesPerMonth: "réponses chat/mois",
+    }
+  },
+
+  collection: {
+    usePopularProduct: "Utiliser l'image du produit le plus populaire",
+    autoSelectDescription: "Sélectionne automatiquement l'image du produit le plus en stock",
+    cancel: "Annuler",
   },
 
   trial: {
@@ -5471,7 +5490,38 @@ export const translations = {
         title: "Intégration Shopify",
         description: "Connectez votre boutique Shopify pour commencer",
       },
+      connectShopify: {
+        title: "Connectez votre boutique Shopify",
+        description: "Synchronisez vos produits en 1 clic",
+        action: "Connecter"
+      },
+      optimizeProduct: {
+        title: "Optimisez votre premier produit",
+        description: "Améliorez le SEO d'un produit en 30 secondes",
+        action: "Optimiser"
+      },
+      createArticle: {
+        title: "Créez votre premier article de blog",
+        description: "Générez du contenu optimisé SEO avec l'IA",
+        action: "Créer"
+      },
+      enableAutoOptimizations: {
+        title: "Activez les optimisations automatiques",
+        description: "Laissez l'IA travailler pour vous",
+        action: "Activer"
+      },
+      viewStatistics: {
+        title: "Consultez vos premières statistiques",
+        description: "Suivez l'impact de vos optimisations",
+        action: "Voir"
+      }
     },
+    progress: "Progression",
+    completed: "complétées",
+    quickWins: "Gains Rapides",
+    recommended: "Recommandé",
+    allCompleted: "🎉 Félicitations ! Vous avez complété toutes les étapes essentielles.",
+    dismiss: "Masquer",
     navigation: {
       next: "Suivant",
       previous: "Précédent",
