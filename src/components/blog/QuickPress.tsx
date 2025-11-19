@@ -146,6 +146,8 @@ export function QuickPress({ onArticleCreated }: QuickPressProps = {}) {
         userId={user?.id || ''}
         storeId={storeId}
         onArticleCreated={onArticleCreated}
+        initialData={undefined}
+        autoGenerate={false}
       />
     </>
   );
