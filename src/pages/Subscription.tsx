@@ -248,7 +248,7 @@ const Subscription = () => {
         </div>
       ) : (
         <>
-          <CurrentPlanCard currentPlan={currentPlan} />
+          <CurrentPlanCard />
 
           {plans.find(p => p.id === 'trial') && (
             <Card className="border-2 border-success bg-success/5">
@@ -289,10 +289,6 @@ const Subscription = () => {
               </div>
             </Card>
           )}
-        
-        {!isUpgradeFlow && currentPlan && currentPlan.id !== 'trial' && (
-          <CurrentPlanCard />
-        )}
 
       {isUpgradeFlow && currentPlan && (
         <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
@@ -609,6 +605,8 @@ const Subscription = () => {
           <UsageLimits />
           <BillingPortal />
         </>
+      )}
+      </>
       )}
     </div>
   );

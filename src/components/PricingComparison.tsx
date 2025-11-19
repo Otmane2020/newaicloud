@@ -170,38 +170,39 @@ const PricingComparison = () => {
             </CardContent>
           </Card>
 
-        {plans.map((plan) => (
-          <Card key={plan} className="overflow-hidden">
-            <CardHeader className="bg-muted/50 pb-3">
-              <div className="flex items-center justify-between">
-                <Badge variant={plan === "pro" ? "default" : "outline"}>
-                  {planNames[plan as keyof typeof planNames]}
-                </Badge>
-                <div className="text-right">
-                  <span className="text-lg font-bold">{planPrices[plan as keyof typeof planPrices]}</span>
-                  {billingPeriod === 'annual' && (
-                    <p className="text-xs text-success">{t.landing.pricing.comparison.billedAnnually}</p>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              {features.map((category) => (
-                <div key={category.category}>
-                  <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">{category.category}</div>
-                  <div className="space-y-2">
-                    {category.items.map((item) => (
-                      <div key={item.name} className="flex items-center justify-between py-2 border-b last:border-0">
-                        <span className="text-sm">{item.name}</span>
-                        <div className="flex-shrink-0">{renderValue(item[plan as keyof typeof item])}</div>
-                      </div>
-                    ))}
+          {plans.map((plan) => (
+            <Card key={plan} className="overflow-hidden">
+              <CardHeader className="bg-muted/50 pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant={plan === "pro" ? "default" : "outline"}>
+                    {planNames[plan as keyof typeof planNames]}
+                  </Badge>
+                  <div className="text-right">
+                    <span className="text-lg font-bold">{planPrices[plan as keyof typeof planPrices]}</span>
+                    {billingPeriod === 'annual' && (
+                      <p className="text-xs text-success">{t.landing.pricing.comparison.billedAnnually}</p>
+                    )}
                   </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                {features.map((category) => (
+                  <div key={category.category}>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">{category.category}</div>
+                    <div className="space-y-2">
+                      {category.items.map((item) => (
+                        <div key={item.name} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <span className="text-sm">{item.name}</span>
+                          <div className="flex-shrink-0">{renderValue(item[plan as keyof typeof item])}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
