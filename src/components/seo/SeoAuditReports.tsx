@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { calculateSeoConfidence } from '@/lib/seoQuality';
+import { calculateSeoConfidence, calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { 
   Home, 
   ShoppingBag, 
@@ -194,7 +194,7 @@ export function SeoAuditReports() {
     queryFn: async () => {
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
-        .select('id, title, seo_title, seo_description, description, tags, seo_synced_to_shopify')
+        .select('id, title, seo_title, seo_description, description, tags, seo_synced_to_shopify, optimization_count, image_url')
         .eq('seller_id', user?.id);
 
       if (productsError) throw productsError;
@@ -215,25 +215,32 @@ export function SeoAuditReports() {
         .or('handle.eq.index,handle.eq.home,handle.eq.homepage')
         .maybeSingle();
 
-      const titleAnalyses = products?.map(p => analyzeTitleQuality(p.seo_title, p.title)) || [];
-      const confidenceScores = products?.map(p => calculateSeoConfidence(p.seo_title, p.seo_description)) || [];
+      // ✅ Use same function as product pages for consistency
+      const productScores = products?.map(p => {
+        const score = calculateDetailedSeoScore(
+          p.seo_title,
+          p.seo_description,
+          !!p.image_url,
+          true,
+          p.tags,
+          p.optimization_count
+        );
+        return score.score;
+      }) || [];
       
-      const avgTitleScore = titleAnalyses.length > 0
-        ? Math.round(
-            (titleAnalyses.reduce((sum, a) => sum + a.score, 0) * 0.6 / titleAnalyses.length) +
-            (confidenceScores.reduce((sum, c) => sum + c, 0) * 0.4 / confidenceScores.length)
-          )
+      const avgTitleScore = productScores.length > 0
+        ? Math.round(productScores.reduce((sum, s) => sum + s, 0) / productScores.length)
         : 0;
+      
+      // Keep analyses for issue tracking
+      const titleAnalyses = products?.map(p => analyzeTitleQuality(p.seo_title, p.title)) || [];
       const titleIssuesCount = titleAnalyses.filter(a => a.issues.length > 0).length;
 
-      const descAnalyses = products?.map(p => analyzeDescriptionQuality(p.seo_description)) || [];
-      
-      const avgDescScore = descAnalyses.length > 0
-        ? Math.round(
-            (descAnalyses.reduce((sum, a) => sum + a.score, 0) * 0.6 / descAnalyses.length) +
-            (confidenceScores.reduce((sum, c) => sum + c, 0) * 0.4 / confidenceScores.length)
-          )
+      const avgDescScore = productScores.length > 0
+        ? Math.round(productScores.reduce((sum, s) => sum + s, 0) / productScores.length)
         : 0;
+      
+      const descAnalyses = products?.map(p => analyzeDescriptionQuality(p.seo_description)) || [];
       const descIssuesCount = descAnalyses.filter(a => a.issues.length > 0).length;
 
       const altAnalyses = images?.map(img => analyzeAltTextQuality(img.alt_text)) || [];
