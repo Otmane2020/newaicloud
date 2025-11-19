@@ -103,11 +103,12 @@ ${data.textContent}
 
 ⚠️ RÈGLE ABSOLUE : Tu DOIS analyser et utiliser UNIQUEMENT les informations fournies ci-dessus. N'INVENTE RIEN. Si la boutique vend des meubles, écris sur des meubles. Si elle vend des vêtements, écris sur des vêtements. Respecte EXACTEMENT l'activité réelle.
 
-OBJECTIF: Créer un titre SEO et une meta description qui:
-1. Incluent EXACTEMENT le nom de la boutique tel que fourni (ne pas inventer un nom)
-2. Mentionnent PRÉCISÉMENT le secteur d'activité basé sur les PRODUITS RÉELS listés
-3. Intègrent 1-2 mots-clés ISSUS des produits ou tags RÉELS détectés
-4. Créent l'urgence avec un appel à l'action
+OBJECTIF: AMÉLIORER le titre SEO et la meta description ACTUELS en:
+1. Conservant EXACTEMENT le nom de la boutique tel que fourni (ne pas inventer un nom)
+2. Mentionnant PRÉCISÉMENT le secteur d'activité basé sur les PRODUITS RÉELS listés
+3. Intégrant 1-2 mots-clés ISSUS des produits ou tags RÉELS détectés
+4. Ajoutant de l'urgence avec un appel à l'action si absent
+5. Optimisant la longueur et la structure pour le SEO
 5. Se démarquent de la concurrence
 
 RÈGLES STRICTES :
