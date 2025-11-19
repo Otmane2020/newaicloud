@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import { ArticleGenerationProgress } from "@/components/blog/ArticleGenerationProgress";
+import { ArticleWizard } from "@/components/blog/ArticleWizard";
 
 interface Opportunity {
   id: string;
@@ -39,8 +40,36 @@ export function BlogOpportunities() {
   const [regenerating, setRegenerating] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showGenerationProgress, setShowGenerationProgress] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardInitialData, setWizardInitialData] = useState<any>(null);
+  const [wizardAutoGenerate, setWizardAutoGenerate] = useState(false);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string>('');
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
+
+  // Load collections
+  useEffect(() => {
+    const loadCollections = async () => {
+      if (!selectedStore?.id) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      setUserId(user.id);
+      
+      const { data } = await supabase
+        .from('shopify_collections')
+        .select('id, title, product_count')
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
+        .order('title');
+      
+      if (data) setCollections(data);
+    };
+    
+    loadCollections();
+  }, [selectedStore?.id]);
 
   useEffect(() => {
     const initOpportunities = async () => {
@@ -318,23 +347,31 @@ export function BlogOpportunities() {
   };
 
   const handleCreateWithWizard = (opp: Opportunity) => {
-    const params = new URLSearchParams({
-      opportunityId: opp.id,
+    setWizardInitialData({
       title: opp.title,
-      category: opp.category,
-      subCategory: opp.subCategory || '',
-      primaryKeywords: opp.primaryKeywords.join(','),
-      secondaryKeywords: opp.secondaryKeywords.join(','),
-      metaDescription: opp.metaDescription,
-      angle: opp.angle || '',
-      targetAudience: opp.targetAudience || '',
-      estimatedWordCount: opp.estimatedWordCount.toString(),
-      productIds: opp.productIds.join(','),
-      collectionIds: (opp.collectionIds || []).join(','),
-      difficulty: opp.difficulty,
+      collectionId: opp.collectionIds?.[0] || '',
+      productIds: opp.productIds || [],
+      keywords: [...opp.primaryKeywords, ...opp.secondaryKeywords],
+      angle: opp.type,
+      wordCount: opp.estimatedWordCount,
+      metaDescription: opp.metaDescription
     });
-    
-    window.location.href = `/blog?tab=new&${params.toString()}`;
+    setWizardAutoGenerate(false);
+    setWizardOpen(true);
+  };
+
+  const handleAutoGenerate = (opp: Opportunity) => {
+    setWizardInitialData({
+      title: opp.title,
+      collectionId: opp.collectionIds?.[0] || '',
+      productIds: opp.productIds || [],
+      keywords: [...opp.primaryKeywords, ...opp.secondaryKeywords],
+      angle: opp.type,
+      wordCount: opp.estimatedWordCount,
+      metaDescription: opp.metaDescription
+    });
+    setWizardAutoGenerate(true);
+    setWizardOpen(true);
   };
 
   const handleRegenerate = async () => {
@@ -577,6 +614,20 @@ export function BlogOpportunities() {
       <ArticleGenerationProgress 
         open={showGenerationProgress} 
         onClose={() => setShowGenerationProgress(false)} 
+      />
+      
+      <ArticleWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        collections={collections}
+        userId={userId}
+        storeId={selectedStore?.id || ''}
+        initialData={wizardInitialData}
+        autoGenerate={wizardAutoGenerate}
+        onArticleCreated={() => {
+          loadOpportunities();
+          setWizardOpen(false);
+        }}
       />
     </div>
   );
