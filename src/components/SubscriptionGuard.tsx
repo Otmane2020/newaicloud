@@ -293,7 +293,9 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   }
   
   const hasValidSubscription = profile?.subscription_status && 
-    profile.stripe_customer_id && // ✅ NOUVEAU: Vérifier stripe_customer_id OBLIGATOIRE
+    (profile.subscription_status === 'active' 
+      ? profile.stripe_customer_id // stripe_customer_id REQUIS pour les comptes actifs
+      : true) && // Pas de stripe_customer_id nécessaire pour les trials
     (profile.subscription_status === 'active' || 
      (profile.subscription_status === 'trialing' && 
       profile.trial_ends_at && 

@@ -660,7 +660,25 @@ export function SmartPricingAI() {
           return p;
         }));
 
-        toast.success(`✅ Analyse terminée - Prix conseillé: ${result.smartPrice?.toFixed(2)}€`, { id: toastId });
+        // Track usage: 2 optimizations per pricing analysis
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (currentUser) {
+            await supabase.rpc("increment_usage", {
+              p_seller_id: currentUser.id,
+              p_field: "optimizations_count",
+              p_increment: 2
+            });
+            console.log(`✅ Usage tracked: 2 optimizations for AI pricing analysis`);
+          }
+        } catch (trackError) {
+          console.error("⚠️ Failed to track usage:", trackError);
+        }
+
+        toast.success(`✅ Analyse terminée - Prix conseillé: ${result.smartPrice?.toFixed(2)}€`, { 
+          id: toastId,
+          description: "2 optimisations utilisées" 
+        });
       }
     } catch (error) {
       console.error("Erreur analyse variante:", error);
@@ -772,9 +790,24 @@ export function SmartPricingAI() {
         }),
       );
 
+      // Track usage: 2 optimizations per pricing analysis
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser && successfulResults.length > 0) {
+          await supabase.rpc("increment_usage", {
+            p_seller_id: currentUser.id,
+            p_field: "optimizations_count",
+            p_increment: 2
+          });
+          console.log(`✅ Usage tracked: 2 optimizations for AI pricing analysis`);
+        }
+      } catch (trackError) {
+        console.error("⚠️ Failed to track usage:", trackError);
+      }
+
       toast.success(`✅ Analyse terminée : ${data.results.length} produit(s)`, {
         id: toastId,
-        description: "Prix intelligents calculés avec succès",
+        description: "Prix intelligents calculés avec succès (2 optimisations utilisées)",
       });
 
       // Update last analysis time
