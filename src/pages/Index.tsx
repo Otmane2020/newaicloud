@@ -308,13 +308,14 @@ const Index = () => {
 
         <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto mb-16">
           {[
-            { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true },
-            { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false },
-            { key: 'pro', priceMonthly: 49, priceYearly: 39, yearlyTotal: 468, icon: "🟠", featured: true },
-            { key: 'enterprise', priceMonthly: 199, priceYearly: 159, yearlyTotal: 1908, icon: "🔵", featured: false }
+            { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
+            { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
+            { key: 'pro', priceMonthly: 49, priceYearly: 39, originalMonthly: 61.25, originalYearly: 48.75, yearlyTotal: 468, icon: "🟠", featured: true, hasPromo: true, discount: 20 },
+            { key: 'enterprise', priceMonthly: 199, priceYearly: 159, originalMonthly: 284.29, originalYearly: 227.14, yearlyTotal: 1908, icon: "🔵", featured: false, hasPromo: true, discount: 30 }
           ].map((planConfig, index) => {
             const plan = t.landing.pricing.plans[planConfig.key as 'trial' | 'starter' | 'pro' | 'enterprise'];
             const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
+            const originalPrice = billingCycle === 'monthly' ? planConfig.originalMonthly : planConfig.originalYearly;
             
             return (
               <Card 
@@ -335,19 +336,36 @@ const Index = () => {
                   </div>
                   
                   <div>
-                    <div className="flex items-baseline gap-2">
-                      {planConfig.isTrial ? (
-                        <>
-                          <span className="text-5xl font-bold">{getCurrencySymbol(language)}0</span>
+                    {planConfig.hasPromo && originalPrice ? (
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-semibold text-muted-foreground line-through">
+                            {getCurrencySymbol(language)}{originalPrice.toFixed(2)}
+                          </span>
+                          <Badge variant="destructive" className="ml-2">
+                            -{planConfig.discount}%
+                          </Badge>
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-5xl font-bold text-primary">{getCurrencySymbol(language)}{price}</span>
                           <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
-                          <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        {planConfig.isTrial ? (
+                          <>
+                            <span className="text-5xl font-bold">{getCurrencySymbol(language)}0</span>
+                            <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
+                            <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {!planConfig.isTrial && billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
                         {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
