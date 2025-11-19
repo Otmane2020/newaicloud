@@ -86,10 +86,14 @@ export function HomePageSeoAudit() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       if (selectedStore?.id) {
-        checkShopifyConnection();
-        loadLastAudit();
+        await checkShopifyConnection();
+        await loadLastAudit();
+        // Auto-import data if not already present
+        if (hasConnection) {
+          await autoImportData();
+        }
       } else {
         setResult(null);
         setSeoTitle('');
@@ -98,7 +102,7 @@ export function HomePageSeoAudit() {
     }, 200);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedStore?.id]);
+  }, [selectedStore?.id, hasConnection]);
 
   const loadLastAudit = async () => {
     if (!selectedStore?.id) {
@@ -112,11 +116,12 @@ export function HomePageSeoAudit() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if there's a saved audit in homepage_seo table
+      // Check if there's a saved audit in homepage_seo table (filtered by store_id)
       const { data: homepageData, error } = await supabase
         .from('homepage_seo')
         .select('*')
         .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -175,17 +180,18 @@ export function HomePageSeoAudit() {
 
       setResult(data);
       
-      // Save audit to homepage_seo table
+      // Save audit to homepage_seo table with store_id
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (user && selectedStore?.id) {
         await supabase
           .from('homepage_seo')
           .upsert({
             user_id: user.id,
+            store_id: selectedStore.id,
             last_audit: data,
             updated_at: new Date().toISOString()
           }, {
-            onConflict: 'user_id'
+            onConflict: 'user_id,store_id'
           });
       }
 
@@ -202,6 +208,57 @@ export function HomePageSeoAudit() {
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const autoImportData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !selectedStore?.id) return;
+
+      // Check if data already exists
+      const { data: existingData } = await supabase
+        .from('homepage_seo')
+        .select('seo_title, seo_description')
+        .eq('user_id', user.id)
+        .eq('store_id', selectedStore.id)
+        .maybeSingle();
+
+      // Only auto-import if data doesn't exist
+      if (!existingData?.seo_title || !existingData?.seo_description) {
+        // Silently import current SEO
+        const { data: store } = await supabase
+          .from('shopify_connections')
+          .select('store_url')
+          .eq('user_id', user.id)
+          .eq('id', selectedStore.id)
+          .single();
+
+        if (store) {
+          const response = await fetch(`https://${store.store_url}`, {
+            headers: { 'Accept': 'text/html' },
+          });
+
+          if (response.ok) {
+            const html = await response.text();
+            const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+            const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+            
+            if (titleMatch) setSeoTitle(titleMatch[1].trim());
+            if (metaMatch) setSeoDescription(metaMatch[1].trim());
+          }
+        }
+
+        // Silently import homepage images
+        await supabase.functions.invoke('import-content-images', {
+          body: { 
+            storeId: selectedStore.id,
+            types: ['homepage']
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Auto-import error:', error);
     }
   };
 
@@ -227,7 +284,36 @@ export function HomePageSeoAudit() {
       if (data.seo_title && data.seo_description) {
         setSeoTitle(data.seo_title);
         setSeoDescription(data.seo_description);
-        sonnerToast.success('SEO content generated successfully');
+
+        // Automatically save to database
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && selectedStore?.id) {
+          await supabase
+            .from('homepage_seo')
+            .upsert({
+              user_id: user.id,
+              store_id: selectedStore.id,
+              seo_title: data.seo_title,
+              seo_description: data.seo_description,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,store_id'
+            });
+        }
+
+        // Automatically sync to Shopify
+        const syncResult = await supabase.functions.invoke('sync-homepage-seo', {
+          body: { 
+            seoTitle: data.seo_title,
+            seoDescription: data.seo_description
+          }
+        });
+
+        if (syncResult.error) throw syncResult.error;
+
+        sonnerToast.success('SEO optimisé et synchronisé', {
+          description: 'Titre et description générés, sauvegardés et synchronisés avec Shopify'
+        });
       }
     } catch (error: any) {
       console.error('Error generating SEO:', error);
@@ -466,7 +552,7 @@ export function HomePageSeoAudit() {
 
       // Verify the sync was successful by fetching from Shopify
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (user && selectedStore?.id) {
         const { data: store } = await supabase
           .from('shopify_connections')
           .select('store_url, access_token')
@@ -499,20 +585,18 @@ export function HomePageSeoAudit() {
             }
           }
         }
-      }
 
-      // Save to database
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (currentUser) {
+        // Save to database with store_id
         await supabase
           .from('homepage_seo')
           .upsert({
-            user_id: currentUser.id,
+            user_id: user.id,
+            store_id: selectedStore.id,
             seo_title: seoTitle,
             seo_description: seoDescription,
             updated_at: new Date().toISOString()
           }, {
-            onConflict: 'user_id'
+            onConflict: 'user_id,store_id'
           });
       }
 
@@ -996,31 +1080,12 @@ export function HomePageSeoAudit() {
                 </Alert>
 
                 <div className="space-y-4">
-                  {/* Import Homepage Images Button */}
-                  <div className="space-y-2">
-                    <Label>Images Homepage</Label>
-                    <Button
-                      onClick={handleImportContentImages}
-                      disabled={importingImages}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {importingImages ? (
-                        <>
-                          <Loader2 className="animate-spin" />
-                          Importation en cours...
-                        </>
-                      ) : (
-                        <>
-                          <Download />
-                          Importer les images homepage
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Extrait toutes les images de votre page d'accueil pour optimisation SEO
-                    </p>
-                  </div>
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-sm">
+                      Les données sont automatiquement synchronisées depuis Shopify au chargement de la page
+                    </AlertDescription>
+                  </Alert>
 
                   <div className="space-y-2">
                     <Label htmlFor="seo-title">{t.homepageAudit.elements.seoTitle}</Label>
@@ -1053,39 +1118,19 @@ export function HomePageSeoAudit() {
 
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      onClick={importCurrentSeo}
-                      disabled={importing}
-                      variant="outline"
-                      className="flex-1 min-w-[180px]"
-                    >
-                      {importing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {t.homepageAudit.buttons.importing}
-                        </>
-                      ) : (
-                        <>
-                          <Target className="w-4 h-4 mr-2" />
-                          {t.homepageAudit.buttons.importCurrentSeo}
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
                       onClick={generateSeoWithAI}
                       disabled={generating}
-                      variant="outline"
-                      className="flex-1 min-w-[180px]"
+                      className="flex-1 min-w-[180px] bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
                     >
                       {generating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {t.homepageAudit.buttons.generating}
+                          Génération et synchronisation...
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          {t.homepageAudit.buttons.optimizeWithAI}
+                          Optimiser avec l'IA et synchroniser
                         </>
                       )}
                     </Button>
@@ -1093,7 +1138,8 @@ export function HomePageSeoAudit() {
                     <Button
                       onClick={syncToShopify}
                       disabled={syncing || !seoTitle || !seoDescription}
-                      className="flex-1 min-w-[180px] bg-orange-600 hover:bg-orange-700"
+                      variant="outline"
+                      className="flex-1 min-w-[180px]"
                     >
                       {syncing ? (
                         <>
@@ -1103,11 +1149,14 @@ export function HomePageSeoAudit() {
                       ) : (
                         <>
                           <Upload className="w-4 h-4 mr-2" />
-                          {t.homepageAudit.buttons.syncToShopify}
+                          Synchroniser manuellement
                         </>
                       )}
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify
+                  </p>
                  </div>
               </CardContent>
             </Card>
