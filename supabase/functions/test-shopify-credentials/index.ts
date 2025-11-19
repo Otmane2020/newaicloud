@@ -16,29 +16,28 @@ serve(async (req) => {
 
     console.log('🔍 Testing Shopify credentials for:', shopDomain);
 
-    // Test credentials by calling Shopify Admin API
     const authHeader = btoa(`${apiKey}:${accessToken}`);
-    const shopifyUrl = `https://${shopDomain}/admin/api/2024-01/shop.json`;
+    const baseUrl = `https://${shopDomain}/admin/api/2024-01`;
     
-    console.log('📞 Calling Shopify API:', shopifyUrl);
-
-    const response = await fetch(shopifyUrl, {
+    // Test shop access first
+    console.log('📞 Testing shop access...');
+    const shopResponse = await fetch(`${baseUrl}/shop.json`, {
       headers: {
         'Authorization': `Basic ${authHeader}`,
         'Content-Type': 'application/json'
       }
     });
 
-    if (!response.ok) {
-      console.error('❌ Shopify API error:', response.status, response.statusText);
-      const errorText = await response.text();
+    if (!shopResponse.ok) {
+      console.error('❌ Shopify API error:', shopResponse.status, shopResponse.statusText);
+      const errorText = await shopResponse.text();
       console.error('Error details:', errorText);
       
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Invalid credentials or shop domain',
-          statusCode: response.status
+          statusCode: shopResponse.status
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -47,8 +46,65 @@ serve(async (req) => {
       );
     }
 
-    const shopData = await response.json();
+    const shopData = await shopResponse.json();
     console.log('✅ Successfully connected to Shopify shop:', shopData.shop?.name);
+
+    // Test specific permissions
+    console.log('🔐 Testing API permissions...');
+    const permissions = {
+      products: false,
+      collections: false,
+      pages: false,
+      articles: false,
+      images: false
+    };
+
+    // Test products
+    try {
+      const productsRes = await fetch(`${baseUrl}/products.json?limit=1`, {
+        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      });
+      permissions.products = productsRes.ok;
+      console.log(`Products access: ${productsRes.ok ? '✅' : '❌'}`);
+    } catch (e) {
+      console.log('Products access: ❌');
+    }
+
+    // Test collections
+    try {
+      const collectionsRes = await fetch(`${baseUrl}/custom_collections.json?limit=1`, {
+        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      });
+      permissions.collections = collectionsRes.ok;
+      console.log(`Collections access: ${collectionsRes.ok ? '✅' : '❌'}`);
+    } catch (e) {
+      console.log('Collections access: ❌');
+    }
+
+    // Test pages
+    try {
+      const pagesRes = await fetch(`${baseUrl}/pages.json?limit=1`, {
+        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      });
+      permissions.pages = pagesRes.ok;
+      console.log(`Pages access: ${pagesRes.ok ? '✅' : '❌'}`);
+    } catch (e) {
+      console.log('Pages access: ❌');
+    }
+
+    // Test articles (blogs)
+    try {
+      const blogsRes = await fetch(`${baseUrl}/blogs.json?limit=1`, {
+        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      });
+      permissions.articles = blogsRes.ok;
+      console.log(`Articles access: ${blogsRes.ok ? '✅' : '❌'}`);
+    } catch (e) {
+      console.log('Articles access: ❌');
+    }
+
+    // Images typically work if products work
+    permissions.images = permissions.products;
 
     return new Response(
       JSON.stringify({ 
@@ -57,7 +113,8 @@ serve(async (req) => {
           name: shopData.shop?.name,
           domain: shopData.shop?.myshopify_domain,
           email: shopData.shop?.email,
-        }
+        },
+        permissions
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -8,6 +8,14 @@ interface ShopifyConnection {
   store_name: string;
 }
 
+interface PermissionScopes {
+  products?: boolean;
+  collections?: boolean;
+  pages?: boolean;
+  articles?: boolean;
+  images?: boolean;
+}
+
 export const useShopifySync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentSyncType, setCurrentSyncType] = useState<string>('');
@@ -40,10 +48,10 @@ export const useShopifySync = () => {
         .replace(/\.myshopify\.com.*$/, '');
       console.log('🏪 [SYNC SHOP] Shop name extracted:', shopName);
 
-      // Get access token
+      // Get access token and permissions
       const { data: storeData, error: storeError } = await supabase
         .from('shopify_connections')
-        .select('access_token')
+        .select('access_token, available_scopes')
         .eq('id', storeToSync.id)
         .single();
 
@@ -52,6 +60,15 @@ export const useShopifySync = () => {
         throw new Error("Store not found");
       }
       console.log('✅ [SYNC TOKEN] Access token retrieved');
+
+      const permissions = (storeData.available_scopes as PermissionScopes) || {
+        products: true,
+        collections: true,
+        pages: true,
+        articles: true,
+        images: true
+      };
+      console.log('🔐 [SYNC PERMISSIONS] Available permissions:', permissions);
 
       // Create sync history entry
       console.log('📝 [SYNC HISTORY] Creating sync history entry...');
@@ -108,8 +125,30 @@ export const useShopifySync = () => {
 
       console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore, imagesBefore });
 
-      // Trigger import for all content types
-      const types = ['products', 'costs', 'collections', 'pages', 'articles', 'images'];
+      // Build content types array based on permissions
+      const types: string[] = [];
+      if (permissions.products) {
+        types.push('products', 'costs');
+      }
+      if (permissions.collections) {
+        types.push('collections');
+      }
+      if (permissions.pages) {
+        types.push('pages');
+      }
+      if (permissions.articles) {
+        types.push('articles');
+      }
+      if (permissions.images && permissions.products) {
+        types.push('images');
+      }
+
+      console.log('📋 [SYNC CONTENT TYPES] Will sync these types:', types);
+
+      if (types.length === 0) {
+        throw new Error('Aucune permission API disponible pour la synchronisation');
+      }
+
       const importResults: Record<string, number> = {};
       const errorMessages: string[] = [];
       
