@@ -311,8 +311,60 @@ export default function Onboarding() {
     }
   };
 
-  // REMOVED: handleStartTrial - Now using Stripe Checkout for ALL plans including Starter trial
-  // This ensures mandatory credit card collection and proper trial activation via Stripe webhook
+  const handleStartFreeTrial = async () => {
+    if (!user) {
+      toast.error(t.onboarding.errors.mustBeConnected);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🎁 Activating free trial for user:', user.id);
+
+      const { data, error } = await supabase.functions.invoke('activate-free-trial');
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(language === 'fr' 
+          ? 'Essai gratuit activé ! Redirection...' 
+          : 'Free trial activated! Redirecting...'
+        );
+        
+        // Check for Shopify pending connection
+        const shopifyPending = searchParams.get('shopify_pending');
+        if (shopifyPending) {
+          console.log('🔗 Claiming Shopify connection after trial setup');
+          try {
+            const { data: claimData, error: claimError } = await supabase.functions.invoke('claim-shopify-connection', {
+              body: { pendingToken: shopifyPending }
+            });
+
+            if (claimError) throw claimError;
+
+            if (claimData?.success) {
+              toast.success(t.sync.shopifyConnected);
+              toast.info(t.sync.autoImport, { duration: 5000 });
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+          } catch (claimError) {
+            console.error('Failed to claim Shopify connection:', claimError);
+            toast.error(t.sync.connectionFailed);
+          }
+        }
+
+        setTimeout(() => navigate('/dashboard'), 1500);
+      }
+    } catch (error) {
+      console.error('💥 Error activating trial:', error);
+      toast.error(language === 'fr'
+        ? 'Erreur lors de l\'activation de l\'essai gratuit'
+        : 'Error activating free trial'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectPlan = async (planId: string, isTrial: boolean = false) => {
     if (!user) {
@@ -652,13 +704,13 @@ export default function Onboarding() {
 
                 <Button 
                   className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
-                  onClick={() => handleSelectPlan('starter', true)}
+                  onClick={handleStartFreeTrial}
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'fr' ? 'Chargement...' : 'Loading...'}
+                      {language === 'fr' ? 'Activation...' : 'Activating...'}
                     </>
                   ) : (
                     <>
