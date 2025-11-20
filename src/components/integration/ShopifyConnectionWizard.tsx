@@ -30,11 +30,57 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const [apiSecret, setApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
 
-  const handleConnectWithShopify = () => {
-    const shopifyDevUrl = "https://admin.shopify.com/?organization_id=171858626&no_redirect=true&redirect=/oauth/redirect_from_developer_dashboard?client_id%3D2b48b327b99e7d7c8eb589c5dee9ef55";
-    
-    console.log("[SHOPIFY-WIZARD] Redirecting to Shopify OAuth");
-    window.location.href = shopifyDevUrl;
+  const handleConnectWithShopify = async () => {
+    try {
+      setManualLoading(true);
+      
+      // Prompt user for shop name
+      const shopNameInput = prompt("Enter your shop name (e.g., my-shop.myshopify.com):");
+      if (!shopNameInput) {
+        setManualLoading(false);
+        return;
+      }
+      
+      const cleanShopName = shopNameInput.replace('.myshopify.com', '');
+      
+      // Get current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Please log in first");
+        setManualLoading(false);
+        return;
+      }
+      
+      console.log('[SHOPIFY-WIZARD] Calling shopify-oauth edge function for:', cleanShopName);
+      
+      // Call shopify-oauth to generate OAuth URL
+      const { data, error } = await supabase.functions.invoke('shopify-oauth', {
+        body: {
+          shopName: `${cleanShopName}.myshopify.com`,
+          commercialName: cleanShopName,
+          preAuth: false  // User is already authenticated
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (error || !data?.authUrl) {
+        console.error('Failed to generate OAuth URL:', error);
+        toast.error("Failed to initiate connection");
+        setManualLoading(false);
+        return;
+      }
+      
+      console.log('[SHOPIFY-WIZARD] Redirecting to OAuth URL:', data.authUrl);
+      
+      // Redirect to Shopify OAuth
+      window.location.href = data.authUrl;
+    } catch (error) {
+      console.error('Error connecting with Shopify:', error);
+      toast.error("An error occurred");
+      setManualLoading(false);
+    }
   };
 
   const handleManualConnect = async () => {
