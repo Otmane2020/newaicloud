@@ -327,17 +327,39 @@ FORMAT RÉPONSE (JSON strict) :
 
     const generatedText = lovableData.choices?.[0]?.message?.content;
     if (!generatedText) {
+      console.error('No content in Gemini response:', JSON.stringify(lovableData, null, 2));
       throw new Error('No text generated from Gemini Vision');
     }
 
-    // Parse JSON response
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('Failed to parse JSON from response:', generatedText);
-      throw new Error('Failed to extract JSON from Vision response');
-    }
+    console.log('🔍 Raw Gemini response:', generatedText);
 
-    const visionResult: VisionResponse = JSON.parse(jsonMatch[0]);
+    // Parse JSON response - handle both pure JSON and text+JSON formats
+    let visionResult: VisionResponse;
+    
+    try {
+      // Try direct JSON parse first
+      visionResult = JSON.parse(generatedText);
+      console.log('✅ Direct JSON parse successful');
+    } catch (directParseError) {
+      console.log('⚠️ Direct parse failed, extracting JSON from text...');
+      
+      // Extract JSON from markdown code blocks or text
+      const jsonMatch = generatedText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || 
+                       generatedText.match(/(\{[\s\S]*\})/);
+      
+      if (!jsonMatch) {
+        console.error('❌ Failed to find JSON in response:', generatedText);
+        throw new Error('Failed to extract JSON from Vision response');
+      }
+
+      try {
+        visionResult = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        console.log('✅ Extracted JSON parse successful');
+      } catch (extractParseError) {
+        console.error('❌ Failed to parse extracted JSON:', jsonMatch[0]);
+        throw new Error('Failed to parse extracted JSON from Vision response');
+      }
+    }
 
     console.log('Vision analysis completed:', visionResult);
 
