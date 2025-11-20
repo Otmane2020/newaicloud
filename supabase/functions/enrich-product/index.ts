@@ -397,6 +397,18 @@ Réponds UNIQUEMENT en JSON valide:
     let specsSource = 'estimated';
     let specsConfidence = 0.5;
     let serpVerified = false;
+    
+    // Separate object for SERP dimensions (to avoid mixing with parsedData)
+    const serpDimensions = {
+      weight: null as number | null,
+      weight_unit: null as string | null,
+      length: null as number | null,
+      length_unit: null as string | null,
+      width: null as number | null,
+      width_unit: null as string | null,
+      height: null as number | null,
+      height_unit: null as string | null,
+    };
 
     // Only use SERP if Vision AI didn't provide sufficient data
     const hasVisionDimensions = visionAttributes?.technicalDimensions && 
@@ -425,36 +437,36 @@ Réponds UNIQUEMENT en JSON valide:
           specsConfidence = serpResponse.confidence;
           serpVerified = true;
 
-          // Only use SERP dimensions if Vision AI didn't provide them
-          if (!visionAttributes?.technicalDimensions?.weight && serpResponse.averageWeight) {
+          // Extract SERP dimensions into dedicated object
+          if (serpResponse.averageWeight) {
             const weightMatch = serpResponse.averageWeight.match(/^([\d.]+)(kg)?$/);
             if (weightMatch) {
-              parsedData.smart_weight = parseFloat(weightMatch[1]);
-              parsedData.smart_weight_unit = 'kg';
+              serpDimensions.weight = parseFloat(weightMatch[1]);
+              serpDimensions.weight_unit = 'kg';
             }
           }
 
-          if (!visionAttributes?.technicalDimensions?.length && serpResponse.averageDimensions?.length) {
+          if (serpResponse.averageDimensions?.length) {
             const lengthMatch = serpResponse.averageDimensions.length.match(/^([\d.]+)(cm)?$/);
             if (lengthMatch) {
-              parsedData.smart_length = parseFloat(lengthMatch[1]);
-              parsedData.smart_length_unit = 'cm';
+              serpDimensions.length = parseFloat(lengthMatch[1]);
+              serpDimensions.length_unit = 'cm';
             }
           }
 
-          if (!visionAttributes?.technicalDimensions?.width && serpResponse.averageDimensions?.width) {
+          if (serpResponse.averageDimensions?.width) {
             const widthMatch = serpResponse.averageDimensions.width.match(/^([\d.]+)(cm)?$/);
             if (widthMatch) {
-              parsedData.smart_width = parseFloat(widthMatch[1]);
-              parsedData.smart_width_unit = 'cm';
+              serpDimensions.width = parseFloat(widthMatch[1]);
+              serpDimensions.width_unit = 'cm';
             }
           }
 
-          if (!visionAttributes?.technicalDimensions?.height && serpResponse.averageDimensions?.height) {
+          if (serpResponse.averageDimensions?.height) {
             const heightMatch = serpResponse.averageDimensions.height.match(/^([\d.]+)(cm)?$/);
             if (heightMatch) {
-              parsedData.smart_height = parseFloat(heightMatch[1]);
-              parsedData.smart_height_unit = 'cm';
+              serpDimensions.height = parseFloat(heightMatch[1]);
+              serpDimensions.height_unit = 'cm';
             }
           }
         } else {
@@ -499,21 +511,27 @@ Réponds UNIQUEMENT en JSON valide:
         // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
         smart_length: existingDimensions.length || 
                       visionAttributes?.technicalDimensions?.length || 
+                      serpDimensions.length ||
                       parsedData.smart_length || null,
         smart_length_unit: existingDimensions.length_unit || 
                           visionAttributes?.technicalDimensions?.lengthUnit || 
+                          serpDimensions.length_unit ||
                           parsedData.smart_length_unit || null,
         smart_width: existingDimensions.width || 
                      visionAttributes?.technicalDimensions?.width || 
+                     serpDimensions.width ||
                      parsedData.smart_width || null,
         smart_width_unit: existingDimensions.width_unit || 
                          visionAttributes?.technicalDimensions?.widthUnit || 
+                         serpDimensions.width_unit ||
                          parsedData.smart_width_unit || null,
         smart_height: existingDimensions.height || 
                       visionAttributes?.technicalDimensions?.height || 
+                      serpDimensions.height ||
                       parsedData.smart_height || null,
         smart_height_unit: existingDimensions.height_unit || 
                           visionAttributes?.technicalDimensions?.heightUnit || 
+                          serpDimensions.height_unit ||
                           parsedData.smart_height_unit || null,
         smart_diameter: existingDimensions.diameter || 
                         visionAttributes?.technicalDimensions?.diameter || 
@@ -529,9 +547,11 @@ Réponds UNIQUEMENT en JSON valide:
                          parsedData.smart_depth_unit || null,
         smart_weight: existingDimensions.weight || 
                       visionAttributes?.technicalDimensions?.weight || 
+                      serpDimensions.weight ||
                       parsedData.smart_weight || null,
         smart_weight_unit: existingDimensions.weight_unit || 
                           visionAttributes?.technicalDimensions?.weightUnit || 
+                          serpDimensions.weight_unit ||
                           parsedData.smart_weight_unit || null,
         smart_seat_height: existingDimensions.seat_height || 
                           visionAttributes?.technicalDimensions?.seatHeight || 
@@ -540,11 +560,15 @@ Réponds UNIQUEMENT en JSON valide:
                                visionAttributes?.technicalDimensions?.seatHeightUnit || 
                                parsedData.smart_seat_height_unit || null,
         
-        // SERP tracking - NEW PRIORITY ORDER: product_description > vision > serp > estimated
+        // SERP tracking - PRIORITY ORDER: product_description > vision > serp > estimated
         specs_source: hasExistingDims ? 'product_description' : 
-                     (visionAttributes?.technicalDimensions ? 'vision' : 
-                     (serpVerified ? 'serp' : 'estimated')),
-        specs_confidence: serpVerified ? specsConfidence : (visionConfidence > 0 ? visionConfidence : 0.5),
+                     (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
+                     serpVerified ? 'serp' : 
+                     'estimated',
+        specs_confidence: hasExistingDims ? 100 : 
+                         (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
+                           Math.round(visionConfidence * 100) :
+                           serpVerified ? Math.round(specsConfidence * 100) : 50,
         serp_verified: serpVerified,
         serp_data: serpData || null,
         
