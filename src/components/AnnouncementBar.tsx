@@ -11,8 +11,8 @@ export const AnnouncementBar = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="bg-gradient-dark border-b border-primary/20 backdrop-blur-sm relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary-light/10 to-primary/10 animate-pulse" />
+    <div className="bg-gradient-announcement border-b border-primary-light/30 backdrop-blur-sm relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 py-3 pr-8 sm:pr-4">
           <div className="flex items-center gap-2">
