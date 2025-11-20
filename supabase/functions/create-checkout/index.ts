@@ -336,17 +336,22 @@ serve(async (req) => {
       },
       success_url: success_url || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
-      allow_promotion_codes: true,
       billing_address_collection: 'required',
       // CRITICAL: Toujours collecter le moyen de paiement
       payment_method_collection: 'always'
     };
     
     // Apply discount coupon if applicable
+    // NOTE: Cannot use both allow_promotion_codes AND discounts - must choose one
     if (discountCoupon) {
       sessionConfig.discounts = [{
         coupon: discountCoupon
       }];
+      console.log('🎫 Auto-applying discount, promotion codes disabled');
+    } else {
+      // Only allow manual promotion codes if no auto-discount is applied
+      sessionConfig.allow_promotion_codes = true;
+      console.log('🎫 Manual promotion codes enabled');
     }
 
     // Les prix annuels dans la base de données sont déjà réduits de 20%
