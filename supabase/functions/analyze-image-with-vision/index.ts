@@ -200,60 +200,31 @@ RÈGLES CRITIQUES :
           },
           signal: lovableController.signal,
         body: JSON.stringify({
-            model: 'google/gemini-2.5-pro', // Using PRO for better technical schema detection
-            messages: [
+          model: 'google/gemini-2.5-flash', // Flash is better at OCR
+          messages: [
               {
                 role: 'user',
                 content: [
                   { 
                     type: 'text', 
-                    text: `🎯 MISSION : Détecter et extraire les dimensions VISIBLES d'un produit sur image.
+                    text: `Analyse cette image produit. Cherche d'abord s'il y a des CHIFFRES visibles (100cm, 71cm, H:75, Ø43, etc.).
 
-⚠️ RÈGLE ABSOLUE : Si tu vois des CHIFFRES sur l'image (100cm, 71cm, H:75, etc.), c'est un schéma technique !
+SI TU VOIS DES CHIFFRES avec des unités (cm, kg, mm) :
+→ hasTechnicalSchema = true
+→ dimensionSource = "visible"
+→ Extrais EXACTEMENT ces valeurs (ne change rien, même les décimales)
+→ Sépare valeur et unité : "100cm" devient height:"100", heightUnit:"cm"
+→ confidence = 0.95
 
-ÉTAPE 1 - SCAN VISUEL PRIORITAIRE :
+SI AUCUN CHIFFRE visible :
+→ hasTechnicalSchema = false
+→ dimensionSource = "estimated"  
+→ Estime selon le type de produit
+→ confidence = 0.75
 
-Cherche ces INDICES VISUELS (dans cet ordre) :
-1️⃣ CHIFFRES avec unités : "100cm", "71cm", "H:75", "Ø35", "47.5cm"
-2️⃣ Lignes de cote (traits avec flèches montrant les mesures)
-3️⃣ Schéma technique (dessin au trait, wireframe, croquis coté)
-4️⃣ Tableaux de spécifications
-5️⃣ Étiquettes produit avec dimensions
+Contexte : ${JSON.stringify(productContext, null, 2)}
 
-→ Si tu vois AU MOINS UN chiffre avec dimension :
-   ✅ hasTechnicalSchema = true
-   ✅ dimensionSource = "visible"
-   ✅ confidence = 0.90-0.95
-   ✅ EXTRAIS les valeurs EXACTES (même les décimales : 47.5, 71.2)
-
-→ Si AUCUN chiffre visible :
-   ⚠️ hasTechnicalSchema = false
-   ⚠️ dimensionSource = "estimated"
-   ⚠️ confidence = 0.70-0.80
-   ⚠️ Estime selon le type de produit
-
-ÉTAPE 2 - EXTRACTION DES VALEURS VISIBLES :
-
-📏 CONVENTIONS d'extraction :
-- "100cm" → height: "100", heightUnit: "cm"
-- "H:71cm" → seatHeight: "71", seatHeightUnit: "cm"
-- "Ø43cm" → diameter: "43", diameterUnit: "cm"
-- "L:47.5cm" → width: "47.5", widthUnit: "cm"
-- "P:47.5cm" → depth: "47.5", depthUnit: "cm"
-- "8.5kg" → weight: "8.5", weightUnit: "kg"
-
-🔤 TRADUCTION des annotations françaises :
-- H: ou hauteur → height
-- L: ou largeur → width
-- P: ou profondeur → depth
-- Ø ou diamètre → diameter
-- Assise → seatHeight
-- Poids → weight
-
-Contexte produit : ${JSON.stringify(productContext, null, 2)}
-
-⚙️ IMPORTANT : Tu ne dois PAS renvoyer de texte libre, uniquement un appel de fonction JSON conforme au schéma fourni dans tools.set_vision_result.
-` 
+IMPORTANT : Utilise la fonction set_vision_result pour retourner le résultat.` 
                   },
                   {
                     type: 'image_url',
