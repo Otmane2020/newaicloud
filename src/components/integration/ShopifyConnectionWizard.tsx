@@ -24,29 +24,27 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const { refreshStores } = useStore();
   const { t } = useTranslation();
 
-  const [showApiForm, setShowApiForm] = useState(false);
+  const [view, setView] = useState<'initial' | 'oauth' | 'api'>('initial');
   const [shopName, setShopName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
 
-  const handleConnectWithShopify = async () => {
+  const handleOAuthConnect = async () => {
+    if (!shopName.trim()) {
+      toast.error("Veuillez entrer le nom de votre boutique");
+      return;
+    }
+
     try {
       setManualLoading(true);
       
-      // Prompt user for shop name
-      const shopNameInput = prompt("Enter your shop name (e.g., my-shop.myshopify.com):");
-      if (!shopNameInput) {
-        setManualLoading(false);
-        return;
-      }
-      
-      const cleanShopName = shopNameInput.replace('.myshopify.com', '');
+      const cleanShopName = shopName.trim().replace('.myshopify.com', '');
       
       // Get current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        toast.error("Please log in first");
+        toast.error("Veuillez vous connecter d'abord");
         setManualLoading(false);
         return;
       }
@@ -67,7 +65,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       
       if (error || !data?.authUrl) {
         console.error('Failed to generate OAuth URL:', error);
-        toast.error("Failed to initiate connection");
+        toast.error("Échec de la connexion");
         setManualLoading(false);
         return;
       }
@@ -78,7 +76,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       window.location.href = data.authUrl;
     } catch (error) {
       console.error('Error connecting with Shopify:', error);
-      toast.error("An error occurred");
+      toast.error("Une erreur s'est produite");
       setManualLoading(false);
     }
   };
@@ -198,7 +196,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       setShopName("");
       setApiKey("");
       setApiSecret("");
-      setShowApiForm(false);
+      setView('initial');
     } catch (error: any) {
       console.error("Error during manual connection:", error);
       toast.error(error.message || "Failed to connect store");
@@ -210,10 +208,15 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   return (
     <Dialog open={open} onOpenChange={(open) => {
       onOpenChange(open);
-      if (!open) setShowApiForm(false);
+      if (!open) {
+        setView('initial');
+        setShopName("");
+        setApiKey("");
+        setApiSecret("");
+      }
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        {!showApiForm ? (
+        {view === 'initial' ? (
           <div className="flex flex-col items-center gap-8 py-8">
             <img 
               src={shopifyLogo} 
@@ -227,7 +230,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
             <div className="w-full max-w-sm space-y-3">
               <Button
-                onClick={handleConnectWithShopify}
+                onClick={() => setView('oauth')}
                 className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
                 size="lg"
               >
@@ -235,7 +238,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               </Button>
 
               <Button
-                onClick={() => setShowApiForm(true)}
+                onClick={() => setView('api')}
                 variant="outline"
                 className="w-full h-14 text-lg border-2 rounded-lg"
                 size="lg"
@@ -244,13 +247,78 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               </Button>
             </div>
           </div>
+        ) : view === 'oauth' ? (
+          <div className="space-y-6 p-2">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setView('initial')}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <DialogTitle className="text-xl">
+                Connexion OAuth Shopify
+              </DialogTitle>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="oauthShopName" className="text-base font-semibold">
+                  Nom de votre boutique
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Entrez le nom de votre boutique Shopify
+                </p>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="oauthShopName"
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    placeholder="ma-boutique"
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && shopName.trim()) {
+                        handleOAuthConnect();
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap font-mono">
+                    .myshopify.com
+                  </span>
+                </div>
+                {shopName && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Domaine: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Button
+              onClick={handleOAuthConnect}
+              disabled={manualLoading || !shopName.trim()}
+              className="w-full"
+              size="lg"
+            >
+              {manualLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connexion en cours...
+                </>
+              ) : (
+                'Continuer vers Shopify'
+              )}
+            </Button>
+          </div>
         ) : (
           <div className="space-y-6 p-2">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowApiForm(false)}
+                onClick={() => setView('initial')}
                 className="h-8 w-8"
               >
                 <ArrowLeft className="h-4 w-4" />
