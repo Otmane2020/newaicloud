@@ -995,7 +995,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle) * 0.8, language)}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1004,6 +1004,19 @@ export default function Onboarding() {
 
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className="text-2xl sm:text-3xl font-bold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
+                      </span>
+                      <Badge variant="destructive" className="text-xs">
+                        -20%
+                      </Badge>
+                    </div>
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
@@ -1129,7 +1142,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle) * 0.7, language)}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1138,6 +1151,19 @@ export default function Onboarding() {
 
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className="text-2xl sm:text-3xl font-bold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
+                      </span>
+                      <Badge variant="destructive" className="text-xs">
+                        -30%
+                      </Badge>
+                    </div>
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
