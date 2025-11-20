@@ -55,6 +55,7 @@ import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
 import ShopifyInstall from "./pages/ShopifyInstall";
+import ShopifyRecover from "./pages/ShopifyRecover";
 import ShopifyInstallGuide from "./pages/ShopifyInstallGuide";
 import ShopifySuccess from "./pages/ShopifySuccess";
 import NotFound from "./pages/NotFound";
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/test-landing" element={<TestLandingGeneration />} />
             <Route path="/testlectureimage" element={<TestLectureImage />} />
           <Route path="/shopify/install" element={<ShopifyInstall />} />
+          <Route path="/shopify/recover" element={<ShopifyRecover />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
             <Route
