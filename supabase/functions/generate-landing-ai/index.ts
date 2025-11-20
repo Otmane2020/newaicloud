@@ -233,8 +233,17 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   const dims = [];
   let weightSource: string | null = null; // Track where weight comes from
   
+  // Detect if we have any smart_* dimensions available
+  const hasSmartDims =
+    enriched.smart_length ||
+    enriched.smart_width ||
+    enriched.smart_height ||
+    enriched.smart_diameter ||
+    enriched.smart_depth ||
+    enriched.smart_seat_height;
+  
   if (techDims && Object.keys(techDims).length > 0) {
-    // Use dimensions extracted from technical schematic or visible on packaging
+    // Use dimensions extracted from technical schematic or visible on packaging (VISION FIRST)
     if (techDims.hauteur_totale) dims.push(`H ${techDims.hauteur_totale}`);
     if (techDims.height) dims.push(`H ${techDims.height}`);
     if (techDims.largeur) dims.push(`L ${techDims.largeur}`);
@@ -254,30 +263,13 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
       sections.push(language === "en" ? "\nDIMENSIONS (visible on image):" : "\nDIMENSIONS (visibles sur image):");
       sections.push(`- ${dims.join(" × ")}`);
     }
-  } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
-    // Use SERP-verified dimensions (MEDIUM PRIORITY)
-    const serpDims = enriched.serp_data.averageDimensions;
-    if (serpDims.length) dims.push(`L ${serpDims.length}`);
-    if (serpDims.width) dims.push(`l ${serpDims.width}`);
-    if (serpDims.height) dims.push(`H ${serpDims.height}`);
-    
-    // Add SERP weight only if not already extracted from vision
-    if (!weightSource && enriched.serp_data.averageWeight) {
-      dims.push(`Poids ${enriched.serp_data.averageWeight}`);
-      weightSource = "serp";
-    }
-    
-    if (dims.length > 0) {
-      sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
-      sections.push(`- ${dims.join(" × ")}`);
-    }
-  } else {
-    // Fallback to estimated smart dimensions (LOWEST PRIORITY)
+  } else if (hasSmartDims) {
+    // Fallback to estimated smart dimensions (SECOND PRIORITY, before SERP)
     if (enriched.smart_length) dims.push(`L ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
     if (enriched.smart_width) dims.push(`l ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
     if (enriched.smart_height) dims.push(`H ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
     
-    // Add estimated weight only if not from vision or SERP
+    // Add estimated weight only if not from vision
     if (!weightSource && enriched.smart_weight) {
       dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
       weightSource = "estimated";
@@ -290,6 +282,23 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     
     if (dims.length > 0) {
       sections.push(language === "en" ? "\nDIMENSIONS (estimated):" : "\nDIMENSIONS (estimées):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
+    // Use SERP-verified dimensions ONLY AS LAST RESORT
+    const serpDims = enriched.serp_data.averageDimensions;
+    if (serpDims.length) dims.push(`L ${serpDims.length}`);
+    if (serpDims.width) dims.push(`l ${serpDims.width}`);
+    if (serpDims.height) dims.push(`H ${serpDims.height}`);
+    
+    // Add SERP weight only if not already extracted from vision/estimation
+    if (!weightSource && enriched.serp_data.averageWeight) {
+      dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+      weightSource = "serp";
+    }
+    
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
       sections.push(`- ${dims.join(" × ")}`);
     }
   }
