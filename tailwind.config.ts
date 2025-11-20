@@ -103,6 +103,7 @@ export default {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-dark': 'var(--gradient-dark)',
         'gradient-subtle': 'var(--gradient-subtle)',
+        'gradient-announcement': 'var(--gradient-announcement)',
       },
       boxShadow: {
         'primary': 'var(--shadow-primary)',
