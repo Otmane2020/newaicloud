@@ -317,7 +317,7 @@ ATTRIBUTS VISUELS:
 
 ANALYSE VISION (estime basé sur description):
 8. ai_vision_analysis: Analyse détaillée du produit (2-3 phrases)
-9. ai_presentation_quality: Note de qualité de présentation /10
+9. ai_presentation_quality: Note de qualité de présentation entre 0 et 1 (ex: 0.8 pour bonne qualité)
 10. ai_craftsmanship_level: Niveau d'artisanat ("standard", "premium", "luxe")
 11. ai_lighting_type: Type d'éclairage apparent ("naturel", "studio", "mixte")
 12. ai_background_style: Style du fond ("neutre", "contextualisé", "lifestyle")
@@ -525,8 +525,8 @@ Réponds UNIQUEMENT en JSON valide:
         ai_vision_analysis: parsedData.ai_vision_analysis || null,
         ai_vision_model: 'deepseek-chat',
         ai_vision_timestamp: new Date().toISOString(),
-        ai_vision_confidence: visionConfidence > 0 ? Math.round(visionConfidence * 100) : (parsedData.ai_presentation_quality ? parsedData.ai_presentation_quality * 10 : 80),
-        ai_presentation_quality: parsedData.ai_presentation_quality || null,
+        ai_vision_confidence: visionConfidence > 0 ? Math.round(visionConfidence * 100) : (parsedData.ai_presentation_quality ? Math.min(parsedData.ai_presentation_quality, 1) * 100 : 80),
+        ai_presentation_quality: parsedData.ai_presentation_quality ? Math.min(parsedData.ai_presentation_quality, 1) : null,
         ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
         ai_lighting_type: parsedData.ai_lighting_type || null,
         ai_background_style: parsedData.ai_background_style || null,
