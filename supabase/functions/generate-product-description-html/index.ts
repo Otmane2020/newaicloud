@@ -238,6 +238,39 @@ REQUIRED HTML STRUCTURE:
   • Proper alt attributes on ALL images
 
 ==============================
+DATA SOURCE PRIORITY & COHERENCE
+==============================
+CRITICAL - Follow this exact priority order for product information:
+
+1. **Product Description** (HIGHEST TRUST):
+   - Use existing product description as the main source of truth
+   - This is the official product information - NEVER contradict it
+   - If dimensions are marked as "product_description" source, display them prominently
+
+2. **Vision AI Insights** (SECOND PRIORITY):
+   - Add visual details that complement the description
+   - Highlight when Vision AI confirms what's in the description
+   - Use for additional visual attributes (color, material, texture, finish)
+
+3. **SERP Data** (THIRD PRIORITY):
+   - Use to validate dimensions or add missing information
+   - Mention SERP validation only if it aligns with description
+   - Good for confirming specifications
+
+4. **Estimated Data** (LAST RESORT):
+   - Fill gaps only when other sources are missing
+   - Mark as "estimated" when displaying
+
+COMBINING SOURCES RULES:
+- DO NOT contradict the product description
+- Create a coherent narrative that prioritizes accuracy over quantity
+- When displaying dimensions, add a small badge indicating source:
+  * "✅ Official dimensions" for product_description
+  * "📸 Vision AI analyzed" for vision
+  * "🔍 Verified by SERP" for serp
+  * "📊 AI estimated" for estimated
+
+==============================
 MEDIA INTEGRATION
 ==============================
 - Use provided image URLs with <img> tags

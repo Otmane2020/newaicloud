@@ -133,6 +133,37 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ Product fetched: ${product.title}`);
 
+    // ============ PHASE 0: CHECK EXISTING DIMENSIONS (HIGHEST PRIORITY) ============
+    console.log('🔍 Phase 0: Checking for existing product dimensions...');
+    let existingDimensions: any = {};
+    let hasExistingDims = false;
+
+    // Check if dimensions already exist in the product
+    if (product.smart_length || product.smart_width || product.smart_height || 
+        product.smart_diameter || product.smart_depth || product.smart_weight || 
+        product.smart_seat_height) {
+      console.log('✅ Found existing dimensions in product');
+      existingDimensions = {
+        length: product.smart_length,
+        length_unit: product.smart_length_unit,
+        width: product.smart_width,
+        width_unit: product.smart_width_unit,
+        height: product.smart_height,
+        height_unit: product.smart_height_unit,
+        diameter: product.smart_diameter,
+        diameter_unit: product.smart_diameter_unit,
+        depth: product.smart_depth,
+        depth_unit: product.smart_depth_unit,
+        weight: product.smart_weight,
+        weight_unit: product.smart_weight_unit,
+        seat_height: product.smart_seat_height,
+        seat_height_unit: product.smart_seat_height_unit,
+      };
+      hasExistingDims = true;
+    } else {
+      console.log('ℹ️ No existing dimensions found');
+    }
+
     // Check if product already optimized for trial users
     const { data: profile } = await supabase
       .from('profiles')
@@ -151,7 +182,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ============ PHASE 1: VISION AI ANALYSIS (HIGHEST PRIORITY) ============
+    // ============ PHASE 1: VISION AI ANALYSIS (SECOND PRIORITY) ============
     console.log('🎨 Phase 1: Vision AI analysis starting...');
     let visionAttributes: any = null;
     let visionConfidence = 0;
@@ -227,7 +258,7 @@ Deno.serve(async (req: Request) => {
       console.log('⏭️ No product images found, skipping Vision AI');
     }
 
-    // ============ PHASE 2: DEEPSEEK AI COMPLETION (FILLS GAPS) ============
+    // ============ PHASE 2: DEEPSEEK AI COMPLETION (FILLS REMAINING GAPS) ============
     console.log('🤖 Phase 2: DeepSeek AI completing missing attributes...');
 
     // Build prompt that includes vision data and asks DeepSeek to ONLY fill gaps
@@ -361,7 +392,7 @@ Réponds UNIQUEMENT en JSON valide:
 
     console.log('📝 Parsed attributes:', parsedData);
 
-    // PHASE 3: Try SERP search for similar products specs
+    // PHASE 3: SERP search for similar products specs (LOWEST PRIORITY - VALIDATION ONLY)
     let serpData = null;
     let specsSource = 'estimated';
     let specsConfidence = 0.5;
@@ -455,24 +486,54 @@ Réponds UNIQUEMENT en JSON valide:
         ai_background_style: parsedData.ai_background_style || null,
         ai_condition_notes: parsedData.ai_condition_notes || null,
         
-        // Dimensions (potentially updated by SERP)
-        smart_length: parsedData.smart_length || null,
-        smart_length_unit: parsedData.smart_length_unit || null,
-        smart_width: parsedData.smart_width || null,
-        smart_width_unit: parsedData.smart_width_unit || null,
-        smart_height: parsedData.smart_height || null,
-        smart_height_unit: parsedData.smart_height_unit || null,
-        smart_diameter: parsedData.smart_diameter || null,
-        smart_diameter_unit: parsedData.smart_diameter_unit || null,
-        smart_depth: parsedData.smart_depth || null,
-        smart_depth_unit: parsedData.smart_depth_unit || null,
-        smart_weight: parsedData.smart_weight || null,
-        smart_weight_unit: parsedData.smart_weight_unit || null,
-        smart_seat_height: parsedData.smart_seat_height || null,
-        smart_seat_height_unit: parsedData.smart_seat_height_unit || null,
+        // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
+        smart_length: existingDimensions.length || 
+                      visionAttributes?.technicalDimensions?.length || 
+                      parsedData.smart_length || null,
+        smart_length_unit: existingDimensions.length_unit || 
+                          visionAttributes?.technicalDimensions?.lengthUnit || 
+                          parsedData.smart_length_unit || null,
+        smart_width: existingDimensions.width || 
+                     visionAttributes?.technicalDimensions?.width || 
+                     parsedData.smart_width || null,
+        smart_width_unit: existingDimensions.width_unit || 
+                         visionAttributes?.technicalDimensions?.widthUnit || 
+                         parsedData.smart_width_unit || null,
+        smart_height: existingDimensions.height || 
+                      visionAttributes?.technicalDimensions?.height || 
+                      parsedData.smart_height || null,
+        smart_height_unit: existingDimensions.height_unit || 
+                          visionAttributes?.technicalDimensions?.heightUnit || 
+                          parsedData.smart_height_unit || null,
+        smart_diameter: existingDimensions.diameter || 
+                        visionAttributes?.technicalDimensions?.diameter || 
+                        parsedData.smart_diameter || null,
+        smart_diameter_unit: existingDimensions.diameter_unit || 
+                            visionAttributes?.technicalDimensions?.diameterUnit || 
+                            parsedData.smart_diameter_unit || null,
+        smart_depth: existingDimensions.depth || 
+                     visionAttributes?.technicalDimensions?.depth || 
+                     parsedData.smart_depth || null,
+        smart_depth_unit: existingDimensions.depth_unit || 
+                         visionAttributes?.technicalDimensions?.depthUnit || 
+                         parsedData.smart_depth_unit || null,
+        smart_weight: existingDimensions.weight || 
+                      visionAttributes?.technicalDimensions?.weight || 
+                      parsedData.smart_weight || null,
+        smart_weight_unit: existingDimensions.weight_unit || 
+                          visionAttributes?.technicalDimensions?.weightUnit || 
+                          parsedData.smart_weight_unit || null,
+        smart_seat_height: existingDimensions.seat_height || 
+                          visionAttributes?.technicalDimensions?.seatHeight || 
+                          parsedData.smart_seat_height || null,
+        smart_seat_height_unit: existingDimensions.seat_height_unit || 
+                               visionAttributes?.technicalDimensions?.seatHeightUnit || 
+                               parsedData.smart_seat_height_unit || null,
         
-        // SERP tracking
-        specs_source: serpVerified ? 'serp' : (visionAttributes?.technicalDimensions ? 'vision' : 'estimated'),
+        // SERP tracking - NEW PRIORITY ORDER: product_description > vision > serp > estimated
+        specs_source: hasExistingDims ? 'product_description' : 
+                     (visionAttributes?.technicalDimensions ? 'vision' : 
+                     (serpVerified ? 'serp' : 'estimated')),
         specs_confidence: serpVerified ? specsConfidence : (visionConfidence > 0 ? visionConfidence : 0.5),
         serp_verified: serpVerified,
         serp_data: serpData || null,
