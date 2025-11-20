@@ -20,8 +20,7 @@ import {
   Star,
   LogOut,
   Loader2,
-  Store,
-  Target
+  Store
 } from 'lucide-react';
 import {
   Select,
@@ -735,108 +734,101 @@ export default function Onboarding() {
         </div>
 
       {/* Plans */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2 items-stretch`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}>
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
           {!hasUsedTrial && (() => {
-            // Define real trial limits
-            const trialLimits = {
-              max_products: 10,
-              max_shopify_stores: 1,
-              max_optimizations_monthly: 50,
-              max_articles_monthly: 1,
-              max_campaigns: 0,
-              max_chat_responses_monthly: 50
-            };
+            const starterPlan = plans.find(p => p.id === 'starter');
+            if (!starterPlan) return null;
 
             return (
-              <Card className="p-6 lg:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col h-full">
-                {/* Badge - Fixed height */}
-                <div className="h-8 mb-2">
-                  <Badge className="bg-success text-xs w-fit">
-                    <Star className="w-3 h-3 mr-1" />
-                    {language === 'fr' ? 'GRATUIT' : 'FREE'}
-                  </Badge>
+              <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
+                  {language === 'fr' ? 'GRATUIT' : 'FREE'}
                 </div>
                 
-                {/* Title - Fixed height */}
-                <div className="h-12 mb-3">
-                  <h3 className="text-2xl font-bold">
-                    {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
-                  </h3>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
+                  <Star className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">
+                  {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
+                </h3>
+                <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
+                  {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
+                </Badge>
                 
-                {/* Price - Fixed height */}
-                <div className="h-32 mb-4">
-                  <div className="text-center">
-                    <div className="flex items-baseline gap-2 justify-center mb-1">
-                      <span className="text-4xl font-bold">
-                        {getCurrencySymbol(language)}0
+                <div className="mb-4">
+                  <div className="text-3xl sm:text-4xl font-bold mb-1">
+                    {getCurrencySymbol(language)}0
+                    <span className="text-base sm:text-lg text-muted-foreground font-normal">
+                      /{t.onboarding.billing.monthly}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t.onboarding.trial.noCardRequired}
+                  </p>
+                </div>
+
+                <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
+                      {formatLimit(starterPlan.max_products)} {language === 'fr' ? 'produits' : 'products'}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
+                      {formatLimit(starterPlan.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
+                      {formatLimit(starterPlan.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
+                    </span>
+                  </div>
+                  {starterPlan.max_campaigns > 0 && (
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {formatLimit(starterPlan.max_campaigns)} {language === 'fr' ? 'campagnes' : 'campaigns'}
                       </span>
-                      <span className="text-muted-foreground text-sm">/{language === 'fr' ? 'mois' : 'month'}</span>
                     </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 mt-3">
-                    <p className="text-xs font-medium text-center">
-                      <span className="text-pink-600 dark:text-pink-400">
-                        {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free trial'}
-                      </span>
-                      <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                        {language === 'fr' ? 'SANS CB' : 'NO CARD'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features - Flexible height */}
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(trialLimits.max_products)} {language === 'fr' ? 'produits' : 'products'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(trialLimits.max_shopify_stores)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(trialLimits.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(trialLimits.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(trialLimits.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
+                  )}
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
+                      {formatLimit(starterPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
                     </span>
                   </div>
                 </div>
 
-                {/* Button - Fixed at bottom */}
-                <div className="mt-auto pt-4">
-                  <Button 
-                    size="lg"
-                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                    onClick={handleStartFreeTrial}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                        {language === 'fr' ? 'Activation...' : 'Activating...'}
-                      </>
-                    ) : (
-                      <span className="leading-tight">{t.onboarding.trial.startTrial}</span>
-                    )}
-                  </Button>
-                </div>
+                <Button 
+                  className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                  onClick={handleStartFreeTrial}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'fr' ? 'Activation...' : 'Activating...'}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {t.onboarding.trial.startTrial}
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-[10px] text-center text-muted-foreground mt-2">
+                  {t.onboarding.choosePlanAfterTrial}
+                </p>
               </Card>
             );
           })()}
@@ -851,23 +843,24 @@ export default function Onboarding() {
             return (
               <Card
                 key={starterPlan.id}
-                className="p-6 lg:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col h-full"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
-                {/* Badge - Fixed height */}
-                <div className="h-8 mb-2">
-                  {/* Empty space for alignment */}
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                {/* Title - Fixed height */}
-                <div className="h-12 mb-3">
-                  <h3 className="text-2xl font-bold">{starterPlan.name}</h3>
-                </div>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">{starterPlan.name}</h3>
+                {starterPlan.trial_days > 0 && (
+                  <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
+                    {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
+                  </Badge>
+                )}
+                <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">{t.dashboard.plans.descriptions.starter}</p>
 
-                {/* Price - Fixed height */}
-                <div className="h-32 mb-4">
-                  <div className="text-center">
-                    <div className="flex items-baseline gap-2 justify-center mb-1">
-                      <span className="text-4xl font-bold">
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex flex-col items-center justify-center mb-2">
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(starterPlan, language, billingCycle) / 12 
@@ -875,93 +868,79 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground text-sm">{language === 'fr' ? '/mois' : '/month'}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{language === 'fr' ? '/mois' : '/month'}</span>
                     </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 mt-3">
-                    <p className="text-xs font-medium text-center">
-                      {starterPlan.trial_days > 0 && (
-                        <>
-                          <span className="text-pink-600 dark:text-pink-400">
-                            {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
-                          </span>
-                          <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                            {language === 'fr' ? 'PUIS ' : 'THEN '}
-                          </span>
-                        </>
-                      )}
-                      {billingCycle === 'yearly' ? (
-                        <span className="text-purple-600 dark:text-purple-400">
-                          {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)} {language === 'fr' ? '/an' : '/year'}
-                        </span>
-                      ) : (
-                        <span className="text-purple-600 dark:text-purple-400">
-                          {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)} {language === 'fr' ? '/mois' : '/month'}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features - Flexible height */}
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-border space-y-2">
-                    <p className="font-semibold text-sm mb-2">
-                      {language === 'fr' ? 'Fonctionnalités supplémentaires :' : 'Additional features:'}
-                    </p>
-                    {Object.entries(starterPlan.features).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success flex-shrink-0" />
-                        <span className="text-sm">
-                          {typeof value === 'boolean' 
-                            ? key.replace('_', ' ')
-                            : `${key.replace('_', ' ')}: ${value}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Button - Fixed at bottom */}
-                <div className="mt-auto pt-4">
-                  <Button
-                    size="lg"
-                    onClick={() => handleSelectPlan(starterPlan.id)}
-                    disabled={loading}
-                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
-                    ) : (
-                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
+                        {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
                     )}
-                  </Button>
+                  </div>
                 </div>
+
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                  {Object.entries(starterPlan.features).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {typeof value === 'boolean' 
+                          ? key.replace('_', ' ')
+                          : `${key.replace('_', ' ')}: ${value}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  size="lg"
+                  onClick={() => handleSelectPlan(starterPlan.id)}
+                  disabled={loading}
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
+                    </>
+                  )}
+                </Button>
+                
+                {starterPlan.trial_days > 0 && (
+                  <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-2 sm:mt-3 px-2">
+                    {tf('onboarding.trial.cardRequired', { 
+                      date: new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                    })}
+                  </p>
+                )}
               </Card>
             );
           })()}
@@ -984,46 +963,68 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className="p-6 lg:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-primary flex flex-col h-full"
+                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                  isPopular ? 'ring-2 ring-primary' : 'border-2 border-border'
+                }`}
               >
-                {/* Badge - Fixed height */}
-                <div className="h-8 mb-2">
-                  <Badge className="bg-primary text-xs w-fit">
+                {isPopular && (
+                  <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
                     <Star className="w-3 h-3 mr-1" />
                     {t.onboarding.planFeatures.mostPopular}
                   </Badge>
+                )}
+
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('professional')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                {/* Title - Fixed height */}
-                <div className="h-12 mb-3">
-                  <h3 className="text-2xl font-bold">Pro</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
+                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forGrowth}</p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡 {language === 'fr' ? "L'équilibre parfait entre puissance, automatisation et évolutivité." : 'The perfect balance between power, automation and scalability.'}
+                  </p>
                 </div>
 
-                {/* Price - Fixed height - with dropdown */}
-                <div className="h-32 mb-4">
-                  <div className="mb-3">
-                    <Select value={selectedProTier} onValueChange={setSelectedProTier}>
-                      <SelectTrigger className="w-full bg-background z-50 text-sm">
-                        <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50 text-sm">
-                        {proPlans
-                          .sort((a, b) => {
-                            const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
-                            const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
-                            return priceA - priceB;
-                          })
-                          .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id}>
-                            {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-baseline gap-2 justify-center mb-1">
-                      <span className="text-4xl font-bold">
+                {/* Dropdown pour choisir le tier */}
+                <div className="mb-3 sm:mb-4">
+                  <Select value={selectedProTier} onValueChange={setSelectedProTier}>
+                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
+                      <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
+                      {proPlans
+                        .sort((a, b) => {
+                          const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
+                          const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
+                          return priceA - priceB; // Tri croissant: 49€ en premier
+                        })
+                        .map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-semibold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
+                      </span>
+                      <Badge variant="destructive" className="text-xs">
+                        -20%
+                      </Badge>
+                    </div>
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1031,80 +1032,81 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground text-sm">{language === 'fr' ? '/mois' : '/month'}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 mt-3">
-                    <p className="text-xs font-medium text-center">
-                      <span className="text-pink-600 dark:text-pink-400">
-                        {language === 'fr' ? 'Obtenez 20% de réduction' : 'Get 20% discount'}
-                      </span>
-                      <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                        {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features - Flexible height */}
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
-                  </div>
-
-                  <div className="pt-4 border-t border-border space-y-2">
-                    <p className="font-semibold text-sm mb-2">
-                      {language === 'fr' ? 'Fonctionnalités supplémentaires :' : 'Additional features:'}
-                    </p>
-                    {Object.entries(selectedPlan.features).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success flex-shrink-0" />
-                        <span className="text-sm">
-                          {typeof value === 'boolean' 
-                            ? key.replace('_', ' ')
-                            : `${key.replace('_', ' ')}: ${value}`}
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
+                      <p className="text-xs sm:text-sm font-medium text-center">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 20% de réduction' : 'Get 20% discount'}
                         </span>
-                      </div>
-                    ))}
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
+                    </div>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Button - Fixed at bottom */}
-                <div className="mt-auto pt-4">
-                  <Button
-                    size="lg"
-                    onClick={() => handleSelectPlan(selectedProTier)}
-                    disabled={loading}
-                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
-                    ) : (
-                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
-                    )}
-                  </Button>
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                  </div>
                 </div>
+
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                  {Object.entries(selectedPlan.features).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {typeof value === 'boolean' 
+                          ? key.replace('_', ' ')
+                          : `${key.replace('_', ' ')}: ${value}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  size="lg"
+                  onClick={() => handleSelectPlan(selectedProTier)}
+                  disabled={loading}
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                    </>
+                  )}
+                </Button>
               </Card>
             );
           })()}
@@ -1125,43 +1127,66 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-6 lg:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col h-full"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
-                {/* Badge - Fixed height */}
-                <div className="h-8 mb-2">
-                  {/* Empty space for alignment */}
+                {isBestValue && (
+                  <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    {t.onboarding.planFeatures.bestValue}
+                  </Badge>
+                )}
+
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                {/* Title - Fixed height */}
-                <div className="h-12 mb-3">
-                  <h3 className="text-2xl font-bold">Enterprise</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
+                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forEnterprise}</p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡 {language === 'fr' ? 'Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.' : 'Fully managed AI suite with high quotas, API access and personal support.'}
+                  </p>
                 </div>
 
-                {/* Price - Fixed height - with dropdown */}
-                <div className="h-32 mb-4">
-                  <div className="mb-3">
-                    <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
-                      <SelectTrigger className="w-full bg-background z-50 text-sm">
-                        <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50 text-sm">
-                        {enterprisePlans
-                          .sort((a, b) => {
-                            const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
-                            const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
-                            return priceA - priceB;
-                          })
-                          .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id}>
-                            {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-baseline gap-2 justify-center mb-1">
-                      <span className="text-4xl font-bold">
+                {/* Dropdown pour choisir le tier */}
+                <div className="mb-3 sm:mb-4">
+                  <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
+                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
+                      <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
+                      {enterprisePlans
+                        .sort((a, b) => {
+                          const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
+                          const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
+                          return priceA - priceB;
+                        })
+                        .map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-semibold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
+                      </span>
+                      <Badge variant="destructive" className="text-xs">
+                        -30%
+                      </Badge>
+                    </div>
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1169,80 +1194,81 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground text-sm">{language === 'fr' ? '/mois' : '/month'}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 mt-3">
-                    <p className="text-xs font-medium text-center">
-                      <span className="text-pink-600 dark:text-pink-400">
-                        {language === 'fr' ? 'Obtenez 30% de réduction' : 'Get 30% discount'}
-                      </span>
-                      <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                        {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features - Flexible height */}
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
-                  </div>
-
-                  <div className="pt-4 border-t border-border space-y-2">
-                    <p className="font-semibold text-sm mb-2">
-                      {language === 'fr' ? 'Fonctionnalités supplémentaires :' : 'Additional features:'}
-                    </p>
-                    {Object.entries(selectedPlan.features).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success flex-shrink-0" />
-                        <span className="text-sm">
-                          {typeof value === 'boolean' 
-                            ? key.replace('_', ' ')
-                            : `${key.replace('_', ' ')}: ${value}`}
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
+                      <p className="text-xs sm:text-sm font-medium text-center">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 30% de réduction' : 'Get 30% discount'}
                         </span>
-                      </div>
-                    ))}
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
+                    </div>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Button - Fixed at bottom */}
-                <div className="mt-auto pt-4">
-                  <Button
-                    size="lg"
-                    onClick={() => handleSelectPlan(selectedEnterpriseTier)}
-                    disabled={loading}
-                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
-                    ) : (
-                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
-                    )}
-                  </Button>
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                  </div>
                 </div>
+
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                  {Object.entries(selectedPlan.features).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {typeof value === 'boolean' 
+                          ? key.replace('_', ' ')
+                          : `${key.replace('_', ' ')}: ${value}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  size="lg"
+                  onClick={() => handleSelectPlan(selectedEnterpriseTier)}
+                  disabled={loading}
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                    </>
+                  )}
+                </Button>
               </Card>
             );
           })()}
