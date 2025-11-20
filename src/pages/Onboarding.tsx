@@ -735,7 +735,7 @@ export default function Onboarding() {
         </div>
 
       {/* Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-2 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 px-2 max-w-[1600px] mx-auto">
         {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
         {!hasUsedTrial && (() => {
             const starterPlan = plans.find(p => p.id === 'starter');
@@ -747,7 +747,7 @@ export default function Onboarding() {
                   {language === 'fr' ? 'GRATUIT' : 'FREE'}
                 </div>
                 
-                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col">
+                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col min-h-[650px]">
                   {/* Bloc 1: Icon centré */}
                   <div className="flex justify-center">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center shadow-glow">
@@ -781,12 +781,12 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center">
+                  <div className="text-center flex-1">
                     <p className="text-sm text-muted-foreground">{t.onboarding.choosePlanAfterTrial}</p>
                   </div>
 
                   {/* Bloc 4bis: Bouton */}
-                  <Button 
+                  <Button
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
                     size="lg"
                     onClick={handleStartFreeTrial}
@@ -845,7 +845,7 @@ export default function Onboarding() {
                 key={starterPlan.id}
                 className="transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
-                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col">
+                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col min-h-[650px]">
                   {/* Bloc 1: Icon centré */}
                   <div className="flex justify-center">
                     <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center shadow-glow`}>
@@ -884,7 +884,7 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center">
+                  <div className="text-center flex-1">
                     <p className="text-sm text-muted-foreground">{t.dashboard.plans.descriptions.starter}</p>
                   </div>
 
@@ -1007,7 +1007,7 @@ export default function Onboarding() {
 
                   {/* Bloc 3: Price avec promo */}
                   <div className="text-center space-y-2">
-                    <div className="text-lg text-muted-foreground line-through">
+                    <div className="text-2xl text-muted-foreground line-through">
                       {formatPrice(
                         billingCycle === 'yearly' 
                           ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1044,7 +1044,7 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center">
+                  <div className="text-center flex-1">
                     <p className="text-sm text-muted-foreground">{t.onboarding.planFeatures.forGrowth}</p>
                   </div>
 
@@ -1118,7 +1118,7 @@ export default function Onboarding() {
                   </Badge>
                 )}
 
-                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col">
+                <div className="p-5 sm:p-6 md:p-8 space-y-4 flex flex-col min-h-[650px]">
                   {/* Bloc 1: Icon centré */}
                   <div className="flex justify-center">
                     <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center shadow-glow`}>
@@ -1155,7 +1155,7 @@ export default function Onboarding() {
 
                   {/* Bloc 3: Price avec promo */}
                   <div className="text-center space-y-2">
-                    <div className="text-lg text-muted-foreground line-through">
+                    <div className="text-2xl text-muted-foreground line-through">
                       {formatPrice(
                         billingCycle === 'yearly' 
                           ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1192,7 +1192,7 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center">
+                  <div className="text-center flex-1">
                     <p className="text-sm text-muted-foreground">{t.onboarding.planFeatures.forEnterprise}</p>
                   </div>
 
