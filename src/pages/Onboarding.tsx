@@ -426,8 +426,12 @@ export default function Onboarding() {
         if (shopifyPending) {
           console.log('🔗 Claiming Shopify connection after trial setup');
           try {
+            const { data: { session } } = await supabase.auth.getSession();
             const { data: claimData, error: claimError } = await supabase.functions.invoke('claim-shopify-connection', {
-              body: { pendingToken: shopifyPending }
+              body: { pendingToken: shopifyPending },
+              headers: session?.access_token ? {
+                Authorization: `Bearer ${session.access_token}`
+              } : {}
             });
 
             if (claimError) throw claimError;

@@ -68,7 +68,7 @@ serve(async (req) => {
         has_used_trial: true,
         trial_ends_at: trialEndDate.toISOString(),
         subscription_status: 'trialing',
-        current_plan_id: 'starter',
+        current_plan_id: 'trial',
         onboarding_completed: true,
         updated_at: new Date().toISOString()
       })
