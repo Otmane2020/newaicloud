@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const TEST_PRODUCT = {
-  id: "test-product-image-reader",
-  title: "Tabouret Bar Rose Velours Teddy Pied Chrome Design",
+  id: "d8415d62-a5aa-4505-a8cb-7f384f891fdc",
+  title: "Tabouret Bar Scandinave Velours Vert Pied Or EURODESIGN",
+  sku: "BS52GVS",
 };
 
 type FunctionStatus = "idle" | "loading" | "success" | "error";
