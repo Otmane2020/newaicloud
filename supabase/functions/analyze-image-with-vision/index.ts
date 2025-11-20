@@ -199,32 +199,38 @@ RÈGLES CRITIQUES :
             'Content-Type': 'application/json',
           },
           signal: lovableController.signal,
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash', // Flash is better at OCR
-          messages: [
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
               {
                 role: 'user',
                 content: [
                   { 
                     type: 'text', 
-                    text: `Analyse cette image produit. Cherche d'abord s'il y a des CHIFFRES visibles (100cm, 71cm, H:75, Ø43, etc.).
+                    text: `ANALYSE CETTE IMAGE PRODUIT ÉTAPE PAR ÉTAPE :
 
-SI TU VOIS DES CHIFFRES avec des unités (cm, kg, mm) :
-→ hasTechnicalSchema = true
-→ dimensionSource = "visible"
-→ Extrais EXACTEMENT ces valeurs (ne change rien, même les décimales)
-→ Sépare valeur et unité : "100cm" devient height:"100", heightUnit:"cm"
-→ confidence = 0.95
+ÉTAPE 1 - RECHERCHE DE DIMENSIONS VISIBLES :
+→ Cherche des CHIFFRES avec unités (100cm, H:75, Ø43, 71cm, 8.5kg, etc.)
+→ Cherche dans : schémas techniques, étiquettes, emballages, règles graduées
+→ Zoom sur tous les textes et chiffres de l'image
 
-SI AUCUN CHIFFRE visible :
-→ hasTechnicalSchema = false
-→ dimensionSource = "estimated"  
-→ Estime selon le type de produit
-→ confidence = 0.75
+ÉTAPE 2 - DÉCISION :
+SI TU VOIS des chiffres + unités (cm, mm, kg, m) :
+✅ hasTechnicalSchema = true
+✅ dimensionSource = "visible"
+✅ Copie EXACTEMENT les valeurs (ne change rien)
+✅ Sépare valeur et unité : "100cm" → height:"100", heightUnit:"cm"
+✅ confidence = 0.95
 
-Contexte : ${JSON.stringify(productContext, null, 2)}
+SI AUCUN chiffre visible :
+❌ hasTechnicalSchema = false
+❌ dimensionSource = "estimated"
+❌ Estime selon le type de produit
+❌ confidence = 0.75
 
-IMPORTANT : Utilise la fonction set_vision_result pour retourner le résultat.` 
+CONTEXTE PRODUIT : ${JSON.stringify(productContext, null, 2)}
+
+UTILISE LA FONCTION set_vision_result POUR RETOURNER LE RÉSULTAT.`
                   },
                   {
                     type: 'image_url',
@@ -235,8 +241,85 @@ IMPORTANT : Utilise la fonction set_vision_result pour retourner le résultat.`
                 ]
               }
             ],
-            temperature: 0.3,
-            max_tokens: 768,
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "set_vision_result",
+                  description: "Retourne les résultats d'analyse visuelle d'un produit avec dimensions extraites ou estimées",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      visualAttributes: {
+                        type: "object",
+                        properties: {
+                          primaryColor: { type: "string", description: "Couleur principale du produit" },
+                          secondaryColors: { type: "array", items: { type: "string" }, description: "Couleurs secondaires" },
+                          materials: { type: "array", items: { type: "string" }, description: "Matériaux identifiés" },
+                          style: { type: "string", description: "Style du produit (moderne, scandinave, industriel, etc.)" },
+                          room: { type: "string", description: "Pièce de destination (salon, cuisine, chambre, etc.)" },
+                          mood: { type: "string", description: "Ambiance (élégant, cosy, minimaliste, etc.)" },
+                          finish: { type: "string", description: "Finition (mat, brillant, satiné, etc.)" },
+                          texture: { type: "string", description: "Texture (lisse, rugueux, doux, etc.)" },
+                          technicalDetails: { type: "array", items: { type: "string" }, description: "Détails techniques visibles" },
+                          technicalDimensions: {
+                            type: "object",
+                            properties: {
+                              height: { type: "string", description: "Hauteur (valeur uniquement)" },
+                              heightUnit: { type: "string", description: "Unité de hauteur (cm, mm, m)" },
+                              width: { type: "string", description: "Largeur (valeur uniquement)" },
+                              widthUnit: { type: "string", description: "Unité de largeur" },
+                              length: { type: "string", description: "Longueur (valeur uniquement)" },
+                              lengthUnit: { type: "string", description: "Unité de longueur" },
+                              depth: { type: "string", description: "Profondeur (valeur uniquement)" },
+                              depthUnit: { type: "string", description: "Unité de profondeur" },
+                              diameter: { type: "string", description: "Diamètre (valeur uniquement)" },
+                              diameterUnit: { type: "string", description: "Unité de diamètre" },
+                              weight: { type: "string", description: "Poids (valeur uniquement)" },
+                              weightUnit: { type: "string", description: "Unité de poids (kg, g)" },
+                              seatHeight: { type: "string", description: "Hauteur d'assise (valeur uniquement)" },
+                              seatHeightUnit: { type: "string", description: "Unité de hauteur d'assise" }
+                            },
+                            description: "Dimensions techniques extraites ou estimées"
+                          },
+                          visualContext: {
+                            type: "object",
+                            properties: {
+                              hasTechnicalSchema: { 
+                                type: "boolean", 
+                                description: "TRUE si des chiffres/dimensions sont VISIBLES dans l'image, FALSE sinon" 
+                              },
+                              hasPackaging: { type: "boolean", description: "Présence d'emballage" },
+                              hasRuler: { type: "boolean", description: "Présence d'une règle ou échelle" },
+                              hasLabels: { type: "boolean", description: "Présence d'étiquettes avec dimensions" },
+                              viewAngle: { type: "string", description: "Angle de vue (face, profil, 3/4, etc.)" },
+                              dimensionSource: { 
+                                type: "string", 
+                                enum: ["visible", "estimated", "not_available"],
+                                description: "visible = chiffres présents dans l'image | estimated = estimation visuelle | not_available = impossible à estimer"
+                              }
+                            },
+                            required: ["hasTechnicalSchema", "dimensionSource"]
+                          }
+                        },
+                        required: ["primaryColor", "materials", "style", "technicalDimensions", "visualContext"]
+                      },
+                      confidence: { 
+                        type: "number", 
+                        description: "Confiance globale (0.95 si visible, 0.75 si estimé)",
+                        minimum: 0,
+                        maximum: 1
+                      }
+                    },
+                    required: ["visualAttributes", "confidence"],
+                    additionalProperties: false
+                  }
+                }
+              }
+            ],
+            tool_choice: { type: "function", function: { name: "set_vision_result" } },
+            temperature: 0.2,
+            max_tokens: 1024
           }),
         }
       );
@@ -267,6 +350,13 @@ IMPORTANT : Utilise la fonction set_vision_result pour retourner le résultat.`
     const lovableData = await lovableResponse.json();
     console.log('Lovable AI Vision response received', JSON.stringify(lovableData, null, 2));
 
+    // Log détaillé pour debug
+    if (lovableData.choices?.[0]?.message?.tool_calls?.[0]) {
+      console.log('✅ Tool call détecté:', JSON.stringify(lovableData.choices[0].message.tool_calls[0], null, 2));
+    } else {
+      console.log('❌ Pas de tool call, réponse texte:', lovableData.choices?.[0]?.message?.content?.substring(0, 200));
+    }
+
     // 1) Try to use structured tool-calling output first
     const toolCall = lovableData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
@@ -287,6 +377,7 @@ IMPORTANT : Utilise la fonction set_vision_result pour retourner le résultat.`
     }
 
     // 2) Fallback: parse plain text content (for backward compatibility)
+    console.warn('⚠️ Gemini n\'a pas utilisé le tool calling, fallback sur texte...');
     const generatedText = lovableData.choices?.[0]?.message?.content;
     if (!generatedText || typeof generatedText !== 'string') {
       console.error('No usable content in Gemini response:', JSON.stringify(lovableData, null, 2));
