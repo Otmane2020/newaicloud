@@ -1018,8 +1018,15 @@ export default function Onboarding() {
                 </div>
 
                 {/* Description - Fixed height */}
-                <div className="h-12 mb-6">
+                <div className="h-12 mb-4">
                   <p className="text-muted-foreground text-sm">{t.onboarding.planFeatures.forGrowth}</p>
+                </div>
+
+                {/* Info box */}
+                <div className="mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs font-medium text-center">
+                    💡 {language === 'fr' ? "L'équilibre parfait entre puissance, automatisation et évolutivité." : 'The perfect balance between power, automation and scalability.'}
+                  </p>
                 </div>
 
                 {/* Dropdown */}
@@ -1193,8 +1200,15 @@ export default function Onboarding() {
                 </div>
 
                 {/* Description - Fixed height */}
-                <div className="h-12 mb-6">
+                <div className="h-12 mb-4">
                   <p className="text-muted-foreground text-sm">{t.onboarding.planFeatures.forEnterprise}</p>
+                </div>
+
+                {/* Info box */}
+                <div className="mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs font-medium text-center">
+                    💡 {language === 'fr' ? 'Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.' : 'Fully managed AI suite with high quotas, API access and personal support.'}
+                  </p>
                 </div>
 
                 {/* Dropdown */}
