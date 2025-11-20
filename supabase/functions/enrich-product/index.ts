@@ -48,6 +48,18 @@ async function callDeepSeek(messages: any[], maxTokens = 500) {
   }
 }
 
+// Helper pour parser les dimensions Vision AI (format: "75cm" ou "75" ou 75)
+function parseVisionDimension(value: string | number | undefined): number | null {
+  if (value === undefined || value === null) return null;
+  
+  // Si c'est déjà un nombre
+  if (typeof value === 'number') return Math.round(value);
+  
+  // Si c'est une string, extraire le nombre
+  const match = value.toString().match(/^([\d.]+)/);
+  return match ? Math.round(parseFloat(match[1])) : null;
+}
+
 function parseAIResponse(responseContent: string): any {
   console.log("🔧 Parsing AI response...");
 
@@ -559,7 +571,7 @@ Réponds UNIQUEMENT en JSON valide:
       // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
       // IMPORTANT: All dimension values must be integers (rounded)
       smart_length: existingDimensions.length || 
-                    (visionAttributes?.technicalDimensions?.length ? Math.round(visionAttributes.technicalDimensions.length) : null) || 
+                    parseVisionDimension(visionAttributes?.technicalDimensions?.length) || 
                     (serpDimensions.length ? Math.round(serpDimensions.length) : null) ||
                     (parsedData.smart_length ? Math.round(parsedData.smart_length) : null),
       smart_length_unit: existingDimensions.length_unit || 
@@ -567,7 +579,7 @@ Réponds UNIQUEMENT en JSON valide:
                         serpDimensions.length_unit ||
                         parsedData.smart_length_unit || null,
       smart_width: existingDimensions.width || 
-                   (visionAttributes?.technicalDimensions?.width ? Math.round(visionAttributes.technicalDimensions.width) : null) || 
+                   parseVisionDimension(visionAttributes?.technicalDimensions?.width) || 
                    (serpDimensions.width ? Math.round(serpDimensions.width) : null) ||
                    (parsedData.smart_width ? Math.round(parsedData.smart_width) : null),
       smart_width_unit: existingDimensions.width_unit || 
@@ -575,7 +587,7 @@ Réponds UNIQUEMENT en JSON valide:
                        serpDimensions.width_unit ||
                        parsedData.smart_width_unit || null,
       smart_height: existingDimensions.height || 
-                    (visionAttributes?.technicalDimensions?.height ? Math.round(visionAttributes.technicalDimensions.height) : null) || 
+                    parseVisionDimension(visionAttributes?.technicalDimensions?.height) || 
                     (serpDimensions.height ? Math.round(serpDimensions.height) : null) ||
                     (parsedData.smart_height ? Math.round(parsedData.smart_height) : null),
       smart_height_unit: existingDimensions.height_unit || 
@@ -583,13 +595,13 @@ Réponds UNIQUEMENT en JSON valide:
                         serpDimensions.height_unit ||
                         parsedData.smart_height_unit || null,
       smart_diameter: existingDimensions.diameter || 
-                      (visionAttributes?.technicalDimensions?.diameter ? Math.round(visionAttributes.technicalDimensions.diameter) : null) || 
+                      parseVisionDimension(visionAttributes?.technicalDimensions?.diameter) || 
                       (parsedData.smart_diameter ? Math.round(parsedData.smart_diameter) : null),
       smart_diameter_unit: existingDimensions.diameter_unit || 
                           (visionAttributes?.technicalDimensions?.diameterUnit ?? null) || 
                           parsedData.smart_diameter_unit || null,
       smart_depth: existingDimensions.depth || 
-                   (visionAttributes?.technicalDimensions?.depth ? Math.round(visionAttributes.technicalDimensions.depth) : null) || 
+                   parseVisionDimension(visionAttributes?.technicalDimensions?.depth) || 
                    (serpDimensions.depth ? Math.round(serpDimensions.depth) : null) ||
                    (parsedData.smart_depth ? Math.round(parsedData.smart_depth) : null),
       smart_depth_unit: existingDimensions.depth_unit || 
@@ -597,7 +609,7 @@ Réponds UNIQUEMENT en JSON valide:
                        serpDimensions.depth_unit ||
                        parsedData.smart_depth_unit || null,
       smart_weight: existingDimensions.weight || 
-                    (visionAttributes?.technicalDimensions?.weight ? Math.round(visionAttributes.technicalDimensions.weight) : null) || 
+                    parseVisionDimension(visionAttributes?.technicalDimensions?.weight) || 
                     (serpDimensions.weight ? Math.round(serpDimensions.weight) : null) ||
                     (parsedData.smart_weight ? Math.round(parsedData.smart_weight) : null),
       smart_weight_unit: existingDimensions.weight_unit || 
@@ -605,21 +617,25 @@ Réponds UNIQUEMENT en JSON valide:
                         serpDimensions.weight_unit ||
                         parsedData.smart_weight_unit || null,
       smart_seat_height: existingDimensions.seat_height || 
-                        (visionAttributes?.technicalDimensions?.seatHeight ? Math.round(visionAttributes.technicalDimensions.seatHeight) : null) || 
+                        parseVisionDimension(visionAttributes?.technicalDimensions?.seatHeight) || 
                         (parsedData.smart_seat_height ? Math.round(parsedData.smart_seat_height) : null),
       smart_seat_height_unit: existingDimensions.seat_height_unit || 
                              (visionAttributes?.technicalDimensions?.seatHeightUnit ?? null) || 
                              parsedData.smart_seat_height_unit || null,
       
-      // SERP tracking - PRIORITY ORDER: product_description > vision > serp > estimated
+      // SERP tracking - PRIORITY ORDER: product_description > vision_visible > vision_estimated > serp > estimated
       specs_source: hasExistingDims ? 'product_description' : 
+                   (visionAttributes?.visualContext?.dimensionSource === 'visible') ? 'vision_visible' :
+                   (visionAttributes?.visualContext?.dimensionSource === 'estimated') ? 'vision_estimated' :
                    (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
                    (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
                    'estimated',
       specs_confidence: hasExistingDims ? 100 : 
+                       (visionAttributes?.visualContext?.dimensionSource === 'visible') ? 95 :
+                       (visionAttributes?.visualContext?.dimensionSource === 'estimated') ? 75 :
                        (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
-                         Math.round(Math.min(visionConfidence || 0.9, 1) * 100) :
-                       (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
+                         Math.round(Math.min(visionConfidence || 0.8, 1) * 100) :
+                       (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 70 :
                        50,
       serp_verified: serpVerified,
       serp_data: serpData || null,
