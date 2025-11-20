@@ -392,69 +392,79 @@ Réponds UNIQUEMENT en JSON valide:
 
     console.log('📝 Parsed attributes:', parsedData);
 
-    // PHASE 3: SERP search for similar products specs (LOWEST PRIORITY - VALIDATION ONLY)
+    // PHASE 3: SERP search for similar products specs (ONLY IF VISION AI FAILED)
     let serpData = null;
     let specsSource = 'estimated';
     let specsConfidence = 0.5;
     let serpVerified = false;
 
-    try {
-      console.log('🔍 Searching SERP for similar products...');
-      const { data: serpResponse, error: serpError } = await supabase.functions.invoke(
-        'search-similar-products-specs',
-        {
-          body: {
-            productTitle: product.title,
-            imageUrl: product.images?.[0]?.src,
-            productType: parsedData.category,
-          }
-        }
-      );
+    // Only use SERP if Vision AI didn't provide sufficient data
+    const hasVisionDimensions = visionAttributes?.technicalDimensions && 
+      Object.keys(visionAttributes.technicalDimensions).length > 0;
+    const hasVisionMaterials = visionAttributes?.materials?.length > 0;
+    const hasVisionColors = visionAttributes?.primaryColor || visionAttributes?.secondaryColors?.length > 0;
 
-      if (!serpError && serpResponse && serpResponse.confidence > 0.7 && serpResponse.similarProducts?.length >= 3) {
-        console.log('✅ SERP data verified with high confidence:', serpResponse.confidence);
-        serpData = serpResponse;
-        specsSource = 'serp';
-        specsConfidence = serpResponse.confidence;
-        serpVerified = true;
-
-        // Override estimated dimensions with SERP data
-        if (serpResponse.averageWeight) {
-          const weightMatch = serpResponse.averageWeight.match(/^([\d.]+)(kg)?$/);
-          if (weightMatch) {
-            parsedData.smart_weight = parseFloat(weightMatch[1]);
-            parsedData.smart_weight_unit = 'kg';
+    if (!hasVisionDimensions && !hasVisionMaterials && !hasVisionColors) {
+      try {
+        console.log('🔍 Vision AI incomplete, searching SERP for similar products...');
+        const { data: serpResponse, error: serpError } = await supabase.functions.invoke(
+          'search-similar-products-specs',
+          {
+            body: {
+              productTitle: product.title,
+              imageUrl: product.images?.[0]?.src,
+              productType: parsedData.category,
+            }
           }
-        }
+        );
 
-        if (serpResponse.averageDimensions?.length) {
-          const lengthMatch = serpResponse.averageDimensions.length.match(/^([\d.]+)(cm)?$/);
-          if (lengthMatch) {
-            parsedData.smart_length = parseFloat(lengthMatch[1]);
-            parsedData.smart_length_unit = 'cm';
-          }
-        }
+        if (!serpError && serpResponse && serpResponse.confidence > 0.7 && serpResponse.similarProducts?.length >= 3) {
+          console.log('✅ SERP data verified with high confidence:', serpResponse.confidence);
+          serpData = serpResponse;
+          specsSource = 'serp';
+          specsConfidence = serpResponse.confidence;
+          serpVerified = true;
 
-        if (serpResponse.averageDimensions?.width) {
-          const widthMatch = serpResponse.averageDimensions.width.match(/^([\d.]+)(cm)?$/);
-          if (widthMatch) {
-            parsedData.smart_width = parseFloat(widthMatch[1]);
-            parsedData.smart_width_unit = 'cm';
+          // Only use SERP dimensions if Vision AI didn't provide them
+          if (!visionAttributes?.technicalDimensions?.weight && serpResponse.averageWeight) {
+            const weightMatch = serpResponse.averageWeight.match(/^([\d.]+)(kg)?$/);
+            if (weightMatch) {
+              parsedData.smart_weight = parseFloat(weightMatch[1]);
+              parsedData.smart_weight_unit = 'kg';
+            }
           }
-        }
 
-        if (serpResponse.averageDimensions?.height) {
-          const heightMatch = serpResponse.averageDimensions.height.match(/^([\d.]+)(cm)?$/);
-          if (heightMatch) {
-            parsedData.smart_height = parseFloat(heightMatch[1]);
-            parsedData.smart_height_unit = 'cm';
+          if (!visionAttributes?.technicalDimensions?.length && serpResponse.averageDimensions?.length) {
+            const lengthMatch = serpResponse.averageDimensions.length.match(/^([\d.]+)(cm)?$/);
+            if (lengthMatch) {
+              parsedData.smart_length = parseFloat(lengthMatch[1]);
+              parsedData.smart_length_unit = 'cm';
+            }
           }
+
+          if (!visionAttributes?.technicalDimensions?.width && serpResponse.averageDimensions?.width) {
+            const widthMatch = serpResponse.averageDimensions.width.match(/^([\d.]+)(cm)?$/);
+            if (widthMatch) {
+              parsedData.smart_width = parseFloat(widthMatch[1]);
+              parsedData.smart_width_unit = 'cm';
+            }
+          }
+
+          if (!visionAttributes?.technicalDimensions?.height && serpResponse.averageDimensions?.height) {
+            const heightMatch = serpResponse.averageDimensions.height.match(/^([\d.]+)(cm)?$/);
+            if (heightMatch) {
+              parsedData.smart_height = parseFloat(heightMatch[1]);
+              parsedData.smart_height_unit = 'cm';
+            }
+          }
+        } else {
+          console.log('⚠️ SERP search returned low confidence or insufficient data');
         }
-      } else {
-        console.log('⚠️ SERP search returned low confidence or insufficient data');
+      } catch (serpError) {
+        console.warn('⚠️ SERP search failed, using estimated values:', serpError);
       }
-    } catch (serpError) {
-      console.warn('⚠️ SERP search failed, using estimated values:', serpError);
+    } else {
+      console.log('✅ Vision AI provided sufficient data, skipping SERP search');
     }
 
     // Update ALL AI attributes and dimensions
