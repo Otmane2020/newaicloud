@@ -61,7 +61,9 @@ RÈGLES STRICTES :
 - Pas de préfixe ou suffixe (pas de "Titre:", "Réponse:", etc.)
 - Langage : ${language === 'fr' ? 'Français' : 'English'}
 - Pas d'emojis, pas de symboles spéciaux
-- Capitalisation appropriée (majuscules pour mots importants)`;
+- CAPITALISATION : Première lettre majuscule uniquement (Title Case), jamais tout en majuscules
+- Exemple BON : "Canapé 3 Places Scandinave Beige"
+- Exemple MAUVAIS : "CANAPÉ 3 PLACES SCANDINAVE BEIGE"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -116,6 +118,16 @@ RÈGLES STRICTES :
       .replace(/^Titre\s*:\s*/i, '') // Remove "Titre:" prefix
       .replace(/^Réponse\s*:\s*/i, '') // Remove "Réponse:" prefix
       .trim();
+
+    // Convert to title case if it's all uppercase
+    if (optimizedTitle === optimizedTitle.toUpperCase()) {
+      console.warn("⚠️ Title was in all caps, converting to title case");
+      optimizedTitle = optimizedTitle
+        .toLowerCase()
+        .split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
 
     // Validate length (max 60 characters for SEO)
     if (optimizedTitle.length > 60) {
