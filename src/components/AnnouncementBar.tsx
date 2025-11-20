@@ -17,7 +17,7 @@ export const AnnouncementBar = () => {
         <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 py-1 pr-8 sm:pr-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary animate-pulse flex-shrink-0" />
-            <span className="text-xs sm:text-sm md:text-base font-medium text-white">
+            <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">
               {t.announcement.limitedSale}
             </span>
           </div>
