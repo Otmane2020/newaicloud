@@ -77,6 +77,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [isEnterprise, setIsEnterprise] = useState(false);
   const isMobile = useIsMobile();
   
   // Check if user is the test account
@@ -151,6 +152,7 @@ export function AppSidebar() {
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
   ];
 
+  // Build account items dynamically based on user plan
   const accountSubItems = [
     { title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" },
     { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
@@ -158,6 +160,12 @@ export function AppSidebar() {
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
     { title: "Monitoring Crons", url: "/cron-monitoring", icon: Clock, key: "cron-monitoring" },
+    // API Access - Enterprise only
+    ...(isEnterprise ? [
+      { title: "Clés API", url: "/api-keys", icon: Key, key: "api-keys" },
+      { title: "Documentation API", url: "/api-docs", icon: Code, key: "api-docs" },
+      { title: "Analytics API", url: "/api-analytics", icon: Activity, key: "api-analytics" },
+    ] : []),
   ];
 
   useEffect(() => {
@@ -188,6 +196,11 @@ export function AppSidebar() {
 
           console.log("📋 Plan data:", plan);
           console.log("❌ Plan error:", planError);
+
+          // Check if user is Enterprise
+          const isEnterpriseUser = profile.current_plan_id?.includes('enterprise');
+          setIsEnterprise(!!isEnterpriseUser);
+          console.log("🏢 Is Enterprise:", isEnterpriseUser);
 
           // Check if user is in trial
           const isTrialing = profile.subscription_status === 'trialing' || profile.current_plan_id === 'trial';
