@@ -995,7 +995,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle) * 0.8, language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1007,9 +1007,9 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
-                          billingCycle === 'yearly' 
+                          (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
-                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.8, 
                           language
                         )}
                       </span>
@@ -1017,7 +1017,7 @@ export default function Onboarding() {
                     </div>
                     {billingCycle === 'yearly' && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
@@ -1129,7 +1129,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle) * 0.7, language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1141,9 +1141,9 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
                       <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
-                          billingCycle === 'yearly' 
+                          (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
-                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.7, 
                           language
                         )}
                       </span>
@@ -1151,7 +1151,7 @@ export default function Onboarding() {
                     </div>
                     {billingCycle === 'yearly' && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
