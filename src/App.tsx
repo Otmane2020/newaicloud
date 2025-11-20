@@ -72,6 +72,7 @@ import SetupPlans from "./pages/SetupPlans";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import TestLandingGeneration from "./pages/TestLandingGeneration";
+import TestLectureImage from "./pages/TestLectureImage";
 import TestRedirection from "./pages/TestRedirection";
 import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
@@ -107,6 +108,7 @@ const App = () => (
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
             <Route path="/test-landing" element={<TestLandingGeneration />} />
+            <Route path="/testlectureimage" element={<TestLectureImage />} />
           <Route path="/shopify/install" element={<ShopifyInstall />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
