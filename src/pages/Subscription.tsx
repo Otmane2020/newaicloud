@@ -251,8 +251,8 @@ const Subscription = () => {
           <CurrentPlanCard />
 
           {plans.find(p => p.id === 'trial') && (
-            <Card className="border-2 border-success bg-success/5">
-              <div className="p-8">
+            <Card className="border-2 border-success bg-success/5 hover:shadow-lg transition-shadow">
+              <div className="p-6 lg:p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -337,9 +337,9 @@ const Subscription = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+      <div className={`grid grid-cols-1 gap-6 ${plans.find(p => p.id === 'trial') ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} max-w-7xl mx-auto`}>
         {starterPlan && (
-          <Card className={`p-4 sm:p-6 md:p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
             {isCurrentPlan(starterPlan.id) && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
                 {t.seo.subscription.currentPlanBadge}
@@ -403,7 +403,7 @@ const Subscription = () => {
         )}
 
         {proPlans.length > 0 && (
-          <Card className={`p-4 sm:p-6 md:p-8 relative flex flex-col ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
             {(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
                 {t.seo.subscription.currentPlanBadge}
@@ -505,7 +505,7 @@ const Subscription = () => {
         )}
 
         {enterprisePlans.length > 0 && (
-          <Card className={`p-4 sm:p-6 md:p-8 relative flex flex-col ${currentPlan?.id.startsWith('enterprise-') ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${currentPlan?.id.startsWith('enterprise-') ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
             {currentPlan?.id.startsWith('enterprise-') && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
                 {t.seo.subscription.currentPlanBadge}
