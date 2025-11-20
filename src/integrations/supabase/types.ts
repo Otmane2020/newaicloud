@@ -3662,6 +3662,8 @@ export type Database = {
       shopify_pending_connections: {
         Row: {
           access_token: string
+          claimed_at: string | null
+          claimed_by: string | null
           commercial_name: string | null
           created_at: string | null
           expires_at: string
@@ -3673,6 +3675,8 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           commercial_name?: string | null
           created_at?: string | null
           expires_at: string
@@ -3684,6 +3688,8 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           commercial_name?: string | null
           created_at?: string | null
           expires_at?: string

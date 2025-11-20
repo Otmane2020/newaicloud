@@ -32,8 +32,17 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[CLAIM-SHOPIFY] ❌ Missing environment variables");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Vérifier l'authentification
@@ -48,7 +57,18 @@ serve(async (req) => {
       );
     }
 
-    const { pendingToken } = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error("[CLAIM-SHOPIFY] ❌ Invalid JSON body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { pendingToken } = requestBody;
 
     console.log("[CLAIM-SHOPIFY] 📦 Request payload", {
       hasPendingToken: !!pendingToken,
@@ -80,13 +100,37 @@ serve(async (req) => {
       .eq("is_claimed", false)
       .single();
 
-    if (fetchError || !pending) {
-      console.error("[CLAIM-SHOPIFY] ❌ Pending connection not found:", {
+    if (fetchError) {
+      console.error("[CLAIM-SHOPIFY] ❌ Database error:", {
         error: fetchError,
-        pendingToken
+        code: fetchError.code,
+        details: fetchError.details
       });
+      
+      // Erreur PGRST116 = pas de résultat trouvé
+      if (fetchError.code === 'PGRST116') {
+        return new Response(
+          JSON.stringify({ 
+            error: "Invalid or expired token",
+            message: "This installation link is invalid or has already been used."
+          }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
+        JSON.stringify({ error: "Database error", details: fetchError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!pending) {
+      console.error("[CLAIM-SHOPIFY] ❌ Pending connection not found");
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid or expired token",
+          message: "This installation link is invalid or has already been used."
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -126,39 +170,76 @@ serve(async (req) => {
       );
     }
 
-    // Créer la connexion Shopify pour l'utilisateur
-    const { error: insertError } = await supabase
+    // Vérifier si l'utilisateur a déjà une connexion pour cette boutique
+    const { data: existingConnection } = await supabase
       .from("shopify_connections")
-      .upsert({
-        user_id: user.id,
-        store_url: pending.shop_url,
-        store_name: pending.commercial_name,
-        access_token: pending.access_token,
-        scope: pending.scope,
-        connected_at: new Date().toISOString(),
-        is_active: true,
-        connection_type: "oauth",
-      });
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("store_url", pending.shop_url)
+      .single();
 
-    if (insertError) {
-      console.error("[CLAIM-SHOPIFY] ❌ Error creating connection:", {
-        error: insertError,
-        userId: user.id,
-        shopUrl: pending.shop_url
-      });
-      return new Response(
-        JSON.stringify({ error: "Failed to create connection", details: insertError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (existingConnection) {
+      console.log("[CLAIM-SHOPIFY] ⚠️ Connection already exists, updating...");
+      
+      const { error: updateError } = await supabase
+        .from("shopify_connections")
+        .update({
+          access_token: pending.access_token,
+          scope: pending.scope,
+          connected_at: new Date().toISOString(),
+          is_active: true,
+          connection_type: "oauth"
+        })
+        .eq("id", existingConnection.id);
+
+      if (updateError) {
+        console.error("[CLAIM-SHOPIFY] ❌ Error updating connection:", updateError);
+        throw updateError;
+      }
+    } else {
+      console.log("[CLAIM-SHOPIFY] ➕ Creating new connection...");
+      const { error: insertError } = await supabase
+        .from("shopify_connections")
+        .insert({
+          user_id: user.id,
+          store_url: pending.shop_url,
+          store_name: pending.commercial_name,
+          access_token: pending.access_token,
+          scope: pending.scope,
+          connected_at: new Date().toISOString(),
+          is_active: true,
+          connection_type: "oauth",
+        });
+
+      if (insertError) {
+        console.error("[CLAIM-SHOPIFY] ❌ Error creating connection:", {
+          error: insertError,
+          userId: user.id,
+          shopUrl: pending.shop_url
+        });
+        return new Response(
+          JSON.stringify({ error: "Failed to create connection", details: insertError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     console.log("[CLAIM-SHOPIFY] ✅ Connection created in database");
 
     // Marquer la connexion en attente comme réclamée
-    await supabase
+    const { error: updatePendingError } = await supabase
       .from("shopify_pending_connections")
-      .update({ is_claimed: true })
+      .update({ 
+        is_claimed: true,
+        claimed_at: new Date().toISOString(),
+        claimed_by: user.id
+      })
       .eq("pending_token", pendingToken);
+
+    if (updatePendingError) {
+      console.error("[CLAIM-SHOPIFY] ⚠️ Error updating pending connection:", updatePendingError);
+      // Ne pas faire échouer la requête principale
+    }
 
     console.log("[CLAIM-SHOPIFY] ✅ Connection successfully claimed", {
       shopUrl: pending.shop_url,
@@ -175,8 +256,9 @@ serve(async (req) => {
       const shopName = pending.shop_url.replace('.myshopify.com', '');
       
       // Appeler la fonction import-products de manière asynchrone
+      const functionUrl = `${supabaseUrl}/functions/v1/import-products`;
       const importResponse = await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/functions/v1/import-products`,
+        functionUrl,
         {
           method: 'POST',
           headers: {
