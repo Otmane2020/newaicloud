@@ -155,13 +155,26 @@ export const ProductContentOptimization = () => {
       setShowPreview(true);
       setSelectedProduct(product || null);
 
-      // Analyze images with Vision AI if needed
+      // Récupérer les données de vision analysis existantes ou analyser
       let visionAnalysis = null;
-      if (product.images.length > 0 && !product.description) {
+      
+      // D'abord, essayer de récupérer les données existantes
+      const { data: productData } = await supabase
+        .from('shopify_products')
+        .select('vision_attributes')
+        .eq('id', product.id)
+        .single();
+      
+      if (productData?.vision_attributes) {
+        visionAnalysis = productData.vision_attributes;
+        console.log("✅ Vision attributes récupérées depuis la DB:", visionAnalysis);
+      } else if (product.images.length > 0) {
+        // Si pas de données existantes, analyser l'image
+        console.log("📸 Analyse de l'image avec Vision AI...");
         const { data: visionData } = await supabase.functions.invoke('analyze-image-with-vision', {
           body: { imageUrl: product.images[0].src }
         });
-        visionAnalysis = visionData?.attributes;
+        visionAnalysis = visionData?.visualAttributes;
       }
 
       const result = await generateProductDescription.mutateAsync({
