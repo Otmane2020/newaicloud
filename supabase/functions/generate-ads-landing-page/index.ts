@@ -70,7 +70,23 @@ serve(async (req) => {
             ai_texture,
             ai_pattern,
             ai_finish,
-            ai_shape
+            ai_shape,
+            smart_length,
+            smart_length_unit,
+            smart_width,
+            smart_width_unit,
+            smart_height,
+            smart_height_unit,
+            smart_depth,
+            smart_depth_unit,
+            smart_diameter,
+            smart_diameter_unit,
+            smart_weight,
+            smart_weight_unit,
+            smart_seat_height,
+            smart_seat_height_unit,
+            specs_source,
+            specs_confidence
           )
         )
       `)
@@ -245,6 +261,19 @@ ${!designInstructions ? '## BASE DESIGN (Amazon-inspired):' : '## APPLY THE DESI
 - Format des réductions : "-20%" (JAMAIS de signe ~ approximatif)
 - Les titres optimisés sont conçus pour le SEO et les conversions
 
+### 0.b GESTION DES DIMENSIONS (OBLIGATOIRE)
+**RÈGLES STRICTES SUR LES DIMENSIONS:**
+- N'ÉCRIS JAMAIS les expressions suivantes dans la landing :
+  - "dimensions approximatives" ou "dimensions approx."
+  - "environ", "environs"
+  - "approximatif", "approximatives"
+  - les symboles "~" ou "±" devant une dimension
+- Même si ces mots apparaissent dans les données produit, TU NE DOIS PAS les réutiliser
+- SI specs_source = "estimated" ou "vision_estimated" : N'AFFICHE AUCUNE SECTION DE DIMENSIONS
+- SI specs_source = "product_description", "vision_visible", "vision" ou "serp" : affiche proprement
+  Exemple : "Dimensions : L 45 x P 35 x H 75 cm"
+- En cas de doute sur la fiabilité : NE PARLE PAS DES DIMENSIONS (mieux vaut rien qu'un approximatif)
+
 ### 1. OUTPUT FORMAT
 - Return a COMPLETE, STANDALONE HTML document
 - Include ALL CSS inline in a <style> tag
@@ -310,6 +339,16 @@ Product ${idx + 1}:
 - Description: ${(p.optimized_description || p.description || '').substring(0, 150)}...
 - Style: ${p.style || 'Moderne'}
 - Material: ${p.ai_material || 'Qualité supérieure'}
+- Dimensions brutes:
+  - Length: ${p.smart_length ? `${p.smart_length} ${p.smart_length_unit || 'cm'}` : 'N/A'}
+  - Width: ${p.smart_width ? `${p.smart_width} ${p.smart_width_unit || 'cm'}` : 'N/A'}
+  - Height: ${p.smart_height ? `${p.smart_height} ${p.smart_height_unit || 'cm'}` : 'N/A'}
+  - Depth: ${p.smart_depth ? `${p.smart_depth} ${p.smart_depth_unit || 'cm'}` : 'N/A'}
+  - Diameter: ${p.smart_diameter ? `${p.smart_diameter} ${p.smart_diameter_unit || 'cm'}` : 'N/A'}
+  - Seat height: ${p.smart_seat_height ? `${p.smart_seat_height} ${p.smart_seat_height_unit || 'cm'}` : 'N/A'}
+  - Weight: ${p.smart_weight ? `${p.smart_weight} ${p.smart_weight_unit || 'kg'}` : 'N/A'}
+- Specs_source (origine des dimensions): ${p.specs_source || 'unknown'}
+- Specs_confidence: ${p.specs_confidence ?? 'N/A'} (0-100)
 `).join('\n')}
 
 #### D. WHY CHOOSE US SECTION
