@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+
+async function hashSecret(secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(secret);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,7 +68,7 @@ serve(async (req) => {
     const apiSecret = `${prefix}_sk_${generateRandomString(64)}`;
 
     // Hasher le secret
-    const secretHash = await bcrypt.hash(apiSecret);
+    const secretHash = await hashSecret(apiSecret);
 
     // Créer la clé dans la base de données avec service role
     const supabaseService = createClient(
