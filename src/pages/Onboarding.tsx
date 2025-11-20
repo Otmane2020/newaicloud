@@ -66,6 +66,7 @@ export default function Onboarding() {
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
+  const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -279,11 +280,11 @@ export default function Onboarding() {
           await claimShopifyConnection(shopifyPending);
         }
         
-      toast.success(t.onboarding.verification.success);
-      // Phase 1C: Augmenter le délai de 1.5s à 5s pour laisser l'import démarrer
-      setTimeout(() => {
-        navigate('/dashboard?show_shopify_prompt=true');
-      }, 5000);
+        toast.success(t.onboarding.verification.success);
+        // Laisser quelques secondes pour que l'import démarre
+        setTimeout(() => {
+          navigate('/dashboard?show_shopify_prompt=true');
+        }, 5000);
       } else {
         console.warn('⚠️ [CHECK-SUBSCRIPTION] No active subscription found');
         toast.error(t.onboarding.errors.noActiveSubscription);
@@ -293,6 +294,7 @@ export default function Onboarding() {
       toast.error(t.onboarding.errors.paymentError);
     } finally {
       setCheckingSubscription(false);
+      setHasCheckedAfterCheckout(true);
     }
   };
 
@@ -622,8 +624,7 @@ export default function Onboarding() {
     );
   }
 
-  // Show verification message if returning from checkout
-  if (checkingSubscription || searchParams.get('checkout') === 'success') {
+  if (checkingSubscription || (searchParams.get('checkout') === 'success' && !hasCheckedAfterCheckout)) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-8">
         <Card className="p-8 max-w-md text-center">
