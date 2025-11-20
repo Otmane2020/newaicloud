@@ -228,13 +228,13 @@ Deno.serve(async (req: Request) => {
             
             // ✅ Logging détaillé pour debug
             console.log(`📊 Image ${i + 1} analysis:`, {
-              hasTechnicalSchema: visionData?.visualContext?.hasTechnicalSchema,
-              dimensionsCount: Object.keys(visionData?.technicalDimensions || {}).length,
-              dimensions: visionData?.technicalDimensions
+              hasTechnicalSchema: (visionData as any)?.visualContext?.hasTechnicalSchema,
+              dimensionsCount: Object.keys((visionData as any)?.technicalDimensions || {}).length,
+              dimensions: (visionData as any)?.technicalDimensions
             });
             
             // ✅ Arrêt anticipé si schéma trouvé
-            if (visionData?.visualContext?.hasTechnicalSchema) {
+            if ((visionData as any)?.visualContext?.hasTechnicalSchema) {
               console.log(`✅ Technical schema found in image ${i + 1}, stopping analysis`);
               break;
             }
@@ -411,6 +411,23 @@ Réponds UNIQUEMENT en JSON valide:
 
     console.log('📝 Parsed attributes:', parsedData);
 
+    // Normaliser ai_presentation_quality vers un entier 0-10 pour stockage en base
+    let qualityScore: number | null = null;
+    const rawQuality = (parsedData as any).ai_presentation_quality;
+
+    if (typeof rawQuality === 'number') {
+      qualityScore = rawQuality <= 1 ? Math.round(rawQuality * 10) : Math.round(rawQuality);
+    } else if (typeof rawQuality === 'string') {
+      const parsed = parseFloat(rawQuality.replace(',', '.'));
+      if (!Number.isNaN(parsed)) {
+        qualityScore = parsed <= 1 ? Math.round(parsed * 10) : Math.round(parsed);
+      }
+    }
+
+    if (qualityScore !== null) {
+      qualityScore = Math.max(0, Math.min(10, qualityScore));
+    }
+
     // PHASE 3: SERP search for similar products specs (ONLY IF VISION AI FAILED)
     let serpData = null;
     let specsSource = 'estimated';
@@ -532,10 +549,10 @@ Réponds UNIQUEMENT en JSON valide:
         ai_vision_timestamp: new Date().toISOString(),
         ai_vision_confidence: visionConfidence > 0
           ? Math.min(visionConfidence, 1)
-          : (parsedData.ai_presentation_quality
-              ? Math.min(parsedData.ai_presentation_quality, 1)
+          : (qualityScore !== null
+              ? Math.min(qualityScore / 10, 1)
               : 0.8),
-        ai_presentation_quality: parsedData.ai_presentation_quality ? Math.min(parsedData.ai_presentation_quality, 1) : null,
+        ai_presentation_quality: qualityScore,
         ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
         ai_lighting_type: parsedData.ai_lighting_type || null,
         ai_background_style: parsedData.ai_background_style || null,
