@@ -33,6 +33,14 @@ export function useTrialLimits() {
           .single();
 
         if (!profile || profile.subscription_status !== 'trialing') {
+          // ✅ Retourner un statut vide mais VALIDE pour utilisateurs non-trial
+          setTrialStatus({
+            isTrialing: false,
+            trialExpired: false,
+            limitReached: false,
+            shouldForcePayment: false,
+            daysLeft: 0
+          });
           return;
         }
 

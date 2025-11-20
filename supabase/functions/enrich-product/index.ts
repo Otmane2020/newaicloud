@@ -198,14 +198,16 @@ Deno.serve(async (req: Request) => {
     if (images && images.length > 0) {
       console.log(`📸 Found ${images.length} images, analyzing with Gemini Vision...`);
       
-      // Analyze up to 6 images (technical schemas are often in later positions)
-      const maxImages = Math.min(images.length, 6);
-      console.log(`📸 Analyzing ${maxImages} images for technical details...`);
+      // ✅ Analyser TOUTES les images (pas de limite)
+      const maxImages = images.length;
+      console.log(`📸 Analyzing ALL ${maxImages} images for technical schemas...`);
       
       const imageAnalyses = [];
-      for (let i = 0; i < maxImages; i++) {
+      
+      // ✅ Analyser dans l'ordre INVERSE (schémas techniques souvent en fin)
+      for (let i = maxImages - 1; i >= 0; i--) {
         try {
-          console.log(`🔍 Analyzing image ${i + 1}/${maxImages} with Vision AI...`);
+          console.log(`🔍 Analyzing image ${i + 1}/${maxImages} (reverse order) with Vision AI...`);
           const { data: visionData, error: visionError } = await supabase.functions.invoke(
             'analyze-image-with-vision',
             {
@@ -224,13 +226,16 @@ Deno.serve(async (req: Request) => {
             imageAnalyses.push(visionData);
             console.log(`✅ Vision analysis ${i + 1} complete (confidence: ${visionData.confidence})`);
             
-            // Early stopping: if we found a technical schema with complete dimensions, stop analyzing
-            const hasTechDims = visionData?.visualContext?.hasTechnicalSchema && 
-                               visionData?.technicalDimensions &&
-                               Object.keys(visionData.technicalDimensions).length >= 3;
+            // ✅ Logging détaillé pour debug
+            console.log(`📊 Image ${i + 1} analysis:`, {
+              hasTechnicalSchema: visionData?.visualContext?.hasTechnicalSchema,
+              dimensionsCount: Object.keys(visionData?.technicalDimensions || {}).length,
+              dimensions: visionData?.technicalDimensions
+            });
             
-            if (hasTechDims) {
-              console.log(`✅ Technical schema with complete dimensions found in image ${i + 1}, stopping analysis`);
+            // ✅ Arrêt anticipé si schéma trouvé
+            if (visionData?.visualContext?.hasTechnicalSchema) {
+              console.log(`✅ Technical schema found in image ${i + 1}, stopping analysis`);
               break;
             }
           } else {
