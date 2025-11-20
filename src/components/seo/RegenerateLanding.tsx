@@ -60,6 +60,8 @@ export default function RegenerateLanding({
   const [error, setError] = useState<string | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
+  const [optimizedTitle, setOptimizedTitle] = useState<string | null>(null);
+  const [titleNeedsSync, setTitleNeedsSync] = useState(false);
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
@@ -276,7 +278,11 @@ export default function RegenerateLanding({
           console.warn("[Landing] SERP title optimization failed:", serpError);
         } else if (serpData?.success && serpData?.optimizedTitle) {
           console.log("[Landing] Title optimized:", serpData.optimizedTitle);
-          toast.success(`Titre optimisé: ${serpData.optimizedTitle}`);
+          setOptimizedTitle(serpData.optimizedTitle);
+          setTitleNeedsSync(true);
+          toast.success(`Titre optimisé: ${serpData.optimizedTitle}`, {
+            description: "N'oubliez pas de synchroniser avec Shopify pour appliquer le nouveau titre"
+          });
         }
       } catch (err) {
         console.warn("[Landing] SERP optimization error:", err);
@@ -424,6 +430,7 @@ export default function RegenerateLanding({
       }
 
       toast.success(t.landingGeneration.success.synced);
+      setTitleNeedsSync(false); // Title is now synced
       if (data?.productUrl) {
         setSyncedProductUrl(data.productUrl);
       }
@@ -440,6 +447,24 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
+      {/* Optimized Title Alert */}
+      {optimizedTitle && titleNeedsSync && (
+        <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+            <div>
+              <p className="font-medium text-sm">Titre optimisé SEO</p>
+              <p className="text-xs text-muted-foreground mb-1">
+                {optimizedTitle}
+              </p>
+              <p className="text-xs text-accent font-medium">
+                ⚠️ Synchronisez avec Shopify pour appliquer le nouveau titre
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Existing Landing Page Status */}
       {!loadingExisting && htmlContent && (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
