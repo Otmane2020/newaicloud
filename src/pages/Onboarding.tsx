@@ -734,42 +734,43 @@ export default function Onboarding() {
         </div>
 
       {/* Plans */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2 items-stretch`}>
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
           {!hasUsedTrial && (() => {
             const starterPlan = plans.find(p => p.id === 'starter');
             if (!starterPlan) return null;
 
             return (
-              <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden">
+              <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col h-full">
                 <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
                   {language === 'fr' ? 'GRATUIT' : 'FREE'}
                 </div>
                 
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
-                  <Star className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                </div>
-
-                <h3 className="text-xl sm:text-2xl font-bold mb-2">
-                  {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
-                </h3>
-                <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
-                  {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
-                </Badge>
-                
-                <div className="mb-4">
-                  <div className="text-3xl sm:text-4xl font-bold mb-1">
-                    {getCurrencySymbol(language)}0
-                    <span className="text-base sm:text-lg text-muted-foreground font-normal">
-                      /{t.onboarding.billing.monthly}
-                    </span>
+                <div className="flex-1 flex flex-col">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
+                    <Star className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t.onboarding.trial.noCardRequired}
-                  </p>
-                </div>
 
-                <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">
+                    {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
+                  </h3>
+                  <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
+                    {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
+                  </Badge>
+                  
+                  <div className="mb-4">
+                    <div className="text-3xl sm:text-4xl font-bold mb-1">
+                      {getCurrencySymbol(language)}0
+                      <span className="text-base sm:text-lg text-muted-foreground font-normal">
+                        /{t.onboarding.billing.monthly}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t.onboarding.trial.noCardRequired}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 flex-1">
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                     <span className="text-xs sm:text-sm">
@@ -806,29 +807,32 @@ export default function Onboarding() {
                       {formatLimit(starterPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
                     </span>
                   </div>
+                  </div>
                 </div>
 
-                <Button 
-                  className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
-                  onClick={handleStartFreeTrial}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'fr' ? 'Activation...' : 'Activating...'}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      {t.onboarding.trial.startTrial}
-                    </>
-                  )}
-                </Button>
-                
-                <p className="text-[10px] text-center text-muted-foreground mt-2">
-                  {t.onboarding.choosePlanAfterTrial}
-                </p>
+                <div className="mt-auto pt-4">
+                  <Button 
+                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                    onClick={handleStartFreeTrial}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'fr' ? 'Activation...' : 'Activating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {t.onboarding.trial.startTrial}
+                      </>
+                    )}
+                  </Button>
+                  
+                  <p className="text-[10px] text-center text-muted-foreground mt-2">
+                    {t.onboarding.choosePlanAfterTrial}
+                  </p>
+                </div>
               </Card>
             );
           })()}
@@ -843,13 +847,14 @@ export default function Onboarding() {
             return (
               <Card
                 key={starterPlan.id}
-                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col h-full"
               >
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
-                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                </div>
+                <div className="flex-1 flex flex-col">
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
 
-                <h3 className="text-xl sm:text-2xl font-bold mb-2">{starterPlan.name}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">{starterPlan.name}</h3>
                 {starterPlan.trial_days > 0 && (
                   <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
                     {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
@@ -917,30 +922,33 @@ export default function Onboarding() {
                     </div>
                   ))}
                 </div>
+                </div>
 
-                <Button
-                  size="lg"
-                  onClick={() => handleSelectPlan(starterPlan.id)}
-                  disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
-                    </>
+                <div className="mt-auto pt-4">
+                  <Button
+                    size="lg"
+                    onClick={() => handleSelectPlan(starterPlan.id)}
+                    disabled={loading}
+                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                        <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
+                      </>
+                    )}
+                  </Button>
+                  
+                  {starterPlan.trial_days > 0 && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-2 sm:mt-3 px-2">
+                      {tf('onboarding.trial.cardRequired', { 
+                        date: new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                      })}
+                    </p>
                   )}
-                </Button>
-                
-                {starterPlan.trial_days > 0 && (
-                  <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-2 sm:mt-3 px-2">
-                    {tf('onboarding.trial.cardRequired', { 
-                      date: new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
-                    })}
-                  </p>
-                )}
+                </div>
               </Card>
             );
           })()}
@@ -963,22 +971,23 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow flex flex-col h-full ${
                   isPopular ? 'ring-2 ring-primary' : 'border-2 border-border'
                 }`}
               >
-                {isPopular && (
-                  <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
-                    <Star className="w-3 h-3 mr-1" />
-                    {t.onboarding.planFeatures.mostPopular}
-                  </Badge>
-                )}
+                <div className="flex-1 flex flex-col">
+                  {isPopular && (
+                    <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
+                      <Star className="w-3 h-3 mr-1" />
+                      {t.onboarding.planFeatures.mostPopular}
+                    </Badge>
+                  )}
 
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('professional')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
-                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                </div>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('professional')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
 
-                <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forGrowth}</p>
                 <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
                   <p className="text-xs sm:text-sm font-medium text-center">
@@ -1091,22 +1100,25 @@ export default function Onboarding() {
                     </div>
                   ))}
                 </div>
+                </div>
 
-                <Button
-                  size="lg"
-                  onClick={() => handleSelectPlan(selectedProTier)}
-                  disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
-                    </>
-                  )}
-                </Button>
+                <div className="mt-auto pt-4">
+                  <Button
+                    size="lg"
+                    onClick={() => handleSelectPlan(selectedProTier)}
+                    disabled={loading}
+                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  >
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                        <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             );
           })()}
@@ -1127,20 +1139,21 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col h-full"
               >
-                {isBestValue && (
-                  <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
-                    <Zap className="w-3 h-3 mr-1" />
-                    {t.onboarding.planFeatures.bestValue}
-                  </Badge>
-                )}
+                <div className="flex-1 flex flex-col">
+                  {isBestValue && (
+                    <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
+                      <Zap className="w-3 h-3 mr-1" />
+                      {t.onboarding.planFeatures.bestValue}
+                    </Badge>
+                  )}
 
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
-                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                </div>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
 
-                <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forEnterprise}</p>
                 <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
                   <p className="text-xs sm:text-sm font-medium text-center">
@@ -1253,22 +1266,25 @@ export default function Onboarding() {
                     </div>
                   ))}
                 </div>
+                </div>
 
-                <Button
-                  size="lg"
-                  onClick={() => handleSelectPlan(selectedEnterpriseTier)}
-                  disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
-                    </>
-                  )}
-                </Button>
+                <div className="mt-auto pt-4">
+                  <Button
+                    size="lg"
+                    onClick={() => handleSelectPlan(selectedEnterpriseTier)}
+                    disabled={loading}
+                    className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  >
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                        <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             );
           })()}
