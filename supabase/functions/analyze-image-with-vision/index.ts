@@ -199,7 +199,7 @@ RÈGLES CRITIQUES :
             'Content-Type': 'application/json',
           },
           signal: lovableController.signal,
-          body: JSON.stringify({
+        body: JSON.stringify({
             model: 'google/gemini-2.5-pro', // Using PRO for better technical schema detection
             messages: [
               {
@@ -252,49 +252,8 @@ Cherche ces INDICES VISUELS (dans cet ordre) :
 
 Contexte produit : ${JSON.stringify(productContext, null, 2)}
 
-EXEMPLE CONCRET avec schéma technique visible :
-
-Si tu vois un schéma avec ces annotations :
-- "100cm" sur la hauteur totale
-- "71cm" sur la hauteur d'assise
-- "47.5cm" sur la profondeur
-- "43cm" sur le diamètre
-- "31cm" sur la largeur
-
-→ Tu DOIS retourner :
-{
-  "visualAttributes": {
-    "technicalDimensions": {
-      "height": "100",
-      "heightUnit": "cm",
-      "seatHeight": "71",
-      "seatHeightUnit": "cm",
-      "depth": "47.5",
-      "depthUnit": "cm",
-      "diameter": "43",
-      "diameterUnit": "cm",
-      "width": "31",
-      "widthUnit": "cm"
-    },
-    "visualContext": {
-      "hasTechnicalSchema": true,
-      "dimensionSource": "visible"
-    }
-  },
-  "confidence": 0.93
-}
-
-⚠️ ERREURS À ÉVITER :
-❌ Ne pas arrondir (71cm, PAS 75cm)
-❌ Ne pas estimer si les valeurs sont visibles
-❌ Ne pas dire "hasTechnicalSchema: false" si tu vois des chiffres
-
-✅ CHECKLIST FINALE :
-1. Y a-t-il des chiffres sur l'image ? → OUI = hasTechnicalSchema: true
-2. Ai-je extrait TOUTES les dimensions visibles ?
-3. Ai-je respecté les décimales (47.5, pas 47 ou 48) ?
-4. Ai-je séparé valeur et unité ?
-5. La confidence est-elle > 0.90 pour du visible ?`
+⚙️ IMPORTANT : Tu ne dois PAS renvoyer de texte libre, uniquement un appel de fonction JSON conforme au schéma fourni dans tools.set_vision_result.
+` 
                   },
                   {
                     type: 'image_url',
@@ -305,8 +264,74 @@ Si tu vois un schéma avec ces annotations :
                 ]
               }
             ],
+            tools: [
+              {
+                type: 'function',
+                function: {
+                  name: 'set_vision_result',
+                  description: 'Retourne le résultat d\'analyse d\'image produit avec dimensions techniques.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      visualAttributes: {
+                        type: 'object',
+                        properties: {
+                          primaryColor: { type: 'string' },
+                          secondaryColors: { type: 'array', items: { type: 'string' } },
+                          materials: { type: 'array', items: { type: 'string' } },
+                          style: { type: 'string' },
+                          room: { type: 'string' },
+                          mood: { type: 'string' },
+                          finish: { type: 'string' },
+                          texture: { type: 'string' },
+                          technicalDetails: { type: 'array', items: { type: 'string' } },
+                          technicalDimensions: {
+                            type: 'object',
+                            properties: {
+                              height: { type: 'string' },
+                              heightUnit: { type: 'string' },
+                              width: { type: 'string' },
+                              widthUnit: { type: 'string' },
+                              length: { type: 'string' },
+                              lengthUnit: { type: 'string' },
+                              depth: { type: 'string' },
+                              depthUnit: { type: 'string' },
+                              diameter: { type: 'string' },
+                              diameterUnit: { type: 'string' },
+                              seatHeight: { type: 'string' },
+                              seatHeightUnit: { type: 'string' },
+                              weight: { type: 'string' },
+                              weightUnit: { type: 'string' }
+                            },
+                            additionalProperties: true
+                          },
+                          visualContext: {
+                            type: 'object',
+                            properties: {
+                              hasTechnicalSchema: { type: 'boolean' },
+                              hasPackaging: { type: 'boolean' },
+                              hasRuler: { type: 'boolean' },
+                              hasLabels: { type: 'boolean' },
+                              viewAngle: { type: 'string' },
+                              dimensionSource: { type: 'string', enum: ['visible', 'estimated', 'not_available'] }
+                            },
+                            additionalProperties: true
+                          }
+                        },
+                        required: ['technicalDimensions'],
+                        additionalProperties: true
+                      },
+                      confidence: { type: 'number' }
+                    },
+                    required: ['visualAttributes', 'confidence'],
+                    additionalProperties: false
+                  }
+                }
+              }
+            ],
+            tool_choice: { type: 'function', function: { name: 'set_vision_result' } },
             temperature: 0.3,
-            max_tokens: 1536,
+            max_tokens: 768,
           }),
         }
       );
@@ -335,17 +360,36 @@ Si tu vois un schéma avec ces annotations :
     }
 
     const lovableData = await lovableResponse.json();
-    console.log('Lovable AI Vision response received');
+    console.log('Lovable AI Vision response received', JSON.stringify(lovableData, null, 2));
 
+    // 1) Try to use structured tool-calling output first
+    const toolCall = lovableData.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        const visionResult: VisionResponse = JSON.parse(toolCall.function.arguments);
+        console.log('Vision analysis completed (tool call):', visionResult);
+
+        return new Response(
+          JSON.stringify(visionResult),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } catch (toolParseError) {
+        console.error('Failed to parse tool call arguments as JSON:', toolCall.function.arguments, toolParseError);
+        // If this fails, we fall back to text-based parsing below
+      }
+    }
+
+    // 2) Fallback: parse plain text content (for backward compatibility)
     const generatedText = lovableData.choices?.[0]?.message?.content;
-    if (!generatedText) {
-      console.error('No content in Gemini response:', JSON.stringify(lovableData, null, 2));
+    if (!generatedText || typeof generatedText !== 'string') {
+      console.error('No usable content in Gemini response:', JSON.stringify(lovableData, null, 2));
       throw new Error('No text generated from Gemini Vision');
     }
 
-    console.log('🔍 Raw Gemini response:', generatedText);
+    console.log('🔍 Raw Gemini response (fallback text parsing):', generatedText);
 
-    // Parse JSON response - handle both pure JSON and text+JSON formats
     let visionResult: VisionResponse;
     
     try {
