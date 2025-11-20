@@ -469,6 +469,18 @@ export default function Onboarding() {
     setLoading(true);
     try {
       console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle, 'trial:', isTrial);
+      console.log('📋 Available plans:', plans.map(p => ({ id: p.id, name: p.name })));
+      
+      // Vérifier que le plan existe
+      const selectedPlan = plans.find(p => p.id === planId);
+      if (!selectedPlan) {
+        console.error('❌ Plan not found:', planId);
+        console.error('Available plan IDs:', plans.map(p => p.id));
+        toast.error(`Plan "${planId}" not found. Please try again or contact support.`);
+        return;
+      }
+      
+      console.log('✅ Selected plan found:', { id: selectedPlan.id, name: selectedPlan.name });
       
       // Check if user has active subscription
       const { data: subscription } = await supabase
@@ -498,8 +510,6 @@ export default function Onboarding() {
 
       // If user has active subscription, use update-subscription for proration
       if (hasActiveSubscription) {
-        const selectedPlan = plans.find(p => p.id === planId);
-        if (!selectedPlan) throw new Error('Plan not found');
 
         const priceId = billingCycle === 'yearly' 
           ? (selectedPlan as any).stripe_price_id_yearly 
@@ -753,7 +763,7 @@ export default function Onboarding() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t.onboarding.trial.cardRequired.split('•')[0]} • {language === 'fr' ? 'Annulez à tout moment' : 'Cancel anytime'}
+                    {t.onboarding.trial.noCardRequired}
                   </p>
                 </div>
 

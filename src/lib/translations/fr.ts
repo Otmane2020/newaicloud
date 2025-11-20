@@ -3240,6 +3240,7 @@ export const translations = {
       freeTrial: "🎁 {{days}} jours d'Essai Gratuit",
       startTrial: "Commencer l'Essai Gratuit",
       cardRequired: "💳 Carte requise • Premier paiement le {{date}}",
+      noCardRequired: "✨ Aucune carte requise • Annulez à tout moment",
     },
     verification: {
       title: "Vérification de votre abonnement",

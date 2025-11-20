@@ -3217,6 +3217,7 @@ export const translations = {
       freeTrial: "🎁 {{days}} days free trial",
       startTrial: "Start free trial",
       cardRequired: "💳 Card required • First payment on {{date}}",
+      noCardRequired: "✨ No card required • Cancel anytime",
     },
     verification: {
       title: "Verifying your subscription",
