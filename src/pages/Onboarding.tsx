@@ -1020,6 +1020,9 @@ export default function Onboarding() {
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
+                    <p className="text-[10px] sm:text-xs text-success mt-1.5 font-medium text-center">
+                      {language === 'fr' ? '✨ -20% déjà appliqué' : '✨ -20% already applied'}
+                    </p>
                   </div>
                 </div>
 
@@ -1154,6 +1157,9 @@ export default function Onboarding() {
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
+                    <p className="text-[10px] sm:text-xs text-success mt-1.5 font-medium text-center">
+                      {language === 'fr' ? '✨ -30% déjà appliqué' : '✨ -30% already applied'}
+                    </p>
                   </div>
                 </div>
 
