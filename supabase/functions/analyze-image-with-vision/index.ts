@@ -207,37 +207,54 @@ RÈGLES CRITIQUES :
                 content: [
                   { 
                     type: 'text', 
-                    text: `Tu es un expert en analyse d'images produit pour extraire ou estimer des dimensions techniques.
+                    text: `Tu es un expert en analyse d'images produit. Ta mission est de détecter et extraire les dimensions techniques VISIBLES sur les images.
 
-🎯 MISSION PRINCIPALE : Pour CHAQUE image, tu DOIS TOUJOURS fournir des dimensions
+🎯 PRIORITÉ ABSOLUE : Chercher les dimensions VISIBLES en PREMIER
 
-ÉTAPE 1 - DÉTECTION VISUELLE (hasTechnicalSchema) :
-Cherche ces éléments visuels :
-□ Lignes de cote avec chiffres (100cm, 71cm, H:75cm)
-□ Schéma technique (wireframe, plan, croquis)
-□ Tableau de dimensions
-□ Règle graduée visible
+ÉTAPE 1 - SCANNER L'IMAGE pour détecter :
+□ Lignes de cote avec chiffres (ex: "100cm", "H:75cm", "Ø35cm")
+□ Schémas techniques avec annotations dimensionnelles
+□ Tableaux de dimensions ou spécifications techniques
+□ Règles graduées ou échelles visibles
+□ Étiquettes ou emballages affichant les mesures
 
-→ Si OUI à une question : hasTechnicalSchema = true, dimensionSource = "visible"
-→ Si NON : hasTechnicalSchema = false, dimensionSource = "estimated"
+ÉTAPE 2 - EXTRACTION vs ESTIMATION :
 
-ÉTAPE 2 - EXTRACTION OU ESTIMATION :
+A) 🔍 SI DIMENSIONS VISIBLES (hasTechnicalSchema = true) :
+   ✓ LIS et EXTRAIS les valeurs EXACTES affichées sur l'image
+   ✓ Respecte les chiffres précis (ex: si tu vois "73cm", écris "73", PAS "75")
+   ✓ Extrais TOUTES les dimensions visibles (hauteur, largeur, profondeur, poids, etc.)
+   ✓ Sépare valeur et unité : height: "73", heightUnit: "cm"
+   ✓ dimensionSource: "visible"
+   ✓ confidence: 0.90-0.95
 
-A) Si dimensions VISIBLES (hasTechnicalSchema = true) :
-   - Extrais EXACTEMENT les valeurs visibles
-   - Sépare valeur et unité : height: "75", heightUnit: "cm"
-   - confidence: 0.85-0.95
+Exemple si tu vois un schéma avec "H:100cm L:43cm P:47cm assise:71cm" :
+{
+  "technicalDimensions": {
+    "height": "100",
+    "heightUnit": "cm",
+    "width": "43",
+    "widthUnit": "cm",
+    "depth": "47",
+    "depthUnit": "cm",
+    "seatHeight": "71",
+    "seatHeightUnit": "cm"
+  },
+  "visualContext": {
+    "hasTechnicalSchema": true,
+    "dimensionSource": "visible"
+  }
+}
 
-B) Si AUCUNE dimension visible (hasTechnicalSchema = false) :
-   - ESTIME les dimensions basées sur le type de produit
-   - Utilise ces références standards :
+B) 📐 SI AUCUNE dimension visible (hasTechnicalSchema = false) :
+   - Estime selon le type de produit visible
+   - Références standards :
      • Tabouret de bar : H:75cm, D:35cm, assise:65cm, poids:8kg
      • Chaise : H:85cm, L:45cm, P:50cm, assise:45cm
      • Table : H:75cm, L:120-180cm, P:70-90cm
      • Meuble TV : H:50cm, L:150cm, P:40cm
      • Canapé : H:80cm, L:200cm, P:90cm, assise:45cm
-     • Lit double : H:100cm, L:140-160cm, P:200cm
-   - Sépare valeur et unité : height: "75", heightUnit: "cm"
+   - dimensionSource: "estimated"
    - confidence: 0.70-0.80
 
 Contexte produit : ${JSON.stringify(productContext, null, 2)}
@@ -246,30 +263,26 @@ FORMAT RÉPONSE (JSON strict) :
 {
   "visualAttributes": {
     "technicalDimensions": {
-      "height": "75",
+      "height": "valeur",
       "heightUnit": "cm",
-      "seatHeight": "65",
-      "seatHeightUnit": "cm",
-      "diameter": "35",
-      "diameterUnit": "cm",
-      "weight": "8",
-      "weightUnit": "kg"
+      "width": "valeur",
+      "widthUnit": "cm"
     },
     "visualContext": {
-      "hasTechnicalSchema": false,
-      "dimensionSource": "estimated"
+      "hasTechnicalSchema": true/false,
+      "dimensionSource": "visible" ou "estimated"
     }
   },
-  "confidence": 0.75
+  "confidence": 0.XX
 }
 
-RÈGLES CRITIQUES :
-✓ TOUJOURS séparer valeur et unité (JAMAIS "75cm", toujours height: "75", heightUnit: "cm")
+⚠️ RÈGLES CRITIQUES :
+✓ PRIORITÉ 1 : Chercher d'abord les dimensions VISIBLES sur l'image
+✓ EXTRAIS les valeurs EXACTES si elles sont affichées (ne les modifie pas)
+✓ Sépare TOUJOURS valeur et unité (height: "73", heightUnit: "cm")
 ✓ NE JAMAIS laisser technicalDimensions vide {}
-✓ Si dimensions visibles → dimensionSource: "visible", confidence: 0.85-0.95
-✓ Si dimensions estimées → dimensionSource: "estimated", confidence: 0.70-0.80
-✓ Utiliser "cm" pour longueurs, "kg" pour poids
-✓ Estimer au minimum : height + 2 autres dimensions pertinentes au type`
+✓ Si visible → hasTechnicalSchema: true, dimensionSource: "visible", confidence: 0.90+
+✓ Si estimé → hasTechnicalSchema: false, dimensionSource: "estimated", confidence: 0.70-0.80`
                   },
                   {
                     type: 'image_url',
