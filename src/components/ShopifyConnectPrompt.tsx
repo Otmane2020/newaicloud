@@ -31,19 +31,18 @@ export function ShopifyConnectPrompt() {
       const searchParams = new URLSearchParams(location.search);
       const forceShow = searchParams.get('show_shopify_prompt') === 'true';
 
+      // RESTRICTION: Only show on /integration page OR when explicitly requested via URL
+      const isIntegrationPage = location.pathname === '/integration';
+      
+      if (!isIntegrationPage && !forceShow) {
+        return;
+      }
+
       // Session-based check to avoid spamming (1 hour cooldown)
       const skipKey = `shopify_prompt_checked_${user.id}`;
       const lastCheck = sessionStorage.getItem(skipKey);
       
       if (!forceShow && lastCheck && Date.now() - parseInt(lastCheck) < 3600000) {
-        return;
-      }
-
-      // Show on important pages where users might need Shopify
-      const allowedPaths = ['/dashboard', '/products', '/seo', '/integration'];
-      const isAllowedPath = allowedPaths.includes(location.pathname);
-      
-      if (!isAllowedPath && !forceShow) {
         return;
       }
 
