@@ -104,6 +104,8 @@ serve(async (req) => {
 
       return {
         ...product,
+        originalTitle: product.title, // Save original title for context
+        optimizedTitle: product.title, // Will be updated after optimization
         discount,
         discount_amount: product.compare_at_price ? (product.compare_at_price - product.price) : null,
         images: productImages.filter((img: any) => img.product_id === product.id),
@@ -112,6 +114,41 @@ serve(async (req) => {
         has_multiple_images: productImages.filter((img: any) => img.product_id === product.id).length > 1
       };
     }) || [];
+
+    // STEP 1: Optimize SERP titles BEFORE generating landing page
+    console.log(`🎯 Optimizing SERP titles for ${products.length} products BEFORE generation...`);
+    const optimizationPromises = products.map(async (product: any) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('optimize-product-title-serp', {
+          body: {
+            productId: product.id,
+            currentTitle: product.originalTitle,
+            description: product.description || product.optimized_description,
+            productType: product.product_type,
+            vendor: product.vendor,
+            language: 'fr'
+          }
+        });
+        
+        if (error) {
+          console.error(`❌ Failed to optimize title for ${product.originalTitle}:`, error);
+          return product; // Keep original title on error
+        }
+        
+        if (data?.optimizedTitle) {
+          console.log(`✅ Optimized: "${product.originalTitle}" → "${data.optimizedTitle}"`);
+          product.optimizedTitle = data.optimizedTitle; // Update with optimized title
+        }
+        
+        return product;
+      } catch (err) {
+        console.error(`❌ Error optimizing ${product.originalTitle}:`, err);
+        return product; // Keep original title on error
+      }
+    });
+
+    await Promise.all(optimizationPromises);
+    console.log('✅ All SERP titles optimized, ready for landing page generation');
 
     // Function to get design style instructions based on campaign design_style
     const getDesignStyleInstructions = (designStyle: string) => {
@@ -200,6 +237,14 @@ ${!designInstructions ? '## BASE DESIGN (Amazon-inspired):' : '## APPLY THE DESI
 
 ## CRITICAL REQUIREMENTS - READ CAREFULLY:
 
+### 0. TITLE USAGE RULES (MANDATORY)
+**IMPORTANT - Utilisation des titres produits:**
+- Utilisez TOUJOURS le "Titre optimisé (PRINCIPAL)" dans tous les affichages de la landing page
+- L'"Ancien titre" est fourni UNIQUEMENT pour contexte sémantique et enrichissement
+- N'affichez JAMAIS l'ancien titre aux visiteurs
+- Format des réductions : "-20%" (JAMAIS de signe ~ approximatif)
+- Les titres optimisés sont conçus pour le SEO et les conversions
+
 ### 1. OUTPUT FORMAT
 - Return a COMPLETE, STANDALONE HTML document
 - Include ALL CSS inline in a <style> tag
@@ -256,7 +301,8 @@ Display ${products.length} products in a responsive grid (2 cols mobile, 3-4 col
 **ALL ${products.length} PRODUCTS:**
 ${products.map((p: any, idx: number) => `
 Product ${idx + 1}:
-- Title: ${p.title}
+- Titre optimisé (PRINCIPAL - à afficher): ${p.optimizedTitle}
+- Ancien titre (contexte uniquement): ${p.originalTitle}
 - Price: ${p.price}€
 - Compare at: ${p.compare_at_price || 'N/A'}€
 - Discount: ${p.discount ? `-${p.discount}%` : 'N/A'}
@@ -377,34 +423,6 @@ Return ONLY the complete HTML document. Start with <!DOCTYPE html>. No markdown,
     if (updateError) {
       console.error("Failed to save landing page:", updateError);
     }
-
-    // Optimize SERP titles for all campaign products
-    console.log(`🎯 Optimizing SERP titles for ${products.length} products...`);
-    const optimizationPromises = products.map(async (product: any) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('optimize-product-title-serp', {
-          body: {
-            productId: product.id,
-            currentTitle: product.title,
-            description: product.description || product.optimized_description,
-            productType: product.product_type,
-            vendor: product.vendor,
-            language: 'fr'
-          }
-        });
-        
-        if (error) {
-          console.error(`❌ Failed to optimize title for ${product.title}:`, error);
-        } else {
-          console.log(`✅ Optimized title for ${product.title}`);
-        }
-      } catch (err) {
-        console.error(`❌ Error optimizing ${product.title}:`, err);
-      }
-    });
-
-    await Promise.all(optimizationPromises);
-    console.log('✅ All SERP titles optimized');
 
     return new Response(
       JSON.stringify({ 
