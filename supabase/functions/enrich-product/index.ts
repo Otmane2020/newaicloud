@@ -198,10 +198,14 @@ Deno.serve(async (req: Request) => {
     if (images && images.length > 0) {
       console.log(`📸 Found ${images.length} images, analyzing with Gemini Vision...`);
       
-      // Analyze the first 3 images (main + 2 additional for better coverage)
+      // Analyze up to 6 images (technical schemas are often in later positions)
+      const maxImages = Math.min(images.length, 6);
+      console.log(`📸 Analyzing ${maxImages} images for technical details...`);
+      
       const imageAnalyses = [];
-      for (let i = 0; i < Math.min(images.length, 3); i++) {
+      for (let i = 0; i < maxImages; i++) {
         try {
+          console.log(`🔍 Analyzing image ${i + 1}/${maxImages} with Vision AI...`);
           const { data: visionData, error: visionError } = await supabase.functions.invoke(
             'analyze-image-with-vision',
             {
@@ -218,7 +222,17 @@ Deno.serve(async (req: Request) => {
 
           if (!visionError && visionData?.visualAttributes) {
             imageAnalyses.push(visionData);
-            console.log(`✅ Vision analysis ${i + 1}/${images.length} completed (confidence: ${visionData.confidence})`);
+            console.log(`✅ Vision analysis ${i + 1} complete (confidence: ${visionData.confidence})`);
+            
+            // Early stopping: if we found a technical schema with complete dimensions, stop analyzing
+            const hasTechDims = visionData?.visualContext?.hasTechnicalSchema && 
+                               visionData?.technicalDimensions &&
+                               Object.keys(visionData.technicalDimensions).length >= 3;
+            
+            if (hasTechDims) {
+              console.log(`✅ Technical schema with complete dimensions found in image ${i + 1}, stopping analysis`);
+              break;
+            }
           } else {
             console.warn(`⚠️ Vision analysis ${i + 1} failed:`, visionError);
           }
@@ -408,6 +422,8 @@ Réponds UNIQUEMENT en JSON valide:
       width_unit: null as string | null,
       height: null as number | null,
       height_unit: null as string | null,
+      depth: null as number | null,
+      depth_unit: null as string | null,
     };
 
     // Only use SERP if Vision AI didn't provide sufficient data
@@ -469,6 +485,14 @@ Réponds UNIQUEMENT en JSON valide:
               serpDimensions.height_unit = 'cm';
             }
           }
+
+          if (serpResponse.averageDimensions?.depth) {
+            const depthMatch = serpResponse.averageDimensions.depth.match(/^([\d.]+)(cm)?$/);
+            if (depthMatch) {
+              serpDimensions.depth = parseFloat(depthMatch[1]);
+              serpDimensions.depth_unit = 'cm';
+            }
+          }
         } else {
           console.log('⚠️ SERP search returned low confidence or insufficient data');
         }
@@ -510,65 +534,68 @@ Réponds UNIQUEMENT en JSON valide:
         
         // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
         smart_length: existingDimensions.length || 
-                      visionAttributes?.technicalDimensions?.length || 
+                      (visionAttributes?.technicalDimensions?.length ?? null) || 
                       serpDimensions.length ||
                       parsedData.smart_length || null,
         smart_length_unit: existingDimensions.length_unit || 
-                          visionAttributes?.technicalDimensions?.lengthUnit || 
+                          (visionAttributes?.technicalDimensions?.lengthUnit ?? null) || 
                           serpDimensions.length_unit ||
                           parsedData.smart_length_unit || null,
         smart_width: existingDimensions.width || 
-                     visionAttributes?.technicalDimensions?.width || 
+                     (visionAttributes?.technicalDimensions?.width ?? null) || 
                      serpDimensions.width ||
                      parsedData.smart_width || null,
         smart_width_unit: existingDimensions.width_unit || 
-                         visionAttributes?.technicalDimensions?.widthUnit || 
+                         (visionAttributes?.technicalDimensions?.widthUnit ?? null) || 
                          serpDimensions.width_unit ||
                          parsedData.smart_width_unit || null,
         smart_height: existingDimensions.height || 
-                      visionAttributes?.technicalDimensions?.height || 
+                      (visionAttributes?.technicalDimensions?.height ?? null) || 
                       serpDimensions.height ||
                       parsedData.smart_height || null,
         smart_height_unit: existingDimensions.height_unit || 
-                          visionAttributes?.technicalDimensions?.heightUnit || 
+                          (visionAttributes?.technicalDimensions?.heightUnit ?? null) || 
                           serpDimensions.height_unit ||
                           parsedData.smart_height_unit || null,
         smart_diameter: existingDimensions.diameter || 
-                        visionAttributes?.technicalDimensions?.diameter || 
+                        (visionAttributes?.technicalDimensions?.diameter ?? null) || 
                         parsedData.smart_diameter || null,
         smart_diameter_unit: existingDimensions.diameter_unit || 
-                            visionAttributes?.technicalDimensions?.diameterUnit || 
+                            (visionAttributes?.technicalDimensions?.diameterUnit ?? null) || 
                             parsedData.smart_diameter_unit || null,
         smart_depth: existingDimensions.depth || 
-                     visionAttributes?.technicalDimensions?.depth || 
+                     (visionAttributes?.technicalDimensions?.depth ?? null) || 
+                     serpDimensions.depth ||
                      parsedData.smart_depth || null,
         smart_depth_unit: existingDimensions.depth_unit || 
-                         visionAttributes?.technicalDimensions?.depthUnit || 
+                         (visionAttributes?.technicalDimensions?.depthUnit ?? null) || 
+                         serpDimensions.depth_unit ||
                          parsedData.smart_depth_unit || null,
         smart_weight: existingDimensions.weight || 
-                      visionAttributes?.technicalDimensions?.weight || 
+                      (visionAttributes?.technicalDimensions?.weight ?? null) || 
                       serpDimensions.weight ||
                       parsedData.smart_weight || null,
         smart_weight_unit: existingDimensions.weight_unit || 
-                          visionAttributes?.technicalDimensions?.weightUnit || 
+                          (visionAttributes?.technicalDimensions?.weightUnit ?? null) || 
                           serpDimensions.weight_unit ||
                           parsedData.smart_weight_unit || null,
         smart_seat_height: existingDimensions.seat_height || 
-                          visionAttributes?.technicalDimensions?.seatHeight || 
+                          (visionAttributes?.technicalDimensions?.seatHeight ?? null) || 
                           parsedData.smart_seat_height || null,
         smart_seat_height_unit: existingDimensions.seat_height_unit || 
-                               visionAttributes?.technicalDimensions?.seatHeightUnit || 
+                               (visionAttributes?.technicalDimensions?.seatHeightUnit ?? null) || 
                                parsedData.smart_seat_height_unit || null,
         
         // SERP tracking - PRIORITY ORDER: product_description > vision > serp > estimated
         specs_source: hasExistingDims ? 'product_description' : 
                      (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
-                     serpVerified ? 'serp' : 
+                     (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
                      'estimated',
         specs_confidence: hasExistingDims ? 100 : 
                          (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
                            Math.round(visionConfidence * 100) :
-                           serpVerified ? Math.round(specsConfidence * 100) : 50,
+                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
+                         50,
         serp_verified: serpVerified,
         serp_data: serpData || null,
         
