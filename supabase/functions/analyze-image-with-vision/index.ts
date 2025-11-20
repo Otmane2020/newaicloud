@@ -74,12 +74,12 @@ serve(async (req) => {
       throw new Error("imageUrl is required");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
     }
 
-    console.log('Analyzing image with Gemini Vision:', imageUrl);
+    console.log('🔍 Analyzing image with Google Gemini Direct API:', imageUrl);
 
     // Download image with timeout (30 seconds)
     const controller = new AbortController();
@@ -185,30 +185,27 @@ RÈGLES CRITIQUES :
 ✓ NE laisse JAMAIS technicalDimensions complètement vide
 ✓ Estime basé sur le type de produit (tabouret = ~75cm hauteur, chaise = ~85cm, etc.)`;
 
-    // Call Lovable AI with Vision support (higher quota limits)
-    const lovableController = new AbortController();
-    const lovableTimeoutId = setTimeout(() => lovableController.abort(), 45000);
+    // Call Google Gemini Direct API with Vision support
+    const geminiController = new AbortController();
+    const geminiTimeoutId = setTimeout(() => geminiController.abort(), 45000);
     
-    let lovableResponse;
+    let geminiResponse;
     try {
-      console.log('Calling Lovable AI with Vision...');
-      lovableResponse = await fetch(
-        'https://ai.gateway.lovable.dev/v1/chat/completions',
+      console.log('📡 Calling Google Gemini Direct API...');
+      geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          signal: lovableController.signal,
+          signal: geminiController.signal,
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
+            contents: [
               {
                 role: 'user',
-                content: [
+                parts: [
                   { 
-                    type: 'text', 
                     text: `ANALYSE DÉTAILLÉE D'IMAGE - RECHERCHE DE DIMENSIONS VISIBLES
 
 🎯 **MISSION CRITIQUE** : TROUVER TOUS LES CHIFFRES ET DIMENSIONS VISIBLES DANS CETTE IMAGE
@@ -253,10 +250,9 @@ RÈGLES CRITIQUES :
 UTILISE LA FONCTION set_vision_result POUR RETOURNER LES RÉSULTATS.`
                   },
                   {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${contentType};base64,${base64Image}`,
-                      detail: 'high' // Plus haute qualité pour lire le texte
+                    inline_data: {
+                      mime_type: contentType,
+                      data: base64Image
                     }
                   }
                 ]
@@ -264,134 +260,144 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LES RÉSULTATS.`
             ],
             tools: [
               {
-                type: "function",
-                function: {
-                  name: "set_vision_result",
-                  description: "Retourne les résultats d'analyse visuelle d'un produit avec dimensions extraites ou estimées",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      visualAttributes: {
-                        type: "object",
-                        properties: {
-                          primaryColor: { type: "string", description: "Couleur principale du produit" },
-                          secondaryColors: { type: "array", items: { type: "string" }, description: "Couleurs secondaires" },
-                          materials: { type: "array", items: { type: "string" }, description: "Matériaux identifiés" },
-                          style: { type: "string", description: "Style du produit (moderne, scandinave, industriel, etc.)" },
-                          room: { type: "string", description: "Pièce de destination (salon, cuisine, chambre, etc.)" },
-                          mood: { type: "string", description: "Ambiance (élégant, cosy, minimaliste, etc.)" },
-                          finish: { type: "string", description: "Finition (mat, brillant, satiné, etc.)" },
-                          texture: { type: "string", description: "Texture (lisse, rugueux, doux, etc.)" },
-                          technicalDetails: { type: "array", items: { type: "string" }, description: "Détails techniques visibles" },
-                          technicalDimensions: {
-                            type: "object",
-                            properties: {
-                              height: { type: "string", description: "Hauteur (valeur uniquement)" },
-                              heightUnit: { type: "string", description: "Unité de hauteur (cm, mm, m)" },
-                              width: { type: "string", description: "Largeur (valeur uniquement)" },
-                              widthUnit: { type: "string", description: "Unité de largeur" },
-                              length: { type: "string", description: "Longueur (valeur uniquement)" },
-                              lengthUnit: { type: "string", description: "Unité de longueur" },
-                              depth: { type: "string", description: "Profondeur (valeur uniquement)" },
-                              depthUnit: { type: "string", description: "Unité de profondeur" },
-                              diameter: { type: "string", description: "Diamètre (valeur uniquement)" },
-                              diameterUnit: { type: "string", description: "Unité de diamètre" },
-                              weight: { type: "string", description: "Poids (valeur uniquement)" },
-                              weightUnit: { type: "string", description: "Unité de poids (kg, g)" },
-                              seatHeight: { type: "string", description: "Hauteur d'assise (valeur uniquement)" },
-                              seatHeightUnit: { type: "string", description: "Unité de hauteur d'assise" }
+                function_declarations: [
+                  {
+                    name: "set_vision_result",
+                    description: "Retourne les résultats d'analyse visuelle d'un produit avec dimensions extraites ou estimées",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        visualAttributes: {
+                          type: "object",
+                          properties: {
+                            primaryColor: { type: "string", description: "Couleur principale du produit" },
+                            secondaryColors: { type: "array", items: { type: "string" }, description: "Couleurs secondaires" },
+                            materials: { type: "array", items: { type: "string" }, description: "Matériaux identifiés" },
+                            style: { type: "string", description: "Style du produit (moderne, scandinave, industriel, etc.)" },
+                            room: { type: "string", description: "Pièce de destination (salon, cuisine, chambre, etc.)" },
+                            mood: { type: "string", description: "Ambiance (élégant, cosy, minimaliste, etc.)" },
+                            finish: { type: "string", description: "Finition (mat, brillant, satiné, etc.)" },
+                            texture: { type: "string", description: "Texture (lisse, rugueux, doux, etc.)" },
+                            technicalDetails: { type: "array", items: { type: "string" }, description: "Détails techniques visibles" },
+                            technicalDimensions: {
+                              type: "object",
+                              properties: {
+                                height: { type: "string", description: "Hauteur (valeur uniquement)" },
+                                heightUnit: { type: "string", description: "Unité de hauteur (cm, mm, m)" },
+                                width: { type: "string", description: "Largeur (valeur uniquement)" },
+                                widthUnit: { type: "string", description: "Unité de largeur" },
+                                length: { type: "string", description: "Longueur (valeur uniquement)" },
+                                lengthUnit: { type: "string", description: "Unité de longueur" },
+                                depth: { type: "string", description: "Profondeur (valeur uniquement)" },
+                                depthUnit: { type: "string", description: "Unité de profondeur" },
+                                diameter: { type: "string", description: "Diamètre (valeur uniquement)" },
+                                diameterUnit: { type: "string", description: "Unité de diamètre" },
+                                weight: { type: "string", description: "Poids (valeur uniquement)" },
+                                weightUnit: { type: "string", description: "Unité de poids (kg, g)" },
+                                seatHeight: { type: "string", description: "Hauteur d'assise (valeur uniquement)" },
+                                seatHeightUnit: { type: "string", description: "Unité de hauteur d'assise" }
+                              },
+                              description: "Dimensions techniques extraites ou estimées"
                             },
-                            description: "Dimensions techniques extraites ou estimées"
+                            visualContext: {
+                              type: "object",
+                              properties: {
+                                hasTechnicalSchema: { 
+                                  type: "boolean", 
+                                  description: "TRUE si des chiffres/dimensions sont VISIBLES dans l'image, FALSE sinon" 
+                                },
+                                hasPackaging: { type: "boolean", description: "Présence d'emballage" },
+                                hasRuler: { type: "boolean", description: "Présence d'une règle ou échelle" },
+                                hasLabels: { type: "boolean", description: "Présence d'étiquettes avec dimensions" },
+                                viewAngle: { type: "string", description: "Angle de vue (face, profil, 3/4, etc.)" },
+                                dimensionSource: { 
+                                  type: "string", 
+                                  enum: ["visible", "estimated", "not_available"],
+                                  description: "visible = chiffres présents dans l'image | estimated = estimation visuelle | not_available = impossible à estimer"
+                                },
+                                visibleDimensions: { 
+                                  type: "array", 
+                                  items: { type: "string" },
+                                  description: "Liste des dimensions visuellement détectées (ex: ['H:85cm', 'L:45cm'])" 
+                                },
+                                confidenceReason: { 
+                                  type: "string",
+                                  description: "Explication textuelle de la confiance et de la source (visible vs estimée)"
+                                }
+                              },
+                              required: ["hasTechnicalSchema", "dimensionSource"]
+                            }
                           },
-                          visualContext: {
-                            type: "object",
-                            properties: {
-                              hasTechnicalSchema: { 
-                                type: "boolean", 
-                                description: "TRUE si des chiffres/dimensions sont VISIBLES dans l'image, FALSE sinon" 
-                              },
-                              hasPackaging: { type: "boolean", description: "Présence d'emballage" },
-                              hasRuler: { type: "boolean", description: "Présence d'une règle ou échelle" },
-                              hasLabels: { type: "boolean", description: "Présence d'étiquettes avec dimensions" },
-                              viewAngle: { type: "string", description: "Angle de vue (face, profil, 3/4, etc.)" },
-                              dimensionSource: { 
-                                type: "string", 
-                                enum: ["visible", "estimated", "not_available"],
-                                description: "visible = chiffres présents dans l'image | estimated = estimation visuelle | not_available = impossible à estimer"
-                              },
-                              visibleDimensions: { 
-                                type: "array", 
-                                items: { type: "string" },
-                                description: "Liste des dimensions visuellement détectées (ex: ['H:85cm', 'L:45cm'])" 
-                              },
-                              confidenceReason: { 
-                                type: "string",
-                                description: "Explication textuelle de la confiance et de la source (visible vs estimée)"
-                              }
-                            },
-                            required: ["hasTechnicalSchema", "dimensionSource"]
-                          }
+                          required: ["primaryColor", "materials", "style", "technicalDimensions", "visualContext"]
                         },
-                        required: ["primaryColor", "materials", "style", "technicalDimensions", "visualContext"]
+                        confidence: { 
+                          type: "number", 
+                          description: "Confiance globale (0.95 si visible, 0.75 si estimé)",
+                          minimum: 0,
+                          maximum: 1
+                        }
                       },
-                      confidence: { 
-                        type: "number", 
-                        description: "Confiance globale (0.95 si visible, 0.75 si estimé)",
-                        minimum: 0,
-                        maximum: 1
-                      }
-                    },
-                    required: ["visualAttributes", "confidence"],
-                    additionalProperties: false
+                      required: ["visualAttributes", "confidence"]
+                    }
                   }
-                }
+                ]
               }
             ],
-            tool_choice: { type: "function", function: { name: "set_vision_result" } },
-            temperature: 0.1,
-            max_tokens: 2048
+            tool_config: {
+              function_calling_config: {
+                mode: "ANY",
+                allowed_function_names: ["set_vision_result"]
+              }
+            },
+            generation_config: {
+              temperature: 0.1,
+              maxOutputTokens: 2048
+            }
           }),
         }
       );
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Lovable AI timeout after 45 seconds');
+        throw new Error('Google Gemini timeout after 45 seconds');
       }
       throw error;
     } finally {
-      clearTimeout(lovableTimeoutId);
+      clearTimeout(geminiTimeoutId);
     }
 
-    if (!lovableResponse.ok) {
-      const errorText = await lovableResponse.text();
-      console.error('Lovable AI error:', lovableResponse.status, errorText);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('❌ Google Gemini error:', geminiResponse.status, errorText);
       
-      // Handle rate limiting gracefully
-      if (lovableResponse.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      // Handle Google-specific errors
+      if (geminiResponse.status === 429) {
+        throw new Error('Google API rate limit exceeded. Please try again in a moment.');
       }
-      if (lovableResponse.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable AI workspace.');
+      if (geminiResponse.status === 403) {
+        throw new Error('Invalid Google API key or insufficient permissions.');
+      }
+      if (geminiResponse.status === 400) {
+        throw new Error('Invalid request format or image too large for Google API.');
       }
       
-      throw new Error(`Lovable AI error: ${lovableResponse.status} ${errorText}`);
+      throw new Error(`Google Gemini error: ${geminiResponse.status} ${errorText}`);
     }
 
-    const lovableData = await lovableResponse.json();
-    console.log('Lovable AI Vision response received', JSON.stringify(lovableData, null, 2));
+    const geminiData = await geminiResponse.json();
+    console.log('✅ Google Gemini response received', JSON.stringify(geminiData, null, 2));
 
     // Log détaillé pour debug
-    if (lovableData.choices?.[0]?.message?.tool_calls?.[0]) {
-      console.log('✅ Tool call détecté:', JSON.stringify(lovableData.choices[0].message.tool_calls[0], null, 2));
+    if (geminiData.candidates?.[0]?.content?.parts?.[0]?.functionCall) {
+      console.log('✅ Function call détecté:', JSON.stringify(geminiData.candidates[0].content.parts[0].functionCall, null, 2));
     } else {
-      console.log('❌ Pas de tool call, réponse texte:', lovableData.choices?.[0]?.message?.content?.substring(0, 200));
+      console.log('❌ Pas de function call, réponse texte:', geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.substring(0, 200));
     }
 
-    // 1) Try to use structured tool-calling output first
-    const toolCall = lovableData.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall?.function?.arguments) {
+    // 1) Try to use structured function-calling output first (Google format)
+    const functionCall = geminiData.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+    if (functionCall?.name === 'set_vision_result' && functionCall?.args) {
       try {
-        const visionResult: VisionResponse = JSON.parse(toolCall.function.arguments);
+        const visionResult: VisionResponse = functionCall.args;
         
         // Logs détaillés pour debug
         const ctx = visionResult.visualAttributes.visualContext;
@@ -402,7 +408,7 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LES RÉSULTATS.`
         console.log('- Dimensions visibles:', ctx.visibleDimensions);
         console.log('- Raison confiance:', ctx.confidenceReason);
         console.log('- Dimensions techniques:', visionResult.visualAttributes.technicalDimensions);
-        console.log('Vision analysis completed (tool call):', visionResult);
+        console.log('✅ Vision analysis completed (function call)');
 
         return new Response(
           JSON.stringify(visionResult),
@@ -410,17 +416,17 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LES RÉSULTATS.`
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
-      } catch (toolParseError) {
-        console.error('Failed to parse tool call arguments as JSON:', toolCall.function.arguments, toolParseError);
+      } catch (functionParseError) {
+        console.error('Failed to parse function call args:', functionCall.args, functionParseError);
         // If this fails, we fall back to text-based parsing below
       }
     }
 
     // 2) Fallback: parse plain text content (for backward compatibility)
-    console.warn('⚠️ Gemini n\'a pas utilisé le tool calling, fallback sur texte...');
-    const generatedText = lovableData.choices?.[0]?.message?.content;
+    console.warn('⚠️ Gemini n\'a pas utilisé le function calling, fallback sur texte...');
+    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!generatedText || typeof generatedText !== 'string') {
-      console.error('No usable content in Gemini response:', JSON.stringify(lovableData, null, 2));
+      console.error('No usable content in Gemini response:', JSON.stringify(geminiData, null, 2));
       throw new Error('No text generated from Gemini Vision');
     }
 
