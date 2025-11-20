@@ -67,6 +67,7 @@ export default function Onboarding() {
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
+  const [trialPlan, setTrialPlan] = useState<Plan | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -167,6 +168,21 @@ export default function Onboarding() {
       if (profileData) {
         setHasUsedTrial(profileData.has_used_trial || false);
         console.log('🎁 User trial status: has_used_trial =', profileData.has_used_trial);
+      }
+
+      // Fetch trial plan separately
+      const { data: trialData } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', 'trial')
+        .eq('is_active', true)
+        .single();
+      
+      if (trialData) {
+        setTrialPlan({
+          ...trialData,
+          features: (trialData.features as Record<string, any>) || {}
+        } as Plan);
       }
 
       const { data, error } = await supabase
@@ -736,10 +752,7 @@ export default function Onboarding() {
       {/* Plans */}
         <div className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2 items-stretch`}>
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
-          {!hasUsedTrial && (() => {
-            const starterPlan = plans.find(p => p.id === 'starter');
-            if (!starterPlan) return null;
-
+          {!hasUsedTrial && trialPlan && (() => {
             return (
               <Card className="p-6 lg:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col h-full">
                 <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
@@ -762,9 +775,14 @@ export default function Onboarding() {
                     {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
                   </Badge>
                 </div>
+
+                {/* Description - Fixed height */}
+                <div className="h-12 mb-4">
+                  <p className="text-muted-foreground text-sm">{language === 'fr' ? 'Testez toutes les fonctionnalités gratuitement' : 'Test all features for free'}</p>
+                </div>
                 
                 {/* Price - Fixed height */}
-                <div className="h-24 mb-6">
+                <div className="h-32 mb-6">
                   <div className="text-center">
                     <div className="text-4xl font-bold mb-1">
                       {getCurrencySymbol(language)}0
@@ -783,37 +801,37 @@ export default function Onboarding() {
                   <div className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(starterPlan.max_products)} {language === 'fr' ? 'produits' : 'products'}
+                      {formatLimit(trialPlan.max_products)} {language === 'fr' ? 'produits' : 'products'}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(starterPlan.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
-                    </span>
+                    <span className="text-sm">{formatStoreLimit(trialPlan.max_shopify_stores)}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(starterPlan.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
+                      {formatLimit(trialPlan.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
                     </span>
                   </div>
-                  {starterPlan.max_campaigns > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">
+                      {formatLimit(trialPlan.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
+                    </span>
+                  </div>
+                  {trialPlan.max_campaigns > 0 && (
                     <div className="flex items-start gap-2">
                       <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(starterPlan.max_campaigns)} {language === 'fr' ? 'campagnes' : 'campaigns'}
+                        {formatLimit(trialPlan.max_campaigns)} {language === 'fr' ? 'campagnes' : 'campaigns'}
                       </span>
                     </div>
                   )}
                   <div className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(starterPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
+                      {formatLimit(trialPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
                     </span>
                   </div>
                 </div>
@@ -881,10 +899,20 @@ export default function Onboarding() {
                 </div>
 
                 {/* Price - Fixed height */}
-                <div className="h-24 mb-6">
+                <div className="h-32 mb-6">
                   <div className="text-center">
-                    <div className="flex items-baseline gap-2 justify-center mb-1">
-                      <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    <div className="flex items-baseline gap-2 justify-center mb-2">
+                      <span className="text-2xl font-semibold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? (getPriceByLanguage(starterPlan, language, billingCycle) / 12) * 2
+                            : getPriceByLanguage(starterPlan, language, billingCycle) * 2, 
+                          language
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 justify-center mb-2">
+                      <span className="text-4xl font-bold text-primary">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(starterPlan, language, billingCycle) / 12 
@@ -893,6 +921,17 @@ export default function Onboarding() {
                         )}
                       </span>
                       <span className="text-muted-foreground text-sm">{language === 'fr' ? '/mois' : '/month'}</span>
+                    </div>
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-1.5 border border-pink-200 dark:border-pink-800 mb-2">
+                      <p className="text-xs font-medium text-center">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 50%' : 'Get 50%'}
+                        </span>
+                        <span className="text-foreground"> {language === 'fr' ? 'de réduction avec' : 'discount with'} </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
                     </div>
                     {billingCycle === 'yearly' && (
                       <span className="text-xs text-muted-foreground">
@@ -1052,10 +1091,20 @@ export default function Onboarding() {
                 </div>
 
                 {/* Price - Fixed height */}
-                <div className="h-40 mb-6">
+                <div className="h-32 mb-6">
                   <div className="text-center">
                     <div className="flex items-baseline gap-2 justify-center mb-2">
                       <span className="text-2xl font-semibold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? (getPriceByLanguage(selectedPlan, language, billingCycle) / 12) / 0.8
+                            : getPriceByLanguage(selectedPlan, language, billingCycle) / 0.8, 
+                          language
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 justify-center mb-2">
+                      <span className="text-4xl font-bold text-primary">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1063,34 +1112,22 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <Badge variant="destructive" className="text-xs">
-                        -20%
-                      </Badge>
-                    </div>
-                    <div className="flex items-baseline gap-2 justify-center mb-2">
-                      <span className="text-4xl font-bold text-primary">
-                        {formatPrice(
-                          (billingCycle === 'yearly' 
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.8, 
-                          language
-                        )}
-                      </span>
                       <span className="text-muted-foreground text-sm">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
-                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-1.5 border border-pink-200 dark:border-pink-800">
-                      <p className="text-xs font-medium">
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-1.5 border border-pink-200 dark:border-pink-800 mb-2">
+                      <p className="text-xs font-medium text-center">
                         <span className="text-pink-600 dark:text-pink-400">
-                          {language === 'fr' ? 'Obtenez 20% de réduction' : 'Get 20% discount'}
+                          {language === 'fr' ? 'Obtenez 20%' : 'Get 20%'}
                         </span>
-                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                        <span className="text-foreground"> {language === 'fr' ? 'de réduction avec' : 'discount with'} </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold">
                           {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
                         </span>
                       </p>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-xs text-muted-foreground block mt-2">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      <span className="text-xs text-muted-foreground">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
@@ -1234,10 +1271,20 @@ export default function Onboarding() {
                 </div>
 
                 {/* Price - Fixed height */}
-                <div className="h-40 mb-6">
+                <div className="h-32 mb-6">
                   <div className="text-center">
                     <div className="flex items-baseline gap-2 justify-center mb-2">
                       <span className="text-2xl font-semibold text-muted-foreground line-through">
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? (getPriceByLanguage(selectedPlan, language, billingCycle) / 12) / 0.7
+                            : getPriceByLanguage(selectedPlan, language, billingCycle) / 0.7, 
+                          language
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 justify-center mb-2">
+                      <span className="text-4xl font-bold text-primary">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1245,34 +1292,22 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <Badge variant="destructive" className="text-xs">
-                        -30%
-                      </Badge>
-                    </div>
-                    <div className="flex items-baseline gap-2 justify-center mb-2">
-                      <span className="text-4xl font-bold text-primary">
-                        {formatPrice(
-                          (billingCycle === 'yearly' 
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.7, 
-                          language
-                        )}
-                      </span>
                       <span className="text-muted-foreground text-sm">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
-                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-1.5 border border-pink-200 dark:border-pink-800">
-                      <p className="text-xs font-medium">
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-1.5 border border-pink-200 dark:border-pink-800 mb-2">
+                      <p className="text-xs font-medium text-center">
                         <span className="text-pink-600 dark:text-pink-400">
-                          {language === 'fr' ? 'Obtenez 30% de réduction' : 'Get 30% discount'}
+                          {language === 'fr' ? 'Obtenez 30%' : 'Get 30%'}
                         </span>
-                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                        <span className="text-foreground"> {language === 'fr' ? 'de réduction avec' : 'discount with'} </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold">
                           {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
                         </span>
                       </p>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-xs text-muted-foreground block mt-2">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      <span className="text-xs text-muted-foreground">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
