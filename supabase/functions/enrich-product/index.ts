@@ -547,11 +547,11 @@ Réponds UNIQUEMENT en JSON valide:
         ai_vision_analysis: parsedData.ai_vision_analysis || null,
         ai_vision_model: 'deepseek-chat',
         ai_vision_timestamp: new Date().toISOString(),
-        ai_vision_confidence: visionConfidence > 0
-          ? Math.min(visionConfidence, 1)
-          : (qualityScore !== null
-              ? Math.min(qualityScore / 10, 1)
-              : 0.8),
+        ai_vision_confidence: qualityScore !== null
+          ? qualityScore
+          : (visionConfidence > 0
+              ? Math.round(Math.min(visionConfidence, 1) * 10)
+              : 8),
         ai_presentation_quality: qualityScore,
         ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
         ai_lighting_type: parsedData.ai_lighting_type || null,
@@ -618,11 +618,11 @@ Réponds UNIQUEMENT en JSON valide:
                      (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
                      (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
                      'estimated',
-        specs_confidence: hasExistingDims ? 1 : 
+        specs_confidence: hasExistingDims ? 100 : 
                          (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
-                           Math.min(visionConfidence || 0.9, 1) :
-                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 0.75 :
-                         0.5,
+                           Math.round(Math.min(visionConfidence || 0.9, 1) * 100) :
+                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
+                         50,
         serp_verified: serpVerified,
         serp_data: serpData || null,
         
