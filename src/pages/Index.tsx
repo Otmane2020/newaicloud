@@ -346,13 +346,10 @@ const Index = () => {
                             -{planConfig.discount}%
                           </Badge>
                         </div>
-                        <div className="flex items-baseline gap-2 mt-1">
-                          <span className="text-5xl font-bold text-primary">{getCurrencySymbol(language)}{price}</span>
-                          <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                        </div>
-                        <p className="text-xs text-success mt-2 font-medium">
-                          {language === 'fr' ? '✨ Réduction de 20% déjà incluse' : '✨ 20% discount already included'}
-                        </p>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-5xl font-bold text-primary">{getCurrencySymbol(language)}{price}</span>
+                        <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                      </div>
                       </div>
                     ) : (
                       <div className="flex items-baseline gap-2">
