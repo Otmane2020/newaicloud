@@ -316,7 +316,7 @@ export default function RegenerateLanding({
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           product_id: product.id,
-          productTitle: product.title,
+          productTitle: optimizedTitle || product.title,
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
