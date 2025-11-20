@@ -979,6 +979,11 @@ export default function Onboarding() {
 
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forGrowth}</p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡 {language === 'fr' ? "L'équilibre parfait entre puissance, automatisation et évolutivité." : 'The perfect balance between power, automation and scalability.'}
+                  </p>
+                </div>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
@@ -1003,9 +1008,9 @@ export default function Onboarding() {
                 </div>
 
                 <div className="mb-4 sm:mb-6">
-                  <div className="flex flex-col items-center justify-center mb-2">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <span className="text-2xl sm:text-3xl font-bold text-muted-foreground line-through">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1018,7 +1023,7 @@ export default function Onboarding() {
                       </Badge>
                     </div>
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1028,8 +1033,18 @@ export default function Onboarding() {
                       </span>
                       <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
+                      <p className="text-xs sm:text-sm font-medium text-center">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 20% de réduction' : 'Get 20% discount'}
+                        </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
+                    </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
@@ -1126,6 +1141,11 @@ export default function Onboarding() {
 
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forEnterprise}</p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡 {language === 'fr' ? 'Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.' : 'Fully managed AI suite with high quotas, API access and personal support.'}
+                  </p>
+                </div>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
@@ -1150,9 +1170,9 @@ export default function Onboarding() {
                 </div>
 
                 <div className="mb-4 sm:mb-6">
-                  <div className="flex flex-col items-center justify-center mb-2">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <span className="text-2xl sm:text-3xl font-bold text-muted-foreground line-through">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1165,7 +1185,7 @@ export default function Onboarding() {
                       </Badge>
                     </div>
                     <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -1175,8 +1195,18 @@ export default function Onboarding() {
                       </span>
                       <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
+                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
+                      <p className="text-xs sm:text-sm font-medium text-center">
+                        <span className="text-pink-600 dark:text-pink-400">
+                          {language === 'fr' ? 'Obtenez 30% de réduction' : 'Get 30% discount'}
+                        </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
+                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                        </span>
+                      </p>
+                    </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
