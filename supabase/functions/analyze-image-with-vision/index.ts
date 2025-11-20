@@ -207,82 +207,94 @@ RÈGLES CRITIQUES :
                 content: [
                   { 
                     type: 'text', 
-                    text: `Tu es un expert en analyse d'images produit. Ta mission est de détecter et extraire les dimensions techniques VISIBLES sur les images.
+                    text: `🎯 MISSION : Détecter et extraire les dimensions VISIBLES d'un produit sur image.
 
-🎯 PRIORITÉ ABSOLUE : Chercher les dimensions VISIBLES en PREMIER
+⚠️ RÈGLE ABSOLUE : Si tu vois des CHIFFRES sur l'image (100cm, 71cm, H:75, etc.), c'est un schéma technique !
 
-ÉTAPE 1 - SCANNER L'IMAGE pour détecter :
-□ Lignes de cote avec chiffres (ex: "100cm", "H:75cm", "Ø35cm")
-□ Schémas techniques avec annotations dimensionnelles
-□ Tableaux de dimensions ou spécifications techniques
-□ Règles graduées ou échelles visibles
-□ Étiquettes ou emballages affichant les mesures
+ÉTAPE 1 - SCAN VISUEL PRIORITAIRE :
 
-ÉTAPE 2 - EXTRACTION vs ESTIMATION :
+Cherche ces INDICES VISUELS (dans cet ordre) :
+1️⃣ CHIFFRES avec unités : "100cm", "71cm", "H:75", "Ø35", "47.5cm"
+2️⃣ Lignes de cote (traits avec flèches montrant les mesures)
+3️⃣ Schéma technique (dessin au trait, wireframe, croquis coté)
+4️⃣ Tableaux de spécifications
+5️⃣ Étiquettes produit avec dimensions
 
-A) 🔍 SI DIMENSIONS VISIBLES (hasTechnicalSchema = true) :
-   ✓ LIS et EXTRAIS les valeurs EXACTES affichées sur l'image
-   ✓ Respecte les chiffres précis (ex: si tu vois "73cm", écris "73", PAS "75")
-   ✓ Extrais TOUTES les dimensions visibles (hauteur, largeur, profondeur, poids, etc.)
-   ✓ Sépare valeur et unité : height: "73", heightUnit: "cm"
-   ✓ dimensionSource: "visible"
-   ✓ confidence: 0.90-0.95
+→ Si tu vois AU MOINS UN chiffre avec dimension :
+   ✅ hasTechnicalSchema = true
+   ✅ dimensionSource = "visible"
+   ✅ confidence = 0.90-0.95
+   ✅ EXTRAIS les valeurs EXACTES (même les décimales : 47.5, 71.2)
 
-Exemple si tu vois un schéma avec "H:100cm L:43cm P:47cm assise:71cm" :
-{
-  "technicalDimensions": {
-    "height": "100",
-    "heightUnit": "cm",
-    "width": "43",
-    "widthUnit": "cm",
-    "depth": "47",
-    "depthUnit": "cm",
-    "seatHeight": "71",
-    "seatHeightUnit": "cm"
-  },
-  "visualContext": {
-    "hasTechnicalSchema": true,
-    "dimensionSource": "visible"
-  }
-}
+→ Si AUCUN chiffre visible :
+   ⚠️ hasTechnicalSchema = false
+   ⚠️ dimensionSource = "estimated"
+   ⚠️ confidence = 0.70-0.80
+   ⚠️ Estime selon le type de produit
 
-B) 📐 SI AUCUNE dimension visible (hasTechnicalSchema = false) :
-   - Estime selon le type de produit visible
-   - Références standards :
-     • Tabouret de bar : H:75cm, D:35cm, assise:65cm, poids:8kg
-     • Chaise : H:85cm, L:45cm, P:50cm, assise:45cm
-     • Table : H:75cm, L:120-180cm, P:70-90cm
-     • Meuble TV : H:50cm, L:150cm, P:40cm
-     • Canapé : H:80cm, L:200cm, P:90cm, assise:45cm
-   - dimensionSource: "estimated"
-   - confidence: 0.70-0.80
+ÉTAPE 2 - EXTRACTION DES VALEURS VISIBLES :
+
+📏 CONVENTIONS d'extraction :
+- "100cm" → height: "100", heightUnit: "cm"
+- "H:71cm" → seatHeight: "71", seatHeightUnit: "cm"
+- "Ø43cm" → diameter: "43", diameterUnit: "cm"
+- "L:47.5cm" → width: "47.5", widthUnit: "cm"
+- "P:47.5cm" → depth: "47.5", depthUnit: "cm"
+- "8.5kg" → weight: "8.5", weightUnit: "kg"
+
+🔤 TRADUCTION des annotations françaises :
+- H: ou hauteur → height
+- L: ou largeur → width
+- P: ou profondeur → depth
+- Ø ou diamètre → diameter
+- Assise → seatHeight
+- Poids → weight
 
 Contexte produit : ${JSON.stringify(productContext, null, 2)}
 
-FORMAT RÉPONSE (JSON strict) :
+EXEMPLE CONCRET avec schéma technique visible :
+
+Si tu vois un schéma avec ces annotations :
+- "100cm" sur la hauteur totale
+- "71cm" sur la hauteur d'assise
+- "47.5cm" sur la profondeur
+- "43cm" sur le diamètre
+- "31cm" sur la largeur
+
+→ Tu DOIS retourner :
 {
   "visualAttributes": {
     "technicalDimensions": {
-      "height": "valeur",
+      "height": "100",
       "heightUnit": "cm",
-      "width": "valeur",
+      "seatHeight": "71",
+      "seatHeightUnit": "cm",
+      "depth": "47.5",
+      "depthUnit": "cm",
+      "diameter": "43",
+      "diameterUnit": "cm",
+      "width": "31",
       "widthUnit": "cm"
     },
     "visualContext": {
-      "hasTechnicalSchema": true/false,
-      "dimensionSource": "visible" ou "estimated"
+      "hasTechnicalSchema": true,
+      "dimensionSource": "visible"
     }
   },
-  "confidence": 0.XX
+  "confidence": 0.93
 }
 
-⚠️ RÈGLES CRITIQUES :
-✓ PRIORITÉ 1 : Chercher d'abord les dimensions VISIBLES sur l'image
-✓ EXTRAIS les valeurs EXACTES si elles sont affichées (ne les modifie pas)
-✓ Sépare TOUJOURS valeur et unité (height: "73", heightUnit: "cm")
-✓ NE JAMAIS laisser technicalDimensions vide {}
-✓ Si visible → hasTechnicalSchema: true, dimensionSource: "visible", confidence: 0.90+
-✓ Si estimé → hasTechnicalSchema: false, dimensionSource: "estimated", confidence: 0.70-0.80`
+⚠️ ERREURS À ÉVITER :
+❌ Ne pas arrondir (71cm, PAS 75cm)
+❌ Ne pas estimer si les valeurs sont visibles
+❌ Ne pas dire "hasTechnicalSchema: false" si tu vois des chiffres
+
+✅ CHECKLIST FINALE :
+1. Y a-t-il des chiffres sur l'image ? → OUI = hasTechnicalSchema: true
+2. Ai-je extrait TOUTES les dimensions visibles ?
+3. Ai-je respecté les décimales (47.5, pas 47 ou 48) ?
+4. Ai-je séparé valeur et unité ?
+5. La confidence est-elle > 0.90 pour du visible ?`
                   },
                   {
                     type: 'image_url',
