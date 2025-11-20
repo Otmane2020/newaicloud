@@ -14,6 +14,7 @@ import { BillingPortal } from "@/components/dashboard/BillingPortal";
 import { CurrentPlanCard } from "@/components/dashboard/CurrentPlanCard";
 import PricingComparison from "@/components/PricingComparison";
 import { getCurrencySymbol } from "@/lib/formatUtils";
+import { PricingCard } from "@/components/pricing/PricingCard";
 
 interface Plan {
   id: string;
@@ -252,40 +253,64 @@ const Subscription = () => {
 
           {plans.find(p => p.id === 'trial') && (
             <Card className="border-2 border-success bg-success/5 hover:shadow-lg transition-shadow">
-              <div className="p-6 lg:p-8">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-3xl font-bold text-foreground">{t.trial.title}</h2>
-                      <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
-                      <Badge variant="outline" className="border-success text-success">{t.trial.noCreditCard}</Badge>
-                    </div>
-                    <p className="text-muted-foreground">{t.trial.description}</p>
+              <div className="p-6 lg:p-8 space-y-6 flex flex-col">
+                {/* Bloc 1: Icon aligné au centre */}
+                <div className="flex justify-center">
+                  <div className="text-4xl sm:text-5xl">🎁</div>
+                </div>
+
+                {/* Bloc 2: Name avec badges */}
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl sm:text-3xl font-bold">{t.trial.title}</h3>
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
+                    <Badge variant="outline" className="border-success text-success">{t.trial.noCreditCard}</Badge>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                    <span className="text-sm">{t.trial.features.optimizations}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                    <span className="text-sm">{t.trial.features.article}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                    <span className="text-sm">{t.trial.features.duration}</span>
+
+                {/* Bloc 3: Price - 0€ */}
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="text-4xl sm:text-5xl font-bold text-success">
+                      0€
+                    </span>
+                    <span className="text-muted-foreground text-base">
+                      / 14 jours
+                    </span>
                   </div>
                 </div>
-                
-                <Button 
-                  size="lg" 
-                  className="w-full md:w-auto bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => handleSelectPlan('trial')}
-                >
-                  {t.trial.startButton}
-                </Button>
+
+                {/* Bloc 4: Description */}
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">{t.trial.description}</p>
+                </div>
+
+                {/* Bloc 4bis: Bouton */}
+                <div className="pt-2">
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-success hover:bg-success/90 text-success-foreground"
+                    onClick={() => handleSelectPlan('trial')}
+                  >
+                    {t.trial.startButton}
+                  </Button>
+                </div>
+
+                {/* Bloc 5: Trait de séparation et détails */}
+                <div className="pt-4 border-t space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                    <span>{t.trial.features.optimizations}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                    <span>{t.trial.features.article}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                    <span>{t.trial.features.duration}</span>
+                  </div>
+                </div>
               </div>
             </Card>
           )}
@@ -339,71 +364,30 @@ const Subscription = () => {
 
       <div className={`grid grid-cols-1 gap-6 ${plans.find(p => p.id === 'trial') ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} max-w-7xl mx-auto`}>
         {starterPlan && (
-          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
-            {isCurrentPlan(starterPlan.id) && (
-              <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
-                {t.seo.subscription.currentPlanBadge}
-              </Badge>
-            )}
-            <div className="space-y-4 sm:space-y-5 md:space-y-6 flex-1">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl sm:text-3xl">{getPlanIcon(starterPlan.id)}</span>
-                  <h3 className="text-xl sm:text-2xl font-bold">{starterPlan.name}</h3>
-                </div>
-                <p className="text-muted-foreground text-xs sm:text-sm">{starterPlan.description}</p>
-              </div>
-              
-              <div>
-                <div className="flex items-baseline gap-1.5 sm:gap-2">
-                  <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{starterPlan.price_monthly}{currency}</span>
-                  <span className="text-muted-foreground text-sm sm:text-base">{t.seo.subscription.perMonth}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5 md:pt-6 border-t">
-                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                  <span>{starterPlan.max_optimizations_monthly} {t.seo.subscription.optimizationsMonth}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                  <span>{starterPlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                  <span>{starterPlan.max_chat_responses_monthly} {t.seo.subscription.chatResponsesMonth}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                  <span>{starterPlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
-                </div>
-              </div>
-            </div>
-
-            <Button 
-              className="w-full mt-4 sm:mt-5 md:mt-6 text-sm sm:text-base" 
-              size="lg"
-              variant={isCurrentPlan(starterPlan.id) ? "secondary" : "default"}
-              disabled={isCurrentPlan(starterPlan.id) || checkoutLoading === starterPlan.id}
-              onClick={() => handleSelectPlan(starterPlan.id)}
-            >
-              {checkoutLoading === starterPlan.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isCurrentPlan(starterPlan.id) ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {t.seo.subscription.currentPlanBadge}
-                </>
-              ) : (
-                t.seo.subscription.selectThisPlan
-              )}
-            </Button>
-          </Card>
+          <PricingCard
+            icon={getPlanIcon(starterPlan.id)}
+            name={starterPlan.name}
+            isCurrentPlan={isCurrentPlan(starterPlan.id)}
+            price={starterPlan.price_monthly}
+            currency={currency}
+            period={t.seo.subscription.perMonth}
+            description={starterPlan.description}
+            buttonText={isCurrentPlan(starterPlan.id) ? t.seo.subscription.currentPlanBadge : t.seo.subscription.selectThisPlan}
+            onButtonClick={() => handleSelectPlan(starterPlan.id)}
+            buttonDisabled={isCurrentPlan(starterPlan.id)}
+            buttonLoading={checkoutLoading === starterPlan.id}
+            buttonVariant={isCurrentPlan(starterPlan.id) ? "secondary" : "default"}
+            features={[
+              { value: starterPlan.max_optimizations_monthly, label: t.seo.subscription.optimizationsMonth },
+              { value: starterPlan.max_articles_monthly, label: t.seo.subscription.articlesMonth },
+              { value: starterPlan.max_chat_responses_monthly, label: t.seo.subscription.chatResponsesMonth },
+              { value: starterPlan.max_shopify_stores, label: t.seo.subscription.shopifyStores },
+            ]}
+          />
         )}
 
         {proPlans.length > 0 && (
-          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
+          <Card className={`relative flex flex-col hover:shadow-lg transition-shadow ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
             {(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
                 {t.seo.subscription.currentPlanBadge}
@@ -414,15 +398,19 @@ const Subscription = () => {
                 {t.seo.subscription.recommendedPlanBadge}
               </Badge>
             )}
-            <div className="space-y-4 sm:space-y-5 md:space-y-6 flex-1">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl sm:text-3xl">⚡</span>
-                  <h3 className="text-xl sm:text-2xl font-bold">Pro</h3>
-                </div>
-                <p className="text-muted-foreground text-xs sm:text-sm">{t.seo.subscription.proGrowth}</p>
+            
+            <div className="p-6 lg:p-8 space-y-6 flex-1 flex flex-col">
+              {/* Bloc 1: Icon aligné au centre */}
+              <div className="flex justify-center">
+                <div className="text-4xl sm:text-5xl">⚡</div>
               </div>
-              
+
+              {/* Bloc 2: Name */}
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold">Pro</h3>
+              </div>
+
+              {/* Sélecteur de tier */}
               <div>
                 <Select value={selectedProTier} onValueChange={setSelectedProTier}>
                   <SelectTrigger className="w-full">
@@ -440,12 +428,17 @@ const Subscription = () => {
 
               {selectedProPlan && (
                 <>
-                  <div>
-                    <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{selectedProPlan.price_monthly}{currency}</span>
-                      <span className="text-muted-foreground text-sm sm:text-base">{t.seo.subscription.perMonth}</span>
+                  {/* Bloc 3: Price */}
+                  <div className="text-center space-y-2">
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl sm:text-5xl font-bold">
+                        {selectedProPlan.price_monthly}{currency}
+                      </span>
+                      <span className="text-muted-foreground text-base">
+                        {t.seo.subscription.perMonth}
+                      </span>
                     </div>
-                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
                       <p className="text-xs sm:text-sm font-medium">
                         <span className="text-pink-600 dark:text-pink-400">
                           {language === 'fr' ? 'Obtenez 20% de réduction avec' : 'Get 20% discount with'}
@@ -457,55 +450,77 @@ const Subscription = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5 md:pt-6 border-t">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedProPlan.max_optimizations_monthly} {t.seo.subscription.optimizationsMonth}</span>
+                  {/* Bloc 4: Description */}
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">{t.seo.subscription.proGrowth}</p>
+                  </div>
+
+                  {/* Bloc 4bis: Bouton */}
+                  <div className="pt-2">
+                    <Button 
+                      className="w-full text-sm sm:text-base" 
+                      size="lg"
+                      variant={isCurrentPlan(selectedProTier) ? "secondary" : "default"}
+                      disabled={isCurrentPlan(selectedProTier) || checkoutLoading === selectedProTier}
+                      onClick={() => handleSelectPlan(selectedProTier)}
+                    >
+                      {checkoutLoading === selectedProTier ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isCurrentPlan(selectedProTier) ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          {t.seo.subscription.currentPlanBadge}
+                        </>
+                      ) : (
+                        t.seo.subscription.upgrade
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Bloc 5: Trait de séparation et détails */}
+                  <div className="pt-4 mt-auto border-t space-y-3">
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedProPlan.max_optimizations_monthly}</span> {t.seo.subscription.optimizationsMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedProPlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedProPlan.max_articles_monthly}</span> {t.seo.subscription.articlesMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedProPlan.max_chat_responses_monthly} {t.seo.subscription.chatResponsesMonth}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedProPlan.max_chat_responses_monthly}</span> {t.seo.subscription.chatResponsesMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedProPlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedProPlan.max_shopify_stores}</span> {t.seo.subscription.shopifyStores}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedProPlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : `${selectedProPlan.max_products.toLocaleString()} ${t.seo.subscription.products.toLowerCase()}`}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">
+                          {selectedProPlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : selectedProPlan.max_products.toLocaleString()}
+                        </span>{' '}
+                        {selectedProPlan.max_products === -1 ? '' : t.seo.subscription.products.toLowerCase()}
+                      </span>
                     </div>
                   </div>
                 </>
               )}
             </div>
-
-            <Button 
-              className="w-full mt-4 sm:mt-5 md:mt-6 text-sm sm:text-base" 
-              size="lg"
-              variant={isCurrentPlan(selectedProTier) ? "secondary" : "default"}
-              disabled={isCurrentPlan(selectedProTier) || checkoutLoading === selectedProTier}
-              onClick={() => handleSelectPlan(selectedProTier)}
-            >
-              {checkoutLoading === selectedProTier ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isCurrentPlan(selectedProTier) ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {t.seo.subscription.currentPlanBadge}
-                </>
-              ) : (
-                t.seo.subscription.upgrade
-              )}
-            </Button>
           </Card>
         )}
 
         {enterprisePlans.length > 0 && (
-          <Card className={`p-6 lg:p-8 relative flex flex-col hover:shadow-lg transition-shadow ${currentPlan?.id.startsWith('enterprise-') ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
+          <Card className={`relative flex flex-col hover:shadow-lg transition-shadow ${currentPlan?.id.startsWith('enterprise-') ? 'border-2 border-primary shadow-lg' : 'border border-border'}`}>
             {currentPlan?.id.startsWith('enterprise-') && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
                 {t.seo.subscription.currentPlanBadge}
@@ -521,15 +536,19 @@ const Subscription = () => {
                 {t.seo.subscription.bestValueBadge}
               </Badge>
             )}
-            <div className="space-y-4 sm:space-y-5 md:space-y-6 flex-1">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl sm:text-3xl">🏢</span>
-                  <h3 className="text-xl sm:text-2xl font-bold">Enterprise</h3>
-                </div>
-                <p className="text-muted-foreground text-xs sm:text-sm">{t.seo.subscription.enterpriseLarge}</p>
+            
+            <div className="p-6 lg:p-8 space-y-6 flex-1 flex flex-col">
+              {/* Bloc 1: Icon aligné au centre */}
+              <div className="flex justify-center">
+                <div className="text-4xl sm:text-5xl">🏢</div>
               </div>
-              
+
+              {/* Bloc 2: Name */}
+              <div className="text-center">
+                <h3 className="text-2xl sm:text-3xl font-bold">Enterprise</h3>
+              </div>
+
+              {/* Sélecteur de tier */}
               <div>
                 <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
                   <SelectTrigger className="w-full">
@@ -547,12 +566,17 @@ const Subscription = () => {
 
               {selectedEnterprisePlan && (
                 <>
-                  <div>
-                    <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}{currency}</span>
-                      <span className="text-muted-foreground text-sm sm:text-base">{t.seo.subscription.perMonth}</span>
+                  {/* Bloc 3: Price */}
+                  <div className="text-center space-y-2">
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl sm:text-5xl font-bold">
+                        {selectedEnterprisePlan.price_monthly.toLocaleString()}{currency}
+                      </span>
+                      <span className="text-muted-foreground text-base">
+                        {t.seo.subscription.perMonth}
+                      </span>
                     </div>
-                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
                       <p className="text-xs sm:text-sm font-medium">
                         <span className="text-pink-600 dark:text-pink-400">
                           {language === 'fr' ? 'Obtenez 30% de réduction avec' : 'Get 30% discount with'}
@@ -564,50 +588,72 @@ const Subscription = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5 md:pt-6 border-t">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} {t.seo.subscription.optimizationsMonth}</span>
+                  {/* Bloc 4: Description */}
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">{t.seo.subscription.enterpriseLarge}</p>
+                  </div>
+
+                  {/* Bloc 4bis: Bouton */}
+                  <div className="pt-2">
+                    <Button 
+                      className="w-full text-sm sm:text-base" 
+                      size="lg"
+                      variant={isCurrentPlan(selectedEnterpriseTier) ? "secondary" : "default"}
+                      disabled={isCurrentPlan(selectedEnterpriseTier) || checkoutLoading === selectedEnterpriseTier}
+                      onClick={() => handleSelectPlan(selectedEnterpriseTier)}
+                    >
+                      {checkoutLoading === selectedEnterpriseTier ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isCurrentPlan(selectedEnterpriseTier) ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          {t.seo.subscription.currentPlanBadge}
+                        </>
+                      ) : (
+                        t.seo.subscription.upgrade
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Bloc 5: Trait de séparation et détails */}
+                  <div className="pt-4 mt-auto border-t space-y-3">
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()}</span> {t.seo.subscription.optimizationsMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedEnterprisePlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedEnterprisePlan.max_articles_monthly}</span> {t.seo.subscription.articlesMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} {t.seo.subscription.chatResponsesMonth}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()}</span> {t.seo.subscription.chatResponsesMonth}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedEnterprisePlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">{selectedEnterprisePlan.max_shopify_stores}</span> {t.seo.subscription.shopifyStores}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
-                      <span>{selectedEnterprisePlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : `${selectedEnterprisePlan.max_products.toLocaleString()} ${t.seo.subscription.products.toLowerCase()}`}</span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">
+                          {selectedEnterprisePlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : selectedEnterprisePlan.max_products.toLocaleString()}
+                        </span>{' '}
+                        {selectedEnterprisePlan.max_products === -1 ? '' : t.seo.subscription.products.toLowerCase()}
+                      </span>
                     </div>
                   </div>
                 </>
               )}
             </div>
-
-            <Button 
-              className="w-full mt-4 sm:mt-5 md:mt-6 text-sm sm:text-base" 
-              size="lg"
-              variant={isCurrentPlan(selectedEnterpriseTier) ? "secondary" : "default"}
-              disabled={isCurrentPlan(selectedEnterpriseTier) || checkoutLoading === selectedEnterpriseTier}
-              onClick={() => handleSelectPlan(selectedEnterpriseTier)}
-            >
-              {checkoutLoading === selectedEnterpriseTier ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isCurrentPlan(selectedEnterpriseTier) ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {t.seo.subscription.currentPlanBadge}
-                </>
-              ) : (
-                t.seo.subscription.upgrade
-              )}
-            </Button>
           </Card>
         )}
       </div>
