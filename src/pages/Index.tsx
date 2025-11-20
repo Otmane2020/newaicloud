@@ -310,8 +310,8 @@ const Index = () => {
           {[
             { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
             { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
-            { key: 'pro', priceMonthly: 49, priceYearly: 39, originalMonthly: 61.25, originalYearly: 48.75, yearlyTotal: 468, icon: "🟠", featured: true, hasPromo: true, discount: 20 },
-            { key: 'enterprise', priceMonthly: 199, priceYearly: 159, originalMonthly: 284.29, originalYearly: 227.14, yearlyTotal: 1908, icon: "🔵", featured: false, hasPromo: true, discount: 30 }
+            { key: 'pro', priceMonthly: 39, priceYearly: 31.20, originalMonthly: 49, originalYearly: 39, yearlyTotal: 374.40, icon: "🟠", featured: true, hasPromo: true, discount: 20 },
+            { key: 'enterprise', priceMonthly: 139, priceYearly: 111.20, originalMonthly: 199, originalYearly: 159, yearlyTotal: 1334.40, icon: "🔵", featured: false, hasPromo: true, discount: 30 }
           ].map((planConfig, index) => {
             const plan = t.landing.pricing.plans[planConfig.key as 'trial' | 'starter' | 'pro' | 'enterprise'];
             const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
