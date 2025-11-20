@@ -5,15 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
-const TEST_PRODUCT = {
-  id: "d8415d62-a5aa-4505-a8cb-7f384f891fdc",
-  title: "Tabouret Bar Scandinave Velours Vert Pied Or EURODESIGN",
-  sku: "BS52GVS",
-};
+const TEST_PRODUCTS = [
+  {
+    id: "d8415d62-a5aa-4505-a8cb-7f384f891fdc",
+    title: "Tabouret Bar Scandinave Velours Vert Pied Or EURODESIGN",
+    sku: "BS52GVS",
+  },
+  {
+    id: "SD22",
+    title: "Produit SD22",
+    sku: "SD22",
+  }
+];
 
 type FunctionStatus = "idle" | "loading" | "success" | "error";
 
 export default function TestLectureImage() {
+  const [selectedProduct, setSelectedProduct] = useState(TEST_PRODUCTS[0]);
   const [enrichStatus, setEnrichStatus] = useState<FunctionStatus>("idle");
   const [visionStatus, setVisionStatus] = useState<FunctionStatus>("idle");
   const [enrichResult, setEnrichResult] = useState<any>(null);
@@ -25,7 +33,7 @@ export default function TestLectureImage() {
     
     try {
       const { data, error } = await supabase.functions.invoke("enrich-product", {
-        body: { productId: TEST_PRODUCT.id }
+        body: { productId: selectedProduct.id }
       });
 
       if (error) throw error;
@@ -49,7 +57,7 @@ export default function TestLectureImage() {
       const { data: images, error: imgError } = await supabase
         .from("product_images")
         .select("src")
-        .eq("product_id", TEST_PRODUCT.id)
+        .eq("product_id", selectedProduct.id)
         .limit(1);
 
       if (imgError) throw imgError;
@@ -61,7 +69,7 @@ export default function TestLectureImage() {
         body: { 
           imageUrl: images[0].src,
           productContext: {
-            title: TEST_PRODUCT.title,
+            title: selectedProduct.title,
             productType: "Tabouret de bar"
           }
         }
@@ -97,8 +105,25 @@ export default function TestLectureImage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Test Lecture Image</h1>
         <p className="text-muted-foreground">
-          Testez l'enrichissement et l'analyse d'image sur le produit : <strong>{TEST_PRODUCT.title}</strong>
+          Testez l'enrichissement et l'analyse d'image
         </p>
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-2">Sélectionner un produit :</label>
+          <select 
+            value={selectedProduct.id}
+            onChange={(e) => {
+              const product = TEST_PRODUCTS.find(p => p.id === e.target.value);
+              if (product) setSelectedProduct(product);
+            }}
+            className="px-4 py-2 border rounded-md bg-background"
+          >
+            {TEST_PRODUCTS.map(product => (
+              <option key={product.id} value={product.id}>
+                {product.title} ({product.sku})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
