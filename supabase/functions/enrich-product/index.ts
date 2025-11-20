@@ -537,55 +537,56 @@ Réponds UNIQUEMENT en JSON valide:
         ai_condition_notes: parsedData.ai_condition_notes || null,
         
         // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
+        // IMPORTANT: All dimension values must be integers (rounded)
         smart_length: existingDimensions.length || 
-                      (visionAttributes?.technicalDimensions?.length ?? null) || 
-                      serpDimensions.length ||
-                      parsedData.smart_length || null,
+                      (visionAttributes?.technicalDimensions?.length ? Math.round(visionAttributes.technicalDimensions.length) : null) || 
+                      (serpDimensions.length ? Math.round(serpDimensions.length) : null) ||
+                      (parsedData.smart_length ? Math.round(parsedData.smart_length) : null),
         smart_length_unit: existingDimensions.length_unit || 
                           (visionAttributes?.technicalDimensions?.lengthUnit ?? null) || 
                           serpDimensions.length_unit ||
                           parsedData.smart_length_unit || null,
         smart_width: existingDimensions.width || 
-                     (visionAttributes?.technicalDimensions?.width ?? null) || 
-                     serpDimensions.width ||
-                     parsedData.smart_width || null,
+                     (visionAttributes?.technicalDimensions?.width ? Math.round(visionAttributes.technicalDimensions.width) : null) || 
+                     (serpDimensions.width ? Math.round(serpDimensions.width) : null) ||
+                     (parsedData.smart_width ? Math.round(parsedData.smart_width) : null),
         smart_width_unit: existingDimensions.width_unit || 
                          (visionAttributes?.technicalDimensions?.widthUnit ?? null) || 
                          serpDimensions.width_unit ||
                          parsedData.smart_width_unit || null,
         smart_height: existingDimensions.height || 
-                      (visionAttributes?.technicalDimensions?.height ?? null) || 
-                      serpDimensions.height ||
-                      parsedData.smart_height || null,
+                      (visionAttributes?.technicalDimensions?.height ? Math.round(visionAttributes.technicalDimensions.height) : null) || 
+                      (serpDimensions.height ? Math.round(serpDimensions.height) : null) ||
+                      (parsedData.smart_height ? Math.round(parsedData.smart_height) : null),
         smart_height_unit: existingDimensions.height_unit || 
                           (visionAttributes?.technicalDimensions?.heightUnit ?? null) || 
                           serpDimensions.height_unit ||
                           parsedData.smart_height_unit || null,
         smart_diameter: existingDimensions.diameter || 
-                        (visionAttributes?.technicalDimensions?.diameter ?? null) || 
-                        parsedData.smart_diameter || null,
+                        (visionAttributes?.technicalDimensions?.diameter ? Math.round(visionAttributes.technicalDimensions.diameter) : null) || 
+                        (parsedData.smart_diameter ? Math.round(parsedData.smart_diameter) : null),
         smart_diameter_unit: existingDimensions.diameter_unit || 
                             (visionAttributes?.technicalDimensions?.diameterUnit ?? null) || 
                             parsedData.smart_diameter_unit || null,
         smart_depth: existingDimensions.depth || 
-                     (visionAttributes?.technicalDimensions?.depth ?? null) || 
-                     serpDimensions.depth ||
-                     parsedData.smart_depth || null,
+                     (visionAttributes?.technicalDimensions?.depth ? Math.round(visionAttributes.technicalDimensions.depth) : null) || 
+                     (serpDimensions.depth ? Math.round(serpDimensions.depth) : null) ||
+                     (parsedData.smart_depth ? Math.round(parsedData.smart_depth) : null),
         smart_depth_unit: existingDimensions.depth_unit || 
                          (visionAttributes?.technicalDimensions?.depthUnit ?? null) || 
                          serpDimensions.depth_unit ||
                          parsedData.smart_depth_unit || null,
         smart_weight: existingDimensions.weight || 
-                      (visionAttributes?.technicalDimensions?.weight ?? null) || 
-                      serpDimensions.weight ||
-                      parsedData.smart_weight || null,
+                      (visionAttributes?.technicalDimensions?.weight ? Math.round(visionAttributes.technicalDimensions.weight) : null) || 
+                      (serpDimensions.weight ? Math.round(serpDimensions.weight) : null) ||
+                      (parsedData.smart_weight ? Math.round(parsedData.smart_weight) : null),
         smart_weight_unit: existingDimensions.weight_unit || 
                           (visionAttributes?.technicalDimensions?.weightUnit ?? null) || 
                           serpDimensions.weight_unit ||
                           parsedData.smart_weight_unit || null,
         smart_seat_height: existingDimensions.seat_height || 
-                          (visionAttributes?.technicalDimensions?.seatHeight ?? null) || 
-                          parsedData.smart_seat_height || null,
+                          (visionAttributes?.technicalDimensions?.seatHeight ? Math.round(visionAttributes.technicalDimensions.seatHeight) : null) || 
+                          (parsedData.smart_seat_height ? Math.round(parsedData.smart_seat_height) : null),
         smart_seat_height_unit: existingDimensions.seat_height_unit || 
                                (visionAttributes?.technicalDimensions?.seatHeightUnit ?? null) || 
                                parsedData.smart_seat_height_unit || null,
