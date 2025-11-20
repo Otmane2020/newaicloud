@@ -735,7 +735,7 @@ export default function Onboarding() {
         </div>
 
       {/* Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 px-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-2 max-w-7xl mx-auto">
         {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
         {!hasUsedTrial && (() => {
             const starterPlan = plans.find(p => p.id === 'starter');
