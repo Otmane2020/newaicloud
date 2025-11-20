@@ -12,8 +12,8 @@ const TEST_PRODUCTS = [
     sku: "BS52GVS",
   },
   {
-    id: "SD22",
-    title: "Produit SD22",
+    id: "b39b6ee0-f414-444e-85e7-54a288e37b01",
+    title: "Tabouret Bar Scandinave Velours Vert Pied Or SWEET DECO",
     sku: "SD22",
   }
 ];
