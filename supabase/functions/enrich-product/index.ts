@@ -526,122 +526,126 @@ Réponds UNIQUEMENT en JSON valide:
     }
 
     // Update ALL AI attributes and dimensions
+    const updatePayload = {
+      // Vision AI attributes (HIGHEST PRIORITY)
+      vision_attributes: visionAttributes || null,
+      vision_timestamp: visionAttributes ? new Date().toISOString() : null,
+      vision_model: visionAttributes ? 'google/gemini-2.5-flash' : null,
+      
+      // Visual attributes (from DeepSeek, unless overridden by Vision)
+      ai_color: visionAttributes?.primaryColor || parsedData.ai_color || null,
+      ai_material: visionAttributes?.materials?.join(', ') || parsedData.ai_material || null,
+      ai_shape: parsedData.ai_shape || null,
+      ai_texture: visionAttributes?.texture || parsedData.ai_texture || null,
+      ai_pattern: parsedData.ai_pattern || null,
+      ai_finish: visionAttributes?.finish || parsedData.ai_finish || null,
+      ai_design_elements: parsedData.ai_design_elements || null,
+      
+      // Vision AI analysis
+      ai_vision_analysis: parsedData.ai_vision_analysis || null,
+      ai_vision_model: 'deepseek-chat',
+      ai_vision_timestamp: new Date().toISOString(),
+      ai_vision_confidence: qualityScore !== null
+        ? qualityScore
+        : (visionConfidence > 0
+            ? Math.round(Math.min(visionConfidence, 1) * 10)
+            : 8),
+      ai_presentation_quality: qualityScore,
+      ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
+      ai_lighting_type: parsedData.ai_lighting_type || null,
+      ai_background_style: parsedData.ai_background_style || null,
+      ai_condition_notes: parsedData.ai_condition_notes || null,
+      
+      // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
+      // IMPORTANT: All dimension values must be integers (rounded)
+      smart_length: existingDimensions.length || 
+                    (visionAttributes?.technicalDimensions?.length ? Math.round(visionAttributes.technicalDimensions.length) : null) || 
+                    (serpDimensions.length ? Math.round(serpDimensions.length) : null) ||
+                    (parsedData.smart_length ? Math.round(parsedData.smart_length) : null),
+      smart_length_unit: existingDimensions.length_unit || 
+                        (visionAttributes?.technicalDimensions?.lengthUnit ?? null) || 
+                        serpDimensions.length_unit ||
+                        parsedData.smart_length_unit || null,
+      smart_width: existingDimensions.width || 
+                   (visionAttributes?.technicalDimensions?.width ? Math.round(visionAttributes.technicalDimensions.width) : null) || 
+                   (serpDimensions.width ? Math.round(serpDimensions.width) : null) ||
+                   (parsedData.smart_width ? Math.round(parsedData.smart_width) : null),
+      smart_width_unit: existingDimensions.width_unit || 
+                       (visionAttributes?.technicalDimensions?.widthUnit ?? null) || 
+                       serpDimensions.width_unit ||
+                       parsedData.smart_width_unit || null,
+      smart_height: existingDimensions.height || 
+                    (visionAttributes?.technicalDimensions?.height ? Math.round(visionAttributes.technicalDimensions.height) : null) || 
+                    (serpDimensions.height ? Math.round(serpDimensions.height) : null) ||
+                    (parsedData.smart_height ? Math.round(parsedData.smart_height) : null),
+      smart_height_unit: existingDimensions.height_unit || 
+                        (visionAttributes?.technicalDimensions?.heightUnit ?? null) || 
+                        serpDimensions.height_unit ||
+                        parsedData.smart_height_unit || null,
+      smart_diameter: existingDimensions.diameter || 
+                      (visionAttributes?.technicalDimensions?.diameter ? Math.round(visionAttributes.technicalDimensions.diameter) : null) || 
+                      (parsedData.smart_diameter ? Math.round(parsedData.smart_diameter) : null),
+      smart_diameter_unit: existingDimensions.diameter_unit || 
+                          (visionAttributes?.technicalDimensions?.diameterUnit ?? null) || 
+                          parsedData.smart_diameter_unit || null,
+      smart_depth: existingDimensions.depth || 
+                   (visionAttributes?.technicalDimensions?.depth ? Math.round(visionAttributes.technicalDimensions.depth) : null) || 
+                   (serpDimensions.depth ? Math.round(serpDimensions.depth) : null) ||
+                   (parsedData.smart_depth ? Math.round(parsedData.smart_depth) : null),
+      smart_depth_unit: existingDimensions.depth_unit || 
+                       (visionAttributes?.technicalDimensions?.depthUnit ?? null) || 
+                       serpDimensions.depth_unit ||
+                       parsedData.smart_depth_unit || null,
+      smart_weight: existingDimensions.weight || 
+                    (visionAttributes?.technicalDimensions?.weight ? Math.round(visionAttributes.technicalDimensions.weight) : null) || 
+                    (serpDimensions.weight ? Math.round(serpDimensions.weight) : null) ||
+                    (parsedData.smart_weight ? Math.round(parsedData.smart_weight) : null),
+      smart_weight_unit: existingDimensions.weight_unit || 
+                        (visionAttributes?.technicalDimensions?.weightUnit ?? null) || 
+                        serpDimensions.weight_unit ||
+                        parsedData.smart_weight_unit || null,
+      smart_seat_height: existingDimensions.seat_height || 
+                        (visionAttributes?.technicalDimensions?.seatHeight ? Math.round(visionAttributes.technicalDimensions.seatHeight) : null) || 
+                        (parsedData.smart_seat_height ? Math.round(parsedData.smart_seat_height) : null),
+      smart_seat_height_unit: existingDimensions.seat_height_unit || 
+                             (visionAttributes?.technicalDimensions?.seatHeightUnit ?? null) || 
+                             parsedData.smart_seat_height_unit || null,
+      
+      // SERP tracking - PRIORITY ORDER: product_description > vision > serp > estimated
+      specs_source: hasExistingDims ? 'product_description' : 
+                   (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
+                   (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
+                   'estimated',
+      specs_confidence: hasExistingDims ? 100 : 
+                       (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
+                         Math.round(Math.min(visionConfidence || 0.9, 1) * 100) :
+                       (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
+                       50,
+      serp_verified: serpVerified,
+      serp_data: serpData || null,
+      
+      // Categorization
+      category: parsedData.category || product.category || null,
+      sub_category: parsedData.sub_category || null,
+      style: visionAttributes?.style || parsedData.style || null,
+      room: visionAttributes?.room || parsedData.room || null,
+      functionality: parsedData.functionality || null,
+      characteristics: parsedData.characteristics || null,
+      
+      // Chat text
+      chat_text: parsedData.chat_text || null,
+      
+      // Status
+      enrichment_status: 'enriched',
+      last_enriched_at: new Date().toISOString(),
+      optimization_count: (product.optimization_count || 0) + 1
+    };
+
+    console.log('🧾 Update payload for shopify_products:', updatePayload);
+
     const { error: updateError } = await supabase
       .from('shopify_products')
-      .update({
-        // Vision AI attributes (HIGHEST PRIORITY)
-        vision_attributes: visionAttributes || null,
-        vision_timestamp: visionAttributes ? new Date().toISOString() : null,
-        vision_model: visionAttributes ? 'google/gemini-2.5-flash' : null,
-        
-        // Visual attributes (from DeepSeek, unless overridden by Vision)
-        ai_color: visionAttributes?.primaryColor || parsedData.ai_color || null,
-        ai_material: visionAttributes?.materials?.join(', ') || parsedData.ai_material || null,
-        ai_shape: parsedData.ai_shape || null,
-        ai_texture: visionAttributes?.texture || parsedData.ai_texture || null,
-        ai_pattern: parsedData.ai_pattern || null,
-        ai_finish: visionAttributes?.finish || parsedData.ai_finish || null,
-        ai_design_elements: parsedData.ai_design_elements || null,
-        
-        // Vision AI analysis
-        ai_vision_analysis: parsedData.ai_vision_analysis || null,
-        ai_vision_model: 'deepseek-chat',
-        ai_vision_timestamp: new Date().toISOString(),
-        ai_vision_confidence: qualityScore !== null
-          ? qualityScore
-          : (visionConfidence > 0
-              ? Math.round(Math.min(visionConfidence, 1) * 10)
-              : 8),
-        ai_presentation_quality: qualityScore,
-        ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
-        ai_lighting_type: parsedData.ai_lighting_type || null,
-        ai_background_style: parsedData.ai_background_style || null,
-        ai_condition_notes: parsedData.ai_condition_notes || null,
-        
-        // Dimensions - PRIORITY ORDER: Existing > Vision > SERP > Estimated
-        // IMPORTANT: All dimension values must be integers (rounded)
-        smart_length: existingDimensions.length || 
-                      (visionAttributes?.technicalDimensions?.length ? Math.round(visionAttributes.technicalDimensions.length) : null) || 
-                      (serpDimensions.length ? Math.round(serpDimensions.length) : null) ||
-                      (parsedData.smart_length ? Math.round(parsedData.smart_length) : null),
-        smart_length_unit: existingDimensions.length_unit || 
-                          (visionAttributes?.technicalDimensions?.lengthUnit ?? null) || 
-                          serpDimensions.length_unit ||
-                          parsedData.smart_length_unit || null,
-        smart_width: existingDimensions.width || 
-                     (visionAttributes?.technicalDimensions?.width ? Math.round(visionAttributes.technicalDimensions.width) : null) || 
-                     (serpDimensions.width ? Math.round(serpDimensions.width) : null) ||
-                     (parsedData.smart_width ? Math.round(parsedData.smart_width) : null),
-        smart_width_unit: existingDimensions.width_unit || 
-                         (visionAttributes?.technicalDimensions?.widthUnit ?? null) || 
-                         serpDimensions.width_unit ||
-                         parsedData.smart_width_unit || null,
-        smart_height: existingDimensions.height || 
-                      (visionAttributes?.technicalDimensions?.height ? Math.round(visionAttributes.technicalDimensions.height) : null) || 
-                      (serpDimensions.height ? Math.round(serpDimensions.height) : null) ||
-                      (parsedData.smart_height ? Math.round(parsedData.smart_height) : null),
-        smart_height_unit: existingDimensions.height_unit || 
-                          (visionAttributes?.technicalDimensions?.heightUnit ?? null) || 
-                          serpDimensions.height_unit ||
-                          parsedData.smart_height_unit || null,
-        smart_diameter: existingDimensions.diameter || 
-                        (visionAttributes?.technicalDimensions?.diameter ? Math.round(visionAttributes.technicalDimensions.diameter) : null) || 
-                        (parsedData.smart_diameter ? Math.round(parsedData.smart_diameter) : null),
-        smart_diameter_unit: existingDimensions.diameter_unit || 
-                            (visionAttributes?.technicalDimensions?.diameterUnit ?? null) || 
-                            parsedData.smart_diameter_unit || null,
-        smart_depth: existingDimensions.depth || 
-                     (visionAttributes?.technicalDimensions?.depth ? Math.round(visionAttributes.technicalDimensions.depth) : null) || 
-                     (serpDimensions.depth ? Math.round(serpDimensions.depth) : null) ||
-                     (parsedData.smart_depth ? Math.round(parsedData.smart_depth) : null),
-        smart_depth_unit: existingDimensions.depth_unit || 
-                         (visionAttributes?.technicalDimensions?.depthUnit ?? null) || 
-                         serpDimensions.depth_unit ||
-                         parsedData.smart_depth_unit || null,
-        smart_weight: existingDimensions.weight || 
-                      (visionAttributes?.technicalDimensions?.weight ? Math.round(visionAttributes.technicalDimensions.weight) : null) || 
-                      (serpDimensions.weight ? Math.round(serpDimensions.weight) : null) ||
-                      (parsedData.smart_weight ? Math.round(parsedData.smart_weight) : null),
-        smart_weight_unit: existingDimensions.weight_unit || 
-                          (visionAttributes?.technicalDimensions?.weightUnit ?? null) || 
-                          serpDimensions.weight_unit ||
-                          parsedData.smart_weight_unit || null,
-        smart_seat_height: existingDimensions.seat_height || 
-                          (visionAttributes?.technicalDimensions?.seatHeight ? Math.round(visionAttributes.technicalDimensions.seatHeight) : null) || 
-                          (parsedData.smart_seat_height ? Math.round(parsedData.smart_seat_height) : null),
-        smart_seat_height_unit: existingDimensions.seat_height_unit || 
-                               (visionAttributes?.technicalDimensions?.seatHeightUnit ?? null) || 
-                               parsedData.smart_seat_height_unit || null,
-        
-        // SERP tracking - PRIORITY ORDER: product_description > vision > serp > estimated
-        specs_source: hasExistingDims ? 'product_description' : 
-                     (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
-                     (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
-                     'estimated',
-        specs_confidence: hasExistingDims ? 100 : 
-                         (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
-                           Math.round(Math.min(visionConfidence || 0.9, 1) * 100) :
-                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
-                         50,
-        serp_verified: serpVerified,
-        serp_data: serpData || null,
-        
-        // Categorization
-        category: parsedData.category || product.category || null,
-        sub_category: parsedData.sub_category || null,
-        style: visionAttributes?.style || parsedData.style || null,
-        room: visionAttributes?.room || parsedData.room || null,
-        functionality: parsedData.functionality || null,
-        characteristics: parsedData.characteristics || null,
-        
-        // Chat text
-        chat_text: parsedData.chat_text || null,
-        
-        // Status
-        enrichment_status: 'enriched',
-        last_enriched_at: new Date().toISOString(),
-        optimization_count: (product.optimization_count || 0) + 1
-      })
+      .update(updatePayload)
       .eq('id', productId);
 
     if (updateError) {
