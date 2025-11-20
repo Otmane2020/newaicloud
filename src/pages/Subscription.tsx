@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Rocket, Zap, Building2, Package } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -188,7 +189,14 @@ const Subscription = () => {
     }
   };
 
-  const getPlanIcon = (planId: string) => {
+  const getPlanIcon = (planId: string): LucideIcon => {
+    if (planId === 'starter') return Rocket;
+    if (planId.startsWith('pro')) return Zap;
+    if (planId.startsWith('enterprise')) return Building2;
+    return Package;
+  };
+  
+  const getPlanIconEmoji = (planId: string) => {
     if (planId === 'starter') return '🚀';
     if (planId.startsWith('pro')) return '⚡';
     if (planId.startsWith('enterprise')) return '🏢';
@@ -322,7 +330,7 @@ const Subscription = () => {
               <div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2">{t.seo.subscription.yourCurrentPlan}</h3>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <span className="text-xl sm:text-2xl">{getPlanIcon(currentPlan.id)}</span>
+                  <span className="text-xl sm:text-2xl">{getPlanIconEmoji(currentPlan.id)}</span>
                   <div>
                     <p className="text-lg sm:text-xl font-bold">{currentPlan.name}</p>
                     <p className="text-muted-foreground text-xs sm:text-sm">{currentPlan.price_monthly}{currency}{t.seo.subscription.perMonth}</p>
@@ -378,10 +386,10 @@ const Subscription = () => {
             buttonLoading={checkoutLoading === starterPlan.id}
             buttonVariant={isCurrentPlan(starterPlan.id) ? "secondary" : "default"}
             features={[
-              { value: starterPlan.max_optimizations_monthly, label: t.seo.subscription.optimizationsMonth },
-              { value: starterPlan.max_articles_monthly, label: t.seo.subscription.articlesMonth },
-              { value: starterPlan.max_chat_responses_monthly, label: t.seo.subscription.chatResponsesMonth },
-              { value: starterPlan.max_shopify_stores, label: t.seo.subscription.shopifyStores },
+              `${starterPlan.max_optimizations_monthly} ${t.seo.subscription.optimizationsMonth}`,
+              `${starterPlan.max_articles_monthly} ${t.seo.subscription.articlesMonth}`,
+              `${starterPlan.max_chat_responses_monthly} ${t.seo.subscription.chatResponsesMonth}`,
+              `${starterPlan.max_shopify_stores} ${t.seo.subscription.shopifyStores}`,
             ]}
           />
         )}

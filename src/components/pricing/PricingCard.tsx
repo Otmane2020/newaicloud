@@ -1,45 +1,32 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Check, Loader2, CheckCircle2 } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface PricingCardProps {
-  // Bloc 1: Icon
-  icon: string;
-  
-  // Bloc 2: Name
+  icon: LucideIcon;
   name: string;
   isCurrentPlan?: boolean;
   isRecommended?: boolean;
   isBestValue?: boolean;
-  
-  // Bloc 3: Price
   price: number;
   currency: string;
   period: string;
   originalPrice?: number;
-  
-  // Bloc 4: Description
   description: string;
-  
-  // Bloc 4bis: Button
+  secondaryDescription?: string;
   buttonText: string;
   onButtonClick: () => void;
   buttonDisabled?: boolean;
   buttonLoading?: boolean;
   buttonVariant?: "default" | "secondary";
-  
-  // Bloc 5: Features
-  features: Array<{
-    label: string;
-    value: string | number;
-  }>;
-  
+  features: string[];
   className?: string;
 }
 
 export function PricingCard({
-  icon,
+  icon: Icon,
   name,
   isCurrentPlan,
   isRecommended,
@@ -49,6 +36,7 @@ export function PricingCard({
   period,
   originalPrice,
   description,
+  secondaryDescription,
   buttonText,
   onButtonClick,
   buttonDisabled,
@@ -60,66 +48,78 @@ export function PricingCard({
   return (
     <Card 
       className={`
-        relative flex flex-col hover:shadow-lg transition-shadow
-        ${isCurrentPlan ? 'border-2 border-primary shadow-lg' : 'border border-border'}
+        relative flex flex-col justify-between
+        p-6 shadow-sm border rounded-2xl bg-card
+        hover:shadow-lg transition-all duration-300 hover:-translate-y-1
+        ${isCurrentPlan ? 'border-2 border-primary' : ''}
         ${className}
       `}
     >
-      {/* Badges en haut */}
+      {/* Badges premium */}
       {isCurrentPlan && (
-        <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-primary text-xs sm:text-sm">
-          Votre Plan
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full shadow-lg text-xs sm:text-sm">
+          ✓ Votre Plan
         </Badge>
       )}
       {!isCurrentPlan && isRecommended && (
-        <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-accent text-xs sm:text-sm">
-          Recommandé
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full shadow-lg text-xs sm:text-sm">
+          ⭐ Recommandé
         </Badge>
       )}
       {!isCurrentPlan && isBestValue && (
-        <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-success text-success-foreground text-xs sm:text-sm">
-          Meilleur Rapport
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full shadow-lg text-xs sm:text-sm">
+          💎 Meilleur Rapport
         </Badge>
       )}
 
-      <div className="p-6 lg:p-8 space-y-6 flex-1 flex flex-col">
-        {/* Bloc 1: Icon aligné au centre */}
-        <div className="flex justify-center">
-          <div className="text-4xl sm:text-5xl">{icon}</div>
+      <div className="flex flex-col h-full">
+        {/* Icône premium centrée */}
+        <div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shadow-md mb-4">
+          <Icon className="w-8 h-8 text-white" />
         </div>
 
-        {/* Bloc 2: Name */}
-        <div className="text-center">
-          <h3 className="text-2xl sm:text-3xl font-bold">{name}</h3>
+        {/* Titre */}
+        <h3 className="text-center text-2xl font-semibold mb-2">
+          {name}
+        </h3>
+
+        {/* Description */}
+        <div className="text-center mb-4 min-h-[60px]">
+          <p className="text-sm text-muted-foreground">{description}</p>
+          {secondaryDescription && (
+            <p className="text-xs text-muted-foreground mt-2">{secondaryDescription}</p>
+          )}
         </div>
 
-        {/* Bloc 3: Price avec prix barré si applicable */}
-        <div className="text-center space-y-1">
+        {/* Prix style Stripe */}
+        <div className="text-center mb-6">
           {originalPrice && originalPrice > price && (
-            <div className="text-lg text-muted-foreground line-through">
+            <div className="text-2xl text-muted-foreground line-through mb-1">
               {originalPrice}{currency}
             </div>
           )}
-          <div className="flex items-baseline justify-center gap-2">
-            <span className="text-4xl sm:text-5xl font-bold">
-              {price}{currency}
-            </span>
-            <span className="text-muted-foreground text-base">
-              {period}
-            </span>
+          <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            {price}{currency}
           </div>
+          <p className="text-muted-foreground text-sm mt-1">
+            {period}
+          </p>
         </div>
 
-        {/* Bloc 4: Description */}
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">{description}</p>
+        {/* Features list */}
+        <div className="space-y-3 mb-6 flex-grow">
+          {features.map((feature, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-success flex-shrink-0" />
+              <span className="text-sm">{feature}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Bloc 4bis: Bouton */}
-        <div className="pt-2">
+        {/* Bouton aligné en bas */}
+        <div className="mt-auto">
           <Button 
-            className="w-full text-sm sm:text-base" 
-            size="lg"
+            className="w-full h-12 text-base font-semibold" 
             variant={buttonVariant}
             disabled={buttonDisabled}
             onClick={onButtonClick}
@@ -135,18 +135,6 @@ export function PricingCard({
               buttonText
             )}
           </Button>
-        </div>
-
-        {/* Bloc 5: Trait de séparation et détails */}
-        <div className="pt-4 mt-auto border-t space-y-3">
-          {features.map((feature, index) => (
-            <div key={index} className="flex items-center gap-3 text-sm">
-              <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-              <span>
-                <span className="font-semibold">{feature.value}</span> {feature.label}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
     </Card>
