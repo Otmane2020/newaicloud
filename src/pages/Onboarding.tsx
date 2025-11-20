@@ -781,8 +781,13 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center flex-1">
+                  <div className="text-center flex-1 space-y-2">
                     <p className="text-sm text-muted-foreground">{t.onboarding.choosePlanAfterTrial}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'fr' 
+                        ? "Testez toutes les fonctionnalités premium sans engagement. Aucune carte bancaire requise."
+                        : "Test all premium features with no commitment. No credit card required."}
+                    </p>
                   </div>
 
                   {/* Bloc 4bis: Bouton */}
@@ -884,8 +889,13 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center flex-1">
+                  <div className="text-center flex-1 space-y-2">
                     <p className="text-sm text-muted-foreground">{t.dashboard.plans.descriptions.starter}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'fr' 
+                        ? "Parfait pour démarrer votre optimisation SEO et booster vos ventes rapidement."
+                        : "Perfect to start your SEO optimization and boost your sales quickly."}
+                    </p>
                   </div>
 
                   {/* Bloc 4bis: Bouton */}
@@ -1044,8 +1054,13 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center flex-1">
+                  <div className="text-center flex-1 space-y-2">
                     <p className="text-sm text-muted-foreground">{t.onboarding.planFeatures.forGrowth}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'fr' 
+                        ? "Idéal pour les boutiques en croissance qui veulent maximiser leur présence en ligne."
+                        : "Ideal for growing stores that want to maximize their online presence."}
+                    </p>
                   </div>
 
                   {/* Bloc 4bis: Bouton */}
@@ -1192,8 +1207,13 @@ export default function Onboarding() {
                   </div>
 
                   {/* Bloc 4: Description */}
-                  <div className="text-center flex-1">
+                  <div className="text-center flex-1 space-y-2">
                     <p className="text-sm text-muted-foreground">{t.onboarding.planFeatures.forEnterprise}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'fr' 
+                        ? "Solution complète pour les grandes entreprises avec support prioritaire et volumes illimités."
+                        : "Complete solution for large businesses with priority support and unlimited volumes."}
+                    </p>
                   </div>
 
                   {/* Bloc 4bis: Bouton */}
