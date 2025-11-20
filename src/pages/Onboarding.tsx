@@ -644,98 +644,111 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-2 sm:p-4 md:p-6">
-      <div className="container mx-auto max-w-7xl">
-        {/* Logout Button */}
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => {
-              await signOut();
-              navigate('/auth');
-            }}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Hero Header Section */}
+      <section className="relative overflow-hidden pt-8 pb-12">
+        <div className="absolute inset-0 bg-gradient-dark opacity-95" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMzYjgyZjYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00em0wLTEwYzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHptMC0xMGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+        
+        <div className="container relative mx-auto px-4">
+          <div className="flex justify-end mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                await signOut();
+                navigate('/auth');
+              }}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="flex flex-col items-center text-center space-y-6 animate-fade-in">
+            {plans.some(p => p.trial_days > 0) && (
+              <Badge className="bg-primary/20 text-white border-primary/30 px-6 py-2">
+                <Shield className="w-4 h-4 mr-2" />
+                {t.onboarding.trial.available}
+              </Badge>
+            )}
+            
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white max-w-4xl leading-tight">
+              {t.onboarding.title.split('NewAI')[0]}
+              <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
+                NewAI
+              </span>
+            </h1>
+            
+            <p className="text-base sm:text-lg md:text-xl max-w-2xl text-gray-300">
+              {t.onboarding.subtitle}
+            </p>
+          </div>
         </div>
 
-      {/* Header */}
-      <div className="text-center mb-4 sm:mb-8 md:mb-10">
-        {plans.some(p => p.trial_days > 0) && (
-          <Badge className="mb-2 sm:mb-3 bg-primary/20 text-primary-foreground border-primary/30 text-xs sm:text-sm">
-            <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            {t.onboarding.trial.available}
-          </Badge>
-        )}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3 px-2">
-          {t.onboarding.title.split('NewAI')[0]}
-          <span className="bg-gradient-primary bg-clip-text text-transparent">
-            NewAI
-          </span>
-        </h1>
-        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
-          {t.onboarding.subtitle}
-        </p>
-      </div>
+        {/* Floating gradient orbs */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-primary/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
+      </section>
 
-      {/* Shopify pending connection alert */}
-      {searchParams.get('shopify_pending') && (
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              {claimingShopify ? (
-                <Loader2 className="h-5 w-5 text-blue-600 mt-0.5 animate-spin" />
-              ) : (
-                <ShoppingBag className="h-5 w-5 text-blue-600 mt-0.5" />
-              )}
-              <div>
-                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                  {claimingShopify 
-                    ? "Connexion en cours..." 
-                    : "Connexion Shopify en attente"
-                  }
-                </p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  {claimingShopify 
-                    ? "Import automatique de vos 10 premiers produits en cours..."
-                    : `Votre boutique ${searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
-                  }
-                </p>
-              </div>
+      <div className="container mx-auto px-4 py-8 max-w-[1600px]">
+
+        {/* Shopify Pending Alert */}
+        {searchParams.get('shopify_pending') && (
+          <div className="max-w-2xl mx-auto mb-10 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-start gap-4">
+            {claimingShopify ? (
+              <Loader2 className="w-6 h-6 text-blue-600 mt-1 animate-spin flex-shrink-0" />
+            ) : (
+              <ShoppingBag className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
+            )}
+            <div>
+              <p className="font-semibold text-blue-900 dark:text-blue-100">
+                {claimingShopify 
+                  ? "Connexion en cours..." 
+                  : "Connexion Shopify en attente"
+                }
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                {claimingShopify 
+                  ? "Import automatique de vos 10 premiers produits en cours..."
+                  : `Votre boutique ${searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
+                }
+              </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-        {/* Billing Toggle */}
-        <div className="flex justify-center mb-4 sm:mb-8 md:mb-10 px-2">
-          <div className="bg-card rounded-full p-1 border-2 border-border">
-            <Button
-              variant={billingCycle === 'monthly' ? 'default' : 'ghost'}
+        {/* Billing Toggle - Toujours visible */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center gap-4 bg-card/50 backdrop-blur-sm rounded-full p-1 border-2 border-border shadow-lg">
+            <button
               onClick={() => setBillingCycle('monthly')}
-              className="rounded-full text-xs sm:text-sm px-3 sm:px-4"
-              size="sm"
+              className={`px-6 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
+                billingCycle === 'monthly' 
+                  ? 'bg-primary text-primary-foreground shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               {t.onboarding.billing.monthly}
-            </Button>
-            <Button
-              variant={billingCycle === 'yearly' ? 'default' : 'ghost'}
+            </button>
+            <button
               onClick={() => setBillingCycle('yearly')}
-              className="rounded-full text-xs sm:text-sm px-3 sm:px-4"
-              size="sm"
+              className={`px-6 py-2 rounded-full font-medium text-sm transition-all duration-300 relative ${
+                billingCycle === 'yearly' 
+                  ? 'bg-primary text-primary-foreground shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               {t.onboarding.billing.yearly}
-              <Badge className="ml-1.5 sm:ml-2 bg-green-500 text-[10px] sm:text-xs px-1.5 sm:px-2">
+              <Badge className="absolute -top-2 -right-2 bg-success text-xs px-2 py-0.5">
                 {t.onboarding.billing.save}
               </Badge>
-            </Button>
+            </button>
           </div>
         </div>
 
-      {/* Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8 px-2 max-w-[1600px] mx-auto">
+        {/* Plans Grid - Style Premium */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1600px] mx-auto auto-rows-fr">
         {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
         {!hasUsedTrial && (() => {
             const starterPlan = plans.find(p => p.id === 'starter');
