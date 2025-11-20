@@ -525,7 +525,11 @@ Réponds UNIQUEMENT en JSON valide:
         ai_vision_analysis: parsedData.ai_vision_analysis || null,
         ai_vision_model: 'deepseek-chat',
         ai_vision_timestamp: new Date().toISOString(),
-        ai_vision_confidence: visionConfidence > 0 ? Math.round(visionConfidence * 100) : (parsedData.ai_presentation_quality ? Math.min(parsedData.ai_presentation_quality, 1) * 100 : 80),
+        ai_vision_confidence: visionConfidence > 0
+          ? Math.min(visionConfidence, 1)
+          : (parsedData.ai_presentation_quality
+              ? Math.min(parsedData.ai_presentation_quality, 1)
+              : 0.8),
         ai_presentation_quality: parsedData.ai_presentation_quality ? Math.min(parsedData.ai_presentation_quality, 1) : null,
         ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
         ai_lighting_type: parsedData.ai_lighting_type || null,
@@ -591,11 +595,11 @@ Réponds UNIQUEMENT en JSON valide:
                      (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 'vision' :
                      (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 'serp' : 
                      'estimated',
-        specs_confidence: hasExistingDims ? 100 : 
+        specs_confidence: hasExistingDims ? 1 : 
                          (visionAttributes?.technicalDimensions && Object.keys(visionAttributes.technicalDimensions).length > 0) ? 
-                           Math.round(visionConfidence * 100) :
-                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 75 :
-                         50,
+                           Math.min(visionConfidence || 0.9, 1) :
+                         (serpDimensions.length || serpDimensions.width || serpDimensions.height || serpDimensions.weight || serpDimensions.depth) ? 0.75 :
+                         0.5,
         serp_verified: serpVerified,
         serp_data: serpData || null,
         
