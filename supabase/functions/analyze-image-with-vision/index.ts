@@ -38,7 +38,9 @@ interface VisualContext {
   hasRuler?: boolean;
   hasLabels?: boolean;
   viewAngle?: string;
-  dimensionSource?: 'visible' | 'estimated' | 'not_available';
+  dimensionSource: 'visible' | 'estimated' | 'not_available';
+  visibleDimensions?: string[];     // ex: ["H:85cm", "L:45cm"]
+  confidenceReason?: string;        // explication textuelle
 }
 
 interface VisualAttributes {
@@ -52,7 +54,7 @@ interface VisualAttributes {
   texture?: string;
   technicalDetails: string[];
   technicalDimensions?: TechnicalDimensions;
-  visualContext?: VisualContext;
+  visualContext: VisualContext;   // plus de "?" - toujours requis
 }
 
 interface VisionResponse {
@@ -207,35 +209,54 @@ RÈGLES CRITIQUES :
                 content: [
                   { 
                     type: 'text', 
-                    text: `ANALYSE CETTE IMAGE PRODUIT ÉTAPE PAR ÉTAPE :
+                    text: `ANALYSE DÉTAILLÉE D'IMAGE - RECHERCHE DE DIMENSIONS VISIBLES
 
-ÉTAPE 1 - RECHERCHE DE DIMENSIONS VISIBLES :
-→ Cherche des CHIFFRES avec unités (100cm, H:75, Ø43, 71cm, 8.5kg, etc.)
-→ Cherche dans : schémas techniques, étiquettes, emballages, règles graduées
-→ Zoom sur tous les textes et chiffres de l'image
+🎯 **MISSION CRITIQUE** : TROUVER TOUS LES CHIFFRES ET DIMENSIONS VISIBLES DANS CETTE IMAGE
 
-ÉTAPE 2 - DÉCISION :
-SI TU VOIS des chiffres + unités (cm, mm, kg, m) :
-✅ hasTechnicalSchema = true
-✅ dimensionSource = "visible"
-✅ Copie EXACTEMENT les valeurs (ne change rien)
-✅ Sépare valeur et unité : "100cm" → height:"100", heightUnit:"cm"
-✅ confidence = 0.95
+**ÉTAPE 1 - INSPECTION VISUELLE APPROFONDIE :**
+🔍 Examine CHAQUE partie de l'image pour trouver :
+- 📏 **Règles graduées, échelles métriques**
+- 🏷️ **Étiquettes avec dimensions (H:, L:, P:, Ø, cm, mm, kg)**
+- 📐 **Schémas techniques avec cotes**
+- 📦 **Emballages avec dimensions imprimées**
+- 🔢 **N'importe quel chiffre suivi de "cm", "mm", "m", "kg"**
 
-SI AUCUN chiffre visible :
-❌ hasTechnicalSchema = false
-❌ dimensionSource = "estimated"
-❌ Estime selon le type de produit
-❌ confidence = 0.75
+**ÉTAPE 2 - DÉCISION DIMENSIONNELLE :**
 
-CONTEXTE PRODUIT : ${JSON.stringify(productContext, null, 2)}
+✅ **SI DIMENSIONS VISIBLES** (tu vois des chiffres + unités) :
+- hasTechnicalSchema = true
+- dimensionSource = "visible"
+- Copie EXACTEMENT les valeurs : "100cm" → height:"100", heightUnit:"cm"
+- confidence = 0.95
+- Liste les dimensions visibles dans visibleDimensions (ex: ["H:85cm", "L:45cm"])
+- Explique dans confidenceReason : "Dimensions extraites d'un schéma technique visible"
 
-UTILISE LA FONCTION set_vision_result POUR RETOURNER LE RÉSULTAT.`
+❌ **SI AUCUNE DIMENSION VISIBLE** :
+- hasTechnicalSchema = false  
+- dimensionSource = "estimated"
+- Estime RÉALISTEMENT selon le type de produit
+- confidence = 0.75
+- Explique dans confidenceReason : "Aucune dimension visible, estimation basée sur le type de produit"
+
+**PRODUIT À ANALYSER :** ${productContext ? `${productContext.title || ''} ${productContext.category || ''} ${productContext.type || ''}` : 'Non spécifié'}
+
+**EXEMPLE RÉEL POUR CHAISE :**
+- Si tu vois "H:85cm L:45cm P:50cm" → dimensions visibles, copie exactement
+- Si rien visible → estimation réaliste pour une chaise (H:85cm, L:45cm, P:50cm)
+
+**RÈGLES D'ESTIMATION RÉALISTES :**
+- Chaise standard : ~85cm hauteur, ~45cm largeur
+- Tabouret de bar : ~75cm hauteur, ~35cm diamètre
+- Table basse : ~45cm hauteur, ~80cm diamètre
+- Canapé 3 places : ~90cm hauteur, ~210cm largeur
+
+UTILISE LA FONCTION set_vision_result POUR RETOURNER LES RÉSULTATS.`
                   },
                   {
                     type: 'image_url',
                     image_url: {
-                      url: `data:${contentType};base64,${base64Image}`
+                      url: `data:${contentType};base64,${base64Image}`,
+                      detail: 'high' // Plus haute qualité pour lire le texte
                     }
                   }
                 ]
@@ -297,6 +318,15 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LE RÉSULTAT.`
                                 type: "string", 
                                 enum: ["visible", "estimated", "not_available"],
                                 description: "visible = chiffres présents dans l'image | estimated = estimation visuelle | not_available = impossible à estimer"
+                              },
+                              visibleDimensions: { 
+                                type: "array", 
+                                items: { type: "string" },
+                                description: "Liste des dimensions visuellement détectées (ex: ['H:85cm', 'L:45cm'])" 
+                              },
+                              confidenceReason: { 
+                                type: "string",
+                                description: "Explication textuelle de la confiance et de la source (visible vs estimée)"
                               }
                             },
                             required: ["hasTechnicalSchema", "dimensionSource"]
@@ -318,8 +348,8 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LE RÉSULTAT.`
               }
             ],
             tool_choice: { type: "function", function: { name: "set_vision_result" } },
-            temperature: 0.2,
-            max_tokens: 1024
+            temperature: 0.1,
+            max_tokens: 2048
           }),
         }
       );
@@ -362,6 +392,16 @@ UTILISE LA FONCTION set_vision_result POUR RETOURNER LE RÉSULTAT.`
     if (toolCall?.function?.arguments) {
       try {
         const visionResult: VisionResponse = JSON.parse(toolCall.function.arguments);
+        
+        // Logs détaillés pour debug
+        const ctx = visionResult.visualAttributes.visualContext;
+        console.log('📊 RÉSULTAT DÉTAILLÉ:');
+        console.log('- Source dimensions:', ctx.dimensionSource);
+        console.log('- Schema technique:', ctx.hasTechnicalSchema);
+        console.log('- Confiance globale:', visionResult.confidence);
+        console.log('- Dimensions visibles:', ctx.visibleDimensions);
+        console.log('- Raison confiance:', ctx.confidenceReason);
+        console.log('- Dimensions techniques:', visionResult.visualAttributes.technicalDimensions);
         console.log('Vision analysis completed (tool call):', visionResult);
 
         return new Response(
