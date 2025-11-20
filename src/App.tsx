@@ -73,6 +73,9 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import TestLandingGeneration from "./pages/TestLandingGeneration";
 import TestRedirection from "./pages/TestRedirection";
+import ApiKeys from "./pages/ApiKeys";
+import ApiDocs from "./pages/ApiDocs";
+import ApiAnalytics from "./pages/ApiAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -428,6 +431,30 @@ const App = () => (
                 <SuperAdminLayout>
                   {({ activeTab, setActiveTab }) => <SetupPlans />}
                 </SuperAdminLayout>
+              }
+            />
+            <Route
+              path="/api-keys"
+              element={
+                <ProtectedLayout>
+                  <ApiKeys />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/api-docs"
+              element={
+                <ProtectedLayout>
+                  <ApiDocs />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/api-analytics"
+              element={
+                <ProtectedLayout>
+                  <ApiAnalytics />
+                </ProtectedLayout>
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -224,6 +224,65 @@ export type Database = {
         }
         Relationships: []
       }
+      api_usage_logs: {
+        Row: {
+          api_key_id: string | null
+          created_at: string | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          method: string
+          request_size_bytes: number | null
+          response_size_bytes: number | null
+          response_time_ms: number | null
+          status_code: number | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method: string
+          request_size_bytes?: number | null
+          response_size_bytes?: number | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method?: string
+          request_size_bytes?: number | null
+          response_size_bytes?: number | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "user_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_notifications: {
         Row: {
           action_label: string | null
@@ -4572,6 +4631,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_api_keys: {
+        Row: {
+          allowed_endpoints: string[] | null
+          api_key: string
+          api_secret_hash: string
+          created_at: string | null
+          environment: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_name: string
+          last_used_at: string | null
+          metadata: Json | null
+          rate_limit_per_minute: number | null
+          user_id: string
+        }
+        Insert: {
+          allowed_endpoints?: string[] | null
+          api_key: string
+          api_secret_hash: string
+          created_at?: string | null
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          rate_limit_per_minute?: number | null
+          user_id: string
+        }
+        Update: {
+          allowed_endpoints?: string[] | null
+          api_key?: string
+          api_secret_hash?: string
+          created_at?: string | null
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          rate_limit_per_minute?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
