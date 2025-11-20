@@ -20,7 +20,8 @@ import {
   Star,
   LogOut,
   Loader2,
-  Store
+  Store,
+  Target
 } from 'lucide-react';
 import {
   Select,
@@ -789,29 +790,29 @@ export default function Onboarding() {
                 {/* Features - Flexible height */}
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <span className="text-sm">
                       {formatLimit(trialLimits.max_products)} {language === 'fr' ? 'produits' : 'products'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
                     <span className="text-sm">{formatStoreLimit(trialLimits.max_shopify_stores)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm">
                       {formatLimit(trialLimits.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="text-sm">
                       {formatLimit(trialLimits.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                     <span className="text-sm">
                       {formatLimit(trialLimits.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
                     </span>
@@ -905,27 +906,27 @@ export default function Onboarding() {
                 {/* Features - Flexible height */}
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
                     <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                   
@@ -1048,27 +1049,27 @@ export default function Onboarding() {
                 {/* Features - Flexible height */}
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
                     <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
 
@@ -1186,27 +1187,27 @@ export default function Onboarding() {
                 {/* Features - Flexible height */}
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <ShoppingBag className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Store className="w-4 h-4 text-purple-600 flex-shrink-0" />
                     <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Zap className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <MessageSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
 
