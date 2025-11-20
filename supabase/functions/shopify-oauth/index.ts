@@ -136,7 +136,7 @@ serve(async (req) => {
         console.log("[SHOPIFY-OAUTH] Flow pre-auth détecté, création pending connection");
         
         const pendingToken = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h (Phase 1A)
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 jours (Solution 3)
 
         await supabase.from("shopify_pending_connections").insert({
           shop_url: shop,
@@ -153,7 +153,7 @@ serve(async (req) => {
 
         // Rediriger vers /auth avec le pending_token
         const redirectUrl = `${APP_URL}/auth?mode=signup&shopify_pending=${pendingToken}&shop=${encodeURIComponent(shop)}`;
-        console.log("[SHOPIFY-OAUTH] Redirection vers auth avec pending token");
+        console.log("[SHOPIFY-OAUTH] Redirection vers auth avec pending token (expires in 7 days)");
         return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
       }
 

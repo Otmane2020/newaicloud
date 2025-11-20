@@ -4778,7 +4778,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shopify_pending_connections_status: {
+        Row: {
+          claimed_at: string | null
+          claimed_by_email: string | null
+          commercial_name: string | null
+          created_at: string | null
+          expires_at: string | null
+          hours_until_expiry: number | null
+          id: string | null
+          is_claimed: boolean | null
+          pending_token: string | null
+          shop_url: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_next_execution: {
@@ -4861,6 +4876,15 @@ export type Database = {
         Returns: undefined
       }
       make_user_admin: { Args: { user_email: string }; Returns: Json }
+      notify_expiring_shopify_tokens: {
+        Args: never
+        Returns: {
+          expires_in_hours: number
+          pending_token: string
+          shop_url: string
+          user_email: string
+        }[]
+      }
       recalculate_shopify_stores_count: {
         Args: { p_user_id?: string }
         Returns: {
