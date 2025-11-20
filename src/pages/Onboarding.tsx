@@ -271,15 +271,16 @@ export default function Onboarding() {
         }
       }
       
+      // ✅ TOUJOURS claim Shopify AVANT de vérifier subscription
+      const shopifyPending = searchParams.get('shopify_pending');
+      if (shopifyPending) {
+        console.log('🔗 Claiming Shopify connection BEFORE subscription check');
+        await claimShopifyConnection(shopifyPending);
+      }
+
+      // PUIS vérifier subscription
       if (data?.subscribed) {
         console.log('✅ [CHECK-SUBSCRIPTION] Subscription verified');
-        
-        // 2. ✅ AVANT de rediriger, claim Shopify si nécessaire
-        const shopifyPending = searchParams.get('shopify_pending');
-        if (shopifyPending) {
-          await claimShopifyConnection(shopifyPending);
-        }
-        
         toast.success(t.onboarding.verification.success);
         // Laisser quelques secondes pour que l'import démarre
         setTimeout(() => {

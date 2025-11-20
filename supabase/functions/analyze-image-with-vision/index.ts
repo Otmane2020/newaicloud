@@ -175,61 +175,49 @@ IMPORTANT :
                 content: [
                   { 
                     type: 'text', 
-                    text: `Tu es un expert en analyse visuelle de produits d'ameublement et décoration.
+                    text: `Tu es un expert en analyse d'images produit pour détecter des dimensions techniques.
 
-🚨 MISSION CRITIQUE : DÉTECTER ET EXTRAIRE LES DIMENSIONS TECHNIQUES 🚨
+🎯 MISSION : Extraire TOUTES les dimensions visibles
 
-═══════════════════════════════════════════════════════════════
-ÉTAPE 1 : DÉTECTION DE SCHÉMAS TECHNIQUES (PRIORITÉ ABSOLUE)
-═══════════════════════════════════════════════════════════════
+ÉTAPE 1 - DÉTECTION (hasTechnicalSchema) :
+Cherche ces éléments visuels :
+□ Lignes de cote avec chiffres (100cm, 71cm, H:75cm)
+□ Schéma technique (wireframe, plan, croquis)
+□ Tableau de dimensions
+□ Règle graduée visible
 
-CHERCHE ATTENTIVEMENT CES ÉLÉMENTS :
-✓ Lignes de cote avec chiffres + unités (100cm, 71cm, 47.5cm, H: 75cm)
-✓ Dessins techniques (wireframe, plan, vue éclatée, croquis)
-✓ Schémas avec flèches et mesures
-✓ Tableaux de dimensions
-✓ Étiquettes produit avec tailles
-✓ Règles graduées ou échelles
-✓ Emballages avec dimensions imprimées
+→ Si OUI à une question : hasTechnicalSchema = true
 
-→ Si tu vois UN SEUL élément ci-dessus : hasTechnicalSchema = true
-
-═══════════════════════════════════════════════════════════════
-ÉTAPE 2 : EXTRACTION DES DIMENSIONS (EXHAUSTIVE)
-═══════════════════════════════════════════════════════════════
-
+ÉTAPE 2 - EXTRACTION :
 Pour CHAQUE dimension visible, extrais :
-- Valeur numérique EXACTE (accepte décimales : 47.5, 71.2)
-- Unité (cm, mm, m, kg, g)
-- Type de mesure
+- height → "75cm" ou "75"
+- seatHeight → "65cm"
+- width → "43cm"
+- depth → "47cm"
+- diameter → "31cm"
+- weight → "8.5kg" ou "8.5"
 
-FORMATS ACCEPTÉS :
-• "75cm" ou "75 cm" ou "75CM"
-• "H: 75cm" ou "Hauteur: 75cm"
-• "L: 50cm" ou "Largeur: 50cm"
-• "P: 40cm" ou "Profondeur: 40cm"
-• "Ø: 35cm" ou "Diamètre: 35cm"
-• "5.5kg" ou "5,5 kg" ou "Poids: 5.5kg"
+Contexte : ${JSON.stringify(productContext, null, 2)}
 
-DIMENSIONS À CHERCHER (ordre de priorité) :
-1. height → Hauteur totale du produit
-2. seatHeight → Hauteur d'assise (chaises/fauteuils uniquement)
-3. width → Largeur totale
-4. depth → Profondeur
-5. diameter → Diamètre (tables rondes, tabourets, pieds)
-6. length → Longueur (canapés, tables rectangulaires)
-7. weight → Poids du produit
+FORMAT RÉPONSE (JSON strict) :
+{
+  "visualAttributes": {
+    "technicalDimensions": {
+      "height": "100cm",
+      "seatHeight": "71cm",
+      "width": "43cm"
+    },
+    "visualContext": {
+      "hasTechnicalSchema": true
+    }
+  },
+  "confidence": 0.9
+}
 
-CONTEXTE PRODUIT :
-${JSON.stringify(productContext, null, 2)}
-
-RÈGLES ABSOLUES :
-✓ Extrais TOUTES les dimensions visibles, même partielles
-✓ Utilise nombres décimaux si nécessaire (47.5, 12.3)
-✓ Si dimensions illisibles ou absentes → technicalDimensions: {}
-✓ hasTechnicalSchema: true dès qu'une dimension est visible
-✓ Réponds UNIQUEMENT en JSON valide, rien d'autre
-✓ Ne devine JAMAIS de dimensions non visibles` 
+RÈGLES :
+✓ Extrais dimensions EXACTES (décimales OK : 47.5)
+✓ Si rien visible → technicalDimensions: {}
+✓ Ne devine JAMAIS de dimensions` 
                   },
                   {
                     type: 'image_url',

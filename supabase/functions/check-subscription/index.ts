@@ -101,17 +101,18 @@ serve(async (req) => {
         .eq('id', user.id)
         .single();
       
-      // ✅ Standard trial profile (status = trialing)
+      // ✅ Standard trial profile (status = trialing) - CONSIDÉRÉ COMME SUBSCRIBED
       if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
         try {
           const trialEnd = new Date(profile.trial_ends_at);
           if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
-            logStep('Valid trial found in database');
+            logStep('Valid trial found in database - treating as subscribed');
             return new Response(JSON.stringify({ 
-              subscribed: true,
+              subscribed: true, // ✅ CRITICAL: Trial = subscribed pour claim Shopify
               status: 'trialing',
-              plan_id: profile.current_plan_id,
-              trial_end: profile.trial_ends_at
+              plan_id: profile.current_plan_id || 'trial',
+              trial_end: profile.trial_ends_at,
+              source: 'supabase_trial'
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 200,
