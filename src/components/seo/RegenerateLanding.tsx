@@ -465,7 +465,7 @@ export default function RegenerateLanding({
           <div className="flex items-center gap-4 mb-5 relative z-10">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-              <Sparkles className="w-6 h-6 text-primary animate-pulse relative z-10" />
+              <Sparkles className="w-8 h-8 text-accent animate-pulse relative z-10" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
