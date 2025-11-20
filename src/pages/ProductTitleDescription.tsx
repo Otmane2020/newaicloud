@@ -572,6 +572,13 @@ export default function ProductTitleDescription() {
             try {
               console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
               
+              // Récupérer vision_attributes depuis le produit
+              const { data: productData } = await supabase
+                .from('shopify_products')
+                .select('vision_attributes, vision_confidence')
+                .eq('id', productId)
+                .single();
+              
               const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
                 'generate-product-description-html',
                 {
@@ -579,7 +586,7 @@ export default function ProductTitleDescription() {
                     title: updatedProduct.seo_title || updatedProduct.title,
                     existingDescription: updatedProduct.seo_description,
                     images: [updatedProduct.image_url].filter(Boolean),
-                    visionAnalysis: null,
+                    visionAnalysis: productData?.vision_attributes || null,
                     template: 'ecommerce',
                     productId: productId
                   }
