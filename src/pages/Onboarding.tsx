@@ -746,80 +746,35 @@ export default function Onboarding() {
                   {language === 'fr' ? 'GRATUIT' : 'FREE'}
                 </div>
                 
-                {/* Icon - Fixed height */}
-                <div className="h-14 mb-4">
+                {/* Icon */}
+                <div className="h-16 flex items-center justify-center mb-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center shadow-glow">
                     <Star className="w-7 h-7 text-white" />
                   </div>
                 </div>
 
-                {/* Title - Fixed height */}
-                <div className="h-16 mb-3">
-                  <h3 className="text-2xl font-bold mb-2">
+                {/* Title */}
+                <div className="text-center mb-4">
+                  <h3 className="text-2xl font-bold">
                     {language === 'fr' ? 'Essai Gratuit' : 'Free Trial'}
                   </h3>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-xs w-fit">
-                    {language === 'fr' ? '14 jours Essai Gratuit' : '14 days free'}
-                  </Badge>
                 </div>
                 
-                {/* Price - Fixed height */}
-                <div className="h-24 mb-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold mb-1">
-                      {getCurrencySymbol(language)}0
-                      <span className="text-lg text-muted-foreground font-normal">
-                        /{t.onboarding.billing.monthly}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {t.onboarding.trial.noCardRequired}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features - Flexible height */}
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(starterPlan.max_products)} {language === 'fr' ? 'produits' : 'products'}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(starterPlan.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(starterPlan.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}
-                    </span>
-                  </div>
-                  {starterPlan.max_campaigns > 0 && (
-                    <div className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">
-                        {formatLimit(starterPlan.max_campaigns)} {language === 'fr' ? 'campagnes' : 'campaigns'}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatLimit(starterPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}
+                {/* Price */}
+                <div className="h-20 flex flex-col items-center justify-center mb-4">
+                  <div className="text-4xl font-bold">
+                    {getCurrencySymbol(language)}0
+                    <span className="text-lg text-muted-foreground font-normal">
+                      /{t.onboarding.billing.monthly}
                     </span>
                   </div>
                 </div>
 
-                {/* Button - Fixed at bottom */}
-                <div className="mt-auto pt-4">
+                {/* Discount placeholder */}
+                <div className="h-12 mb-4"></div>
+
+                {/* Button */}
+                <div className="mb-6">
                   <Button 
                     className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
                     onClick={handleStartFreeTrial}
@@ -837,10 +792,41 @@ export default function Onboarding() {
                       </>
                     )}
                   </Button>
-                  
-                  <p className="text-[10px] text-center text-muted-foreground mt-2">
-                    {t.onboarding.choosePlanAfterTrial}
-                  </p>
+                </div>
+
+                {/* Features at bottom */}
+                <div className="flex-1 border-t pt-6">
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-xs w-fit mb-4">
+                    {language === 'fr' ? '14 jours • Aucune carte requise' : '14 days • No card required'}
+                  </Badge>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span>{formatLimit(starterPlan.max_products)} {language === 'fr' ? 'produits' : 'products'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span>{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span>{formatLimit(starterPlan.max_optimizations_monthly)} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span>{formatLimit(starterPlan.max_articles_monthly)} {language === 'fr' ? 'articles/mois' : 'articles/month'}</span>
+                    </li>
+                    {starterPlan.max_campaigns > 0 && (
+                      <li className="flex items-start gap-2">
+                        <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                        <span>{formatLimit(starterPlan.max_campaigns)} {language === 'fr' ? 'campagnes' : 'campaigns'}</span>
+                      </li>
+                    )}
+                    <li className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span>{formatLimit(starterPlan.max_chat_responses_monthly)} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}</span>
+                    </li>
+                  </ul>
                 </div>
               </Card>
             );
