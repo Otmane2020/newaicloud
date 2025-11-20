@@ -94,30 +94,57 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       logStep('No customer found, checking database profile');
       
-      // Check if user has trialing status in database
+      // Check if user has trial or legacy trial-like status in database
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('subscription_status, trial_ends_at, current_plan_id')
         .eq('id', user.id)
         .single();
       
+      // ✅ Standard trial profile (status = trialing)
       if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
         try {
           const trialEnd = new Date(profile.trial_ends_at);
           if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
-          logStep('Valid trial found in database');
-          return new Response(JSON.stringify({ 
-            subscribed: true,
-            status: 'trialing',
-            plan_id: profile.current_plan_id,
-            trial_end: profile.trial_ends_at
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          });
+            logStep('Valid trial found in database');
+            return new Response(JSON.stringify({ 
+              subscribed: true,
+              status: 'trialing',
+              plan_id: profile.current_plan_id,
+              trial_end: profile.trial_ends_at
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
           }
         } catch (dateError) {
           logStep('Invalid trial_ends_at date', { trial_ends_at: profile.trial_ends_at });
+        }
+      }
+
+      // ✅ Legacy profiles: status=active but plan_id="trial" with a future trial_ends_at
+      if (profile?.subscription_status === 'active' && profile.current_plan_id === 'trial' && profile.trial_ends_at) {
+        try {
+          const trialEnd = new Date(profile.trial_ends_at);
+          if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
+            logStep('Legacy active-trial profile treated as valid trial', {
+              subscription_status: profile.subscription_status,
+              current_plan_id: profile.current_plan_id,
+              trial_end: profile.trial_ends_at,
+            });
+            return new Response(JSON.stringify({
+              subscribed: true,
+              status: 'trialing',
+              plan_id: 'trial',
+              trial_end: profile.trial_ends_at,
+              source: 'legacy_trial_profile',
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+        } catch (dateError) {
+          logStep('Invalid legacy trial_ends_at date', { trial_ends_at: profile.trial_ends_at });
         }
       }
       
