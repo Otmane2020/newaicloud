@@ -39,11 +39,13 @@ export function ShopifyConnectPrompt() {
         return;
       }
 
-      // Show on important pages where users might need Shopify
+      // Show on important pages where users might need Shopify, but NOT on onboarding/checkout
       const allowedPaths = ['/dashboard', '/products', '/seo', '/integration'];
+      const excludedPaths = ['/onboarding'];
       const isAllowedPath = allowedPaths.includes(location.pathname);
+      const isExcludedPath = excludedPaths.includes(location.pathname);
       
-      if (!isAllowedPath && !forceShow) {
+      if ((!isAllowedPath || isExcludedPath) && !forceShow) {
         return;
       }
 
