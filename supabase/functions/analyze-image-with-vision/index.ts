@@ -168,12 +168,69 @@ IMPORTANT :
           },
           signal: lovableController.signal,
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'google/gemini-2.5-pro', // Using PRO for better technical schema detection
             messages: [
               {
                 role: 'user',
                 content: [
-                  { type: 'text', text: visionPrompt },
+                  { 
+                    type: 'text', 
+                    text: `Tu es un expert en analyse visuelle de produits d'ameublement et décoration.
+
+🚨 MISSION CRITIQUE : DÉTECTER ET EXTRAIRE LES DIMENSIONS TECHNIQUES 🚨
+
+═══════════════════════════════════════════════════════════════
+ÉTAPE 1 : DÉTECTION DE SCHÉMAS TECHNIQUES (PRIORITÉ ABSOLUE)
+═══════════════════════════════════════════════════════════════
+
+CHERCHE ATTENTIVEMENT CES ÉLÉMENTS :
+✓ Lignes de cote avec chiffres + unités (100cm, 71cm, 47.5cm, H: 75cm)
+✓ Dessins techniques (wireframe, plan, vue éclatée, croquis)
+✓ Schémas avec flèches et mesures
+✓ Tableaux de dimensions
+✓ Étiquettes produit avec tailles
+✓ Règles graduées ou échelles
+✓ Emballages avec dimensions imprimées
+
+→ Si tu vois UN SEUL élément ci-dessus : hasTechnicalSchema = true
+
+═══════════════════════════════════════════════════════════════
+ÉTAPE 2 : EXTRACTION DES DIMENSIONS (EXHAUSTIVE)
+═══════════════════════════════════════════════════════════════
+
+Pour CHAQUE dimension visible, extrais :
+- Valeur numérique EXACTE (accepte décimales : 47.5, 71.2)
+- Unité (cm, mm, m, kg, g)
+- Type de mesure
+
+FORMATS ACCEPTÉS :
+• "75cm" ou "75 cm" ou "75CM"
+• "H: 75cm" ou "Hauteur: 75cm"
+• "L: 50cm" ou "Largeur: 50cm"
+• "P: 40cm" ou "Profondeur: 40cm"
+• "Ø: 35cm" ou "Diamètre: 35cm"
+• "5.5kg" ou "5,5 kg" ou "Poids: 5.5kg"
+
+DIMENSIONS À CHERCHER (ordre de priorité) :
+1. height → Hauteur totale du produit
+2. seatHeight → Hauteur d'assise (chaises/fauteuils uniquement)
+3. width → Largeur totale
+4. depth → Profondeur
+5. diameter → Diamètre (tables rondes, tabourets, pieds)
+6. length → Longueur (canapés, tables rectangulaires)
+7. weight → Poids du produit
+
+CONTEXTE PRODUIT :
+${JSON.stringify(productContext, null, 2)}
+
+RÈGLES ABSOLUES :
+✓ Extrais TOUTES les dimensions visibles, même partielles
+✓ Utilise nombres décimaux si nécessaire (47.5, 12.3)
+✓ Si dimensions illisibles ou absentes → technicalDimensions: {}
+✓ hasTechnicalSchema: true dès qu'une dimension est visible
+✓ Réponds UNIQUEMENT en JSON valide, rien d'autre
+✓ Ne devine JAMAIS de dimensions non visibles` 
+                  },
                   {
                     type: 'image_url',
                     image_url: {
@@ -183,8 +240,8 @@ IMPORTANT :
                 ]
               }
             ],
-            temperature: 0.4,
-            max_tokens: 1024,
+            temperature: 0.3,
+            max_tokens: 1536,
           }),
         }
       );
