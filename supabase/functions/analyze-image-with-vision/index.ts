@@ -15,6 +15,32 @@ interface VisionRequest {
   };
 }
 
+interface TechnicalDimensions {
+  height?: string;
+  width?: string;
+  length?: string;
+  depth?: string;
+  diameter?: string;
+  weight?: string;
+  seatHeight?: string;
+  heightUnit?: string;
+  widthUnit?: string;
+  lengthUnit?: string;
+  depthUnit?: string;
+  diameterUnit?: string;
+  weightUnit?: string;
+  seatHeightUnit?: string;
+}
+
+interface VisualContext {
+  hasTechnicalSchema: boolean;
+  hasPackaging?: boolean;
+  hasRuler?: boolean;
+  hasLabels?: boolean;
+  viewAngle?: string;
+  dimensionSource?: 'visible' | 'estimated' | 'not_available';
+}
+
 interface VisualAttributes {
   primaryColor: string;
   secondaryColors: string[];
@@ -22,7 +48,11 @@ interface VisualAttributes {
   style: string;
   room?: string;
   mood: string;
+  finish?: string;
+  texture?: string;
   technicalDetails: string[];
+  technicalDimensions?: TechnicalDimensions;
+  visualContext?: VisualContext;
 }
 
 interface VisionResponse {
@@ -103,53 +133,55 @@ serve(async (req) => {
       ? `\nContexte produit : ${productContext.title || ''} ${productContext.category || ''} ${productContext.type || ''}`
       : '';
 
-    const visionPrompt = `Analyse cette image produit de manière technique et précise.${contextInfo}
+    const visionPrompt = `Analyse cette image produit et EXTRAIS ou ESTIME les dimensions.${contextInfo}
 
-INSTRUCTIONS CRITIQUES :
-1. DIMENSIONS : Si des dimensions sont visibles (sur emballage, étiquette, schéma technique, règle visible), extrais-les EXACTEMENT
-2. POIDS : Si le poids est visible (sur emballage, étiquette), extrais-le EXACTEMENT
-3. MATÉRIAUX : Identifie VISUELLEMENT les matériaux (grain du bois, reflets métalliques, texture du tissu)
-4. FINITION : Décris la finition visible (vernis mat/brillant, peinture, métal brossé, etc.)
-5. COULEURS : Liste les couleurs réelles visibles, pas les noms de produits
+🎯 MISSION : Pour CHAQUE image, tu DOIS :
+1. Chercher des dimensions VISIBLES (schéma, étiquette, emballage, règle)
+2. Si rien n'est visible, ESTIMER visuellement les dimensions basées sur le type de produit
+3. Toujours fournir une estimation dimensionnelle
 
-Réponds UNIQUEMENT avec un objet JSON valide contenant :
+EXTRACTION DES DIMENSIONS :
+- Si dimensions VISIBLES → extrais EXACTEMENT et marque dimensionSource: "visible"
+- Si rien visible → ESTIME visuellement et marque dimensionSource: "estimated"
+- Sépare TOUJOURS valeur et unité (height: "75", heightUnit: "cm")
+
+Exemple pour un tabouret de bar :
 {
   "visualAttributes": {
-    "primaryColor": "couleur dominante réelle vue",
-    "secondaryColors": ["couleur 2 visible", "couleur 3 visible"],
-    "materials": ["matériau identifié visuellement 1", "matériau 2"],
-    "style": "style/design (moderne, scandinave, industriel, vintage, classique, contemporain)",
-    "room": "contexte/pièce si visible (salon, chambre, cuisine, bureau, extérieur)",
-    "mood": "ambiance (chaleureux, élégant, minimaliste, cosy, luxueux, rustique)",
-    "finish": "finition visible (vernis mat, brillant, peinture, laqué, brossé, brut)",
-    "texture": "texture visible (lisse, rugueux, grain fin, grain épais, tissé)",
-    "technicalDetails": ["détail technique visible 1", "détail 2"],
+    "primaryColor": "vert sapin",
+    "secondaryColors": ["doré"],
+    "materials": ["velours", "métal"],
+    "style": "scandinave",
+    "room": "cuisine",
+    "mood": "élégant",
+    "finish": "brillant",
+    "texture": "doux",
+    "technicalDetails": ["pied métallique doré", "repose-pieds intégré"],
     "technicalDimensions": {
-      "height": "hauteur EXACTE si visible (avec unité, e.g., '80cm')",
-      "width": "largeur EXACTE si visible (avec unité)",
-      "length": "longueur EXACTE si visible (avec unité)",
-      "depth": "profondeur EXACTE si visible (avec unité)",
-      "diameter": "diamètre EXACT si visible (avec unité)",
-      "weight": "poids EXACT si visible sur emballage/étiquette (avec unité, e.g., '5kg', '2.5kg')",
-      "seatHeight": "hauteur d'assise si applicable et visible",
-      "packageDimensions": "dimensions emballage si visibles"
+      "height": "75",
+      "heightUnit": "cm",
+      "diameter": "35",
+      "diameterUnit": "cm",
+      "seatHeight": "65",
+      "seatHeightUnit": "cm",
+      "weight": "8.5",
+      "weightUnit": "kg"
     },
     "visualContext": {
-      "hasPackaging": false,
       "hasTechnicalSchema": false,
-      "hasRuler": false,
-      "hasLabels": false,
-      "viewAngle": "face/profil/3/4/dessus/dessous"
+      "dimensionSource": "estimated"
     }
   },
-  "confidence": 0.85
+  "confidence": 0.75
 }
 
-IMPORTANT : 
-- Ne mets une dimension que si elle est RÉELLEMENT VISIBLE sur l'image
-- Si rien n'est visible, laisse technicalDimensions vide {}
-- Le confidence score doit être élevé (>0.8) seulement si dimensions visibles
-- Donne priorité absolue aux données extraites d'étiquettes, emballages, ou schémas techniques`;
+RÈGLES CRITIQUES :
+✓ Sépare TOUJOURS valeur et unité (height: "75", heightUnit: "cm")
+✓ Utilise "cm" pour longueurs, "kg" pour poids
+✓ Si dimensions estimées, baisse confidence à 0.7-0.8
+✓ Si dimensions visibles, confidence 0.85-0.95
+✓ NE laisse JAMAIS technicalDimensions complètement vide
+✓ Estime basé sur le type de produit (tabouret = ~75cm hauteur, chaise = ~85cm, etc.)`;
 
     // Call Lovable AI with Vision support (higher quota limits)
     const lovableController = new AbortController();
