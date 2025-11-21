@@ -1121,7 +1121,18 @@ export default function Onboarding() {
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground line-through">
+                      <span className="text-3xl font-bold text-primary">
+                        {formatPrice(
+                          (billingCycle === "yearly"
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
+                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.8,
+                          language,
+                        )}
+                      </span>
+                      <span className="text-muted-foreground text-base">
+                        {t.onboarding.planFeatures.perMonth}
+                      </span>
+                      <span className="text-3xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1132,17 +1143,6 @@ export default function Onboarding() {
                       <Badge variant="destructive" className="text-xs">
                         -20%
                       </Badge>
-                      <span className="text-2xl sm:text-3xl font-bold text-primary">
-                        {formatPrice(
-                          (billingCycle === "yearly"
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.8,
-                          language,
-                        )}
-                      </span>
-                      <span className="text-muted-foreground text-sm sm:text-base">
-                        {t.onboarding.planFeatures.perMonth}
-                      </span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">
@@ -1281,7 +1281,18 @@ export default function Onboarding() {
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground line-through">
+                      <span className="text-3xl font-bold text-primary">
+                        {formatPrice(
+                          (billingCycle === "yearly"
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
+                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.7,
+                          language,
+                        )}
+                      </span>
+                      <span className="text-muted-foreground text-base">
+                        {t.onboarding.planFeatures.perMonth}
+                      </span>
+                      <span className="text-3xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1292,17 +1303,6 @@ export default function Onboarding() {
                       <Badge variant="destructive" className="text-xs">
                         -30%
                       </Badge>
-                      <span className="text-2xl sm:text-3xl font-bold text-primary">
-                        {formatPrice(
-                          (billingCycle === "yearly"
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.7,
-                          language,
-                        )}
-                      </span>
-                      <span className="text-muted-foreground text-sm sm:text-base">
-                        {t.onboarding.planFeatures.perMonth}
-                      </span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">
