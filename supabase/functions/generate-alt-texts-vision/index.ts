@@ -63,55 +63,163 @@ function extractProductName(title: string): string {
   return productName;
 }
 
-// Build optimized alt-text mixing product name + SEO keywords + visual descriptors
+// Normalize word to its stem (basic French stemming)
+function getStem(word: string): string {
+  const w = word.toLowerCase().trim();
+  
+  // Remove common French suffixes
+  if (w.endsWith('aux')) return w.slice(0, -3) + 'al';
+  if (w.endsWith('eaux')) return w.slice(0, -4) + 'eau';
+  if (w.endsWith('s') && w.length > 3) return w.slice(0, -1);
+  if (w.endsWith('ée')) return w.slice(0, -2) + 'é';
+  if (w.endsWith('ées')) return w.slice(0, -3) + 'é';
+  
+  return w;
+}
+
+// Tokenize text into significant words
+function tokenize(text: string): string[] {
+  if (!text) return [];
+  
+  const stopWords = new Set([
+    'avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an', 'of',
+    'le', 'la', 'les', 'un', 'de', 'du', 'en', 'ou', 'et', 'à', 'au', 'aux', 'ce', 'cette'
+  ]);
+  
+  return text
+    .toLowerCase()
+    .split(/[\s,;:.!?()]+/)
+    .filter(w => w.length > 2 && !stopWords.has(w));
+}
+
+// Categorize words by semantic type
+interface CategorizedWords {
+  materials: string[];
+  colors: string[];
+  shapes: string[];
+  styles: string[];
+  others: string[];
+}
+
+function categorizeWords(words: string[]): CategorizedWords {
+  const materialsSet = new Set([
+    'bois', 'verre', 'métal', 'marbre', 'pierre', 'tissu', 'cuir', 'céramique', 
+    'acier', 'fer', 'aluminium', 'plastique', 'résine', 'rotin', 'osier',
+    'wood', 'glass', 'metal', 'marble', 'stone', 'fabric', 'leather', 'ceramic',
+    'travertin', 'travertine', 'chêne', 'oak', 'noyer', 'walnut'
+  ]);
+  
+  const colorsSet = new Set([
+    'blanc', 'noir', 'beige', 'gris', 'marron', 'rouge', 'bleu', 'vert', 'jaune',
+    'white', 'black', 'grey', 'gray', 'brown', 'red', 'blue', 'green', 'yellow',
+    'transparent', 'translucide', 'opaque', 'clair', 'foncé', 'doré', 'argenté'
+  ]);
+  
+  const shapesSet = new Set([
+    'rectangulaire', 'carré', 'rond', 'ovale', 'circulaire', 'triangulaire',
+    'rectangular', 'square', 'round', 'oval', 'circular', 'triangular',
+    'arrondi', 'courbe', 'droit', 'angulaire'
+  ]);
+  
+  const stylesSet = new Set([
+    'moderne', 'scandinave', 'industriel', 'vintage', 'classique', 'contemporain',
+    'modern', 'scandinavian', 'industrial', 'vintage', 'classic', 'contemporary',
+    'minimaliste', 'rustique', 'élégant', 'design'
+  ]);
+  
+  const result: CategorizedWords = {
+    materials: [],
+    colors: [],
+    shapes: [],
+    styles: [],
+    others: []
+  };
+  
+  for (const word of words) {
+    const stem = getStem(word);
+    if (materialsSet.has(stem)) result.materials.push(word);
+    else if (colorsSet.has(stem)) result.colors.push(word);
+    else if (shapesSet.has(stem)) result.shapes.push(word);
+    else if (stylesSet.has(stem)) result.styles.push(word);
+    else result.others.push(word);
+  }
+  
+  return result;
+}
+
+// Build optimized alt-text with intelligent deduplication and structured phrase
 function buildOptimizedAltText(
   productName: string,
   visualAnalysis: string,
   seoKeywords: string[] = [],
   maxWords: number = 15
 ): string {
-  // Extract words from product name and visual analysis
-  const productWords = productName.toLowerCase().split(' ').filter(w => w.length > 0);
-  const analysisWords = visualAnalysis.toLowerCase().split(/\s+/);
+  // Track used stems to avoid repetition
+  const usedStems = new Set<string>();
+  const finalTokens: string[] = [];
   
-  // Stop words to filter out
-  const stopWords = ['avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an', 'of'];
+  // Helper to add tokens without stem duplicates
+  const addToken = (token: string): boolean => {
+    const stem = getStem(token);
+    if (!usedStems.has(stem)) {
+      usedStems.add(stem);
+      finalTokens.push(token);
+      return true;
+    }
+    return false;
+  };
   
-  // Step 1: Start with product name (base)
-  let parts: string[] = [productName];
-  let usedWords = new Set(productWords);
+  // Step 1: Add product name tokens (highest priority)
+  const productTokens = tokenize(productName);
+  productTokens.forEach(addToken);
   
-  // Step 2: Add unique SEO keywords that bring value
-  const uniqueSeoKeywords = seoKeywords
-    .filter(kw => kw && kw.length > 2)
-    .filter(kw => {
-      const kwLower = kw.toLowerCase();
-      return !usedWords.has(kwLower) && !stopWords.includes(kwLower);
-    })
-    .slice(0, 4); // Max 4 SEO keywords
+  // Step 2: Add SEO keyword tokens
+  const seoTokens = seoKeywords.flatMap(kw => tokenize(kw));
+  for (const token of seoTokens) {
+    if (finalTokens.length >= maxWords) break;
+    addToken(token);
+  }
   
-  uniqueSeoKeywords.forEach(kw => {
-    parts.push(kw);
-    usedWords.add(kw.toLowerCase());
-  });
+  // Step 3: Add visual analysis tokens
+  const visualTokens = tokenize(visualAnalysis);
+  for (const token of visualTokens) {
+    if (finalTokens.length >= maxWords) break;
+    addToken(token);
+  }
   
-  // Step 3: Add visual descriptors that aren't already covered
-  const uniqueVisualKeywords = analysisWords
-    .filter(word => 
-      word.length > 3 && 
-      !usedWords.has(word) &&
-      !stopWords.includes(word)
-    )
-    .slice(0, 6); // Max 6 visual descriptors
+  // Step 4: Categorize and build structured phrase
+  const categorized = categorizeWords(finalTokens);
   
-  parts = parts.concat(uniqueVisualKeywords);
+  const parts: string[] = [productName];
   
-  // Join and limit to max words
-  let altText = parts.join(' ');
-  const words = altText.split(' ').filter(w => w.length > 0);
+  if (categorized.shapes.length > 0) {
+    parts.push(categorized.shapes.slice(0, 2).join(', '));
+  }
   
-  if (words.length > maxWords) {
-    altText = words.slice(0, maxWords).join(' ');
+  if (categorized.materials.length > 0) {
+    parts.push(`en ${categorized.materials.join(' et ')}`);
+  }
+  
+  if (categorized.colors.length > 0) {
+    parts.push(`coloris ${categorized.colors.join(', ')}`);
+  }
+  
+  if (categorized.styles.length > 0) {
+    parts.push(`style ${categorized.styles.slice(0, 2).join(', ')}`);
+  }
+  
+  // Add remaining significant words
+  if (categorized.others.length > 0) {
+    const remaining = categorized.others.slice(0, 3);
+    parts.push(remaining.join(', '));
+  }
+  
+  // Join with commas and limit length
+  const altText = parts.filter(p => p.length > 0).join(', ');
+  
+  // Ensure we don't exceed max length (200 chars)
+  if (altText.length > 200) {
+    return altText.substring(0, 197) + '...';
   }
   
   return altText.trim();
@@ -169,13 +277,13 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Analyze title with DeepSeek to extract key SEO keywords
+// Analyze title with DeepSeek to extract structured SEO data
 async function analyzeTitle(productTitle: string) {
   const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
   
   if (!deepseekApiKey) {
-    console.warn('DeepSeek API key not configured, skipping title analysis');
-    return { keywords: [], analysis: '' };
+    console.warn('DeepSeek API key not configured, using fallback analysis');
+    return extractStructuredKeywords(productTitle);
   }
 
   try {
@@ -190,29 +298,37 @@ async function analyzeTitle(productTitle: string) {
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert SEO. Extrais les mots-clés importants d\'un titre produit pour optimiser le référencement.'
+            content: 'Tu es un expert SEO e-commerce. Tu analyses les titres produits et extrais les informations structurées pour optimiser le référencement.'
           },
           {
             role: 'user',
-            content: `Analyse ce titre produit et extrais les mots-clés SEO importants (marque, style, matériau, fonction, couleur). Élimine les mots génériques comme "premium", "qualité", "top".
+            content: `Analyse ce titre produit et extrais les informations structurées par catégories.
 
 Titre: "${productTitle}"
 
-Réponds UNIQUEMENT avec un JSON valide :
+Réponds UNIQUEMENT avec un JSON valide structuré :
 {
-  "keywords": ["mot-clé 1", "mot-clé 2", ...],
-  "analysis": "Brève analyse du titre en 1-2 phrases"
-}`
+  "materials": ["matériau1", "matériau2"],
+  "colors": ["couleur1", "couleur2"],
+  "style": ["style1"],
+  "features": ["caractéristique1", "caractéristique2"],
+  "product_type": "type de produit"
+}
+
+Consignes :
+- Élimine les mots génériques comme "premium", "qualité", "top"
+- Sois précis et concis
+- N'invente rien, extrait seulement ce qui est explicitement mentionné`
           }
         ],
         temperature: 0.3,
-        max_tokens: 200
+        max_tokens: 250
       })
     });
 
     if (!response.ok) {
       console.error('DeepSeek API error:', response.status);
-      return { keywords: [], analysis: '' };
+      return extractStructuredKeywords(productTitle);
     }
 
     const data = await response.json();
@@ -221,18 +337,73 @@ Réponds UNIQUEMENT avec un JSON valide :
     try {
       const cleaned = cleanJsonResponse(content);
       const parsed = JSON.parse(cleaned);
+      
+      // Flatten structured data into keywords array for backward compatibility
+      const keywords: string[] = [
+        ...(parsed.materials || []),
+        ...(parsed.colors || []),
+        ...(parsed.style || []),
+        ...(parsed.features || [])
+      ].filter(k => k && k.length > 2);
+      
       return {
-        keywords: parsed.keywords || [],
-        analysis: parsed.analysis || ''
+        keywords,
+        analysis: `Type: ${parsed.product_type || 'produit'}`,
+        structured: parsed
       };
     } catch (e) {
       console.error('Failed to parse DeepSeek response:', content);
-      return { keywords: [], analysis: '' };
+      return extractStructuredKeywords(productTitle);
     }
   } catch (error) {
     console.error('DeepSeek analysis error:', error);
-    return { keywords: [], analysis: '' };
+    return extractStructuredKeywords(productTitle);
   }
+}
+
+// Fallback: extract structured keywords from title using regex
+function extractStructuredKeywords(title: string): { keywords: string[]; analysis: string; structured?: any } {
+  const keywords: string[] = [];
+  const lowerTitle = title.toLowerCase();
+  
+  // Extract materials
+  const materials = ['bois', 'verre', 'métal', 'marbre', 'pierre', 'tissu', 'cuir', 'céramique', 'travertin'];
+  const foundMaterials = materials.filter(m => lowerTitle.includes(m));
+  keywords.push(...foundMaterials);
+  
+  // Extract colors
+  const colors = ['blanc', 'noir', 'beige', 'gris', 'marron', 'transparent'];
+  const foundColors = colors.filter(c => lowerTitle.includes(c));
+  keywords.push(...foundColors);
+  
+  // Extract styles
+  const styles = ['moderne', 'scandinave', 'industriel', 'vintage', 'classique'];
+  const foundStyles = styles.filter(s => lowerTitle.includes(s));
+  keywords.push(...foundStyles);
+  
+  // Extract product type (first 2-3 words usually)
+  const words = title.split(/\s+/).filter(w => w.length > 2);
+  const productType = words.slice(0, 3).join(' ');
+  
+  // Add other significant words (> 3 chars, not stop words)
+  const stopWords = ['avec', 'pour', 'dans', 'the', 'and', 'with'];
+  const otherWords = words.filter(w => 
+    w.length > 3 && 
+    !stopWords.includes(w.toLowerCase()) &&
+    !keywords.includes(w.toLowerCase())
+  ).slice(0, 3);
+  keywords.push(...otherWords);
+  
+  return {
+    keywords,
+    analysis: `Analyse automatique: ${productType}`,
+    structured: {
+      materials: foundMaterials,
+      colors: foundColors,
+      style: foundStyles,
+      product_type: productType
+    }
+  };
 }
 
 // Analyze image with Vision AI (Gemini)
@@ -339,13 +510,17 @@ Image montrant un détail de textile :
 "Assemblage de planches de bois clair veiné, vue d'ensemble"
 "Détail de textile gris chiné à mailles serrées"
 
-📝 FORMAT DE RÉPONSE (JSON strict) :
+📝 FORMAT DE RÉPONSE (JSON strict avec catégories) :
 {
-  "alt_text": "Description courte (12-16 mots max) de CE QUI EST VISIBLE uniquement",
-  "visual_analysis": "Analyse détaillée technique uniquement des éléments visuellement identifiables dans l'image, sans suppositions sur le produit complet"
+  "materials": ["matériau1", "matériau2"],
+  "colors": ["couleur1", "couleur2"],
+  "shapes": ["forme1"],
+  "textures": ["texture1"],
+  "view_angle": "type de vue (gros plan, vue d'ensemble, etc.)",
+  "visual_description": "Description structurée en 12-16 mots des éléments visuels identifiables"
 }
 
-Maintenant, analyse cette image en suivant strictement ces règles.`
+Maintenant, analyse cette image en suivant strictement ces règles et retourne un JSON structuré.`
             },
             {
               inlineData: {
@@ -691,25 +866,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Step 2: Analyze title with DeepSeek to extract SEO keywords
+    // Step 2: Analyze title with DeepSeek to extract structured SEO keywords
     let titleKeywords: string[] = [];
+    let titleStructured: any = null;
     if (productTitle) {
       console.log(`🧠 DeepSeek - Analyzing title: "${productTitle}"`);
       const titleAnalysis = await analyzeTitle(productTitle);
       titleKeywords = titleAnalysis.keywords;
+      titleStructured = titleAnalysis.structured;
       
-      // Fallback: extract keywords from title if DeepSeek failed
-      if (titleKeywords.length === 0) {
-        console.warn('⚠️ DeepSeek returned no keywords, extracting from title');
-        // Extract important words from title (skip common words)
-        const titleWords = productTitle.split(/\s+/).filter(w => 
-          w.length > 3 && 
-          !['avec', 'pour', 'dans', 'the', 'and', 'with'].includes(w.toLowerCase())
-        );
-        titleKeywords = titleWords.slice(0, 5);
+      console.log(`✅ SEO Keywords extracted:`, titleKeywords.join(', '));
+      if (titleStructured) {
+        console.log(`📊 Structured data:`, {
+          materials: titleStructured.materials,
+          colors: titleStructured.colors,
+          style: titleStructured.style,
+          product_type: titleStructured.product_type
+        });
       }
-      
-      console.log(`✅ SEO Keywords: ${titleKeywords.join(', ')}`);
       
       // Enhance keywords with SERP visual insights
       if (serpImageInsights?.dominantStyles) {
@@ -733,25 +907,45 @@ Deno.serve(async (req: Request) => {
 
     let geminiAltText = "";
     let visualAnalysis = "";
+    let visionStructured: any = null;
     
     try {
       const cleanedJson = cleanJsonResponse(visionContent);
       console.log('Cleaned JSON:', cleanedJson.substring(0, 100));
       
       const parsed = JSON.parse(cleanedJson);
-      geminiAltText = parsed.alt_text || "";
-      visualAnalysis = parsed.visual_analysis || "";
+      visionStructured = parsed;
+      
+      // Build visual description from structured data
+      if (parsed.visual_description) {
+        geminiAltText = parsed.visual_description;
+      } else {
+        // Fallback: build from categories
+        const parts: string[] = [];
+        if (parsed.shapes?.length) parts.push(parsed.shapes.join(', '));
+        if (parsed.materials?.length) parts.push(`en ${parsed.materials.join(' et ')}`);
+        if (parsed.colors?.length) parts.push(`coloris ${parsed.colors.join(', ')}`);
+        if (parsed.textures?.length) parts.push(parsed.textures.join(', '));
+        geminiAltText = parts.join(', ');
+      }
+      
+      visualAnalysis = `Matériaux: ${parsed.materials?.join(', ') || 'non identifié'}. Couleurs: ${parsed.colors?.join(', ') || 'non identifié'}. Vue: ${parsed.view_angle || 'standard'}.`;
     } catch (e) {
       console.error('Failed to parse Vision JSON:', visionContent);
       console.error('Parse error:', e);
       
-      // Fallback: extract from raw text
-      const match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
+      // Fallback: extract alt_text or visual_description
+      let match = visionContent.match(/"visual_description":\s*"([^"]+)"/);
       if (match) {
         geminiAltText = match[1];
       } else {
-        geminiAltText = 'Image visuelle';
-        visualAnalysis = 'Analyse visuelle non disponible';
+        match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
+        if (match) {
+          geminiAltText = match[1];
+        } else {
+          geminiAltText = 'Image visuelle';
+          visualAnalysis = 'Analyse visuelle non disponible';
+        }
       }
     }
 
@@ -796,8 +990,16 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`✅ Vision ALT text generated for image ${imageId}:`);
-    console.log(`   - Title Keywords: ${titleKeywords.join(', ')}`);
-    console.log(`   - Final ALT Text (mixed): ${finalAltText}`);
+    console.log(`   - DeepSeek Keywords: ${titleKeywords.join(', ')}`);
+    if (visionStructured) {
+      console.log(`   - Vision AI Structured:`, {
+        materials: visionStructured.materials,
+        colors: visionStructured.colors,
+        shapes: visionStructured.shapes,
+        view: visionStructured.view_angle
+      });
+    }
+    console.log(`   - Final ALT Text (optimized): ${finalAltText}`);
     console.log(`   - Visual Analysis: ${visualAnalysis}`);
     console.log(`   - Character count: ${finalAltText.length}`);
 
