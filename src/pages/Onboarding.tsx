@@ -65,12 +65,12 @@ export default function Onboarding() {
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const { syncShopifyStore } = useShopifySync();
 
-  // ✅ Helper to wait for products before redirecting
+  // ✅ Helper to wait for products before redirecting (timeout: 40s)
   const waitForProducts = async (userId: string): Promise<void> => {
-    console.log("⏳ [WAIT-PRODUCTS] Waiting for products to be imported...");
+    console.log("⏳ [WAIT-PRODUCTS] Waiting up to 40s for products to be imported...");
     
     let productsFound = false;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       try {
@@ -82,7 +82,7 @@ export default function Onboarding() {
         
         if (result.data && result.data.length > 0) {
           productsFound = true;
-          console.log("✅ [WAIT-PRODUCTS] Products found!");
+          console.log(`✅ [WAIT-PRODUCTS] Products found after ${i + 1}s!`);
           break;
         }
       } catch (err) {
@@ -91,14 +91,14 @@ export default function Onboarding() {
     }
     
     if (!productsFound) {
-      console.log("⏱️ [WAIT-PRODUCTS] Timeout - proceeding anyway");
+      console.log("⏱️ [WAIT-PRODUCTS] Timeout (40s) - proceeding anyway");
       toast.info("Synchronisation en cours...", {
         description: "Vos produits continuent d'être importés en arrière-plan.",
       });
     }
   };
 
-  // ✅ Auto-detect and claim Shopify ONLY after checkout success
+  // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
   useEffect(() => {
     const autoClaimIfNeeded = async () => {
       if (!user) return;
@@ -108,13 +108,14 @@ export default function Onboarding() {
       
       if (!shopifyPending) return;
       
-      // ✅ Gate with checkout=success to ensure plan selection comes first
-      if (!checkoutSuccess) {
-        console.log("⏸️ [AUTO-CLAIM] Waiting for plan selection (checkout=success required)");
+      // 🚫 RACE CONDITION FIX: Ne PAS s'exécuter si checkout=success
+      // Dans ce cas, handleCheckSubscription gère TOUT (subscription + claim + import)
+      if (checkoutSuccess) {
+        console.log("⏭️ [AUTO-CLAIM] Skipping - checkout=success detected, handleCheckSubscription will manage everything");
         return;
       }
       
-      console.log("🔍 [AUTO-CLAIM] Checkout success detected, checking if auto-claim needed", { shopifyPending });
+      console.log("🔍 [AUTO-CLAIM] No checkout success, checking if auto-claim needed", { shopifyPending });
       
       try {
         // Check if user already has an active subscription
@@ -341,10 +342,10 @@ export default function Onboarding() {
     setCheckingSubscription(true);
 
     const waitForProductsLocal = async (userId: string): Promise<void> => {
-      console.log("⏳ [WAIT-PRODUCTS] Waiting for products to be imported...");
+      console.log("⏳ [WAIT-PRODUCTS] Waiting up to 40s for products to be imported...");
       
       let productsFound = false;
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 40; i++) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         try {
@@ -356,7 +357,7 @@ export default function Onboarding() {
           
           if (result.data && result.data.length > 0) {
             productsFound = true;
-            console.log("✅ [WAIT-PRODUCTS] Products found!");
+            console.log(`✅ [WAIT-PRODUCTS] Products found after ${i + 1}s!`);
             break;
           }
         } catch (err) {
@@ -365,15 +366,76 @@ export default function Onboarding() {
       }
       
       if (!productsFound) {
-        console.log("⏱️ [WAIT-PRODUCTS] Timeout - proceeding anyway");
+        console.log("⏱️ [WAIT-PRODUCTS] Timeout (40s) - proceeding anyway");
         toast.info("Synchronisation en cours...", {
           description: "Vos produits continuent d'être importés en arrière-plan.",
         });
       }
     };
 
+    // 🔄 RETRY LOGIC: Attempt subscription check up to 3 times with progressive delays
+    const checkSubscriptionWithRetry = async (session: any, maxRetries = 3): Promise<{ subscribed: boolean } | null> => {
+      const delays = [1000, 2000, 3000]; // 1s, 2s, 3s
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`🔍 [CHECK-SUBSCRIPTION] Attempt ${attempt}/${maxRetries}`);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke("check-subscription", {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+
+          if (error) {
+            console.error(`❌ [CHECK-SUBSCRIPTION] Attempt ${attempt} error:`, error);
+            if (attempt < maxRetries) {
+              const delay = delays[attempt - 1];
+              console.log(`⏳ [CHECK-SUBSCRIPTION] Retrying in ${delay}ms...`);
+              toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, { 
+                id: "check-subscription-retry" 
+              });
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            throw error;
+          }
+
+          if (data?.subscribed) {
+            console.log(`✅ [CHECK-SUBSCRIPTION] Subscription confirmed on attempt ${attempt}`);
+            toast.dismiss("check-subscription-retry");
+            return data;
+          }
+
+          // Not subscribed yet, retry if we have attempts left
+          if (attempt < maxRetries) {
+            const delay = delays[attempt - 1];
+            console.log(`⏳ [CHECK-SUBSCRIPTION] Not subscribed yet, retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`);
+            toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, { 
+              id: "check-subscription-retry" 
+            });
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+
+          // All retries exhausted, subscription still not active
+          console.warn("⚠️ [CHECK-SUBSCRIPTION] All retries exhausted, subscription not active");
+          toast.dismiss("check-subscription-retry");
+          return data;
+
+        } catch (err) {
+          console.error(`❌ [CHECK-SUBSCRIPTION] Attempt ${attempt} exception:`, err);
+          if (attempt === maxRetries) {
+            throw err;
+          }
+        }
+      }
+
+      return null;
+    };
+
     try {
-      console.log("🔍 [CHECK-SUBSCRIPTION] Starting subscription check", {
+      console.log("🔍 [CHECK-SUBSCRIPTION] Starting subscription check with retry logic", {
         hasShopifyPending: !!searchParams.get("shopify_pending"),
         shopifyPendingValue: searchParams.get("shopify_pending"),
         checkoutSuccess: searchParams.get("checkout") === "success",
@@ -390,17 +452,16 @@ export default function Onboarding() {
         return;
       }
 
-      // ✅ STEP 1: Check/activate subscription FIRST
-      const { data, error } = await supabase.functions.invoke("check-subscription", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      toast.loading("Vérification du paiement...", { id: "check-subscription" });
 
-      if (error) {
-        console.error("❌ [CHECK-SUBSCRIPTION] Error checking subscription:", error);
+      // ✅ STEP 1: Check/activate subscription FIRST (with retry)
+      const subscriptionData = await checkSubscriptionWithRetry(session);
+
+      if (!subscriptionData) {
         // Fallback: try fix-stuck-subscriptions
         console.log("🔧 [CHECK-SUBSCRIPTION] Attempting to fix stuck subscription...");
+        toast.loading("Activation de l'abonnement...", { id: "check-subscription" });
+        
         const { data: fixData, error: fixError } = await supabase.functions.invoke("fix-stuck-subscriptions");
 
         if (fixError) {
@@ -410,7 +471,7 @@ export default function Onboarding() {
         console.log("✅ [CHECK-SUBSCRIPTION] Fix result:", fixData);
 
         if (fixData?.fixed > 0) {
-          toast.success(t.onboarding.verification.activated);
+          toast.success(t.onboarding.verification.activated, { id: "check-subscription" });
           
           // ✅ STEP 2: Now claim Shopify AFTER subscription is active
           const shopifyPending = searchParams.get("shopify_pending");
@@ -426,30 +487,91 @@ export default function Onboarding() {
       }
 
       // ✅ Verify subscription was successful
-      if (data?.subscribed) {
+      if (subscriptionData?.subscribed) {
         console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified and active");
+        toast.success(t.onboarding.verification.success, { id: "check-subscription" });
         
         // ✅ STEP 2: Now claim Shopify AFTER subscription is confirmed active
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending && user?.id) {
           console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription verified");
-          await claimShopifyConnection(shopifyPending);
-          await waitForProductsLocal(user.id);
+          
+          try {
+            await claimShopifyConnection(shopifyPending);
+            await waitForProductsLocal(user.id);
+          } catch (claimError) {
+            console.error("❌ [CHECK-SUBSCRIPTION] Claim/import error:", claimError);
+            
+            // 🔄 ROBUST ERROR HANDLING: Offer retry option
+            toast.error("Erreur lors de la connexion Shopify", {
+              description: "Impossible de connecter votre boutique.",
+              action: {
+                label: "Réessayer",
+                onClick: async () => {
+                  try {
+                    toast.loading("Nouvelle tentative...", { id: "retry-claim" });
+                    await claimShopifyConnection(shopifyPending);
+                    await waitForProductsLocal(user.id);
+                    toast.success("Boutique connectée avec succès!", { id: "retry-claim" });
+                    setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1000);
+                  } catch (retryError) {
+                    console.error("❌ [RETRY-CLAIM] Failed again:", retryError);
+                    toast.error("Échec de la reconnexion", {
+                      description: "Veuillez réessayer depuis le tableau de bord.",
+                      id: "retry-claim"
+                    });
+                    
+                    // Log to integration_failures for debugging
+                    await supabase.from("integration_failures").insert({
+                      user_id: user?.id,
+                      integration_type: "shopify",
+                      error_type: "claim_retry_failed",
+                      error_message: retryError instanceof Error ? retryError.message : String(retryError),
+                      context: { shopifyPending, attempt: "retry" }
+                    });
+                  }
+                }
+              }
+            });
+            
+            // Log error to integration_failures
+            await supabase.from("integration_failures").insert({
+              user_id: user?.id,
+              integration_type: "shopify",
+              error_type: "claim_failed",
+              error_message: claimError instanceof Error ? claimError.message : String(claimError),
+              context: { shopifyPending }
+            });
+            
+            // Still redirect to dashboard with manual import fallback
+            setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 2000);
+            return;
+          }
         }
-        
-        toast.success(t.onboarding.verification.success);
         
         // Redirect to dashboard
         setTimeout(() => {
           navigate("/dashboard?show_shopify_prompt=true");
         }, 1000);
       } else {
-        console.warn("⚠️ [CHECK-SUBSCRIPTION] No active subscription found");
-        toast.error(t.onboarding.errors.noActiveSubscription);
+        console.warn("⚠️ [CHECK-SUBSCRIPTION] No active subscription found after all retries");
+        toast.error(t.onboarding.errors.noActiveSubscription, { id: "check-subscription" });
       }
     } catch (error) {
-      console.error("❌ [CHECK-SUBSCRIPTION] Error:", error);
-      toast.error(t.onboarding.errors.paymentError);
+      console.error("❌ [CHECK-SUBSCRIPTION] Fatal error:", error);
+      toast.error(t.onboarding.errors.paymentError, { id: "check-subscription" });
+      
+      // Log to integration_failures
+      await supabase.from("integration_failures").insert({
+        user_id: user?.id,
+        integration_type: "stripe",
+        error_type: "check_subscription_failed",
+        error_message: error instanceof Error ? error.message : String(error),
+        context: { 
+          shopifyPending: searchParams.get("shopify_pending"),
+          checkoutSuccess: searchParams.get("checkout") === "success"
+        }
+      });
     } finally {
       setCheckingSubscription(false);
       setHasCheckedAfterCheckout(true);

@@ -66,16 +66,20 @@ export function AutoSyncProgressDialog() {
             </div>
           </div>
 
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-xs space-y-2">
             <div className="h-1 bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-primary to-primary-dark animate-pulse" 
                    style={{ width: '60%' }} />
             </div>
+            <p className="text-xs text-center text-muted-foreground">
+              Étape en cours : {getTypeLabel(currentType)}
+            </p>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center max-w-xs">
-            Veuillez patienter pendant la synchronisation de vos données Shopify...
-          </p>
+          <div className="space-y-1 text-xs text-muted-foreground text-center max-w-xs">
+            <p className="font-medium">Veuillez patienter pendant la synchronisation...</p>
+            <p className="text-xs">Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique</p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
