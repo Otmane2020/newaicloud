@@ -30,6 +30,56 @@ function cleanJsonResponse(text: string): string {
   return cleaned.replace(/^```json?\s*|\s*```$/g, '').trim();
 }
 
+// Extract the main product name from full title
+function extractProductName(title: string): string {
+  // Clean title by taking part before first dash or comma
+  let productName = title.split(/[-–—,]/)[0].trim();
+  
+  // Limit to 3-4 words maximum for the name
+  const words = productName.split(' ').filter(w => w.length > 0);
+  if (words.length > 4) {
+    productName = words.slice(0, 4).join(' ');
+  }
+  
+  return productName;
+}
+
+// Build optimized alt-text mixing product name + visual descriptors
+function buildOptimizedAltText(
+  productName: string,
+  visualAnalysis: string,
+  maxWords: number = 15
+): string {
+  // Extract words from product name and visual analysis
+  const productWords = productName.toLowerCase().split(' ');
+  const analysisWords = visualAnalysis.toLowerCase().split(/\s+/);
+  
+  // Filter visual keywords that add value (not already in product name)
+  const stopWords = ['avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an'];
+  const visualKeywords = analysisWords.filter(word => 
+    word.length > 3 && 
+    !productWords.includes(word) &&
+    !stopWords.includes(word)
+  );
+  
+  // Build alt-text: product name + top visual descriptors
+  let altText = productName;
+  
+  // Add visual descriptors
+  const descriptors = visualKeywords.slice(0, 8).join(' ');
+  if (descriptors) {
+    altText += ` ${descriptors}`;
+  }
+  
+  // Limit to max words
+  const words = altText.split(' ');
+  if (words.length > maxWords) {
+    altText = words.slice(0, maxWords).join(' ');
+  }
+  
+  return altText.trim();
+}
+
 function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
   if (!altText || typeof altText !== 'string') {
     return false;
@@ -38,7 +88,7 @@ function validateAltText(altText: string, productTitle?: string, minLength = 15,
   const trimmed = altText.trim();
   const wordCount = trimmed.split(' ').length;
   
-  // Vérification de longueur
+  // Length check
   if (trimmed.length < minLength || trimmed.length > maxLength) {
     console.warn('⚠️ ALT text length invalid:', trimmed.length);
     return false;
@@ -49,17 +99,28 @@ function validateAltText(altText: string, productTitle?: string, minLength = 15,
     return false;
   }
   
-  // Vérification anti-copie du titre
+  // Anti-copy check (allow product name but not full title)
   if (productTitle) {
-    const titleWords = productTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const productName = extractProductName(productTitle);
+    const productNameWords = productName.toLowerCase().split(/\s+/);
     const altWords = trimmed.toLowerCase().split(/\s+/);
-    const matchingWords = titleWords.filter(w => altWords.includes(w));
     
-    // Si plus de 60% des mots significatifs du titre sont dans l'ALT, c'est suspect
+    // Check if product name is present (good!)
+    const hasProductName = productNameWords.some(w => altWords.includes(w));
+    
+    // Check we didn't copy FULL title (>80% similarity = bad)
+    const titleWords = productTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const matchingWords = titleWords.filter(w => altWords.includes(w));
     const matchRatio = titleWords.length > 0 ? matchingWords.length / titleWords.length : 0;
-    if (matchRatio > 0.6) {
-      console.warn('⚠️ ALT text contains too many words from product title:', matchRatio);
+    
+    if (matchRatio > 0.8) {
+      console.warn('⚠️ ALT text is too similar to full title:', matchRatio);
       return false;
+    }
+    
+    if (!hasProductName) {
+      console.warn('⚠️ ALT text should contain product name');
+      // Just warn, don't reject
     }
   }
   
@@ -621,7 +682,7 @@ Deno.serve(async (req: Request) => {
     const visionResponse = await callVisionAI(image.src);
     const visionContent = visionResponse.text;
 
-    let altText = "";
+    let geminiAltText = "";
     let visualAnalysis = "";
     
     try {
@@ -629,17 +690,8 @@ Deno.serve(async (req: Request) => {
       console.log('Cleaned JSON:', cleanedJson.substring(0, 100));
       
       const parsed = JSON.parse(cleanedJson);
-      altText = parsed.alt_text || "";
+      geminiAltText = parsed.alt_text || "";
       visualAnalysis = parsed.visual_analysis || "";
-      
-      // Validate with product title to prevent copying
-      const productTitleForValidation = productContext.split('\n')[0]?.replace(/^Produit:\s*/, '').trim();
-      
-      if (!validateAltText(altText, productTitleForValidation)) {
-        throw new Error('ALT text validation failed (length, word count, or too similar to product title)');
-      }
-      
-      console.log('✅ ALT text validated successfully:', altText.substring(0, 50));
     } catch (e) {
       console.error('Failed to parse Vision JSON:', visionContent);
       console.error('Parse error:', e);
@@ -647,22 +699,45 @@ Deno.serve(async (req: Request) => {
       // Fallback: extract from raw text
       const match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
       if (match) {
-        altText = match[1];
+        geminiAltText = match[1];
       } else {
-        // Generic fallback based on content type
-        const contextLines = productContext.split('\n');
-        const firstLine = contextLines[0] || 'Image';
-        altText = `${firstLine} - Image visuelle`.trim();
+        geminiAltText = 'Image visuelle';
         visualAnalysis = 'Analyse visuelle non disponible';
       }
     }
 
-    // Update image with ALT text and analysis
+    // ✨ Create intelligent mix: product name + visual analysis
+    let finalAltText = "";
+    
+    if (productTitle && geminiAltText) {
+      // Extract main product name
+      const productName = extractProductName(productTitle);
+      
+      // Combine with visual analysis
+      finalAltText = buildOptimizedAltText(productName, geminiAltText, 15);
+      
+      console.log('🎯 Alt-text optimisé:');
+      console.log(`   - Titre original: ${productTitle}`);
+      console.log(`   - Nom extrait: ${productName}`);
+      console.log(`   - Gemini: ${geminiAltText}`);
+      console.log(`   - Final (MIX): ${finalAltText}`);
+    } else {
+      // Fallback: use only Gemini if no title
+      finalAltText = geminiAltText;
+    }
+
+    // Validate final mixed alt-text
+    if (!validateAltText(finalAltText, productTitle)) {
+      console.warn('⚠️ Final alt-text validation failed, using Gemini directly');
+      finalAltText = geminiAltText;
+    }
+
+    // Update image with mixed ALT text
     const tableName = imageType === 'content' ? 'content_images' : 'product_images';
     const { error: updateError } = await supabaseClient
       .from(tableName)
       .update({ 
-        alt_text: altText
+        alt_text: finalAltText
       })
       .eq("id", imageId);
 
@@ -672,9 +747,9 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ Vision ALT text generated for image ${imageId}:`);
     console.log(`   - Title Keywords: ${titleKeywords.join(', ')}`);
-    console.log(`   - ALT Text: ${altText}`);
+    console.log(`   - Final ALT Text (mixed): ${finalAltText}`);
     console.log(`   - Visual Analysis: ${visualAnalysis}`);
-    console.log(`   - Character count: ${altText.length}`);
+    console.log(`   - Character count: ${finalAltText.length}`);
 
     // Track usage - Alt image counts as 3 optimizations
     if (userId) {
@@ -691,7 +766,7 @@ Deno.serve(async (req: Request) => {
         message: "Vision ALT text generated successfully",
         data: {
           image_id: imageId,
-          alt_text: altText,
+          alt_text: finalAltText,
           visual_analysis: visualAnalysis,
         },
       }),
