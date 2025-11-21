@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Loader2, Eye, Ruler } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Eye, Ruler, Sparkles, FileText } from "lucide-react";
 
 interface ProductImage {
   id: string;
@@ -15,6 +15,9 @@ interface ProductImage {
   result?: any;
   hasVisionCache?: boolean;
   visionAttributes?: any;
+  generatingLanding?: boolean;
+  landingLogs?: string[];
+  landingHtml?: string;
 }
 
 export default function TestLectureImage() {
@@ -64,6 +67,96 @@ export default function TestLectureImage() {
       toast.error("Erreur chargement images : " + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testLandingPage = async (imageId: string) => {
+    const image = images.find(img => img.id === imageId);
+    if (!image) return;
+
+    // Reset logs et marquer comme en génération
+    setImages(prev => prev.map(img => 
+      img.id === imageId ? { 
+        ...img, 
+        generatingLanding: true, 
+        landingLogs: ["🚀 Démarrage de la génération..."],
+        landingHtml: undefined
+      } : img
+    ));
+
+    const addLog = (log: string) => {
+      console.log(`[Landing Test] ${log}`);
+      setImages(prev => prev.map(img => 
+        img.id === imageId ? { 
+          ...img, 
+          landingLogs: [...(img.landingLogs || []), log]
+        } : img
+      ));
+    };
+
+    try {
+      addLog("📦 Chargement des données produit...");
+      
+      // Récupérer les infos complètes du produit
+      const { data: productData, error: productError } = await supabase
+        .from("shopify_products")
+        .select("*")
+        .eq("id", image.product_id)
+        .single();
+
+      if (productError) throw productError;
+      
+      addLog(`✅ Produit chargé: ${productData.title}`);
+      addLog(`🖼️ Vision cache: ${productData.vision_analyzed ? "Oui" : "Non"}`);
+
+      addLog("🧠 Appel de l'edge function generate-landing-ai...");
+      
+      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+        body: {
+          product_id: image.product_id,
+          productTitle: productData.title,
+          imageUrl: image.src,
+          description: productData.body_html || "",
+          vendor: productData.vendor || "Marque",
+          designStyle: 'modern',
+          mainColor: "#3B82F6",
+          layout: 'single-column',
+          length: 'medium',
+          imageAnalysis: productData.vision_attributes ? JSON.stringify(productData.vision_attributes) : "",
+          language: "fr"
+        }
+      });
+
+      if (error) {
+        addLog(`❌ Erreur edge function: ${error.message}`);
+        throw error;
+      }
+
+      if (data?.error) {
+        addLog(`❌ Erreur dans la réponse: ${data.error}`);
+        throw new Error(data.error);
+      }
+
+      addLog("✅ Landing page générée avec succès!");
+      addLog(`📏 Taille HTML: ${data?.html?.length || 0} caractères`);
+
+      // Stocker le HTML
+      setImages(prev => prev.map(img => 
+        img.id === imageId ? { 
+          ...img, 
+          generatingLanding: false,
+          landingHtml: data?.html,
+          landingLogs: [...(img.landingLogs || []), "✨ Génération terminée!"]
+        } : img
+      ));
+
+      toast.success("Landing page générée!");
+    } catch (error: any) {
+      addLog(`💥 Erreur finale: ${error.message}`);
+      setImages(prev => prev.map(img => 
+        img.id === imageId ? { ...img, generatingLanding: false } : img
+      ));
+      toast.error("Erreur génération: " + error.message);
     }
   };
 
@@ -225,6 +318,63 @@ export default function TestLectureImage() {
                   </Button>
                 )}
               </div>
+
+              {/* Test Landing Page Button */}
+              <Button 
+                onClick={() => testLandingPage(image.id)}
+                disabled={image.generatingLanding}
+                className="w-full"
+                size="sm"
+                variant="secondary"
+              >
+                {image.generatingLanding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Test Landing Page
+                  </>
+                )}
+              </Button>
+
+              {/* Landing Debug Logs */}
+              {image.landingLogs && image.landingLogs.length > 0 && (
+                <div className="space-y-2 p-3 bg-muted rounded-lg text-xs">
+                  <div className="font-medium flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Logs de génération:
+                  </div>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {image.landingLogs.map((log, idx) => (
+                      <div key={idx} className="text-muted-foreground font-mono">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                  {image.landingHtml && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        const blob = new Blob([image.landingHtml!], { type: "text/html" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `test-landing-${image.product_id}.html`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success("HTML téléchargé!");
+                      }}
+                    >
+                      💾 Télécharger HTML
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {image.result && !image.result.error && (
                 <div className="space-y-2 p-3 bg-muted rounded-lg text-sm">
