@@ -30,12 +30,31 @@ function cleanJsonResponse(text: string): string {
   return cleaned.replace(/^```json?\s*|\s*```$/g, '').trim();
 }
 
-// Extract the main product name from full title
+// Extract the main product name intelligently from full title
 function extractProductName(title: string): string {
   // Clean title by taking part before first dash or comma
   let productName = title.split(/[-–—,]/)[0].trim();
   
-  // Limit to 3-4 words maximum for the name
+  // Detect key product phrases to keep together
+  const keyPhrases = [
+    /canapé\s+d'angle/i,
+    /table\s+basse/i,
+    /meuble\s+tv/i,
+    /lit\s+coffre/i,
+    /buffet\s+bahut/i,
+    /chaise\s+de\s+bureau/i
+  ];
+  
+  // Check if we have a key phrase, keep it complete
+  for (const phrase of keyPhrases) {
+    if (phrase.test(productName)) {
+      const words = productName.split(' ');
+      // Keep up to 5 words for key phrases
+      return words.slice(0, Math.min(5, words.length)).join(' ');
+    }
+  }
+  
+  // Default: limit to 4 words
   const words = productName.split(' ').filter(w => w.length > 0);
   if (words.length > 4) {
     productName = words.slice(0, 4).join(' ');
@@ -44,35 +63,53 @@ function extractProductName(title: string): string {
   return productName;
 }
 
-// Build optimized alt-text mixing product name + visual descriptors
+// Build optimized alt-text mixing product name + SEO keywords + visual descriptors
 function buildOptimizedAltText(
   productName: string,
   visualAnalysis: string,
+  seoKeywords: string[] = [],
   maxWords: number = 15
 ): string {
   // Extract words from product name and visual analysis
-  const productWords = productName.toLowerCase().split(' ');
+  const productWords = productName.toLowerCase().split(' ').filter(w => w.length > 0);
   const analysisWords = visualAnalysis.toLowerCase().split(/\s+/);
   
-  // Filter visual keywords that add value (not already in product name)
-  const stopWords = ['avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an'];
-  const visualKeywords = analysisWords.filter(word => 
-    word.length > 3 && 
-    !productWords.includes(word) &&
-    !stopWords.includes(word)
-  );
+  // Stop words to filter out
+  const stopWords = ['avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an', 'of'];
   
-  // Build alt-text: product name + top visual descriptors
-  let altText = productName;
+  // Step 1: Start with product name (base)
+  let parts: string[] = [productName];
+  let usedWords = new Set(productWords);
   
-  // Add visual descriptors
-  const descriptors = visualKeywords.slice(0, 8).join(' ');
-  if (descriptors) {
-    altText += ` ${descriptors}`;
-  }
+  // Step 2: Add unique SEO keywords that bring value
+  const uniqueSeoKeywords = seoKeywords
+    .filter(kw => kw && kw.length > 2)
+    .filter(kw => {
+      const kwLower = kw.toLowerCase();
+      return !usedWords.has(kwLower) && !stopWords.includes(kwLower);
+    })
+    .slice(0, 4); // Max 4 SEO keywords
   
-  // Limit to max words
-  const words = altText.split(' ');
+  uniqueSeoKeywords.forEach(kw => {
+    parts.push(kw);
+    usedWords.add(kw.toLowerCase());
+  });
+  
+  // Step 3: Add visual descriptors that aren't already covered
+  const uniqueVisualKeywords = analysisWords
+    .filter(word => 
+      word.length > 3 && 
+      !usedWords.has(word) &&
+      !stopWords.includes(word)
+    )
+    .slice(0, 6); // Max 6 visual descriptors
+  
+  parts = parts.concat(uniqueVisualKeywords);
+  
+  // Join and limit to max words
+  let altText = parts.join(' ');
+  const words = altText.split(' ').filter(w => w.length > 0);
+  
   if (words.length > maxWords) {
     altText = words.slice(0, maxWords).join(' ');
   }
@@ -660,7 +697,19 @@ Deno.serve(async (req: Request) => {
       console.log(`🧠 DeepSeek - Analyzing title: "${productTitle}"`);
       const titleAnalysis = await analyzeTitle(productTitle);
       titleKeywords = titleAnalysis.keywords;
-      console.log(`✅ DeepSeek - Keywords extracted: ${titleKeywords.join(', ')}`);
+      
+      // Fallback: extract keywords from title if DeepSeek failed
+      if (titleKeywords.length === 0) {
+        console.warn('⚠️ DeepSeek returned no keywords, extracting from title');
+        // Extract important words from title (skip common words)
+        const titleWords = productTitle.split(/\s+/).filter(w => 
+          w.length > 3 && 
+          !['avec', 'pour', 'dans', 'the', 'and', 'with'].includes(w.toLowerCase())
+        );
+        titleKeywords = titleWords.slice(0, 5);
+      }
+      
+      console.log(`✅ SEO Keywords: ${titleKeywords.join(', ')}`);
       
       // Enhance keywords with SERP visual insights
       if (serpImageInsights?.dominantStyles) {
@@ -706,21 +755,22 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ✨ Create intelligent mix: product name + visual analysis
+    // ✨ Create intelligent mix: product name + SEO keywords + visual analysis
     let finalAltText = "";
     
     if (productTitle && geminiAltText) {
       // Extract main product name
       const productName = extractProductName(productTitle);
       
-      // Combine with visual analysis
-      finalAltText = buildOptimizedAltText(productName, geminiAltText, 15);
+      // Combine: name + SEO keywords + visual analysis
+      finalAltText = buildOptimizedAltText(productName, geminiAltText, titleKeywords, 15);
       
       console.log('🎯 Alt-text optimisé:');
       console.log(`   - Titre original: ${productTitle}`);
       console.log(`   - Nom extrait: ${productName}`);
-      console.log(`   - Gemini: ${geminiAltText}`);
-      console.log(`   - Final (MIX): ${finalAltText}`);
+      console.log(`   - SEO Keywords: ${titleKeywords.join(', ')}`);
+      console.log(`   - Gemini visual: ${geminiAltText}`);
+      console.log(`   - Final (NAME + SEO + VISUAL): ${finalAltText}`);
     } else {
       // Fallback: use only Gemini if no title
       finalAltText = geminiAltText;
