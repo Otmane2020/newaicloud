@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/formatUtils";
 import { useShopifySync } from "@/hooks/useShopifySync";
+import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
 
 interface Plan {
   id: string;
@@ -63,6 +64,22 @@ export default function Onboarding() {
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const { syncShopifyStore } = useShopifySync();
+  const { isSyncing } = useAutoSyncProgress();
+  const [wasSyncing, setWasSyncing] = useState(false);
+
+  // Redirect to dashboard after auto-sync completes
+  useEffect(() => {
+    if (wasSyncing && !isSyncing) {
+      const shopifyPending = searchParams.get("shopify_pending");
+      if (shopifyPending) {
+        console.log("✅ [Onboarding] Auto-sync completed, redirecting to dashboard");
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+      }
+    }
+    setWasSyncing(isSyncing);
+  }, [isSyncing, wasSyncing, searchParams, navigate]);
 
   useEffect(() => {
     if (!user) {
