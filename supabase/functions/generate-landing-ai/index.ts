@@ -181,25 +181,39 @@ function generateDesignTokens(colorScheme: any) {
 function buildVisionSummary(attributes: any, language = "fr") {
   if (!attributes) return "";
   
+  const labels = language === "en" ? {
+    visualAnalysis: "VISUAL ANALYSIS:",
+    colors: "Colors",
+    materials: "Materials",
+    style: "Style",
+    condition: "Condition"
+  } : {
+    visualAnalysis: "ANALYSE VISUELLE:",
+    colors: "Couleurs",
+    materials: "Matériaux",
+    style: "Style",
+    condition: "État"
+  };
+  
   const sections = [];
   
   if (attributes.visualDescription) {
-    sections.push(language === "en" ? "VISUAL ANALYSIS:" : "ANALYSE VISUELLE:");
+    sections.push(labels.visualAnalysis);
     sections.push(attributes.visualDescription);
   }
   
   const details = [];
   if (attributes.dominantColors?.length) {
-    details.push(`${language === "en" ? "Colors" : "Couleurs"}: ${attributes.dominantColors.join(", ")}`);
+    details.push(`${labels.colors}: ${attributes.dominantColors.join(", ")}`);
   }
   if (attributes.materials?.length) {
-    details.push(`${language === "en" ? "Materials" : "Matériaux"}: ${attributes.materials.join(", ")}`);
+    details.push(`${labels.materials}: ${attributes.materials.join(", ")}`);
   }
   if (attributes.style) {
-    details.push(`${language === "en" ? "Style" : "Style"}: ${attributes.style}`);
+    details.push(`${labels.style}: ${attributes.style}`);
   }
   if (attributes.condition) {
-    details.push(`${language === "en" ? "Condition" : "État"}: ${attributes.condition}`);
+    details.push(`${labels.condition}: ${attributes.condition}`);
   }
   
   if (details.length > 0) {
@@ -213,18 +227,85 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (!enriched) return "";
 
   const sections = [];
+  
+  // Translation labels
+  const labels = language === "en" ? {
+    color: "Color",
+    material: "Material",
+    shape: "Shape",
+    texture: "Texture",
+    pattern: "Pattern",
+    finish: "Finish",
+    designElements: "Design Elements",
+    visualAttributes: "VISUAL ATTRIBUTES:",
+    dimensions: "DIMENSIONS",
+    dimensionsVisible: "DIMENSIONS (visible on image):",
+    dimensionsEstimated: "DIMENSIONS (estimated):",
+    dimensionsSerpVerified: "DIMENSIONS (SERP verified):",
+    technicalSpecs: "TECHNICAL SPECIFICATIONS (from Vision AI):",
+    categorization: "CATEGORIZATION:",
+    category: "Category",
+    subCategory: "Sub-category",
+    style: "Style",
+    room: "Room",
+    functionality: "Functionality",
+    qualityAnalysis: "QUALITY ANALYSIS:",
+    analysis: "Analysis",
+    presentationQuality: "Presentation Quality",
+    craftsmanshipLevel: "Craftsmanship Level",
+    conversationalDesc: "CONVERSATIONAL DESCRIPTION:",
+    height: "H",
+    length: "L",
+    width: "W",
+    depth: "D",
+    diameter: "Ø",
+    seatHeight: "Seat height",
+    weight: "Weight"
+  } : {
+    color: "Couleur",
+    material: "Matériau",
+    shape: "Forme",
+    texture: "Texture",
+    pattern: "Motif",
+    finish: "Finition",
+    designElements: "Éléments Design",
+    visualAttributes: "ATTRIBUTS VISUELS:",
+    dimensions: "DIMENSIONS",
+    dimensionsVisible: "DIMENSIONS (visibles sur image):",
+    dimensionsEstimated: "DIMENSIONS (estimées):",
+    dimensionsSerpVerified: "DIMENSIONS (vérifiées SERP):",
+    technicalSpecs: "SPÉCIFICATIONS TECHNIQUES (Vision IA):",
+    categorization: "CATÉGORISATION:",
+    category: "Catégorie",
+    subCategory: "Sous-catégorie",
+    style: "Style",
+    room: "Pièce",
+    functionality: "Fonctionnalité",
+    qualityAnalysis: "ANALYSE QUALITÉ:",
+    analysis: "Analyse",
+    presentationQuality: "Qualité Présentation",
+    craftsmanshipLevel: "Niveau Artisanat",
+    conversationalDesc: "DESCRIPTION CONVERSATIONNELLE:",
+    height: "H",
+    length: "L",
+    width: "l",
+    depth: "P",
+    diameter: "Ø",
+    seatHeight: "Hauteur d'assise",
+    weight: "Poids"
+  };
 
   // Visual Attributes
   const visualAttrs = [];
-  if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
-  if (enriched.ai_material) visualAttrs.push(`Matériau: ${enriched.ai_material}`);
-  if (enriched.ai_shape) visualAttrs.push(`Forme: ${enriched.ai_shape}`);
-  if (enriched.ai_texture) visualAttrs.push(`Texture: ${enriched.ai_texture}`);
-  if (enriched.ai_pattern) visualAttrs.push(`Motif: ${enriched.ai_pattern}`);
-  if (enriched.ai_finish) visualAttrs.push(`Finition: ${enriched.ai_finish}`);
-  if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
+  if (enriched.ai_color) visualAttrs.push(`${labels.color}: ${enriched.ai_color}`);
+  if (enriched.ai_material) visualAttrs.push(`${labels.material}: ${enriched.ai_material}`);
+  if (enriched.ai_shape) visualAttrs.push(`${labels.shape}: ${enriched.ai_shape}`);
+  if (enriched.ai_texture) visualAttrs.push(`${labels.texture}: ${enriched.ai_texture}`);
+  if (enriched.ai_pattern) visualAttrs.push(`${labels.pattern}: ${enriched.ai_pattern}`);
+  if (enriched.ai_finish) visualAttrs.push(`${labels.finish}: ${enriched.ai_finish}`);
+  if (enriched.ai_design_elements) visualAttrs.push(`${labels.designElements}: ${enriched.ai_design_elements}`);
   if (visualAttrs.length > 0) {
-    sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
+    sections.push(labels.visualAttributes);
     sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
 
@@ -244,61 +325,61 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   
   if (techDims && Object.keys(techDims).length > 0) {
     // Use dimensions extracted from technical schematic or visible on packaging (VISION FIRST)
-    if (techDims.hauteur_totale) dims.push(`H ${techDims.hauteur_totale}`);
-    if (techDims.height) dims.push(`H ${techDims.height}`);
-    if (techDims.largeur) dims.push(`L ${techDims.largeur}`);
-    if (techDims.length) dims.push(`L ${techDims.length}`);
-    if (techDims.profondeur) dims.push(`P ${techDims.profondeur}`);
-    if (techDims.width) dims.push(`l ${techDims.width}`);
-    if (techDims.hauteur_assise) dims.push(`Hauteur d'assise ${techDims.hauteur_assise}`);
-    if (techDims.diametre) dims.push(`Ø ${techDims.diametre}`);
+    if (techDims.hauteur_totale) dims.push(`${labels.height} ${techDims.hauteur_totale}`);
+    if (techDims.height) dims.push(`${labels.height} ${techDims.height}`);
+    if (techDims.largeur) dims.push(`${labels.length} ${techDims.largeur}`);
+    if (techDims.length) dims.push(`${labels.length} ${techDims.length}`);
+    if (techDims.profondeur) dims.push(`${labels.depth} ${techDims.profondeur}`);
+    if (techDims.width) dims.push(`${labels.width} ${techDims.width}`);
+    if (techDims.hauteur_assise) dims.push(`${labels.seatHeight} ${techDims.hauteur_assise}`);
+    if (techDims.diametre) dims.push(`${labels.diameter} ${techDims.diametre}`);
     
     // Extract weight from vision (HIGHEST PRIORITY)
     if (techDims.weight) {
-      dims.push(`Poids ${techDims.weight}`);
+      dims.push(`${labels.weight} ${techDims.weight}`);
       weightSource = "vision"; // Mark that weight comes from vision
     }
     
     if (dims.length > 0) {
-      sections.push(language === "en" ? "\nDIMENSIONS (visible on image):" : "\nDIMENSIONS (visibles sur image):");
+      sections.push(`\n${labels.dimensionsVisible}`);
       sections.push(`- ${dims.join(" × ")}`);
     }
   } else if (hasSmartDims) {
     // Fallback to estimated smart dimensions (SECOND PRIORITY, before SERP)
-    if (enriched.smart_length) dims.push(`L ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
-    if (enriched.smart_width) dims.push(`l ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
-    if (enriched.smart_height) dims.push(`H ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
+    if (enriched.smart_length) dims.push(`${labels.length} ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
+    if (enriched.smart_width) dims.push(`${labels.width} ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
+    if (enriched.smart_height) dims.push(`${labels.height} ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
     
     // Add estimated weight only if not from vision
     if (!weightSource && enriched.smart_weight) {
-      dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+      dims.push(`${labels.weight} ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
       weightSource = "estimated";
     }
     
-    if (enriched.smart_diameter) dims.push(`Ø ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
-    if (enriched.smart_depth) dims.push(`P ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
+    if (enriched.smart_diameter) dims.push(`${labels.diameter} ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
+    if (enriched.smart_depth) dims.push(`${labels.depth} ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
     if (enriched.smart_seat_height)
-      dims.push(`Hauteur d'assise ~${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
+      dims.push(`${labels.seatHeight} ~${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
     
     if (dims.length > 0) {
-      sections.push(language === "en" ? "\nDIMENSIONS (estimated):" : "\nDIMENSIONS (estimées):");
+      sections.push(`\n${labels.dimensionsEstimated}`);
       sections.push(`- ${dims.join(" × ")}`);
     }
   } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
     // Use SERP-verified dimensions ONLY AS LAST RESORT
     const serpDims = enriched.serp_data.averageDimensions;
-    if (serpDims.length) dims.push(`L ${serpDims.length}`);
-    if (serpDims.width) dims.push(`l ${serpDims.width}`);
-    if (serpDims.height) dims.push(`H ${serpDims.height}`);
+    if (serpDims.length) dims.push(`${labels.length} ${serpDims.length}`);
+    if (serpDims.width) dims.push(`${labels.width} ${serpDims.width}`);
+    if (serpDims.height) dims.push(`${labels.height} ${serpDims.height}`);
     
     // Add SERP weight only if not already extracted from vision/estimation
     if (!weightSource && enriched.serp_data.averageWeight) {
-      dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+      dims.push(`${labels.weight} ${enriched.serp_data.averageWeight}`);
       weightSource = "serp";
     }
     
     if (dims.length > 0) {
-      sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
+      sections.push(`\n${labels.dimensionsSerpVerified}`);
       sections.push(`- ${dims.join(" × ")}`);
     }
   }
@@ -307,36 +388,36 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (enriched.vision_attributes?.technicalDetails && Array.isArray(enriched.vision_attributes.technicalDetails)) {
     const techDetails = enriched.vision_attributes.technicalDetails;
     if (techDetails.length > 0) {
-      sections.push(language === "en" ? "\nTECHNICAL SPECIFICATIONS (from Vision AI):" : "\nSPÉCIFICATIONS TECHNIQUES (Vision IA):");
+      sections.push(`\n${labels.technicalSpecs}`);
       sections.push(techDetails.map((detail: string) => `- ${detail}`).join("\n"));
     }
   }
 
   // Categorization
   const cats = [];
-  if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
-  if (enriched.sub_category) cats.push(`Sous-catégorie: ${enriched.sub_category}`);
-  if (enriched.style) cats.push(`Style: ${enriched.style}`);
-  if (enriched.room) cats.push(`Pièce: ${enriched.room}`);
-  if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
+  if (enriched.category) cats.push(`${labels.category}: ${enriched.category}`);
+  if (enriched.sub_category) cats.push(`${labels.subCategory}: ${enriched.sub_category}`);
+  if (enriched.style) cats.push(`${labels.style}: ${enriched.style}`);
+  if (enriched.room) cats.push(`${labels.room}: ${enriched.room}`);
+  if (enriched.functionality) cats.push(`${labels.functionality}: ${enriched.functionality}`);
   if (cats.length > 0) {
-    sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
+    sections.push(`\n${labels.categorization}`);
     sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
   }
 
   // Quality & Analysis
   const quality = [];
-  if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
-  if (enriched.ai_presentation_quality) quality.push(`Qualité Présentation: ${enriched.ai_presentation_quality}`);
-  if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
+  if (enriched.ai_vision_analysis) quality.push(`${labels.analysis}: ${enriched.ai_vision_analysis}`);
+  if (enriched.ai_presentation_quality) quality.push(`${labels.presentationQuality}: ${enriched.ai_presentation_quality}`);
+  if (enriched.ai_craftsmanship_level) quality.push(`${labels.craftsmanshipLevel}: ${enriched.ai_craftsmanship_level}`);
   if (quality.length > 0) {
-    sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
+    sections.push(`\n${labels.qualityAnalysis}`);
     sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
   }
 
   // Conversational Text
   if (enriched.chat_text) {
-    sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
+    sections.push(`\n${labels.conversationalDesc}`);
     sections.push(enriched.chat_text);
   }
 
@@ -1213,6 +1294,22 @@ PRODUIT :
 
 ${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATIONS - C'EST CE QUI EST RÉELLEMENT VISIBLE DANS L'IMAGE) :\n${visualAnalysis}\n\n🚨 CRITIQUE : Tu DOIS décrire uniquement ce que l'IA visuelle a observé. NE mentionne PAS de caractéristiques, couleurs ou matériaux qui contredisent l'analyse visuelle ci-dessus. Si l'IA visuelle dit que le produit a des éléments en bois, NE parle PAS d'éléments métalliques. SOIS PRÉCIS À 100% PAR RAPPORT AUX OBSERVATIONS VISUELLES.\n` : ""}
+${serpInsights ? `
+🎯 ANALYSE DES CONCURRENTS (UTILISE CECI POUR STRUCTURER TA PAGE) :
+
+📋 Sections Communes Trouvées dans les Meilleurs Résultats :
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join('\n') || '- Section héro\n- Avantages produit\n- FAQ'}
+
+💬 Modèles de CTA Efficaces :
+${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join('\n') || '- Acheter maintenant\n- En savoir plus'}
+
+🏗️ Éléments Structurels à Inclure :
+${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join('\n') || '- Titre clair\n- Imagerie visuelle\n- Signaux de confiance'}
+
+📊 Densité du Contenu : ${serpInsights.contentDensity || 'moyenne'}
+
+💡 RECOMMANDATION : Structure ta landing page en utilisant ces modèles éprouvés tout en maintenant l'unicité.
+` : ""}
 
 IMAGES :
 ${imgs}
