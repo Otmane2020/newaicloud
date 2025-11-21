@@ -42,6 +42,21 @@ export const useAutoSync = (userId: string | undefined) => {
             console.log('⏭️ [AutoSync] Skipping - not a new connection');
             return;
           }
+
+          // ✅ For OAuth connections, skip import (backend handles it via trigger-auto-sync)
+          // Just manage the popup UI
+          if (connection.connection_type === 'oauth') {
+            console.log('⏭️ [AutoSync] OAuth connection detected - backend will handle import');
+            const storeName = connection.store_name || connection.store_url;
+            startSync(storeName);
+            
+            // Show popup for 5 seconds then close (backend is doing the actual work)
+            setTimeout(() => {
+              endSync();
+            }, 5000);
+            
+            return;
+          }
           
           // Vérifier si l'utilisateur a un abonnement actif
           const { data: profile } = await supabase
@@ -93,7 +108,7 @@ export const useAutoSync = (userId: string | undefined) => {
               
               // Appeler la fonction d'import appropriée
               const functionName = type === 'articles' ? 'import-shopify-articles' :
-                                 type === 'images' ? 'import-shopify-images' :
+                                 type === 'images' ? 'import-content-images' :
                                  `import-shopify-${type}`;
               
               try {

@@ -65,15 +65,56 @@ export default function Onboarding() {
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const { syncShopifyStore } = useShopifySync();
 
-  // ✅ NEW: Auto-detect and claim Shopify if user has active subscription
+  // ✅ Helper to wait for products before redirecting
+  const waitForProducts = async (userId: string): Promise<void> => {
+    console.log("⏳ [WAIT-PRODUCTS] Waiting for products to be imported...");
+    
+    let productsFound = false;
+    for (let i = 0; i < 20; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      try {
+        const result = await (supabase as any)
+          .from("shopify_products")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(1);
+        
+        if (result.data && result.data.length > 0) {
+          productsFound = true;
+          console.log("✅ [WAIT-PRODUCTS] Products found!");
+          break;
+        }
+      } catch (err) {
+        console.error("Error checking products:", err);
+      }
+    }
+    
+    if (!productsFound) {
+      console.log("⏱️ [WAIT-PRODUCTS] Timeout - proceeding anyway");
+      toast.info("Synchronisation en cours...", {
+        description: "Vos produits continuent d'être importés en arrière-plan.",
+      });
+    }
+  };
+
+  // ✅ Auto-detect and claim Shopify ONLY after checkout success
   useEffect(() => {
     const autoClaimIfNeeded = async () => {
       if (!user) return;
       
       const shopifyPending = searchParams.get("shopify_pending");
+      const checkoutSuccess = searchParams.get("checkout") === "success";
+      
       if (!shopifyPending) return;
       
-      console.log("🔍 [AUTO-CLAIM] Checking if auto-claim needed", { shopifyPending });
+      // ✅ Gate with checkout=success to ensure plan selection comes first
+      if (!checkoutSuccess) {
+        console.log("⏸️ [AUTO-CLAIM] Waiting for plan selection (checkout=success required)");
+        return;
+      }
+      
+      console.log("🔍 [AUTO-CLAIM] Checkout success detected, checking if auto-claim needed", { shopifyPending });
       
       try {
         // Check if user already has an active subscription
@@ -106,6 +147,9 @@ export default function Onboarding() {
           
           await claimShopifyConnection(shopifyPending);
           
+          // Wait for at least one product before redirecting
+          await waitForProducts(user.id);
+          
           // Redirect to dashboard after products are imported
           console.log("🎯 [AUTO-CLAIM] Redirecting to dashboard with products");
           navigate("/dashboard?show_shopify_prompt=true");
@@ -118,7 +162,7 @@ export default function Onboarding() {
     };
     
     autoClaimIfNeeded();
-  }, [user, searchParams]);
+  }, [user, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!user) {
@@ -284,8 +328,40 @@ export default function Onboarding() {
     }
   };
 
-  const handleCheckSubscription = async () => {
+  const handleCheckSubscription = async (): Promise<void> => {
     setCheckingSubscription(true);
+
+    const waitForProductsLocal = async (userId: string): Promise<void> => {
+      console.log("⏳ [WAIT-PRODUCTS] Waiting for products to be imported...");
+      
+      let productsFound = false;
+      for (let i = 0; i < 20; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        try {
+          const result = await (supabase as any)
+            .from("shopify_products")
+            .select("id")
+            .eq("user_id", userId)
+            .limit(1);
+          
+          if (result.data && result.data.length > 0) {
+            productsFound = true;
+            console.log("✅ [WAIT-PRODUCTS] Products found!");
+            break;
+          }
+        } catch (err) {
+          console.error("Error checking products:", err);
+        }
+      }
+      
+      if (!productsFound) {
+        console.log("⏱️ [WAIT-PRODUCTS] Timeout - proceeding anyway");
+        toast.info("Synchronisation en cours...", {
+          description: "Vos produits continuent d'être importés en arrière-plan.",
+        });
+      }
+    };
 
     try {
       console.log("🔍 [CHECK-SUBSCRIPTION] Starting subscription check", {
@@ -305,7 +381,7 @@ export default function Onboarding() {
         return;
       }
 
-      // 1. Vérifier l'abonnement
+      // ✅ STEP 1: Check/activate subscription FIRST
       const { data, error } = await supabase.functions.invoke("check-subscription", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -325,41 +401,39 @@ export default function Onboarding() {
         console.log("✅ [CHECK-SUBSCRIPTION] Fix result:", fixData);
 
         if (fixData?.fixed > 0) {
-          // 2. Avant de rediriger, claim Shopify si nécessaire
-          const shopifyPending = searchParams.get("shopify_pending");
-          if (shopifyPending) {
-            await claimShopifyConnection(shopifyPending);
-          }
-
           toast.success(t.onboarding.verification.activated);
+          
+          // ✅ STEP 2: Now claim Shopify AFTER subscription is active
+          const shopifyPending = searchParams.get("shopify_pending");
+          if (shopifyPending && user?.id) {
+            console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription activation");
+            await claimShopifyConnection(shopifyPending);
+            await waitForProductsLocal(user.id);
+          }
+          
           setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1500);
           return;
         }
       }
 
-      // ✅ TOUJOURS claim Shopify AVANT de vérifier subscription
-      const shopifyPending = searchParams.get("shopify_pending");
-      if (shopifyPending) {
-        console.log("🔗 Claiming Shopify connection BEFORE subscription check");
-        await claimShopifyConnection(shopifyPending);
-      }
-
-      // PUIS vérifier subscription
+      // ✅ Verify subscription was successful
       if (data?.subscribed) {
-        console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified");
+        console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified and active");
+        
+        // ✅ STEP 2: Now claim Shopify AFTER subscription is confirmed active
+        const shopifyPending = searchParams.get("shopify_pending");
+        if (shopifyPending && user?.id) {
+          console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription verified");
+          await claimShopifyConnection(shopifyPending);
+          await waitForProductsLocal(user.id);
+        }
         
         toast.success(t.onboarding.verification.success);
         
-        // Redirection immédiate si pas de Shopify, sinon attendre un peu
-        if (!shopifyPending) {
-          navigate("/dashboard");
-        } else {
-          // La synchro a déjà été déclenchée et on a attendu les produits dans claimShopifyConnection
-          console.log("⏳ [CHECK-SUBSCRIPTION] Redirecting to dashboard with products");
-          setTimeout(() => {
-            navigate("/dashboard?show_shopify_prompt=true");
-          }, 1000);
-        }
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate("/dashboard?show_shopify_prompt=true");
+        }, 1000);
       } else {
         console.warn("⚠️ [CHECK-SUBSCRIPTION] No active subscription found");
         toast.error(t.onboarding.errors.noActiveSubscription);
