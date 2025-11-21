@@ -4629,7 +4629,7 @@ export const translations = {
         trial: {
           name: "Essai Gratuit",
           description: "Testez toutes les fonctionnalités pendant 14 jours",
-          cta: "Commencer l'Essai Gratuit",
+          cta: "Essai Gratuit",
           highlight: "Accès complet à toutes les fonctionnalités Pro pendant 14 jours. Aucune carte de crédit requise.",
           badge: "🎁 Gratuit",
           promo: "",
