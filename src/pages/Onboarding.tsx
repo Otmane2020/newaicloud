@@ -806,19 +806,19 @@ export default function Onboarding() {
                   </div>
 
                   <Button
-                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                    className="w-full text-xs sm:text-sm py-3 sm:py-4 h-auto min-h-[52px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
                     onClick={handleStartFreeTrial}
                     disabled={loading}
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === "fr" ? "Activation..." : "Activating..."}
+                        <span className="leading-normal">{language === "fr" ? "Activation..." : "Activating..."}</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        {t.onboarding.trial.startTrial}
+                        <Sparkles className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="leading-normal">{t.onboarding.trial.startTrial}</span>
                       </>
                     )}
                   </Button>
@@ -1135,14 +1135,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  className="w-full text-sm sm:text-base py-4 sm:py-5 h-auto min-h-[56px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
                       <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-tight">
+                      <span className="leading-normal">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
@@ -1319,14 +1319,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  className="w-full text-sm sm:text-base py-4 sm:py-5 h-auto min-h-[56px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
                       <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-tight">
+                      <span className="leading-normal">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
