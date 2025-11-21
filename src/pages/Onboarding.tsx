@@ -64,22 +64,6 @@ export default function Onboarding() {
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const { syncShopifyStore } = useShopifySync();
-  const { isSyncing } = useAutoSyncProgress();
-  const [wasSyncing, setWasSyncing] = useState(false);
-
-  // Redirect to dashboard after auto-sync completes
-  useEffect(() => {
-    if (wasSyncing && !isSyncing) {
-      const shopifyPending = searchParams.get("shopify_pending");
-      if (shopifyPending) {
-        console.log("✅ [Onboarding] Auto-sync completed, redirecting to dashboard");
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1000);
-      }
-    }
-    setWasSyncing(isSyncing);
-  }, [isSyncing, wasSyncing, searchParams, navigate]);
 
   useEffect(() => {
     if (!user) {
@@ -297,6 +281,28 @@ export default function Onboarding() {
       // PUIS vérifier subscription
       if (data?.subscribed) {
         console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified");
+        
+        // Déclencher manuellement la synchro si shopify_pending est présent
+        if (shopifyPending) {
+          console.log("🔄 [Onboarding] Triggering manual sync after subscription");
+          const { data: pendingConnections } = await supabase
+            .from('shopify_connections')
+            .select('*')
+            .eq('user_id', user?.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (pendingConnections && pendingConnections.length > 0) {
+            const connection = pendingConnections[0];
+            console.log("🚀 [Onboarding] Starting sync for:", connection.store_name);
+            await syncShopifyStore({
+              id: connection.id,
+              store_url: connection.store_url,
+              store_name: connection.store_name || connection.store_url,
+            });
+          }
+        }
+        
         toast.success(t.onboarding.verification.success);
         // Laisser quelques secondes pour que l'import démarre
         setTimeout(() => {
@@ -498,26 +504,23 @@ export default function Onboarding() {
               toast.success(t.sync.shopifyConnected);
               toast.info(t.sync.autoImport, { duration: 5000 });
               
-              // Trigger automatic synchronization for free trial
-              try {
-                const { data: connectionData } = await supabase
-                  .from('shopify_connections')
-                  .select('id, store_url, store_name')
-                  .eq('user_id', user?.id)
-                  .order('created_at', { ascending: false })
-                  .limit(1)
-                  .single();
+              // Déclencher manuellement la synchro après activation du trial
+              console.log("🔄 [Trial] Triggering manual sync after trial activation");
+              const { data: connectionData } = await supabase
+                .from('shopify_connections')
+                .select('id, store_url, store_name')
+                .eq('user_id', user?.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
 
-                if (connectionData) {
-                  console.log("🔄 Triggering automatic sync for free trial store:", connectionData.id);
-                  await syncShopifyStore({
-                    id: connectionData.id,
-                    store_url: connectionData.store_url,
-                    store_name: connectionData.store_name || connectionData.store_url,
-                  });
-                }
-              } catch (syncError) {
-                console.error("❌ Error triggering auto-sync:", syncError);
+              if (connectionData) {
+                console.log("🚀 [Trial] Starting sync for:", connectionData.store_name);
+                await syncShopifyStore({
+                  id: connectionData.id,
+                  store_url: connectionData.store_url,
+                  store_name: connectionData.store_name || connectionData.store_url,
+                });
               }
               
               await new Promise((resolve) => setTimeout(resolve, 3000));

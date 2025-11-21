@@ -1,9 +1,14 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
+import { useLocation } from 'react-router-dom';
 import { Loader2, Package, FileText, Image, FolderOpen, Newspaper } from 'lucide-react';
 
 export function AutoSyncProgressDialog() {
   const { isSyncing, currentType, storeName } = useAutoSyncProgress();
+  const location = useLocation();
+  
+  // Ne pas afficher le dialog sur la page onboarding
+  const shouldShow = isSyncing && location.pathname !== '/onboarding';
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -34,7 +39,7 @@ export function AutoSyncProgressDialog() {
   };
 
   return (
-    <Dialog open={isSyncing}>
+    <Dialog open={shouldShow}>
       <DialogContent className="sm:max-w-md [&>button]:hidden">
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           <div className="relative">
