@@ -21,9 +21,10 @@ export const useAutoSync = (userId: string | undefined) => {
       console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
       startSync(pendingSync);
+      // Keep showing for 30 seconds to allow backend import to complete
       setTimeout(() => {
         endSync();
-      }, 5000);
+      }, 30000); // Extended to 30s
     }
 
     // Écouter les insertions ET updates dans shopify_connections
@@ -59,21 +60,23 @@ export const useAutoSync = (userId: string | undefined) => {
           if (connection.connection_type === 'oauth') {
             console.log('⏭️ [AutoSync] OAuth connection detected - backend will handle import');
             
+            const storeName = connection.store_name || connection.store_url;
+            
             // Si on est sur /onboarding, stocker pour afficher après redirection
-            if (window.location.pathname === '/onboarding') {
+            if (window.location.pathname.startsWith('/onboarding')) {
               console.log('⏭️ [AutoSync] On onboarding page, storing sync for dashboard display');
-              const storeName = connection.store_name || connection.store_url;
               sessionStorage.setItem('pending_sync', storeName);
               return;
             }
             
-            const storeName = connection.store_name || connection.store_url;
+            // Si on est déjà sur dashboard, afficher immédiatement
+            console.log('✅ [AutoSync] On dashboard, showing sync dialog immediately');
             startSync(storeName);
             
-            // Show popup for 5 seconds then close (backend is doing the actual work)
+            // Keep showing for 30 seconds to allow backend import to complete
             setTimeout(() => {
               endSync();
-            }, 5000);
+            }, 30000); // Extended to 30s to show full import process
             
             return;
           }
