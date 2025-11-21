@@ -3,7 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp, Loader2, ShoppingBag, FileText, BarChart3, MessageSquare } from "lucide-react";
+import {
+  CheckCircle2,
+  Sparkles,
+  Zap,
+  Crown,
+  CreditCard,
+  TrendingUp,
+  Loader2,
+  ShoppingBag,
+  FileText,
+  BarChart3,
+  MessageSquare,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,13 +52,13 @@ export function SubscriptionPlans() {
   const { limits } = useUsageLimits();
   const { t, tf, language } = useTranslation();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
-  const [currentBillingPeriod, setCurrentBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [currentBillingPeriod, setCurrentBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [selectedProPlan, setSelectedProPlan] = useState<string>('');
-  const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<string>('');
+  const [selectedProPlan, setSelectedProPlan] = useState<string>("");
+  const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<string>("");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingPlanChange, setPendingPlanChange] = useState<{
     planId: string;
@@ -60,69 +72,60 @@ export function SubscriptionPlans() {
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) return;
-      
+
       // Load plans
       const { data: plansData } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
+        .from("subscription_plans")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+
       if (plansData) {
         // Filter plans - include Trial (free) and plans with valid Stripe price IDs
-        const validPlans = plansData.filter(plan => {
+        const validPlans = plansData.filter((plan) => {
           // Always include Trial plan (no Stripe required)
-          if (plan.id === 'trial') return true;
-          
-          const monthlyId = plan.stripe_price_id_monthly || '';
-          const yearlyId = plan.stripe_price_id_yearly || '';
-          
-          const hasValidMonthly = monthlyId.startsWith('price_') && 
-            !monthlyId.includes('monthly') && 
-            !monthlyId.includes('pro_') && 
-            !monthlyId.includes('enterprise_');
-          
-          const hasValidYearly = yearlyId.startsWith('price_') && 
-            !yearlyId.includes('yearly') && 
-            !yearlyId.includes('pro_') && 
-            !yearlyId.includes('enterprise_');
-          
+          if (plan.id === "trial") return true;
+
+          const monthlyId = plan.stripe_price_id_monthly || "";
+          const yearlyId = plan.stripe_price_id_yearly || "";
+
+          const hasValidMonthly =
+            monthlyId.startsWith("price_") &&
+            !monthlyId.includes("monthly") &&
+            !monthlyId.includes("pro_") &&
+            !monthlyId.includes("enterprise_");
+
+          const hasValidYearly =
+            yearlyId.startsWith("price_") &&
+            !yearlyId.includes("yearly") &&
+            !yearlyId.includes("pro_") &&
+            !yearlyId.includes("enterprise_");
+
           return hasValidMonthly || hasValidYearly;
         });
-        
+
         setPlans(validPlans);
-        
+
         // Set default selections
-        const proPlans = validPlans.filter(p => 
-          p.id === 'professional' || 
-          p.id === 'pro' || 
-          p.id.startsWith('pro-')
-        );
-        const enterprisePlans = validPlans.filter(p => 
-          p.id === 'enterprise' || 
-          p.id.startsWith('enterprise-')
-        );
-        
+        const proPlans = validPlans.filter((p) => p.id === "professional" || p.id === "pro" || p.id.startsWith("pro-"));
+        const enterprisePlans = validPlans.filter((p) => p.id === "enterprise" || p.id.startsWith("enterprise-"));
+
         if (proPlans.length > 0) setSelectedProPlan(proPlans[0].id);
         if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
       }
-      
+
       // Load current plan and billing period
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_plan_id')
-        .eq('id', user.id)
-        .single();
-      
+      const { data: profile } = await supabase.from("profiles").select("current_plan_id").eq("id", user.id).single();
+
       const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('billing_period')
-        .eq('seller_id', user.id)
-        .in('status', ['active', 'trialing'])
+        .from("subscriptions")
+        .select("billing_period")
+        .eq("seller_id", user.id)
+        .in("status", ["active", "trialing"])
         .maybeSingle();
-      
+
       setCurrentPlanId(profile?.current_plan_id || null);
-      setCurrentBillingPeriod((subscription?.billing_period as 'monthly' | 'yearly') || 'monthly');
+      setCurrentBillingPeriod((subscription?.billing_period as "monthly" | "yearly") || "monthly");
       setLoading(false);
     };
 
@@ -139,23 +142,23 @@ export function SubscriptionPlans() {
     }
 
     // Special handling for Trial plan - no Stripe checkout needed
-    if (planId === 'trial') {
-      navigate('/auth?mode=signup&plan=trial');
+    if (planId === "trial") {
+      navigate("/auth?mode=signup&plan=trial");
       return;
     }
 
     setCheckoutLoading(planId);
     try {
       // Get the selected plan details
-      const selectedPlan = plans.find(p => p.id === planId);
+      const selectedPlan = plans.find((p) => p.id === planId);
       if (!selectedPlan) throw new Error("Plan not found");
 
       // Check if user has an active subscription
       const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('stripe_subscription_id, status')
-        .eq('seller_id', user.id)
-        .in('status', ['active', 'trialing'])
+        .from("subscriptions")
+        .select("stripe_subscription_id, status")
+        .eq("seller_id", user.id)
+        .in("status", ["active", "trialing"])
         .maybeSingle();
 
       const hasActiveSubscription = !!subscription?.stripe_subscription_id;
@@ -163,19 +166,15 @@ export function SubscriptionPlans() {
       // If user has active subscription, calculate proration
       if (hasActiveSubscription) {
         // Get the stripe price ID for the new plan
-        const newPriceId = billingPeriod === 'monthly' 
-          ? selectedPlan.stripe_price_id_monthly 
-          : selectedPlan.stripe_price_id_yearly;
+        const newPriceId =
+          billingPeriod === "monthly" ? selectedPlan.stripe_price_id_monthly : selectedPlan.stripe_price_id_yearly;
 
         if (!newPriceId) throw new Error("Price ID not found for selected plan");
 
         // Calculate proration
-        const { data: prorationData, error: prorationError } = await supabase.functions.invoke(
-          'calculate-proration',
-          {
-            body: { new_price_id: newPriceId }
-          }
-        );
+        const { data: prorationData, error: prorationError } = await supabase.functions.invoke("calculate-proration", {
+          body: { new_price_id: newPriceId },
+        });
 
         if (prorationError) throw prorationError;
 
@@ -186,26 +185,26 @@ export function SubscriptionPlans() {
           priceId: newPriceId,
           prorationAmount: prorationData.prorationAmount || 0,
           hasActiveSubscription: true,
-          breakdown: prorationData.breakdown || null
+          breakdown: prorationData.breakdown || null,
         });
         setConfirmDialogOpen(true);
       } else {
         // No active subscription, redirect directly to Stripe checkout
-        const { data, error } = await supabase.functions.invoke('force-payment', {
+        const { data, error } = await supabase.functions.invoke("force-payment", {
           body: {
             plan_id: planId,
-            billing_period: billingPeriod
-          }
+            billing_period: billingPeriod,
+          },
         });
-        
+
         if (error) throw error;
-        
+
         if (data?.url) {
           window.location.href = data.url;
         }
       }
     } catch (error: any) {
-      console.error('Error handling plan selection:', error);
+      console.error("Error handling plan selection:", error);
       toast({
         title: t.errors.error,
         description: error.message,
@@ -221,18 +220,18 @@ export function SubscriptionPlans() {
     try {
       if (pendingPlanChange.hasActiveSubscription) {
         // Create upgrade invoice and get payment URL
-        const { data, error } = await supabase.functions.invoke('create-upgrade-invoice', {
+        const { data, error } = await supabase.functions.invoke("create-upgrade-invoice", {
           body: {
-            new_price_id: pendingPlanChange.priceId
-          }
+            new_price_id: pendingPlanChange.priceId,
+          },
         });
-        
+
         if (error) throw error;
-        
+
         if (data.payment_required && data.payment_url) {
           // Open Stripe payment page in new tab
-          window.open(data.payment_url, '_blank');
-          
+          window.open(data.payment_url, "_blank");
+
           toast({
             title: "Redirection vers le paiement",
             description: `Montant à payer: ${data.amount_due.toFixed(2)} ${data.currency.toUpperCase()}`,
@@ -241,14 +240,14 @@ export function SubscriptionPlans() {
           // No payment required (downgrade or $0 proration)
           toast({
             title: t.account.subscription.activationSuccess,
-            description: 'Votre plan a été mis à jour avec succès!',
+            description: "Votre plan a été mis à jour avec succès!",
           });
-          
+
           setTimeout(() => window.location.reload(), 1500);
         }
       }
     } catch (error: any) {
-      console.error('Error confirming plan change:', error);
+      console.error("Error confirming plan change:", error);
       toast({
         title: t.errors.error,
         description: error.message,
@@ -263,7 +262,7 @@ export function SubscriptionPlans() {
 
   const isCurrentPlan = (planId: string) => {
     // For trial plan, ignore billing period check since trial has no billing period
-    if (planId === 'trial') {
+    if (planId === "trial") {
       return currentPlanId === planId;
     }
     // For paid plans, check both plan ID and billing period
@@ -273,12 +272,12 @@ export function SubscriptionPlans() {
   const getPrice = (plan: Plan) => {
     let price = getPriceByLanguage(plan, language, billingPeriod);
     // Pour l'annuel, afficher le prix mensuel équivalent
-    if (billingPeriod === 'yearly') {
+    if (billingPeriod === "yearly") {
       price = price / 12;
     }
-    
+
     // Format avec 2 décimales pour être cohérent avec Stripe
-    const formattedPrice = price.toFixed(2).replace('.', ',');
+    const formattedPrice = price.toFixed(2).replace(".", ",");
     return formattedPrice;
   };
 
@@ -286,54 +285,50 @@ export function SubscriptionPlans() {
     // Remise fixe de 20% sur l'annuel
     return "20";
   };
-  
+
   const getPlanLevel = (planId: string) => {
-    if (planId === 'trial' || planId === 'starter') return 1;
-    if (planId === 'professional' || planId.startsWith('pro-')) return 2;
-    if (planId.startsWith('enterprise-')) return 3;
+    if (planId === "trial" || planId === "starter") return 1;
+    if (planId === "professional" || planId.startsWith("pro-")) return 2;
+    if (planId.startsWith("enterprise-")) return 3;
     return 0;
   };
-  
+
   const getButtonText = (planId: string) => {
     if (isCurrentPlan(planId)) return t.dashboard.plans.currentPlan;
-    
-    const currentLevel = getPlanLevel(currentPlanId || '');
+
+    const currentLevel = getPlanLevel(currentPlanId || "");
     const targetLevel = getPlanLevel(planId);
-    
+
     if (targetLevel > currentLevel) return t.dashboard.plans.upgrade;
     if (targetLevel < currentLevel) return t.dashboard.plans.downgrade;
     return t.dashboard.plans.changePlan;
   };
 
   // Group plans by category
-  const trialPlan = plans.find(p => p.id === 'trial');
-  const starterPlan = plans.find(p => p.id === 'starter');
-  const proPlans = plans.filter(p => 
-    p.id.startsWith('pro-')
-  ).sort((a, b) => a.display_order - b.display_order);
-  const enterprisePlans = plans.filter(p => 
-    p.id.startsWith('enterprise-')
-  ).sort((a, b) => a.display_order - b.display_order);
-  
-  const selectedPro = proPlans.find(p => p.id === selectedProPlan);
-  const selectedEnterprise = enterprisePlans.find(p => p.id === selectedEnterprisePlan);
+  const trialPlan = plans.find((p) => p.id === "trial");
+  const starterPlan = plans.find((p) => p.id === "starter");
+  const proPlans = plans.filter((p) => p.id.startsWith("pro-")).sort((a, b) => a.display_order - b.display_order);
+  const enterprisePlans = plans
+    .filter((p) => p.id.startsWith("enterprise-"))
+    .sort((a, b) => a.display_order - b.display_order);
+
+  const selectedPro = proPlans.find((p) => p.id === selectedProPlan);
+  const selectedEnterprise = enterprisePlans.find((p) => p.id === selectedEnterprisePlan);
 
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
         <h2 className="text-3xl font-bold">{t.dashboard.plans.title}</h2>
-        <p className="text-muted-foreground">
-          {t.dashboard.plans.subtitle}
-        </p>
-        
+        <p className="text-muted-foreground">{t.dashboard.plans.subtitle}</p>
+
         <div className="flex justify-center">
-          <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
+          <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as "monthly" | "yearly")}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="monthly">{t.dashboard.plans.monthly}</TabsTrigger>
               <TabsTrigger value="yearly">
                 {t.dashboard.plans.yearly}
                 <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
-                  {tf('dashboard.plans.save', { percent: '20' })}
+                  {tf("dashboard.plans.save", { percent: "20" })}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -344,13 +339,15 @@ export function SubscriptionPlans() {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Trial Plan */}
         {trialPlan && (
-          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(trialPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card
+            className={`p-8 relative flex flex-col ${isCurrentPlan(trialPlan.id) ? "border-2 border-primary shadow-primary" : ""}`}
+          >
             {isCurrentPlan(trialPlan.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
               </Badge>
             )}
-            
+
             <div className="space-y-6 flex-1">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -359,7 +356,7 @@ export function SubscriptionPlans() {
                 </div>
                 <p className="text-muted-foreground text-sm">{trialPlan.description}</p>
               </div>
-              
+
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">€0</span>
@@ -370,15 +367,21 @@ export function SubscriptionPlans() {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{trialPlan.max_products} {t.dashboard.plans.features.products}</span>
+                  <span>
+                    {trialPlan.max_products} {t.dashboard.plans.features.products}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{trialPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}</span>
+                  <span>
+                    {trialPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{trialPlan.max_articles_monthly || 0} {t.dashboard.plans.features.articles}</span>
+                  <span>
+                    {trialPlan.max_articles_monthly || 0} {t.dashboard.plans.features.articles}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -386,7 +389,9 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{trialPlan.max_chat_responses_monthly || 0} {t.dashboard.plans.features.chatResponses}</span>
+                  <span>
+                    {trialPlan.max_chat_responses_monthly || 0} {t.dashboard.plans.features.chatResponses}
+                  </span>
                 </div>
               </div>
             </div>
@@ -408,13 +413,15 @@ export function SubscriptionPlans() {
 
         {/* Starter Plan */}
         {starterPlan && (
-          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card
+            className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? "border-2 border-primary shadow-primary" : ""}`}
+          >
             {isCurrentPlan(starterPlan.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
               </Badge>
             )}
-            
+
             <div className="space-y-6 flex-1">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -423,7 +430,7 @@ export function SubscriptionPlans() {
                 </div>
                 <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.starter}</p>
               </div>
-              
+
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">€{getPrice(starterPlan)}</span>
@@ -434,15 +441,21 @@ export function SubscriptionPlans() {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_products} {t.dashboard.plans.features.products}</span>
+                  <span>
+                    {starterPlan.max_products} {t.dashboard.plans.features.products}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}</span>
+                  <span>
+                    {starterPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_articles_monthly} {t.dashboard.plans.features.articles}</span>
+                  <span>
+                    {starterPlan.max_articles_monthly} {t.dashboard.plans.features.articles}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -450,7 +463,9 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_chat_responses_monthly} {t.dashboard.plans.features.chatResponses}</span>
+                  <span>
+                    {starterPlan.max_chat_responses_monthly} {t.dashboard.plans.features.chatResponses}
+                  </span>
                 </div>
               </div>
             </div>
@@ -472,13 +487,15 @@ export function SubscriptionPlans() {
 
         {/* Pro Plans */}
         {selectedPro && (
-          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedPro.id) ? 'border-2 border-primary shadow-primary' : 'border-2 border-primary/20'}`}>
+          <Card
+            className={`p-8 relative flex flex-col ${isCurrentPlan(selectedPro.id) ? "border-2 border-primary shadow-primary" : "border-2 border-primary/20"}`}
+          >
             {isCurrentPlan(selectedPro.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
               </Badge>
             )}
-            
+
             <div className="space-y-6 flex-1">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -487,34 +504,33 @@ export function SubscriptionPlans() {
                 </div>
                 <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.pro}</p>
               </div>
-              
+
               {proPlans.length > 1 && (
-              <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
-                <SelectTrigger className="w-full bg-card border-2">
-                  <SelectValue>
-                    €{getPrice(selectedPro)} - {selectedPro?.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {proPlans.map((plan) => {
-                    let price = getPriceByLanguage(plan, language, billingPeriod);
-                    if (billingPeriod === 'yearly') {
-                      price = price / 12;
-                    }
-                    const formattedPrice = price.toFixed(2).replace('.', ',');
-                    return (
-                      <SelectItem
-                        key={plan.id}
-                        value={plan.id}
-                      >
-                        €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
+                  <SelectTrigger className="w-full bg-card border-2">
+                    <SelectValue>
+                      €{getPrice(selectedPro)} - {selectedPro?.max_optimizations_monthly.toLocaleString("fr-FR")}{" "}
+                      optimisations
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {proPlans.map((plan) => {
+                      let price = getPriceByLanguage(plan, language, billingPeriod);
+                      if (billingPeriod === "yearly") {
+                        price = price / 12;
+                      }
+                      const formattedPrice = price.toFixed(2).replace(".", ",");
+                      return (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString("fr-FR")}{" "}
+                          optimisations
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               )}
-              
+
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">€{getPrice(selectedPro)}</span>
@@ -525,23 +541,35 @@ export function SubscriptionPlans() {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_products.toLocaleString('fr-FR')} {t.dashboard.plans.features.products}</span>
+                  <span>
+                    {selectedPro.max_products.toLocaleString("fr-FR")} {t.dashboard.plans.features.products}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_optimizations_monthly.toLocaleString('fr-FR')} {t.dashboard.plans.features.optimizations}</span>
+                  <span>
+                    {selectedPro.max_optimizations_monthly.toLocaleString("fr-FR")}{" "}
+                    {t.dashboard.plans.features.optimizations}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_articles_monthly} {t.dashboard.plans.features.articles}</span>
+                  <span>
+                    {selectedPro.max_articles_monthly} {t.dashboard.plans.features.articles}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_campaigns} {t.dashboard.plans.features.campaigns}</span>
+                  <span>
+                    {selectedPro.max_campaigns} {t.dashboard.plans.features.campaigns}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString('fr-FR')} {t.dashboard.plans.features.chatResponses}</span>
+                  <span>
+                    {selectedPro.max_chat_responses_monthly.toLocaleString("fr-FR")}{" "}
+                    {t.dashboard.plans.features.chatResponses}
+                  </span>
                 </div>
               </div>
             </div>
@@ -563,13 +591,15 @@ export function SubscriptionPlans() {
 
         {/* Enterprise Plans */}
         {selectedEnterprise && (
-          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
+          <Card
+            className={`p-8 relative flex flex-col ${isCurrentPlan(selectedEnterprise.id) ? "border-2 border-primary shadow-primary" : ""}`}
+          >
             {isCurrentPlan(selectedEnterprise.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
               </Badge>
             )}
-            
+
             <div className="space-y-6 flex-1">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -578,34 +608,33 @@ export function SubscriptionPlans() {
                 </div>
                 <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.enterprise}</p>
               </div>
-              
+
               {enterprisePlans.length > 1 && (
-              <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
-                <SelectTrigger className="w-full bg-card border-2">
-                  <SelectValue>
-                    €{getPrice(selectedEnterprise)} - {selectedEnterprise?.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {enterprisePlans.map((plan) => {
-                    let price = getPriceByLanguage(plan, language, billingPeriod);
-                    if (billingPeriod === 'yearly') {
-                      price = price / 12;
-                    }
-                    const formattedPrice = price.toFixed(2).replace('.', ',');
-                    return (
-                      <SelectItem
-                        key={plan.id}
-                        value={plan.id}
-                      >
-                        €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
+                  <SelectTrigger className="w-full bg-card border-2">
+                    <SelectValue>
+                      €{getPrice(selectedEnterprise)} -{" "}
+                      {selectedEnterprise?.max_optimizations_monthly.toLocaleString("fr-FR")} optimisations
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {enterprisePlans.map((plan) => {
+                      let price = getPriceByLanguage(plan, language, billingPeriod);
+                      if (billingPeriod === "yearly") {
+                        price = price / 12;
+                      }
+                      const formattedPrice = price.toFixed(2).replace(".", ",");
+                      return (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString("fr-FR")}{" "}
+                          optimisations
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               )}
-              
+
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">€{getPrice(selectedEnterprise)}</span>
@@ -616,11 +645,13 @@ export function SubscriptionPlans() {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>Illimité produits</span>
+                  <span> Produits Illimité</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString('fr-FR')}+ optimisations/mois</span>
+                  <span>
+                    {selectedEnterprise.max_optimizations_monthly.toLocaleString("fr-FR")}+ optimisations/mois
+                  </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -632,7 +663,9 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString('fr-FR')}+ réponses chat/mois</span>
+                  <span>
+                    {selectedEnterprise.max_chat_responses_monthly.toLocaleString("fr-FR")}+ réponses chat/mois
+                  </span>
                 </div>
               </div>
             </div>
@@ -662,13 +695,13 @@ export function SubscriptionPlans() {
             setPendingPlanChange(null);
           }
         }}
-        currentPlanName={plans.find(p => p.id === currentPlanId)?.name || ''}
-        newPlanName={pendingPlanChange?.planName || ''}
+        currentPlanName={plans.find((p) => p.id === currentPlanId)?.name || ""}
+        newPlanName={pendingPlanChange?.planName || ""}
         prorationAmount={pendingPlanChange?.prorationAmount || 0}
         currency="eur"
         isLoading={!!checkoutLoading}
         onConfirm={handleConfirmPlanChange}
-        isUpgrade={getPlanLevel(pendingPlanChange?.planId || '') > getPlanLevel(currentPlanId || '')}
+        isUpgrade={getPlanLevel(pendingPlanChange?.planId || "") > getPlanLevel(currentPlanId || "")}
         breakdown={pendingPlanChange?.breakdown}
       />
     </div>
