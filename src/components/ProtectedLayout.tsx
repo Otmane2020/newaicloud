@@ -11,10 +11,12 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/contexts/StoreContext";
+import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { stores, loading: storesLoading } = useStore();
+  const { isSyncing } = useAutoSyncProgress();
   const isMobile = useIsMobile();
 
   if (loading) {
@@ -53,7 +55,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <LimitWarningBanner />
-            {!storesLoading && stores.length === 0 && (
+            {!storesLoading && !isSyncing && stores.length === 0 && (
               <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-3">
                 <NoStoreConnectedPrompt />
               </div>

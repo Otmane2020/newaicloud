@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
@@ -9,6 +9,7 @@ import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
  */
 export const useAutoSync = (userId: string | undefined) => {
   const { startSync, updateType, endSync } = useAutoSyncProgress();
+  const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -21,10 +22,45 @@ export const useAutoSync = (userId: string | undefined) => {
       console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
       startSync(pendingSync);
-      // Keep showing for 30 seconds to allow backend import to complete
+      
+      // Poll sync_history to check when import is complete
+      const checkSyncStatus = async () => {
+        const { data: latestSync } = await supabase
+          .from('sync_history')
+          .select('status, items_synced')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
+          console.log('✅ [AutoSync] Import completed:', latestSync);
+          if (syncCheckIntervalRef.current) {
+            clearInterval(syncCheckIntervalRef.current);
+            syncCheckIntervalRef.current = null;
+          }
+          endSync();
+          
+          if (latestSync.status === 'success') {
+            toast.success('Synchronisation terminée', {
+              description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+            });
+          }
+        }
+      };
+      
+      // Check immediately then every 3 seconds
+      checkSyncStatus();
+      syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+      
+      // Failsafe: close after 2 minutes maximum
       setTimeout(() => {
+        if (syncCheckIntervalRef.current) {
+          clearInterval(syncCheckIntervalRef.current);
+          syncCheckIntervalRef.current = null;
+        }
         endSync();
-      }, 30000); // Extended to 30s
+      }, 120000);
     }
 
     // Écouter les insertions ET updates dans shopify_connections
@@ -69,14 +105,48 @@ export const useAutoSync = (userId: string | undefined) => {
               return;
             }
             
-            // Si on est déjà sur dashboard, afficher immédiatement
-            console.log('✅ [AutoSync] On dashboard, showing sync dialog immediately');
+            // Si on est déjà sur dashboard, afficher immédiatement et surveiller l'état
+            console.log('✅ [AutoSync] On dashboard, showing sync dialog and monitoring import');
             startSync(storeName);
             
-            // Keep showing for 30 seconds to allow backend import to complete
+            // Poll sync_history to check when import is complete
+            const checkSyncStatus = async () => {
+              const { data: latestSync } = await supabase
+                .from('sync_history')
+                .select('status, items_synced')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+              
+              if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
+                console.log('✅ [AutoSync] Import completed:', latestSync);
+                if (syncCheckIntervalRef.current) {
+                  clearInterval(syncCheckIntervalRef.current);
+                  syncCheckIntervalRef.current = null;
+                }
+                endSync();
+                
+                if (latestSync.status === 'success') {
+                  toast.success('Synchronisation terminée', {
+                    description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+                  });
+                }
+              }
+            };
+            
+            // Check immediately then every 3 seconds
+            checkSyncStatus();
+            syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+            
+            // Failsafe: close after 2 minutes maximum
             setTimeout(() => {
+              if (syncCheckIntervalRef.current) {
+                clearInterval(syncCheckIntervalRef.current);
+                syncCheckIntervalRef.current = null;
+              }
               endSync();
-            }, 30000); // Extended to 30s to show full import process
+            }, 120000);
             
             return;
           }
@@ -177,6 +247,10 @@ export const useAutoSync = (userId: string | undefined) => {
     return () => {
       console.log('⏹️ [AutoSync] Unsubscribing from connection changes');
       supabase.removeChannel(channel);
+      if (syncCheckIntervalRef.current) {
+        clearInterval(syncCheckIntervalRef.current);
+        syncCheckIntervalRef.current = null;
+      }
     };
   }, [userId, startSync, updateType, endSync]);
 };
