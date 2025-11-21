@@ -23,6 +23,8 @@ import {
   Store,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/formatUtils";
 import { useShopifySync } from "@/hooks/useShopifySync";
@@ -63,15 +65,22 @@ export default function Onboarding() {
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
+  const [isWaitingForProducts, setIsWaitingForProducts] = useState(false);
+  const [importProgress, setImportProgress] = useState<string>("");
+  const [importElapsedSeconds, setImportElapsedSeconds] = useState(0);
   const { syncShopifyStore } = useShopifySync();
 
   // ✅ Helper to wait for products before redirecting (timeout: 40s)
-  const waitForProducts = async (userId: string): Promise<void> => {
+  const waitForProducts = async (
+    userId: string, 
+    onProgress?: (elapsed: number, total: number) => void
+  ): Promise<void> => {
     console.log("⏳ [WAIT-PRODUCTS] Waiting up to 40s for products to be imported...");
     
     let productsFound = false;
     for (let i = 0; i < 40; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      onProgress?.(i + 1, 40);
       
       try {
         const result = await (supabase as any)
@@ -724,44 +733,106 @@ export default function Onboarding() {
       return;
     }
 
-    setLoading(true);
     try {
+      setLoading(true);
+      setIsWaitingForProducts(true);
+      setImportProgress("Activation de l'essai gratuit...");
+      setImportElapsedSeconds(0);
+
+      // Timer pour afficher les secondes écoulées
+      const timer = setInterval(() => {
+        setImportElapsedSeconds(prev => prev + 1);
+      }, 1000);
+
       console.log("🎁 [FREE-TRIAL] Activating free trial for user:", user.id);
 
       // ✅ STEP 1: Activate trial FIRST
       const { data, error } = await supabase.functions.invoke("activate-free-trial");
 
-      if (error) throw error;
+      if (error) {
+        clearInterval(timer);
+        throw error;
+      }
 
       if (data?.success) {
         console.log("✅ [FREE-TRIAL] Trial activated, status is now 'trialing'");
-        toast.success(
-          language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!",
-        );
-
+        
         // ✅ STEP 2: NOW claim Shopify after trial is active
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending) {
           console.log("🔗 [FREE-TRIAL] Claiming Shopify connection after trial activation");
+          setImportProgress("Connexion de votre boutique...");
           
           setClaimingShopify(true);
-          await claimShopifyConnection(shopifyPending);
           
-          // ✅ STEP 3: Wait for products to be imported by backend
-          console.log("⏳ [FREE-TRIAL] Waiting for products to be imported...");
-          await waitForProducts(user.id);
-          
-          setClaimingShopify(false);
+          try {
+            await claimShopifyConnection(shopifyPending);
+            
+            // ✅ STEP 3: Wait for products to be imported by backend
+            console.log("⏳ [FREE-TRIAL] Waiting for products to be imported...");
+            setImportProgress("Import des produits en cours...");
+            
+            await waitForProducts(user.id, (elapsed, total) => {
+              setImportProgress(`Recherche de produits... ${elapsed}/${total}s`);
+            });
+            
+            setClaimingShopify(false);
+          } catch (claimError) {
+            console.error("❌ [FREE-TRIAL] Error claiming connection:", claimError);
+            clearInterval(timer);
+            
+            // Log error to integration_failures
+            await supabase.from("integration_failures").insert({
+              user_id: user.id,
+              integration_type: "shopify",
+              error_type: "free_trial_claim_failed",
+              error_message: claimError instanceof Error ? claimError.message : "Unknown error",
+              context: { shopifyPending },
+            });
+
+            toast.error("Erreur lors de la connexion", {
+              description: "Impossible de connecter votre boutique.",
+              action: {
+                label: "Réessayer",
+                onClick: () => handleStartFreeTrial(),
+              },
+            });
+            
+            clearInterval(timer);
+            navigate("/dashboard");
+            return;
+          }
         }
 
+        clearInterval(timer);
+        toast.success(language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!");
+        
         // Redirect to dashboard
         setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1000);
       }
     } catch (error) {
       console.error("💥 [FREE-TRIAL] Error:", error);
-      toast.error(language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial");
+      
+      // Log error to integration_failures
+      await supabase.from("integration_failures").insert({
+        user_id: user?.id || "",
+        integration_type: "shopify",
+        error_type: "free_trial_activation_failed",
+        error_message: error instanceof Error ? error.message : "Unknown error",
+        context: { step: importProgress },
+      });
+      
+      toast.error(language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial", {
+        action: {
+          label: "Réessayer",
+          onClick: () => handleStartFreeTrial(),
+        },
+      });
+      
+      navigate("/dashboard");
     } finally {
       setLoading(false);
+      setIsWaitingForProducts(false);
     }
   };
 
@@ -1627,6 +1698,47 @@ export default function Onboarding() {
           })()}
         </div>
       </div>
+
+      {/* Dialog de progression pour l'import */}
+      <Dialog open={isWaitingForProducts}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              Import en cours
+            </DialogTitle>
+            <DialogDescription>
+              Veuillez patienter pendant l'import de votre boutique Shopify
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Progression</span>
+                <span className="font-semibold text-primary">{importElapsedSeconds}s</span>
+              </div>
+              <Progress value={(importElapsedSeconds / 40) * 100} className="h-2" />
+            </div>
+
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+              <p className="text-sm font-medium text-foreground">{importProgress}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique
+              </p>
+            </div>
+
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>✓ Activation de l'essai gratuit</p>
+              <p>✓ Connexion de votre boutique</p>
+              <p className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Import des produits en cours...
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
