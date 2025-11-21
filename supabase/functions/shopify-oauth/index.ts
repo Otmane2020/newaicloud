@@ -164,9 +164,8 @@ serve(async (req) => {
         await supabase.from("shopify_connections").upsert({
           user_id: oauthState.user_id,
           store_url: shop,
-          commercial_name: oauthState.shop_name,
+          store_name: oauthState.shop_name || shop,
           access_token: accessToken,
-          scope: tokenData.scope,
           connected_at: new Date().toISOString(),
           is_active: true,
           connection_type: "oauth",
