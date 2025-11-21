@@ -81,6 +81,32 @@ function ensureAccessibleText(bgColor: string): string {
   return bgLum > 0.5 ? "#000000" : "#FFFFFF";
 }
 
+// Sanitize dimensions from Gemini-generated HTML to avoid duplicates
+function sanitizeDimensionsInHtml(html: string): string {
+  console.log("🧹 Sanitizing dimensions from HTML...");
+  
+  // Remove table rows containing dimension keywords (case insensitive)
+  let cleaned = html.replace(
+    /<tr[\s\S]*?(?:Dimensions?|DIMENSIONS?|Hauteur|Height|Largeur|Width|Profondeur|Depth|Longueur|Length)[\s\S]*?<\/tr>/gi,
+    ""
+  );
+  
+  // Remove list items containing dimension keywords
+  cleaned = cleaned.replace(
+    /<li[^>]*>[\s\S]*?(?:Dimensions?|DIMENSIONS?)[\s\S]*?<\/li>/gi,
+    ""
+  );
+  
+  // Remove paragraphs that are just dimension specifications
+  cleaned = cleaned.replace(
+    /<p[^>]*>[\s\S]*?(?:Dimensions?\s*:|\d+\s*(?:cm|mm|m)\s*[×x]\s*\d+)[\s\S]*?<\/p>/gi,
+    ""
+  );
+  
+  console.log("✅ Dimensions sanitized from HTML");
+  return cleaned;
+}
+
 function adjustSaturation(hex: string, factor: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
@@ -1298,6 +1324,8 @@ ${enrichedProduct?.serp_verified ? `
 - NO links to external pages (use href="#" only)
 - NO call-to-action buttons of any kind
 - NO "Dimensions" section - dimensions will be added automatically after generation
+- NO physical dimensions (height, width, depth, length, diameter) in the Technical Specifications section - DO NOT include any numeric measurements or dimension tables/rows
+- In Technical Specifications, focus ONLY on materials, finishes, features, care instructions - NEVER include size measurements
 
 ✅ REQUIRED SECTIONS:
 Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
@@ -1473,6 +1501,8 @@ STRUCTURE :
 - AUCUN lien vers des pages externes (utiliser href="#" uniquement)
 - AUCUN bouton call-to-action de quelque nature que ce soit
 - AUCUNE section "Dimensions" - les dimensions seront ajoutées automatiquement après génération
+- AUCUNE dimension physique (hauteur, largeur, profondeur, longueur, diamètre) dans la section Caractéristiques Techniques - NE PAS inclure de mesures chiffrées ou tableaux/lignes de dimensions
+- Dans Caractéristiques Techniques, se concentrer UNIQUEMENT sur les matériaux, finitions, fonctionnalités, entretien - JAMAIS les mesures de taille
 
 ✅ SECTIONS REQUISES :
 Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
@@ -1560,7 +1590,10 @@ UTILISATION DES ICÔNES :
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
     // 🧹 Apply HTML normalization and sanitization
-    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+    let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+    
+    // 🧹 Remove any dimension-related content that Gemini might have added
+    html = sanitizeDimensionsInHtml(html);
 
     // 📊 Validate final HTML
     const validation = validateHTML(html);
@@ -1624,28 +1657,28 @@ UTILISATION DES ICÔNES :
         console.log("📏 Final dimension text:", dimensionText);
         
         dimensionsSection = `
-    <!-- Dimensions Section (AFTER Caractéristiques) -->
-    <section class="py-6 md:py-8" style="background-color: hsl(${designTokens.background})">
+    <!-- Dimensions Section - Discrete placement after Caractéristiques -->
+    <section class="py-6" style="background-color: hsl(${designTokens.background})">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-lg p-5 md:p-6 shadow-sm border border-gray-200">
-          <h2 class="text-base font-semibold mb-4 uppercase tracking-wide" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h2>
+        <div class="bg-white/50 rounded-lg p-4 border border-gray-200">
           
           <div class="flex flex-col sm:flex-row gap-4 items-start">
             
             ${imagesWithDimensions.length > 0 ? `
-            <!-- Technical Schema Image -->
+            <!-- Technical Schema Image - Compact -->
             <div class="shrink-0">
               <img src="${imagesWithDimensions[0].src}" 
                    alt="${imagesWithDimensions[0].alt_text || 'Technical dimensions'}" 
-                   class="w-full sm:w-40 md:w-48 h-auto rounded-md border border-gray-300"
+                   class="w-24 sm:w-28 h-auto rounded-md border border-gray-300 shadow-sm"
                    loading="lazy" />
             </div>
             ` : ''}
             
-            <!-- Dimension Text -->
+            <!-- Dimension Text - Discrete -->
             <div class="flex-1">
-              <p class="text-xl md:text-2xl font-bold mb-2" style="color: hsl(${designTokens.text})">${dimensionText}</p>
-              <p class="text-sm text-gray-600">${dimensionLabels.subtitle}</p>
+              <h3 class="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">${dimensionLabels.title}</h3>
+              <p class="text-base md:text-lg font-semibold mb-1" style="color: hsl(${designTokens.text})">${dimensionText}</p>
+              <p class="text-xs text-gray-500">${dimensionLabels.subtitle}</p>
             </div>
             
           </div>
