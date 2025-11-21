@@ -175,9 +175,8 @@ Be specific and descriptive in ${language === 'fr' ? 'French' : 'English'}.`;
       }
     }
 
-    // Step 3: Generate optimized title with Lovable AI
+    // Step 3: Generate optimized title with Google Gemini
     console.log('[SMART-TITLE] Step 3: Generate optimized title');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     
     const titlePrompt = `You are an expert e-commerce SEO copywriter. Generate an optimized product title based on this analysis:
 
@@ -205,35 +204,38 @@ ${visionAnalysis}` : ''}
 
 Generate ONLY the optimized title, no explanations.`;
 
-    const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: titlePrompt }],
-        temperature: 0.7,
-        max_tokens: 100,
-      }),
-    });
+    const geminiTitleResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: titlePrompt }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 100,
+          }
+        })
+      }
+    );
 
-    if (!lovableResponse.ok) {
-      const errorText = await lovableResponse.text();
-      console.error('[SMART-TITLE] Lovable AI error:', lovableResponse.status, errorText);
-      throw new Error(`Lovable AI error: ${lovableResponse.status}`);
+    if (!geminiTitleResponse.ok) {
+      const errorText = await geminiTitleResponse.text();
+      console.error('[SMART-TITLE] Google Gemini error:', geminiTitleResponse.status, errorText);
+      throw new Error(`Google Gemini error: ${geminiTitleResponse.status}`);
     }
 
-    const lovableData = await lovableResponse.json();
-    console.log('[SMART-TITLE] Lovable AI response:', JSON.stringify(lovableData));
+    const geminiTitleData = await geminiTitleResponse.json();
+    console.log('[SMART-TITLE] Google Gemini response:', JSON.stringify(geminiTitleData));
     
-    if (!lovableData.choices || !lovableData.choices[0] || !lovableData.choices[0].message) {
-      console.error('[SMART-TITLE] Invalid Lovable AI response structure:', lovableData);
-      throw new Error('Invalid response from Lovable AI');
+    if (!geminiTitleData.candidates || !geminiTitleData.candidates[0] || !geminiTitleData.candidates[0].content) {
+      console.error('[SMART-TITLE] Invalid Google Gemini response structure:', geminiTitleData);
+      throw new Error('Invalid response from Google Gemini');
     }
 
-    const optimizedTitle = lovableData.choices[0].message.content.trim()
+    const optimizedTitle = geminiTitleData.candidates[0].content.parts[0].text.trim()
       .replace(/^["']|["']$/g, '')
       .slice(0, 60);
 
