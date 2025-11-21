@@ -181,16 +181,15 @@ serve(async (req) => {
     if (existingConnection) {
       console.log("[CLAIM-SHOPIFY] ⚠️ Connection already exists, updating...");
       
-      const { error: updateError } = await supabase
-        .from("shopify_connections")
-        .update({
-          access_token: pending.access_token,
-          scope: pending.scope,
-          connected_at: new Date().toISOString(),
-          is_active: true,
-          connection_type: "oauth"
-        })
-        .eq("id", existingConnection.id);
+    const { error: updateError } = await supabase
+      .from("shopify_connections")
+      .update({
+        access_token: pending.access_token,
+        connected_at: new Date().toISOString(),
+        is_active: true,
+        connection_type: "oauth"
+      })
+      .eq("id", existingConnection.id);
 
       if (updateError) {
         console.error("[CLAIM-SHOPIFY] ❌ Error updating connection:", updateError);
@@ -198,18 +197,17 @@ serve(async (req) => {
       }
     } else {
       console.log("[CLAIM-SHOPIFY] ➕ Creating new connection...");
-      const { error: insertError } = await supabase
-        .from("shopify_connections")
-        .insert({
-          user_id: user.id,
-          store_url: pending.shop_url,
-          store_name: pending.commercial_name,
-          access_token: pending.access_token,
-          scope: pending.scope,
-          connected_at: new Date().toISOString(),
-          is_active: true,
-          connection_type: "oauth",
-        });
+    const { error: insertError } = await supabase
+      .from("shopify_connections")
+      .insert({
+        user_id: user.id,
+        store_url: pending.shop_url,
+        store_name: pending.commercial_name,
+        access_token: pending.access_token,
+        connected_at: new Date().toISOString(),
+        is_active: true,
+        connection_type: "oauth",
+      });
 
       if (insertError) {
         console.error("[CLAIM-SHOPIFY] ❌ Error creating connection:", {
