@@ -32,7 +32,6 @@ export default function ShopifySuccess() {
               const shopParam = shop ? `&shop=${encodeURIComponent(shop)}` : '';
               navigate(`/auth?shopify_pending=${shopifyPending}${shopParam}`);
             } else {
-              localStorage.setItem('shopify_trigger_import', 'true');
               navigate('/integration');
             }
             return 0;
@@ -132,7 +131,6 @@ export default function ShopifySuccess() {
                 const shopParam = shop ? `&shop=${encodeURIComponent(shop)}` : '';
                 navigate(`/auth?shopify_pending=${shopifyPending}${shopParam}`);
               } else {
-                localStorage.setItem('shopify_trigger_import', 'true');
                 navigate('/integration');
               }
             }}

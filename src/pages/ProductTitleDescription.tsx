@@ -59,7 +59,6 @@ import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConf
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
-import { ImportConfirmDialog } from "@/components/integration/ImportConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -3101,16 +3100,4 @@ export default function ProductTitleDescription() {
         </DialogContent>
       </Dialog>
 
-      <ImportConfirmDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        onConfirm={() => {
-          setShowImportDialog(false);
-          navigate('/dashboard');
-          toast.info("Veuillez vous rendre dans 'Boutiques Shopify' pour importer vos données");
-        }}
-        storeName={selectedStore?.store_name || ''}
-      />
-    </div>
-  );
-}
+      <SimpleSyncProgress

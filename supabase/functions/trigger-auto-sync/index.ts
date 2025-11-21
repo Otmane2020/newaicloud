@@ -137,6 +137,7 @@ serve(async (req) => {
       .from("sync_history")
       .insert({
         user_id: user_id,
+        store_id: connection.id,
         sync_type: "import",
         content_types: importTypes,
         status: "running",
@@ -246,6 +247,7 @@ serve(async (req) => {
         .from("sync_history")
         .update({
           status: hasErrors ? "failed" : "success",
+          store_id: connection.id,
           items_synced: totalImported,
           duration_ms: duration,
           completed_at: new Date().toISOString(),
