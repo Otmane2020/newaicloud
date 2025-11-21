@@ -58,7 +58,8 @@ export const useAutoSync = (userId: string | undefined) => {
             return;
           }
           
-          // Vérifier si l'utilisateur a un abonnement actif
+          // ✅ For API connections, verify subscription status before importing
+          // (OAuth connections are handled by backend trigger-auto-sync)
           const { data: profile } = await supabase
             .from('profiles')
             .select('subscription_status, onboarding_completed')
@@ -68,6 +69,9 @@ export const useAutoSync = (userId: string | undefined) => {
           if (!profile?.subscription_status || 
               !['active', 'trialing'].includes(profile.subscription_status)) {
             console.log('⏸️ [AutoSync] User has no active subscription, skipping auto-sync');
+            toast.info('Plan requis', {
+              description: 'Veuillez sélectionner un plan pour synchroniser vos produits.',
+            });
             return;
           }
           
