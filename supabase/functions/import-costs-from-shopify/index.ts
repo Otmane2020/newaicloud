@@ -6,6 +6,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to handle Shopify rate limiting with retry
+async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promise<Response> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Handle rate limiting (429 Too Many Requests)
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '2');
+        console.log(`⏳ [IMPORT-COSTS] Rate limited, waiting ${retryAfter}s before retry ${i+1}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        continue;
+      }
+      
+      // Return response if successful or non-retryable error
+      return response;
+    } catch (error) {
+      console.error(`⚠️ [IMPORT-COSTS] Fetch error on attempt ${i+1}/${maxRetries}:`, error);
+      if (i === maxRetries - 1) throw error;
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -76,8 +102,11 @@ serve(async (req) => {
         totalVariants++;
 
         try {
-          // Get variant details to find inventory_item_id
-          const variantResponse = await fetch(
+          // Add delay before each request to respect Shopify rate limits
+          await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay = ~3 requests/second
+          
+          // Get variant details to find inventory_item_id (with retry on 429)
+          const variantResponse = await fetchWithRetry(
             `${storeUrl}/admin/api/2025-01/variants/${variant.shopify_variant_id}.json`,
             {
               headers: {
@@ -100,8 +129,8 @@ serve(async (req) => {
             continue;
           }
 
-          // Get inventory item with cost
-          const inventoryResponse = await fetch(
+          // Get inventory item with cost (with retry on 429)
+          const inventoryResponse = await fetchWithRetry(
             `${storeUrl}/admin/api/2025-01/inventory_items/${inventoryItemId}.json`,
             {
               headers: {
@@ -135,9 +164,6 @@ serve(async (req) => {
           } else {
             console.log(`ℹ️ [IMPORT-COSTS] No cost found for variant: ${variant.sku}`);
           }
-
-          // Rate limiting: 2 requests per second
-          await new Promise(resolve => setTimeout(resolve, 500));
 
         } catch (error) {
           console.error(`❌ [IMPORT-COSTS] Error processing variant ${variant.sku}:`, error);
