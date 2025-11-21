@@ -937,14 +937,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-4 sm:py-5 px-6 sm:px-8 h-auto min-h-[56px]"
+                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
                 >
                   {loading ? (
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-normal whitespace-nowrap">{t.onboarding.planFeatures.subscribe}</span>
+                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-relaxed text-center">{t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
@@ -1135,14 +1135,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-4 sm:py-5 px-6 sm:px-8 h-auto min-h-[56px]"
+                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-normal whitespace-nowrap">
+                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-relaxed text-center">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
@@ -1319,14 +1319,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-4 sm:py-5 px-6 sm:px-8 h-auto min-h-[56px]"
+                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-normal whitespace-nowrap">
+                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-relaxed text-center">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
