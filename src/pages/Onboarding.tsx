@@ -25,6 +25,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/formatUtils";
+import { useShopifySync } from "@/hooks/useShopifySync";
 
 interface Plan {
   id: string;
@@ -61,6 +62,7 @@ export default function Onboarding() {
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
+  const { syncShopifyStore } = useShopifySync();
 
   useEffect(() => {
     if (!user) {
@@ -377,6 +379,28 @@ export default function Onboarding() {
         toast.success(t.sync.shopifyConnected);
         toast.info(t.sync.autoImport, { duration: 5000 });
 
+        // Trigger automatic synchronization for all plans
+        try {
+          const { data: connectionData } = await supabase
+            .from('shopify_connections')
+            .select('id, store_url, store_name')
+            .eq('user_id', user?.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (connectionData) {
+            console.log("🔄 Triggering automatic sync for store:", connectionData.id);
+            await syncShopifyStore({
+              id: connectionData.id,
+              store_url: connectionData.store_url,
+              store_name: connectionData.store_name || connectionData.store_url,
+            });
+          }
+        } catch (syncError) {
+          console.error("❌ Error triggering auto-sync:", syncError);
+        }
+
         // Phase 1C: Attendre 3 secondes pour que l'import démarre
         await new Promise((resolve) => setTimeout(resolve, 3000));
       } else {
@@ -456,6 +480,29 @@ export default function Onboarding() {
             if (claimData?.success) {
               toast.success(t.sync.shopifyConnected);
               toast.info(t.sync.autoImport, { duration: 5000 });
+              
+              // Trigger automatic synchronization for free trial
+              try {
+                const { data: connectionData } = await supabase
+                  .from('shopify_connections')
+                  .select('id, store_url, store_name')
+                  .eq('user_id', user?.id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (connectionData) {
+                  console.log("🔄 Triggering automatic sync for free trial store:", connectionData.id);
+                  await syncShopifyStore({
+                    id: connectionData.id,
+                    store_url: connectionData.store_url,
+                    store_name: connectionData.store_name || connectionData.store_url,
+                  });
+                }
+              } catch (syncError) {
+                console.error("❌ Error triggering auto-sync:", syncError);
+              }
+              
               await new Promise((resolve) => setTimeout(resolve, 3000));
             }
           } catch (claimError) {
