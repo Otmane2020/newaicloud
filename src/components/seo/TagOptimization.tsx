@@ -287,35 +287,21 @@ export function TagOptimization() {
   
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score based on truly optimized products (with quality tags)
+  // Calculate tag SEO score: percentage of truly optimized products
   const trulyOptimizedProducts = products.filter(p => {
     const hasTags = p.tags && p.tags.trim().length > 0;
     const tagsScore = calculateTagsScore(p.tags);
-    return p.optimization_count && p.optimization_count > 0 && hasTags && tagsScore >= 8;
+    return p.optimization_count && p.optimization_count > 0 && hasTags && tagsScore >= 12;
   });
   
-  const tagSeoScore = trulyOptimizedProducts.length > 0 
-    ? Math.round(
-        (trulyOptimizedProducts.reduce((sum, p) => {
-          const score = calculateTagsScore(p.tags);
-          // Debug first few products
-          if (trulyOptimizedProducts.indexOf(p) < 3) {
-            console.log('🏷️ [TAG DEBUG]', {
-              productId: p.id,
-              title: p.title,
-              tags: p.tags,
-              optimizationCount: p.optimization_count,
-              calculatedScore: score
-            });
-          }
-          return sum + score;
-        }, 0) / trulyOptimizedProducts.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
-      )
+  const tagSeoScore = products.length > 0 
+    ? Math.round((trulyOptimizedProducts.length / products.length) * 100)
     : 0;
   
   console.log('🎯 [TAG SEO SCORE]', {
     totalProducts: products.length,
     trulyOptimizedProducts: trulyOptimizedProducts.length,
+    percentage: products.length > 0 ? (trulyOptimizedProducts.length / products.length * 100).toFixed(1) : 0,
     finalScore: tagSeoScore
   });
 
