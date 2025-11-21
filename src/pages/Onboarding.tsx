@@ -382,10 +382,10 @@ export default function Onboarding() {
         // Trigger automatic synchronization for all plans
         try {
           const { data: connectionData } = await supabase
-            .from('shopify_connections')
-            .select('id, store_url, store_name')
-            .eq('user_id', user?.id)
-            .order('created_at', { ascending: false })
+            .from("shopify_connections")
+            .select("id, store_url, store_name")
+            .eq("user_id", user?.id)
+            .order("created_at", { ascending: false })
             .limit(1)
             .single();
 
@@ -417,23 +417,23 @@ export default function Onboarding() {
       }
     } catch (claimError: any) {
       console.error("❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:", claimError);
-      
+
       const errorData = claimError.context?.body || {};
-      const errorCode = errorData.error || '';
-      const errorMessage = errorData.message || claimError.message || '';
-      
-      if (errorCode === 'invalid_shop_url') {
+      const errorCode = errorData.error || "";
+      const errorMessage = errorData.message || claimError.message || "";
+
+      if (errorCode === "invalid_shop_url") {
         toast.error("URL de boutique invalide", {
           description: errorMessage,
-          duration: 8000
+          duration: 8000,
         });
-      } else if (errorCode === 'connection_already_exists') {
+      } else if (errorCode === "connection_already_exists") {
         toast.warning("Boutique déjà connectée", {
-          description: "Cette boutique est déjà liée à votre compte."
+          description: "Cette boutique est déjà liée à votre compte.",
         });
       } else {
         toast.error(t.sync.connectionFailed, {
-          description: errorMessage
+          description: errorMessage,
         });
       }
     }
@@ -480,14 +480,14 @@ export default function Onboarding() {
             if (claimData?.success) {
               toast.success(t.sync.shopifyConnected);
               toast.info(t.sync.autoImport, { duration: 5000 });
-              
+
               // Trigger automatic synchronization for free trial
               try {
                 const { data: connectionData } = await supabase
-                  .from('shopify_connections')
-                  .select('id, store_url, store_name')
-                  .eq('user_id', user?.id)
-                  .order('created_at', { ascending: false })
+                  .from("shopify_connections")
+                  .select("id, store_url, store_name")
+                  .eq("user_id", user?.id)
+                  .order("created_at", { ascending: false })
                   .limit(1)
                   .single();
 
@@ -502,7 +502,7 @@ export default function Onboarding() {
               } catch (syncError) {
                 console.error("❌ Error triggering auto-sync:", syncError);
               }
-              
+
               await new Promise((resolve) => setTimeout(resolve, 3000));
             }
           } catch (claimError) {
@@ -1078,14 +1078,6 @@ export default function Onboarding() {
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                   {t.onboarding.planFeatures.forGrowth}
                 </p>
-                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
-                  <p className="text-xs sm:text-sm font-medium text-center">
-                    💡{" "}
-                    {language === "fr"
-                      ? "L'équilibre parfait entre puissance, automatisation et évolutivité."
-                      : "The perfect balance between power, automation and scalability."}
-                  </p>
-                </div>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
