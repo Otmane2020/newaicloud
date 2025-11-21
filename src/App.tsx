@@ -6,8 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
+import { AutoSyncProvider } from "./contexts/AutoSyncContext";
 import { LanguageProvider } from "@/lib/language";
 import { AIAssistant } from "@/components/AIAssistant";
+import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { useAutoSync } from "@/hooks/useAutoSync";
@@ -118,10 +120,12 @@ const App = () => (
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <StoreProvider>
-              <AppQuotaMonitor />
-              <AutoSyncMonitor />
-            <div className="overflow-x-hidden max-w-full">
+            <AutoSyncProvider>
+              <StoreProvider>
+                <AppQuotaMonitor />
+                <AutoSyncMonitor />
+                <AutoSyncProgressDialog />
+              <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/translation" element={<TranslationAudit />} />
@@ -496,7 +500,8 @@ const App = () => (
           <AIAssistant />
           <NotificationPermissionPrompt />
             </div>
-          </StoreProvider>
+              </StoreProvider>
+            </AutoSyncProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
