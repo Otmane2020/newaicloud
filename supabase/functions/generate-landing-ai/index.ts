@@ -363,25 +363,24 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     enriched.smart_seat_height;
   
   if (techDims && Object.keys(techDims).length > 0) {
-    // Use dimensions extracted from technical schematic or visible on packaging (VISION FIRST)
-    if (techDims.hauteur_totale) dims.push(`${labels.height} ${techDims.hauteur_totale}`);
-    if (techDims.height) dims.push(`${labels.height} ${techDims.height}`);
-    if (techDims.largeur) dims.push(`${labels.length} ${techDims.largeur}`);
-    if (techDims.length) dims.push(`${labels.length} ${techDims.length}`);
-    if (techDims.profondeur) dims.push(`${labels.depth} ${techDims.profondeur}`);
-    if (techDims.width) dims.push(`${labels.width} ${techDims.width}`);
-    if (techDims.hauteur_assise) dims.push(`${labels.seatHeight} ${techDims.hauteur_assise}`);
-    if (techDims.diametre) dims.push(`${labels.diameter} ${techDims.diametre}`);
+    // Use dimensions extracted from Gemini Vision (standard keys: height, width, depth, length, diameter)
+    // Format: "H 87 cm × L 270 cm × P 196 cm × l 96 cm"
+    const dimParts = [];
+    if (techDims.height) dimParts.push(`${labels.height} ${techDims.height} ${techDims.heightUnit || 'cm'}`);
+    if (techDims.length) dimParts.push(`${labels.length} ${techDims.length} ${techDims.lengthUnit || 'cm'}`);
+    if (techDims.depth) dimParts.push(`${labels.depth} ${techDims.depth} ${techDims.depthUnit || 'cm'}`);
+    if (techDims.width) dimParts.push(`${labels.width} ${techDims.width} ${techDims.widthUnit || 'cm'}`);
+    if (techDims.diameter) dimParts.push(`${labels.diameter} ${techDims.diameter} ${techDims.diameterUnit || 'cm'}`);
     
     // Extract weight from vision (HIGHEST PRIORITY)
     if (techDims.weight) {
-      dims.push(`${labels.weight} ${techDims.weight}`);
-      weightSource = "vision"; // Mark that weight comes from vision
+      dimParts.push(`${labels.weight} ${techDims.weight} ${techDims.weightUnit || 'kg'}`);
+      weightSource = "vision";
     }
     
-    if (dims.length > 0) {
+    if (dimParts.length > 0) {
       sections.push(`\n${labels.dimensionsVisible}`);
-      sections.push(`- ${dims.join(" × ")}`);
+      sections.push(`- ${dimParts.join(" × ")}`);
     }
   } else if (hasSmartDims) {
     // Fallback to estimated smart dimensions (SECOND PRIORITY, before SERP)
