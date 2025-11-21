@@ -848,7 +848,7 @@ export default function Onboarding() {
                   </Badge>
 
                   <div className="mb-4">
-                    <div className="text-3xl font-bold mb-1">
+                    <div className="text-4xl font-bold mb-1">
                       {getCurrencySymbol(language)}0
                       <span className="text-base text-muted-foreground font-normal">
                         /{t.onboarding.billing.monthly}
@@ -960,7 +960,7 @@ export default function Onboarding() {
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(starterPlan, language, billingCycle) / 12
@@ -1136,7 +1136,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl md:text-4xl font-semibold text-muted-foreground line-through">
+                      <span className="text-4xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1298,7 +1298,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl md:text-4xl font-semibold text-muted-foreground line-through">
+                      <span className="text-4xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
