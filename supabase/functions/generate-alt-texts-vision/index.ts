@@ -126,6 +126,15 @@ function categorizeWords(words: string[]): CategorizedWords {
     'modern', 'scandinavian', 'industrial', 'vintage', 'classic', 'contemporary',
     'minimaliste', 'rustique', 'élégant', 'design'
   ]);
+
+  // Generic object words we never want to add from the AI description
+  const genericSet = new Set([
+    'table', 'basse', 'plateau', 'structure', 'pieds', 'meuble', 'produit',
+    'article', 'image', 'photo', 'vue', 'montre', 'appartement', 'piece',
+    'pièce', 'interieur', 'intérieur', 'exterieur', 'extérieur',
+    'room', 'product', 'item', 'picture', 'view', 'watch', 'apartment',
+    'interior', 'exterior'
+  ]);
   
   const result: CategorizedWords = {
     materials: [],
@@ -137,6 +146,10 @@ function categorizeWords(words: string[]): CategorizedWords {
   
   for (const word of words) {
     const stem = getStem(word);
+
+    // Skip very generic object words (product type already in product name)
+    if (genericSet.has(stem)) continue;
+
     if (materialsSet.has(stem)) result.materials.push(word);
     else if (colorsSet.has(stem)) result.colors.push(word);
     else if (shapesSet.has(stem)) result.shapes.push(word);
