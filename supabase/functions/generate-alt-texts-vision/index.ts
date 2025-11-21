@@ -198,7 +198,7 @@ function buildNaturalAltText(
   const usedStems = new Set<string>();
 
   // Mark product name stems as used first
-  tokenize(cleanProductName).forEach((token) => {
+  tokenize(cleanProductName).forEach((token: string) => {
     usedStems.add(getStem(token));
   });
 
@@ -206,7 +206,7 @@ function buildNaturalAltText(
   const allDescriptors: string[] = [];
 
   [...seoKeywords, visualAnalysis].forEach((source) => {
-    tokenize(source).forEach((token) => {
+    tokenize(source).forEach((token: string) => {
       const stem = getStem(token);
       if (!usedStems.has(stem) && allDescriptors.length < 12) {
         usedStems.add(stem);
@@ -680,7 +680,7 @@ function createOptimizedAltText(
 
   // Start with product name
   let altText = productName;
-  tokenize(productName).forEach((token) => usedTerms.add(getStem(token)));
+  tokenize(productName).forEach((token: string) => usedTerms.add(getStem(token)));
 
   // Add materials from vision analysis first (most important visually)
   if (visionAnalysis.materials && visionAnalysis.materials.length > 0) {
@@ -693,7 +693,7 @@ function createOptimizedAltText(
       } else {
         altText += ` in ${availableMaterials.join(" and ")}`;
       }
-      availableMaterials.forEach((m) => usedTerms.add(getStem(m)));
+      availableMaterials.forEach((m: string) => usedTerms.add(getStem(m)));
     }
   }
 
@@ -708,7 +708,7 @@ function createOptimizedAltText(
       } else {
         altText += `, ${availableColors.join(" ")} color`;
       }
-      availableColors.forEach((c) => usedTerms.add(getStem(c)));
+      availableColors.forEach((c: string) => usedTerms.add(getStem(c)));
     }
   }
 
@@ -719,7 +719,7 @@ function createOptimizedAltText(
 
     if (availableShapes.length > 0) {
       altText += `, ${availableShapes[0]}`;
-      availableShapes.forEach((s) => usedTerms.add(getStem(s)));
+      availableShapes.forEach((s: string) => usedTerms.add(getStem(s)));
     }
   }
 
