@@ -3238,7 +3238,7 @@ export const translations = {
     trial: {
       available: "💳 Essai Gratuit disponible sur le plan Starter",
       freeTrial: "🎁 {{days}} jours d'Essai Gratuit",
-      startTrial: "Commencer l'Essai Gratuit",
+      startTrial: "Essai Gratuit",
       cardRequired: "💳 Carte requise • Premier paiement le {{date}}",
       noCardRequired: "✨ Aucune carte requise • Annulez à tout moment",
     },
@@ -4443,7 +4443,7 @@ export const translations = {
       titleEnd: "avec l'IA",
       subtitle:
         "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
-      ctaPrimary: "Commencer l'essai gratuit",
+      ctaPrimary: "Essai gratuit",
       ctaSecondary: "Voir la démo",
       setupTime: "Installation en 5 minutes",
     },
