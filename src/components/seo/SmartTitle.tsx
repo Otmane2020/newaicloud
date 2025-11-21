@@ -4,26 +4,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useStore } from "@/contexts/StoreContext";
 
 export const SmartTitle = () => {
+  const { selectedStore } = useStore();
+  const storeId = selectedStore?.id;
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products-for-smart-title'],
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['products-for-smart-title', storeId, page],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get total count
+      const { count } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user.id)
+        .eq('store_id', storeId);
+
+      // Get paginated products
       const { data, error } = await supabase
         .from('shopify_products')
         .select(`
           id,
           title,
           product_type,
+          body_html,
           optimization_count,
           product_images (
             id,
@@ -32,13 +46,19 @@ export const SmartTitle = () => {
           )
         `)
         .eq('seller_id', user.id)
+        .eq('store_id', storeId)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
       if (error) throw error;
-      return data;
+      return { products: data, totalCount: count || 0 };
     },
+    enabled: !!storeId,
   });
+
+  const products = productsData?.products;
+  const totalCount = productsData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const handleGenerate = async (productId: string) => {
     setIsGenerating(true);
@@ -71,13 +91,18 @@ export const SmartTitle = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h2 className="text-2xl font-bold">Smart Title Generator</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h2 className="text-2xl font-bold">Smart Title Generator</h2>
+        </div>
+        <Badge variant="secondary">
+          {totalCount} produits avec images
+        </Badge>
       </div>
 
       <p className="text-muted-foreground">
-        Génération intelligente de titres optimisés combinant l'analyse visuelle (Gemini) et textuelle (DeepSeek)
+        Génération intelligente de titres optimisés combinant l'analyse visuelle (Gemini Vision) et textuelle (DeepSeek)
       </p>
 
       {result && (
@@ -104,6 +129,32 @@ export const SmartTitle = () => {
             )}
           </div>
         </Card>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0 || isLoading}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Précédent
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page + 1} sur {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1 || isLoading}
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
