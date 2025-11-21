@@ -65,11 +65,9 @@ export const getPriceByLanguage = (
 
 /**
  * Format a price with the appropriate currency symbol
- * Smart formatting: shows decimals only when needed (9,99 or 7,99), otherwise shows whole numbers (9 or 49)
+ * Always shows whole numbers without decimals
  * @param amount - The price amount
  * @param language - The language code ('fr' or 'en')
- * @param forceDecimals - Force showing decimals even for whole numbers (default: false)
- * @param isYearlyTotal - If true, round to avoid decimals in yearly totals (default: false)
  * @returns Formatted price string
  */
 export const formatPrice = (
@@ -80,29 +78,10 @@ export const formatPrice = (
 ): string => {
   const symbol = getCurrencySymbol(language);
   
-  // For yearly totals, always round to avoid decimals
-  if (isYearlyTotal) {
-    const roundedAmount = Math.round(amount);
-    return language === 'fr' 
-      ? `${roundedAmount} ${symbol}`
-      : `${symbol}${roundedAmount}`;
-  }
-  
-  // Check if the number has meaningful decimals
-  const hasDecimals = amount % 1 !== 0;
-  
-  let formattedAmount: string;
-  if (forceDecimals || hasDecimals) {
-    // Show decimals
-    formattedAmount = language === 'fr' 
-      ? amount.toFixed(2).replace('.', ',')
-      : amount.toFixed(2);
-  } else {
-    // Show whole number without decimals
-    formattedAmount = Math.round(amount).toString();
-  }
+  // Always round to whole numbers (no decimals)
+  const roundedAmount = Math.round(amount);
   
   return language === 'fr' 
-    ? `${formattedAmount} ${symbol}`
-    : `${symbol}${formattedAmount}`;
+    ? `${roundedAmount} ${symbol}`
+    : `${symbol}${roundedAmount}`;
 };
