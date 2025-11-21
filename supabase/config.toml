@@ -339,3 +339,36 @@ verify_jwt = false
 schedule = "*/5 * * * *"
 function = "cleanup-stuck-syncs"
 
+[cron.send-trial-expiring]
+schedule = "0 9 * * *"
+function = "send-trial-expiring"
+
+[cron.send-weekly-seo-digest]
+schedule = "0 9 * * 0"
+function = "send-weekly-seo-digest"
+
+[cron.send-monthly-report]
+schedule = "0 9 1 * *"
+function = "send-monthly-report"
+
+[functions.send-trial-expiring]
+verify_jwt = false
+
+[functions.send-payment-failed]
+verify_jwt = false
+
+[functions.send-order-confirmation]
+verify_jwt = false
+
+[functions.send-shipping-notification]
+verify_jwt = false
+
+[functions.send-abandoned-cart]
+verify_jwt = false
+
+[functions.send-weekly-seo-digest]
+verify_jwt = false
+
+[functions.send-monthly-report]
+verify_jwt = false
+
