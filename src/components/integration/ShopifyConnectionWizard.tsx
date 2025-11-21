@@ -12,6 +12,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import shopifyLogo from "@/assets/shopify-logo.svg";
+import { useShopifySync } from "@/hooks/useShopifySync";
 
 interface ShopifyConnectionWizardProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const { refreshStores } = useStore();
   const { t } = useTranslation();
+  const { syncShopifyStore } = useShopifySync();
 
   const [view, setView] = useState<'initial' | 'oauth' | 'api'>('initial');
   const [shopName, setShopName] = useState("");
@@ -163,15 +165,19 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       if (!permissions.articles) missingPermissions.push('Articles');
 
       // 3. Insérer la nouvelle connexion avec les permissions
-      const { error: insertError } = await supabase.from("shopify_connections").insert({
-        user_id: user.id,
-        store_url: verifiedShopDomain,
-        store_name: commercialShopName,
-        api_key: apiKey,
-        access_token: apiSecret,
-        connection_type: "api_keys",
-        available_scopes: permissions,
-      });
+      const { data: newConnection, error: insertError } = await supabase
+        .from("shopify_connections")
+        .insert({
+          user_id: user.id,
+          store_url: verifiedShopDomain,
+          store_name: commercialShopName,
+          api_key: apiKey,
+          access_token: apiSecret,
+          connection_type: "api_keys",
+          available_scopes: permissions,
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
@@ -184,10 +190,25 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       }
 
       toast.success("Store connected successfully!");
+      toast.info("Synchronisation automatique en cours...", { duration: 5000 });
 
       // 4. Rafraîchir les limites d'usage et le contexte du store
       await refreshLimits();
       await refreshStores();
+
+      // 5. Déclencher la synchronisation automatique
+      if (newConnection) {
+        console.log('🔄 [Wizard] Triggering automatic sync for new connection:', newConnection.id);
+        try {
+          await syncShopifyStore({
+            id: newConnection.id,
+            store_url: newConnection.store_url,
+            store_name: newConnection.store_name || newConnection.store_url,
+          });
+        } catch (syncError) {
+          console.error("❌ [Wizard] Error during auto-sync:", syncError);
+        }
+      }
 
       onSuccess?.();
       onOpenChange(false);

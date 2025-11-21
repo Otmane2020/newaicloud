@@ -10,6 +10,9 @@ import { LanguageProvider } from "@/lib/language";
 import { AIAssistant } from "@/components/AIAssistant";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
+import { useAutoSync } from "@/hooks/useAutoSync";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
@@ -85,6 +88,30 @@ function AppQuotaMonitor() {
   return null;
 }
 
+function AutoSyncMonitor() {
+  const [userId, setUserId] = useState<string>();
+
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id);
+    };
+    getUserId();
+
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Activer la synchronisation automatique pour tous les flux
+  useAutoSync(userId);
+  
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -93,6 +120,7 @@ const App = () => (
           <AuthProvider>
             <StoreProvider>
               <AppQuotaMonitor />
+              <AutoSyncMonitor />
             <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
