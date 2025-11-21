@@ -186,13 +186,25 @@ function buildVisionSummary(attributes: any, language = "fr") {
     colors: "Colors",
     materials: "Materials",
     style: "Style",
-    condition: "Condition"
+    condition: "Condition",
+    dimensions: "DIMENSIONS (detected):",
+    height: "Height",
+    width: "Width",
+    depth: "Depth",
+    length: "Length",
+    diameter: "Diameter"
   } : {
     visualAnalysis: "ANALYSE VISUELLE:",
     colors: "Couleurs",
     materials: "Matériaux",
     style: "Style",
-    condition: "État"
+    condition: "État",
+    dimensions: "DIMENSIONS (détectées):",
+    height: "Hauteur",
+    width: "Largeur",
+    depth: "Profondeur",
+    length: "Longueur",
+    diameter: "Diamètre"
   };
   
   const sections = [];
@@ -218,6 +230,33 @@ function buildVisionSummary(attributes: any, language = "fr") {
   
   if (details.length > 0) {
     sections.push("\n" + details.map((d: string) => `- ${d}`).join("\n"));
+  }
+  
+  // Add technical dimensions if available
+  if (attributes.technicalDimensions) {
+    const dims = attributes.technicalDimensions;
+    const dimDetails = [];
+    
+    if (dims.height) {
+      dimDetails.push(`${labels.height}: ${dims.height} ${dims.heightUnit || 'cm'}`);
+    }
+    if (dims.width) {
+      dimDetails.push(`${labels.width}: ${dims.width} ${dims.widthUnit || 'cm'}`);
+    }
+    if (dims.depth) {
+      dimDetails.push(`${labels.depth}: ${dims.depth} ${dims.depthUnit || 'cm'}`);
+    }
+    if (dims.length) {
+      dimDetails.push(`${labels.length}: ${dims.length} ${dims.lengthUnit || 'cm'}`);
+    }
+    if (dims.diameter) {
+      dimDetails.push(`${labels.diameter}: ${dims.diameter} ${dims.diameterUnit || 'cm'}`);
+    }
+    
+    if (dimDetails.length > 0) {
+      sections.push(`\n${labels.dimensions}`);
+      sections.push(dimDetails.map((d: string) => `- ${d}`).join("\n"));
+    }
   }
   
   return sections.join("\n");
