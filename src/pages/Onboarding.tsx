@@ -1019,7 +1019,7 @@ export default function Onboarding() {
                     <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
+                    <SelectContent className="bg-background border border-border z-[9999] text-xs sm:text-sm">
                       {proPlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
