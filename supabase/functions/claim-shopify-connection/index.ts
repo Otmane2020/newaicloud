@@ -135,11 +135,25 @@ serve(async (req) => {
       );
     }
 
-    console.log("[CLAIM-SHOPIFY] ✅ Found pending connection:", {
-      shopUrl: pending.shop_url,
-      commercialName: pending.commercial_name,
-      expiresAt: pending.expires_at
-    });
+  console.log("[CLAIM-SHOPIFY] ✅ Found pending connection:", {
+    shopUrl: pending.shop_url,
+    commercialName: pending.commercial_name,
+    expiresAt: pending.expires_at
+  });
+
+  // ❗ Vérifier l'existence et la validité du shop_url
+  if (!pending.shop_url || !pending.shop_url.endsWith(".myshopify.com")) {
+    console.error("[CLAIM-SHOPIFY] ❌ Invalid Shopify shop_url:", pending.shop_url);
+
+    return new Response(
+      JSON.stringify({
+        error: "invalid_shop_url",
+        message: "L'URL de la boutique est invalide. Vérifiez que vous utilisez bien une URL du type : nom-boutique.myshopify.com",
+        shop_url: pending.shop_url
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
     // Vérifier l'expiration
     const expiresAt = new Date(pending.expires_at);
@@ -193,7 +207,15 @@ serve(async (req) => {
 
       if (updateError) {
         console.error("[CLAIM-SHOPIFY] ❌ Error updating connection:", updateError);
-        throw updateError;
+        return new Response(
+          JSON.stringify({ 
+            error: "database_update_failed",
+            message: "Impossible de mettre à jour votre connexion Shopify existante.",
+            details: updateError.message,
+            shop_url: pending.shop_url
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     } else {
       console.log("[CLAIM-SHOPIFY] ➕ Creating new connection...");
@@ -215,8 +237,26 @@ serve(async (req) => {
           userId: user.id,
           shopUrl: pending.shop_url
         });
+        
+        // Vérifier si c'est une erreur de contrainte unique
+        if (insertError.code === '23505') {
+          return new Response(
+            JSON.stringify({ 
+              error: "connection_already_exists",
+              message: "Cette boutique est déjà connectée à votre compte.",
+              shop_url: pending.shop_url
+            }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
         return new Response(
-          JSON.stringify({ error: "Failed to create connection", details: insertError.message }),
+          JSON.stringify({ 
+            error: "database_insert_failed",
+            message: "Impossible de créer votre connexion Shopify.",
+            details: insertError.message,
+            shop_url: pending.shop_url
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

@@ -135,10 +135,22 @@ serve(async (req) => {
       if (oauthState.is_pre_auth) {
         console.log("[SHOPIFY-OAUTH] Flow pre-auth détecté, création pending connection");
         
+        // Valider le shop_url AVANT insertion
+        if (!shop || !shop.endsWith(".myshopify.com")) {
+          console.error("[SHOPIFY-OAUTH] ❌ Invalid shop URL received:", shop);
+          return new Response(
+            JSON.stringify({ 
+              error: "invalid_shop_url",
+              message: "L'URL de la boutique Shopify reçue est invalide." 
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
         const pendingToken = crypto.randomUUID();
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 jours (Solution 3)
 
-        await supabase.from("shopify_pending_connections").insert({
+        const { error: insertError } = await supabase.from("shopify_pending_connections").insert({
           shop_url: shop,
           access_token: accessToken,
           scope: tokenData.scope,
@@ -147,6 +159,17 @@ serve(async (req) => {
           expires_at: expiresAt.toISOString(),
           is_claimed: false,
         });
+
+        if (insertError) {
+          console.error("[SHOPIFY-OAUTH] ❌ Failed to create pending connection:", insertError);
+          return new Response(
+            JSON.stringify({ 
+              error: "database_error",
+              message: "Impossible d'enregistrer la connexion en attente." 
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);

@@ -108,8 +108,19 @@ export default function ShopifyRecover() {
     } catch (error: any) {
       console.error("Error claiming connection:", error);
       
-      const errorMessage = error.message || '';
-      if (errorMessage.includes('expired') || errorMessage.includes('Token expired')) {
+      const errorData = error.context?.body || {};
+      const errorCode = errorData.error || '';
+      const errorMessage = errorData.message || error.message || '';
+      
+      if (errorCode === 'invalid_shop_url') {
+        toast.error("URL de boutique invalide", {
+          description: errorMessage
+        });
+      } else if (errorCode === 'connection_already_exists') {
+        toast.warning("Boutique déjà connectée", {
+          description: "Cette boutique est déjà liée à votre compte."
+        });
+      } else if (errorMessage.includes('expired') || errorMessage.includes('Token expired')) {
         toast.error("Token expiré", {
           description: "Ce lien d'installation a expiré. Réinstallez l'application depuis Shopify."
         });

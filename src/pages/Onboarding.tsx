@@ -391,9 +391,27 @@ export default function Onboarding() {
           context: { pendingToken },
         });
       }
-    } catch (claimError) {
+    } catch (claimError: any) {
       console.error("❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:", claimError);
-      toast.error(t.sync.connectionFailed);
+      
+      const errorData = claimError.context?.body || {};
+      const errorCode = errorData.error || '';
+      const errorMessage = errorData.message || claimError.message || '';
+      
+      if (errorCode === 'invalid_shop_url') {
+        toast.error("URL de boutique invalide", {
+          description: errorMessage,
+          duration: 8000
+        });
+      } else if (errorCode === 'connection_already_exists') {
+        toast.warning("Boutique déjà connectée", {
+          description: "Cette boutique est déjà liée à votre compte."
+        });
+      } else {
+        toast.error(t.sync.connectionFailed, {
+          description: errorMessage
+        });
+      }
     }
   };
 
