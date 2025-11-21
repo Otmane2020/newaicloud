@@ -81,6 +81,76 @@ function ensureAccessibleText(bgColor: string): string {
   return bgLum > 0.5 ? "#000000" : "#FFFFFF";
 }
 
+// Translation utilities for French localization
+function translateMaterialsToFrench(materials: string): string {
+  const materialMap: Record<string, string> = {
+    'ceramic': 'céramique',
+    'wood': 'bois',
+    'travertine': 'travertin',
+    'metal': 'métal',
+    'glass': 'verre',
+    'marble': 'marbre',
+    'stone': 'pierre',
+    'fabric': 'tissu',
+    'leather': 'cuir',
+    'plastic': 'plastique',
+    'steel': 'acier',
+    'aluminum': 'aluminium',
+    'brass': 'laiton',
+    'copper': 'cuivre',
+    'oak': 'chêne',
+    'pine': 'pin',
+    'walnut': 'noyer',
+    'cotton': 'coton',
+    'linen': 'lin',
+    'velvet': 'velours',
+    'concrete': 'béton',
+    'rattan': 'rotin',
+    'wicker': 'osier',
+    'bamboo': 'bambou'
+  };
+
+  return materials
+    .split(',')
+    .map(m => {
+      const trimmed = m.trim().toLowerCase();
+      return materialMap[trimmed] || m.trim();
+    })
+    .join(', ');
+}
+
+function translateColorsToFrench(colors: string): string {
+  const colorMap: Record<string, string> = {
+    'beige': 'beige',
+    'white': 'blanc',
+    'black': 'noir',
+    'brown': 'marron',
+    'gray': 'gris',
+    'grey': 'gris',
+    'blue': 'bleu',
+    'red': 'rouge',
+    'green': 'vert',
+    'yellow': 'jaune',
+    'orange': 'orange',
+    'purple': 'violet',
+    'pink': 'rose',
+    'gold': 'or',
+    'silver': 'argent',
+    'cream': 'crème',
+    'ivory': 'ivoire',
+    'navy': 'bleu marine',
+    'turquoise': 'turquoise'
+  };
+
+  return colors
+    .split(',')
+    .map(c => {
+      const trimmed = c.trim().toLowerCase();
+      return colorMap[trimmed] || c.trim();
+    })
+    .join(', ');
+}
+
 // Sanitize dimensions from Gemini-generated HTML to avoid duplicates
 function sanitizeDimensionsInHtml(html: string): string {
   console.log("🧹 Sanitizing dimensions from HTML...");
@@ -94,6 +164,12 @@ function sanitizeDimensionsInHtml(html: string): string {
   // Remove list items containing dimension keywords
   cleaned = cleaned.replace(
     /<li[^>]*>[\s\S]*?(?:Dimensions?|DIMENSIONS?)[\s\S]*?<\/li>/gi,
+    ""
+  );
+  
+  // Remove dimension/technical schema images from gallery sections
+  cleaned = cleaned.replace(
+    /<img[^>]*alt="[^"]*(?:dimension|technical|schema|schéma|measure|mesure)[^"]*"[^>]*>/gi,
     ""
   );
   
@@ -360,10 +436,16 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     weight: "Poids"
   };
 
-  // Visual Attributes
+  // Visual Attributes with French translation
   const visualAttrs = [];
-  if (enriched.ai_color) visualAttrs.push(`${labels.color}: ${enriched.ai_color}`);
-  if (enriched.ai_material) visualAttrs.push(`${labels.material}: ${enriched.ai_material}`);
+  if (enriched.ai_color) {
+    const translatedColor = language === 'fr' ? translateColorsToFrench(enriched.ai_color) : enriched.ai_color;
+    visualAttrs.push(`${labels.color}: ${translatedColor}`);
+  }
+  if (enriched.ai_material) {
+    const translatedMaterial = language === 'fr' ? translateMaterialsToFrench(enriched.ai_material) : enriched.ai_material;
+    visualAttrs.push(`${labels.material}: ${translatedMaterial}`);
+  }
   if (enriched.ai_shape) visualAttrs.push(`${labels.shape}: ${enriched.ai_shape}`);
   if (enriched.ai_texture) visualAttrs.push(`${labels.texture}: ${enriched.ai_texture}`);
   if (enriched.ai_pattern) visualAttrs.push(`${labels.pattern}: ${enriched.ai_pattern}`);
@@ -797,7 +879,13 @@ serve(async (req) => {
 
     // 🖼️ Multi-Image Vision AI Analysis - Analyze ALL product images
     console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
-    const imageAnalyses: Array<{ imageUrl: string; description: string; index: number }> = [];
+    const imageAnalyses: Array<{ 
+      imageUrl: string; 
+      description: string; 
+      index: number;
+      visualAttributes?: any;
+      visualContext?: any;
+    }> = [];
     
     // Analyze main image + all additional images (limit to 6 images max for performance)
     const imagesToAnalyze = images.slice(0, 6);
@@ -835,6 +923,8 @@ serve(async (req) => {
             imageUrl: img.src,
             description,
             index: i + 1,
+            visualAttributes: visionData.visualAttributes,
+            visualContext: visionData.visualContext,
           });
           console.log(`✅ Vision AI analysis completed for image ${i + 1}`);
         }
@@ -908,9 +998,28 @@ serve(async (req) => {
       console.log("⏭️ No images analyzed by Vision AI");
     }
 
+    // --- Filter dimension images from gallery ---
+    console.log("🖼️ Filtering images for gallery...");
+    const technicalSchemaImageUrls = imageAnalyses
+      .filter(a => a.visualContext?.hasTechnicalSchema)
+      .map(a => a.imageUrl);
+    
+    console.log(`📐 Found ${technicalSchemaImageUrls.length} technical schema images to exclude from gallery`);
+    
+    const galleryImages = images.filter(img => 
+      !technicalSchemaImageUrls.includes(img.src)
+    );
+    
+    const dimensionImages = images.filter(img =>
+      technicalSchemaImageUrls.includes(img.src)
+    );
+    
+    console.log(`🎨 Gallery will use ${galleryImages.length} lifestyle images`);
+    console.log(`📏 Dimension section will use ${dimensionImages.length} technical images`);
+    
     // --- Prompt bilingual ---
-    const imgs = images.length
-      ? images.map((i) => `- ${i.src}`).join("\n")
+    const imgs = galleryImages.length
+      ? galleryImages.map((i) => `- ${i.src}`).join("\n")
       : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
@@ -1326,6 +1435,7 @@ ${enrichedProduct?.serp_verified ? `
 - NO "Dimensions" section - dimensions will be added automatically after generation
 - NO physical dimensions (height, width, depth, length, diameter) in the Technical Specifications section - DO NOT include any numeric measurements or dimension tables/rows
 - In Technical Specifications, focus ONLY on materials, finishes, features, care instructions - NEVER include size measurements
+- The image gallery section MUST ONLY include lifestyle/product photos - DO NOT include technical diagrams, dimension schema images, or measurement illustrations (they will be added in a separate dimensions section)
 
 ✅ REQUIRED SECTIONS:
 Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
@@ -1503,6 +1613,7 @@ STRUCTURE :
 - AUCUNE section "Dimensions" - les dimensions seront ajoutées automatiquement après génération
 - AUCUNE dimension physique (hauteur, largeur, profondeur, longueur, diamètre) dans la section Caractéristiques Techniques - NE PAS inclure de mesures chiffrées ou tableaux/lignes de dimensions
 - Dans Caractéristiques Techniques, se concentrer UNIQUEMENT sur les matériaux, finitions, fonctionnalités, entretien - JAMAIS les mesures de taille
+- La galerie d'images DOIT UNIQUEMENT inclure des photos lifestyle/produit - NE PAS inclure de schémas techniques, images de dimensions, ou illustrations de mesures (elles seront ajoutées dans une section dimensions séparée)
 
 ✅ SECTIONS REQUISES :
 Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
@@ -1615,10 +1726,8 @@ UTILISATION DES ICÔNES :
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
     
-    // Find the first image - if we have technical dimensions from vision, the first image likely has the schema
-    const imagesWithDimensions = enrichedProduct?.vision_attributes?.visualContext?.hasTechnicalSchema 
-      ? images.slice(0, 1) 
-      : [];
+    // Use filtered dimension images (technical schema images)
+    const imagesWithDimensions = dimensionImages.length > 0 ? dimensionImages.slice(0, 2) : [];
     
     if (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions) {
       const dims = imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
@@ -1691,43 +1800,28 @@ UTILISATION DES ICÔNES :
     // Insert dimensions section AFTER "Caractéristiques" / "Technical Specifications" section
     let finalHtml = html;
     if (dimensionsSection) {
-      // Look for common patterns for characteristics section end
-      const caracteristiquesPatterns = [
-        /<\/section>[\s\S]{0,200}(?:caract[ée]ristiques|specifications|technical)/i,
-        /(?:caract[ée]ristiques|specifications|technical)[\s\S]{0,500}<\/section>/i
-      ];
+      console.log("📐 Searching for Caractéristiques/Specifications section...");
+      
+      // Stronger regex to find the section containing characteristics keywords
+      const caracteristiquesRegex = /<section[^>]*>[\s\S]*?(?:caract[ée]ristiques|technical\s+specifications|specifications?\s+techniques?)[\s\S]*?<\/section>/i;
+      const match = html.match(caracteristiquesRegex);
       
       let insertAt = -1;
-      for (const pattern of caracteristiquesPatterns) {
-        const match = html.match(pattern);
-        if (match) {
-          // Find the </section> closing tag after this match
-          const matchEnd = (match.index || 0) + match[0].length;
-          const nextSectionClose = html.indexOf('</section>', matchEnd - 50);
-          if (nextSectionClose > 0) {
-            insertAt = nextSectionClose + 10; // After </section>
-            console.log("📐 Found Caractéristiques section, inserting dimensions after it");
-            break;
-          }
-        }
+      if (match && match.index !== undefined) {
+        // Insert right after the matched </section> tag
+        insertAt = match.index + match[0].length;
+        console.log(`📐 ✅ Found Caractéristiques section at position ${match.index}, inserting dimensions after it`);
+      } else {
+        console.log("📐 ⚠️ Caractéristiques section not found, using fallback placement");
       }
       
-      // Fallback: insert after 2nd section if characteristics not found
+      // Fallback: insert before </body> as last resort (not after 2nd section)
       if (insertAt < 0) {
-        const firstSection = html.indexOf('</section>');
-        if (firstSection > 0) {
-          const secondSection = html.indexOf('</section>', firstSection + 10);
-          if (secondSection > 0) {
-            insertAt = secondSection + 10;
-            console.log("📐 Inserting dimensions after 2nd section (fallback)");
-          }
+        const bodyEnd = html.lastIndexOf('</body>');
+        if (bodyEnd > 0) {
+          insertAt = bodyEnd;
+          console.log("📐 Using fallback: inserting before </body>");
         }
-      }
-      
-      // Final fallback: before body close
-      if (insertAt < 0) {
-        insertAt = html.indexOf('</body>');
-        console.log("📐 Inserting dimensions before </body> (last resort)");
       }
       
       if (insertAt > 0) {
