@@ -154,75 +154,83 @@ function buildOptimizedAltText(
   seoKeywords: string[] = [],
   maxWords: number = 15
 ): string {
-  // Track used stems to avoid repetition
-  const usedStems = new Set<string>();
-  const finalTokens: string[] = [];
+  // Extract clean product name (no duplication later)
+  const cleanProductName = extractProductName(productName);
   
-  // Helper to add tokens without stem duplicates
-  const addToken = (token: string): boolean => {
+  // Track used stems globally to prevent ANY repetition
+  const usedStems = new Set<string>();
+  
+  // Mark product name stems as used first
+  tokenize(cleanProductName).forEach(token => {
+    usedStems.add(getStem(token));
+  });
+  
+  // Collect unique tokens from SEO keywords
+  const seoTokens: string[] = [];
+  seoKeywords.flatMap(kw => tokenize(kw)).forEach(token => {
     const stem = getStem(token);
     if (!usedStems.has(stem)) {
       usedStems.add(stem);
-      finalTokens.push(token);
-      return true;
+      seoTokens.push(token);
     }
-    return false;
-  };
+  });
   
-  // Step 1: Add product name tokens (highest priority)
-  const productTokens = tokenize(productName);
-  productTokens.forEach(addToken);
+  // Collect unique tokens from visual analysis
+  const visualTokens: string[] = [];
+  tokenize(visualAnalysis).forEach(token => {
+    const stem = getStem(token);
+    if (!usedStems.has(stem) && visualTokens.length < 8) {
+      usedStems.add(stem);
+      visualTokens.push(token);
+    }
+  });
   
-  // Step 2: Add SEO keyword tokens
-  const seoTokens = seoKeywords.flatMap(kw => tokenize(kw));
-  for (const token of seoTokens) {
-    if (finalTokens.length >= maxWords) break;
-    addToken(token);
-  }
+  // Categorize all collected tokens
+  const allTokens = [...seoTokens, ...visualTokens];
+  const categorized = categorizeWords(allTokens);
   
-  // Step 3: Add visual analysis tokens
-  const visualTokens = tokenize(visualAnalysis);
-  for (const token of visualTokens) {
-    if (finalTokens.length >= maxWords) break;
-    addToken(token);
-  }
+  // Build structured phrase parts
+  const parts: string[] = [cleanProductName];
   
-  // Step 4: Categorize and build structured phrase
-  const categorized = categorizeWords(finalTokens);
-  
-  const parts: string[] = [productName];
-  
+  // Add shape if available
   if (categorized.shapes.length > 0) {
-    parts.push(categorized.shapes.slice(0, 2).join(', '));
+    parts.push(categorized.shapes[0]);
   }
   
+  // Add materials (max 2)
   if (categorized.materials.length > 0) {
-    parts.push(`en ${categorized.materials.join(' et ')}`);
+    const mats = categorized.materials.slice(0, 2);
+    parts.push(mats.length === 1 ? `en ${mats[0]}` : `en ${mats.join(' et ')}`);
   }
   
+  // Add colors (max 2)
   if (categorized.colors.length > 0) {
-    parts.push(`coloris ${categorized.colors.join(', ')}`);
+    const cols = categorized.colors.slice(0, 2);
+    parts.push(cols.length === 1 ? `coloris ${cols[0]}` : `coloris ${cols.join(' et ')}`);
   }
   
+  // Add style (max 1)
   if (categorized.styles.length > 0) {
-    parts.push(`style ${categorized.styles.slice(0, 2).join(', ')}`);
+    parts.push(`style ${categorized.styles[0]}`);
   }
   
-  // Add remaining significant words
+  // Add max 2 other significant descriptors
   if (categorized.others.length > 0) {
-    const remaining = categorized.others.slice(0, 3);
-    parts.push(remaining.join(', '));
+    categorized.others.slice(0, 2).forEach(word => parts.push(word));
   }
   
-  // Join with commas and limit length
-  const altText = parts.filter(p => p.length > 0).join(', ');
+  // Join with commas and clean up
+  let altText = parts.join(', ');
   
-  // Ensure we don't exceed max length (200 chars)
+  // Remove any accidental double spaces or double commas
+  altText = altText.replace(/\s+/g, ' ').replace(/,\s*,/g, ',').trim();
+  
+  // Ensure length constraints
   if (altText.length > 200) {
-    return altText.substring(0, 197) + '...';
+    altText = altText.substring(0, 197) + '...';
   }
   
-  return altText.trim();
+  return altText;
 }
 
 function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
