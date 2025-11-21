@@ -165,10 +165,19 @@ export default function Onboarding() {
   }, [user, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    // ✅ IMPORTANT: Si retour de checkout Stripe sans user, rediriger vers login
+    const checkoutSuccess = searchParams.get("checkout") === "success";
+    const shopifyPending = searchParams.get("shopify_pending");
+    
     if (!user) {
-      // Préserver le token shopify_pending si présent
-      const shopifyPending = searchParams.get("shopify_pending");
-      if (shopifyPending) {
+      console.log("🔐 [ONBOARDING] No user detected");
+      
+      if (checkoutSuccess && shopifyPending) {
+        // Retour de Stripe checkout mais pas connecté → forcer le login
+        console.log("🔄 [ONBOARDING] Checkout success but no session, redirecting to login");
+        navigate(`/auth?checkout=success&shopify_pending=${shopifyPending}`);
+      } else if (shopifyPending) {
+        // Cas normal : pas encore de plan sélectionné
         navigate(`/auth?shopify_pending=${shopifyPending}`);
       } else {
         navigate("/auth");
@@ -182,7 +191,7 @@ export default function Onboarding() {
 
     // ✅ Gérer le retour de checkout Stripe
     // Le claim Shopify sera fait dans handleCheckSubscription
-    if (searchParams.get("checkout") === "success") {
+    if (checkoutSuccess) {
       console.log("🔄 [ONBOARDING] Checkout success detected, checking subscription");
       handleCheckSubscription();
     }

@@ -36,11 +36,19 @@ export default function Auth() {
       
       // Vérifier s'il y a un pending_token Shopify à associer
       const shopifyPending = searchParams.get('shopify_pending');
+      const checkoutSuccess = searchParams.get('checkout') === 'success';
       
       if (shopifyPending) {
-        console.log('🔗 Shopify pending token detected, redirecting to onboarding for trial setup');
-        // Rediriger vers onboarding pour configurer l'essai AVANT de claim
-        navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+        console.log('🔗 Shopify pending token detected, redirecting to onboarding');
+        
+        // ✅ Si retour de checkout, préserver le paramètre
+        if (checkoutSuccess) {
+          console.log('💳 Checkout success detected, redirecting with checkout flag');
+          navigate(`/onboarding?checkout=success&shopify_pending=${shopifyPending}`);
+        } else {
+          // Cas normal : pas encore de plan sélectionné
+          navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+        }
       } else {
         // Redirection normale sans Shopify pending
         const destination = redirectPath || '/dashboard';
