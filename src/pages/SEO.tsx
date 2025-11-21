@@ -184,7 +184,6 @@ export default function SEO() {
       {/* Tab Content - Navigation via sidebar uniquement */}
       <div className="mt-6">
         {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
-        {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
         {activeTab === 'tags' && <TagOptimization />}
         {activeTab === 'pages' && (
           <>
