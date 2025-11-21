@@ -306,3 +306,36 @@ verify_jwt = true
 verify_jwt = true
 memory_limit_mb = 512
 
+[functions.trigger-auto-sync]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.import-costs-from-shopify]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.analyze-image-with-vision]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.update-subscription]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.calculate-proration]
+verify_jwt = true
+
+[functions.activate-full-plan]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.create-upgrade-invoice]
+verify_jwt = true
+
+[functions.cleanup-stuck-syncs]
+verify_jwt = false
+
+[cron.cleanup-stuck-syncs]
+schedule = "*/5 * * * *"
+function = "cleanup-stuck-syncs"
+
