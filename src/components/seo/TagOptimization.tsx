@@ -268,29 +268,31 @@ export function TagOptimization() {
   const productsToSyncCount = products.filter(p => p.optimization_count && p.optimization_count > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score based on real quality of tags
-  const tagSeoScore = products.length > 0 
+  // Calculate tag SEO score based on optimized products only
+  const optimizedProducts = products.filter(p => p.optimization_count && p.optimization_count > 0);
+  const tagSeoScore = optimizedProducts.length > 0 
     ? Math.round(
-        (products.reduce((sum, p) => {
+        (optimizedProducts.reduce((sum, p) => {
           const score = calculateTagsScore(p.tags);
           // Debug first few products
-          if (products.indexOf(p) < 3) {
+          if (optimizedProducts.indexOf(p) < 3) {
             console.log('🏷️ [TAG DEBUG]', {
               productId: p.id,
               title: p.title,
               tags: p.tags,
+              optimizationCount: p.optimization_count,
               calculatedScore: score
             });
           }
           return sum + score;
-        }, 0) / products.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
+        }, 0) / optimizedProducts.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
       )
     : 0;
   
   console.log('🎯 [TAG SEO SCORE]', {
     totalProducts: products.length,
-    finalScore: tagSeoScore,
-    productsWithTags: products.filter(p => p.tags && p.tags.trim().length > 0).length
+    optimizedProducts: optimizedProducts.length,
+    finalScore: tagSeoScore
   });
 
   const filters = [
