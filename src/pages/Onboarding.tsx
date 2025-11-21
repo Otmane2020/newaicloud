@@ -828,7 +828,7 @@ export default function Onboarding() {
               if (!starterPlan) return null;
 
               return (
-                <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden">
+                <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
                     {language === "fr" ? "GRATUIT" : "FREE"}
                   </div>
@@ -900,7 +900,7 @@ export default function Onboarding() {
                   </div>
 
                   <Button
-                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow mt-auto"
                     onClick={handleStartFreeTrial}
                     disabled={loading}
                   >
@@ -934,7 +934,7 @@ export default function Onboarding() {
             return (
               <Card
                 key={starterPlan.id}
-                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border flex flex-col"
               >
                 <div
                   className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}
@@ -1031,7 +1031,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
@@ -1077,7 +1077,7 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow relative overflow-hidden ${
+                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow relative overflow-hidden flex flex-col ${
                   isPopular ? "ring-2 ring-primary" : "border-2 border-border"
                 }`}
               >
@@ -1094,9 +1094,6 @@ export default function Onboarding() {
                 </div>
 
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
-                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-                  {t.onboarding.planFeatures.forGrowth}
-                </p>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
@@ -1148,16 +1145,6 @@ export default function Onboarding() {
                       <span className="text-muted-foreground text-sm sm:text-base">
                         {t.onboarding.planFeatures.perMonth}
                       </span>
-                    </div>
-                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
-                      <p className="text-xs sm:text-sm font-medium text-center">
-                        <span className="text-pink-600 dark:text-pink-400">
-                          {language === "fr" ? "Obtenez 20% de réduction" : "Get 20% discount"}
-                        </span>
-                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                          {language === "fr" ? "PROMO LIMITÉE" : "LIMITED PROMO"}
-                        </span>
-                      </p>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
@@ -1220,7 +1207,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
@@ -1254,7 +1241,7 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border relative overflow-hidden"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border relative overflow-hidden flex flex-col"
               >
                 {isBestValue && (
                   <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
@@ -1269,9 +1256,6 @@ export default function Onboarding() {
                 </div>
 
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
-                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-                  {t.onboarding.planFeatures.forEnterprise}
-                </p>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
@@ -1323,16 +1307,6 @@ export default function Onboarding() {
                       <span className="text-muted-foreground text-sm sm:text-base">
                         {t.onboarding.planFeatures.perMonth}
                       </span>
-                    </div>
-                    <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800 w-full">
-                      <p className="text-xs sm:text-sm font-medium text-center">
-                        <span className="text-pink-600 dark:text-pink-400">
-                          {language === "fr" ? "Obtenez 30% de réduction" : "Get 30% discount"}
-                        </span>
-                        <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                          {language === "fr" ? "PROMO LIMITÉE" : "LIMITED PROMO"}
-                        </span>
-                      </p>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
@@ -1395,7 +1369,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
