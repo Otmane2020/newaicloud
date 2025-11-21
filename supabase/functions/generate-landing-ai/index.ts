@@ -549,9 +549,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
-
     // 🔧 STEP 1: Product Enrichment (with conditional logic and retry)
     console.log("🔧 Starting product enrichment check...");
     let enrichmentStatus = "skipped";
@@ -1446,36 +1443,45 @@ UTILISATION DES ICÔNES :
 - Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
 - AUCUNE icône décorative ailleurs`;
 
-    // --- AI call with timeout (60s) ---
-    console.log("🤖 Starting AI generation...");
+    // --- AI call with Google Gemini Direct API (60s timeout) ---
+    console.log("🤖 Starting AI generation with Google Gemini Direct API...");
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
+    }
+
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 60000);
 
     let aiResponse;
     try {
-      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                detectedLanguage === "en"
-                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
-                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.",
+      const systemPrompt = detectedLanguage === "en"
+        ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
+        : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.";
+
+      aiResponse = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + GOOGLE_GEMINI_API_KEY,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: systemPrompt + "\n\n" + prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 16000,
             },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 16000,
-          temperature: 0.7,
-        }),
-        signal: aiController.signal,
-      });
+          }),
+          signal: aiController.signal,
+        }
+      );
     } finally {
       clearTimeout(aiTimeout);
     }
@@ -1484,14 +1490,26 @@ UTILISATION DES ICÔNES :
 
     if (!aiResponse.ok) {
       const text = await aiResponse.text();
-      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
+      console.error("❌ Google Gemini API error:", aiResponse.status, text);
+      return new Response(JSON.stringify({ error: `Google Gemini API ${aiResponse.status}`, detail: text }), {
         status: aiResponse.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await aiResponse.json();
-    let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
+    console.log("📦 Google Gemini response structure:", JSON.stringify(data, null, 2));
+    
+    // Extract content from Gemini response format
+    let rawHtml = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    
+    if (!rawHtml) {
+      console.error("❌ No content in Gemini response");
+      return new Response(JSON.stringify({ error: "No content generated" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!rawHtml || rawHtml.length < 400)
       return new Response(
