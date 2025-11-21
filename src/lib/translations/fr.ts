@@ -835,15 +835,15 @@ export const translations = {
     impossible: "Impossible",
     dataRefreshed: "Données actualisées",
   },
-  
+
   planNames: {
     "Free Trial": "Essai Gratuit",
-    "trial": "Essai Gratuit",
-    "Starter": "Démarrage",
-    "Pro": "Pro",
-    "Business": "Business",
-    "Enterprise": "Entreprise",
-    "Free": "Gratuit",
+    trial: "Essai Gratuit",
+    Starter: "Démarrage",
+    Pro: "Pro",
+    Business: "Business",
+    Enterprise: "Entreprise",
+    Free: "Gratuit",
   },
 
   navigation: {
@@ -3227,7 +3227,7 @@ export const translations = {
     perYear: "/an",
     mostPopular: "Le Plus Populaire",
     selectPlan: "Sélectionner le Plan",
-    startTrial: "Commencer l'Essai Gratuit",
+    startTrial: "Essai Gratuit",
     features: "Fonctionnalités",
     allFeatures: "Toutes les Fonctionnalités",
     billing: {
