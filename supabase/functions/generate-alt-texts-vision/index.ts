@@ -8,135 +8,179 @@ const corsHeaders = {
 
 interface AltTextVisionRequest {
   imageId: string;
-  imageType?: 'product' | 'content';
+  imageType?: "product" | "content";
 }
 
 function cleanJsonResponse(text: string): string {
   let cleaned = text.trim();
-  
+
   // Pattern 1: ```json\n{...}\n```
   const jsonBlockMatch = cleaned.match(/```json\s*\n?([\s\S]*?)\n?```/);
   if (jsonBlockMatch) {
     return jsonBlockMatch[1].trim();
   }
-  
+
   // Pattern 2: ```{...}```
   const codeBlockMatch = cleaned.match(/```\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     return codeBlockMatch[1].trim();
   }
-  
+
   // Pattern 3: Remove backticks
-  return cleaned.replace(/^```json?\s*|\s*```$/g, '').trim();
+  return cleaned.replace(/^```json?\s*|\s*```$/g, "").trim();
 }
 
 // Extract the main product name intelligently from full title
 function extractProductName(title: string): string {
+  if (!title) return "";
+
   // Clean title by taking part before first dash or comma
   let productName = title.split(/[-–—,]/)[0].trim();
-  
+
   // Smart detection: keep first 2-4 words based on word length
-  const words = productName.split(/\s+/).filter(w => w.length > 0);
-  
+  const words = productName.split(/\s+/).filter((w) => w.length > 0);
+
   // If first words are short (<=4 chars), keep more words (up to 5)
   // If words are long, keep fewer (3-4 max)
   const avgLength = words.slice(0, 3).reduce((sum, w) => sum + w.length, 0) / Math.min(3, words.length);
   const maxWords = avgLength <= 4 ? 5 : 4;
-  
-  return words.slice(0, Math.min(maxWords, words.length)).join(' ');
+
+  return words.slice(0, Math.min(maxWords, words.length)).join(" ");
 }
 
 // Normalize word to its stem (basic French stemming)
 function getStem(word: string): string {
   const w = word.toLowerCase().trim();
-  
+
   // Remove common French suffixes
-  if (w.endsWith('aux')) return w.slice(0, -3) + 'al';
-  if (w.endsWith('eaux')) return w.slice(0, -4) + 'eau';
-  if (w.endsWith('s') && w.length > 3) return w.slice(0, -1);
-  if (w.endsWith('ée')) return w.slice(0, -2) + 'é';
-  if (w.endsWith('ées')) return w.slice(0, -3) + 'é';
-  
+  if (w.endsWith("aux")) return w.slice(0, -3) + "al";
+  if (w.endsWith("eaux")) return w.slice(0, -4) + "eau";
+  if (w.endsWith("s") && w.length > 3) return w.slice(0, -1);
+  if (w.endsWith("ée")) return w.slice(0, -2) + "é";
+  if (w.endsWith("ées")) return w.slice(0, -3) + "é";
+
   return w;
 }
 
 // Tokenize text into significant words
 function tokenize(text: string): string[] {
   if (!text) return [];
-  
+
   const stopWords = new Set([
-    'avec', 'pour', 'dans', 'une', 'des', 'the', 'and', 'with', 'for', 'in', 'a', 'an', 'of',
-    'le', 'la', 'les', 'un', 'de', 'du', 'en', 'ou', 'et', 'à', 'au', 'aux', 'ce', 'cette'
+    "avec",
+    "pour",
+    "dans",
+    "une",
+    "des",
+    "the",
+    "and",
+    "with",
+    "for",
+    "in",
+    "a",
+    "an",
+    "of",
+    "le",
+    "la",
+    "les",
+    "un",
+    "de",
+    "du",
+    "en",
+    "ou",
+    "et",
+    "à",
+    "au",
+    "aux",
+    "ce",
+    "cette",
   ]);
-  
+
   return text
     .toLowerCase()
     .split(/[\s,;:.!?()]+/)
-    .filter(w => w.length > 2 && !stopWords.has(w));
+    .filter((w) => w.length > 2 && !stopWords.has(w));
 }
 
 // Detect language automatically
-function detectLanguage(text: string): 'fr' | 'en' {
-  const frenchMarkers = ['avec', 'pour', 'dans', 'une', 'des', 'le', 'la', 'les', 'en', 'de', 'du'];
-  const englishMarkers = ['with', 'for', 'in', 'the', 'and', 'of', 'this', 'that'];
-  
+function detectLanguage(text: string): "fr" | "en" {
+  const frenchMarkers = ["avec", "pour", "dans", "une", "des", "le", "la", "les", "en", "de", "du"];
+  const englishMarkers = ["with", "for", "in", "the", "and", "of", "this", "that"];
+
   let frScore = 0;
   let enScore = 0;
-  
+
   const words = text.toLowerCase().split(/\s+/);
   for (const word of words) {
     if (frenchMarkers.includes(word)) frScore++;
     if (englishMarkers.includes(word)) enScore++;
   }
-  
-  return frScore > enScore ? 'fr' : 'en';
+
+  return frScore > enScore ? "fr" : "en";
 }
 
 // Universal intelligent categorization (NO HARDCODED LISTS)
 interface UniversalTokens {
-  descriptors: string[];  // All meaningful words
-  dimensions: string[];   // Detected dimensions: 120x70, 3cm, etc.
-  quantities: string[];   // Detected quantities: 2 pièces, pack de 4, etc.
+  descriptors: string[]; // All meaningful words
+  dimensions: string[]; // Detected dimensions: 120x70, 3cm, etc.
+  quantities: string[]; // Detected quantities: 2 pièces, pack de 4, etc.
 }
 
 function intelligentCategorize(words: string[]): UniversalTokens {
   const result: UniversalTokens = {
     descriptors: [],
     dimensions: [],
-    quantities: []
+    quantities: [],
   };
-  
+
   // Generic noise words to skip (very common, not descriptive)
   const noiseSet = new Set([
-    'table', 'basse', 'plateau', 'structure', 'pieds', 'meuble', 'produit',
-    'article', 'image', 'photo', 'vue', 'piece', 'pièce',
-    'room', 'product', 'item', 'picture', 'view', 'interior', 'exterior'
+    "table",
+    "basse",
+    "plateau",
+    "structure",
+    "pieds",
+    "meuble",
+    "produit",
+    "article",
+    "image",
+    "photo",
+    "vue",
+    "piece",
+    "pièce",
+    "room",
+    "product",
+    "item",
+    "picture",
+    "view",
+    "interior",
+    "exterior",
   ]);
-  
+
   for (const word of words) {
     const stem = getStem(word);
-    
+
     // Skip generic noise
     if (noiseSet.has(stem)) continue;
-    
+
     // Detect dimensions: 120x70, 3cm, 45°, etc.
     if (/\d+x\d+|\d+cm|\d+mm|\d+°|[\d,]+\s?(cm|mm|m|kg|g|l|ml)/i.test(word)) {
       result.dimensions.push(word);
       continue;
     }
-    
+
     // Detect quantities: 2 pièces, pack de 4, etc.
     if (/\d+\s?(pièces?|pack|set|lot)/i.test(word)) {
       result.quantities.push(word);
       continue;
     }
-    
+
     // All other meaningful words are descriptors
     if (word.length > 2) {
       result.descriptors.push(word);
     }
   }
-  
+
   return result;
 }
 
@@ -145,24 +189,24 @@ function buildNaturalAltText(
   productName: string,
   visualAnalysis: string,
   seoKeywords: string[] = [],
-  maxWords: number = 15
+  maxWords: number = 15,
 ): string {
   const cleanProductName = extractProductName(productName);
-  const language = detectLanguage(productName + ' ' + visualAnalysis);
-  
+  const language = detectLanguage(productName + " " + visualAnalysis);
+
   // Track used stems globally to prevent ANY repetition
   const usedStems = new Set<string>();
-  
+
   // Mark product name stems as used first
-  tokenize(cleanProductName).forEach(token => {
+  tokenize(cleanProductName).forEach((token) => {
     usedStems.add(getStem(token));
   });
-  
+
   // Collect unique descriptors from SEO keywords + visual analysis
   const allDescriptors: string[] = [];
-  
-  [...seoKeywords, visualAnalysis].forEach(source => {
-    tokenize(source).forEach(token => {
+
+  [...seoKeywords, visualAnalysis].forEach((source) => {
+    tokenize(source).forEach((token) => {
       const stem = getStem(token);
       if (!usedStems.has(stem) && allDescriptors.length < 12) {
         usedStems.add(stem);
@@ -170,45 +214,49 @@ function buildNaturalAltText(
       }
     });
   });
-  
+
   // Categorize intelligently (no hardcoded lists)
   const categorized = intelligentCategorize(allDescriptors);
-  
+
   // Build sentence with natural connectors
-  return buildDescriptiveSentence(
-    cleanProductName,
-    categorized,
-    language
-  );
+  return buildDescriptiveSentence(cleanProductName, categorized, language);
 }
 
 // Build a natural descriptive sentence (FR/EN)
-function buildDescriptiveSentence(
-  productName: string,
-  tokens: UniversalTokens,
-  language: 'fr' | 'en'
-): string {
+function buildDescriptiveSentence(productName: string, tokens: UniversalTokens, language: "fr" | "en"): string {
   let sentence = productName;
-  
+
   // Split descriptors into semantic groups using linguistic patterns
   const materials: string[] = [];
   const colors: string[] = [];
   const shapes: string[] = [];
   const features: string[] = [];
-  
+
   for (const word of tokens.descriptors) {
     const lower = word.toLowerCase();
-    
+
     // Detect materials (common e-commerce materials)
-    if (/bois|marbre|métal|verre|tissu|cuir|plastique|acier|aluminium|pierre|céramique|wood|marble|metal|glass|fabric|leather|plastic|steel|stone|ceramic/i.test(lower)) {
+    if (
+      /bois|marbre|métal|verre|tissu|cuir|plastique|acier|aluminium|pierre|céramique|wood|marble|metal|glass|fabric|leather|plastic|steel|stone|ceramic/i.test(
+        lower,
+      )
+    ) {
       materials.push(word);
     }
     // Detect colors
-    else if (/blanc|noir|beige|gris|rouge|bleu|vert|jaune|rose|transparent|white|black|grey|gray|red|blue|green|yellow|pink|clear/i.test(lower)) {
+    else if (
+      /blanc|noir|beige|gris|rouge|bleu|vert|jaune|rose|transparent|white|black|grey|gray|red|blue|green|yellow|pink|clear/i.test(
+        lower,
+      )
+    ) {
       colors.push(word);
     }
     // Detect shapes/forms
-    else if (/rond|carré|rectangulaire|ovale|organique|géométrique|courbe|round|square|rectangular|oval|organic|geometric|curved|forme|form|shape/i.test(lower)) {
+    else if (
+      /rond|carré|rectangulaire|ovale|organique|géométrique|courbe|round|square|rectangular|oval|organic|geometric|curved|forme|form|shape/i.test(
+        lower,
+      )
+    ) {
       shapes.push(word);
     }
     // Other features
@@ -216,269 +264,285 @@ function buildDescriptiveSentence(
       features.push(word);
     }
   }
-  
+
   // Construct sentence with appropriate connectors
-  if (language === 'fr') {
+  if (language === "fr") {
     // Materials: "en marbre et métal"
     if (materials.length > 0) {
-      const materialsPhrase = materials.length === 1
-        ? `en ${materials[0]}`
-        : `en ${materials.slice(0, 2).join(' et ')}`;
+      const materialsPhrase =
+        materials.length === 1 ? `en ${materials[0]}` : `en ${materials.slice(0, 2).join(" et ")}`;
       sentence += `, ${materialsPhrase}`;
     }
-    
+
     // Colors: "coloris blanc transparent"
     if (colors.length > 0) {
-      sentence += `, coloris ${colors.slice(0, 2).join(' ')}`;
+      sentence += `, coloris ${colors.slice(0, 2).join(" ")}`;
     }
-    
+
     // Shapes: "forme organique"
     if (shapes.length > 0) {
       sentence += `, ${shapes[0]}`;
     }
-    
+
     // Features: just add naturally
     if (features.length > 0) {
-      sentence += `, ${features.slice(0, 2).join(', ')}`;
+      sentence += `, ${features.slice(0, 2).join(", ")}`;
     }
-    
+
     // Dimensions: "dimensions 120x70x45 cm"
     if (tokens.dimensions.length > 0) {
       const dim = tokens.dimensions[0];
       sentence += `, dimensions ${dim}`;
-      if (!/cm|mm|m\b/.test(dim)) sentence += ' cm';
+      if (!/cm|mm|m\b/.test(dim)) sentence += " cm";
     }
   } else {
     // English structure
     if (materials.length > 0) {
-      const materialsPhrase = materials.length === 1
-        ? `in ${materials[0]}`
-        : `in ${materials.slice(0, 2).join(' and ')}`;
+      const materialsPhrase =
+        materials.length === 1 ? `in ${materials[0]}` : `in ${materials.slice(0, 2).join(" and ")}`;
       sentence += `, ${materialsPhrase}`;
     }
-    
+
     if (colors.length > 0) {
-      sentence += `, ${colors.slice(0, 2).join(' ')} color`;
+      sentence += `, ${colors.slice(0, 2).join(" ")} color`;
     }
-    
+
     if (shapes.length > 0) {
       sentence += `, ${shapes[0]}`;
     }
-    
+
     if (features.length > 0) {
-      sentence += `, ${features.slice(0, 2).join(', ')}`;
+      sentence += `, ${features.slice(0, 2).join(", ")}`;
     }
-    
+
     if (tokens.dimensions.length > 0) {
       const dim = tokens.dimensions[0];
       sentence += `, dimensions ${dim}`;
-      if (!/cm|mm|m\b/.test(dim)) sentence += ' cm';
+      if (!/cm|mm|m\b/.test(dim)) sentence += " cm";
     }
   }
-  
+
   // Clean up
-  sentence = sentence
-    .replace(/\s+/g, ' ')
-    .replace(/,\s*,/g, ',')
-    .replace(/,\s*$/, '')
-    .trim();
-  
+  sentence = sentence.replace(/\s+/g, " ").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim();
+
   // Ensure max length
   if (sentence.length > 200) {
-    sentence = sentence.substring(0, 197) + '...';
+    sentence = sentence.substring(0, 197) + "...";
   }
-  
+
   return sentence;
 }
 
 function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
-  if (!altText || typeof altText !== 'string') {
+  if (!altText || typeof altText !== "string") {
     return false;
   }
-  
+
   const trimmed = altText.trim();
-  const wordCount = trimmed.split(' ').length;
-  
+  const wordCount = trimmed.split(" ").length;
+
   // Length check
   if (trimmed.length < minLength || trimmed.length > maxLength) {
-    console.warn('⚠️ ALT text length invalid:', trimmed.length);
+    console.warn("⚠️ ALT text length invalid:", trimmed.length);
     return false;
   }
-  
+
   if (wordCount < 6 || wordCount > 16) {
-    console.warn('⚠️ ALT text word count invalid:', wordCount);
+    console.warn("⚠️ ALT text word count invalid:", wordCount);
     return false;
   }
-  
+
   // Anti-copy check (allow product name but not full title)
   if (productTitle) {
     const productName = extractProductName(productTitle);
     const productNameWords = productName.toLowerCase().split(/\s+/);
     const altWords = trimmed.toLowerCase().split(/\s+/);
-    
+
     // Check if product name is present (good!)
-    const hasProductName = productNameWords.some(w => altWords.includes(w));
-    
+    const hasProductName = productNameWords.some((w) => altWords.includes(w));
+
     // Check we didn't copy FULL title (>80% similarity = bad)
-    const titleWords = productTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-    const matchingWords = titleWords.filter(w => altWords.includes(w));
+    const titleWords = productTitle
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
+    const matchingWords = titleWords.filter((w) => altWords.includes(w));
     const matchRatio = titleWords.length > 0 ? matchingWords.length / titleWords.length : 0;
-    
+
     if (matchRatio > 0.8) {
-      console.warn('⚠️ ALT text is too similar to full title:', matchRatio);
+      console.warn("⚠️ ALT text is too similar to full title:", matchRatio);
       return false;
     }
-    
+
     if (!hasProductName) {
-      console.warn('⚠️ ALT text should contain product name');
+      console.warn("⚠️ ALT text should contain product name");
       // Just warn, don't reject
     }
   }
-  
-  return !altText.includes('```');
+
+  return !altText.includes("```");
 }
 
 // Sleep utility for rate limiting
 async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Analyze title with DeepSeek - UNIVERSAL E-COMMERCE extraction
-async function analyzeTitle(productTitle: string) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-  
+// Enhanced DeepSeek analysis with better product understanding
+async function analyzeTitleWithDeepSeek(productTitle: string) {
+  const deepseekApiKey = Deno.env.get("DEEPSEEK_API_KEY");
+
   if (!deepseekApiKey) {
-    console.warn('DeepSeek API key not configured, using fallback analysis');
+    console.warn("DeepSeek API key not configured, using fallback analysis");
     return extractGenericKeywords(productTitle);
   }
 
   try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${deepseekApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${deepseekApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: "deepseek-chat",
         messages: [
           {
-            role: 'system',
-            content: 'Tu es un expert e-commerce UNIVERSEL (meubles, mode, tech, alimentation, cosmétiques, jouets, auto, santé, etc.). Tu extrais les attributs pertinents de TOUS types de produits.'
+            role: "system",
+            content: `Tu es un expert e-commerce spécialisé dans l'extraction d'attributs produits pour l'optimisation SEO et l'accessibilité. Tu identifies les caractéristiques essentielles d'un produit à partir de son titre.`,
           },
           {
-            role: 'user',
-            content: `Analyse ce titre produit et extrait les attributs pertinents.
+            role: "user",
+            content: `Analyse ce titre produit et extrait les attributs SEO pertinents pour créer un texte ALT accessible.
 
 Titre: "${productTitle}"
 
 Réponds UNIQUEMENT avec un JSON valide :
 {
+  "product_name": "Nom principal du produit (2-4 mots max)",
   "keywords": ["mot-clé1", "mot-clé2", "mot-clé3", ...],
-  "product_type": "type de produit"
+  "attributes": {
+    "materials": ["matériau1", "matériau2"],
+    "colors": ["couleur1", "couleur2"],
+    "style": "style si mentionné",
+    "features": ["caractéristique1", "caractéristique2"]
+  },
+  "product_type": "catégorie de produit"
 }
 
-RÈGLES :
-- Extrais UNIQUEMENT ce qui est explicitement mentionné
-- N'invente RIEN
-- Élimine les mots génériques ("premium", "qualité", "top", "meilleur")
-- Garde les attributs précis (matériaux, couleurs, tailles, caractéristiques techniques, ingrédients, etc.)
-- Maximum 8-10 mots-clés
-- Sois concis et précis`
-          }
+RÈGLES STRICTES :
+- "product_name" : extrait le nom principal (ex: "Table basse gigogne", "Chaise scandinave")
+- "keywords" : 6-8 mots-clés maximum, uniquement ce qui est explicitement mentionné
+- Élimine les mots marketing ("premium", "qualité", "top", "meilleur")
+- Garde les attributs concrets : matériaux, couleurs, dimensions, caractéristiques techniques
+- Sois concis et précis, n'invente rien`,
+          },
         ],
-        temperature: 0.2,
-        max_tokens: 200
-      })
+        temperature: 0.1, // Lower temperature for more consistent extraction
+        max_tokens: 300,
+      }),
     });
 
     if (!response.ok) {
-      console.error('DeepSeek API error:', response.status);
+      console.error("DeepSeek API error:", response.status);
       return extractGenericKeywords(productTitle);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '{}';
-    
+    const content = data.choices?.[0]?.message?.content || "{}";
+
     try {
       const cleaned = cleanJsonResponse(content);
       const parsed = JSON.parse(cleaned);
-      
-      const keywords = (parsed.keywords || []).filter((k: string) => k && k.length > 2);
-      
+
+      // Validate and clean extracted data
+      const productName = parsed.product_name || extractProductName(productTitle);
+      const keywords = (parsed.keywords || []).filter((k: string) => k && k.length > 2).slice(0, 8);
+      const attributes = parsed.attributes || {};
+
+      // Combine keywords with attribute values for better coverage
+      const allKeywords = [
+        ...new Set([...keywords, ...(attributes.materials || []), ...(attributes.colors || [])]),
+      ].slice(0, 10);
+
       return {
-        keywords,
-        analysis: `Type: ${parsed.product_type || 'produit'}`,
-        structured: parsed
+        productName,
+        keywords: allKeywords,
+        attributes,
+        productType: parsed.product_type || "produit",
+        analysis: `Type: ${parsed.product_type || "produit"} - ${allKeywords.length} attributs identifiés`,
       };
     } catch (e) {
-      console.error('Failed to parse DeepSeek response:', content);
+      console.error("Failed to parse DeepSeek response:", content);
       return extractGenericKeywords(productTitle);
     }
   } catch (error) {
-    console.error('DeepSeek analysis error:', error);
+    console.error("DeepSeek analysis error:", error);
     return extractGenericKeywords(productTitle);
   }
 }
 
-// Fallback: Generic keyword extraction (NO HARDCODED LISTS)
-function extractGenericKeywords(title: string): { keywords: string[]; analysis: string; structured?: any } {
-  // Simple intelligent tokenization without hardcoded material/color lists
+// Fallback: Generic keyword extraction
+function extractGenericKeywords(title: string): {
+  productName: string;
+  keywords: string[];
+  analysis: string;
+  attributes: any;
+  productType: string;
+} {
+  const productName = extractProductName(title);
   const tokens = tokenize(title);
-  
-  // Extract first 6-8 meaningful words as keywords
   const keywords = tokens.slice(0, 8);
-  
-  // Product type = first 2-3 words
-  const productType = title.split(/\s+/).filter(w => w.length > 2).slice(0, 3).join(' ');
-  
+  const productType = title
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+    .slice(0, 3)
+    .join(" ");
+
   return {
+    productName,
     keywords,
     analysis: `Analyse générique: ${productType}`,
-    structured: {
-      keywords,
-      product_type: productType
-    }
+    attributes: {},
+    productType,
   };
 }
 
-// Analyze image with Vision AI (Gemini)
+// Enhanced Vision AI analysis with better structured output
 async function callVisionAI(imageUrl: string, retryCount = 0) {
-  const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+  const geminiApiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
 
   if (!geminiApiKey) {
-    throw new Error('Google Gemini API key not configured');
+    throw new Error("Google Gemini API key not configured");
   }
 
-  console.log('🔍 Calling Vision AI with ZERO context (pure visual analysis)');
-  console.log('📸 Image URL:', imageUrl.substring(0, 80) + '...');
-  console.log('🚫 NO product context passed');
-  console.log('🚫 NO keywords passed');
+  console.log("🔍 Calling Vision AI for pure visual analysis");
+  console.log("📸 Image URL:", imageUrl.substring(0, 80) + "...");
 
-  // Check for placeholder URLs that won't work
-  if (imageUrl.includes('placeholder.com') || imageUrl.includes('via.placeholder')) {
-    throw new Error('Cannot analyze placeholder images. Please use real product images.');
+  // Check for placeholder URLs
+  if (imageUrl.includes("placeholder.com") || imageUrl.includes("via.placeholder")) {
+    throw new Error("Cannot analyze placeholder images. Please use real product images.");
   }
 
   // Convert image to base64 efficiently
   let base64Data: string;
-  if (imageUrl.startsWith('data:')) {
-    base64Data = imageUrl.split(',')[1];
+  if (imageUrl.startsWith("data:")) {
+    base64Data = imageUrl.split(",")[1];
   } else {
     try {
       const imageResponse = await fetch(imageUrl, {
-        signal: AbortSignal.timeout(10000) // 10s timeout
+        signal: AbortSignal.timeout(10000), // 10s timeout
       });
-      
+
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
       }
-      
+
       const arrayBuffer = await imageResponse.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
-      
-      // Convert to base64 in chunks to avoid stack overflow
-      let binary = '';
+
+      // Convert to base64 in chunks
+      let binary = "";
       const chunkSize = 8192;
       for (let i = 0; i < bytes.length; i += chunkSize) {
         const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
@@ -486,128 +550,205 @@ async function callVisionAI(imageUrl: string, retryCount = 0) {
       }
       base64Data = btoa(binary);
     } catch (fetchError) {
-      console.error('Image fetch error:', fetchError);
-      const errorMsg = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      console.error("Image fetch error:", fetchError);
+      const errorMsg = fetchError instanceof Error ? fetchError.message : "Unknown error";
       throw new Error(`Cannot access image URL: ${imageUrl}. ${errorMsg}`);
     }
   }
 
-  // Rate limiting: wait before making request
-  const minDelayBetweenRequests = 6500; // 6.5s to stay under 10 req/min
+  // Rate limiting
+  const minDelayBetweenRequests = 6500;
   await sleep(minDelayBetweenRequests);
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: `Tu es un expert en vision par ordinateur pour l'e-commerce UNIVERSEL (meubles, mode, tech, alimentation, cosmétiques, jouets, auto, etc.).
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `Tu es un expert en vision par ordinateur pour l'e-commerce.
 
 🎯 MISSION : Analyse visuelle PURE de cette image produit.
 
-📸 RÈGLES D'ANALYSE UNIVERSELLE :
-1. Décris ce que tu vois visuellement (formes, couleurs, matériaux, textures, composition)
-2. Adapte ton vocabulaire au type de produit détecté
-3. Maximum 12-16 mots descriptifs
-4. Ton factuel et neutre
-5. N'invente rien, décris seulement ce qui est visible
-5. N'invente RIEN, ne suppose RIEN sur le produit complet ou son contexte
-6. N'utilise AUCUNE information externe (tu ne connais pas le titre, la description, le contexte du produit)
-7. Si tu vois un détail isolé (ex: pieds de meuble), décris SEULEMENT ce détail visible, pas l'objet complet
-8. Évite tout langage marketing ou superlatif
-9. Sois précis sur les matériaux visibles (métal, bois, tissu, pierre, verre, etc.)
-10. Mentionne l'angle de vue si pertinent (gros plan, vue d'ensemble, détail, macro, etc.)
+📸 RÈGLES D'ANALYSE :
+1. Décris uniquement ce qui est visible (formes, couleurs, matériaux, textures)
+2. Maximum 12-16 mots descriptifs
+3. Ton factuel et neutre
+4. N'invente rien, ne suppose rien sur le contexte
+5. Adapte ton vocabulaire au type de produit détecté
 
 🔍 ÉLÉMENTS À OBSERVER :
 - Formes et structures visibles
-- Couleurs précises (noir, blanc, beige, gris, etc.)
-- Matériaux identifiables visuellement
-- Textures apparentes (lisse, mat, brillant, texturé, etc.)
+- Couleurs précises
+- Matériaux identifiables
+- Textures apparentes
 - Angle de prise de vue
 - Composition de l'image
-- Détails distinctifs visibles
 
-❌ EXEMPLES DE CE QU'IL NE FAUT PAS FAIRE :
-Image montrant uniquement des pieds métalliques noirs :
-❌ FAUX : "Table basse gigogne avec plateau en marbre et structure métallique noire"
-✅ CORRECT : "Gros plan sur pieds en métal noir arrondis avec plateau blanc en arrière-plan"
-
-Image montrant un détail de textile :
-❌ FAUX : "Canapé d'angle scandinave 5 places en tissu beige"
-✅ CORRECT : "Texture de tissu beige clair à trame visible"
-
-✅ EXEMPLES CORRECTS :
-"Plateau rectangulaire en pierre beige nervurée, surface polie"
-"Structure métallique noire tubulaire, finition mate, vue en macro"
-"Assemblage de planches de bois clair veiné, vue d'ensemble"
-"Détail de textile gris chiné à mailles serrées"
-
-📝 FORMAT DE RÉPONSE (JSON strict avec catégories) :
+📝 FORMAT DE RÉPONSE (JSON strict) :
 {
   "materials": ["matériau1", "matériau2"],
   "colors": ["couleur1", "couleur2"],
   "shapes": ["forme1"],
   "textures": ["texture1"],
-  "view_angle": "type de vue (gros plan, vue d'ensemble, etc.)",
-  "visual_description": "Description structurée en 12-16 mots des éléments visuels identifiables"
+  "view_angle": "type de vue",
+  "product_category": "catégorie détectée",
+  "visual_description": "Description structurée en 12-16 mots"
 }
 
-Maintenant, analyse cette image en suivant strictement ces règles et retourne un JSON structuré.`
-            },
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: base64Data
-              }
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 500,
-      }
-    }),
-  });
+Exemple correct pour des pieds de meuble :
+{
+  "materials": ["métal"],
+  "colors": ["noir"],
+  "shapes": ["cylindrique"],
+  "textures": ["mat"],
+  "view_angle": "gros plan",
+  "product_category": "mobilier",
+  "visual_description": "Pieds métalliques noirs cylindriques avec finition mate, vue en gros plan"
+}
+
+Maintenant, analyse cette image et retourne un JSON structuré.`,
+              },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: base64Data,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more consistent analysis
+          maxOutputTokens: 500,
+        },
+      }),
+    },
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    
-    // Handle rate limit (429) with retry
+
+    // Handle rate limit with retry
     if (response.status === 429 && retryCount < 3) {
       console.warn(`Rate limit hit (attempt ${retryCount + 1}/3), retrying...`);
-      
-      // Parse retry delay from error
+
       let retryDelaySeconds = 30;
       try {
         const errorData = JSON.parse(errorText);
-        const retryInfo = errorData.error?.details?.find((d: any) => d['@type']?.includes('RetryInfo'));
+        const retryInfo = errorData.error?.details?.find((d: any) => d["@type"]?.includes("RetryInfo"));
         if (retryInfo?.retryDelay) {
-          retryDelaySeconds = parseInt(retryInfo.retryDelay.replace('s', '')) || 30;
+          retryDelaySeconds = parseInt(retryInfo.retryDelay.replace("s", "")) || 30;
         }
       } catch {}
-      
+
       console.log(`Waiting ${retryDelaySeconds}s before retry...`);
       await sleep(retryDelaySeconds * 1000);
-      
-      // Retry with incremented count
+
       return callVisionAI(imageUrl, retryCount + 1);
     }
-    
+
     throw new Error(`Google Gemini API error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  
-  // Extract text from Gemini response format
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
   return { text };
+}
+
+// Enhanced mixing algorithm with better semantic integration
+function createOptimizedAltText(
+  productName: string,
+  seoKeywords: string[],
+  visionAnalysis: any,
+  language: "fr" | "en",
+): string {
+  console.log("🎯 Creating optimized ALT text mix:");
+  console.log("   - Product Name:", productName);
+  console.log("   - SEO Keywords:", seoKeywords);
+  console.log("   - Vision Analysis:", visionAnalysis);
+
+  // Track used terms to avoid repetition
+  const usedTerms = new Set<string>();
+
+  // Start with product name
+  let altText = productName;
+  tokenize(productName).forEach((token) => usedTerms.add(getStem(token)));
+
+  // Add materials from vision analysis first (most important visually)
+  if (visionAnalysis.materials && visionAnalysis.materials.length > 0) {
+    const materials = visionAnalysis.materials.slice(0, 2);
+    const availableMaterials = materials.filter((m: string) => !usedTerms.has(getStem(m)));
+
+    if (availableMaterials.length > 0) {
+      if (language === "fr") {
+        altText += ` en ${availableMaterials.join(" et ")}`;
+      } else {
+        altText += ` in ${availableMaterials.join(" and ")}`;
+      }
+      availableMaterials.forEach((m) => usedTerms.add(getStem(m)));
+    }
+  }
+
+  // Add colors from vision analysis
+  if (visionAnalysis.colors && visionAnalysis.colors.length > 0) {
+    const colors = visionAnalysis.colors.slice(0, 2);
+    const availableColors = colors.filter((c: string) => !usedTerms.has(getStem(c)));
+
+    if (availableColors.length > 0) {
+      if (language === "fr") {
+        altText += `, coloris ${availableColors.join(" ")}`;
+      } else {
+        altText += `, ${availableColors.join(" ")} color`;
+      }
+      availableColors.forEach((c) => usedTerms.add(getStem(c)));
+    }
+  }
+
+  // Add shapes/features from vision analysis
+  if (visionAnalysis.shapes && visionAnalysis.shapes.length > 0) {
+    const shapes = visionAnalysis.shapes.slice(0, 1);
+    const availableShapes = shapes.filter((s: string) => !usedTerms.has(getStem(s)));
+
+    if (availableShapes.length > 0) {
+      altText += `, ${availableShapes[0]}`;
+      availableShapes.forEach((s) => usedTerms.add(getStem(s)));
+    }
+  }
+
+  // Add SEO keywords that haven't been used yet (complementary features)
+  const remainingKeywords = seoKeywords.filter((k) => !usedTerms.has(getStem(k))).slice(0, 2);
+
+  if (remainingKeywords.length > 0) {
+    altText += `, ${remainingKeywords.join(", ")}`;
+  }
+
+  // Add view angle if relevant
+  if (visionAnalysis.view_angle && !["standard", "vue standard"].includes(visionAnalysis.view_angle.toLowerCase())) {
+    if (language === "fr") {
+      altText += `, ${visionAnalysis.view_angle}`;
+    } else {
+      altText += `, ${visionAnalysis.view_angle} view`;
+    }
+  }
+
+  // Clean up and validate
+  altText = altText.replace(/\s+/g, " ").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim();
+
+  // Ensure reasonable length
+  if (altText.length > 180) {
+    altText = altText.substring(0, 177) + "...";
+  }
+
+  console.log("   - Final ALT Text:", altText);
+  return altText;
 }
 
 Deno.serve(async (req: Request) => {
@@ -621,78 +762,77 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Get authorization header for user authentication
-    const authHeader = req.headers.get('Authorization');
+    // Authentication
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser(token);
+
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'User not authenticated' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "User not authenticated" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const { imageId, imageType = 'product' }: AltTextVisionRequest = await req.json();
+    const { imageId, imageType = "product" }: AltTextVisionRequest = await req.json();
 
     if (!imageId) {
-      return new Response(
-        JSON.stringify({ error: "Image ID is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Image ID is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Check optimization limits using RPC
-    const { data: checkResult, error: checkError } = await supabaseClient
-      .rpc('check_optimization_allowed', {
-        p_user_id: user.id,
-        p_resource_type: 'image',
-        p_resource_id: imageId,
-        p_force: false
-      });
+    // Check optimization limits
+    const { data: checkResult, error: checkError } = await supabaseClient.rpc("check_optimization_allowed", {
+      p_user_id: user.id,
+      p_resource_type: "image",
+      p_resource_id: imageId,
+      p_force: false,
+    });
 
     if (checkError) {
-      console.error('Error checking optimization limits:', checkError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to check optimization limits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error("Error checking optimization limits:", checkError);
+      return new Response(JSON.stringify({ error: "Failed to check optimization limits" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (!checkResult.allowed) {
       return new Response(
         JSON.stringify({
           error: checkResult.reason,
-          message: checkResult.message
+          message: checkResult.message,
         }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get image info based on type
+    // Get image info
     let image: any;
     let imageError: any;
-    
-    if (imageType === 'content') {
+
+    if (imageType === "content") {
       const result = await supabaseClient
         .from("content_images")
         .select("id, src, alt_text, content_type, content_id, user_id")
         .eq("id", imageId)
         .maybeSingle();
-      
+
       image = result.data;
       imageError = result.error;
     } else {
@@ -701,324 +841,127 @@ Deno.serve(async (req: Request) => {
         .select("id, src, alt_text, product_id")
         .eq("id", imageId)
         .maybeSingle();
-      
+
       image = result.data;
       imageError = result.error;
     }
 
     if (imageError || !image) {
-      console.error('Image not found:', imageError);
-      return new Response(
-        JSON.stringify({ error: "Image not found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      console.error("Image not found:", imageError);
+      return new Response(JSON.stringify({ error: "Image not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Get context based on image type
-    let productContext = "";
-    let userId = image.user_id;
+    // Get product context
     let productTitle = "";
-    let product: any = null; // Declare product outside conditional blocks
-    let storeId: string | null = null; // Declare storeId early
-    
-    if (imageType === 'content') {
-      // Get content context
-      const contentType = image.content_type;
-      const contentId = image.content_id;
-      
-      if (contentType === 'collection') {
-        const { data: collection } = await supabaseClient
-          .from("shopify_collections")
-          .select("title, body_html")
-          .eq("id", contentId)
-          .maybeSingle();
-        
-        if (collection) {
-          productTitle = collection.title;
-          productContext = `Collection: ${collection.title}\n`;
-          if (collection.body_html) {
-            const shortDesc = collection.body_html.replace(/<[^>]*>/g, '').substring(0, 150);
-            productContext += `Description: ${shortDesc}\n`;
-          }
-        }
-      } else if (contentType === 'page') {
-        const { data: page } = await supabaseClient
-          .from("shopify_pages")
-          .select("title, body_html")
-          .eq("id", contentId)
-          .maybeSingle();
-        
-        if (page) {
-          productTitle = page.title;
-          productContext = `Page: ${page.title}\n`;
-        }
-      } else if (contentType === 'article') {
-        const { data: article } = await supabaseClient
-          .from("blog_articles")
-          .select("title, content")
-          .eq("id", contentId)
-          .maybeSingle();
-        
-        if (article) {
-          productTitle = article.title;
-          productContext = `Article: ${article.title}\n`;
-          const shortContent = article.content.replace(/<[^>]*>/g, '').substring(0, 150);
-          productContext += `Content: ${shortContent}\n`;
-        }
-      }
-    } else {
-      // Get product info (including title for keyword mixing and store_id for localization)
+    let userId = image.user_id;
+
+    if (imageType === "product") {
       const { data: productData, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("title, description, category, ai_color, ai_material, seller_id, store_id")
+        .select("title, description, category, seller_id")
         .eq("id", image.product_id)
         .maybeSingle();
 
       if (productError || !productData) {
-        console.error('Product not found for image:', imageId, 'product_id:', image.product_id, 'error:', productError);
+        console.error("Product not found for image:", imageId);
         return new Response(
-          JSON.stringify({ 
-            error: "Product not found for this image. The product may have been deleted.",
+          JSON.stringify({
+            error: "Product not found for this image",
             imageId: imageId,
-            productId: image.product_id
+            productId: image.product_id,
           }),
           {
             status: 404,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
-      
-      product = productData; // Assign to outer scope variable
-      userId = productData.seller_id;
+
       productTitle = productData.title;
-      storeId = productData.store_id; // Get store_id from product
-
-      // Get variants for this product (for variable products)
-      const { data: variants } = await supabaseClient
-        .from("product_variants")
-        .select("title, option1, option2, option3, ai_color, ai_material")
-        .eq("product_id", image.product_id)
-        .limit(5);
-
-      // Build context with product title for keyword extraction
-      productContext = `Titre produit: ${product.title}\n`;
-      productContext += `Category: ${product.category || 'Product'}\n`;
-      
-      if (product.description) {
-        const shortDesc = product.description.substring(0, 150);
-        productContext += `Description hint: ${shortDesc}\n`;
-      }
-
-      if (variants && variants.length > 0) {
-        productContext += `\nVariations:\n`;
-        variants.forEach(v => {
-          const variantDesc = [v.option1, v.option2, v.option3].filter(Boolean).join(', ');
-          if (variantDesc) {
-            productContext += `- ${v.title || variantDesc}\n`;
-          }
-          if (v.ai_color) productContext += `  Color: ${v.ai_color}\n`;
-          if (v.ai_material) productContext += `  Material: ${v.ai_material}\n`;
-        });
-      } else {
-        if (product.ai_color) productContext += `Color: ${product.ai_color}\n`;
-        if (product.ai_material) productContext += `Material: ${product.ai_material}\n`;
-      }
+      userId = productData.seller_id;
     }
 
-    console.log(`🎯 Vision AI Analysis for image: ${image.id}`);
+    console.log(`🎯 Starting Vision AI Analysis for image: ${image.id}`);
+    console.log(`📝 Product Title: ${productTitle}`);
 
-    // 🌍 Get store localization for SERP analysis
-    let storeCountry = 'United States';
-    let storeLanguage = 'en';
-    
-    // Get store_id based on image type
-    if (imageType === 'content') {
-      if (image.content_type === 'collection') {
-        const { data: collection } = await supabaseClient
-          .from("shopify_collections")
-          .select("store_id")
-          .eq("id", image.content_id)
-          .maybeSingle();
-        storeId = collection?.store_id || null;
-      } else if (image.content_type === 'article') {
-        const { data: article } = await supabaseClient
-          .from("blog_articles")
-          .select("store_id")
-          .eq("id", image.content_id)
-          .maybeSingle();
-        storeId = article?.store_id || null;
-      }
-    }
-    // For product images, storeId is already set above in the product block
-    
-    if (storeId) {
-      console.log("🔍 Fetching store localization info...");
-      try {
-        const { data: storeData } = await supabaseClient
-          .from('shopify_connections')
-          .select('primary_locale, country_code')
-          .eq('id', storeId)
-          .maybeSingle();
-        
-        if (storeData) {
-          storeCountry = storeData.country_code || 'United States';
-          storeLanguage = storeData.primary_locale?.split('-')[0] || 'en';
-          console.log(`📍 Store location: ${storeCountry}, language: ${storeLanguage}`);
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to fetch store info, using defaults:', error);
-      }
-    }
+    // Step 1: Analyze title with DeepSeek for SEO keywords
+    let deepSeekAnalysis = null;
+    let seoKeywords: string[] = [];
+    let extractedProductName = "";
 
-    // Step 1: Analyze SERP for image visual patterns
-    let serpImageInsights: any = null;
     if (productTitle) {
-      console.log("🔍 Analyzing SERP for image patterns...");
-      try {
-        const { data: serpData, error: serpError } = await supabaseClient.functions.invoke("analyze-serp-competitors", {
-          body: {
-            keyword: productTitle,
-            analysisType: "images",
-            location: storeCountry,
-            language: storeLanguage,
-            maxResults: 10
-          }
-        });
+      console.log("🧠 Step 1: DeepSeek Title Analysis");
+      deepSeekAnalysis = await analyzeTitleWithDeepSeek(productTitle);
+      seoKeywords = deepSeekAnalysis.keywords;
+      extractedProductName = deepSeekAnalysis.productName;
 
-        if (serpError) {
-          console.warn("⚠️ SERP image analysis failed:", serpError);
-        } else if (serpData) {
-          serpImageInsights = serpData.insights;
-          console.log("✅ SERP image analysis completed:", {
-            dominantStyles: serpImageInsights?.dominantStyles?.length || 0,
-            commonAngles: serpImageInsights?.commonAngles?.length || 0
-          });
-        }
-      } catch (serpErr) {
-        console.warn("⚠️ SERP image analysis error:", serpErr);
-      }
+      console.log("✅ DeepSeek Results:");
+      console.log("   - Product Name:", extractedProductName);
+      console.log("   - SEO Keywords:", seoKeywords);
+      console.log("   - Analysis:", deepSeekAnalysis.analysis);
+    } else {
+      // For content images without product title
+      extractedProductName = "Image";
     }
 
-    // Step 2: Analyze title with DeepSeek to extract structured SEO keywords
-    let titleKeywords: string[] = [];
-    let titleStructured: any = null;
-    if (productTitle) {
-      console.log(`🧠 DeepSeek - Analyzing title: "${productTitle}"`);
-      const titleAnalysis = await analyzeTitle(productTitle);
-      titleKeywords = titleAnalysis.keywords;
-      titleStructured = titleAnalysis.structured;
-      
-      console.log(`✅ SEO Keywords extracted:`, titleKeywords.join(', '));
-      if (titleStructured) {
-        console.log(`📊 Structured data:`, {
-          materials: titleStructured.materials,
-          colors: titleStructured.colors,
-          style: titleStructured.style,
-          product_type: titleStructured.product_type
-        });
-      }
-      
-      // Enhance keywords with SERP visual insights
-      if (serpImageInsights?.dominantStyles) {
-        console.log(`✨ Adding SERP visual context: ${serpImageInsights.dominantStyles.slice(0, 2).join(', ')}`);
-      }
-    }
-
-    // Step 3: Analyze image with Vision AI (PURE VISUAL ANALYSIS - NO CONTEXT)
-    // DeepSeek and SERP data are kept for logging/metrics but NOT passed to Vision AI
-    console.log('📊 DeepSeek keywords (for reference only, not used in Vision AI):', titleKeywords);
-    if (serpImageInsights) {
-      console.log('🎨 SERP insights (for reference only, not used in Vision AI):', {
-        dominantStyles: serpImageInsights.dominantStyles,
-        commonAngles: serpImageInsights.commonAngles,
-        colorSchemes: serpImageInsights.colorSchemes,
-      });
-    }
-
+    // Step 2: Analyze image with Vision AI
+    console.log("👁️ Step 2: Vision AI Image Analysis");
     const visionResponse = await callVisionAI(image.src);
     const visionContent = visionResponse.text;
 
-    let geminiAltText = "";
-    let visualAnalysis = "";
     let visionStructured: any = null;
-    
+    let visualDescription = "";
+
     try {
       const cleanedJson = cleanJsonResponse(visionContent);
-      console.log('Cleaned JSON:', cleanedJson.substring(0, 100));
-      
-      const parsed = JSON.parse(cleanedJson);
-      visionStructured = parsed;
-      
-      // Build visual description from structured data
-      if (parsed.visual_description) {
-        geminiAltText = parsed.visual_description;
-      } else {
-        // Fallback: build from categories
-        const parts: string[] = [];
-        if (parsed.shapes?.length) parts.push(parsed.shapes.join(', '));
-        if (parsed.materials?.length) parts.push(`en ${parsed.materials.join(' et ')}`);
-        if (parsed.colors?.length) parts.push(`coloris ${parsed.colors.join(', ')}`);
-        if (parsed.textures?.length) parts.push(parsed.textures.join(', '));
-        geminiAltText = parts.join(', ');
-      }
-      
-      visualAnalysis = `Matériaux: ${parsed.materials?.join(', ') || 'non identifié'}. Couleurs: ${parsed.colors?.join(', ') || 'non identifié'}. Vue: ${parsed.view_angle || 'standard'}.`;
+      visionStructured = JSON.parse(cleanedJson);
+      visualDescription = visionStructured.visual_description || "";
+
+      console.log("✅ Vision AI Results:");
+      console.log("   - Materials:", visionStructured.materials);
+      console.log("   - Colors:", visionStructured.colors);
+      console.log("   - Shapes:", visionStructured.shapes);
+      console.log("   - View Angle:", visionStructured.view_angle);
+      console.log("   - Visual Description:", visualDescription);
     } catch (e) {
-      console.error('Failed to parse Vision JSON:', visionContent);
-      console.error('Parse error:', e);
-      
-      // Fallback: extract alt_text or visual_description
-      let match = visionContent.match(/"visual_description":\s*"([^"]+)"/);
-      if (match) {
-        geminiAltText = match[1];
-      } else {
-        match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
-        if (match) {
-          geminiAltText = match[1];
-        } else {
-          geminiAltText = 'Image visuelle';
-          visualAnalysis = 'Analyse visuelle non disponible';
-        }
-      }
+      console.error("Failed to parse Vision AI response:", visionContent);
+      console.error("Parse error:", e);
+
+      // Fallback: extract description directly
+      const match =
+        visionContent.match(/"visual_description":\s*"([^"]+)"/) || visionContent.match(/"alt_text":\s*"([^"]+)"/);
+      visualDescription = match ? match[1] : "Image produit";
+      visionStructured = { visual_description: visualDescription };
     }
 
-    // ✨ Create intelligent mix: product name + SEO keywords + visual analysis
+    // Step 3: Create optimized mix
+    console.log("🔀 Step 3: Creating Optimized Mix");
+    const language = detectLanguage(productTitle + " " + visualDescription);
+
     let finalAltText = "";
-    
-    if (productTitle && geminiAltText) {
-      // Extract main product name
-      const productName = extractProductName(productTitle);
-      
-      // Combine: name + SEO keywords + visual analysis
-      finalAltText = buildNaturalAltText(productName, geminiAltText, titleKeywords, 15);
-      
-      console.log('🎯 Alt-text optimisé:');
-      console.log(`   - Titre original: ${productTitle}`);
-      console.log(`   - Nom extrait: ${productName}`);
-      console.log(`   - SEO Keywords: ${titleKeywords.join(', ')}`);
-      console.log(`   - Gemini visual: ${geminiAltText}`);
-      console.log(`   - Final (NAME + SEO + VISUAL): ${finalAltText}`);
+
+    if (productTitle && visionStructured) {
+      finalAltText = createOptimizedAltText(extractedProductName, seoKeywords, visionStructured, language);
     } else {
-      // Fallback: use only Gemini if no title
-      finalAltText = geminiAltText;
+      // Fallback: use only visual description
+      finalAltText = visualDescription;
     }
 
-    // Validate final mixed alt-text
+    // Validate final alt-text
     if (!validateAltText(finalAltText, productTitle)) {
-      console.warn('⚠️ Final alt-text validation failed, using Gemini directly');
-      finalAltText = geminiAltText;
+      console.warn("⚠️ Final alt-text validation failed, using visual description directly");
+      finalAltText = visualDescription;
     }
 
-    // Update image with mixed ALT text
-    const tableName = imageType === 'content' ? 'content_images' : 'product_images';
+    // Update image with final ALT text
+    const tableName = imageType === "content" ? "content_images" : "product_images";
     const { error: updateError } = await supabaseClient
       .from(tableName)
-      .update({ 
-        alt_text: finalAltText
+      .update({
+        alt_text: finalAltText,
       })
       .eq("id", imageId);
 
@@ -1026,26 +969,17 @@ Deno.serve(async (req: Request) => {
       throw updateError;
     }
 
-    console.log(`✅ Vision ALT text generated for image ${imageId}:`);
-    console.log(`   - DeepSeek Keywords: ${titleKeywords.join(', ')}`);
-    if (visionStructured) {
-      console.log(`   - Vision AI Structured:`, {
-        materials: visionStructured.materials,
-        colors: visionStructured.colors,
-        shapes: visionStructured.shapes,
-        view: visionStructured.view_angle
-      });
-    }
-    console.log(`   - Final ALT Text (optimized): ${finalAltText}`);
-    console.log(`   - Visual Analysis: ${visualAnalysis}`);
-    console.log(`   - Character count: ${finalAltText.length}`);
+    console.log(`✅ ALT Text Generation Complete:`);
+    console.log(`   - Final ALT Text: ${finalAltText}`);
+    console.log(`   - Character Count: ${finalAltText.length}`);
+    console.log(`   - Word Count: ${finalAltText.split(" ").length}`);
 
-    // Track usage - Alt image counts as 3 optimizations
+    // Track usage
     if (userId) {
-      await supabaseClient.rpc('increment_usage', {
+      await supabaseClient.rpc("increment_usage", {
         p_seller_id: userId,
-        p_field: 'optimizations_count',
-        p_increment: 3
+        p_field: "optimizations_count",
+        p_increment: 3,
       });
     }
 
@@ -1056,13 +990,18 @@ Deno.serve(async (req: Request) => {
         data: {
           image_id: imageId,
           alt_text: finalAltText,
-          visual_analysis: visualAnalysis,
+          analysis: {
+            product_name: extractedProductName,
+            seo_keywords: seoKeywords,
+            visual_analysis: visionStructured,
+            language: language,
+          },
         },
       }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Error:", error);
@@ -1074,7 +1013,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });
