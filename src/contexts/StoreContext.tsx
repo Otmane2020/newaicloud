@@ -81,7 +81,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadStores();
-  }, [user?.id]);
+
+    if (!user?.id) return;
+
+    // Subscribe to realtime changes on shopify_connections
+    console.log('🔴 [STORE_CONTEXT] Setting up realtime listener for user:', user.id);
+    const channel = supabase
+      .channel('shopify-connections-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shopify_connections',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('🔄 [STORE_CONTEXT] Shopify connection changed:', payload);
+          loadStores();
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔴 [STORE_CONTEXT] Realtime subscription status:', status);
+      });
+
+    return () => {
+      console.log('⏹️ [STORE_CONTEXT] Unsubscribing from shopify connections');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadStores]);
 
   return (
     <StoreContext.Provider 

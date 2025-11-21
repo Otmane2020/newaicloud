@@ -155,6 +155,36 @@ export default function Dashboard() {
     return () => clearTimeout(timeoutId);
   }, [user, selectedStore?.id]);
 
+  // Realtime refresh: reload stats when products are imported
+  useEffect(() => {
+    if (!user?.id || !selectedStore?.id) return;
+
+    console.log('🔴 [Dashboard] Setting up realtime listener for products');
+    const channel = supabase
+      .channel('dashboard-products-refresh')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'shopify_products',
+          filter: `store_id=eq.${selectedStore.id}`,
+        },
+        (payload) => {
+          console.log('🔄 [Dashboard] New product inserted, refreshing stats:', payload);
+          loadStats();
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔴 [Dashboard] Realtime subscription status:', status);
+      });
+
+    return () => {
+      console.log('⏹️ [Dashboard] Unsubscribing from products');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, selectedStore?.id]);
+
   const loadStats = async () => {
     try {
       // Get count of all connected stores
