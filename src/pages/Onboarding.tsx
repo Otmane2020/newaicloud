@@ -281,17 +281,17 @@ export default function Onboarding() {
       // PUIS vérifier subscription
       if (data?.subscribed) {
         console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified");
-        
+
         // Déclencher manuellement la synchro si shopify_pending est présent
         if (shopifyPending) {
           console.log("🔄 [Onboarding] Triggering manual sync after subscription");
           const { data: pendingConnections } = await supabase
-            .from('shopify_connections')
-            .select('*')
-            .eq('user_id', user?.id)
-            .order('created_at', { ascending: false })
+            .from("shopify_connections")
+            .select("*")
+            .eq("user_id", user?.id)
+            .order("created_at", { ascending: false })
             .limit(1);
-          
+
           if (pendingConnections && pendingConnections.length > 0) {
             const connection = pendingConnections[0];
             console.log("🚀 [Onboarding] Starting sync for:", connection.store_name);
@@ -302,7 +302,7 @@ export default function Onboarding() {
             });
           }
         }
-        
+
         toast.success(t.onboarding.verification.success);
         // Laisser quelques secondes pour que l'import démarre
         setTimeout(() => {
@@ -405,10 +405,10 @@ export default function Onboarding() {
         // Trigger automatic synchronization for all plans
         try {
           const { data: connectionData } = await supabase
-            .from('shopify_connections')
-            .select('id, store_url, store_name')
-            .eq('user_id', user?.id)
-            .order('created_at', { ascending: false })
+            .from("shopify_connections")
+            .select("id, store_url, store_name")
+            .eq("user_id", user?.id)
+            .order("created_at", { ascending: false })
             .limit(1)
             .single();
 
@@ -440,23 +440,23 @@ export default function Onboarding() {
       }
     } catch (claimError: any) {
       console.error("❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:", claimError);
-      
+
       const errorData = claimError.context?.body || {};
-      const errorCode = errorData.error || '';
-      const errorMessage = errorData.message || claimError.message || '';
-      
-      if (errorCode === 'invalid_shop_url') {
+      const errorCode = errorData.error || "";
+      const errorMessage = errorData.message || claimError.message || "";
+
+      if (errorCode === "invalid_shop_url") {
         toast.error("URL de boutique invalide", {
           description: errorMessage,
-          duration: 8000
+          duration: 8000,
         });
-      } else if (errorCode === 'connection_already_exists') {
+      } else if (errorCode === "connection_already_exists") {
         toast.warning("Boutique déjà connectée", {
-          description: "Cette boutique est déjà liée à votre compte."
+          description: "Cette boutique est déjà liée à votre compte.",
         });
       } else {
         toast.error(t.sync.connectionFailed, {
-          description: errorMessage
+          description: errorMessage,
         });
       }
     }
@@ -503,14 +503,14 @@ export default function Onboarding() {
             if (claimData?.success) {
               toast.success(t.sync.shopifyConnected);
               toast.info(t.sync.autoImport, { duration: 5000 });
-              
+
               // Déclencher manuellement la synchro après activation du trial
               console.log("🔄 [Trial] Triggering manual sync after trial activation");
               const { data: connectionData } = await supabase
-                .from('shopify_connections')
-                .select('id, store_url, store_name')
-                .eq('user_id', user?.id)
-                .order('created_at', { ascending: false })
+                .from("shopify_connections")
+                .select("id, store_url, store_name")
+                .eq("user_id", user?.id)
+                .order("created_at", { ascending: false })
                 .limit(1)
                 .single();
 
@@ -522,7 +522,7 @@ export default function Onboarding() {
                   store_name: connectionData.store_name || connectionData.store_url,
                 });
               }
-              
+
               await new Promise((resolve) => setTimeout(resolve, 3000));
             }
           } catch (claimError) {
@@ -1084,7 +1084,7 @@ export default function Onboarding() {
                 {isPopular && (
                   <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
                     <Star className="w-3 h-3 mr-1" />
-                    {language === "fr" ? "Gratuit" : "Free"}
+                    {t.onboarding.planFeatures.mostPopular}
                   </Badge>
                 )}
 
@@ -1098,6 +1098,14 @@ export default function Onboarding() {
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                   {t.onboarding.planFeatures.forGrowth}
                 </p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡{" "}
+                    {language === "fr"
+                      ? "L'équilibre parfait entre puissance, automatisation et évolutivité."
+                      : "The perfect balance between power, automation and scalability."}
+                  </p>
+                </div>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
@@ -1260,7 +1268,7 @@ export default function Onboarding() {
                 {isBestValue && (
                   <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
                     <Zap className="w-3 h-3 mr-1" />
-                    {language === "fr" ? "Gratuit" : "Free"}
+                    {t.onboarding.planFeatures.bestValue}
                   </Badge>
                 )}
 
@@ -1274,6 +1282,14 @@ export default function Onboarding() {
                 <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                   {t.onboarding.planFeatures.forEnterprise}
                 </p>
+                <div className="mb-3 sm:mb-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs sm:text-sm font-medium text-center">
+                    💡{" "}
+                    {language === "fr"
+                      ? "Suite IA entièrement gérée avec quotas élevés, accès API et support personnel."
+                      : "Fully managed AI suite with high quotas, API access and personal support."}
+                  </p>
+                </div>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
