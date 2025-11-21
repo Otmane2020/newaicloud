@@ -847,52 +847,56 @@ export default function Onboarding() {
                     {language === "fr" ? "14 jours Essai Gratuit" : "14 days free"}
                   </Badge>
 
-                  <div className="mb-4">
-                    <div className="text-4xl font-bold mb-1">
-                      {getCurrencySymbol(language)}0
-                      <span className="text-base text-muted-foreground font-normal">
-                        /{t.onboarding.billing.monthly}
-                      </span>
+                  <div className="mb-6">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold">
+                          {getCurrencySymbol(language)}0
+                        </span>
+                        <span className="text-muted-foreground text-base">
+                          /{t.onboarding.billing.monthly}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">{t.onboarding.trial.noCardRequired}</p>
+                    <p className="text-xs text-muted-foreground text-center mt-2">{t.onboarding.trial.noCardRequired}</p>
                   </div>
 
-                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {formatLimit(starterPlan.max_products)} {language === "fr" ? "produits" : "products"}
                       </span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {formatLimit(starterPlan.max_optimizations_monthly)}{" "}
                         {language === "fr" ? "optimisations/mois" : "optimizations/month"}
                       </span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {formatLimit(starterPlan.max_articles_monthly)}{" "}
                         {language === "fr" ? "articles/mois" : "articles/month"}
                       </span>
                     </div>
                     {starterPlan.max_campaigns > 0 && (
-                      <div className="flex items-start gap-2">
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                        <span className="text-xs sm:text-sm">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="text-sm">
                           {formatLimit(starterPlan.max_campaigns)} {language === "fr" ? "campagnes" : "campaigns"}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {formatLimit(starterPlan.max_chat_responses_monthly)}{" "}
                         {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
                       </span>
@@ -901,18 +905,18 @@ export default function Onboarding() {
 
                   <div className="border-t border-border pt-4 mt-4">
                     <Button
-                      className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                      className="w-full py-4 h-auto text-base font-medium bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
                       onClick={handleStartFreeTrial}
                       disabled={loading}
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           {language === "fr" ? "Activation..." : "Activating..."}
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-2 h-4 w-4" />
+                          <Sparkles className="mr-2 h-5 w-5" />
                           {t.onboarding.trial.startTrial}
                         </>
                       )}
@@ -957,8 +961,8 @@ export default function Onboarding() {
                   {t.dashboard.plans.descriptions.starter}
                 </p>
 
-                <div className="mb-4 sm:mb-6">
-                  <div className="flex flex-col items-center justify-center mb-2">
+                <div className="mb-6">
+                  <div className="flex flex-col items-center justify-center gap-1">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
@@ -973,7 +977,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     {billingCycle === "yearly" && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
+                      <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)}{" "}
                         {language === "fr" ? "facturé annuellement" : "billed annually"}
                       </span>
@@ -981,48 +985,48 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <BarChart3 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <MessageSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                <div className="space-y-2 mb-6 pt-4 border-t border-border">
                   {Object.entries(starterPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {typeof value === "boolean" ? key.replace("_", " ") : `${key.replace("_", " ")}: ${value}`}
                       </span>
                     </div>
@@ -1033,7 +1037,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
+                  className="w-full py-4 h-auto text-base font-medium mt-auto"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
@@ -1098,12 +1102,12 @@ export default function Onboarding() {
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
 
                 {/* Dropdown pour choisir le tier */}
-                <div className="mb-3 sm:mb-4">
+                <div className="mb-4">
                   <Select value={selectedProTier} onValueChange={setSelectedProTier}>
-                    <SelectTrigger className="w-full bg-background border-2 text-sm font-medium">
+                    <SelectTrigger className="w-full bg-card border-2 border-border text-base font-medium h-11">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover border-2 border-border z-[100] text-sm">
+                    <SelectContent className="bg-card border-2 border-border shadow-lg z-[100]">
                       {proPlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
@@ -1111,7 +1115,7 @@ export default function Onboarding() {
                           return priceA - priceB; // Tri croissant: 49€ en premier
                         })
                         .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer">
+                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer text-base py-3">
                             {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}{" "}
                             - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                           </SelectItem>
@@ -1120,10 +1124,10 @@ export default function Onboarding() {
                   </Select>
                 </div>
 
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-6">
                   <div className="flex flex-col items-center justify-center gap-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl md:text-5xl font-bold text-primary">
+                      <span className="text-4xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1149,7 +1153,7 @@ export default function Onboarding() {
                       </Badge>
                     </div>
                     {billingCycle === "yearly" && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-1">
+                      <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)}{" "}
                         {language === "fr" ? "facturé annuellement" : "billed annually"}
                       </span>
@@ -1157,48 +1161,48 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <BarChart3 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <MessageSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                <div className="space-y-2 mb-6 pt-4 border-t border-border">
                   {Object.entries(selectedPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {typeof value === "boolean" ? key.replace("_", " ") : `${key.replace("_", " ")}: ${value}`}
                       </span>
                     </div>
@@ -1209,7 +1213,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
+                  className="w-full py-4 h-auto text-base font-medium mt-auto"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
@@ -1260,12 +1264,12 @@ export default function Onboarding() {
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
 
                 {/* Dropdown pour choisir le tier */}
-                <div className="mb-3 sm:mb-4">
+                <div className="mb-4">
                   <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
-                    <SelectTrigger className="w-full bg-background border-2 text-sm font-medium">
+                    <SelectTrigger className="w-full bg-card border-2 border-border text-base font-medium h-11">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover border-2 border-border z-[100] text-sm">
+                    <SelectContent className="bg-card border-2 border-border shadow-lg z-[100]">
                       {enterprisePlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
@@ -1273,7 +1277,7 @@ export default function Onboarding() {
                           return priceA - priceB;
                         })
                         .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer">
+                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer text-base py-3">
                             {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}{" "}
                             - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                           </SelectItem>
@@ -1282,10 +1286,10 @@ export default function Onboarding() {
                   </Select>
                 </div>
 
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-6">
                   <div className="flex flex-col items-center justify-center gap-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl md:text-5xl font-bold text-primary">
+                      <span className="text-4xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1311,7 +1315,7 @@ export default function Onboarding() {
                       </Badge>
                     </div>
                     {billingCycle === "yearly" && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-1">
+                      <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)}{" "}
                         {language === "fr" ? "facturé annuellement" : "billed annually"}
                       </span>
@@ -1319,48 +1323,48 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <BarChart3 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
+                    <MessageSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm">
                       {formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
+                <div className="space-y-2 mb-6 pt-4 border-t border-border">
                   {Object.entries(selectedPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                      <span className="text-sm">
                         {typeof value === "boolean" ? key.replace("_", " ") : `${key.replace("_", " ")}: ${value}`}
                       </span>
                     </div>
@@ -1371,7 +1375,7 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px] mt-auto"
+                  className="w-full py-4 h-auto text-base font-medium mt-auto"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
