@@ -82,7 +82,6 @@ import TestRedirection from "./pages/TestRedirection";
 import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
-import SmartTitle from "./pages/SmartTitle";
 
 const queryClient = new QueryClient();
 
@@ -240,14 +239,6 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <SEO />
-                </ProtectedLayout>
-              }
-            />
-            <Route
-              path="/smarttitle"
-              element={
-                <ProtectedLayout>
-                  <SmartTitle />
                 </ProtectedLayout>
               }
             />
