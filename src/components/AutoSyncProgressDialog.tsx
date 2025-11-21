@@ -7,9 +7,11 @@ export function AutoSyncProgressDialog() {
   const { isSyncing, currentType, storeName } = useAutoSyncProgress();
   const location = useLocation();
   
-  // Ne pas afficher le dialog sur la page onboarding
-  const isOnboarding = location.pathname.startsWith('/onboarding');
-  const shouldShow = isSyncing && !isOnboarding;
+  // Afficher le dialog partout sauf sur onboarding SANS shopify_pending
+  // Si on est sur onboarding AVEC shopify_pending, on affiche le dialog pour montrer le claim en cours
+  const isOnboardingWithoutShopify = location.pathname.startsWith('/onboarding') && 
+                                      !location.search.includes('shopify_pending');
+  const shouldShow = isSyncing && !isOnboardingWithoutShopify;
 
   const getIcon = (type: string) => {
     switch (type) {

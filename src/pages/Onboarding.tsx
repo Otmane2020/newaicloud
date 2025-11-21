@@ -113,9 +113,16 @@ export default function Onboarding() {
           // Auto-claim and import will happen via backend trigger-auto-sync
           setClaimingShopify(true);
           
+          console.log("⏳ [AUTO-CLAIM] Ensuring auth is complete before claiming...");
+          // S'assurer que l'auth est complète avant de claim
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           await claimShopifyConnection(shopifyPending);
           
-          // Redirect immediately - AutoSyncProgressDialog will show on dashboard
+          // Attendre un peu pour que le realtime event se déclenche avant la redirection
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Redirect - AutoSyncProgressDialog will show on dashboard via sessionStorage
           console.log("🎯 [AUTO-CLAIM] Redirecting to dashboard - import will continue in background");
           navigate("/dashboard?show_shopify_prompt=true");
         }
@@ -189,7 +196,9 @@ export default function Onboarding() {
       // If has shopify_pending, let the auto-claim useEffect handle redirection
       const shopifyPending = searchParams.get("shopify_pending");
       if (shopifyPending && (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")) {
-        console.log("⏸️ Has shopify_pending and active subscription, letting auto-claim handle it");
+        console.log("⏸️ Has shopify_pending and active subscription, waiting for auth to complete before claim");
+        // Attendre que l'auth soit complète avant de claim
+        await new Promise(resolve => setTimeout(resolve, 1000));
         return;
       }
 
