@@ -1297,6 +1297,7 @@ ${enrichedProduct?.serp_verified ? `
 - NO footer section
 - NO links to external pages (use href="#" only)
 - NO call-to-action buttons of any kind
+- NO "Dimensions" section - dimensions will be added automatically after generation
 
 ✅ REQUIRED SECTIONS:
 Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
@@ -1471,6 +1472,7 @@ STRUCTURE :
 - AUCUNE section footer
 - AUCUN lien vers des pages externes (utiliser href="#" uniquement)
 - AUCUN bouton call-to-action de quelque nature que ce soit
+- AUCUNE section "Dimensions" - les dimensions seront ajoutées automatiquement après génération
 
 ✅ SECTIONS REQUISES :
 Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
@@ -1580,19 +1582,19 @@ UTILISATION DES ICÔNES :
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
     
-    // Find images with technical schemas (dimensions visible)
-    const imagesWithDimensions = images.filter((img: any) => {
-      // Check if this image was analyzed and has visible dimensions
-      const analysis = imageAnalyses.find((a: any) => a.imageUrl === img.src);
-      return analysis && enrichedProduct?.vision_attributes?.visualContext?.hasTechnicalSchema;
-    }).slice(0, 2); // Limit to 2 dimension images
+    // Find the first image - if we have technical dimensions from vision, the first image likely has the schema
+    const imagesWithDimensions = enrichedProduct?.vision_attributes?.visualContext?.hasTechnicalSchema 
+      ? images.slice(0, 1) 
+      : [];
     
     if (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions) {
       const dims = imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
       const visualContext = enrichedProduct?.vision_attributes?.visualContext;
       
+      console.log("📐 Gemini Vision Dimensions:", JSON.stringify(dims, null, 2));
+      
       const dimensionLabels = detectedLanguage === "en" ? {
-        title: "Dimensions",
+        title: "DIMENSIONS",
         subtitle: visualContext?.dimensionSource === "visible" ? "From technical diagram" : "Detected from analysis",
         height: "H",
         width: "l", 
@@ -1600,7 +1602,7 @@ UTILISATION DES ICÔNES :
         length: "L",
         diameter: "Ø"
       } : {
-        title: "Dimensions",
+        title: "DIMENSIONS",
         subtitle: visualContext?.dimensionSource === "visible" ? "Schéma technique" : "Détectées par analyse",
         height: "H",
         width: "l",
@@ -1609,7 +1611,7 @@ UTILISATION DES ICÔNES :
         diameter: "Ø"
       };
       
-      // Build compact dimension string (e.g., "H 87 cm × L 270 cm × P 196 cm × l 96 cm")
+      // Build compact dimension string using EXACT Gemini Vision values
       const dimParts = [];
       if (dims.height) dimParts.push(`${dimensionLabels.height} ${dims.height} ${dims.heightUnit || 'cm'}`);
       if (dims.length) dimParts.push(`${dimensionLabels.length} ${dims.length} ${dims.lengthUnit || 'cm'}`);
@@ -1619,35 +1621,31 @@ UTILISATION DES ICÔNES :
       
       if (dimParts.length > 0) {
         const dimensionText = dimParts.join(' × ');
+        console.log("📏 Final dimension text:", dimensionText);
         
         dimensionsSection = `
-    <!-- Dimensions Section - Compact & Discrete -->
-    <section class="py-8" style="background-color: hsl(${designTokens.surface})">
+    <!-- Dimensions Section (AFTER Caractéristiques) -->
+    <section class="py-6 md:py-8" style="background-color: hsl(${designTokens.background})">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 md:p-6 shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg p-5 md:p-6 shadow-sm border border-gray-200">
+          <h2 class="text-base font-semibold mb-4 uppercase tracking-wide" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h2>
           
-          <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-start md:items-center">
+          <div class="flex flex-col sm:flex-row gap-4 items-start">
             
             ${imagesWithDimensions.length > 0 ? `
-            <!-- Dimension Images (compact) -->
-            <div class="flex gap-2 shrink-0">
-              ${imagesWithDimensions.map((img: any) => `
-              <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden border border-gray-200">
-                <img src="${img.src}" alt="${img.alt_text || 'Dimensions'}" 
-                     class="w-full h-full object-cover" 
-                     loading="lazy" />
-              </div>
-              `).join('')}
+            <!-- Technical Schema Image -->
+            <div class="shrink-0">
+              <img src="${imagesWithDimensions[0].src}" 
+                   alt="${imagesWithDimensions[0].alt_text || 'Technical dimensions'}" 
+                   class="w-full sm:w-40 md:w-48 h-auto rounded-md border border-gray-300"
+                   loading="lazy" />
             </div>
             ` : ''}
             
-            <!-- Dimension Text (compact) -->
+            <!-- Dimension Text -->
             <div class="flex-1">
-              <h3 class="text-sm font-medium mb-1 uppercase tracking-wide opacity-70" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h3>
-              <p class="text-lg md:text-xl font-semibold" style="color: hsl(${designTokens.text})">${dimensionText}</p>
-              ${visualContext?.confidenceReason ? `
-              <p class="text-xs mt-1 opacity-60" style="color: hsl(${designTokens.text})">${dimensionLabels.subtitle}</p>
-              ` : ''}
+              <p class="text-xl md:text-2xl font-bold mb-2" style="color: hsl(${designTokens.text})">${dimensionText}</p>
+              <p class="text-sm text-gray-600">${dimensionLabels.subtitle}</p>
             </div>
             
           </div>
@@ -1657,27 +1655,51 @@ UTILISATION DES ICÔNES :
       }
     }
     
-    // Insert dimensions section right after the hero/gallery section
+    // Insert dimensions section AFTER "Caractéristiques" / "Technical Specifications" section
     let finalHtml = html;
     if (dimensionsSection) {
-      // Find a good insertion point - after first section or after gallery
-      const insertPoints = [
-        html.indexOf('</section>'),
-        html.indexOf('</div><!--'),
-        html.indexOf('<section', 100) // Second section
-      ].filter(i => i > 0);
+      // Look for common patterns for characteristics section end
+      const caracteristiquesPatterns = [
+        /<\/section>[\s\S]{0,200}(?:caract[ée]ristiques|specifications|technical)/i,
+        /(?:caract[ée]ristiques|specifications|technical)[\s\S]{0,500}<\/section>/i
+      ];
       
-      if (insertPoints.length > 0) {
-        const insertAt = Math.min(...insertPoints) + (html.indexOf('</section>') === Math.min(...insertPoints) ? 10 : 0);
-        finalHtml = html.slice(0, insertAt) + dimensionsSection + html.slice(insertAt);
-        console.log("📐 Dimensions section injected into HTML");
-      } else {
-        // Fallback: insert before closing body
-        const bodyClose = html.indexOf('</body>');
-        if (bodyClose > 0) {
-          finalHtml = html.slice(0, bodyClose) + dimensionsSection + html.slice(bodyClose);
-          console.log("📐 Dimensions section added before </body>");
+      let insertAt = -1;
+      for (const pattern of caracteristiquesPatterns) {
+        const match = html.match(pattern);
+        if (match) {
+          // Find the </section> closing tag after this match
+          const matchEnd = (match.index || 0) + match[0].length;
+          const nextSectionClose = html.indexOf('</section>', matchEnd - 50);
+          if (nextSectionClose > 0) {
+            insertAt = nextSectionClose + 10; // After </section>
+            console.log("📐 Found Caractéristiques section, inserting dimensions after it");
+            break;
+          }
         }
+      }
+      
+      // Fallback: insert after 2nd section if characteristics not found
+      if (insertAt < 0) {
+        const firstSection = html.indexOf('</section>');
+        if (firstSection > 0) {
+          const secondSection = html.indexOf('</section>', firstSection + 10);
+          if (secondSection > 0) {
+            insertAt = secondSection + 10;
+            console.log("📐 Inserting dimensions after 2nd section (fallback)");
+          }
+        }
+      }
+      
+      // Final fallback: before body close
+      if (insertAt < 0) {
+        insertAt = html.indexOf('</body>');
+        console.log("📐 Inserting dimensions before </body> (last resort)");
+      }
+      
+      if (insertAt > 0) {
+        finalHtml = html.slice(0, insertAt) + dimensionsSection + html.slice(insertAt);
+        console.log("✅ Dimensions section successfully inserted");
       }
     }
 
