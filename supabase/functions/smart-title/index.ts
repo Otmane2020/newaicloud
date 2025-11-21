@@ -10,6 +10,20 @@ interface SmartTitleRequest {
   language?: string;
 }
 
+// Helper function to convert ArrayBuffer to base64 without stack overflow
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192;
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  return btoa(binary);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -129,7 +143,7 @@ Return ONLY a JSON object with these fields:
       try {
         const imageResponse = await fetch(primaryImage.src);
         const imageBuffer = await imageResponse.arrayBuffer();
-        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        const base64Image = arrayBufferToBase64(imageBuffer);
 
         const visionPrompt = `Analyze this product image and describe:
 1. Visual style and design
@@ -241,21 +255,6 @@ Generate ONLY the optimized title, no explanations.`;
 
     console.log('[SMART-TITLE] Optimized title:', optimizedTitle);
 
-    // Step 4: Update product
-    const { error: updateError } = await supabase
-      .from('shopify_products')
-      .update({
-        title: optimizedTitle,
-        optimization_count: (product.optimization_count || 0) + 1,
-        last_optimization_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', productId);
-
-    if (updateError) {
-      throw updateError;
-    }
-
     // Track usage
     await supabase.rpc('increment_usage', {
       p_seller_id: user.id,
@@ -266,6 +265,7 @@ Generate ONLY the optimized title, no explanations.`;
     return new Response(
       JSON.stringify({
         success: true,
+        productId: productId,
         originalTitle: product.title,
         optimizedTitle,
         deepseekAnalysis,

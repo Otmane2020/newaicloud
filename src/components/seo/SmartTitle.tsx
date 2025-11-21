@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Sparkles, Image as ImageIcon, ChevronLeft, ChevronRight, Eye, Brain, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/contexts/StoreContext";
 
@@ -14,10 +23,11 @@ export const SmartTitle = () => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 50;
 
-  const { data: productsData, isLoading } = useQuery({
+  const { data: productsData, isLoading, refetch } = useQuery({
     queryKey: ['products-for-smart-title', storeId, page],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,6 +82,7 @@ export const SmartTitle = () => {
       if (error) throw error;
 
       setResult(data);
+      setIsPreviewOpen(true);
       toast.success('Aperçu du titre optimisé généré!');
     } catch (error) {
       console.error('Smart title error:', error);
@@ -83,15 +94,28 @@ export const SmartTitle = () => {
 
   const handleApply = async (productId: string, optimizedTitle: string) => {
     try {
+      // First get current product data
+      const { data: currentProduct } = await supabase
+        .from('shopify_products')
+        .select('optimization_count')
+        .eq('id', productId)
+        .single();
+
       const { error } = await supabase
         .from('shopify_products')
-        .update({ title: optimizedTitle })
+        .update({ 
+          title: optimizedTitle,
+          optimization_count: (currentProduct?.optimization_count || 0) + 1,
+          last_optimization_at: new Date().toISOString(),
+        })
         .eq('id', productId);
 
       if (error) throw error;
 
       toast.success('Titre optimisé appliqué avec succès!');
       setResult(null);
+      setIsPreviewOpen(false);
+      refetch();
     } catch (error) {
       console.error('Apply title error:', error);
       toast.error('Erreur lors de l\'application du titre');
@@ -122,45 +146,156 @@ export const SmartTitle = () => {
         Génération intelligente de titres optimisés combinant l'analyse visuelle (Gemini Vision) et textuelle (DeepSeek)
       </p>
 
-      {result && (
-        <Card className="p-6 bg-primary/5 border-primary">
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Titre original</p>
-              <p className="text-lg line-through opacity-60">{result.originalTitle}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Titre optimisé</p>
-              <p className="text-xl font-bold text-primary">{result.optimizedTitle}</p>
-            </div>
-            {result.deepseekAnalysis && (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Analyse DeepSeek:</p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">{result.deepseekAnalysis.category}</Badge>
-                  {result.deepseekAnalysis.materials?.map((m: string, i: number) => (
-                    <Badge key={i} variant="outline">{m}</Badge>
-                  ))}
-                </div>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Aperçu du titre optimisé</DialogTitle>
+            <DialogDescription>
+              Analyse complète par IA pour optimiser votre titre produit
+            </DialogDescription>
+          </DialogHeader>
+
+          {result && (
+            <div className="space-y-6">
+              {/* Section 1: Comparaison des titres */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">
+                  Titre actuel
+                </h3>
+                <p className="text-sm line-through opacity-60">
+                  {result.originalTitle}
+                </p>
+                
+                <h3 className="font-semibold text-sm text-primary mt-4">
+                  Titre optimisé proposé
+                </h3>
+                <p className="text-xl font-bold text-primary">
+                  {result.optimizedTitle}
+                </p>
               </div>
-            )}
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={() => handleApply(result.productId, result.optimizedTitle)}
-                className="flex-1"
-              >
-                Appliquer le titre
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setResult(null)}
-              >
-                Annuler
-              </Button>
+
+              <Separator />
+
+              {/* Section 2: Analyse visuelle Gemini */}
+              {result.visionAnalysis && (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold">Analyse visuelle Gemini</h3>
+                    </div>
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <p className="text-sm whitespace-pre-wrap">
+                        {result.visionAnalysis}
+                      </p>
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* Section 3: Analyse textuelle DeepSeek */}
+              {result.deepseekAnalysis && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold">Analyse textuelle DeepSeek</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Catégorie */}
+                    {result.deepseekAnalysis.category && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Catégorie:
+                        </span>
+                        <Badge variant="secondary" className="ml-2">
+                          {result.deepseekAnalysis.category}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Matériaux */}
+                    {result.deepseekAnalysis.materials?.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Matériaux:
+                        </span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {result.deepseekAnalysis.materials.map((material: string, idx: number) => (
+                            <Badge key={idx} variant="outline">
+                              {material}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Caractéristiques */}
+                    {result.deepseekAnalysis.features?.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Caractéristiques:
+                        </span>
+                        <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                          {result.deepseekAnalysis.features.map((feature: string, idx: number) => (
+                            <li key={idx}>{feature}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Points de vente */}
+                    {result.deepseekAnalysis.selling_points?.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Points de vente:
+                        </span>
+                        <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                          {result.deepseekAnalysis.selling_points.map((point: string, idx: number) => (
+                            <li key={idx}>{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Use case */}
+                    {result.deepseekAnalysis.use_case && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Cas d'usage:
+                        </span>
+                        <p className="text-sm mt-1">{result.deepseekAnalysis.use_case}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </Card>
-      )}
+          )}
+
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsPreviewOpen(false)}
+              className="flex-1"
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={() => {
+                if (result?.productId && result?.optimizedTitle) {
+                  handleApply(result.productId, result.optimizedTitle);
+                }
+              }}
+              className="flex-1"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Appliquer ce titre
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t pt-4">
