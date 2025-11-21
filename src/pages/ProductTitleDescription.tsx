@@ -3100,4 +3100,6 @@ export default function ProductTitleDescription() {
         </DialogContent>
       </Dialog>
 
-      <SimpleSyncProgress
+    </div>
+  );
+};
