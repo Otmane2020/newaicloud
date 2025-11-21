@@ -184,155 +184,6 @@ function intelligentCategorize(words: string[]): UniversalTokens {
   return result;
 }
 
-// Build natural descriptive ALT text as a REAL SENTENCE (not keyword list)
-function buildNaturalAltText(
-  productName: string,
-  visualAnalysis: string,
-  seoKeywords: string[] = [],
-  maxWords: number = 15,
-): string {
-  const cleanProductName = extractProductName(productName);
-  const language = detectLanguage(productName + " " + visualAnalysis);
-
-  // Track used stems globally to prevent ANY repetition
-  const usedStems = new Set<string>();
-
-  // Mark product name stems as used first
-  tokenize(cleanProductName).forEach((token: string) => {
-    usedStems.add(getStem(token));
-  });
-
-  // Collect unique descriptors from SEO keywords + visual analysis
-  const allDescriptors: string[] = [];
-
-  [...seoKeywords, visualAnalysis].forEach((source) => {
-    tokenize(source).forEach((token: string) => {
-      const stem = getStem(token);
-      if (!usedStems.has(stem) && allDescriptors.length < 12) {
-        usedStems.add(stem);
-        allDescriptors.push(token);
-      }
-    });
-  });
-
-  // Categorize intelligently (no hardcoded lists)
-  const categorized = intelligentCategorize(allDescriptors);
-
-  // Build sentence with natural connectors
-  return buildDescriptiveSentence(cleanProductName, categorized, language);
-}
-
-// Build a natural descriptive sentence (FR/EN)
-function buildDescriptiveSentence(productName: string, tokens: UniversalTokens, language: "fr" | "en"): string {
-  let sentence = productName;
-
-  // Split descriptors into semantic groups using linguistic patterns
-  const materials: string[] = [];
-  const colors: string[] = [];
-  const shapes: string[] = [];
-  const features: string[] = [];
-
-  for (const word of tokens.descriptors) {
-    const lower = word.toLowerCase();
-
-    // Detect materials (common e-commerce materials)
-    if (
-      /bois|marbre|métal|verre|tissu|cuir|plastique|acier|aluminium|pierre|céramique|wood|marble|metal|glass|fabric|leather|plastic|steel|stone|ceramic/i.test(
-        lower,
-      )
-    ) {
-      materials.push(word);
-    }
-    // Detect colors
-    else if (
-      /blanc|noir|beige|gris|rouge|bleu|vert|jaune|rose|transparent|white|black|grey|gray|red|blue|green|yellow|pink|clear/i.test(
-        lower,
-      )
-    ) {
-      colors.push(word);
-    }
-    // Detect shapes/forms
-    else if (
-      /rond|carré|rectangulaire|ovale|organique|géométrique|courbe|round|square|rectangular|oval|organic|geometric|curved|forme|form|shape/i.test(
-        lower,
-      )
-    ) {
-      shapes.push(word);
-    }
-    // Other features
-    else if (word.length > 3) {
-      features.push(word);
-    }
-  }
-
-  // Construct sentence with appropriate connectors
-  if (language === "fr") {
-    // Materials: "en marbre et métal"
-    if (materials.length > 0) {
-      const materialsPhrase =
-        materials.length === 1 ? `en ${materials[0]}` : `en ${materials.slice(0, 2).join(" et ")}`;
-      sentence += `, ${materialsPhrase}`;
-    }
-
-    // Colors: "coloris blanc transparent"
-    if (colors.length > 0) {
-      sentence += `, coloris ${colors.slice(0, 2).join(" ")}`;
-    }
-
-    // Shapes: "forme organique"
-    if (shapes.length > 0) {
-      sentence += `, ${shapes[0]}`;
-    }
-
-    // Features: just add naturally
-    if (features.length > 0) {
-      sentence += `, ${features.slice(0, 2).join(", ")}`;
-    }
-
-    // Dimensions: "dimensions 120x70x45 cm"
-    if (tokens.dimensions.length > 0) {
-      const dim = tokens.dimensions[0];
-      sentence += `, dimensions ${dim}`;
-      if (!/cm|mm|m\b/.test(dim)) sentence += " cm";
-    }
-  } else {
-    // English structure
-    if (materials.length > 0) {
-      const materialsPhrase =
-        materials.length === 1 ? `in ${materials[0]}` : `in ${materials.slice(0, 2).join(" and ")}`;
-      sentence += `, ${materialsPhrase}`;
-    }
-
-    if (colors.length > 0) {
-      sentence += `, ${colors.slice(0, 2).join(" ")} color`;
-    }
-
-    if (shapes.length > 0) {
-      sentence += `, ${shapes[0]}`;
-    }
-
-    if (features.length > 0) {
-      sentence += `, ${features.slice(0, 2).join(", ")}`;
-    }
-
-    if (tokens.dimensions.length > 0) {
-      const dim = tokens.dimensions[0];
-      sentence += `, dimensions ${dim}`;
-      if (!/cm|mm|m\b/.test(dim)) sentence += " cm";
-    }
-  }
-
-  // Clean up
-  sentence = sentence.replace(/\s+/g, " ").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim();
-
-  // Ensure max length
-  if (sentence.length > 200) {
-    sentence = sentence.substring(0, 197) + "...";
-  }
-
-  return sentence;
-}
-
 function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
   if (!altText || typeof altText !== "string") {
     return false;
@@ -349,6 +200,12 @@ function validateAltText(altText: string, productTitle?: string, minLength = 15,
 
   if (wordCount < 6 || wordCount > 16) {
     console.warn("⚠️ ALT text word count invalid:", wordCount);
+    return false;
+  }
+
+  // Check for corrupted text or nonsense
+  if (trimmed.includes("ca dpnne ca") || trimmed.includes("undefined") || trimmed.includes("null")) {
+    console.warn("⚠️ ALT text contains corrupted content");
     return false;
   }
 
@@ -581,15 +438,14 @@ async function callVisionAI(imageUrl: string, retryCount = 0) {
 2. Maximum 12-16 mots descriptifs
 3. Ton factuel et neutre
 4. N'invente rien, ne suppose rien sur le contexte
-5. Adapte ton vocabulaire au type de produit détecté
+5. Utilise uniquement des termes cohérents et naturels
 
 🔍 ÉLÉMENTS À OBSERVER :
 - Formes et structures visibles
-- Couleurs précises
+- Couleurs précises (dans l'ordre naturel: "blanc transparent" pas "transparent blanc")
 - Matériaux identifiables
 - Textures apparentes
 - Angle de prise de vue
-- Composition de l'image
 
 📝 FORMAT DE RÉPONSE (JSON strict) :
 {
@@ -599,21 +455,14 @@ async function callVisionAI(imageUrl: string, retryCount = 0) {
   "textures": ["texture1"],
   "view_angle": "type de vue",
   "product_category": "catégorie détectée",
-  "visual_description": "Description structurée en 12-16 mots"
+  "visual_description": "Description naturelle et structurée"
 }
 
-Exemple correct pour des pieds de meuble :
-{
-  "materials": ["métal"],
-  "colors": ["noir"],
-  "shapes": ["cylindrique"],
-  "textures": ["mat"],
-  "view_angle": "gros plan",
-  "product_category": "mobilier",
-  "visual_description": "Pieds métalliques noirs cylindriques avec finition mate, vue en gros plan"
-}
-
-Maintenant, analyse cette image et retourne un JSON structuré.`,
+IMPORTANT : 
+- Les couleurs dans l'ordre naturel ("blanc transparent" pas "transparent blanc")
+- Pas de mots isolés sans contexte ("reposant", "trois")
+- Des phrases complètes et naturelles
+- Pas de texte corrompu ou d'erreurs de formatage`,
               },
               {
                 inlineData: {
@@ -663,7 +512,7 @@ Maintenant, analyse cette image et retourne un JSON structuré.`,
   return { text };
 }
 
-// Enhanced mixing algorithm with better semantic integration
+// Enhanced mixing algorithm with better semantic integration and natural language
 function createOptimizedAltText(
   productName: string,
   seoKeywords: string[],
@@ -682,69 +531,105 @@ function createOptimizedAltText(
   let altText = productName;
   tokenize(productName).forEach((token: string) => usedTerms.add(getStem(token)));
 
-  // Add materials from vision analysis first (most important visually)
+  const parts: string[] = [];
+
+  // Add shapes from vision analysis first (most descriptive)
+  if (visionAnalysis.shapes && visionAnalysis.shapes.length > 0) {
+    const shapes = visionAnalysis.shapes.slice(0, 1);
+    const availableShapes = shapes.filter((s: string) => !usedTerms.has(getStem(s)));
+    if (availableShapes.length > 0) {
+      parts.push(availableShapes[0]);
+      availableShapes.forEach((s: string) => usedTerms.add(getStem(s)));
+    }
+  }
+
+  // Add materials from vision analysis
   if (visionAnalysis.materials && visionAnalysis.materials.length > 0) {
     const materials = visionAnalysis.materials.slice(0, 2);
     const availableMaterials = materials.filter((m: string) => !usedTerms.has(getStem(m)));
-
     if (availableMaterials.length > 0) {
       if (language === "fr") {
-        altText += ` en ${availableMaterials.join(" et ")}`;
+        parts.push(`en ${availableMaterials.join(" et ")}`);
       } else {
-        altText += ` in ${availableMaterials.join(" and ")}`;
+        parts.push(`in ${availableMaterials.join(" and ")}`);
       }
       availableMaterials.forEach((m: string) => usedTerms.add(getStem(m)));
     }
   }
 
-  // Add colors from vision analysis
+  // Add colors from vision analysis (ensure natural order)
   if (visionAnalysis.colors && visionAnalysis.colors.length > 0) {
     const colors = visionAnalysis.colors.slice(0, 2);
     const availableColors = colors.filter((c: string) => !usedTerms.has(getStem(c)));
-
     if (availableColors.length > 0) {
       if (language === "fr") {
-        altText += `, coloris ${availableColors.join(" ")}`;
+        parts.push(`coloris ${availableColors.join(" ")}`);
       } else {
-        altText += `, ${availableColors.join(" ")} color`;
+        parts.push(`${availableColors.join(" ")} color`);
       }
       availableColors.forEach((c: string) => usedTerms.add(getStem(c)));
     }
   }
 
-  // Add shapes/features from vision analysis
-  if (visionAnalysis.shapes && visionAnalysis.shapes.length > 0) {
-    const shapes = visionAnalysis.shapes.slice(0, 1);
-    const availableShapes = shapes.filter((s: string) => !usedTerms.has(getStem(s)));
+  // Add meaningful SEO keywords (filter out generic terms)
+  const meaningfulKeywords = seoKeywords
+    .filter((k) => {
+      const stem = getStem(k);
+      return (
+        !usedTerms.has(stem) &&
+        k.length > 3 &&
+        !["moderne", "design", "style", "modern", "design", "reposant", "trois"].includes(stem)
+      );
+    })
+    .slice(0, 2);
 
-    if (availableShapes.length > 0) {
-      altText += `, ${availableShapes[0]}`;
-      availableShapes.forEach((s: string) => usedTerms.add(getStem(s)));
-    }
+  if (meaningfulKeywords.length > 0) {
+    parts.push(meaningfulKeywords.join(", "));
   }
 
-  // Add SEO keywords that haven't been used yet (complementary features)
-  const remainingKeywords = seoKeywords.filter((k) => !usedTerms.has(getStem(k))).slice(0, 2);
-
-  if (remainingKeywords.length > 0) {
-    altText += `, ${remainingKeywords.join(", ")}`;
+  // Add dimensions if available
+  if (visionAnalysis.dimensions && visionAnalysis.dimensions.length > 0) {
+    const dim = visionAnalysis.dimensions[0];
+    if (language === "fr") {
+      parts.push(`dimensions ${dim}${!/cm|mm|m\b/.test(dim) ? " cm" : ""}`);
+    } else {
+      parts.push(`dimensions ${dim}${!/cm|mm|m\b/.test(dim) ? " cm" : ""}`);
+    }
   }
 
   // Add view angle if relevant
   if (visionAnalysis.view_angle && !["standard", "vue standard"].includes(visionAnalysis.view_angle.toLowerCase())) {
-    if (language === "fr") {
-      altText += `, ${visionAnalysis.view_angle}`;
-    } else {
-      altText += `, ${visionAnalysis.view_angle} view`;
-    }
+    parts.push(visionAnalysis.view_angle);
+  }
+
+  // Construct final sentence
+  if (parts.length > 0) {
+    altText += `, ${parts.join(", ")}`;
   }
 
   // Clean up and validate
   altText = altText.replace(/\s+/g, " ").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim();
 
+  // Remove any corrupted text or nonsense words
+  altText = altText.replace(/\b(ca dpnne ca|reposant|trois|undefined|null)\b/gi, "").trim();
+  altText = altText.replace(/\s+/g, " ").replace(/,\s*,/g, ",").replace(/,\s*$/, "");
+
   // Ensure reasonable length
   if (altText.length > 180) {
     altText = altText.substring(0, 177) + "...";
+  }
+
+  // Final validation - if text doesn't make sense, use a simpler fallback
+  const wordCount = altText.split(" ").length;
+  if (wordCount < 4 || altText.includes("undefined") || altText.includes("null")) {
+    console.warn("⚠️ ALT text validation failed, using fallback");
+    if (language === "fr") {
+      altText =
+        `${productName} en ${visionAnalysis.materials?.[0] || "matériau"} ${visionAnalysis.colors?.[0] || ""}`.trim();
+    } else {
+      altText =
+        `${productName} in ${visionAnalysis.materials?.[0] || "material"} ${visionAnalysis.colors?.[0] || ""}`.trim();
+    }
   }
 
   console.log("   - Final ALT Text:", altText);
