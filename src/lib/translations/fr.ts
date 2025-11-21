@@ -3262,7 +3262,7 @@ export const translations = {
       articles: "articles/mois",
       campaigns: "campagnes",
       chatResponses: "réponses chat/mois",
-      subscribe: "S'abonner maintenant",
+      subscribe: "S'abonner ",
       perMonth: "/mois",
       mostPopular: "Le Plus Populaire",
       bestValue: "Meilleur Rapport Qualité-Prix",
