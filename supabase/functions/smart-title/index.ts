@@ -95,7 +95,19 @@ Return ONLY a JSON object with these fields:
       }),
     });
 
+    if (!deepseekResponse.ok) {
+      const errorText = await deepseekResponse.text();
+      console.error('[SMART-TITLE] DeepSeek error:', deepseekResponse.status, errorText);
+      throw new Error(`DeepSeek API error: ${deepseekResponse.status}`);
+    }
+
     const deepseekData = await deepseekResponse.json();
+    
+    if (!deepseekData.choices || !deepseekData.choices[0] || !deepseekData.choices[0].message) {
+      console.error('[SMART-TITLE] Invalid DeepSeek response:', deepseekData);
+      throw new Error('Invalid response from DeepSeek API');
+    }
+
     const deepseekAnalysis = JSON.parse(
       deepseekData.choices[0].message.content
         .replace(/```json\n?/g, '')
@@ -149,6 +161,12 @@ Be specific and descriptive in ${language === 'fr' ? 'French' : 'English'}.`;
           }
         );
 
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error('[SMART-TITLE] Gemini Vision error:', geminiResponse.status, errorText);
+          throw new Error(`Gemini Vision API error: ${geminiResponse.status}`);
+        }
+
         const geminiData = await geminiResponse.json();
         visionAnalysis = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || null;
         console.log('[SMART-TITLE] Vision analysis:', visionAnalysis);
@@ -201,7 +219,20 @@ Generate ONLY the optimized title, no explanations.`;
       }),
     });
 
+    if (!lovableResponse.ok) {
+      const errorText = await lovableResponse.text();
+      console.error('[SMART-TITLE] Lovable AI error:', lovableResponse.status, errorText);
+      throw new Error(`Lovable AI error: ${lovableResponse.status}`);
+    }
+
     const lovableData = await lovableResponse.json();
+    console.log('[SMART-TITLE] Lovable AI response:', JSON.stringify(lovableData));
+    
+    if (!lovableData.choices || !lovableData.choices[0] || !lovableData.choices[0].message) {
+      console.error('[SMART-TITLE] Invalid Lovable AI response structure:', lovableData);
+      throw new Error('Invalid response from Lovable AI');
+    }
+
     const optimizedTitle = lovableData.choices[0].message.content.trim()
       .replace(/^["']|["']$/g, '')
       .slice(0, 60);
