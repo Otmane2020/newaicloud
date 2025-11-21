@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ProductOptimizationTabs } from '@/components/seo/ProductOptimizationTabs';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
+import { SmartTitle } from '@/components/seo/SmartTitle';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
 import { PageOptimization } from '@/components/seo/PageOptimization';
 import { HomePageSeo } from '@/components/seo/HomePageSeo';
@@ -35,7 +36,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'ads-campaign', 'google-console'];
+    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'smart-title', 'automation', 'ads-campaign', 'google-console'];
     
     if (tab && validTabs.includes(tab)) {
       if (tab === 'optimization') {
@@ -306,6 +307,7 @@ export default function SEO() {
         {activeTab === 'audit' && <SeoAuditReports />}
         {activeTab === 'audit-dashboard' && <SeoAuditDashboard />}
         {activeTab === 'alt' && <SeoAltImage />}
+        {activeTab === 'smart-title' && <SmartTitle />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'ads-campaign' && <AdsCampaign />}
         {activeTab === 'google-console' && (
