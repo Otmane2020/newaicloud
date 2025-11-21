@@ -26,11 +26,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`🎯 [TITLE_SERP] Optimizing title for product: ${currentTitle.substring(0, 50)}...`);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    console.log('🚀 Starting title optimization with SERP...');
+    
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
     }
 
     // 🔍 Analyze SERP competitors for this product type
@@ -65,26 +65,33 @@ RÈGLES STRICTES :
 - Exemple BON : "Canapé 3 Places Scandinave Beige"
 - Exemple MAUVAIS : "CANAPÉ 3 PLACES SCANDINAVE BEIGE"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "Tu es un expert en optimisation SEO e-commerce spécialisé dans les titres produits performants. Tu retournes UNIQUEMENT le titre optimisé, sans aucun formatage supplémentaire." },
-          { role: "user", content: serpPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 100
-      }),
-    });
+    const systemPrompt = "Tu es un expert en optimisation SEO e-commerce spécialisé dans les titres produits performants. Tu retournes UNIQUEMENT le titre optimisé, sans aucun formatage supplémentaire.";
+    
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt + "\n\n" + serpPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 100,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Lovable AI error:", response.status, errorText);
+      console.error("❌ Google Gemini API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -93,18 +100,11 @@ RÈGLES STRICTES :
         );
       }
       
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits to your Lovable AI workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`Lovable AI error: ${response.status}`);
+      throw new Error(`Google Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    let optimizedTitle = data.choices?.[0]?.message?.content?.trim();
+    let optimizedTitle = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!optimizedTitle) {
       console.error("❌ No title generated");
