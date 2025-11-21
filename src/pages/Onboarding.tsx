@@ -776,40 +776,31 @@ export default function Onboarding() {
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        {formatLimit(starterPlan.max_products)} {language === "fr" ? "produits" : "products"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
-                        {formatLimit(starterPlan.max_optimizations_monthly)}{" "}
-                        {language === "fr" ? "optimisations/mois" : "optimizations/month"}
+                        50 {language === "fr" ? "produits" : "products"}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        {formatLimit(starterPlan.max_articles_monthly)}{" "}
-                        {language === "fr" ? "articles/mois" : "articles/month"}
+                        1 {language === "fr" ? "Boutique connectée" : "Connected store"}
                       </span>
                     </div>
-                    {starterPlan.max_campaigns > 0 && (
-                      <div className="flex items-start gap-2">
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                        <span className="text-xs sm:text-sm">
-                          {formatLimit(starterPlan.max_campaigns)} {language === "fr" ? "campagnes" : "campaigns"}
-                        </span>
-                      </div>
-                    )}
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        {formatLimit(starterPlan.max_chat_responses_monthly)}{" "}
-                        {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
+                        50 {language === "fr" ? "optimisations/mois" : "optimizations/month"}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        5 {language === "fr" ? "articles/mois" : "articles/month"}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        50 {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
                       </span>
                     </div>
                   </div>
