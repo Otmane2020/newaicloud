@@ -72,12 +72,29 @@ export const SmartTitle = () => {
       if (error) throw error;
 
       setResult(data);
-      toast.success('Titre optimisé généré avec succès!');
+      toast.success('Aperçu du titre optimisé généré!');
     } catch (error) {
       console.error('Smart title error:', error);
-      toast.error('Erreur lors de la génération du titre');
+      toast.error('Erreur lors de la génération de l\'aperçu');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleApply = async (productId: string, optimizedTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('shopify_products')
+        .update({ title: optimizedTitle })
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      toast.success('Titre optimisé appliqué avec succès!');
+      setResult(null);
+    } catch (error) {
+      console.error('Apply title error:', error);
+      toast.error('Erreur lors de l\'application du titre');
     }
   };
 
@@ -127,6 +144,20 @@ export const SmartTitle = () => {
                 </div>
               </div>
             )}
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={() => handleApply(result.productId, result.optimizedTitle)}
+                className="flex-1"
+              >
+                Appliquer le titre
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setResult(null)}
+              >
+                Annuler
+              </Button>
+            </div>
           </div>
         </Card>
       )}
@@ -212,7 +243,7 @@ export const SmartTitle = () => {
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Générer
+                      Aperçu
                     </>
                   )}
                 </Button>
