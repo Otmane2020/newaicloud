@@ -194,14 +194,18 @@ export function TagOptimization() {
 
   // Filtered products logic
   const filteredProducts = products.filter((product) => {
-    if (filter === 'to_optimize' && product.optimization_count && product.optimization_count > 0) return false;
-    if (filter === 'tagged' && (!product.optimization_count || product.optimization_count === 0)) return false;
-    if (filter === 'to_sync' && (product.seo_synced_to_shopify || (!product.optimization_count || product.optimization_count === 0))) return false;
+    const hasTags = product.tags && product.tags.trim().length > 0;
+    const tagsScore = calculateTagsScore(product.tags);
+    const isTrulyOptimized = product.optimization_count && product.optimization_count > 0 && hasTags && tagsScore >= 8;
+    
+    if (filter === 'to_optimize' && isTrulyOptimized) return false;
+    if (filter === 'tagged' && !isTrulyOptimized) return false;
+    if (filter === 'to_sync' && (product.seo_synced_to_shopify || !isTrulyOptimized)) return false;
     if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
 
     // Status filter
-    if (statusFilter === 'optimized' && (!product.optimization_count || product.optimization_count === 0)) return false;
-    if (statusFilter === 'not-optimized' && product.optimization_count && product.optimization_count > 0) return false;
+    if (statusFilter === 'optimized' && !isTrulyOptimized) return false;
+    if (statusFilter === 'not-optimized' && isTrulyOptimized) return false;
 
     // Sync filter
     if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
@@ -262,20 +266,40 @@ export function TagOptimization() {
     cacheKey: 'tags-pagination'
   });
 
-  // Statistics - based on optimization_count
-  const productsNotOptimized = products.filter(p => !p.optimization_count || p.optimization_count === 0).length;
-  const productsOptimized = products.filter(p => p.optimization_count && p.optimization_count > 0).length;
-  const productsToSyncCount = products.filter(p => p.optimization_count && p.optimization_count > 0 && !p.seo_synced_to_shopify).length;
+  // Statistics - based on optimization_count AND tags quality
+  const productsNotOptimized = products.filter(p => {
+    const hasTags = p.tags && p.tags.trim().length > 0;
+    const tagsScore = calculateTagsScore(p.tags);
+    return !p.optimization_count || p.optimization_count === 0 || !hasTags || tagsScore < 8;
+  }).length;
+  
+  const productsOptimized = products.filter(p => {
+    const hasTags = p.tags && p.tags.trim().length > 0;
+    const tagsScore = calculateTagsScore(p.tags);
+    return p.optimization_count && p.optimization_count > 0 && hasTags && tagsScore >= 8;
+  }).length;
+  
+  const productsToSyncCount = products.filter(p => {
+    const hasTags = p.tags && p.tags.trim().length > 0;
+    const tagsScore = calculateTagsScore(p.tags);
+    return p.optimization_count && p.optimization_count > 0 && hasTags && tagsScore >= 8 && !p.seo_synced_to_shopify;
+  }).length;
+  
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score based on optimized products only
-  const optimizedProducts = products.filter(p => p.optimization_count && p.optimization_count > 0);
-  const tagSeoScore = optimizedProducts.length > 0 
+  // Calculate tag SEO score based on truly optimized products (with quality tags)
+  const trulyOptimizedProducts = products.filter(p => {
+    const hasTags = p.tags && p.tags.trim().length > 0;
+    const tagsScore = calculateTagsScore(p.tags);
+    return p.optimization_count && p.optimization_count > 0 && hasTags && tagsScore >= 8;
+  });
+  
+  const tagSeoScore = trulyOptimizedProducts.length > 0 
     ? Math.round(
-        (optimizedProducts.reduce((sum, p) => {
+        (trulyOptimizedProducts.reduce((sum, p) => {
           const score = calculateTagsScore(p.tags);
           // Debug first few products
-          if (optimizedProducts.indexOf(p) < 3) {
+          if (trulyOptimizedProducts.indexOf(p) < 3) {
             console.log('🏷️ [TAG DEBUG]', {
               productId: p.id,
               title: p.title,
@@ -285,13 +309,13 @@ export function TagOptimization() {
             });
           }
           return sum + score;
-        }, 0) / optimizedProducts.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
+        }, 0) / trulyOptimizedProducts.length) * 5 // Multiply by 5 INSIDE Math.round() for consistency with Dashboard
       )
     : 0;
   
   console.log('🎯 [TAG SEO SCORE]', {
     totalProducts: products.length,
-    optimizedProducts: optimizedProducts.length,
+    trulyOptimizedProducts: trulyOptimizedProducts.length,
     finalScore: tagSeoScore
   });
 
@@ -336,7 +360,11 @@ export function TagOptimization() {
   };
 
   const handleGenerateAllTags = async () => {
-    const productsToGenerate = products.filter(p => !p.optimization_count || p.optimization_count === 0);
+    const productsToGenerate = products.filter(p => {
+      const hasTags = p.tags && p.tags.trim().length > 0;
+      const tagsScore = calculateTagsScore(p.tags);
+      return !p.optimization_count || p.optimization_count === 0 || !hasTags || tagsScore < 8;
+    });
     if (productsToGenerate.length === 0) {
       toast.info(t.seo.tags.allOptimized);
       return;
@@ -1135,22 +1163,24 @@ export function TagOptimization() {
                     {(() => {
                       const isOptimized = product.optimization_count && product.optimization_count > 0;
                       const hasTags = product.tags && product.tags.trim().length > 0;
+                      const tagsScore = calculateTagsScore(product.tags);
                       
-                      if (isOptimized) {
+                      // Un produit est vraiment optimisé s'il a été traité ET a des tags de qualité
+                      if (isOptimized && hasTags && tagsScore >= 12) {
                         return (
                           <Badge className="bg-green-500 text-white text-xs">
                             {t.seo.tags.status.optimized}
                           </Badge>
                         );
-                      } else if (!hasTags) {
+                      } else if (isOptimized && hasTags && tagsScore >= 8) {
                         return (
-                          <Badge className="bg-red-500 text-white text-xs">
-                            {t.seo.tags.status.pending}
+                          <Badge className="bg-yellow-500 text-white text-xs">
+                            À améliorer
                           </Badge>
                         );
                       } else {
                         return (
-                          <Badge className="bg-orange-500 text-white text-xs">
+                          <Badge className="bg-red-500 text-white text-xs">
                             {t.seo.tags.status.pending}
                           </Badge>
                         );
