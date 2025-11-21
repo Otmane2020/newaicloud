@@ -35,32 +35,15 @@ function extractProductName(title: string): string {
   // Clean title by taking part before first dash or comma
   let productName = title.split(/[-–—,]/)[0].trim();
   
-  // Detect key product phrases to keep together
-  const keyPhrases = [
-    /canapé\s+d'angle/i,
-    /table\s+basse/i,
-    /meuble\s+tv/i,
-    /lit\s+coffre/i,
-    /buffet\s+bahut/i,
-    /chaise\s+de\s+bureau/i
-  ];
+  // Smart detection: keep first 2-4 words based on word length
+  const words = productName.split(/\s+/).filter(w => w.length > 0);
   
-  // Check if we have a key phrase, keep it complete
-  for (const phrase of keyPhrases) {
-    if (phrase.test(productName)) {
-      const words = productName.split(' ');
-      // Keep up to 5 words for key phrases
-      return words.slice(0, Math.min(5, words.length)).join(' ');
-    }
-  }
+  // If first words are short (<=4 chars), keep more words (up to 5)
+  // If words are long, keep fewer (3-4 max)
+  const avgLength = words.slice(0, 3).reduce((sum, w) => sum + w.length, 0) / Math.min(3, words.length);
+  const maxWords = avgLength <= 4 ? 5 : 4;
   
-  // Default: limit to 4 words
-  const words = productName.split(' ').filter(w => w.length > 0);
-  if (words.length > 4) {
-    productName = words.slice(0, 4).join(' ');
-  }
-  
-  return productName;
+  return words.slice(0, Math.min(maxWords, words.length)).join(' ');
 }
 
 // Normalize word to its stem (basic French stemming)
@@ -92,83 +75,80 @@ function tokenize(text: string): string[] {
     .filter(w => w.length > 2 && !stopWords.has(w));
 }
 
-// Categorize words by semantic type
-interface CategorizedWords {
-  materials: string[];
-  colors: string[];
-  shapes: string[];
-  styles: string[];
-  others: string[];
+// Detect language automatically
+function detectLanguage(text: string): 'fr' | 'en' {
+  const frenchMarkers = ['avec', 'pour', 'dans', 'une', 'des', 'le', 'la', 'les', 'en', 'de', 'du'];
+  const englishMarkers = ['with', 'for', 'in', 'the', 'and', 'of', 'this', 'that'];
+  
+  let frScore = 0;
+  let enScore = 0;
+  
+  const words = text.toLowerCase().split(/\s+/);
+  for (const word of words) {
+    if (frenchMarkers.includes(word)) frScore++;
+    if (englishMarkers.includes(word)) enScore++;
+  }
+  
+  return frScore > enScore ? 'fr' : 'en';
 }
 
-function categorizeWords(words: string[]): CategorizedWords {
-  const materialsSet = new Set([
-    'bois', 'verre', 'métal', 'marbre', 'pierre', 'tissu', 'cuir', 'céramique', 
-    'acier', 'fer', 'aluminium', 'plastique', 'résine', 'rotin', 'osier',
-    'wood', 'glass', 'metal', 'marble', 'stone', 'fabric', 'leather', 'ceramic',
-    'travertin', 'travertine', 'chêne', 'oak', 'noyer', 'walnut'
-  ]);
-  
-  const colorsSet = new Set([
-    'blanc', 'noir', 'beige', 'gris', 'marron', 'rouge', 'bleu', 'vert', 'jaune',
-    'white', 'black', 'grey', 'gray', 'brown', 'red', 'blue', 'green', 'yellow',
-    'transparent', 'translucide', 'opaque', 'clair', 'foncé', 'doré', 'argenté'
-  ]);
-  
-  const shapesSet = new Set([
-    'rectangulaire', 'carré', 'rond', 'ovale', 'circulaire', 'triangulaire',
-    'rectangular', 'square', 'round', 'oval', 'circular', 'triangular',
-    'arrondi', 'courbe', 'droit', 'angulaire'
-  ]);
-  
-  const stylesSet = new Set([
-    'moderne', 'scandinave', 'industriel', 'vintage', 'classique', 'contemporain',
-    'modern', 'scandinavian', 'industrial', 'vintage', 'classic', 'contemporary',
-    'minimaliste', 'rustique', 'élégant', 'design'
-  ]);
+// Universal intelligent categorization (NO HARDCODED LISTS)
+interface UniversalTokens {
+  descriptors: string[];  // All meaningful words
+  dimensions: string[];   // Detected dimensions: 120x70, 3cm, etc.
+  quantities: string[];   // Detected quantities: 2 pièces, pack de 4, etc.
+}
 
-  // Generic object words we never want to add from the AI description
-  const genericSet = new Set([
-    'table', 'basse', 'plateau', 'structure', 'pieds', 'meuble', 'produit',
-    'article', 'image', 'photo', 'vue', 'montre', 'appartement', 'piece',
-    'pièce', 'interieur', 'intérieur', 'exterieur', 'extérieur',
-    'room', 'product', 'item', 'picture', 'view', 'watch', 'apartment',
-    'interior', 'exterior'
-  ]);
-  
-  const result: CategorizedWords = {
-    materials: [],
-    colors: [],
-    shapes: [],
-    styles: [],
-    others: []
+function intelligentCategorize(words: string[]): UniversalTokens {
+  const result: UniversalTokens = {
+    descriptors: [],
+    dimensions: [],
+    quantities: []
   };
+  
+  // Generic noise words to skip (very common, not descriptive)
+  const noiseSet = new Set([
+    'table', 'basse', 'plateau', 'structure', 'pieds', 'meuble', 'produit',
+    'article', 'image', 'photo', 'vue', 'piece', 'pièce',
+    'room', 'product', 'item', 'picture', 'view', 'interior', 'exterior'
+  ]);
   
   for (const word of words) {
     const stem = getStem(word);
-
-    // Skip very generic object words (product type already in product name)
-    if (genericSet.has(stem)) continue;
-
-    if (materialsSet.has(stem)) result.materials.push(word);
-    else if (colorsSet.has(stem)) result.colors.push(word);
-    else if (shapesSet.has(stem)) result.shapes.push(word);
-    else if (stylesSet.has(stem)) result.styles.push(word);
-    else result.others.push(word);
+    
+    // Skip generic noise
+    if (noiseSet.has(stem)) continue;
+    
+    // Detect dimensions: 120x70, 3cm, 45°, etc.
+    if (/\d+x\d+|\d+cm|\d+mm|\d+°|[\d,]+\s?(cm|mm|m|kg|g|l|ml)/i.test(word)) {
+      result.dimensions.push(word);
+      continue;
+    }
+    
+    // Detect quantities: 2 pièces, pack de 4, etc.
+    if (/\d+\s?(pièces?|pack|set|lot)/i.test(word)) {
+      result.quantities.push(word);
+      continue;
+    }
+    
+    // All other meaningful words are descriptors
+    if (word.length > 2) {
+      result.descriptors.push(word);
+    }
   }
   
   return result;
 }
 
-// Build optimized alt-text with intelligent deduplication and structured phrase
-function buildOptimizedAltText(
+// Build natural descriptive ALT text (NO KEYWORD LISTS)
+function buildNaturalAltText(
   productName: string,
   visualAnalysis: string,
   seoKeywords: string[] = [],
   maxWords: number = 15
 ): string {
-  // Extract clean product name (no duplication later)
   const cleanProductName = extractProductName(productName);
+  const language = detectLanguage(productName + ' ' + visualAnalysis);
   
   // Track used stems globally to prevent ANY repetition
   const usedStems = new Set<string>();
@@ -178,65 +158,51 @@ function buildOptimizedAltText(
     usedStems.add(getStem(token));
   });
   
-  // Collect unique tokens from SEO keywords
-  const seoTokens: string[] = [];
+  // Collect unique descriptors from SEO keywords
+  const uniqueDescriptors: string[] = [];
   seoKeywords.flatMap(kw => tokenize(kw)).forEach(token => {
     const stem = getStem(token);
-    if (!usedStems.has(stem)) {
+    if (!usedStems.has(stem) && uniqueDescriptors.length < 10) {
       usedStems.add(stem);
-      seoTokens.push(token);
+      uniqueDescriptors.push(token);
     }
   });
   
-  // Collect unique tokens from visual analysis
-  const visualTokens: string[] = [];
+  // Add visual analysis tokens
   tokenize(visualAnalysis).forEach(token => {
     const stem = getStem(token);
-    if (!usedStems.has(stem) && visualTokens.length < 8) {
+    if (!usedStems.has(stem) && uniqueDescriptors.length < 12) {
       usedStems.add(stem);
-      visualTokens.push(token);
+      uniqueDescriptors.push(token);
     }
   });
   
-  // Categorize all collected tokens
-  const allTokens = [...seoTokens, ...visualTokens];
-  const categorized = categorizeWords(allTokens);
+  // Intelligently categorize (universal, no hardcoded lists)
+  const categorized = intelligentCategorize(uniqueDescriptors);
   
-  // Build language-neutral structured phrase
-  const parts: string[] = [cleanProductName];
+  // Build natural sentence structure
+  let altText = cleanProductName;
   
-  // Add shapes (max 1)
-  if (categorized.shapes.length > 0) {
-    parts.push(categorized.shapes[0]);
+  // Add descriptors naturally
+  if (categorized.descriptors.length > 0) {
+    // Take first 6-8 most relevant descriptors
+    const topDescriptors = categorized.descriptors.slice(0, Math.min(8, maxWords - 3));
+    altText += ', ' + topDescriptors.join(', ');
   }
   
-  // Add materials (max 2)
-  if (categorized.materials.length > 0) {
-    parts.push(...categorized.materials.slice(0, 2));
+  // Add dimensions at the end if present
+  if (categorized.dimensions.length > 0) {
+    altText += ', ' + categorized.dimensions[0];
   }
   
-  // Add colors (max 2)
-  if (categorized.colors.length > 0) {
-    parts.push(...categorized.colors.slice(0, 2));
-  }
+  // Clean up formatting
+  altText = altText
+    .replace(/\s+/g, ' ')
+    .replace(/,\s*,/g, ',')
+    .replace(/,\s*$/, '')
+    .trim();
   
-  // Add style (max 1)
-  if (categorized.styles.length > 0) {
-    parts.push(categorized.styles[0]);
-  }
-  
-  // Add max 2 other significant descriptors
-  if (categorized.others.length > 0) {
-    parts.push(...categorized.others.slice(0, 2));
-  }
-  
-  // Join with commas and clean up
-  let altText = parts.join(', ');
-  
-  // Remove any accidental double spaces or double commas
-  altText = altText.replace(/\s+/g, ' ').replace(/,\s*,/g, ',').trim();
-  
-  // Ensure length constraints
+  // Ensure max length
   if (altText.length > 200) {
     altText = altText.substring(0, 197) + '...';
   }
@@ -296,13 +262,13 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Analyze title with DeepSeek to extract structured SEO data
+// Analyze title with DeepSeek - UNIVERSAL E-COMMERCE extraction
 async function analyzeTitle(productTitle: string) {
   const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
   
   if (!deepseekApiKey) {
     console.warn('DeepSeek API key not configured, using fallback analysis');
-    return extractStructuredKeywords(productTitle);
+    return extractGenericKeywords(productTitle);
   }
 
   try {
@@ -317,37 +283,37 @@ async function analyzeTitle(productTitle: string) {
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert SEO e-commerce. Tu analyses les titres produits et extrais les informations structurées pour optimiser le référencement.'
+            content: 'Tu es un expert e-commerce UNIVERSEL (meubles, mode, tech, alimentation, cosmétiques, jouets, auto, santé, etc.). Tu extrais les attributs pertinents de TOUS types de produits.'
           },
           {
             role: 'user',
-            content: `Analyse ce titre produit et extrais les informations structurées par catégories.
+            content: `Analyse ce titre produit et extrait les attributs pertinents.
 
 Titre: "${productTitle}"
 
-Réponds UNIQUEMENT avec un JSON valide structuré :
+Réponds UNIQUEMENT avec un JSON valide :
 {
-  "materials": ["matériau1", "matériau2"],
-  "colors": ["couleur1", "couleur2"],
-  "style": ["style1"],
-  "features": ["caractéristique1", "caractéristique2"],
+  "keywords": ["mot-clé1", "mot-clé2", "mot-clé3", ...],
   "product_type": "type de produit"
 }
 
-Consignes :
-- Élimine les mots génériques comme "premium", "qualité", "top"
-- Sois précis et concis
-- N'invente rien, extrait seulement ce qui est explicitement mentionné`
+RÈGLES :
+- Extrais UNIQUEMENT ce qui est explicitement mentionné
+- N'invente RIEN
+- Élimine les mots génériques ("premium", "qualité", "top", "meilleur")
+- Garde les attributs précis (matériaux, couleurs, tailles, caractéristiques techniques, ingrédients, etc.)
+- Maximum 8-10 mots-clés
+- Sois concis et précis`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 250
+        temperature: 0.2,
+        max_tokens: 200
       })
     });
 
     if (!response.ok) {
       console.error('DeepSeek API error:', response.status);
-      return extractStructuredKeywords(productTitle);
+      return extractGenericKeywords(productTitle);
     }
 
     const data = await response.json();
@@ -357,13 +323,7 @@ Consignes :
       const cleaned = cleanJsonResponse(content);
       const parsed = JSON.parse(cleaned);
       
-      // Flatten structured data into keywords array for backward compatibility
-      const keywords: string[] = [
-        ...(parsed.materials || []),
-        ...(parsed.colors || []),
-        ...(parsed.style || []),
-        ...(parsed.features || [])
-      ].filter(k => k && k.length > 2);
+      const keywords = (parsed.keywords || []).filter((k: string) => k && k.length > 2);
       
       return {
         keywords,
@@ -372,54 +332,30 @@ Consignes :
       };
     } catch (e) {
       console.error('Failed to parse DeepSeek response:', content);
-      return extractStructuredKeywords(productTitle);
+      return extractGenericKeywords(productTitle);
     }
   } catch (error) {
     console.error('DeepSeek analysis error:', error);
-    return extractStructuredKeywords(productTitle);
+    return extractGenericKeywords(productTitle);
   }
 }
 
-// Fallback: extract structured keywords from title using regex
-function extractStructuredKeywords(title: string): { keywords: string[]; analysis: string; structured?: any } {
-  const keywords: string[] = [];
-  const lowerTitle = title.toLowerCase();
+// Fallback: Generic keyword extraction (NO HARDCODED LISTS)
+function extractGenericKeywords(title: string): { keywords: string[]; analysis: string; structured?: any } {
+  // Simple intelligent tokenization without hardcoded material/color lists
+  const tokens = tokenize(title);
   
-  // Extract materials
-  const materials = ['bois', 'verre', 'métal', 'marbre', 'pierre', 'tissu', 'cuir', 'céramique', 'travertin'];
-  const foundMaterials = materials.filter(m => lowerTitle.includes(m));
-  keywords.push(...foundMaterials);
+  // Extract first 6-8 meaningful words as keywords
+  const keywords = tokens.slice(0, 8);
   
-  // Extract colors
-  const colors = ['blanc', 'noir', 'beige', 'gris', 'marron', 'transparent'];
-  const foundColors = colors.filter(c => lowerTitle.includes(c));
-  keywords.push(...foundColors);
-  
-  // Extract styles
-  const styles = ['moderne', 'scandinave', 'industriel', 'vintage', 'classique'];
-  const foundStyles = styles.filter(s => lowerTitle.includes(s));
-  keywords.push(...foundStyles);
-  
-  // Extract product type (first 2-3 words usually)
-  const words = title.split(/\s+/).filter(w => w.length > 2);
-  const productType = words.slice(0, 3).join(' ');
-  
-  // Add other significant words (> 3 chars, not stop words)
-  const stopWords = ['avec', 'pour', 'dans', 'the', 'and', 'with'];
-  const otherWords = words.filter(w => 
-    w.length > 3 && 
-    !stopWords.includes(w.toLowerCase()) &&
-    !keywords.includes(w.toLowerCase())
-  ).slice(0, 3);
-  keywords.push(...otherWords);
+  // Product type = first 2-3 words
+  const productType = title.split(/\s+/).filter(w => w.length > 2).slice(0, 3).join(' ');
   
   return {
     keywords,
-    analysis: `Analyse automatique: ${productType}`,
+    analysis: `Analyse générique: ${productType}`,
     structured: {
-      materials: foundMaterials,
-      colors: foundColors,
-      style: foundStyles,
+      keywords,
       product_type: productType
     }
   };
@@ -489,15 +425,16 @@ async function callVisionAI(imageUrl: string, retryCount = 0) {
         {
           parts: [
             {
-              text: `Tu es un expert en vision par ordinateur et en génération de textes ALT conformes aux standards Google d'accessibilité.
+              text: `Tu es un expert en vision par ordinateur pour l'e-commerce UNIVERSEL (meubles, mode, tech, alimentation, cosmétiques, jouets, auto, etc.).
 
-🎯 MISSION : Décris UNIQUEMENT ce qui est VISUELLEMENT présent dans cette image.
+🎯 MISSION : Analyse visuelle PURE de cette image produit.
 
-📸 RÈGLES STRICTES D'ANALYSE VISUELLE :
-1. Analyse l'image comme si tu la voyais pour la première fois
-2. Décris SEULEMENT les éléments visibles : formes, couleurs, matériaux apparents, angle de vue, composition
-3. Maximum 12-16 mots pour l'ALT text
-4. Ton factuel et neutre (comme un observateur neutre)
+📸 RÈGLES D'ANALYSE UNIVERSELLE :
+1. Décris ce que tu vois visuellement (formes, couleurs, matériaux, textures, composition)
+2. Adapte ton vocabulaire au type de produit détecté
+3. Maximum 12-16 mots descriptifs
+4. Ton factuel et neutre
+5. N'invente rien, décris seulement ce qui est visible
 5. N'invente RIEN, ne suppose RIEN sur le produit complet ou son contexte
 6. N'utilise AUCUNE information externe (tu ne connais pas le titre, la description, le contexte du produit)
 7. Si tu vois un détail isolé (ex: pieds de meuble), décris SEULEMENT ce détail visible, pas l'objet complet
@@ -976,7 +913,7 @@ Deno.serve(async (req: Request) => {
       const productName = extractProductName(productTitle);
       
       // Combine: name + SEO keywords + visual analysis
-      finalAltText = buildOptimizedAltText(productName, geminiAltText, titleKeywords, 15);
+      finalAltText = buildNaturalAltText(productName, geminiAltText, titleKeywords, 15);
       
       console.log('🎯 Alt-text optimisé:');
       console.log(`   - Titre original: ${productTitle}`);
