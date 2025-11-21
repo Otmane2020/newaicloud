@@ -1119,9 +1119,9 @@ export default function Onboarding() {
                 </div>
 
                 <div className="mb-4 sm:mb-6">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl font-semibold text-muted-foreground line-through">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1132,9 +1132,7 @@ export default function Onboarding() {
                       <Badge variant="destructive" className="text-xs">
                         -20%
                       </Badge>
-                    </div>
-                    <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
+                      <span className="text-2xl sm:text-3xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1147,7 +1145,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     {billingCycle === "yearly" && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)}{" "}
                         {language === "fr" ? "facturé annuellement" : "billed annually"}
                       </span>
@@ -1281,9 +1279,9 @@ export default function Onboarding() {
                 </div>
 
                 <div className="mb-4 sm:mb-6">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl font-semibold text-muted-foreground line-through">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1294,9 +1292,7 @@ export default function Onboarding() {
                       <Badge variant="destructive" className="text-xs">
                         -30%
                       </Badge>
-                    </div>
-                    <div className="flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
+                      <span className="text-2xl sm:text-3xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1309,7 +1305,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     {billingCycle === "yearly" && (
-                      <span className="text-xs sm:text-sm text-muted-foreground text-center mt-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)}{" "}
                         {language === "fr" ? "facturé annuellement" : "billed annually"}
                       </span>
