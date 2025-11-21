@@ -595,71 +595,39 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log("🎁 Activating free trial for user:", user.id);
+      console.log("🎁 [FREE-TRIAL] Activating free trial for user:", user.id);
 
+      // ✅ STEP 1: Activate trial FIRST
       const { data, error } = await supabase.functions.invoke("activate-free-trial");
 
       if (error) throw error;
 
       if (data?.success) {
+        console.log("✅ [FREE-TRIAL] Trial activated, status is now 'trialing'");
         toast.success(
-          language === "fr" ? "Essai Gratuit activé ! Redirection..." : "Free trial activated! Redirecting...",
+          language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!",
         );
 
-        // Check for Shopify pending connection
+        // ✅ STEP 2: NOW claim Shopify after trial is active
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending) {
-          console.log("🔗 Claiming Shopify connection after trial setup");
-          try {
-            const {
-              data: { session },
-            } = await supabase.auth.getSession();
-            const { data: claimData, error: claimError } = await supabase.functions.invoke("claim-shopify-connection", {
-              body: { pendingToken: shopifyPending },
-              headers: session?.access_token
-                ? {
-                    Authorization: `Bearer ${session.access_token}`,
-                  }
-                : {},
-            });
-
-            if (claimError) throw claimError;
-
-            if (claimData?.success) {
-              toast.success(t.sync.shopifyConnected);
-              toast.info(t.sync.autoImport, { duration: 5000 });
-
-              // Déclencher manuellement la synchro après activation du trial
-              console.log("🔄 [Trial] Triggering manual sync after trial activation");
-              const { data: connectionData } = await supabase
-                .from("shopify_connections")
-                .select("id, store_url, store_name")
-                .eq("user_id", user?.id)
-                .order("created_at", { ascending: false })
-                .limit(1)
-                .single();
-
-              if (connectionData) {
-                console.log("🚀 [Trial] Starting sync for:", connectionData.store_name);
-                await syncShopifyStore({
-                  id: connectionData.id,
-                  store_url: connectionData.store_url,
-                  store_name: connectionData.store_name || connectionData.store_url,
-                });
-              }
-
-              await new Promise((resolve) => setTimeout(resolve, 3000));
-            }
-          } catch (claimError) {
-            console.error("Failed to claim Shopify connection:", claimError);
-            toast.error(t.sync.connectionFailed);
-          }
+          console.log("🔗 [FREE-TRIAL] Claiming Shopify connection after trial activation");
+          
+          setClaimingShopify(true);
+          await claimShopifyConnection(shopifyPending);
+          
+          // ✅ STEP 3: Wait for products to be imported by backend
+          console.log("⏳ [FREE-TRIAL] Waiting for products to be imported...");
+          await waitForProducts(user.id);
+          
+          setClaimingShopify(false);
         }
 
-        setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1500);
+        // Redirect to dashboard
+        setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1000);
       }
     } catch (error) {
-      console.error("💥 Error activating trial:", error);
+      console.error("💥 [FREE-TRIAL] Error:", error);
       toast.error(language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial");
     } finally {
       setLoading(false);
