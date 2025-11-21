@@ -13,6 +13,8 @@ interface ProductImage {
   productTitle?: string;
   analyzing?: boolean;
   result?: any;
+  hasVisionCache?: boolean;
+  visionAttributes?: any;
 }
 
 export default function TestLectureImage() {
@@ -27,14 +29,18 @@ export default function TestLectureImage() {
     try {
       setLoading(true);
       
-      // Récupérer toutes les images avec info produit
+      // Récupérer toutes les images avec info produit et vision_attributes
       const { data: imagesData, error } = await supabase
         .from("product_images")
         .select(`
           id,
           src,
           product_id,
-          shopify_products!inner(title)
+          shopify_products!inner(
+            title,
+            vision_attributes,
+            vision_analyzed
+          )
         `)
         .limit(50);
 
@@ -46,11 +52,14 @@ export default function TestLectureImage() {
         product_id: img.product_id,
         productTitle: img.shopify_products?.title || "Produit sans titre",
         analyzing: false,
-        result: null
+        result: null,
+        hasVisionCache: !!img.shopify_products?.vision_attributes,
+        visionAttributes: img.shopify_products?.vision_attributes
       }));
 
       setImages(formattedImages);
-      toast.success(`${formattedImages.length} images chargées`);
+      const cachedCount = formattedImages.filter(img => img.hasVisionCache).length;
+      toast.success(`${formattedImages.length} images chargées (${cachedCount} déjà analysées)`);
     } catch (error: any) {
       toast.error("Erreur chargement images : " + error.message);
     } finally {
@@ -58,9 +67,21 @@ export default function TestLectureImage() {
     }
   };
 
-  const analyzeImage = async (imageId: string) => {
+  const analyzeImage = async (imageId: string, forceReanalyze = false) => {
     const image = images.find(img => img.id === imageId);
     if (!image) return;
+
+    // Si déjà analysé et pas de forçage, charger depuis cache
+    if (image.hasVisionCache && !forceReanalyze) {
+      setImages(prev => prev.map(img => 
+        img.id === imageId ? { 
+          ...img, 
+          result: { visualAttributes: img.visionAttributes, confidence: 1 } 
+        } : img
+      ));
+      toast.success("Analyse chargée depuis le cache");
+      return;
+    }
 
     // Marquer comme en cours d'analyse
     setImages(prev => prev.map(img => 
@@ -79,12 +100,36 @@ export default function TestLectureImage() {
 
       if (error) throw error;
 
-      // Stocker le résultat
+      // Sauvegarder dans shopify_products.vision_attributes
+      if (data?.visualAttributes) {
+        const { error: updateError } = await supabase
+          .from("shopify_products")
+          .update({ 
+            vision_attributes: data.visualAttributes,
+            vision_analyzed: true,
+            vision_confidence: data.confidence || 1
+          })
+          .eq("id", image.product_id);
+
+        if (updateError) {
+          console.error("Erreur sauvegarde vision_attributes:", updateError);
+        } else {
+          console.log("✅ Vision attributes saved to DB");
+        }
+      }
+
+      // Stocker le résultat dans l'UI
       setImages(prev => prev.map(img => 
-        img.id === imageId ? { ...img, analyzing: false, result: data } : img
+        img.id === imageId ? { 
+          ...img, 
+          analyzing: false, 
+          result: data,
+          hasVisionCache: true,
+          visionAttributes: data?.visualAttributes
+        } : img
       ));
 
-      toast.success("Analyse terminée");
+      toast.success(forceReanalyze ? "Réanalyse terminée et sauvegardée" : "Analyse terminée et sauvegardée");
     } catch (error: any) {
       setImages(prev => prev.map(img => 
         img.id === imageId ? { ...img, analyzing: false, result: { error: error.message } } : img
@@ -139,24 +184,47 @@ export default function TestLectureImage() {
             </CardHeader>
 
             <CardContent className="space-y-3">
-              <Button 
-                onClick={() => analyzeImage(image.id)}
-                disabled={image.analyzing}
-                className="w-full"
-                size="sm"
-              >
-                {image.analyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyse en cours...
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Analyser l'image
-                  </>
+              {image.hasVisionCache && (
+                <Badge variant="secondary" className="w-full justify-center">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Déjà analysé
+                </Badge>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => analyzeImage(image.id, false)}
+                  disabled={image.analyzing}
+                  className="flex-1"
+                  size="sm"
+                  variant={image.hasVisionCache ? "outline" : "default"}
+                >
+                  {image.analyzing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Analyse...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      {image.hasVisionCache ? "Voir" : "Analyser"}
+                    </>
+                  )}
+                </Button>
+                
+                {image.hasVisionCache && (
+                  <Button 
+                    onClick={() => analyzeImage(image.id, true)}
+                    disabled={image.analyzing}
+                    size="sm"
+                    variant="ghost"
+                    className="px-3"
+                    title="Forcer la réanalyse"
+                  >
+                    <Loader2 className="h-4 w-4" />
+                  </Button>
                 )}
-              </Button>
+              </div>
 
               {image.result && !image.result.error && (
                 <div className="space-y-2 p-3 bg-muted rounded-lg text-sm">

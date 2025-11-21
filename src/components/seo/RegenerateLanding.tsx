@@ -173,7 +173,7 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
+   * 🖼️ Analyze Image with AI Vision (with cache)
    -----------------------------*/
   const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
     if (!imageUrl) {
@@ -182,6 +182,24 @@ export default function RegenerateLanding({
     }
 
     try {
+      setProgressMessage("Vérification du cache...");
+      setProgress(22);
+
+      // 🔍 Vérifier si vision_attributes existe déjà dans la DB
+      const { data: productData, error: fetchError } = await supabase
+        .from("shopify_products")
+        .select("vision_attributes, vision_analyzed")
+        .eq("id", product.id)
+        .single();
+
+      if (!fetchError && productData?.vision_attributes && productData?.vision_analyzed) {
+        console.log("[Vision] Using cached analysis from DB");
+        setProgress(25);
+        return JSON.stringify(productData.vision_attributes);
+      }
+
+      // 🆕 Pas de cache, analyser l'image
+      console.log("[Vision] No cache found, analyzing image...");
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
@@ -197,8 +215,26 @@ export default function RegenerateLanding({
         return "";
       }
 
+      // 💾 Sauvegarder les résultats dans la DB
+      if (data?.visualAttributes) {
+        const { error: updateError } = await supabase
+          .from("shopify_products")
+          .update({
+            vision_attributes: data.visualAttributes,
+            vision_analyzed: true,
+            vision_confidence: data.confidence || 1
+          })
+          .eq("id", product.id);
+
+        if (updateError) {
+          console.error("[Vision] Failed to cache analysis:", updateError);
+        } else {
+          console.log("[Vision] Analysis cached to DB successfully");
+        }
+      }
+
       console.log("[Vision] Image analysis completed");
-      return data?.attributes ? JSON.stringify(data.attributes) : "";
+      return data?.visualAttributes ? JSON.stringify(data.visualAttributes) : "";
     } catch (err) {
       console.error("[Vision] Image analysis error:", err);
       return "";
