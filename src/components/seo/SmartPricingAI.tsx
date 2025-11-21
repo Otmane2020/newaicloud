@@ -729,6 +729,12 @@ export function SmartPricingAI() {
         description: "Recherche des prix concurrents et calcul des prix optimaux",
       });
 
+      console.log('📊 [SMART-PRICING] Calling edge function with:', {
+        productIds: productsToAnalyze.map(p => p.id),
+        taxRate,
+        productCount: productsToAnalyze.length
+      });
+
       const { data, error } = await supabase.functions.invoke("analyze-competitor-pricing", {
         body: {
           productIds: productsToAnalyze.map((p) => p.id),
@@ -736,7 +742,13 @@ export function SmartPricingAI() {
         },
       });
 
+      console.log('📊 [SMART-PRICING] Edge function response:', { 
+        data: data ? { success: data.success, resultsCount: data.results?.length } : null, 
+        error 
+      });
+
       if (error) {
+        console.error('❌ [SMART-PRICING] Edge function error:', error);
         if (error.message.includes("not found") || error.message.includes("FunctionsRelayError")) {
           toast.error("❌ Fonction d'analyse non déployée", {
             id: toastId,
@@ -744,11 +756,22 @@ export function SmartPricingAI() {
           });
           return;
         }
+        toast.error(`❌ Erreur: ${error.message}`, { id: toastId });
         throw error;
       }
 
+      if (!data || !data.results) {
+        console.error('❌ [SMART-PRICING] Invalid response structure:', data);
+        toast.error("Erreur: réponse invalide de l'analyse", { 
+          id: toastId,
+          description: "La fonction d'analyse n'a pas retourné de résultats" 
+        });
+        return;
+      }
+
       if (!data.success) {
-        toast.error(`❌ ${data.error}`, { id: toastId });
+        console.error('❌ [SMART-PRICING] Analysis failed:', data.error);
+        toast.error(`❌ ${data.error || "Échec de l'analyse"}`, { id: toastId });
         return;
       }
 
@@ -805,7 +828,12 @@ export function SmartPricingAI() {
         console.error("⚠️ Failed to track usage:", trackError);
       }
 
-      toast.success(`✅ Analyse terminée : ${data.results.length} produit(s)`, {
+      const analyzedCount = successfulResults.length;
+      const failedCount = data.results.length - analyzedCount;
+
+      console.log('✅ [SMART-PRICING] Analysis complete:', { analyzedCount, failedCount });
+
+      toast.success(`✅ Analyse terminée : ${analyzedCount} produit(s) analysé${analyzedCount > 1 ? 's' : ''}${failedCount > 0 ? `, ${failedCount} échec${failedCount > 1 ? 's' : ''}` : ''}`, {
         id: toastId,
         description: "Prix intelligents calculés avec succès (2 optimisations utilisées)",
       });
@@ -813,12 +841,70 @@ export function SmartPricingAI() {
       // Update last analysis time
       setLastAnalysisTime(new Date());
     } catch (error: any) {
-      console.error("Price analysis error:", error);
+      console.error("❌ [SMART-PRICING] Price analysis error:", error);
       toast.error("❌ Erreur lors de l'analyse", {
-        description: error.message || "Une erreur inattendue est survenue",
+        description: error.message || "Une erreur inattendue est survenue. Consultez la console pour plus de détails.",
       });
     } finally {
       setAnalyzingPrices(false);
+    }
+  };
+
+  const testSingleProductAnalysis = async (productId: string) => {
+    try {
+      console.log('🧪 [TEST] Starting test analysis for product:', productId);
+      const toastId = toast.loading("🧪 Test d'analyse en cours...");
+
+      const { data, error } = await supabase.functions.invoke("analyze-competitor-pricing", {
+        body: {
+          productIds: [productId],
+          taxRate,
+          debugImageOnly: false
+        },
+      });
+
+      console.log('🧪 [TEST] Raw response:', { data, error });
+
+      if (error) {
+        console.error('🧪 [TEST] Error:', error);
+        toast.error(`Test échoué: ${error.message}`, { id: toastId });
+        return;
+      }
+
+      if (data?.results?.[0]) {
+        const result = data.results[0];
+        console.log('🧪 [TEST] Analysis result:', result);
+        
+        if (result.error) {
+          toast.error(`Test échoué: ${result.error}`, { id: toastId });
+          return;
+        }
+
+        toast.success(`✅ Test réussi - Smart Price: ${result.smartPrice?.toFixed(2) || 'N/A'}€`, { 
+          id: toastId,
+          description: result.reasoning?.substring(0, 100) 
+        });
+        
+        // Mettre à jour le produit avec les résultats
+        setProducts(prev => prev.map(p => {
+          if (p.id === productId && result) {
+            return {
+              ...p,
+              market_price: result.marketPrice,
+              smart_price: result.smartPrice,
+              ai_reasoning: result.reasoning,
+              competitors: result.competitors || []
+            };
+          }
+          return p;
+        }));
+      } else {
+        console.error('🧪 [TEST] No results in response');
+        toast.error("Test échoué: aucun résultat", { id: toastId });
+      }
+    } catch (error) {
+      console.error('🧪 [TEST] Exception:', error);
+      toast.error(`Test échoué: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   };
 
@@ -2149,6 +2235,25 @@ export function SmartPricingAI() {
                             </TooltipTrigger>
                             <TooltipContent>
                               <p className="text-xs">Analyser le prix avec l'IA</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => testSingleProductAnalysis(product.id)}
+                                className="h-7 px-2 gap-1 hover:bg-blue-600/10 border-blue-300"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                                <span className="text-xs">Test</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Test rapide avec logs détaillés</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
