@@ -899,27 +899,29 @@ export default function Onboarding() {
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow mt-auto"
-                    onClick={handleStartFreeTrial}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === "fr" ? "Activation..." : "Activating..."}
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        {t.onboarding.trial.startTrial}
-                      </>
-                    )}
-                  </Button>
+                  <div className="border-t border-border pt-4 mt-4">
+                    <Button
+                      className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                      onClick={handleStartFreeTrial}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {language === "fr" ? "Activation..." : "Activating..."}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          {t.onboarding.trial.startTrial}
+                        </>
+                      )}
+                    </Button>
 
-                  <p className="text-[10px] text-center text-muted-foreground mt-2">
-                    {t.onboarding.choosePlanAfterTrial}
-                  </p>
+                    <p className="text-[10px] text-center text-muted-foreground mt-2">
+                      {t.onboarding.choosePlanAfterTrial}
+                    </p>
+                  </div>
                 </Card>
               );
             })()}
@@ -1098,10 +1100,10 @@ export default function Onboarding() {
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
                   <Select value={selectedProTier} onValueChange={setSelectedProTier}>
-                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
+                    <SelectTrigger className="w-full bg-background border-2 text-sm font-medium">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
+                    <SelectContent className="bg-popover border-2 border-border z-[100] text-sm">
                       {proPlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
@@ -1109,7 +1111,7 @@ export default function Onboarding() {
                           return priceA - priceB; // Tri croissant: 49€ en premier
                         })
                         .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id}>
+                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer">
                             {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}{" "}
                             - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                           </SelectItem>
@@ -1121,7 +1123,7 @@ export default function Onboarding() {
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center gap-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold text-primary">
+                      <span className="text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1134,7 +1136,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-semibold text-muted-foreground line-through">
+                      <span className="text-3xl md:text-4xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1260,10 +1262,10 @@ export default function Onboarding() {
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-3 sm:mb-4">
                   <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
-                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
+                    <SelectTrigger className="w-full bg-background border-2 text-sm font-medium">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
+                    <SelectContent className="bg-popover border-2 border-border z-[100] text-sm">
                       {enterprisePlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
@@ -1271,7 +1273,7 @@ export default function Onboarding() {
                           return priceA - priceB;
                         })
                         .map((plan) => (
-                          <SelectItem key={plan.id} value={plan.id}>
+                          <SelectItem key={plan.id} value={plan.id} className="cursor-pointer">
                             {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}{" "}
                             - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                           </SelectItem>
@@ -1283,7 +1285,7 @@ export default function Onboarding() {
                 <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center gap-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold text-primary">
+                      <span className="text-4xl md:text-5xl font-bold text-primary">
                         {formatPrice(
                           (billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
@@ -1296,7 +1298,7 @@ export default function Onboarding() {
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-semibold text-muted-foreground line-through">
+                      <span className="text-3xl md:text-4xl font-semibold text-muted-foreground line-through">
                         {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
