@@ -1579,62 +1579,78 @@ UTILISATION DES ICÔNES :
 
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
+    
+    // Find images with technical schemas (dimensions visible)
+    const imagesWithDimensions = images.filter((img: any) => {
+      // Check if this image was analyzed and has visible dimensions
+      const analysis = imageAnalyses.find((a: any) => a.imageUrl === img.src);
+      return analysis && enrichedProduct?.vision_attributes?.visualContext?.hasTechnicalSchema;
+    }).slice(0, 2); // Limit to 2 dimension images
+    
     if (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions) {
       const dims = imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
+      const visualContext = enrichedProduct?.vision_attributes?.visualContext;
       
       const dimensionLabels = detectedLanguage === "en" ? {
-        title: "Technical Dimensions",
-        subtitle: "Detected from product analysis",
-        height: "Height",
-        width: "Width", 
-        depth: "Depth",
-        length: "Length",
-        diameter: "Diameter"
+        title: "Dimensions",
+        subtitle: visualContext?.dimensionSource === "visible" ? "From technical diagram" : "Detected from analysis",
+        height: "H",
+        width: "l", 
+        depth: "P",
+        length: "L",
+        diameter: "Ø"
       } : {
-        title: "Dimensions Techniques",
-        subtitle: "Détectées par analyse du produit",
-        height: "Hauteur",
-        width: "Largeur",
-        depth: "Profondeur", 
-        length: "Longueur",
-        diameter: "Diamètre"
+        title: "Dimensions",
+        subtitle: visualContext?.dimensionSource === "visible" ? "Schéma technique" : "Détectées par analyse",
+        height: "H",
+        width: "l",
+        depth: "P", 
+        length: "L",
+        diameter: "Ø"
       };
       
-      const dimArray = [];
-      if (dims.height) dimArray.push({ label: dimensionLabels.height, value: `${dims.height} ${dims.heightUnit || 'cm'}` });
-      if (dims.width) dimArray.push({ label: dimensionLabels.width, value: `${dims.width} ${dims.widthUnit || 'cm'}` });
-      if (dims.depth) dimArray.push({ label: dimensionLabels.depth, value: `${dims.depth} ${dims.depthUnit || 'cm'}` });
-      if (dims.length) dimArray.push({ label: dimensionLabels.length, value: `${dims.length} ${dims.lengthUnit || 'cm'}` });
-      if (dims.diameter) dimArray.push({ label: dimensionLabels.diameter, value: `${dims.diameter} ${dims.diameterUnit || 'cm'}` });
+      // Build compact dimension string (e.g., "H 87 cm × L 270 cm × P 196 cm × l 96 cm")
+      const dimParts = [];
+      if (dims.height) dimParts.push(`${dimensionLabels.height} ${dims.height} ${dims.heightUnit || 'cm'}`);
+      if (dims.length) dimParts.push(`${dimensionLabels.length} ${dims.length} ${dims.lengthUnit || 'cm'}`);
+      if (dims.depth) dimParts.push(`${dimensionLabels.depth} ${dims.depth} ${dims.depthUnit || 'cm'}`);
+      if (dims.width) dimParts.push(`${dimensionLabels.width} ${dims.width} ${dims.widthUnit || 'cm'}`);
+      if (dims.diameter) dimParts.push(`${dimensionLabels.diameter} ${dims.diameter} ${dims.diameterUnit || 'cm'}`);
       
-      if (dimArray.length > 0) {
+      if (dimParts.length > 0) {
+        const dimensionText = dimParts.join(' × ');
+        
         dimensionsSection = `
-    <!-- Dimensions Section -->
-    <section class="py-12 md:py-16" style="background-color: hsl(${designTokens.surface})">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold mb-2" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h2>
-          <p class="text-sm md:text-base opacity-70" style="color: hsl(${designTokens.text})">${dimensionLabels.subtitle}</p>
-        </div>
-        
-        <!-- Mobile: Cards -->
-        <div class="block md:hidden space-y-3">
-          ${dimArray.map(d => `
-          <div class="bg-white rounded-lg p-4 shadow-md" style="border-left: 4px solid hsl(${designTokens.primary})">
-            <div class="font-semibold text-sm mb-1" style="color: hsl(${designTokens.primary})">${d.label}</div>
-            <div class="text-2xl font-bold" style="color: hsl(${designTokens.text})">${d.value}</div>
+    <!-- Dimensions Section - Compact & Discrete -->
+    <section class="py-8" style="background-color: hsl(${designTokens.surface})">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 md:p-6 shadow-sm border border-gray-200">
+          
+          <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-start md:items-center">
+            
+            ${imagesWithDimensions.length > 0 ? `
+            <!-- Dimension Images (compact) -->
+            <div class="flex gap-2 shrink-0">
+              ${imagesWithDimensions.map((img: any) => `
+              <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden border border-gray-200">
+                <img src="${img.src}" alt="${img.alt_text || 'Dimensions'}" 
+                     class="w-full h-full object-cover" 
+                     loading="lazy" />
+              </div>
+              `).join('')}
+            </div>
+            ` : ''}
+            
+            <!-- Dimension Text (compact) -->
+            <div class="flex-1">
+              <h3 class="text-sm font-medium mb-1 uppercase tracking-wide opacity-70" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h3>
+              <p class="text-lg md:text-xl font-semibold" style="color: hsl(${designTokens.text})">${dimensionText}</p>
+              ${visualContext?.confidenceReason ? `
+              <p class="text-xs mt-1 opacity-60" style="color: hsl(${designTokens.text})">${dimensionLabels.subtitle}</p>
+              ` : ''}
+            </div>
+            
           </div>
-          `).join('')}
-        </div>
-        
-        <!-- Desktop: Grid -->
-        <div class="hidden md:grid grid-cols-2 lg:grid-cols-${Math.min(dimArray.length, 4)} gap-6">
-          ${dimArray.map(d => `
-          <div class="bg-white rounded-xl p-6 shadow-lg text-center hover:shadow-xl transition-shadow duration-300" style="border-top: 3px solid hsl(${designTokens.primary})">
-            <div class="text-sm font-medium mb-2 uppercase tracking-wide" style="color: hsl(${designTokens.primary})">${d.label}</div>
-            <div class="text-3xl lg:text-4xl font-bold" style="color: hsl(${designTokens.text})">${d.value}</div>
-          </div>
-          `).join('')}
         </div>
       </div>
     </section>`;
