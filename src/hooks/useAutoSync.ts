@@ -15,6 +15,17 @@ export const useAutoSync = (userId: string | undefined) => {
 
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
 
+    // Check if there's a pending sync from onboarding page
+    const pendingSync = sessionStorage.getItem('pending_sync');
+    if (pendingSync && window.location.pathname === '/dashboard') {
+      console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
+      sessionStorage.removeItem('pending_sync');
+      startSync(pendingSync);
+      setTimeout(() => {
+        endSync();
+      }, 5000);
+    }
+
     // Écouter les insertions ET updates dans shopify_connections
     const channel = supabase
       .channel('shopify-connection-changes')
@@ -47,6 +58,14 @@ export const useAutoSync = (userId: string | undefined) => {
           // Backend handles actual import via trigger-auto-sync
           if (connection.connection_type === 'oauth') {
             console.log('⏭️ [AutoSync] OAuth connection detected - backend will handle import');
+            
+            // Si on est sur /onboarding, stocker pour afficher après redirection
+            if (window.location.pathname === '/onboarding') {
+              console.log('⏭️ [AutoSync] On onboarding page, storing sync for dashboard display');
+              const storeName = connection.store_name || connection.store_url;
+              sessionStorage.setItem('pending_sync', storeName);
+              return;
+            }
             
             const storeName = connection.store_name || connection.store_url;
             startSync(storeName);
