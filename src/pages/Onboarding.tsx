@@ -469,84 +469,10 @@ export default function Onboarding() {
         console.log("✅ [CLAIM-SHOPIFY] Shopify connection claimed successfully");
         toast.success(t.sync.shopifyConnected);
         
-        const importToastId = toast.loading("Importation de vos produits en cours...", { 
-          duration: Infinity 
+        // Backend trigger-auto-sync will handle the import
+        toast.info("Synchronisation automatique de vos produits en cours...", {
+          duration: 5000,
         });
-
-        // Wait a moment for the connection to be fully established
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Trigger automatic synchronization and wait for products
-        try {
-          const { data: connectionData } = await supabase
-            .from("shopify_connections")
-            .select("id, store_url, store_name")
-            .eq("user_id", user?.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
-
-          if (connectionData) {
-            console.log("🔄 [CLAIM-SHOPIFY] Triggering automatic sync for store:", connectionData.id);
-            
-            // Start sync
-            const syncPromise = syncShopifyStore({
-              id: connectionData.id,
-              store_url: connectionData.store_url,
-              store_name: connectionData.store_name || connectionData.store_url,
-            });
-            
-            // Wait for products to appear (max 15 seconds)
-            let productsFound = false;
-            let attempts = 0;
-            const maxAttempts = 15;
-            
-            while (!productsFound && attempts < maxAttempts) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-              attempts++;
-              
-              const { data: products, count } = await supabase
-                .from("shopify_products")
-                .select("id", { count: "exact", head: true })
-                .eq("seller_id", user?.id)
-                .limit(1);
-              
-              if (count && count > 0) {
-                productsFound = true;
-                console.log(`✅ [CLAIM-SHOPIFY] Products found after ${attempts} seconds:`, count);
-                toast.dismiss(importToastId);
-                toast.success(`${count} produit${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''} !`, {
-                  duration: 3000,
-                });
-              } else {
-                console.log(`⏳ [CLAIM-SHOPIFY] Waiting for products... (${attempts}/${maxAttempts})`);
-              }
-            }
-            
-            if (!productsFound) {
-              console.warn("⚠️ [CLAIM-SHOPIFY] No products found after timeout");
-              toast.dismiss(importToastId);
-              toast.info("Import en cours... Les produits apparaîtront dans quelques instants.", {
-                duration: 5000,
-              });
-            }
-            
-            // Wait for sync promise to complete or timeout
-            await Promise.race([
-              syncPromise,
-              new Promise((resolve) => setTimeout(resolve, 2000))
-            ]).catch((syncError) => {
-              console.error("❌ [CLAIM-SHOPIFY] Sync error:", syncError);
-            });
-            
-          }
-        } catch (syncError) {
-          console.error("❌ [CLAIM-SHOPIFY] Error during sync:", syncError);
-          toast.dismiss(importToastId);
-          toast.error("Erreur lors de l'importation", {
-            description: "Vous pouvez réessayer depuis le tableau de bord.",
-          });
-        }
       } else {
         console.error("❌ [CLAIM-SHOPIFY] Claim failed:", claimData);
 

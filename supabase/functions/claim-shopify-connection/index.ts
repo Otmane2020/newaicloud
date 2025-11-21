@@ -284,18 +284,16 @@ serve(async (req) => {
       userId: user.id
     });
 
-    // 🆕 Déclencher l'import automatique des 10 premiers produits
-    console.log("[CLAIM-SHOPIFY] 🚀 Triggering auto-import of first 10 products", {
-      shopUrl: pending.shop_url,
-      accessToken: pending.access_token ? "***present***" : "missing"
+    // 🆕 Déclencher la synchronisation automatique complète via trigger-auto-sync
+    console.log("[CLAIM-SHOPIFY] 🚀 Triggering automatic sync for user", {
+      userId: user.id,
+      shopUrl: pending.shop_url
     });
 
     try {
-      const shopName = pending.shop_url.replace('.myshopify.com', '');
-      
-      // Appeler la fonction import-products de manière asynchrone
-      const functionUrl = `${supabaseUrl}/functions/v1/import-products`;
-      const importResponse = await fetch(
+      // Appeler trigger-auto-sync qui gère toute la logique d'import
+      const functionUrl = `${supabaseUrl}/functions/v1/trigger-auto-sync`;
+      const syncResponse = await fetch(
         functionUrl,
         {
           method: 'POST',
@@ -304,23 +302,21 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            shopName: shopName,
-            autoImport: true,
-            maxProducts: 10,
+            user_id: user.id,
           }),
         }
       );
 
-      if (!importResponse.ok) {
-        const errorText = await importResponse.text();
-        console.error("[CLAIM-SHOPIFY] ❌ Auto-import failed:", errorText);
+      if (!syncResponse.ok) {
+        const errorText = await syncResponse.text();
+        console.error("[CLAIM-SHOPIFY] ❌ Auto-sync trigger failed:", errorText);
       } else {
-        const importData = await importResponse.json();
-        console.log("[CLAIM-SHOPIFY] ✅ Auto-import initiated successfully:", importData);
+        const syncData = await syncResponse.json();
+        console.log("[CLAIM-SHOPIFY] ✅ Auto-sync triggered successfully:", syncData);
       }
-    } catch (importError) {
-      console.error("[CLAIM-SHOPIFY] ⚠️ Error triggering auto-import:", importError);
-      // Ne pas faire échouer la connexion si l'import échoue
+    } catch (syncError) {
+      console.error("[CLAIM-SHOPIFY] ⚠️ Error triggering auto-sync:", syncError);
+      // Ne pas faire échouer la connexion si la sync échoue
     }
 
     return new Response(

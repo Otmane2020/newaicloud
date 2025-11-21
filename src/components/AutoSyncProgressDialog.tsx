@@ -8,7 +8,7 @@ export function AutoSyncProgressDialog() {
   const location = useLocation();
   
   // Ne pas afficher le dialog sur la page onboarding
-  const shouldShow = isSyncing && location.pathname !== '/onboarding';
+  const shouldShow = isSyncing;
 
   const getIcon = (type: string) => {
     switch (type) {
