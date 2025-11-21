@@ -139,110 +139,9 @@ export default function ShopifyConnectionsList() {
     }
   };
   
-  // Check if just connected a store and show import dialog
-  useEffect(() => {
-    const justConnected = localStorage.getItem('shopify_just_connected');
-    const storeName = localStorage.getItem('shopify_store_name');
-    
-    if (justConnected === 'true' && storeName && connections.length > 0) {
-      // Find the newly connected store
-      const newStore = connections.find(c => c.store_name === storeName);
-      if (newStore) {
-        setStoreToImport(newStore);
-        setShowImportConfirm(true);
-        
-        // Clear flags
-        localStorage.removeItem('shopify_just_connected');
-        localStorage.removeItem('shopify_store_name');
-      }
-    }
-  }, [connections]);
+  // Removed manual import logic - now handled by useAutoSync
 
-  // Poll import_jobs table for real-time progress updates
-  useEffect(() => {
-    if (!importJobId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const { data: job, error } = await supabase
-          .from('import_jobs')
-          .select('*')
-          .eq('id', importJobId)
-          .single();
-
-        if (error) {
-          console.error('Error polling job:', error);
-          return;
-        }
-
-        if (job) {
-          // Update progress
-          const totalPages = job.total_pages || 1;
-          const currentPage = job.current_page || 0;
-          const productsProcessed = job.products_processed || 0;
-          const percentage = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
-
-          setImportProgress({
-            currentPage,
-            totalPages,
-            productsProcessed,
-            percentage
-          });
-
-          // Check if job is complete
-          if (job.status === 'completed' || job.status === 'failed' || job.status === 'quota_reached') {
-            clearInterval(pollInterval);
-            setImportingStoreId(null);
-            
-            if (job.status === 'completed') {
-              setImportPhase('complete');
-              setProductsImported(job.products_processed || 0);
-              toast.success('Import terminé !', {
-                description: `${job.products_processed} produits importés avec succès`
-              });
-            } else if (job.status === 'quota_reached') {
-              setLimitReached(true);
-              setProductsImported(job.products_processed || 0);
-              toast.warning('Quota atteint', {
-                description: 'Certains produits n\'ont pas été importés. Upgradez pour continuer.'
-              });
-            } else if (job.status === 'failed') {
-              toast.error('Erreur d\'import', {
-                description: job.error_message || 'Une erreur est survenue'
-              });
-              setShowProgressDialog(false);
-            }
-            
-            setImportJobId(null);
-            checkUsageLimits(); // Refresh usage limits
-          }
-        }
-      } catch (error) {
-        console.error('Error in polling:', error);
-      }
-    }, 1000); // Poll every second
-
-    return () => clearInterval(pollInterval);
-  }, [importJobId]);
-
-  const checkUsageLimits = async () => {
-    try {
-      // Get current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers = session?.access_token ? {
-        Authorization: `Bearer ${session.access_token}`
-      } : {};
-      
-      const { data, error } = await supabase.functions.invoke('check-usage-limits', {
-        headers
-      });
-      if (!error && data) {
-        setUsageLimits(data);
-      }
-    } catch (error) {
-      console.error('Error checking usage limits:', error);
-    }
-  };
+  // Removed checkUsageLimits - not needed with new auto-sync system
 
   const loadConnections = async () => {
     try {
@@ -253,21 +152,6 @@ export default function ShopifyConnectionsList() {
 
       if (error) throw error;
       setConnections(data || []);
-      
-      // Load product counts for each store
-      if (data && data.length > 0) {
-        const counts: Record<string, number> = {};
-        await Promise.all(
-          data.map(async (store) => {
-            const { count } = await supabase
-              .from('shopify_products')
-              .select('*', { count: 'exact', head: true })
-              .eq('store_id', store.id);
-            counts[store.id] = count || 0;
-          })
-        );
-        setStoreProductCounts(counts);
-      }
     } catch (error) {
       console.error('Error loading connections:', error);
       toast.error(t.common.error);
@@ -276,33 +160,7 @@ export default function ShopifyConnectionsList() {
     }
   };
 
-  const openDeleteDialog = (id: string) => {
-    setStoreToDelete(id);
-    setShowDeleteDialog(true);
-  };
-
-  const deleteConnection = async () => {
-    if (!storeToDelete) return;
-
-    try {
-      // Use edge function for async batch deletion to avoid timeout
-      const { data, error } = await supabase.functions.invoke('delete-shopify-connection', {
-        body: { storeId: storeToDelete }
-      });
-
-      if (error) throw error;
-      
-      console.log('✅ Store deleted:', data);
-      
-      toast.success('Boutique déconnectée avec succès');
-      loadConnections();
-      setShowDeleteDialog(false);
-      setStoreToDelete(null);
-    } catch (error) {
-      console.error('Error deleting connection:', error);
-      toast.error(t.common.error);
-    }
-  };
+  // Removed delete functions - not needed in connections list
 
   const openEditNameDialog = (store: ShopifyConnection) => {
     setStoreToEdit(store);
@@ -723,276 +581,9 @@ export default function ShopifyConnectionsList() {
     }
   };
 
-  // Poll import job status
-  useEffect(() => {
-    if (!importJobId || !showProgressDialog) return;
-    
-    const pollInterval = setInterval(async () => {
-      const { data: job } = await supabase
-        .from('import_jobs')
-        .select('*')
-        .eq('id', importJobId)
-        .single();
-      
-      if (job) {
-        const progress = Math.min(
-          ((job.current_page || 0) / Math.max(job.total_pages || 1, 1)) * 100,
-          100
-        );
-        
-        setImportProgress({
-          percentage: progress,
-          currentPage: job.current_page || 0,
-          totalPages: job.total_pages || 0,
-          productsProcessed: job.products_processed || 0,
-        });
-        
-        setProductsImported(job.products_processed || 0);
-        
-        // ✅ Récupérer le nombre de pages importées depuis la DB
-        if (job.store_id) {
-          const { count } = await supabase
-            .from('shopify_pages')
-            .select('*', { count: 'exact', head: true })
-            .eq('store_id', job.store_id);
-          
-          if (count !== null) {
-            setPagesImported(count);
-          }
-        }
-        
-        // Check if completed or quota reached
-        if (job.status === 'completed') {
-          setImportPhase('complete');
-          clearInterval(pollInterval);
-          toast.success('Import completed!');
-          loadConnections();
-        } else if (job.status === 'quota_reached') {
-          setLimitReached(true);
-          setImportPhase('complete');
-          // Save the store for resuming after upgrade
-          if (job.store_id) {
-            const store = connections.find(c => c.id === job.store_id);
-            if (store) {
-              setPendingImportStore(store);
-            }
-          }
-          clearInterval(pollInterval);
-        } else if (job.status === 'failed') {
-          clearInterval(pollInterval);
-          setShowProgressDialog(false);
-          toast.error(job.error_message || 'Error during import');
-        }
-      }
-    }, 500);
-    
-    return () => clearInterval(pollInterval);
-  }, [importJobId, showProgressDialog]);
+  // Removed manual import polling - now handled by useAutoSync
 
-  const handleUpgradeFromImport = () => {
-    setShowProgressDialog(false);
-    toast.error('Limite de produits atteinte', {
-      description: 'Upgradez votre plan pour continuer l\'importation.',
-      action: {
-        label: 'Voir les plans',
-        onClick: () => navigate('/subscription')
-      }
-    });
-  };
-
-  const handleUpgradeComplete = async () => {
-    // Wait a bit for the subscription to be fully updated
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Refresh limits
-    await checkUsageLimits();
-    
-    toast.success('Plan upgraded! Resuming import...', {
-      description: 'Importing remaining products from your store'
-    });
-    
-    // Resume import with the pending store
-    if (pendingImportStore) {
-      await importAllContent(pendingImportStore);
-      setPendingImportStore(null);
-    }
-  };
-
-  const importAllContent = async (store: ShopifyConnection) => {
-    try {
-      setImportingStoreId(store.id);
-      
-      // Check usage limits first
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers = session?.access_token ? {
-        Authorization: `Bearer ${session.access_token}`
-      } : {};
-      
-      const { data: limitsData, error: limitsError } = await supabase.functions.invoke(
-        'check-usage-limits',
-        { headers }
-      );
-      
-      if (limitsError) {
-        toast.error('Error checking usage limits');
-        return;
-      }
-      
-      setUsageLimits(limitsData);
-      const currentProducts = limitsData?.usage?.products_count || 0;
-      const maxProductsAllowed = limitsData?.limits?.max_products || 10;
-      const availableSlots = Math.max(0, maxProductsAllowed - currentProducts);
-      
-      setMaxProducts(maxProductsAllowed);
-      
-      // If no slots available, navigate to subscription page
-      if (availableSlots === 0) {
-        setPendingImportStore(store);
-        toast.error('Limite de produits atteinte', {
-          description: 'Upgradez votre plan pour importer plus de produits.',
-          action: {
-            label: 'Voir les plans',
-            onClick: () => navigate('/subscription')
-          }
-        });
-        setImportingStoreId(null);
-        return;
-      }
-      
-      // Show warning if close to limit
-      if (availableSlots <= 10) {
-        toast.warning(`Only ${availableSlots} products left to import`);
-      }
-
-      // 🔄 Load full store data including credentials
-      const { data: fullStore, error: loadError } = await supabase
-        .from('shopify_connections')
-        .select('*')
-        .eq('id', store.id)
-        .single();
-
-      if (loadError || !fullStore) {
-        throw new Error('Unable to load store credentials');
-      }
-
-      // Clean the shop name
-      let cleanShopName = (fullStore.store_url || '')
-        .replace(/^https?:\/\//, '')
-        .replace(/\.myshopify\.com.*$/, '')
-        .replace(/\/$/, '');
-
-      // Prepare request body with credentials
-      const requestBody: any = {
-        storeId: fullStore.id,
-        shopName: cleanShopName,
-        apiSecret: fullStore.access_token,
-      };
-
-      // Add API key for manual connections
-      if (fullStore.connection_type === 'manual' && fullStore.api_key) {
-        requestBody.apiKey = fullStore.api_key;
-      }
-
-      // Reset progress state
-      setImportProgress({ percentage: 0, currentPage: 0, totalPages: 0, productsProcessed: 0 });
-      setProductsImported(0);
-      setPagesImported(0);
-      setArticlesImported(0);
-      setImportedItems([]);
-      setImportPhase('products');
-      setLimitReached(false);
-      setTotalShopifyProducts(0);
-      setShowProgressDialog(true);
-
-      const globalToastId = toast.loading('Import global en cours...');
-
-      // 1. Import Products
-      const { data: importData, error } = await supabase.functions.invoke('import-products', {
-        body: requestBody
-      });
-
-      if (error) throw error;
-      
-      // Set total products count from Shopify
-      if (importData?.totalShopifyProducts) {
-        setTotalShopifyProducts(importData.totalShopifyProducts);
-      }
-      
-      // Set job ID to start polling
-      if (importData?.jobId) {
-        setImportJobId(importData.jobId);
-      }
-      
-      // 2. Import Articles
-      try {
-        const { data: articlesData, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
-          body: { 
-            storeId: fullStore.id,
-            shopName: cleanShopName,
-            authToken: fullStore.access_token
-          }
-        });
-        
-        if (!articlesError && articlesData) {
-          const count = articlesData.count || 0;
-          setArticlesImported(count);
-        }
-      } catch (articleError) {
-        console.error('❌ Error importing articles:', articleError);
-      }
-
-      // 3. Import Pages
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: pagesData } = await supabase.functions.invoke('import-shopify-pages', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: {
-              storeId: fullStore.id,
-              shopName: cleanShopName,
-              apiSecret: fullStore.access_token,
-            },
-          });
-          
-          if (pagesData) {
-            setPagesImported(pagesData.imported || 0);
-          }
-        }
-      } catch (pageError) {
-        console.error('❌ Error importing pages:', pageError);
-      }
-
-      // 4. Import Collections
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await supabase.functions.invoke('import-shopify-collections', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: {
-              storeId: fullStore.id,
-              shopName: cleanShopName,
-              apiSecret: fullStore.access_token,
-            },
-          });
-        }
-      } catch (collectionError) {
-        console.error('❌ Error importing collections:', collectionError);
-      }
-
-      toast.success('Import global terminé !', { id: globalToastId });
-      
-    } catch (error: any) {
-      console.error('Error importing content:', error);
-      toast.error(error.message || 'Error during import');
-      setShowProgressDialog(false);
-    } finally {
-      setImportingStoreId(null);
-    }
-  };
+  // Removed handleUpgradeFromImport and handleUpgradeComplete - not needed with auto-sync
 
   if (loading) {
     return (
@@ -1047,7 +638,7 @@ export default function ShopifyConnectionsList() {
                         )}
                       </Badge>
                       <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        {storeProductCounts[store.id] || 0} produits importés
+                        {/* Product count removed - not needed */}
                       </Badge>
                     </div>
                     
@@ -1113,14 +704,7 @@ export default function ShopifyConnectionsList() {
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openDeleteDialog(store.id)}
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {/* Delete button removed */}
                 </div>
               </div>
             </CardContent>
@@ -1231,58 +815,7 @@ export default function ShopifyConnectionsList() {
         totalImported={totalSyncImported}
       />
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-destructive/10 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-destructive" />
-              </div>
-              <AlertDialogTitle className="text-xl">Delete Connection</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="space-y-4 pt-2">
-              <p className="text-base">
-                Are you sure you want to delete this Shopify connection?
-              </p>
-              
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p className="font-medium text-foreground text-sm">The following will be deleted:</p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="w-4 h-4 text-muted-foreground" />
-                    <span>All imported products</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span>All Shopify pages</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                    <span>All associated data</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <p className="text-sm font-medium text-destructive flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  This action is irreversible
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="flex-1">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={deleteConnection} 
-              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete dialog removed - managed in settings */}
     </>
   );
 }
