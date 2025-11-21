@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Loader2, Eye, Ruler, Sparkles, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Eye, Ruler, Sparkles, FileText, AlertCircle, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProductImage {
   id: string;
@@ -23,10 +24,38 @@ interface ProductImage {
 export default function TestLectureImage() {
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   useEffect(() => {
-    loadAllImages();
+    checkAuthAndLoadImages();
   }, []);
+
+  const checkAuthAndLoadImages = async () => {
+    try {
+      setLoading(true);
+      
+      // Vérifier l'authentification
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log("❌ User not authenticated:", authError);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      setUserEmail(user.email || "");
+      console.log("✅ User authenticated:", user.email);
+      
+      await loadAllImages();
+    } catch (error: any) {
+      console.error("Error checking auth:", error);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
 
   const loadAllImages = async () => {
     try {
@@ -236,8 +265,21 @@ export default function TestLectureImage() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Chargement des images...</span>
+          <span className="ml-2">Vérification authentification...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Vous devez être authentifié pour accéder à cette page. Veuillez vous connecter.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -249,9 +291,15 @@ export default function TestLectureImage() {
         <p className="text-muted-foreground">
           Cliquez sur une image pour l'analyser avec Google Gemini et détecter les dimensions
         </p>
+        {userEmail && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Connecté en tant que: {userEmail}
+          </p>
+        )}
         <div className="mt-2 flex items-center gap-2">
           <Badge variant="outline">{images.length} images chargées</Badge>
-          <Button variant="ghost" size="sm" onClick={loadAllImages}>
+          <Button variant="ghost" size="sm" onClick={() => checkAuthAndLoadImages()}>
+            <RefreshCw className="h-4 w-4 mr-1" />
             Recharger
           </Button>
         </div>
@@ -472,8 +520,23 @@ export default function TestLectureImage() {
 
       {images.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Aucune image trouvée dans votre projet</p>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground" />
+              <div>
+                <p className="text-lg font-medium">Aucune image trouvée</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Vous devez d'abord importer vos produits Shopify pour voir les images ici.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Allez dans <strong>Intégration → Import Shopify</strong> pour importer vos produits.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => checkAuthAndLoadImages()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Réessayer
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
