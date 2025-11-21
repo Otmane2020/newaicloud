@@ -65,6 +65,65 @@ export default function Onboarding() {
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const { syncShopifyStore } = useShopifySync();
 
+  // ✅ NEW: Auto-detect and claim Shopify if user has active subscription
+  useEffect(() => {
+    const autoClaimIfNeeded = async () => {
+      if (!user) return;
+      
+      const shopifyPending = searchParams.get("shopify_pending");
+      if (!shopifyPending) return;
+      
+      console.log("🔍 [AUTO-CLAIM] Checking if auto-claim needed", { shopifyPending });
+      
+      try {
+        // Check if user already has an active subscription
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("subscription_status, current_plan_id")
+          .eq("id", user.id)
+          .single();
+        
+        console.log("📋 [AUTO-CLAIM] Profile status:", profile);
+        
+        if (profile?.subscription_status === "active" || profile?.subscription_status === "trialing") {
+          console.log("✅ [AUTO-CLAIM] User has active subscription, auto-claiming Shopify");
+          
+          // Check if already has a Shopify connection
+          const { data: existingConnection } = await supabase
+            .from("shopify_connections")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          if (existingConnection) {
+            console.log("⚠️ [AUTO-CLAIM] Connection already exists, redirecting to dashboard");
+            navigate("/dashboard?show_shopify_prompt=true");
+            return;
+          }
+          
+          // Auto-claim and sync
+          setClaimingShopify(true);
+          toast.info("Connexion de votre boutique Shopify...", { duration: 3000 });
+          
+          await claimShopifyConnection(shopifyPending);
+          
+          toast.success("Boutique connectée ! Importation des produits en cours...", { duration: 5000 });
+          
+          // Wait a bit for sync to start, then redirect
+          setTimeout(() => {
+            navigate("/dashboard?show_shopify_prompt=true");
+          }, 3000);
+        }
+      } catch (error) {
+        console.error("❌ [AUTO-CLAIM] Error:", error);
+      } finally {
+        setClaimingShopify(false);
+      }
+    };
+    
+    autoClaimIfNeeded();
+  }, [user, searchParams]);
+
   useEffect(() => {
     if (!user) {
       // Préserver le token shopify_pending si présent
@@ -113,6 +172,13 @@ export default function Onboarding() {
 
       console.log("📋 Profile data:", profile);
 
+      // If has shopify_pending, let the auto-claim useEffect handle redirection
+      const shopifyPending = searchParams.get("shopify_pending");
+      if (shopifyPending && (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")) {
+        console.log("⏸️ Has shopify_pending and active subscription, letting auto-claim handle it");
+        return;
+      }
+
       // If user has active subscription and onboarding is completed, redirect to dashboard
       if (profile?.subscription_status === "active" && profile?.onboarding_completed) {
         console.log("✅ User already has active subscription, redirecting to dashboard");
@@ -136,7 +202,8 @@ export default function Onboarding() {
       });
 
       if (subData?.subscribed) {
-        console.log("✅ Active subscription found in Stripe, redirecting to dashboard");
+        console.log("✅ Active subscription found in Stripe");
+        
         // Update profile
         await supabase
           .from("profiles")
@@ -147,7 +214,10 @@ export default function Onboarding() {
           })
           .eq("id", user?.id);
 
-        navigate("/dashboard");
+        // Only redirect if no shopify_pending (otherwise let auto-claim handle it)
+        if (!shopifyPending) {
+          navigate("/dashboard");
+        }
       }
     } catch (error) {
       console.error("Error checking existing subscription:", error);
@@ -322,23 +392,39 @@ export default function Onboarding() {
   };
 
   const claimShopifyConnection = async (pendingToken: string) => {
-    console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify connection before redirect", { pendingToken });
+    console.log("🔗 [CLAIM-SHOPIFY] Starting claim process", { pendingToken });
 
     try {
+      // Check if connection already exists
+      const { data: existingConnection } = await supabase
+        .from("shopify_connections")
+        .select("id, store_name")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+      
+      if (existingConnection) {
+        console.log("⚠️ [CLAIM-SHOPIFY] Connection already exists:", existingConnection);
+        toast.info("Boutique déjà connectée", {
+          description: `${existingConnection.store_name} est déjà liée à votre compte.`,
+        });
+        return;
+      }
+
       // Get current session for authorization
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        console.error("[CHECK-SUBSCRIPTION] No session access token available");
+        console.error("[CLAIM-SHOPIFY] No session access token available");
         toast.error(t.sync.connectionFailed, {
-          description: "Please log in again to continue.",
+          description: "Veuillez vous reconnecter pour continuer.",
         });
         return;
       }
 
-      console.log("[CHECK-SUBSCRIPTION] Calling claim function with auth token");
+      console.log("[CLAIM-SHOPIFY] Calling claim function with auth token");
+      toast.loading("Connexion à votre boutique Shopify...", { id: "claim-shopify" });
 
       const { data: claimData, error: claimError } = await supabase.functions.invoke("claim-shopify-connection", {
         body: { pendingToken },
@@ -347,16 +433,16 @@ export default function Onboarding() {
         },
       });
 
-      console.log("🔗 [CHECK-SUBSCRIPTION] Claim response:", { claimData, claimError });
+      toast.dismiss("claim-shopify");
+      console.log("🔗 [CLAIM-SHOPIFY] Claim response:", { claimData, claimError });
 
-      // Phase 1B: Vérifier si le token est expiré AVANT d'essayer
+      // Handle token expiration errors
       if (claimError || claimData?.error === "Token expired" || claimData?.error === "Invalid or expired token") {
-        console.error("❌ [CHECK-SUBSCRIPTION] Token expired or invalid:", claimData);
+        console.error("❌ [CLAIM-SHOPIFY] Token expired or invalid:", claimData);
 
-        // Check if it's a token expiration error
         const errorMessage = claimError?.message || claimData?.error || "";
 
-        // Log l'échec dans integration_failures
+        // Log failure
         await supabase.from("integration_failures").insert({
           user_id: user?.id,
           integration_type: "shopify",
@@ -366,7 +452,7 @@ export default function Onboarding() {
         });
 
         if (errorMessage.includes("expired") || errorMessage.includes("Token expired")) {
-          toast.error("Votre connexion Shopify a expiré (24h). Veuillez réinstaller l'application Shopify.", {
+          toast.error("Votre connexion Shopify a expiré (24h). Veuillez réinstaller l'application.", {
             duration: 10000,
             action: {
               label: "Réinstaller",
@@ -375,7 +461,7 @@ export default function Onboarding() {
           });
         } else {
           toast.error(t.sync.connectionFailed, {
-            description: errorMessage || "Please try again or contact support.",
+            description: errorMessage || "Veuillez réessayer ou contacter le support.",
           });
         }
 
@@ -383,9 +469,9 @@ export default function Onboarding() {
       }
 
       if (claimError) {
-        console.error("❌ [CHECK-SUBSCRIPTION] Shopify claim error:", claimError);
+        console.error("❌ [CLAIM-SHOPIFY] Shopify claim error:", claimError);
 
-        // Log l'échec
+        // Log failure
         await supabase.from("integration_failures").insert({
           user_id: user?.id,
           integration_type: "shopify",
@@ -398,11 +484,14 @@ export default function Onboarding() {
       }
 
       if (claimData?.success) {
-        console.log("✅ [CHECK-SUBSCRIPTION] Shopify connection claimed successfully");
+        console.log("✅ [CLAIM-SHOPIFY] Shopify connection claimed successfully");
         toast.success(t.sync.shopifyConnected);
-        toast.info(t.sync.autoImport, { duration: 5000 });
+        toast.info("Importation automatique des produits démarrée...", { duration: 5000 });
 
-        // Trigger automatic synchronization for all plans
+        // Wait a moment for the connection to be fully established
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Trigger automatic synchronization
         try {
           const { data: connectionData } = await supabase
             .from("shopify_connections")
@@ -413,23 +502,30 @@ export default function Onboarding() {
             .single();
 
           if (connectionData) {
-            console.log("🔄 Triggering automatic sync for store:", connectionData.id);
-            await syncShopifyStore({
+            console.log("🔄 [CLAIM-SHOPIFY] Triggering automatic sync for store:", connectionData.id);
+            
+            // Start sync in background
+            syncShopifyStore({
               id: connectionData.id,
               store_url: connectionData.store_url,
               store_name: connectionData.store_name || connectionData.store_url,
+            }).catch((syncError) => {
+              console.error("❌ [CLAIM-SHOPIFY] Sync error:", syncError);
+              toast.error("Erreur lors de l'importation des produits", {
+                description: "Vous pouvez réessayer depuis le tableau de bord.",
+              });
             });
+            
+            // Wait a bit for sync to start
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           }
         } catch (syncError) {
-          console.error("❌ Error triggering auto-sync:", syncError);
+          console.error("❌ [CLAIM-SHOPIFY] Error fetching connection data:", syncError);
         }
-
-        // Phase 1C: Attendre 3 secondes pour que l'import démarre
-        await new Promise((resolve) => setTimeout(resolve, 3000));
       } else {
-        console.error("❌ [CHECK-SUBSCRIPTION] Claim failed:", claimData);
+        console.error("❌ [CLAIM-SHOPIFY] Claim failed:", claimData);
 
-        // Log l'échec
+        // Log failure
         await supabase.from("integration_failures").insert({
           user_id: user?.id,
           integration_type: "shopify",
@@ -437,9 +533,13 @@ export default function Onboarding() {
           error_message: JSON.stringify(claimData),
           context: { pendingToken },
         });
+        
+        toast.error("Échec de la connexion", {
+          description: "Veuillez réessayer ou contacter le support.",
+        });
       }
     } catch (claimError: any) {
-      console.error("❌ [CHECK-SUBSCRIPTION] Failed to claim Shopify:", claimError);
+      console.error("❌ [CLAIM-SHOPIFY] Failed to claim Shopify:", claimError);
 
       const errorData = claimError.context?.body || {};
       const errorCode = errorData.error || "";
