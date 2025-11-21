@@ -189,34 +189,32 @@ function buildOptimizedAltText(
   const allTokens = [...seoTokens, ...visualTokens];
   const categorized = categorizeWords(allTokens);
   
-  // Build structured phrase parts
+  // Build language-neutral structured phrase
   const parts: string[] = [cleanProductName];
   
-  // Add shape if available
+  // Add shapes (max 1)
   if (categorized.shapes.length > 0) {
     parts.push(categorized.shapes[0]);
   }
   
   // Add materials (max 2)
   if (categorized.materials.length > 0) {
-    const mats = categorized.materials.slice(0, 2);
-    parts.push(mats.length === 1 ? `en ${mats[0]}` : `en ${mats.join(' et ')}`);
+    parts.push(...categorized.materials.slice(0, 2));
   }
   
   // Add colors (max 2)
   if (categorized.colors.length > 0) {
-    const cols = categorized.colors.slice(0, 2);
-    parts.push(cols.length === 1 ? `coloris ${cols[0]}` : `coloris ${cols.join(' et ')}`);
+    parts.push(...categorized.colors.slice(0, 2));
   }
   
   // Add style (max 1)
   if (categorized.styles.length > 0) {
-    parts.push(`style ${categorized.styles[0]}`);
+    parts.push(categorized.styles[0]);
   }
   
   // Add max 2 other significant descriptors
   if (categorized.others.length > 0) {
-    categorized.others.slice(0, 2).forEach(word => parts.push(word));
+    parts.push(...categorized.others.slice(0, 2));
   }
   
   // Join with commas and clean up
