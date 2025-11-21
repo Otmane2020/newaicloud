@@ -776,49 +776,58 @@ export default function Onboarding() {
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        50 {language === "fr" ? "produits" : "products"}
+                        {formatLimit(starterPlan.max_products)} {language === "fr" ? "produits" : "products"}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {formatLimit(starterPlan.max_optimizations_monthly)}{" "}
+                        {language === "fr" ? "optimisations/mois" : "optimizations/month"}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        1 {language === "fr" ? "Boutique connectée" : "Connected store"}
+                        {formatLimit(starterPlan.max_articles_monthly)}{" "}
+                        {language === "fr" ? "articles/mois" : "articles/month"}
                       </span>
                     </div>
+                    {starterPlan.max_campaigns > 0 && (
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm">
+                          {formatLimit(starterPlan.max_campaigns)} {language === "fr" ? "campagnes" : "campaigns"}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">
-                        50 {language === "fr" ? "optimisations/mois" : "optimizations/month"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
-                        5 {language === "fr" ? "articles/mois" : "articles/month"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">
-                        50 {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
+                        {formatLimit(starterPlan.max_chat_responses_monthly)}{" "}
+                        {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
                       </span>
                     </div>
                   </div>
 
                   <Button
-                    className="w-full text-xs sm:text-sm py-3 sm:py-4 h-auto min-h-[52px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
+                    className="w-full text-xs sm:text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-glow"
                     onClick={handleStartFreeTrial}
                     disabled={loading}
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        <span className="leading-normal">{language === "fr" ? "Activation..." : "Activating..."}</span>
+                        {language === "fr" ? "Activation..." : "Activating..."}
                       </>
                     ) : (
                       <>
-                        <Sparkles className="mr-2 h-4 w-4 flex-shrink-0" />
-                        <span className="leading-normal">{t.onboarding.trial.startTrial}</span>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {t.onboarding.trial.startTrial}
                       </>
                     )}
                   </Button>
@@ -937,14 +946,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-relaxed text-center">{t.onboarding.planFeatures.subscribe}</span>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
@@ -1019,7 +1028,7 @@ export default function Onboarding() {
                     <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-[9999] text-xs sm:text-sm">
+                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
                       {proPlans
                         .sort((a, b) => {
                           const priceA = billingCycle === "yearly" ? a.price_yearly : a.price_monthly;
@@ -1135,14 +1144,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-relaxed text-center">
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
@@ -1319,14 +1328,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base py-5 sm:py-6 px-4 sm:px-6 h-auto min-h-[64px] flex items-center justify-center"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2 flex-shrink-0" />
-                      <span className="leading-relaxed text-center">
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">
                         {selectedPlan.trial_days > 0
                           ? t.onboarding.trial.startTrial
                           : t.onboarding.planFeatures.subscribe}
