@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ExternalLink, Eye } from "lucide-react";
+import { ProductImageSelector } from "@/components/seo/ProductImageSelector";
 
 export default function MediaHistory() {
   const queryClient = useQueryClient();
@@ -41,33 +42,31 @@ export default function MediaHistory() {
 
       const { data: historyData, error: historyError } = await supabase
         .from('product_image_history')
-        .select('*')
+        .select(`
+          *,
+          shopify_products!inner(
+            id,
+            title
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error('Error fetching product image history:', historyError);
+        throw historyError;
+      }
 
-      // Fetch related product data separately
-      const enrichedData = await Promise.all(
-        historyData.map(async (item) => {
-          const { data: product } = await supabase
-            .from('shopify_products')
-            .select(`
-              title,
-              product_images(id, position, src),
-              product_variants(id, title, image_url, position)
-            `)
-            .eq('id', item.product_id)
-            .maybeSingle();
+      console.log('Product history loaded:', historyData?.length, 'items');
+      
+      // Log any missing product data
+      historyData?.forEach(item => {
+        if (!item.shopify_products) {
+          console.warn('Missing product data for history item:', item.id, 'product_id:', item.product_id);
+        }
+      });
 
-          return {
-            ...item,
-            shopify_products: product
-          };
-        })
-      );
-
-      return enrichedData;
+      return historyData;
     }
   });
 
@@ -236,10 +235,6 @@ export default function MediaHistory() {
     if (type === 'product') {
       title = item.shopify_products?.title || 'Produit inconnu';
       
-      // Combine product images and variant images
-      const productImages = item.shopify_products?.product_images || [];
-      const variants = item.shopify_products?.product_variants || [];
-      
       onApply = (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -254,121 +249,12 @@ export default function MediaHistory() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
-            {/* Product main images */}
-            {productImages.length > 0 && (
-              <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Images produit principales
-                </div>
-                {productImages
-                  .sort((a: any, b: any) => a.position - b.position)
-                  .map((img: any, idx: number) => (
-                    <DropdownMenuItem
-                      key={img.id}
-                      onClick={() => applyProductImage.mutate({
-                        historyId: item.id,
-                        targetImageId: img.id,
-                        optimizedUrl: item.optimized_url
-                      })}
-                      className="gap-3 py-3"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {img.src ? (
-                          <img 
-                            src={img.src} 
-                            alt={`Image ${idx + 1}`}
-                            className="w-12 h-12 rounded object-cover border"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <div className="font-medium">
-                            {idx === 0 ? 'Image principale' : `Image ${idx + 1}`}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Position {img.position || idx + 1}
-                          </div>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))
-                }
-              </>
-            )}
-            
-            {/* Variant images */}
-            {variants.length > 0 && (
-              <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
-                  Images des variantes
-                </div>
-                {variants
-                  .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
-                  .map((variant: any) => {
-                    return (
-                      <DropdownMenuItem
-                        key={variant.id}
-                        onClick={async () => {
-                          try {
-                            // Update the variant's image_url directly
-                            const { error } = await supabase
-                              .from('product_variants')
-                              .update({ image_url: item.optimized_url })
-                              .eq('id', variant.id);
-
-                            if (error) throw error;
-
-                            // Mark this history version as current
-                            await supabase
-                              .from('product_image_history')
-                              .update({ is_current: true })
-                              .eq('id', item.id);
-
-                            toast.success('Image appliquée à la variante avec succès');
-                            queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
-                          } catch (error) {
-                            console.error('Error applying image to variant:', error);
-                            toast.error("Erreur lors de l'application de l'image");
-                          }
-                        }}
-                        className="gap-3 py-3"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          {variant.image_url ? (
-                            <img 
-                              src={variant.image_url} 
-                              alt={variant.title}
-                              className="w-12 h-12 rounded object-cover border"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border">
-                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <div className="font-medium line-clamp-1">
-                              {variant.title}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Variante {variant.image_url ? '' : '(sans image)'}
-                            </div>
-                          </div>
-                        </div>
-                      </DropdownMenuItem>
-                    );
-                  })
-                }
-              </>
-            )}
-            
-            {productImages.length === 0 && variants.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Aucune image disponible pour ce produit
-              </div>
-            )}
+            <ProductImageSelector 
+              productId={item.product_id} 
+              historyId={item.id}
+              optimizedUrl={item.optimized_url}
+              onApply={applyProductImage.mutate}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       );
