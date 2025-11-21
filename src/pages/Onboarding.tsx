@@ -1077,15 +1077,14 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow relative overflow-hidden ${
                   isPopular ? "ring-2 ring-primary" : "border-2 border-border"
                 }`}
               >
                 {isPopular && (
-                  <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
-                    <Star className="w-3 h-3 mr-1" />
-                    {t.onboarding.planFeatures.mostPopular}
-                  </Badge>
+                  <div className="absolute top-0 right-0 bg-gradient-to-br from-primary to-blue-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
+                    {t.onboarding.planFeatures.mostPopular.toUpperCase()}
+                  </div>
                 )}
 
                 <div
@@ -1263,13 +1262,12 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border relative overflow-hidden"
               >
                 {isBestValue && (
-                  <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
-                    <Zap className="w-3 h-3 mr-1" />
-                    {t.onboarding.planFeatures.bestValue}
-                  </Badge>
+                  <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
+                    {t.onboarding.planFeatures.bestValue.toUpperCase()}
+                  </div>
                 )}
 
                 <div
