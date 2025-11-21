@@ -66,15 +66,29 @@ export function useQuotaMonitoring() {
         console.log('📦 [QuotaMonitoring] Unoptimized products:', unoptimizedProducts);
 
         // Check for images needing alt text
+        // First, get products for this user
         // @ts-ignore - Complex Supabase type causes TS deep instantiation error
-        const { data: imagesWithoutAltData } = await supabase
-          .from('product_images')
+        const { data: userProducts } = await supabase
+          .from('shopify_products')
           .select('id')
-          .eq('user_id', user.id)
-          .is('alt_text', null)
-          .limit(100);
+          .eq('seller_id', user.id)
+          .limit(200);
 
-        const imagesWithoutAlt = imagesWithoutAltData?.length || 0;
+        let imagesWithoutAlt = 0;
+
+        if (userProducts && userProducts.length > 0) {
+          // Then, get images for those products without alt text
+          // @ts-ignore - Complex Supabase type causes TS deep instantiation error
+          const { data: imagesWithoutAltData } = await supabase
+            .from('product_images')
+            .select('id')
+            .in('product_id', userProducts.map((p: any) => p.id))
+            .is('alt_text', null)
+            .limit(100);
+
+          imagesWithoutAlt = imagesWithoutAltData?.length || 0;
+        }
+
         console.log('🖼️ [QuotaMonitoring] Images without alt:', imagesWithoutAlt);
 
         // Check for collections needing optimization
