@@ -10,10 +10,8 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText, AlertCircle, Trash2 } from 'lucide-react';
+import { Loader2, ShoppingBag, Link as LinkIcon, Trash2, AlertCircle } from 'lucide-react';
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
-import { ImportProgressDialog } from './ImportProgressDialog';
-import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { useTranslation } from '@/lib/language';
 
 export function ShopifyConnection() {
@@ -22,22 +20,6 @@ export function ShopifyConnection() {
   const { t, tf, language } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importJobId, setImportJobId] = useState<string | null>(null);
-  const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
-  const [productsImported, setProductsImported] = useState(0);
-  const [pagesImported, setPagesImported] = useState(0);
-  const [importedItems, setImportedItems] = useState<Array<{type: 'product' | 'page'; title: string; image?: string; handle?: string}>>([]);
-  const [progress, setProgress] = useState({
-    currentPage: 0,
-    totalPages: 0,
-    productsProcessed: 0,
-    percentage: 0
-  });
-  const [limitReached, setLimitReached] = useState(false);
-  const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -48,60 +30,6 @@ export function ShopifyConnection() {
   useEffect(() => {
     loadStore();
   }, [user]);
-
-  // Poll import job progress
-  useEffect(() => {
-    if (!importJobId || !importing) return;
-
-    const interval = setInterval(async () => {
-      const { data: job } = await supabase
-        .from('import_jobs')
-        .select('*')
-        .eq('id', importJobId)
-        .single();
-
-      if (job) {
-        const percentage = job.total_pages > 0 
-          ? Math.round((job.current_page / job.total_pages) * 100)
-          : 0;
-
-        setProgress({
-          currentPage: job.current_page,
-          totalPages: job.total_pages,
-          productsProcessed: job.products_processed,
-          percentage
-        });
-
-        if (job.status === 'completed') {
-          clearInterval(interval);
-          setImporting(false);
-          setImportDialogOpen(false);
-          setProductsImported(job.products_processed);
-          toast.success(tf('shopify.connection.imported', { count: job.products_processed }));
-          setTimeout(() => {
-            navigate('/products');
-          }, 1500);
-        }
-
-        if (job.status === 'quota_reached') {
-          clearInterval(interval);
-          setImporting(false);
-          setLimitReached(true);
-          setProductsImported(job.products_processed);
-          // Keep dialog open to show upgrade message
-        }
-
-        if (job.status === 'failed') {
-          clearInterval(interval);
-          setImporting(false);
-          setImportDialogOpen(false);
-          toast.error(job.error_message || t.shopify.connection.errorImport);
-        }
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [importJobId, importing, navigate]);
 
   const loadStore = async () => {
     try {
@@ -202,86 +130,25 @@ export function ShopifyConnection() {
       
       // Wait for DB sync then reload
       await new Promise(resolve => setTimeout(resolve, 500));
-      const reloadedStore = await loadStore();
-      
-      console.log('🔄 Store reloaded after save - FULL DATA:', {
-        reloadedStore: reloadedStore,
-        hasStore: !!reloadedStore,
-        hasApiKey: !!reloadedStore?.api_key,
-        hasAccessToken: !!reloadedStore?.access_token,
-        apiKeyType: typeof reloadedStore?.api_key,
-        accessTokenType: typeof reloadedStore?.access_token,
-        apiKeyLength: reloadedStore?.api_key?.length,
-        accessTokenLength: reloadedStore?.access_token?.length,
-        apiKeyValue: reloadedStore?.api_key,
-        accessTokenValue: reloadedStore?.access_token
-      });
-      
-      // Trigger import directly with reloaded data
-      if (reloadedStore && reloadedStore.access_token && reloadedStore.api_key) {
-        console.log('🚀 Triggering auto-import with fresh credentials');
+      await loadStore();
+
+      // Trigger auto-sync (comme pour OAuth)
+      try {
+        console.log('🚀 [Admin API] Triggering auto-sync...');
         
-        // Set states for import UI
-        setImporting(true);
-        setImportDialogOpen(true);
-        setImportPhase('products');
-        setLimitReached(false);
-        setProgress({
-          currentPage: 0,
-          totalPages: 0,
-          productsProcessed: 0,
-          percentage: 0
+        const { error: syncError } = await supabase.functions.invoke('trigger-auto-sync', {
+          body: { user_id: user?.id }
         });
-        setProductsImported(0);
-        setPagesImported(0);
-        setImportedItems([]);
         
-        const shopName = reloadedStore.store_url?.replace('.myshopify.com', '') || '';
-        
-        const requestBody = {
-          shopName: shopName,
-          apiSecret: reloadedStore.access_token,
-          apiKey: reloadedStore.api_key,
-          storeId: reloadedStore.id
-        };
-
-        console.log('📤 REQUEST BODY SENT TO EDGE FUNCTION - RAW VALUES:', {
-          requestBody: requestBody,
-          shopName: requestBody.shopName,
-          apiKey: requestBody.apiKey,
-          apiSecret: requestBody.apiSecret,
-          apiKeyType: typeof requestBody.apiKey,
-          apiSecretType: typeof requestBody.apiSecret,
-          apiKeyLength: requestBody.apiKey?.length,
-          apiSecretLength: requestBody.apiSecret?.length,
-          storeId: requestBody.storeId
-        });
-
-        try {
-          const { data, error } = await supabase.functions.invoke('import-products', {
-            body: requestBody
-          });
-
-          if (error) throw error;
-
-          if (data?.jobId) {
-            setImportJobId(data.jobId);
-          }
-        } catch (importError: any) {
-          console.error('Auto-import error:', importError);
-          setImporting(false);
-          setImportDialogOpen(false);
-          toast.error(importError.message || t.shopify.connection.errorAutoImport);
+        if (syncError) {
+          console.error('❌ [Admin API] Auto-sync trigger failed:', syncError);
+          toast.error('Erreur lors du déclenchement de la synchronisation');
+        } else {
+          console.log('✅ [Admin API] Auto-sync triggered successfully');
+          toast.info('Synchronisation automatique de vos produits en cours...', { duration: 5000 });
         }
-      } else {
-        console.error('❌ Cannot trigger auto-import - missing data:', {
-          hasReloadedStore: !!reloadedStore,
-          hasAccessToken: !!reloadedStore?.access_token,
-          hasApiKey: !!reloadedStore?.api_key
-        });
-        toast.error(t.shopify.connection.autoImportImpossible, {
-          description: t.shopify.connection.credentialsNotReloaded
-        });
+      } catch (err) {
+        console.error('❌ [Admin API] Error triggering auto-sync:', err);
       }
       
     } catch (error) {
@@ -320,245 +187,6 @@ export function ShopifyConnection() {
       toast.error(error.message || t.shopify.connection.errorDeleting);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Poll import_jobs table for real-time progress updates
-  useEffect(() => {
-    if (!importJobId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const { data: job, error } = await supabase
-          .from('import_jobs')
-          .select('*')
-          .eq('id', importJobId)
-          .single();
-
-        if (error) {
-          console.error('Error polling job:', error);
-          return;
-        }
-
-        if (job) {
-          // Update progress
-          const totalPages = job.total_pages || 1;
-          const currentPage = job.current_page || 0;
-          const productsProcessed = job.products_processed || 0;
-          const percentage = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
-
-          setProgress({
-            currentPage,
-            totalPages,
-            productsProcessed,
-            percentage
-          });
-
-          // Check if job is complete
-          if (job.status === 'completed' || job.status === 'failed' || job.status === 'quota_reached') {
-            clearInterval(pollInterval);
-            setImporting(false);
-            
-            if (job.status === 'completed') {
-              setImportPhase('complete');
-              setProductsImported(job.products_processed || 0);
-              toast.success('Import terminé !', {
-                description: `${job.products_processed} produits importés avec succès`
-              });
-            } else if (job.status === 'quota_reached') {
-              setLimitReached(true);
-              setProductsImported(job.products_processed || 0);
-              toast.warning('Quota atteint', {
-                description: 'Certains produits n\'ont pas été importés. Upgradez pour continuer.'
-              });
-            } else if (job.status === 'failed') {
-              toast.error('Erreur d\'import', {
-                description: job.error_message || 'Une erreur est survenue'
-              });
-              setImportDialogOpen(false);
-            }
-            
-            setImportJobId(null);
-            refreshLimits(); // Refresh usage limits
-          }
-        }
-      } catch (error) {
-        console.error('Error in polling:', error);
-      }
-    }, 1000); // Poll every second
-
-    return () => clearInterval(pollInterval);
-  }, [importJobId, refreshLimits]);
-
-  const handleImportProducts = async () => {
-    if (!store || !store.id) {
-      toast.error(t.shopify.connection.connectFirst);
-      return;
-    }
-
-    // Vérifier les limites avant d'importer
-    if (!canDoAction('products')) {
-      toast.error('Limite de produits atteinte', {
-        description: limits?.isTrialing 
-          ? 'Passez à un plan payant pour importer plus de produits.'
-          : 'Limite mensuelle atteinte. Upgradez votre plan pour continuer.',
-        action: {
-          label: 'Voir les plans',
-          onClick: () => navigate('/subscription')
-        }
-      });
-      return;
-    }
-
-    // 🔄 CRITICAL: Force reload store data to get latest credentials
-    console.log('🔄 Reloading store data before import...', {
-      currentStoreId: store.id
-    });
-    const freshStore = await supabase
-      .from('shopify_connections')
-      .select('*')
-      .eq('id', store.id)
-      .maybeSingle();
-
-    console.log('📦 Raw response from Supabase:', {
-      data: freshStore.data,
-      error: freshStore.error,
-      dataKeys: freshStore.data ? Object.keys(freshStore.data) : 'NO DATA',
-      fullData: JSON.stringify(freshStore.data)
-    });
-
-    if (!freshStore.data) {
-      toast.error(t.shopify.connection.cannotLoadData);
-      console.error('❌ No data returned from supabase');
-      return;
-    }
-
-    const storeData = freshStore.data;
-
-    console.log('🔍 StoreData extracted:', {
-      storeData: storeData,
-      api_key: storeData.api_key,
-      access_token: storeData.access_token,
-      api_key_type: typeof storeData.api_key,
-      access_token_type: typeof storeData.access_token
-    });
-
-    // ✅ Vérifier que les credentials existent
-    console.log('🔍 Checking credentials:', {
-      storeId: storeData.id,
-      connectionType: storeData.connection_type,
-      hasApiKey: !!storeData.api_key,
-      hasAccessToken: !!storeData.access_token,
-      apiKeyValue: storeData.api_key ? `${storeData.api_key.substring(0, 10)}...` : 'NULL',
-      accessTokenValue: storeData.access_token ? `${storeData.access_token.substring(0, 10)}...` : 'NULL'
-    });
-
-    if (!storeData.access_token || storeData.access_token.trim() === '') {
-      toast.error(t.shopify.connection.credentialsMissing, {
-        description: t.shopify.connection.reconnectRequired
-      });
-      console.error('❌ Access token is missing. Store needs to be reconnected:', { 
-        storeId: storeData?.id,
-        connectionType: storeData?.connection_type,
-        hasAccessToken: !!storeData?.access_token,
-        hasApiKey: !!storeData?.api_key
-      });
-      return;
-    }
-
-    // Pour les connexions manuelles, vérifier que l'API Key existe aussi
-    if (storeData.connection_type === 'manual' && (!storeData.api_key || storeData.api_key.trim() === '')) {
-      toast.error(t.shopify.connection.apiKeyMissing, {
-        description: t.shopify.connection.apiKeyRequired
-      });
-      console.error('❌ API Key is missing for manual connection:', { 
-        storeId: storeData?.id,
-        hasApiKey: !!storeData?.api_key
-      });
-      return;
-    }
-
-    console.log('✅ Starting import with valid credentials:', {
-      storeId: storeData.id,
-      storeName: storeData.store_url,
-      connectionType: storeData.connection_type,
-      credentialsPresent: true
-    });
-
-    try {
-      setImporting(true);
-      setImportDialogOpen(true);
-      setImportPhase('products');
-      setLimitReached(false);
-      setProgress({
-        currentPage: 0,
-        totalPages: 0,
-        productsProcessed: 0,
-        percentage: 0
-      });
-      setProductsImported(0);
-      setPagesImported(0);
-      setImportedItems([]);
-      
-      const shopName = storeData.store_url?.replace('.myshopify.com', '') || '';
-      
-      // Préparer le body selon le type de connexion
-      const requestBody: any = {
-        shopName: shopName,
-        apiSecret: storeData.access_token, // Toujours requis (OAuth token ou API Secret)
-        storeId: storeData.id
-      };
-
-      // Ajouter apiKey seulement si c'est une connexion manuelle
-      if (storeData.connection_type === 'manual' && storeData.api_key) {
-        requestBody.apiKey = storeData.api_key;
-      }
-
-      console.log('📤 REQUEST BODY GOING TO EDGE FUNCTION:', {
-        requestBody: requestBody,
-        shopName: requestBody.shopName,
-        shopNameType: typeof requestBody.shopName,
-        shopNameLength: requestBody.shopName?.length,
-        apiKey: requestBody.apiKey,
-        apiKeyType: typeof requestBody.apiKey,
-        apiKeyLength: requestBody.apiKey?.length,
-        apiSecret: requestBody.apiSecret,
-        apiSecretType: typeof requestBody.apiSecret,
-        apiSecretLength: requestBody.apiSecret?.length,
-        apiSecretIsEmpty: requestBody.apiSecret === '',
-        apiSecretIsNull: requestBody.apiSecret === null,
-        apiSecretIsUndefined: requestBody.apiSecret === undefined,
-        storeId: requestBody.storeId
-      });
-
-      console.log('📤 Sending to Edge Function:', {
-        shopName: requestBody.shopName,
-        hasApiKey: !!requestBody.apiKey,
-        hasApiSecret: !!requestBody.apiSecret,
-        storeId: requestBody.storeId
-      });
-
-      const { data, error } = await supabase.functions.invoke('import-products', {
-        body: requestBody
-      });
-
-      if (error) throw error;
-
-      if (data?.jobId) {
-        setImportJobId(data.jobId);
-      }
-    } catch (error: any) {
-      console.error('Import error:', error);
-      setImporting(false);
-      setImportDialogOpen(false);
-      
-      if (error.message?.includes('API token') || error.message?.includes('apiToken')) {
-        toast.error(t.shopify.connection.invalidToken);
-      } else if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
-        toast.error(t.shopify.connection.authError);
-      } else {
-        toast.error(error.message || t.shopify.connection.errorImporting);
-      }
     }
   };
 
@@ -702,60 +330,9 @@ export function ShopifyConnection() {
             </p>
           </div>
 
-          {importing && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="text-sm font-medium">{language === 'fr' ? 'Import en cours...' : 'Import in progress...'}</span>
-              </div>
-
-              <Progress value={progress.percentage} className="h-3" />
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-foreground">{progress.percentage}%</div>
-                  <div className="text-xs text-muted-foreground mt-1">{language === 'fr' ? 'Progression' : 'Progress'}</div>
-                </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-                    <FileText className="w-5 h-5" />
-                    {progress.currentPage}/{progress.totalPages || '?'}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">{language === 'fr' ? 'Pages' : 'Pages'}</div>
-                </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-                    <Package className="w-5 h-5" />
-                    {progress.productsProcessed}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">Produits</div>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <Button 
-              onClick={handleImportProducts}
-              disabled={importing || !store.access_token || (store.connection_type === 'manual' && !store.api_key)}
-              className="flex-1"
-            >
-              {importing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Import en cours...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Importer les produits
-                </>
-              )}
-            </Button>
-            
-            <Button 
               onClick={handleDeleteConnection}
-              disabled={importing}
               variant="destructive"
               className="sm:w-auto"
             >
@@ -765,22 +342,6 @@ export function ShopifyConnection() {
           </div>
         </Card>
       )}
-
-      <ImportProgressDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        phase={importPhase}
-        progress={progress}
-        productsImported={productsImported}
-        pagesImported={pagesImported}
-        articlesImported={0}
-        collectionsImported={0}
-        imagesImported={0}
-        importedItems={importedItems}
-        limitReached={limitReached}
-        maxProducts={limits?.limits?.max_products || 50}
-        totalShopifyProducts={totalShopifyProducts}
-      />
     </div>
   );
 }

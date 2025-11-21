@@ -9,8 +9,6 @@ import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTrian
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ImportProgressDialog } from './ImportProgressDialog';
-import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
@@ -47,36 +45,6 @@ export default function ShopifyConnectionsList() {
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
   
-  // Progress dialog state
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [importJobId, setImportJobId] = useState<string | null>(null);
-  const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
-  const [importProgress, setImportProgress] = useState({
-    percentage: 0,
-    currentPage: 0,
-    totalPages: 0,
-    productsProcessed: 0,
-  });
-  const [productsImported, setProductsImported] = useState(0);
-  const [pagesImported, setPagesImported] = useState(0);
-  const [articlesImported, setArticlesImported] = useState(0);
-  const [importedItems, setImportedItems] = useState<any[]>([]);
-  const [limitReached, setLimitReached] = useState(false);
-  const [maxProducts, setMaxProducts] = useState(0);
-  const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
-  const [storeProductCounts, setStoreProductCounts] = useState<Record<string, number>>({});
-  
-  const [usageLimits, setUsageLimits] = useState<any>(null);
-  const [pendingImportStore, setPendingImportStore] = useState<ShopifyConnection | null>(null);
-  
-  // Delete confirmation dialog state
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
-  
-  // Import confirmation dialog state
-  const [showImportConfirm, setShowImportConfirm] = useState(false);
-  const [storeToImport, setStoreToImport] = useState<ShopifyConnection | null>(null);
-  
   // Sync settings dialog state
   const [showSyncSettings, setShowSyncSettings] = useState(false);
   const [selectedStore, setSelectedStore] = useState<ShopifyConnection | null>(null);
@@ -101,28 +69,8 @@ export default function ShopifyConnectionsList() {
 
   useEffect(() => {
     loadConnections();
-    checkUsageLimits();
     updateStoreNames();
   }, []);
-
-  // Check if we need to trigger auto-import after store connection
-  useEffect(() => {
-    const autoTriggerImport = async () => {
-      const shouldTriggerImport = localStorage.getItem("shopify_trigger_import");
-      if (shouldTriggerImport === "true" && connections.length > 0) {
-        localStorage.removeItem("shopify_trigger_import");
-        
-        // Wait a bit for the UI to settle
-        setTimeout(() => {
-          const lastStore = connections[0]; // Most recent store
-          setStoreToImport(lastStore);
-          setShowImportConfirm(true);
-        }, 500);
-      }
-    };
-
-    autoTriggerImport();
-  }, [connections]);
   
   
   const updateStoreNames = async () => {
@@ -1125,7 +1073,7 @@ export default function ShopifyConnectionsList() {
                 </div>
                 
                 <div className="flex items-center gap-2 ml-4">
-                  <Button
+                   <Button
                     size="sm"
                     variant="default"
                     onClick={() => startManualSync(store)}
@@ -1141,26 +1089,6 @@ export default function ShopifyConnectionsList() {
                       <>
                         <RefreshCw className="w-4 h-4" />
                         Synchroniser
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => importAllContent(store)}
-                    disabled={importingStoreId === store.id}
-                    className="gap-2"
-                    title="Importer les contenus"
-                  >
-                    {importingStoreId === store.id ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Import...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4" />
-                        Importer
                       </>
                     )}
                   </Button>
@@ -1290,35 +1218,6 @@ export default function ShopifyConnectionsList() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <ImportConfirmDialog
-        open={showImportConfirm}
-        onOpenChange={setShowImportConfirm}
-        onConfirm={() => {
-          if (storeToImport) {
-            importAllContent(storeToImport);
-          }
-          setShowImportConfirm(false);
-        }}
-        storeName={storeToImport?.store_name || ''}
-      />
-
-      <ImportProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
-        phase={importPhase}
-        progress={importProgress}
-        productsImported={productsImported}
-        pagesImported={pagesImported}
-        articlesImported={articlesImported}
-        collectionsImported={0}
-        imagesImported={0}
-        importedItems={importedItems}
-        limitReached={limitReached}
-        maxProducts={maxProducts}
-        totalShopifyProducts={totalShopifyProducts}
-        onUpgrade={handleUpgradeFromImport}
-      />
 
       <SimpleSyncProgress
         open={isSyncing}
