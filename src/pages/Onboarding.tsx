@@ -699,6 +699,14 @@ export default function Onboarding() {
     return `${formattedValue} ${isPlural ? "Connected stores" : "Connected store"}`;
   };
 
+  const formatProductLimit = (maxProducts: number): string => {
+    const isUnlimitedValue = maxProducts === -1 || maxProducts >= 999999;
+    if (isUnlimitedValue) {
+      return language === "fr" ? "Produits illimités" : "Unlimited products";
+    }
+    return `${formatLimit(maxProducts)} ${t.onboarding.planFeatures.products}`;
+  };
+
   const getPrice = (plan: Plan) => {
     return billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly;
   };
@@ -819,7 +827,7 @@ export default function Onboarding() {
 
         {/* Plans */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 ${!hasUsedTrial ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-7xl mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
+          className={`grid grid-cols-1 ${!hasUsedTrial ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-[1600px] mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
         >
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
           {!hasUsedTrial &&
@@ -861,7 +869,7 @@ export default function Onboarding() {
                     <p className="text-xs text-muted-foreground text-center mt-2">{t.onboarding.trial.noCardRequired}</p>
                   </div>
 
-                  <div className="space-y-3 mb-6 border-t border-b border-border py-4">
+                  <div className="space-y-3 mb-6 border-t py-4">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
@@ -985,11 +993,11 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
+                <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}
+                      {formatProductLimit(starterPlan.max_products)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1161,11 +1169,11 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
+                <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}
+                      {formatProductLimit(selectedPlan.max_products)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1323,11 +1331,11 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
+                <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
-                      {formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}
+                      {formatProductLimit(selectedPlan.max_products)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
