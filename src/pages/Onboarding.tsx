@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
 import {
   Check,
   Sparkles,
@@ -53,6 +54,7 @@ export default function Onboarding() {
   const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { refreshStores } = useStore();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
@@ -118,6 +120,9 @@ export default function Onboarding() {
           await new Promise(resolve => setTimeout(resolve, 500));
           
           await claimShopifyConnection(shopifyPending);
+          
+          // Rafraîchir le StoreContext pour afficher la nouvelle boutique
+          await refreshStores();
           
           // Attendre un peu pour que le realtime event se déclenche avant la redirection
           await new Promise(resolve => setTimeout(resolve, 1000));
