@@ -43,6 +43,21 @@ export const useAutoSync = (userId: string | undefined) => {
             return;
           }
           
+          // Vérifier si l'utilisateur a un abonnement actif
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_status, onboarding_completed')
+            .eq('id', userId)
+            .single();
+          
+          if (!profile?.subscription_status || 
+              !['active', 'trialing'].includes(profile.subscription_status)) {
+            console.log('⏸️ [AutoSync] User has no active subscription, skipping auto-sync');
+            return;
+          }
+          
+          console.log('✅ [AutoSync] User has active subscription, proceeding with sync');
+          
           // Attendre que la connexion soit complètement établie
           await new Promise(resolve => setTimeout(resolve, 2000));
           
