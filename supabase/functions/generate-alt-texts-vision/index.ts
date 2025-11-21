@@ -140,7 +140,7 @@ function intelligentCategorize(words: string[]): UniversalTokens {
   return result;
 }
 
-// Build natural descriptive ALT text (NO KEYWORD LISTS)
+// Build natural descriptive ALT text as a REAL SENTENCE (not keyword list)
 function buildNaturalAltText(
   productName: string,
   visualAnalysis: string,
@@ -158,56 +158,137 @@ function buildNaturalAltText(
     usedStems.add(getStem(token));
   });
   
-  // Collect unique descriptors from SEO keywords
-  const uniqueDescriptors: string[] = [];
-  seoKeywords.flatMap(kw => tokenize(kw)).forEach(token => {
-    const stem = getStem(token);
-    if (!usedStems.has(stem) && uniqueDescriptors.length < 10) {
-      usedStems.add(stem);
-      uniqueDescriptors.push(token);
-    }
+  // Collect unique descriptors from SEO keywords + visual analysis
+  const allDescriptors: string[] = [];
+  
+  [...seoKeywords, visualAnalysis].forEach(source => {
+    tokenize(source).forEach(token => {
+      const stem = getStem(token);
+      if (!usedStems.has(stem) && allDescriptors.length < 12) {
+        usedStems.add(stem);
+        allDescriptors.push(token);
+      }
+    });
   });
   
-  // Add visual analysis tokens
-  tokenize(visualAnalysis).forEach(token => {
-    const stem = getStem(token);
-    if (!usedStems.has(stem) && uniqueDescriptors.length < 12) {
-      usedStems.add(stem);
-      uniqueDescriptors.push(token);
+  // Categorize intelligently (no hardcoded lists)
+  const categorized = intelligentCategorize(allDescriptors);
+  
+  // Build sentence with natural connectors
+  return buildDescriptiveSentence(
+    cleanProductName,
+    categorized,
+    language
+  );
+}
+
+// Build a natural descriptive sentence (FR/EN)
+function buildDescriptiveSentence(
+  productName: string,
+  tokens: UniversalTokens,
+  language: 'fr' | 'en'
+): string {
+  let sentence = productName;
+  
+  // Split descriptors into semantic groups using linguistic patterns
+  const materials: string[] = [];
+  const colors: string[] = [];
+  const shapes: string[] = [];
+  const features: string[] = [];
+  
+  for (const word of tokens.descriptors) {
+    const lower = word.toLowerCase();
+    
+    // Detect materials (common e-commerce materials)
+    if (/bois|marbre|métal|verre|tissu|cuir|plastique|acier|aluminium|pierre|céramique|wood|marble|metal|glass|fabric|leather|plastic|steel|stone|ceramic/i.test(lower)) {
+      materials.push(word);
     }
-  });
-  
-  // Intelligently categorize (universal, no hardcoded lists)
-  const categorized = intelligentCategorize(uniqueDescriptors);
-  
-  // Build natural sentence structure
-  let altText = cleanProductName;
-  
-  // Add descriptors naturally
-  if (categorized.descriptors.length > 0) {
-    // Take first 6-8 most relevant descriptors
-    const topDescriptors = categorized.descriptors.slice(0, Math.min(8, maxWords - 3));
-    altText += ', ' + topDescriptors.join(', ');
+    // Detect colors
+    else if (/blanc|noir|beige|gris|rouge|bleu|vert|jaune|rose|transparent|white|black|grey|gray|red|blue|green|yellow|pink|clear/i.test(lower)) {
+      colors.push(word);
+    }
+    // Detect shapes/forms
+    else if (/rond|carré|rectangulaire|ovale|organique|géométrique|courbe|round|square|rectangular|oval|organic|geometric|curved|forme|form|shape/i.test(lower)) {
+      shapes.push(word);
+    }
+    // Other features
+    else if (word.length > 3) {
+      features.push(word);
+    }
   }
   
-  // Add dimensions at the end if present
-  if (categorized.dimensions.length > 0) {
-    altText += ', ' + categorized.dimensions[0];
+  // Construct sentence with appropriate connectors
+  if (language === 'fr') {
+    // Materials: "en marbre et métal"
+    if (materials.length > 0) {
+      const materialsPhrase = materials.length === 1
+        ? `en ${materials[0]}`
+        : `en ${materials.slice(0, 2).join(' et ')}`;
+      sentence += `, ${materialsPhrase}`;
+    }
+    
+    // Colors: "coloris blanc transparent"
+    if (colors.length > 0) {
+      sentence += `, coloris ${colors.slice(0, 2).join(' ')}`;
+    }
+    
+    // Shapes: "forme organique"
+    if (shapes.length > 0) {
+      sentence += `, ${shapes[0]}`;
+    }
+    
+    // Features: just add naturally
+    if (features.length > 0) {
+      sentence += `, ${features.slice(0, 2).join(', ')}`;
+    }
+    
+    // Dimensions: "dimensions 120x70x45 cm"
+    if (tokens.dimensions.length > 0) {
+      const dim = tokens.dimensions[0];
+      sentence += `, dimensions ${dim}`;
+      if (!/cm|mm|m\b/.test(dim)) sentence += ' cm';
+    }
+  } else {
+    // English structure
+    if (materials.length > 0) {
+      const materialsPhrase = materials.length === 1
+        ? `in ${materials[0]}`
+        : `in ${materials.slice(0, 2).join(' and ')}`;
+      sentence += `, ${materialsPhrase}`;
+    }
+    
+    if (colors.length > 0) {
+      sentence += `, ${colors.slice(0, 2).join(' ')} color`;
+    }
+    
+    if (shapes.length > 0) {
+      sentence += `, ${shapes[0]}`;
+    }
+    
+    if (features.length > 0) {
+      sentence += `, ${features.slice(0, 2).join(', ')}`;
+    }
+    
+    if (tokens.dimensions.length > 0) {
+      const dim = tokens.dimensions[0];
+      sentence += `, dimensions ${dim}`;
+      if (!/cm|mm|m\b/.test(dim)) sentence += ' cm';
+    }
   }
   
-  // Clean up formatting
-  altText = altText
+  // Clean up
+  sentence = sentence
     .replace(/\s+/g, ' ')
     .replace(/,\s*,/g, ',')
     .replace(/,\s*$/, '')
     .trim();
   
   // Ensure max length
-  if (altText.length > 200) {
-    altText = altText.substring(0, 197) + '...';
+  if (sentence.length > 200) {
+    sentence = sentence.substring(0, 197) + '...';
   }
   
-  return altText;
+  return sentence;
 }
 
 function validateAltText(altText: string, productTitle?: string, minLength = 15, maxLength = 200): boolean {
