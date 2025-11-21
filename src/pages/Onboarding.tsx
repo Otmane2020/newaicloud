@@ -861,7 +861,7 @@ export default function Onboarding() {
                     <p className="text-xs text-muted-foreground text-center mt-2">{t.onboarding.trial.noCardRequired}</p>
                   </div>
 
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-3 mb-6 border-t border-b border-border py-4">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
@@ -985,7 +985,7 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
@@ -1161,7 +1161,7 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
@@ -1323,7 +1323,7 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-6 border-t border-b border-border py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-sm">
