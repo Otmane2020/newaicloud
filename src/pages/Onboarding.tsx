@@ -510,7 +510,6 @@ export default function Onboarding() {
       }
 
       console.log("[CLAIM-SHOPIFY] Calling claim function with auth token");
-      toast.loading("Connexion à votre boutique Shopify...", { id: "claim-shopify" });
 
       const { data: claimData, error: claimError } = await supabase.functions.invoke("claim-shopify-connection", {
         body: { pendingToken },
@@ -519,7 +518,6 @@ export default function Onboarding() {
         },
       });
 
-      toast.dismiss("claim-shopify");
       console.log("🔗 [CLAIM-SHOPIFY] Claim response:", { claimData, claimError });
 
       // Handle token expiration errors
@@ -639,30 +637,24 @@ export default function Onboarding() {
         console.log("✅ [FREE-TRIAL] Trial activated, status is now 'trialing'");
         toast.success(language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!");
         
-        // ✅ STEP 2: NOW claim Shopify after trial is active
+        // ✅ STEP 2: Claim Shopify in background (fire and forget)
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending) {
-          console.log("🔗 [FREE-TRIAL] Claiming Shopify connection after trial activation");
+          console.log("🔗 [FREE-TRIAL] Claiming Shopify connection in background");
           
-          try {
-            await claimShopifyConnection(shopifyPending);
-            // Backend trigger-auto-sync will handle import
-          } catch (claimError) {
+          // Fire and forget - don't wait for claim to complete
+          claimShopifyConnection(shopifyPending).catch((claimError) => {
             console.error("❌ [FREE-TRIAL] Error claiming connection:", claimError);
             
             // Log error to integration_failures
-            await supabase.from("integration_failures").insert({
+            supabase.from("integration_failures").insert({
               user_id: user.id,
               integration_type: "shopify",
               error_type: "free_trial_claim_failed",
               error_message: claimError instanceof Error ? claimError.message : "Unknown error",
               context: { shopifyPending },
             });
-
-            toast.error("Erreur lors de la connexion", {
-              description: "Veuillez réessayer depuis le tableau de bord.",
-            });
-          }
+          });
         }
 
         // Redirect immediately - AutoSyncProgressDialog will show on dashboard
