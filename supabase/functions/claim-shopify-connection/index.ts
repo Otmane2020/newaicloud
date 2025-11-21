@@ -199,6 +199,7 @@ serve(async (req) => {
       .from("shopify_connections")
       .update({
         access_token: pending.access_token,
+        store_name: pending.commercial_name || pending.shop_url,
         connected_at: new Date().toISOString(),
         is_active: true,
         connection_type: "oauth"
@@ -224,7 +225,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         store_url: pending.shop_url,
-        store_name: pending.commercial_name,
+        store_name: pending.commercial_name || pending.shop_url,
         access_token: pending.access_token,
         connected_at: new Date().toISOString(),
         is_active: true,

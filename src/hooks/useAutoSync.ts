@@ -4,6 +4,9 @@ import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 
+// Failsafe timeout: 10 minutes for large imports
+const FAILSAFE_MS = 10 * 60 * 1000;
+
 /**
  * Hook qui écoute les nouvelles connexions Shopify et déclenche automatiquement
  * la synchronisation pour tous les flux (OAuth et API)
@@ -55,14 +58,14 @@ export const useAutoSync = (userId: string | undefined) => {
       checkSyncStatus();
       syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
       
-      // Failsafe: close after 2 minutes maximum
+      // Failsafe: close dialog after 10 minutes for large imports
       setTimeout(() => {
         if (syncCheckIntervalRef.current) {
           clearInterval(syncCheckIntervalRef.current);
           syncCheckIntervalRef.current = null;
         }
         endSync();
-      }, 120000);
+      }, FAILSAFE_MS);
     }
 
     // Écouter les insertions ET updates dans shopify_connections
@@ -141,14 +144,14 @@ export const useAutoSync = (userId: string | undefined) => {
             checkSyncStatus();
             syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
             
-            // Failsafe: close after 2 minutes maximum
+            // Failsafe: close dialog after 10 minutes for large imports
             setTimeout(() => {
               if (syncCheckIntervalRef.current) {
                 clearInterval(syncCheckIntervalRef.current);
                 syncCheckIntervalRef.current = null;
               }
               endSync();
-            }, 120000);
+            }, FAILSAFE_MS);
             
             return;
           }

@@ -30,7 +30,7 @@ export function StoreSelector() {
       <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
         <Store className="w-4 h-4 text-primary shrink-0" />
         <span className="text-sm text-foreground truncate">
-          {stores[0].store_label || stores[0].store_name || 'Boutique'}
+          {stores[0].store_label || stores[0].store_name || stores[0].store_url || 'Boutique'}
         </span>
       </div>
     );
@@ -58,7 +58,7 @@ export function StoreSelector() {
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Store className="w-4 h-4 text-primary shrink-0" />
           <span className="text-sm text-foreground truncate">
-            {selectedStore?.store_label || selectedStore?.store_name || 'Sélectionner une boutique'}
+            {selectedStore?.store_label || selectedStore?.store_name || selectedStore?.store_url || 'Sélectionner une boutique'}
           </span>
         </div>
       </SelectTrigger>
