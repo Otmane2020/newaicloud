@@ -78,7 +78,17 @@ export const formatPrice = (
 ): string => {
   const symbol = getCurrencySymbol(language);
   
-  // Always round to whole numbers (no decimals)
+  // Keep decimals only for 9.99 and 7.99
+  const shouldKeepDecimals = (amount === 9.99 || amount === 7.99);
+  
+  if (shouldKeepDecimals) {
+    const formattedAmount = amount.toFixed(2).replace('.', ',');
+    return language === 'fr' 
+      ? `${formattedAmount} ${symbol}`
+      : `${symbol}${formattedAmount}`;
+  }
+  
+  // Round to whole numbers for other amounts
   const roundedAmount = Math.round(amount);
   
   return language === 'fr' 
