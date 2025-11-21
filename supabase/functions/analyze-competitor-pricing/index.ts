@@ -487,11 +487,14 @@ async function analyzeWithAI(
   const minPriceWithMargin = totalCost * 1.3;
 
   if (!competitorPrices || competitorPrices.length === 0) {
-    const smartPrice = Math.round(minPriceWithMargin * 1.5 * 100) / 100;
+    // Fallback intelligent basé sur les coûts
+    const costMarkup = 2.5; // Coefficient multiplicateur (250%)
+    const smartPrice = Math.round(totalCost * costMarkup * 100) / 100;
+    
     return {
       marketPrice: null,
       smartPrice: smartPrice,
-      reasoning: `Prix sans concurrents. Coûts ${totalCost.toFixed(2)}€ + marge 50%.`,
+      reasoning: `Prix calculé sans concurrents trouvés. Coûts: ${totalCost.toFixed(2)}€ + marge ${((costMarkup - 1) * 100).toFixed(0)}% = ${smartPrice.toFixed(2)}€. Aucune donnée concurrente disponible.`,
       competitors: []
     };
   }
@@ -575,12 +578,28 @@ smartPrice ≥ ${minPriceWithMargin.toFixed(2)}€`;
       competitors: top10
     };
   } catch (error) {
-    const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
+    console.error('❌ AI analysis failed:', error);
+    
+    // Fallback: utiliser la moyenne des concurrents si disponible
+    if (competitorPrices.length > 0) {
+      const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
+      const smartPrice = Math.max(avgPrice, minPriceWithMargin);
+      
+      return {
+        marketPrice: avgPrice,
+        smartPrice: Math.round(smartPrice * 100) / 100,
+        reasoning: `Prix moyen marché (${competitorPrices.length} concurrents) avec marge minimum. IA indisponible.`,
+        competitors: competitorPrices.slice(0, 10)
+      };
+    }
+    
+    // Dernier fallback: si rien ne fonctionne
+    const emergencyPrice = Math.round(minPriceWithMargin * 1.5 * 100) / 100;
     return {
-      marketPrice: avgPrice,
-      smartPrice: Math.max(avgPrice, minPriceWithMargin),
-      reasoning: `Fallback: moyenne marché`,
-      competitors: competitorPrices.slice(0, 10)
+      marketPrice: null,
+      smartPrice: emergencyPrice,
+      reasoning: `Prix d'urgence: coûts ${totalCost.toFixed(2)}€ + marge 50%. Analyse échouée.`,
+      competitors: []
     };
   }
 }
@@ -596,6 +615,18 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Vérifier que les clés API nécessaires sont configurées
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
+    const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
+
+    if (!LOVABLE_API_KEY) {
+      console.warn('⚠️ LOVABLE_API_KEY not configured - AI analysis will be limited');
+    }
+    if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
+      console.warn('⚠️ DataForSEO credentials not configured - SERP search disabled');
+    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing authorization header');
@@ -996,11 +1027,15 @@ serve(async (req) => {
 
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-      } catch (error) {
-        console.error(`❌ Error analyzing product ${productId}:`, error);
+      } catch (productError) {
+        console.error(`❌ Failed to analyze product ${productId}:`, productError);
         results.push({
           productId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: productError instanceof Error ? productError.message : 'Unknown error',
+          marketPrice: null,
+          smartPrice: null,
+          reasoning: 'Échec de l\'analyse',
+          competitors: []
         });
       }
     }
@@ -1009,7 +1044,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: results.length > 0,
         results,
         summary: {
           total: productIds.length,
