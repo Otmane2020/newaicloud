@@ -582,8 +582,16 @@ export default function Onboarding() {
       }
 
       if (claimData?.success) {
-        console.log("✅ [CLAIM-SHOPIFY] Shopify connection claimed successfully");
+        console.log("✅ [CLAIM-SHOPIFY] Shopify connection claimed successfully", claimData);
         toast.success(t.sync.shopifyConnected);
+        
+        // Stocker le nom/url de la boutique pour afficher le popup de synchro sur le dashboard
+        if (claimData.shop) {
+          const cleanName = String(claimData.shop)
+            .replace(/^https?:\/\//, '')
+            .replace(/\/$/, '');
+          sessionStorage.setItem('pending_sync', cleanName);
+        }
         
         // Backend trigger-auto-sync will handle the import
         toast.info("Synchronisation automatique de vos produits en cours...", {

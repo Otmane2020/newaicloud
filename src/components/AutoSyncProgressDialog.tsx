@@ -59,7 +59,7 @@ export function AutoSyncProgressDialog() {
               Synchronisation automatique
             </h3>
             <p className="text-sm text-muted-foreground">
-              {storeName}
+              {storeName || 'Votre boutique Shopify'}
             </p>
             <div className="flex items-center justify-center gap-2 pt-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />

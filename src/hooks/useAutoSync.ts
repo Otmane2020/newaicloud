@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 
@@ -9,6 +10,7 @@ import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
  */
 export const useAutoSync = (userId: string | undefined) => {
   const { startSync, updateType, endSync } = useAutoSyncProgress();
+  const location = useLocation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export const useAutoSync = (userId: string | undefined) => {
 
     // Check if there's a pending sync from onboarding page
     const pendingSync = sessionStorage.getItem('pending_sync');
-    if (pendingSync && window.location.pathname === '/dashboard') {
+    if (pendingSync && location.pathname === '/dashboard') {
       console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
       startSync(pendingSync);
@@ -99,7 +101,7 @@ export const useAutoSync = (userId: string | undefined) => {
             const storeName = connection.store_name || connection.store_url;
             
             // Si on est sur /onboarding, stocker pour afficher après redirection
-            if (window.location.pathname.startsWith('/onboarding')) {
+            if (location.pathname.startsWith('/onboarding')) {
               console.log('⏭️ [AutoSync] On onboarding page, storing sync for dashboard display');
               sessionStorage.setItem('pending_sync', storeName);
               return;
@@ -252,5 +254,5 @@ export const useAutoSync = (userId: string | undefined) => {
         syncCheckIntervalRef.current = null;
       }
     };
-  }, [userId, startSync, updateType, endSync]);
+  }, [userId, startSync, updateType, endSync, location.pathname]);
 };
