@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
@@ -10,7 +9,6 @@ import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
  */
 export const useAutoSync = (userId: string | undefined) => {
   const { startSync, updateType, endSync } = useAutoSyncProgress();
-  const location = useLocation();
 
   useEffect(() => {
     if (!userId) return;
@@ -45,16 +43,10 @@ export const useAutoSync = (userId: string | undefined) => {
             return;
           }
 
-          // ✅ For OAuth connections, skip import (backend handles it via trigger-auto-sync)
-          // Just manage the popup UI
+          // ✅ For OAuth connections, show progress dialog on dashboard
+          // Backend handles actual import via trigger-auto-sync
           if (connection.connection_type === 'oauth') {
             console.log('⏭️ [AutoSync] OAuth connection detected - backend will handle import');
-            
-            // Ne pas afficher le dialog si on est sur /onboarding (le page gère son propre UI)
-            if (location.pathname === '/onboarding') {
-              console.log('⏭️ [AutoSync] Skipping dialog on /onboarding - page handles UI');
-              return;
-            }
             
             const storeName = connection.store_name || connection.store_url;
             startSync(storeName);

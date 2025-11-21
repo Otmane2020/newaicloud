@@ -23,8 +23,6 @@ import {
   Store,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/formatUtils";
 import { useShopifySync } from "@/hooks/useShopifySync";
@@ -65,47 +63,7 @@ export default function Onboarding() {
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
-  const [isWaitingForProducts, setIsWaitingForProducts] = useState(false);
-  const [importProgress, setImportProgress] = useState<string>("");
-  const [importElapsedSeconds, setImportElapsedSeconds] = useState(0);
   const { syncShopifyStore } = useShopifySync();
-
-  // ✅ Helper to wait for products before redirecting (timeout: 40s)
-  const waitForProducts = async (
-    userId: string, 
-    onProgress?: (elapsed: number, total: number) => void
-  ): Promise<void> => {
-    console.log("⏳ [WAIT-PRODUCTS] Waiting up to 40s for products to be imported...");
-    
-    let productsFound = false;
-    for (let i = 0; i < 40; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      onProgress?.(i + 1, 40);
-      
-      try {
-        const result = await (supabase as any)
-          .from("shopify_products")
-          .select("id")
-          .eq("user_id", userId)
-          .limit(1);
-        
-        if (result.data && result.data.length > 0) {
-          productsFound = true;
-          console.log(`✅ [WAIT-PRODUCTS] Products found after ${i + 1}s!`);
-          break;
-        }
-      } catch (err) {
-        console.error("Error checking products:", err);
-      }
-    }
-    
-    if (!productsFound) {
-      console.log("⏱️ [WAIT-PRODUCTS] Timeout (40s) - proceeding anyway");
-      toast.info("Synchronisation en cours...", {
-        description: "Vos produits continuent d'être importés en arrière-plan.",
-      });
-    }
-  };
 
   // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
   useEffect(() => {
@@ -152,16 +110,13 @@ export default function Onboarding() {
             return;
           }
           
-          // Auto-claim and sync
+          // Auto-claim and import will happen via backend trigger-auto-sync
           setClaimingShopify(true);
           
           await claimShopifyConnection(shopifyPending);
           
-          // Wait for at least one product before redirecting
-          await waitForProducts(user.id);
-          
-          // Redirect to dashboard after products are imported
-          console.log("🎯 [AUTO-CLAIM] Redirecting to dashboard with products");
+          // Redirect immediately - AutoSyncProgressDialog will show on dashboard
+          console.log("🎯 [AUTO-CLAIM] Redirecting to dashboard - import will continue in background");
           navigate("/dashboard?show_shopify_prompt=true");
         }
       } catch (error) {
@@ -350,38 +305,6 @@ export default function Onboarding() {
   const handleCheckSubscription = async (): Promise<void> => {
     setCheckingSubscription(true);
 
-    const waitForProductsLocal = async (userId: string): Promise<void> => {
-      console.log("⏳ [WAIT-PRODUCTS] Waiting up to 40s for products to be imported...");
-      
-      let productsFound = false;
-      for (let i = 0; i < 40; i++) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        try {
-          const result = await (supabase as any)
-            .from("shopify_products")
-            .select("id")
-            .eq("user_id", userId)
-            .limit(1);
-          
-          if (result.data && result.data.length > 0) {
-            productsFound = true;
-            console.log(`✅ [WAIT-PRODUCTS] Products found after ${i + 1}s!`);
-            break;
-          }
-        } catch (err) {
-          console.error("Error checking products:", err);
-        }
-      }
-      
-      if (!productsFound) {
-        console.log("⏱️ [WAIT-PRODUCTS] Timeout (40s) - proceeding anyway");
-        toast.info("Synchronisation en cours...", {
-          description: "Vos produits continuent d'être importés en arrière-plan.",
-        });
-      }
-    };
-
     // 🔄 RETRY LOGIC: Attempt subscription check up to 3 times with progressive delays
     const checkSubscriptionWithRetry = async (session: any, maxRetries = 3): Promise<{ subscribed: boolean } | null> => {
       const delays = [1000, 2000, 3000]; // 1s, 2s, 3s
@@ -487,10 +410,11 @@ export default function Onboarding() {
           if (shopifyPending && user?.id) {
             console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription activation");
             await claimShopifyConnection(shopifyPending);
-            await waitForProductsLocal(user.id);
           }
           
-          setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1500);
+          // Redirect immediately - AutoSyncProgressDialog will show on dashboard
+          console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
+          navigate("/dashboard?show_shopify_prompt=true");
           return;
         }
       }
@@ -507,40 +431,11 @@ export default function Onboarding() {
           
           try {
             await claimShopifyConnection(shopifyPending);
-            await waitForProductsLocal(user.id);
           } catch (claimError) {
-            console.error("❌ [CHECK-SUBSCRIPTION] Claim/import error:", claimError);
+            console.error("❌ [CHECK-SUBSCRIPTION] Claim error:", claimError);
             
-            // 🔄 ROBUST ERROR HANDLING: Offer retry option
             toast.error("Erreur lors de la connexion Shopify", {
-              description: "Impossible de connecter votre boutique.",
-              action: {
-                label: "Réessayer",
-                onClick: async () => {
-                  try {
-                    toast.loading("Nouvelle tentative...", { id: "retry-claim" });
-                    await claimShopifyConnection(shopifyPending);
-                    await waitForProductsLocal(user.id);
-                    toast.success("Boutique connectée avec succès!", { id: "retry-claim" });
-                    setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1000);
-                  } catch (retryError) {
-                    console.error("❌ [RETRY-CLAIM] Failed again:", retryError);
-                    toast.error("Échec de la reconnexion", {
-                      description: "Veuillez réessayer depuis le tableau de bord.",
-                      id: "retry-claim"
-                    });
-                    
-                    // Log to integration_failures for debugging
-                    await supabase.from("integration_failures").insert({
-                      user_id: user?.id,
-                      integration_type: "shopify",
-                      error_type: "claim_retry_failed",
-                      error_message: retryError instanceof Error ? retryError.message : String(retryError),
-                      context: { shopifyPending, attempt: "retry" }
-                    });
-                  }
-                }
-              }
+              description: "Veuillez réessayer depuis le tableau de bord.",
             });
             
             // Log error to integration_failures
@@ -551,17 +446,12 @@ export default function Onboarding() {
               error_message: claimError instanceof Error ? claimError.message : String(claimError),
               context: { shopifyPending }
             });
-            
-            // Still redirect to dashboard with manual import fallback
-            setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 2000);
-            return;
           }
         }
         
-        // Redirect to dashboard
-        setTimeout(() => {
-          navigate("/dashboard?show_shopify_prompt=true");
-        }, 1000);
+        // Redirect immediately - AutoSyncProgressDialog will show on dashboard
+        console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
+        navigate("/dashboard?show_shopify_prompt=true");
       } else {
         console.warn("⚠️ [CHECK-SUBSCRIPTION] No active subscription found after all retries");
         toast.error(t.onboarding.errors.noActiveSubscription, { id: "check-subscription" });
@@ -735,14 +625,6 @@ export default function Onboarding() {
 
     try {
       setLoading(true);
-      setIsWaitingForProducts(true);
-      setImportProgress("Activation de l'essai gratuit...");
-      setImportElapsedSeconds(0);
-
-      // Timer pour afficher les secondes écoulées
-      const timer = setInterval(() => {
-        setImportElapsedSeconds(prev => prev + 1);
-      }, 1000);
 
       console.log("🎁 [FREE-TRIAL] Activating free trial for user:", user.id);
 
@@ -750,36 +632,23 @@ export default function Onboarding() {
       const { data, error } = await supabase.functions.invoke("activate-free-trial");
 
       if (error) {
-        clearInterval(timer);
         throw error;
       }
 
       if (data?.success) {
         console.log("✅ [FREE-TRIAL] Trial activated, status is now 'trialing'");
+        toast.success(language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!");
         
         // ✅ STEP 2: NOW claim Shopify after trial is active
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending) {
           console.log("🔗 [FREE-TRIAL] Claiming Shopify connection after trial activation");
-          setImportProgress("Connexion de votre boutique...");
-          
-          setClaimingShopify(true);
           
           try {
             await claimShopifyConnection(shopifyPending);
-            
-            // ✅ STEP 3: Wait for products to be imported by backend
-            console.log("⏳ [FREE-TRIAL] Waiting for products to be imported...");
-            setImportProgress("Import des produits en cours...");
-            
-            await waitForProducts(user.id, (elapsed, total) => {
-              setImportProgress(`Recherche de produits... ${elapsed}/${total}s`);
-            });
-            
-            setClaimingShopify(false);
+            // Backend trigger-auto-sync will handle import
           } catch (claimError) {
             console.error("❌ [FREE-TRIAL] Error claiming connection:", claimError);
-            clearInterval(timer);
             
             // Log error to integration_failures
             await supabase.from("integration_failures").insert({
@@ -791,24 +660,14 @@ export default function Onboarding() {
             });
 
             toast.error("Erreur lors de la connexion", {
-              description: "Impossible de connecter votre boutique.",
-              action: {
-                label: "Réessayer",
-                onClick: () => handleStartFreeTrial(),
-              },
+              description: "Veuillez réessayer depuis le tableau de bord.",
             });
-            
-            clearInterval(timer);
-            navigate("/dashboard");
-            return;
           }
         }
 
-        clearInterval(timer);
-        toast.success(language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!");
-        
-        // Redirect to dashboard
-        setTimeout(() => navigate("/dashboard?show_shopify_prompt=true"), 1000);
+        // Redirect immediately - AutoSyncProgressDialog will show on dashboard
+        console.log("✅ [FREE-TRIAL] Redirecting to dashboard");
+        navigate("/dashboard?show_shopify_prompt=true");
       }
     } catch (error) {
       console.error("💥 [FREE-TRIAL] Error:", error);
@@ -819,7 +678,7 @@ export default function Onboarding() {
         integration_type: "shopify",
         error_type: "free_trial_activation_failed",
         error_message: error instanceof Error ? error.message : "Unknown error",
-        context: { step: importProgress },
+        context: {},
       });
       
       toast.error(language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial", {
@@ -832,7 +691,6 @@ export default function Onboarding() {
       navigate("/dashboard");
     } finally {
       setLoading(false);
-      setIsWaitingForProducts(false);
     }
   };
 
@@ -1699,46 +1557,6 @@ export default function Onboarding() {
         </div>
       </div>
 
-      {/* Dialog de progression pour l'import */}
-      <Dialog open={isWaitingForProducts}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              Import en cours
-            </DialogTitle>
-            <DialogDescription>
-              Veuillez patienter pendant l'import de votre boutique Shopify
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progression</span>
-                <span className="font-semibold text-primary">{importElapsedSeconds}s</span>
-              </div>
-              <Progress value={(importElapsedSeconds / 40) * 100} className="h-2" />
-            </div>
-
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
-              <p className="text-sm font-medium text-foreground">{importProgress}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique
-              </p>
-            </div>
-
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>✓ Activation de l'essai gratuit</p>
-              <p>✓ Connexion de votre boutique</p>
-              <p className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Import des produits en cours...
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
