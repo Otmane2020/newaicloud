@@ -89,6 +89,7 @@ export function AppSidebar() {
     { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
     { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
+    { title: "Smart Title", url: "/seo?tab=smart-title", icon: Sparkles, key: "smart-title" },
     { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
