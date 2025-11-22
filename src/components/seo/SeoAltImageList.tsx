@@ -74,12 +74,34 @@ export function SeoAltImageList() {
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [storeLanguage, setStoreLanguage] = useState<string>('fr');
 
   useEffect(() => {
     if (selectedStore) {
       fetchImages();
+      fetchStoreLanguage();
     }
   }, [user, selectedStore?.id]);
+
+  const fetchStoreLanguage = async () => {
+    if (!selectedStore?.id) return;
+    
+    try {
+      const { data } = await supabase
+        .from('shopify_connections')
+        .select('store_language')
+        .eq('id', selectedStore.id)
+        .maybeSingle();
+      
+      if (data?.store_language) {
+        const lang = data.store_language.split('-')[0].toLowerCase();
+        setStoreLanguage(['fr', 'en', 'es'].includes(lang) ? lang : 'fr');
+        console.log(`🌍 Store language detected: ${lang}`);
+      }
+    } catch (error) {
+      console.warn('Could not fetch store language:', error);
+    }
+  };
 
   const fetchImages = async () => {
     if (!selectedStore?.id) {
@@ -219,7 +241,10 @@ export function SeoAltImageList() {
     for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
         const { data, error } = await supabase.functions.invoke('generate-alt-texts', {
-          body: { imageId: imagesToGenerate[i].id }
+          body: { 
+            imageId: imagesToGenerate[i].id,
+            language: storeLanguage
+          }
         });
         
         if (!error && data) {

@@ -100,6 +100,10 @@ verify_jwt = true
 [functions.generate-alt-texts]
 verify_jwt = true
 
+[functions.smart-alt-text]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.shopping-feed]
 verify_jwt = false
 
