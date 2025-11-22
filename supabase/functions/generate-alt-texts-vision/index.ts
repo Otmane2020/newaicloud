@@ -755,7 +755,7 @@ Deno.serve(async (req: Request) => {
     let storeLanguage: string | null = null;
 
     if (imageType === "product") {
-      // ✅ FIX: Use correct table name and LEFT join (not INNER)
+      // ✅ FIX: Use explicit foreign key join on store_id
       const { data: productData, error: productError } = await supabaseClient
         .from("shopify_products")
         .select(`
@@ -763,7 +763,8 @@ Deno.serve(async (req: Request) => {
           description, 
           category, 
           seller_id,
-          store:shopify_connections(store_language)
+          store_id,
+          connections:shopify_connections!shopify_products_store_id_fkey(store_language)
         `)
         .eq("id", image.product_id)
         .maybeSingle();
@@ -785,7 +786,9 @@ Deno.serve(async (req: Request) => {
 
       productTitle = productData.title;
       userId = productData.seller_id;
-      storeLanguage = (productData as any).store?.store_language || null;
+      
+      // Extract store_language from the connections join
+      storeLanguage = (productData as any).connections?.store_language || null;
       
       console.log(`🌍 Store language detected: ${storeLanguage || "not configured (will use auto-detection)"}`);
     }
