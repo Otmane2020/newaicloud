@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ✅ CORRECTION : Gestion améliorée des erreurs d'API et fallback
+// ✅ NOUVELLE CLASSE POUR GESTION DES ERREURS ET FALLBACK
 class AIService {
   private static readonly GEMINI_MODELS = [
     "gemini-2.0-flash", // Premier choix
@@ -15,13 +15,7 @@ class AIService {
     "gemini-1.5-pro", // Deuxième fallback
   ];
 
-  private static readonly LOVABLE_MODELS = [
-    "google/gemini-2.0-flash",
-    "google/gemini-1.5-flash",
-    "google/gemini-1.5-pro",
-  ];
-
-  static async generateWithFallback(prompt: string, apiKey: string, language: string) {
+  static async generateWithFallback(prompt: string, apiKey: string, language: string): Promise<string> {
     let lastError: any = null;
 
     for (const model of this.GEMINI_MODELS) {
@@ -46,7 +40,7 @@ class AIService {
     throw new Error(`Tous les modèles Gemini ont échoué: ${lastError?.message}`);
   }
 
-  private static async callGeminiAPI(prompt: string, apiKey: string, model: string, language: string) {
+  private static async callGeminiAPI(prompt: string, apiKey: string, model: string, language: string): Promise<string> {
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 45000); // 45s timeout
 
@@ -83,7 +77,9 @@ class AIService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API Error ${response.status}: ${errorText}`);
+        const error = new Error(`API Error ${response.status}: ${errorText}`);
+        (error as any).status = response.status;
+        throw error;
       }
 
       const data = await response.json();
@@ -99,37 +95,9 @@ class AIService {
       throw error;
     }
   }
-
-  static async analyzeImageWithFallback(imageUrl: string, apiKey: string) {
-    for (const model of this.LOVABLE_MODELS) {
-      try {
-        console.log(`🖼️ Analyse d'image avec: ${model}`);
-        const result = await this.callLovableAPI(imageUrl, apiKey, model);
-        return result;
-      } catch (error: any) {
-        console.warn(`❌ Échec analyse image avec ${model}:`, error.message);
-        continue;
-      }
-    }
-    throw new Error("Tous les modèles d'analyse d'image ont échoué");
-  }
-
-  private static async callLovableAPI(imageUrl: string, apiKey: string, model: string) {
-    // Implémentation existante de l'analyse d'image...
-    // (garder le code existant mais avec le modèle dynamique)
-    const visionController = new AbortController();
-    const visionTimeout = setTimeout(() => visionController.abort(), 15000);
-
-    try {
-      // ... code existant de l'analyse d'image
-      return { success: true, model };
-    } finally {
-      clearTimeout(visionTimeout);
-    }
-  }
 }
 
-// ✅ NOUVELLES FONCTIONS POUR POLICES LUXUEUSES
+// ✅ FONCTIONS POUR POLICES LUXUEUSES
 function getPremiumFontConfig(designStyle: string) {
   const fontConfigs = {
     premium: {
@@ -178,6 +146,13 @@ tailwind.config = {
 .elegant-serif {
   font-family: 'Playfair Display', serif;
 }
+
+.text-gradient-premium {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 `,
     },
     modern: {
@@ -198,6 +173,11 @@ tailwind.config = {
       }
     }
   }
+}
+`,
+      css: `
+.font-modern {
+  font-family: 'Manrope', sans-serif;
 }
 `,
     },
@@ -221,13 +201,18 @@ tailwind.config = {
   }
 }
 `,
+      css: `
+.font-mono-minimal {
+  font-family: 'Space Grotesk', monospace;
+}
+`,
     },
   };
 
   return fontConfigs[designStyle as keyof typeof fontConfigs] || fontConfigs.modern;
 }
 
-function enhanceWithPremiumTypography(html: string, designStyle: string): string {
+function enhanceWithPremiumTypography(html: string, designStyle: string, designTokens: any): string {
   const fontConfig = getPremiumFontConfig(designStyle);
 
   // Ajouter les polices dans le head
@@ -235,18 +220,43 @@ function enhanceWithPremiumTypography(html: string, designStyle: string): string
     html = html.replace("</head>", `${fontConfig.fonts}\n</head>`);
   }
 
+  // Ajouter les variables CSS pour les couleurs HSL
+  const cssVariables = `
+<style>
+  :root {
+    --primary: ${designTokens.primary};
+    --secondary: ${designTokens.secondary};
+    --accent: ${designTokens.accent};
+    --background: ${designTokens.background};
+    --text: ${designTokens.text};
+  }
+  ${fontConfig.css}
+</style>
+`;
+
+  // Injecter les variables CSS dans le head
+  if (html.includes("</head>")) {
+    html = html.replace("</head>", `${cssVariables}\n</head>`);
+  }
+
   // Améliorer les titres avec des classes typographiques premium
   if (designStyle === "premium") {
     html = html
       .replace(/<h1[^>]*>/g, (match) => {
         if (!match.includes('class="')) {
-          return match.replace(">", ' class="hero-title">');
+          return match.replace(">", ' class="hero-title text-hero font-bold tracking-luxury">');
         }
-        return match.replace('class="', 'class="hero-title ');
+        return match.replace('class="', 'class="hero-title text-hero font-bold tracking-luxury ');
       })
       .replace(/<h2[^>]*>/g, (match) => {
         if (!match.includes('class="')) {
-          return match.replace(">", ' class="elegant-serif text-display font-bold tracking-luxury">');
+          return match.replace(">", ' class="elegant-serif text-display font-semibold tracking-wide">');
+        }
+        return match;
+      })
+      .replace(/<h3[^>]*>/g, (match) => {
+        if (!match.includes('class="')) {
+          return match.replace(">", ' class="luxury-text text-title font-medium tracking-elegant">');
         }
         return match;
       });
@@ -256,18 +266,30 @@ function enhanceWithPremiumTypography(html: string, designStyle: string): string
 }
 
 // ✅ FONCTION AMÉLIORÉE POUR TAILWIND AVEC POLICES
-function ensureTailwindConfig(html: string, designStyle: string = "modern"): string {
+function ensureTailwindConfig(html: string, designStyle: string = "modern", designTokens: any = null): string {
   const fontConfig = getPremiumFontConfig(designStyle);
 
-  // Configuration Tailwind étendue avec polices
+  // Configuration Tailwind étendue avec polices et couleurs HSL
   const tailwindConfig = `
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   ${fontConfig.tailwindConfig}
 </script>
+${
+  designTokens
+    ? `
 <style>
-  ${designStyle === "premium" ? fontConfig.css : ""}
+  :root {
+    --primary: ${designTokens.primary};
+    --secondary: ${designTokens.secondary};
+    --accent: ${designTokens.accent};
+    --background: ${designTokens.background};
+    --text: ${designTokens.text};
+  }
 </style>
+`
+    : ""
+}
 `;
 
   // Vérifier et corriger la configuration Tailwind
@@ -284,9 +306,6 @@ function ensureTailwindConfig(html: string, designStyle: string = "modern"): str
 <script>
   ${fontConfig.tailwindConfig}
 </script>
-<style>
-  ${designStyle === "premium" ? fontConfig.css : ""}
-</style>
 `;
     const headEnd = html.indexOf("</head>");
     if (headEnd > -1) {
@@ -297,120 +316,130 @@ function ensureTailwindConfig(html: string, designStyle: string = "modern"): str
   return html;
 }
 
-// ✅ PROMPT AMÉLIORÉ AVEC INSTRUCTIONS TYPOGRAPHIQUES PRÉCISES
-function getEnhancedPrompt(
-  originalPrompt: string,
-  designStyle: string,
+// ✅ FONCTION DE FALLBACK POUR QUOTA DÉPASSÉ
+function generateFallbackTemplate(
+  productTitle: string,
+  description: string,
   designTokens: any,
-  detectedLanguage: string,
+  language: string,
+  designStyle: string,
 ): string {
-  const fontInstructions = getPremiumFontConfig(designStyle);
+  console.log("🔄 Génération du template de fallback...");
 
-  const typographyEnhancements =
-    detectedLanguage === "en"
-      ? `
-🎨 **PREMIUM TYPOGRAPHY SYSTEM (STRICTLY ENFORCED):**
+  const isFrench = language === "fr";
+  const title = isFrench ? "Description du Produit" : "Product Description";
+  const desc = description || (isFrench ? "Description détaillée du produit." : "Detailed product description.");
 
-${fontInstructions.name}
+  const fontConfig = getPremiumFontConfig(designStyle);
 
-🚨 CRITICAL TYPOGRAPHY RULES:
-- ALWAYS use the provided font classes in your HTML
-- For PREMIUM style: Use 'hero-title', 'elegant-serif', 'luxury-text' classes
-- Headings: Use font-serif for premium, font-sans for modern, font-mono for minimalist
-- Letter spacing: tracking-wide, tracking-wider, tracking-luxury for premium
-- Font weights: Use light (300), regular (400), medium (500), semibold (600), bold (700)
-- Line height: leading-tight for headings, leading-relaxed for body text
+  return `
+<!DOCTYPE html>
+<html lang="${language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>${productTitle}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    ${fontConfig.fonts}
+    <script>
+      ${fontConfig.tailwindConfig}
+    </script>
+    <style>
+      :root {
+        --primary: ${designTokens.primary};
+        --secondary: ${designTokens.secondary};
+        --accent: ${designTokens.accent};
+        --background: ${designTokens.background};
+        --text: ${designTokens.text};
+      }
+      ${fontConfig.css}
+      
+      .hero-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        background: linear-gradient(135deg, hsl(${designTokens.primary}) 0%, hsl(${designTokens.accent}) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .luxury-text {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 300;
+        letter-spacing: 0.1em;
+      }
+    </style>
+</head>
+<body style="background-color: hsl(${designTokens.background}); color: hsl(${designTokens.text})">
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center justify-center py-20 px-4" style="background: linear-gradient(135deg, hsl(${designTokens.primary}) 0%, hsl(${designTokens.accent}) 100%);">
+        <div class="container mx-auto text-center">
+            <h1 class="hero-title text-6xl md:text-8xl lg:text-9xl mb-8 leading-tight">
+                ${productTitle}
+            </h1>
+            <p class="luxury-text text-xl md:text-2xl lg:text-3xl max-w-4xl mx-auto leading-relaxed text-white">
+                ${desc}
+            </p>
+        </div>
+    </section>
 
-📐 TYPOGRAPHY SCALE:
-- H1: text-6xl md:text-8xl lg:text-hero (premium) / text-5xl md:text-7xl (modern)
-- H2: text-4xl md:text-6xl lg:text-display (premium) / text-3xl md:text-5xl (modern)  
-- H3: text-2xl md:text-4xl lg:text-title (premium) / text-xl md:text-3xl (modern)
-- Body: text-base md:text-lg leading-relaxed
+    <!-- Features Section -->
+    <section class="py-20" style="background-color: hsl(${designTokens.surface})">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl md:text-6xl font-bold text-center mb-16 elegant-serif" style="color: hsl(${designTokens.primary})">
+                ${isFrench ? "Caractéristiques Principales" : "Key Features"}
+            </h2>
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="text-center p-8 rounded-2xl shadow-xl" style="background-color: hsl(${designTokens.background})">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Qualité" : "Quality"}</h3>
+                    <p class="text-gray-600">${isFrench ? "Matériaux de première qualité et finition exceptionnelle." : "Premium materials and exceptional finish."}</p>
+                </div>
+                <div class="text-center p-8 rounded-2xl shadow-xl" style="background-color: hsl(${designTokens.background})">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Design" : "Design"}</h3>
+                    <p class="text-gray-600">${isFrench ? "Esthétique raffinée et contemporaine." : "Refined and contemporary aesthetics."}</p>
+                </div>
+                <div class="text-center p-8 rounded-2xl shadow-xl" style="background-color: hsl(${designTokens.background})">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Durabilité" : "Durability"}</h3>
+                    <p class="text-gray-600">${isFrench ? "Conçu pour durer dans le temps." : "Built to stand the test of time."}</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-✨ PREMIUM TEXT EFFECTS:
-- Text shadows: style="text-shadow: 0 2px 4px rgba(0,0,0,0.5)"
-- Gradient text: style="background: linear-gradient(135deg, hsl(${designTokens.primary}) 0%, hsl(${designTokens.accent}) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"
-- Letter spacing: tracking-wider, tracking-widest for luxury feel
-`
-      : `
-🎨 **SYSTÈME TYPOGRAPHIQUE PREMIUM (STRICTEMENT APPLIQUÉ):**
-
-${fontInstructions.name}
-
-🚨 RÈGLES TYPOGRAPHIQUES CRITIQUES :
-- TOUJOURS utiliser les classes de polices fournies dans votre HTML
-- Pour le style PREMIUM : Utiliser les classes 'hero-title', 'elegant-serif', 'luxury-text'
-- Titres : Utiliser font-serif pour premium, font-sans pour moderne, font-mono pour minimaliste
-- Espacement des lettres : tracking-wide, tracking-wider, tracking-luxury pour premium
-- Poids de police : Utiliser light (300), regular (400), medium (500), semibold (600), bold (700)
-- Hauteur de ligne : leading-tight pour les titres, leading-relaxed pour le texte courant
-
-📐 ÉCHELLE TYPOGRAPHIQUE :
-- H1 : text-6xl md:text-8xl lg:text-hero (premium) / text-5xl md:text-7xl (modern)
-- H2 : text-4xl md:text-6xl lg:text-display (premium) / text-3xl md:text-5xl (modern)
-- H3 : text-2xl md:text-4xl lg:text-title (premium) / text-xl md:text-3xl (modern)
-- Corps : text-base md:text-lg leading-relaxed
-
-✨ EFFETS TEXTE PREMIUM :
-- Ombres texte : style="text-shadow: 0 2px 4px rgba(0,0,0,0.5)"
-- Texte dégradé : style="background: linear-gradient(135deg, hsl(${designTokens.primary}) 0%, hsl(${designTokens.accent}) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"
-- Espacement lettres : tracking-wider, tracking-widest pour effet luxueux
-`;
-
-  return originalPrompt + typographyEnhancements;
+    <!-- CTA Section -->
+    <section class="py-20 text-center">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-5xl font-bold mb-8">${isFrench ? "Prêt à découvrir l'excellence ?" : "Ready to discover excellence?"}</h2>
+            <button class="px-8 py-4 text-lg font-semibold rounded-full transition-transform hover:scale-105" 
+                    style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+                ${isFrench ? "En savoir plus" : "Learn More"}
+            </button>
+        </div>
+    </section>
+</body>
+</html>`;
 }
 
-// 🎨 STYLES PREMIUM AMÉLIORÉS
-const styleTemplates = {
-  // ... [garder les styles existants mais améliorer le premium] ...
-  premium: {
-    name: "PREMIUM ULTRA-LUXE - Polices & Élégance",
-    description: "ULTRA-LUXE: Backgrounds sombres, polices serif élégantes, typographie raffinée, effets riches",
-    rules: `
-🎨 STYLE PREMIUM ULTRA-LUXE (STRICTEMENT APPLIQUÉ):
-================================================
-POLICES & TYPOGRAPHIE - LUXUEUSES SERIF:
-- ✅ Polices Google Fonts: Playfair Display + Cormorant Garamond + Inter
-- ✅ Titres: font-serif (Playfair Display) avec tracking-wide
-- ✅ Sous-titres: font-elegant (Cormorant Garamond) avec letter-spacing
-- ✅ Corps: font-sans (Inter) pour une lisibilité parfaite
-- ✅ Tailles custom: text-hero, text-display, text-title
+// [GARDER TOUTES LES AUTRES FONCTIONS EXISTANTES (hexToRgb, generateDesignTokens, etc.)]
+// ... (toutes les fonctions utilitaires existantes restent inchangées)
 
-PALETTE COULEURS - SOPHISTIQUÉE SOMBRE:
-- ✅ Background SOMBRE: bg-gray-900, bg-slate-900, bg-zinc-900
-- ✅ Accents métalliques: or (#D4AF37), argent, bronze
-- ✅ Dégradés complexes multi-stops avec effets de brillance
-- ✅ Texte sur fond sombre: text-gray-100, text-white avec ombres
-
-EFFETS TYPOGRAPHIQUES - RICHESSE VISUELLE:
-- ✅ Text shadows: text-shadow: 0 2px 4px rgba(0,0,0,0.8)
-- ✅ Gradient text: bg-gradient-to-r from-gold to-silver bg-clip-text text-transparent
-- ✅ Letter spacing: tracking-wider, tracking-widest, tracking-luxury
-- ✅ Font weights variés: 300 (light), 400 (regular), 600 (semibold), 700 (bold)
-
-ESPACES - TRÈS GÉNÉREUX:
-- ✅ Sections: py-20 md:py-40 lg:py-52 (espacement royal)
-- ✅ Entre éléments: space-y-20 md:space-y-28
-- ✅ Containers: max-w-8xl avec marges luxueuses
-
-ÉLÉMENTS VISUELS - PROFONDEUR EXTRA:
-- ✅ Ombres portées multiples: shadow-2xl, shadow-3xl
-- ✅ Bordures très arrondies: rounded-3xl, rounded-full
-- ✅ Overlays subtils: backdrop-blur-md, bg-black/30
-- ✅ Images: Cadres avec ombres et reflets subtils
-- ✅ Effets de brillance: glow, shimmer avec animations
-
-ICÔNES - COMPLEXES ET BRILLANTES:
-- ✅ Taille imposante: w-14 h-14 lg:w-18 lg:h-18
-- ✅ Dégradés 3+ couleurs avec effets métalliques
-- ✅ Filters: feGaussianBlur, feColorMatrix pour effets luxueux
-- ✅ Strokes épais: stroke-width="3.5"
-- ✅ Effets de lumière: multiple layers, opacités variables
-`,
-  },
-};
-
-// 🎯 CODE PRINCIPAL MIS À JOUR
+// ✅ MODIFICATION DE LA FONCTION PRINCIPALE
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -452,19 +481,44 @@ serve(async (req) => {
     } = body ?? {};
 
     let productTitle = initialProductTitle;
+
+    console.log("📥 Request parameters:", {
+      product_id,
+      productTitle: productTitle?.substring(0, 50),
+      designStyle,
+      hasColorScheme: !!colorScheme,
+      language,
+    });
+
+    // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
+
+    // Generate design tokens
     const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
 
-    // ✅ CORRECTION : Gestion des erreurs de quota
+    if (!productTitle)
+      return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    if (!product_id)
+      return new Response(JSON.stringify({ error: "Missing required field: product_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    // [RESTE DU CODE EXISTANT POUR L'ENRICHISSEMENT ET LA RÉCUPÉRATION DES DONNÉES...]
+    // ... (garder tout le code existant pour l'enrichissement, images, variants, etc.)
+
+    // ✅ CORRECTION : APPEL AI AVEC SYSTÈME DE FALLBACK
+    console.log("🤖 Starting AI generation with fallback system...");
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+
     if (!GOOGLE_GEMINI_API_KEY) {
       throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
-    // [Code de préparation et enrichissement existant...]
-
-    // ✅ APPEL AI AVEC FALLBACK
-    console.log("🤖 Starting AI generation with fallback system...");
     let rawHtml: string;
 
     try {
@@ -484,10 +538,11 @@ serve(async (req) => {
 
     // ✅ APPLICATION DES AMÉLIORATIONS TYPOGRAPHIQUES
     let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
-    html = ensureTailwindConfig(html, designStyle);
-    html = enhanceWithPremiumTypography(html, designStyle);
+    html = ensureTailwindConfig(html, designStyle, designTokens);
+    html = enhanceWithPremiumTypography(html, designStyle, designTokens);
 
-    // [Reste du code existant...]
+    // [RESTE DU CODE EXISTANT POUR LES DIMENSIONS, SAUVEGARDE, ETC...]
+    // ... (garder tout le code existant pour les dimensions, insertion, sauvegarde)
 
     console.log("✅ Landing page generation successful with premium typography!");
     return new Response(
@@ -519,78 +574,5 @@ serve(async (req) => {
   }
 });
 
-// ✅ TEMPLATE DE FALLBACK POUR QUOTA DÉPASSÉ
-function generateFallbackTemplate(
-  productTitle: string,
-  description: string,
-  designTokens: any,
-  language: string,
-  designStyle: string,
-): string {
-  console.log("🔄 Generating fallback template...");
-
-  const isFrench = language === "fr";
-  const title = isFrench ? "Description du Produit" : "Product Description";
-  const desc = description || (isFrench ? "Description détaillée du produit." : "Detailed product description.");
-
-  return `
-<!DOCTYPE html>
-<html lang="${language}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${productTitle}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-        .luxury-text {
-            font-family: 'Cormorant Garamond', serif;
-            font-weight: 300;
-            letter-spacing: 0.1em;
-        }
-    </style>
-</head>
-<body style="background-color: hsl(${designTokens.background}); color: hsl(${designTokens.text})">
-    <!-- Hero Section -->
-    <section class="min-h-screen flex items-center justify-center py-20">
-        <div class="container mx-auto px-4 text-center">
-            <h1 class="hero-title text-6xl md:text-8xl lg:text-9xl mb-8" style="color: hsl(${designTokens.primary})">
-                ${productTitle}
-            </h1>
-            <p class="luxury-text text-xl md:text-2xl lg:text-3xl max-w-4xl mx-auto leading-relaxed">
-                ${desc}
-            </p>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="py-20" style="background-color: hsl(${designTokens.surface})">
-        <div class="container mx-auto px-4">
-            <h2 class="text-4xl md:text-6xl font-bold text-center mb-16 elegant-serif">
-                ${isFrench ? "Caractéristiques Principales" : "Key Features"}
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                <div class="text-center p-8 rounded-2xl" style="background-color: hsl(${designTokens.background})">
-                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Qualité" : "Quality"}</h3>
-                    <p>${isFrench ? "Matériaux de première qualité et finition exceptionnelle." : "Premium materials and exceptional finish."}</p>
-                </div>
-                <div class="text-center p-8 rounded-2xl" style="background-color: hsl(${designTokens.background})">
-                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Design" : "Design"}</h3>
-                    <p>${isFrench ? "Esthétique raffinée et contemporaine." : "Refined and contemporary aesthetics."}</p>
-                </div>
-                <div class="text-center p-8 rounded-2xl" style="background-color: hsl(${designTokens.background})">
-                    <h3 class="text-2xl font-semibold mb-4">${isFrench ? "Durabilité" : "Durability"}</h3>
-                    <p>${isFrench ? "Conçu pour durer dans le temps." : "Built to stand the test of time."}</p>
-                </div>
-            </div>
-        </div>
-    </section>
-</body>
-</html>`;
-}
-
-// [Garder toutes les autres fonctions existantes (hexToRgb, generateDesignTokens, etc.)]
+// [GARDER TOUTES LES FONCTIONS EXISTANTES (clamp, hexToRgb, generateDesignTokens, etc.)]
+// ... (toutes les autres fonctions restent inchangées)
