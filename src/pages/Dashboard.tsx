@@ -127,8 +127,8 @@ export default function Dashboard() {
         const checkoutStatus = searchParams.get('checkout');
         if (checkoutStatus === 'success') {
           toast({
-            title: t.toasts.subscriptionActivated,
-            description: t.toasts.subscriptionActivatedMessage,
+            title: t.toasts.success.subscriptionActivated,
+            description: t.toasts.success.subscriptionActivatedMessage,
           });
           
           searchParams.delete('checkout');
@@ -140,8 +140,8 @@ export default function Dashboard() {
           }, 1500);
         } else if (checkoutStatus === 'cancelled') {
           toast({
-            title: t.toasts.paymentCancelled,
-            description: t.toasts.paymentCancelledMessage,
+            title: t.toasts.warning.paymentCancelled,
+            description: t.toasts.warning.paymentCancelledMessage,
             variant: "destructive"
           });
           
