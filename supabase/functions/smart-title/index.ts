@@ -25,45 +25,50 @@ function arrayBufferToBase64(buf: ArrayBuffer) {
 }
 
 // -----------------------------
-// 🟦 SAFE GEMINI VISION (NO CRASH)
+// 🟦 LOVABLE AI VISION (NO CRASH)
 // -----------------------------
-async function safeGeminiVision(base64: string, prompt: string, apiKey: string) {
+async function safeLovableVision(base64: string, prompt: string, apiKey: string) {
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64,
-                  },
-                },
-              ],
-            },
-          ],
-        }),
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/jpeg;base64,${base64}` },
+              },
+            ],
+          },
+        ],
+        temperature: 0.2,
+      }),
+    });
 
-    const text = await res.text();
-
-    // IMPORTANT: ne jamais throw -> éviter crash Supabase
     if (!res.ok) {
-      console.log("⚠ Gemini Vision non-fatal:", text);
+      const text = await res.text();
+      console.log("⚠ Lovable AI Vision non-fatal:", res.status, text);
+      
+      if (res.status === 429) {
+        console.log("⚠ Rate limit exceeded");
+      } else if (res.status === 402) {
+        console.log("⚠ Payment required");
+      }
       return null;
     }
 
-    const data = JSON.parse(text);
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content || null;
   } catch (e) {
-    console.log("⚠ Gemini Vision exception:", e);
+    console.log("⚠ Lovable AI Vision exception:", e);
     return null;
   }
 }
@@ -136,7 +141,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
-    const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY")!;
+    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY")!
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -153,7 +158,7 @@ Deno.serve(async (req) => {
       .single();
 
     const images = product.product_images || [];
-    const primary = images.sort((a, b) => (a.position || 0) - (b.position || 0))[0];
+    const primary = images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))[0];
 
     let visionAnalysis = null;
 
@@ -177,13 +182,13 @@ Analyse cette image et décris précisément:
 Réponds en phrases complètes.
 `;
 
-      // ESSAI GEMINI (NE CRASH JAMAIS)
-      if (GEMINI_KEY) {
-        visionAnalysis = await safeGeminiVision(base64, visionPrompt, GEMINI_KEY);
+      // ESSAI LOVABLE AI (NE CRASH JAMAIS)
+      if (LOVABLE_KEY) {
+        visionAnalysis = await safeLovableVision(base64, visionPrompt, LOVABLE_KEY);
       }
 
       // FALLBACK
-      if (!visionAnalysis) {
+      if (!visionAnalysis && DEEPSEEK_KEY) {
         visionAnalysis = await deepseekVision(base64, visionPrompt, DEEPSEEK_KEY);
       }
 
