@@ -123,12 +123,15 @@ export default function MediaHistory() {
     mutationFn: async ({ 
       historyId, 
       targetImageId, 
-      optimizedUrl 
+      optimizedUrl,
+      productId
     }: { 
       historyId: string; 
       targetImageId: string; 
       optimizedUrl: string;
+      productId: string;
     }) => {
+      // 1. Update local database
       const { error: updateError } = await supabase
         .from('product_images')
         .update({ 
@@ -138,20 +141,35 @@ export default function MediaHistory() {
         .eq('id', targetImageId);
 
       if (updateError) throw updateError;
+
+      // 2. Sync to Shopify
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+        'sync-product-images-to-shopify',
+        { body: { product_id: productId } }
+      );
+
+      if (syncError) {
+        console.error('⚠️ Shopify sync error:', syncError);
+        throw new Error('Image appliquée mais synchronisation Shopify échouée');
+      }
+
+      return syncResult;
     },
     onSuccess: () => {
-      toast.success('Image appliquée avec succès');
+      toast.success('Image appliquée et synchronisée avec Shopify ✅');
       queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application');
+      toast.error(error.message || 'Erreur lors de l\'application');
     }
   });
 
   const applyCollectionImage = useMutation({
     mutationFn: async ({ collectionId, optimizedUrl }: { collectionId: string; optimizedUrl: string }) => {
+      // 1. Update local database
       const { error } = await supabase
         .from('shopify_collections')
         .update({ 
@@ -161,16 +179,34 @@ export default function MediaHistory() {
         .eq('id', collectionId);
 
       if (error) throw error;
+
+      // 2. Sync to Shopify
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+        'sync-collection-image-to-shopify',
+        { body: { collection_id: collectionId } }
+      );
+
+      if (syncError) {
+        console.error('⚠️ Shopify sync error:', syncError);
+        throw new Error('Image appliquée mais synchronisation Shopify échouée');
+      }
+
+      return syncResult;
     },
     onSuccess: () => {
-      toast.success('Image de collection appliquée');
+      toast.success('Image appliquée et synchronisée avec Shopify ✅');
       queryClient.invalidateQueries({ queryKey: ['collection-image-history'] });
+      queryClient.invalidateQueries({ queryKey: ['shopify-collections'] });
     },
-    onError: () => toast.error('Erreur lors de l\'application')
+    onError: (error: any) => {
+      console.error('Error applying image:', error);
+      toast.error(error.message || 'Erreur lors de l\'application');
+    }
   });
 
   const applyArticleImage = useMutation({
     mutationFn: async ({ articleId, optimizedUrl }: { articleId: string; optimizedUrl: string }) => {
+      // 1. Update local database
       const { error } = await supabase
         .from('blog_articles')
         .update({ 
@@ -180,12 +216,29 @@ export default function MediaHistory() {
         .eq('id', articleId);
 
       if (error) throw error;
+
+      // 2. Sync to Shopify
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+        'sync-article-image-to-shopify',
+        { body: { article_id: articleId } }
+      );
+
+      if (syncError) {
+        console.error('⚠️ Shopify sync error:', syncError);
+        throw new Error('Image appliquée mais synchronisation Shopify échouée');
+      }
+
+      return syncResult;
     },
     onSuccess: () => {
-      toast.success('Image d\'article appliquée');
+      toast.success('Image appliquée et synchronisée avec Shopify ✅');
       queryClient.invalidateQueries({ queryKey: ['article-image-history'] });
+      queryClient.invalidateQueries({ queryKey: ['blog-articles'] });
     },
-    onError: () => toast.error('Erreur lors de l\'application')
+    onError: (error: any) => {
+      console.error('Error applying image:', error);
+      toast.error(error.message || 'Erreur lors de l\'application');
+    }
   });
 
   const handleDownload = (url: string, filename: string) => {

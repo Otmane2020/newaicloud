@@ -8,7 +8,7 @@ interface ProductImageSelectorProps {
   productId: string;
   historyId: string;
   optimizedUrl: string;
-  onApply: (params: { historyId: string; targetImageId: string; optimizedUrl: string }) => void;
+  onApply: (params: { historyId: string; targetImageId: string; optimizedUrl: string; productId: string }) => void;
 }
 
 export function ProductImageSelector({ 
@@ -71,7 +71,8 @@ export function ProductImageSelector({
                 onClick={() => onApply({
                   historyId,
                   targetImageId: img.id,
-                  optimizedUrl
+                  optimizedUrl,
+                  productId
                 })}
                 className="gap-3 py-3"
               >
@@ -115,6 +116,7 @@ export function ProductImageSelector({
                 key={variant.id}
                 onClick={async () => {
                   try {
+                    // 1. Update variant image
                     const { error } = await supabase
                       .from('product_variants')
                       .update({ image_url: optimizedUrl })
@@ -127,8 +129,21 @@ export function ProductImageSelector({
                       .update({ is_current: true })
                       .eq('id', historyId);
 
-                    toast.success('Image appliquée à la variante avec succès');
+                    // 2. Sync to Shopify
+                    const { error: syncError } = await supabase.functions.invoke(
+                      'sync-product-images-to-shopify',
+                      { body: { product_id: productId } }
+                    );
+
+                    if (syncError) {
+                      console.error('⚠️ Shopify sync error:', syncError);
+                      toast.success('Image appliquée (sync Shopify partielle)');
+                    } else {
+                      toast.success('Image appliquée et synchronisée avec Shopify ✅');
+                    }
+
                     queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
+                    queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
                   } catch (error) {
                     console.error('Error applying image to variant:', error);
                     toast.error("Erreur lors de l'application de l'image");
