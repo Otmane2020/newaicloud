@@ -21,10 +21,10 @@ serve(async (req) => {
   }
 
   try {
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     const body: VisionRequest = await req.json();
@@ -34,41 +34,13 @@ serve(async (req) => {
       throw new Error("imageUrl is required");
     }
 
-    console.log(`🔍 Analyzing image with Gemini Vision: ${imageUrl.substring(0, 100)}...`);
-
-    // Préparer l'image pour Gemini
-    let imageData = "";
-    
-    if (imageUrl.startsWith("data:image")) {
-      // Image déjà en base64
-      imageData = imageUrl.split(",")[1];
-    } else {
-      // Télécharger et convertir en base64
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.status}`);
-      }
-      const imageBlob = await imageResponse.blob();
-      const arrayBuffer = await imageBlob.arrayBuffer();
-      
-      // Convert to base64 in chunks to avoid stack overflow
-      const bytes = new Uint8Array(arrayBuffer);
-      const chunkSize = 0x8000; // 32KB chunks
-      let binary = '';
-      
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-        binary += String.fromCharCode(...chunk);
-      }
-      
-      imageData = btoa(binary);
-    }
+    console.log(`🔍 Analyzing image with Lovable AI Vision: ${imageUrl.substring(0, 100)}...`);
 
     const contextInfo = productContext 
       ? `\nContexte produit: ${productContext.title || ""} - ${productContext.category || ""} ${productContext.type || ""}`
       : "";
 
-    // Appel à Gemini Vision avec prompt détaillé
+    // Appel à Lovable AI Vision avec prompt détaillé
     const prompt = `Tu es un expert en analyse visuelle de produits e-commerce. Analyse cette image de produit et extrait les informations suivantes:${contextInfo}
 
 OBJECTIF PRINCIPAL: DÉTECTER ET EXTRAIRE LES DIMENSIONS TECHNIQUES SI UN SCHÉMA EST PRÉSENT
@@ -131,43 +103,57 @@ Réponds UNIQUEMENT en JSON valide:
 }`;
 
     const visionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          contents: [
+          model: "google/gemini-2.5-flash",
+          messages: [
             {
-              parts: [
-                { text: prompt },
+              role: "user",
+              content: [
                 {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: imageData,
-                  },
+                  type: "text",
+                  text: prompt
                 },
-              ],
-            },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl
+                  }
+                }
+              ]
+            }
           ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2000,
-          },
-        }),
+          temperature: 0.3,
+          max_tokens: 2000
+        })
       }
     );
 
     if (!visionResponse.ok) {
       const errorText = await visionResponse.text();
-      console.error("Gemini Vision API error:", errorText);
-      throw new Error(`Gemini Vision error: ${visionResponse.status}`);
+      console.error("Lovable AI Vision error:", errorText);
+      
+      if (visionResponse.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
+      }
+      if (visionResponse.status === 402) {
+        throw new Error("Payment required. Please add credits to your Lovable workspace.");
+      }
+      
+      throw new Error(`Lovable AI Vision error: ${visionResponse.status}`);
     }
 
     const visionData = await visionResponse.json();
-    const analysisText = visionData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const analysisText = visionData?.choices?.[0]?.message?.content || "";
 
     if (!analysisText) {
-      throw new Error("No analysis returned from Gemini Vision");
+      throw new Error("No analysis returned from Lovable AI Vision");
     }
 
     console.log("✅ Vision analysis received");
