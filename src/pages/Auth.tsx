@@ -130,7 +130,7 @@ export default function Auth() {
             {mode === 'login'
               ? t.auth.login
               : referralCode 
-                ? t.toasts.welcomeBonusMessage
+                ? t.toasts.success.welcomeBonusMessage
                 : t.auth.signup}
           </p>
 
@@ -153,10 +153,10 @@ export default function Auth() {
               <Gift className="h-5 w-5 text-purple-600" />
               <AlertDescription className="text-sm">
                 <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
-                  {t.toasts.welcomeBonus}
+                  {t.toasts.success.welcomeBonus}
                 </p>
                 <p className="text-purple-700 dark:text-purple-300">
-                  {t.toasts.welcomeBonusMessage}
+                  {t.toasts.success.welcomeBonusMessage}
                 </p>
               </AlertDescription>
             </Alert>
