@@ -537,7 +537,23 @@ export default function RegenerateLanding({
                         <p className="text-xs text-muted-foreground font-medium mb-1 flex items-center gap-1">
                           <Brain className="w-3 h-3" /> DeepSeek AI
                         </p>
-                        <p className="text-xs line-clamp-2">{titleAnalysis.deepseekAnalysis}</p>
+                        <div className="text-xs space-y-1">
+                          {typeof titleAnalysis.deepseekAnalysis === 'object' ? (
+                            <>
+                              {(titleAnalysis.deepseekAnalysis as any).category && (
+                                <p><span className="font-medium">Catégorie:</span> {(titleAnalysis.deepseekAnalysis as any).category}</p>
+                              )}
+                              {(titleAnalysis.deepseekAnalysis as any).style && (
+                                <p><span className="font-medium">Style:</span> {(titleAnalysis.deepseekAnalysis as any).style}</p>
+                              )}
+                              {(titleAnalysis.deepseekAnalysis as any).materials?.length > 0 && (
+                                <p><span className="font-medium">Matériaux:</span> {(titleAnalysis.deepseekAnalysis as any).materials.join(', ')}</p>
+                              )}
+                            </>
+                          ) : (
+                            <p>{titleAnalysis.deepseekAnalysis}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

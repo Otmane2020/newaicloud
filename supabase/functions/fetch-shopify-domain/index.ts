@@ -62,7 +62,7 @@ serve(async (req) => {
     
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        response = await fetch(`${shopifyUrl}/admin/api/2025-10/shop.json`, {
+        response = await fetch(`${shopifyUrl}/admin/api/2024-10/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': store.access_token,
             'Content-Type': 'application/json',
