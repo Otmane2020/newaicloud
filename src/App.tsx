@@ -125,7 +125,6 @@ const App = () => (
                 <AppQuotaMonitor />
                 <AutoSyncMonitor />
               <div className="overflow-x-hidden max-w-full">
-                <AutoSyncProgressDialog />
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/translation" element={<TranslationAudit />} />
@@ -499,6 +498,7 @@ const App = () => (
           <Sonner />
           <AIAssistant />
           <NotificationPermissionPrompt />
+          <AutoSyncProgressDialog />
             </div>
               </StoreProvider>
             </AutoSyncProvider>
