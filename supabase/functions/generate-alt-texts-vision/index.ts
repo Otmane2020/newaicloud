@@ -246,7 +246,12 @@ async function sleep(ms: number) {
 }
 
 // Enhanced DeepSeek analysis with better product understanding
-async function analyzeTitleWithDeepSeek(productTitle: string) {
+async function analyzeTitleWithDeepSeek(productTitle: string, isRegeneration: boolean = false) {
+  console.log(`🤖 Starting DeepSeek analysis for: "${productTitle}"`);
+  if (isRegeneration) {
+    console.log(`🔄 REGENERATION MODE: Will ignore previous context and analyze only current title`);
+  }
+  
   const deepseekApiKey = Deno.env.get("DEEPSEEK_API_KEY");
 
   if (!deepseekApiKey) {
@@ -272,7 +277,7 @@ async function analyzeTitleWithDeepSeek(productTitle: string) {
             role: "user",
             content: `Analyse ce titre produit et extrait les attributs SEO pertinents pour créer un texte ALT accessible.
 
-Titre: "${productTitle}"
+${isRegeneration ? "⚠️ IMPORTANT: Ceci est une RÉGÉNÉRATION. Ignore tout contexte précédent et analyse UNIQUEMENT ce titre actuel.\n" : ""}Titre: "${productTitle}"
 
 Réponds UNIQUEMENT avec un JSON valide :
 {
@@ -739,14 +744,21 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Get product context
+    // Get product context and store language
     let productTitle = "";
     let userId = image.user_id;
+    let storeLanguage: string | null = null;
 
     if (imageType === "product") {
       const { data: productData, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("title, description, category, seller_id")
+        .select(`
+          title, 
+          description, 
+          category, 
+          seller_id,
+          store:shopify_store_connections!inner(store_language)
+        `)
         .eq("id", image.product_id)
         .maybeSingle();
 
@@ -767,10 +779,25 @@ Deno.serve(async (req: Request) => {
 
       productTitle = productData.title;
       userId = productData.seller_id;
+      storeLanguage = (productData as any).store?.store_language || null;
+      
+      console.log(`🌍 Store language detected: ${storeLanguage || "not configured (will use auto-detection)"}`);
     }
 
     console.log(`🎯 Starting Vision AI Analysis for image: ${image.id}`);
     console.log(`📝 Product Title: ${productTitle}`);
+
+    // Clean existing ALT text before regeneration to prevent contamination
+    if (image.alt_text) {
+      console.log(`🧹 Cleaning existing ALT text: "${image.alt_text}"`);
+      console.log(`   (prevents old context from contaminating new generation)`);
+      
+      const tableName = imageType === "content" ? "content_images" : "product_images";
+      await supabaseClient
+        .from(tableName)
+        .update({ alt_text: null })
+        .eq("id", imageId);
+    }
 
     // Step 1: Analyze title with DeepSeek for SEO keywords
     let deepSeekAnalysis = null;
@@ -779,7 +806,8 @@ Deno.serve(async (req: Request) => {
 
     if (productTitle) {
       console.log("🧠 Step 1: DeepSeek Title Analysis");
-      deepSeekAnalysis = await analyzeTitleWithDeepSeek(productTitle);
+      const isRegeneration = !!image.alt_text; // true if ALT text existed before cleaning
+      deepSeekAnalysis = await analyzeTitleWithDeepSeek(productTitle, isRegeneration);
       seoKeywords = deepSeekAnalysis.keywords;
       extractedProductName = deepSeekAnalysis.productName;
 
@@ -824,7 +852,10 @@ Deno.serve(async (req: Request) => {
 
     // Step 3: Create optimized mix
     console.log("🔀 Step 3: Creating Optimized Mix");
-    const language = detectLanguage(productTitle + " " + visualDescription);
+    
+    // Use store language if available, otherwise fall back to auto-detection
+    const language = (storeLanguage as "fr" | "en") || detectLanguage(productTitle + " " + visualDescription);
+    console.log(`🌍 Using language: ${language} (from ${storeLanguage ? 'store config' : 'auto-detection'})`);
 
     let finalAltText = "";
 
