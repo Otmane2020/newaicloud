@@ -145,7 +145,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ Product fetched: ${product.title}`);
 
-    // ============ PHASE 0: CHECK EXISTING DIMENSIONS (HIGHEST PRIORITY) ============
+    // ============ PHASE 0: CHECK EXISTING DIMENSIONS & EXTRACT FROM DESCRIPTION (HIGHEST PRIORITY) ============
     console.log('🔍 Phase 0: Checking for existing product dimensions...');
     let existingDimensions: any = {};
     let hasExistingDims = false;
@@ -173,7 +173,42 @@ Deno.serve(async (req: Request) => {
       };
       hasExistingDims = true;
     } else {
-      console.log('ℹ️ No existing dimensions found');
+      // 🆕 EXTRACT DIMENSIONS FROM DESCRIPTION TEXT (if available)
+      console.log('📝 Attempting to extract dimensions from product description...');
+      const description = product.description || product.body_html || '';
+      
+      if (description) {
+        const extractedDims: any = {};
+        
+        // Patterns for dimension extraction (French, English, Spanish)
+        const patterns = {
+          height: /(?:hauteur|height|alto)[\s:]*(\d+(?:[.,]\d+)?)\s*(cm|m|mm)?/i,
+          width: /(?:largeur|width|ancho)[\s:]*(\d+(?:[.,]\d+)?)\s*(cm|m|mm)?/i,
+          length: /(?:longueur|length|largo)[\s:]*(\d+(?:[.,]\d+)?)\s*(cm|m|mm)?/i,
+          depth: /(?:profondeur|depth|profundo)[\s:]*(\d+(?:[.,]\d+)?)\s*(cm|m|mm)?/i,
+          weight: /(?:poids|weight|peso)[\s:]*(\d+(?:[.,]\d+)?)\s*(kg|g)?/i,
+          diameter: /(?:diamètre|diameter|diámetro)[\s:]*(\d+(?:[.,]\d+)?)\s*(cm|m|mm)?/i,
+        };
+        
+        for (const [key, pattern] of Object.entries(patterns)) {
+          const match = description.match(pattern);
+          if (match) {
+            const value = parseFloat(match[1].replace(',', '.'));
+            const unit = match[2] || (key === 'weight' ? 'kg' : 'cm');
+            extractedDims[key] = Math.round(value);
+            extractedDims[`${key}_unit`] = unit;
+            console.log(`✅ Extracted ${key}: ${value} ${unit}`);
+          }
+        }
+        
+        if (Object.keys(extractedDims).length > 0) {
+          console.log(`✅ Extracted ${Object.keys(extractedDims).length / 2} dimensions from description`);
+          existingDimensions = extractedDims;
+          hasExistingDims = true;
+        } else {
+          console.log('ℹ️ No dimensions found in description');
+        }
+      }
     }
 
     // Check if product already optimized for trial users

@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, Send } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 
 
@@ -120,21 +120,24 @@ export function LandingPagePreviewDialog({
                 >
                   Télécharger HTML
                 </Button>
-                {!productUrl ? (
-                  <Button
-                    onClick={() => syncMutation.mutate(currentLandingPage)}
-                    disabled={isSyncing || !currentLandingPage}
-                  >
-                    {isSyncing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Synchronisation...
-                      </>
-                    ) : (
-                      "Synchroniser avec Shopify"
-                    )}
-                  </Button>
-                ) : (
+                <Button
+                  onClick={() => syncMutation.mutate(currentLandingPage)}
+                  disabled={isSyncing || !currentLandingPage}
+                  variant={productUrl ? "outline" : "default"}
+                >
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Synchronisation...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      {productUrl ? "Re-synchroniser" : "Synchroniser avec Shopify"}
+                    </>
+                  )}
+                </Button>
+                {productUrl && (
                   <Button
                     variant="default"
                     size="sm"
