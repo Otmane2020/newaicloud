@@ -303,11 +303,38 @@ export default function RegenerateLanding({
       setProgress(15);
 
       // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision AI + DeepSeek)
+      // 🌍 CORRECTION: Récupérer la langue du store (pas la langue UI)
+      let storeLanguage: string = language;
+      try {
+        const { data: storeConnection } = await supabase
+          .from('shopify_products')
+          .select('store_id')
+          .eq('id', product.id)
+          .maybeSingle();
+        
+        if (storeConnection?.store_id) {
+          const { data: store } = await supabase
+            .from('shopify_connections')
+            .select('store_language')
+            .eq('id', storeConnection.store_id)
+            .maybeSingle();
+          
+          if (store?.store_language) {
+            const detectedLang = store.store_language.split('-')[0].toLowerCase();
+            // Validate language (fallback to 'fr' if unknown)
+            storeLanguage = ['fr', 'en', 'es'].includes(detectedLang) ? detectedLang : 'fr';
+            console.log(`🌍 Using store language for title: ${storeLanguage}`);
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ Failed to fetch store language, using UI language:", err);
+      }
+
       try {
         const { data: titleData, error: titleError } = await supabase.functions.invoke("smart-title", {
           body: {
             productId: product.id,
-            language: language,
+            language: storeLanguage, // ✅ Use store language, not UI language
           },
         });
 
