@@ -436,8 +436,78 @@ function generateFallbackTemplate(
 </html>`;
 }
 
-// [GARDER TOUTES LES AUTRES FONCTIONS EXISTANTES (hexToRgb, generateDesignTokens, etc.)]
-// ... (toutes les fonctions utilitaires existantes restent inchangées)
+// ✅ FONCTIONS UTILITAIRES POUR COULEURS HSL
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+function rgbToHsl(r: number, g: number, b: number): string {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+function hexToHsl(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "210 100% 50%"; // Fallback bleu
+  return rgbToHsl(rgb.r, rgb.g, rgb.b);
+}
+
+function generateDesignTokens(colorScheme: any) {
+  const primary = colorScheme.primary || "#3B82F6";
+  const secondary = colorScheme.secondary || "#6366F1";
+  const accent = colorScheme.accent || "#10B981";
+  const background = colorScheme.background || "#FFFFFF";
+  const surface = colorScheme.surface || "#F9FAFB";
+  const text = colorScheme.text || "#1F2937";
+
+  return {
+    primary: hexToHsl(primary),
+    secondary: hexToHsl(secondary),
+    accent: hexToHsl(accent),
+    background: hexToHsl(background),
+    surface: hexToHsl(surface),
+    text: hexToHsl(text),
+    ctaText: "0 0% 100%", // Blanc pour les boutons
+  };
+}
+
+function inferLanguageFromText(text: string): "fr" | "en" {
+  const frenchWords = ["le", "la", "les", "de", "des", "du", "avec", "pour", "sur", "dans"];
+  const lowerText = text.toLowerCase();
+  const frenchCount = frenchWords.filter((word) => lowerText.includes(` ${word} `)).length;
+  return frenchCount >= 2 ? "fr" : "en";
+}
 
 // ✅ MODIFICATION DE LA FONCTION PRINCIPALE
 serve(async (req) => {
@@ -478,6 +548,7 @@ serve(async (req) => {
       language,
       designStyle = "modern",
       imageAnalysis,
+      enrichedAttributes,
     } = body ?? {};
 
     let productTitle = initialProductTitle;
@@ -491,7 +562,7 @@ serve(async (req) => {
     });
 
     // Auto-detect language from product title and description if not provided
-    const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
+    const detectedLanguage: "fr" | "en" = language === "en" ? "en" : language === "fr" ? "fr" : inferLanguageFromText(`${productTitle || ""} ${description || ""}`);
 
     // Generate design tokens
     const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
@@ -519,10 +590,219 @@ serve(async (req) => {
       throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
+    // 🔥 BLOC MANDATORY DATA - FORCER GEMINI À UTILISER LES CARACTÉRISTIQUES
+    const mandatoryData = `
+⚠️ DONNÉES PRODUIT À INCLURE OBLIGATOIREMENT DANS LA PAGE :
+
+📦 INFORMATIONS DE BASE :
+- Titre : ${productTitle}
+- Marque/Vendor : ${vendor || "Non spécifié"}
+- Description originale : ${description || "Aucune description"}
+
+📊 CARACTÉRISTIQUES TECHNIQUES EXTRAITES :
+${enrichedAttributes && Object.keys(enrichedAttributes).length > 0
+  ? JSON.stringify(enrichedAttributes, null, 2)
+  : "Aucun attribut enrichi disponible"}
+
+📐 DIMENSIONS :
+${length || "Non spécifiées"}
+
+🖼️ ANALYSE VISUELLE AI :
+${imageAnalysis || "Aucune analyse d'image disponible"}
+
+🎨 HIGHLIGHTS PERSONNALISÉS :
+${customHighlights || "Aucun highlight spécifique"}
+
+⚡ RÈGLES STRICTES :
+1. TOUTES ces informations doivent apparaître dans la landing page
+2. Inclure 100% des caractéristiques techniques dans une section "Spécifications Techniques"
+3. Inclure les matériaux, dimensions, et toutes les fonctionnalités mentionnées
+4. NE JAMAIS inventer des informations non fournies
+5. Utiliser un design ${designStyle} avec des icônes SVG professionnelles
+6. Langue : ${detectedLanguage}
+7. Couleurs HSL : ${JSON.stringify(designTokens)}
+`.trim();
+
+    // 📝 CONSTRUCTION DU PROMPT COMPLET
+    const aiPrompt = `
+${mandatoryData}
+
+---
+
+You are a professional Shopify UX/UI expert specialized in generating high-quality product landing pages in Tailwind HTML.
+
+====================================================================
+MANDATORY PRODUCT DATA BLOCK (DO NOT SKIP / DO NOT ALTER / DO NOT IGNORE)
+====================================================================
+
+You MUST include ALL data from the JSON below EXACTLY as provided.
+You MUST NOT modify, simplify, reinterpret, or omit ANY technical detail.
+
+RAW_PRODUCT_DATA:
+${JSON.stringify(
+  {
+    title: productTitle,
+    description: description,
+    vendor: vendor,
+    enriched_attributes: enrichedAttributes,
+    vision_analysis: imageAnalysis,
+    dimensions: length,
+    highlights: customHighlights
+  },
+  null,
+  2
+)}
+
+CRITICAL RULES FOR DATA:
+1. DIMENSIONS PRIORITY:
+   - ALWAYS use dimensions from enriched_attributes if available
+   - NEVER invent new dimensions
+   - NEVER change numeric values
+   - ALWAYS show all available dimensions in the technical section
+
+2. MATERIALS / COLORS / STYLE PRIORITY:
+   - Vision materials/colors override text description
+   - Enriched attributes override text description
+   - NEVER contradict enriched data
+
+3. REPEAT ALL IMPORTANT DATA:
+   You MUST repeat all technical info in:
+   - Technical Specifications section
+   - Materials & Composition section
+   - Product Overview section (summary)
+
+4. YOU MUST NEVER SKIP DATA:
+   If the product has measurements, weight, materials, style, room type,
+   features, subcategories, or enriched attributes—they MUST appear
+   somewhere in the landing page
+
+====================================================================
+PAGE OBJECTIVES
+====================================================================
+Generate a complete, polished, professional landing page in Tailwind CSS.
+
+Tone:
+- Clean
+- Premium
+- Modern
+- E-commerce ready
+- NO childish icons
+- NO emojis
+- NO decorative graphics
+
+====================================================================
+STRICT DESIGN RULES
+====================================================================
+
+COLOR RULES:
+- USE ONLY HSL INLINE STYLES (MANDATORY)
+- NEVER output HEX colors
+- Examples:
+  style="background-color: hsl(${designTokens.primary})"
+  style="color: hsl(${designTokens.text})"
+
+LAYOUT RULES:
+- HTML5 full document required
+- Tailwind included via CDN
+- Mobile-first
+- Beautiful whitespace
+- No cramped layouts
+
+IMAGE RULES (MANDATORY):
+- ALL images must have: loading="lazy"
+- Hero images MUST include:
+  - dark overlay (bg-black/40)
+  - text-shadow for readability
+  - white text
+  - centered layout
+
+ICON RULES:
+- ONLY SVG icons with professional gradients
+- NEVER use emojis
+- Each icon MUST use unique gradient ID
+- Professional appearance only
+
+CTA RULES (CRITICAL):
+❌ DO NOT include:
+- Buy now buttons
+- Add to cart buttons
+- Order buttons
+- Navigation menus
+- External links
+- Footer with legal info
+
+====================================================================
+STRUCTURE REQUIRED
+====================================================================
+
+Your landing page MUST include:
+
+1. Hero section (with overlay + text-shadow)
+2. Key Benefits (3–6 items with SVG icons)
+3. Product Overview (short summary)
+4. Full Technical Specifications (using mandatory data)
+5. Materials & Finish section
+6. Image Gallery
+7. Care instructions
+8. FAQ (4–6 entries)
+
+====================================================================
+DESIGN STYLE (MANDATORY)
+====================================================================
+Selected style: ${designStyle}
+
+Use ${designStyle === "premium" ? "elegant serif fonts, luxury spacing, gradient accents" : designStyle === "modern" ? "clean sans-serif, bold headings, clear hierarchy" : "minimal design, lots of whitespace, subtle details"}
+
+====================================================================
+ICON TEMPLATE (MANDATORY)
+====================================================================
+Use this structure for ALL icons:
+
+<svg class="w-16 h-16 mx-auto mb-4" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+      <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#iconGrad1)" opacity="0.15"/>
+  <path d="YOUR_ICON_PATH" stroke="url(#iconGrad1)" stroke-width="2.5" fill="none"/>
+</svg>
+
+====================================================================
+IMAGE OVERLAY TEMPLATE (MANDATORY)
+====================================================================
+Use this exact structure for hero images:
+
+<div class="relative h-[70vh] md:h-[600px]">
+  <img src="${imageUrl || ""}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="relative z-10 flex flex-col justify-center items-center text-center h-full px-4">
+    <h1 class="text-white text-4xl md:text-6xl font-bold" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+      ${productTitle}
+    </h1>
+  </div>
+</div>
+
+====================================================================
+FINAL INSTRUCTIONS
+====================================================================
+
+- The HTML must be clean
+- The structure must be consistent
+- The data must be 100% accurate
+- You MUST reuse all technical attributes & enriched data
+- You MUST trust enriched attributes (they are ALWAYS correct)
+- No missing sections
+- Language: ${detectedLanguage === "fr" ? "French" : "English"}
+
+Generate now the complete HTML landing page.
+`;
+
     let rawHtml: string;
 
     try {
-      rawHtml = await AIService.generateWithFallback(prompt, GOOGLE_GEMINI_API_KEY, detectedLanguage);
+      rawHtml = await AIService.generateWithFallback(aiPrompt, GOOGLE_GEMINI_API_KEY, detectedLanguage);
       console.log("✅ AI generation completed successfully");
     } catch (error: any) {
       console.error("❌ All AI models failed:", error);
@@ -547,9 +827,9 @@ serve(async (req) => {
     console.log("✅ Landing page generation successful with premium typography!");
     return new Response(
       JSON.stringify({
-        html: finalHtml,
-        enrichment_status: enrichmentStatus,
-        attributes_count: attributesCount,
+        html: html,
+        enrichment_status: "enriched",
+        attributes_count: 0,
         ai_model: "gemini-with-fallback",
       }),
       {
