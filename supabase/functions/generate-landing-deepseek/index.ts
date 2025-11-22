@@ -184,34 +184,52 @@ serve(async (req) => {
     });
 
     console.log("🤖 DeepSeek generating HTML...");
+    console.log(`📏 Prompt length: ${prompt.length} characters`);
 
-    const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content:
-              language === "fr"
-                ? "Tu es un expert en création de landing pages e-commerce premium. Tu produis du HTML Tailwind propre, riche et sans CTA commercial."
-                : "You are an expert in premium e-commerce landing page creation. Produce clean, rich Tailwind HTML without commercial CTAs.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 8000,
-      }),
-    });
+    let deepseekResponse;
+    try {
+      // Add timeout to avoid hanging indefinitely
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
 
-    if (!deepseekResponse.ok) {
-      const errorBody = await deepseekResponse.text();
-      console.error("❌ DeepSeek API error details:", errorBody);
-      throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorBody}`);
+      deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content:
+                language === "fr"
+                  ? "Tu es un expert en création de landing pages e-commerce premium. Tu produis du HTML Tailwind propre, riche et sans CTA commercial."
+                  : "You are an expert in premium e-commerce landing page creation. Produce clean, rich Tailwind HTML without commercial CTAs.",
+            },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 8000,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!deepseekResponse.ok) {
+        const errorBody = await deepseekResponse.text();
+        console.error("❌ DeepSeek API error details:", errorBody);
+        throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorBody}`);
+      }
+    } catch (error) {
+      console.error("❌ DeepSeek API fetch error:", error);
+      const err = error as Error;
+      if (err.name === 'AbortError') {
+        throw new Error("DeepSeek API request timeout after 2 minutes");
+      }
+      throw new Error(`DeepSeek API fetch failed: ${err.message}`);
     }
 
     const deepseekJson = await deepseekResponse.json();
