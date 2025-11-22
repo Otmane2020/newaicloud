@@ -41,6 +41,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { responsiveDialogClasses } from '@/lib/dialogUtils';
+import { useTranslation } from '@/lib/language';
 
 interface ArticleWizardProps {
   open: boolean;
@@ -61,53 +62,24 @@ interface ArticleWizardProps {
   autoGenerate?: boolean;
 }
 
-const LAYOUTS = [
-  { 
-    id: 'editorial', 
-    name: 'Éditorial', 
-    description: 'Style magazine avec grandes images et texte riche',
-    icon: FileText
-  },
-  { 
-    id: 'gallery', 
-    name: 'Galerie', 
-    description: 'Focus sur les visuels avec grille d\'images',
-    icon: LayoutGrid
-  },
-  { 
-    id: 'grid', 
-    name: 'Grille Produits', 
-    description: 'Présentation structurée des produits',
-    icon: Grid3x3
-  },
-  { 
-    id: 'story', 
-    name: 'Storytelling', 
-    description: 'Narration immersive avec produits intégrés',
-    icon: Image
-  },
-];
-
 const COLOR_PALETTES = [
-  { id: 'modern', name: 'Moderne', colors: ['#1a1a1a', '#4a4a4a', '#808080', '#c0c0c0', '#e8e8e8'] },
-  { id: 'earth', name: 'Terreux', colors: ['#3d2817', '#6b4423', '#9c8577', '#c9b5a0', '#e8d9cc'] },
-  { id: 'green', name: 'Frais Vert', colors: ['#1b5e20', '#43a047', '#66bb6a', '#81c784', '#a5d6a7'] },
-  { id: 'blue', name: 'Professionnel Bleu', colors: ['#003d82', '#0066cc', '#3399ff', '#66b3ff', '#99ccff'] },
-  { id: 'gold', name: 'Luxe Or', colors: ['#1a1a1a', '#4a4a4a', '#c5a647', '#d4af37', '#f0e68c'] },
-  { id: 'vibrant', name: 'Vibrant', colors: ['#c62828', '#e53935', '#ef5350', '#e57373', '#ef9a9a'] },
-  { id: 'custom', name: 'Personnalisé', colors: ['#000000', '#ffffff', '#0066cc'] },
+  { id: 'modern', colors: ['#1a1a1a', '#4a4a4a', '#808080', '#c0c0c0', '#e8e8e8'] },
+  { id: 'earth', colors: ['#3d2817', '#6b4423', '#9c8577', '#c9b5a0', '#e8d9cc'] },
+  { id: 'green', colors: ['#1b5e20', '#43a047', '#66bb6a', '#81c784', '#a5d6a7'] },
+  { id: 'blue', colors: ['#003d82', '#0066cc', '#3399ff', '#66b3ff', '#99ccff'] },
+  { id: 'gold', colors: ['#1a1a1a', '#4a4a4a', '#c5a647', '#d4af37', '#f0e68c'] },
+  { id: 'vibrant', colors: ['#c62828', '#e53935', '#ef5350', '#e57373', '#ef9a9a'] },
+  { id: 'custom', colors: ['#000000', '#ffffff', '#0066cc'] },
 ];
 
 const ARTICLE_LENGTHS = [
-  { value: 700, label: '700 mots', description: 'Article court et concis' },
-  { value: 2000, label: '2000 mots', description: 'Article détaillé et complet' },
+  { value: 700 },
+  { value: 2000 },
 ];
 
 const EDITORIAL_ANGLES = [
   {
     id: 'guide',
-    name: 'Guide',
-    description: 'Guide complet',
     icon: BookOpen,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
@@ -116,8 +88,6 @@ const EDITORIAL_ANGLES = [
   },
   {
     id: 'comparatif',
-    name: 'Comparatif',
-    description: 'Comparaison produits',
     icon: Scale,
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
@@ -126,8 +96,6 @@ const EDITORIAL_ANGLES = [
   },
   {
     id: 'avis',
-    name: 'Avis',
-    description: 'Tests et avis',
     icon: Star,
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50',
@@ -136,8 +104,6 @@ const EDITORIAL_ANGLES = [
   },
   {
     id: 'tutoriel',
-    name: 'Tutoriel',
-    description: 'Guide pratique',
     icon: GraduationCap,
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
@@ -156,6 +122,7 @@ export function ArticleWizard({
   initialData,
   autoGenerate = false
 }: ArticleWizardProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [selectedAngle, setSelectedAngle] = useState('guide');
   const [selectedCollection, setSelectedCollection] = useState('');
@@ -317,7 +284,7 @@ export function ArticleWizard({
       setProductPage(page);
     } catch (error) {
       console.error('Error loading products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error(t.blog.dialogs.articleWizard.messages.productsError);
     }
   };
 
@@ -348,13 +315,13 @@ export function ArticleWizard({
         setSuggestedTitle(data.articleTitle || '');
         setSelectedKeywords([]);
         
-        toast.success('Mots-clés intelligents générés avec DeepSeek AI');
+        toast.success(t.blog.dialogs.articleWizard.messages.keywordsGenerated);
       } else {
         throw new Error(data?.error || 'Failed to generate keywords');
       }
     } catch (error) {
       console.error('Error generating keywords:', error);
-      toast.error('Erreur lors de la génération des mots-clés');
+      toast.error(t.blog.dialogs.articleWizard.messages.keywordsError);
     } finally {
       setGeneratingKeywords(false);
     }
@@ -395,7 +362,7 @@ export function ArticleWizard({
 
   const generateArticle = async () => {
     if (allKeywords.length === 0 || selectedProducts.length === 0) {
-      toast.error('Sélectionnez au moins un produit et un mot-clé');
+      toast.error(t.blog.dialogs.articleWizard.messages.selectProductsAndKeywords);
       return;
     }
 
@@ -406,21 +373,21 @@ export function ArticleWizard({
     setStep(7);
 
     try {
-      setCurrentStep('🔍 Analyse des produits sélectionnés...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.analyzing);
       setProgress(10);
       await new Promise(r => setTimeout(r, 500));
 
       const collectionTitle = collections.find(c => c.id === selectedCollection)?.title;
 
-      setCurrentStep('🎨 Génération de l\'image de couverture...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.generatingImage);
       setProgress(20);
       await new Promise(r => setTimeout(r, 800));
 
-      setCurrentStep('📝 Rédaction de l\'introduction...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.writingIntro);
       setProgress(35);
       await new Promise(r => setTimeout(r, 600));
 
-      setCurrentStep('🛍️ Intégration des produits...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.integratingProducts);
       setProgress(50);
 
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
@@ -441,15 +408,15 @@ export function ArticleWizard({
       });
 
       setProgress(70);
-      setCurrentStep('🔗 Ajout du netlinking et des liens internes...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.addingLinks);
       await new Promise(r => setTimeout(r, 500));
 
       setProgress(85);
-      setCurrentStep('✨ Optimisation SEO et méta-données...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.optimizingSeo);
       await new Promise(r => setTimeout(r, 500));
 
       setProgress(95);
-      setCurrentStep('🎯 Finalisation de l\'article...');
+      setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.finalizing);
 
       if (error) throw error;
 
@@ -457,15 +424,15 @@ export function ArticleWizard({
         setArticleId(data.article.id);
         setPreview(data.article.content || '');
         setProgress(100);
-        setCurrentStep('✅ Article généré avec succès!');
-        toast.success('Article créé avec succès!');
+        setCurrentStep(t.blog.dialogs.articleWizard.generation.steps.success);
+        toast.success(t.blog.dialogs.articleWizard.messages.articleCreated);
         onArticleCreated?.(); // Notify parent that article was created
       } else {
-        throw new Error('Erreur lors de la génération');
+        throw new Error(t.blog.dialogs.articleWizard.messages.generationError);
       }
     } catch (error: any) {
       console.error('Error generating article:', error);
-      toast.error(error.message || 'Erreur lors de la génération');
+      toast.error(error.message || t.blog.dialogs.articleWizard.messages.generationError);
       setStep(6);
     } finally {
       setGenerating(false);
@@ -490,14 +457,14 @@ export function ArticleWizard({
         setShopifyArticleUrl(data.articleUrl);
       }
 
-      toast.success('Article publié sur Shopify!');
+      toast.success(t.blog.dialogs.articleWizard.messages.published);
 
       if (onArticleCreated) {
         onArticleCreated();
       }
     } catch (error: any) {
       console.error('Error publishing:', error);
-      toast.error('Erreur lors de la publication');
+      toast.error(t.blog.dialogs.articleWizard.messages.publishError);
     }
   };
 
@@ -506,7 +473,7 @@ export function ArticleWizard({
       <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-2xl font-serif">
-            Assistant de Création d'Article
+            {t.blog.dialogs.articleWizard.title}
           </DialogTitle>
         </DialogHeader>
 
@@ -517,13 +484,13 @@ export function ArticleWizard({
             <div className="p-6 rounded-lg border bg-card">
               <div className="flex items-center justify-between mb-4">
                 {[
-                  { num: 1, label: 'Angle' },
-                  { num: 2, label: 'Layout' },
-                  { num: 3, label: 'Collection' },
-                  { num: 4, label: 'Couleurs' },
-                  { num: 5, label: 'Produits' },
-                  { num: 6, label: 'Mots-clés' },
-                  { num: 7, label: 'Génération' }
+                  { num: 1, label: t.blog.dialogs.articleWizard.steps.angle },
+                  { num: 2, label: t.blog.dialogs.articleWizard.steps.layout },
+                  { num: 3, label: t.blog.dialogs.articleWizard.steps.collection },
+                  { num: 4, label: t.blog.dialogs.articleWizard.steps.colors },
+                  { num: 5, label: t.blog.dialogs.articleWizard.steps.products },
+                  { num: 6, label: t.blog.dialogs.articleWizard.steps.keywords },
+                  { num: 7, label: t.blog.dialogs.articleWizard.steps.generation }
                 ].map((s, idx) => (
                   <div key={s.num} className="flex items-center">
                     <div className="flex flex-col items-center">
@@ -557,8 +524,8 @@ export function ArticleWizard({
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-serif">Angle éditorial</h2>
-              <p className="text-muted-foreground">Choisissez le type d'article que vous souhaitez créer</p>
+              <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.editorialAngles.title}</h2>
+              <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.editorialAngles.description}</p>
             </div>
           </div>
 
@@ -584,10 +551,10 @@ export function ArticleWizard({
                     <div className={`w-14 h-14 rounded-full ${angle.bgColor} flex items-center justify-center border-2 ${angle.borderColor}`}>
                       <Icon className={`w-7 h-7 ${angle.color}`} />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1 font-serif">{angle.name}</h3>
-                      <p className="text-sm text-muted-foreground">{angle.description}</p>
-                    </div>
+                     <div>
+                       <h3 className="font-semibold text-lg mb-1 font-serif">{t.blog.dialogs.articleWizard.editorialAngles[angle.id as 'guide' | 'comparatif' | 'avis' | 'tutoriel'].name}</h3>
+                       <p className="text-sm text-muted-foreground">{t.blog.dialogs.articleWizard.editorialAngles[angle.id as 'guide' | 'comparatif' | 'avis' | 'tutoriel'].description}</p>
+                     </div>
                   </div>
                 </button>
               );
@@ -604,8 +571,8 @@ export function ArticleWizard({
               <Layout className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-serif">Layout de la page</h2>
-              <p className="text-muted-foreground">Choisissez la structure visuelle de votre article</p>
+              <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.layouts.title}</h2>
+              <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.layouts.description}</p>
             </div>
           </div>
 
@@ -634,8 +601,8 @@ export function ArticleWizard({
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-sm mb-0.5 font-serif">Éditorial</h3>
-                <p className="text-xs text-muted-foreground">Magazine, grandes images</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">{t.blog.dialogs.articleWizard.layouts.editorial.name}</h3>
+                <p className="text-xs text-muted-foreground">{t.blog.dialogs.articleWizard.layouts.editorial.description}</p>
               </div>
             </button>
 
@@ -666,8 +633,8 @@ export function ArticleWizard({
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-sm mb-0.5 font-serif">Galerie</h3>
-                <p className="text-xs text-muted-foreground">Grille d'images</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">{t.blog.dialogs.articleWizard.layouts.gallery.name}</h3>
+                <p className="text-xs text-muted-foreground">{t.blog.dialogs.articleWizard.layouts.gallery.description}</p>
               </div>
             </button>
 
@@ -696,8 +663,8 @@ export function ArticleWizard({
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-sm mb-0.5 font-serif">Grille Produits</h3>
-                <p className="text-xs text-muted-foreground">Image + Texte</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">{t.blog.dialogs.articleWizard.layouts.grid.name}</h3>
+                <p className="text-xs text-muted-foreground">{t.blog.dialogs.articleWizard.layouts.grid.description}</p>
               </div>
             </button>
 
@@ -726,8 +693,8 @@ export function ArticleWizard({
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-sm mb-0.5 font-serif">Hero Droite</h3>
-                <p className="text-xs text-muted-foreground">Image dominante</p>
+                <h3 className="font-semibold text-sm mb-0.5 font-serif">{t.blog.dialogs.articleWizard.layouts.story.name}</h3>
+                <p className="text-xs text-muted-foreground">{t.blog.dialogs.articleWizard.layouts.story.description}</p>
               </div>
             </button>
           </div>
@@ -743,23 +710,23 @@ export function ArticleWizard({
                   <Package className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold font-serif">Choisissez une collection</h2>
-                  <p className="text-muted-foreground">Point de départ de votre article</p>
+                  <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.collection.title}</h2>
+                  <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.collection.description}</p>
                 </div>
               </div>
 
               {filteredCollections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p className="mb-2">Aucune collection trouvée.</p>
+                  <p className="mb-2">{t.blog.dialogs.articleWizard.collection.noCollections}</p>
                   {collections.length > 0 ? (
                     <div className="text-xs space-y-1">
-                      <p>Collections totales: {collections.length}</p>
-                      <p>Store ID actuel: {storeId || 'non défini'}</p>
-                      <p className="text-destructive">Les collections ne correspondent pas au store actuel.</p>
-                      <p>Veuillez vérifier votre connexion Shopify.</p>
+                      <p>{t.blog.dialogs.articleWizard.collection.totalCollections}: {collections.length}</p>
+                      <p>{t.blog.dialogs.articleWizard.collection.currentStore}: {storeId || t.blog.dialogs.articleWizard.collection.notDefined}</p>
+                      <p className="text-destructive">{t.blog.dialogs.articleWizard.collection.mismatch}</p>
+                      <p>{t.blog.dialogs.articleWizard.collection.checkConnection}</p>
                     </div>
                   ) : (
-                    <p className="text-xs">Veuillez importer vos collections Shopify.</p>
+                    <p className="text-xs">{t.blog.dialogs.articleWizard.collection.importCollections}</p>
                   )}
                 </div>
               ) : (
@@ -776,12 +743,12 @@ export function ArticleWizard({
                     >
                       <h3 className="font-semibold mb-2 font-serif">{collection.title}</h3>
                       <p className="text-xs text-muted-foreground mb-2">
-                        {collection.products_count || 0} produit{(collection.products_count || 0) !== 1 ? 's' : ''}
+                        {collection.products_count || 0} {(collection.products_count || 0) !== 1 ? t.blog.dialogs.articleWizard.collection.productsPlural : t.blog.dialogs.articleWizard.collection.products}
                       </p>
                       {selectedCollection === collection.id && (
                         <div className="flex items-center gap-2 text-primary text-sm mt-2">
                           <Check className="w-4 h-4" />
-                          <span>Sélectionné</span>
+                          <span>{t.blog.dialogs.articleWizard.collection.selected}</span>
                         </div>
                       )}
                     </button>
@@ -800,8 +767,8 @@ export function ArticleWizard({
               <Palette className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-serif">Palette de couleurs</h2>
-              <p className="text-muted-foreground">Choisissez des couleurs professionnelles</p>
+              <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.colors.title}</h2>
+              <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.colors.description}</p>
             </div>
           </div>
 
@@ -833,32 +800,34 @@ export function ArticleWizard({
                     );
                   })}
                 </div>
-                <p className="text-xs font-medium text-center">{palette.name}</p>
+                <p className="text-xs font-medium text-center">{t.blog.dialogs.articleWizard.colors.palettes[palette.id as keyof typeof t.blog.dialogs.articleWizard.colors.palettes]}</p>
               </button>
             ))}
           </div>
 
-          {/* Article Length Selection */}
           <div className="mb-6">
-            <Label className="text-base font-semibold mb-3 block">Longueur de l'article</Label>
+            <Label className="text-base font-semibold mb-3 block">{t.blog.dialogs.articleWizard.colors.articleLength}</Label>
             <div className="grid grid-cols-2 gap-3">
-              {ARTICLE_LENGTHS.map((length) => (
-                <button
-                  key={length.value}
-                  onClick={() => setArticleLength(length.value)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    articleLength === length.value
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold">{length.label}</span>
-                    {articleLength === length.value && <Check className="w-4 h-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{length.description}</p>
-                </button>
-              ))}
+              {ARTICLE_LENGTHS.map((length) => {
+                const lengthKey = length.value === 700 ? 'short' : 'long';
+                return (
+                  <button
+                    key={length.value}
+                    onClick={() => setArticleLength(length.value)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      articleLength === length.value
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold">{t.blog.dialogs.articleWizard.colors.lengths[lengthKey].label}</span>
+                      {articleLength === length.value && <Check className="w-4 h-4 text-primary" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t.blog.dialogs.articleWizard.colors.lengths[lengthKey].description}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -944,7 +913,8 @@ export function ArticleWizard({
               <Package className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold font-serif">Sélection des produits</h2>
+              <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.products.title}</h2>
+              <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.products.description}</p>
             </div>
           </div>
 
@@ -953,7 +923,7 @@ export function ArticleWizard({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Rechercher un produit..."
+                placeholder={t.blog.dialogs.articleWizard.products.search}
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="w-full pl-9"
@@ -1099,8 +1069,8 @@ export function ArticleWizard({
               <Tag className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-serif">Mots-clés SEO</h2>
-              <p className="text-muted-foreground">Suggestions et personnalisation</p>
+              <h2 className="text-2xl font-bold font-serif">{t.blog.dialogs.articleWizard.keywords.title}</h2>
+              <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.keywords.description}</p>
             </div>
           </div>
 
@@ -1110,7 +1080,7 @@ export function ArticleWizard({
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <Label className="text-sm font-semibold text-primary mb-2 block flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  Titre d'article suggéré par l'IA
+                  {t.blog.dialogs.articleWizard.keywords.suggestedTitle}
                 </Label>
                 <p className="text-lg font-serif font-bold">{suggestedTitle}</p>
               </div>
@@ -1120,7 +1090,7 @@ export function ArticleWizard({
             {generatingKeywords && (
               <div className="flex items-center justify-center gap-3 py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-muted-foreground">Génération de mots-clés intelligents avec DeepSeek AI...</p>
+                <p className="text-muted-foreground">{t.blog.dialogs.articleWizard.keywords.generating}</p>
               </div>
             )}
 
@@ -1134,7 +1104,7 @@ export function ArticleWizard({
                       Mots-clés suggérés par l'IA ({suggestedKeywords.filter(kw => !selectedKeywords.includes(kw)).length})
                     </Label>
                     <Button onClick={selectAllKeywords} variant="outline" size="sm">
-                      Tout sélectionner
+                      {t.blog.dialogs.articleWizard.keywords.selectAll}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1163,10 +1133,10 @@ export function ArticleWizard({
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addCustomKeyword()}
-                  placeholder="Ex: décoration moderne, tendance 2024..."
+                  placeholder={t.blog.dialogs.articleWizard.keywords.placeholder}
                   className="flex-1"
                 />
-                <Button onClick={addCustomKeyword} variant="outline">Ajouter</Button>
+                <Button onClick={addCustomKeyword} variant="outline">{t.blog.dialogs.articleWizard.keywords.add}</Button>
               </div>
               {(selectedKeywords.length > 0 || customKeywords.length > 0) && (
                 <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
