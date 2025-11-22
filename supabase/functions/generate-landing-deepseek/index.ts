@@ -232,12 +232,14 @@ serve(async (req) => {
           },
         ],
         temperature: 0.7,
-        max_tokens: 16000,
+        max_tokens: 8000,
       }),
     });
 
     if (!deepseekResponse.ok) {
-      throw new Error(`DeepSeek API error: ${deepseekResponse.status}`);
+      const errorBody = await deepseekResponse.text();
+      console.error("❌ DeepSeek API error details:", errorBody);
+      throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorBody}`);
     }
 
     const deepseekData = await deepseekResponse.json();
@@ -360,15 +362,42 @@ function buildDeepSeekPrompt(productData: any, config: any) {
     .join("\n");
 
   const wordCount = contentLength === "short" ? "800-1200" : contentLength === "long" ? "2000-3000" : "1200-2000";
+  
+  // Simplifier les données produit pour éviter un prompt trop long
+  const simplifiedData = {
+    title: productData.title,
+    description: productData.description?.substring(0, 500) || "",
+    vendor: productData.vendor,
+    dimensions: productData.dimensions,
+    materials: productData.materials.slice(0, 5),
+    colors: productData.colors.slice(0, 5),
+    style: productData.style.slice(0, 5),
+    features: productData.features.slice(0, 8),
+    visualAnalysis: productData.visualAnalysis?.substring(0, 800) || "",
+    hasVariants: productData.variants.length > 0,
+  };
 
   const prompt = language === "fr" ? `
 Tu dois générer une landing page HTML5 complète et professionnelle pour ce produit:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 DONNÉES PRODUIT OBLIGATOIRES (À UTILISER INTÉGRALEMENT)
+📦 DONNÉES PRODUIT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${JSON.stringify(productData, null, 2)}
+Titre: ${simplifiedData.title}
+Marque: ${simplifiedData.vendor || "N/A"}
+Description: ${simplifiedData.description}
+
+Dimensions: ${JSON.stringify(simplifiedData.dimensions)}
+Matériaux: ${simplifiedData.materials.join(", ") || "Non spécifié"}
+Couleurs: ${simplifiedData.colors.join(", ") || "Non spécifié"}
+Style: ${simplifiedData.style.join(", ") || "Moderne"}
+
+Caractéristiques: ${simplifiedData.features.join(" • ") || "N/A"}
+
+Analyse visuelle: ${simplifiedData.visualAnalysis}
+
+${simplifiedData.hasVariants ? "⚠️ Ce produit a plusieurs variantes - créer un tableau comparatif" : ""}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎨 CONFIGURATION DESIGN
@@ -452,10 +481,23 @@ COMMENCE MAINTENANT LA GÉNÉRATION:
 You must generate a complete professional HTML5 landing page for this product:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 MANDATORY PRODUCT DATA (USE ENTIRELY)
+📦 PRODUCT DATA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${JSON.stringify(productData, null, 2)}
+Title: ${simplifiedData.title}
+Brand: ${simplifiedData.vendor || "N/A"}
+Description: ${simplifiedData.description}
+
+Dimensions: ${JSON.stringify(simplifiedData.dimensions)}
+Materials: ${simplifiedData.materials.join(", ") || "Not specified"}
+Colors: ${simplifiedData.colors.join(", ") || "Not specified"}
+Style: ${simplifiedData.style.join(", ") || "Modern"}
+
+Features: ${simplifiedData.features.join(" • ") || "N/A"}
+
+Visual analysis: ${simplifiedData.visualAnalysis}
+
+${simplifiedData.hasVariants ? "⚠️ This product has multiple variants - create comparison table" : ""}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎨 DESIGN CONFIGURATION
