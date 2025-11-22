@@ -2686,6 +2686,30 @@ export const translations = {
       netlinkingDesc: "Gestion des liens",
       settingsDesc: "Configuration",
     },
+    aiArticle: {
+      title: "Créer un Article IA",
+      description: "Générez un article optimisé SEO en quelques clics avec l'intelligence artificielle",
+      quickPress: {
+        title: "Quick Press Pro",
+        subtitle: "Créez des articles professionnels optimisés SEO en quelques clics",
+        description: "Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout, personnalisation des couleurs, sélection des produits, et génération d'un article complet avec images, table des matières et galeries interactives.",
+      },
+      features: {
+        design: {
+          title: "Design Professionnel",
+          description: "3 layouts et 5 palettes de couleurs inspirés des plus grands magazines",
+        },
+        gallery: {
+          title: "Galeries Interactives",
+          description: "Images cliquables et galeries élégantes pour tous vos produits",
+        },
+        seo: {
+          title: "SEO Optimisé",
+          description: "Mots-clés intelligents, meta descriptions et structure parfaite",
+        },
+      },
+      startButton: "Démarrer l'assistant",
+    },
     createNew: "Créer un Nouvel Article",
     startCreating: "Commencer à Créer",
     newCampaign: "Nouvelle Campagne",

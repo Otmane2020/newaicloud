@@ -6,6 +6,7 @@ import { Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArticleWizard } from './ArticleWizard';
+import { useTranslation } from '@/lib/language';
 
 interface QuickPressProps {
   onArticleCreated?: () => void;
@@ -13,6 +14,7 @@ interface QuickPressProps {
 
 export function QuickPress({ onArticleCreated }: QuickPressProps = {}) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [collections, setCollections] = useState<any[]>([]);
   const [storeId, setStoreId] = useState<string>('');
@@ -96,14 +98,12 @@ export function QuickPress({ onArticleCreated }: QuickPressProps = {}) {
               <Zap className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold mb-2">Quick Press Pro</h2>
+              <h2 className="text-3xl font-bold mb-2">{t.blog.aiArticle.quickPress.title}</h2>
               <p className="text-muted-foreground text-lg mb-4">
-                Créez des articles professionnels optimisés SEO en quelques clics
+                {t.blog.aiArticle.quickPress.subtitle}
               </p>
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6">
-                Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout,
-                personnalisation des couleurs, sélection des produits, et génération d'un article complet
-                avec images, table des matières et galeries interactives.
+                {t.blog.aiArticle.quickPress.description}
               </p>
             </div>
             <Button
@@ -112,28 +112,28 @@ export function QuickPress({ onArticleCreated }: QuickPressProps = {}) {
               className="text-lg px-8 py-6"
             >
               <Zap className="w-6 h-6 mr-2" />
-              Démarrer l'assistant
+              {t.blog.aiArticle.startButton}
             </Button>
           </div>
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-6">
-            <h3 className="font-semibold text-lg mb-2">✨ Design Professionnel</h3>
+            <h3 className="font-semibold text-lg mb-2">✨ {t.blog.aiArticle.features.design.title}</h3>
             <p className="text-sm text-muted-foreground">
-              3 layouts et 5 palettes de couleurs inspirés des plus grands magazines
+              {t.blog.aiArticle.features.design.description}
             </p>
           </Card>
           <Card className="p-6">
-            <h3 className="font-semibold text-lg mb-2">📸 Galeries Interactives</h3>
+            <h3 className="font-semibold text-lg mb-2">📸 {t.blog.aiArticle.features.gallery.title}</h3>
             <p className="text-sm text-muted-foreground">
-              Images cliquables et galeries élégantes pour tous vos produits
+              {t.blog.aiArticle.features.gallery.description}
             </p>
           </Card>
           <Card className="p-6">
-            <h3 className="font-semibold text-lg mb-2">🎯 SEO Optimisé</h3>
+            <h3 className="font-semibold text-lg mb-2">🎯 {t.blog.aiArticle.features.seo.title}</h3>
             <p className="text-sm text-muted-foreground">
-              Mots-clés intelligents, meta descriptions et structure parfaite
+              {t.blog.aiArticle.features.seo.description}
             </p>
           </Card>
         </div>

@@ -588,9 +588,9 @@ export default function Blog() {
               <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl sm:text-2xl font-bold">Create AI Article</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">{t.blog.aiArticle.title}</h2>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Generate an SEO-optimized article in a few clicks with artificial intelligence
+                {t.blog.aiArticle.description}
               </p>
             </div>
           </div>
@@ -603,38 +603,36 @@ export default function Blog() {
               
               <div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-2">
-                  Quick Press Pro
+                  {t.blog.aiArticle.quickPress.title}
                 </h3>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  Créez des articles professionnels optimisés SEO en quelques clics
+                  {t.blog.aiArticle.quickPress.subtitle}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-xl mx-auto">
-                  Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout,
-                  personnalisation des couleurs, sélection des produits, et génération d'un article complet
-                  avec images, table des matières et galeries interactives.
+                  {t.blog.aiArticle.quickPress.description}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4">
                 <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
                   <div className="text-2xl mb-3">✨</div>
-                  <div className="font-semibold mb-1 text-sm sm:text-base">Design Professionnel</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">{t.blog.aiArticle.features.design.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    3 layouts et 5 palettes de couleurs inspirés des plus grands magazines
+                    {t.blog.aiArticle.features.design.description}
                   </div>
                 </div>
                 <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
                   <div className="text-2xl mb-3">📸</div>
-                  <div className="font-semibold mb-1 text-sm sm:text-base">Galeries Interactives</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">{t.blog.aiArticle.features.gallery.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    Images cliquables et galeries élégantes pour tous vos produits
+                    {t.blog.aiArticle.features.gallery.description}
                   </div>
                 </div>
                 <div className="p-4 sm:p-6 border rounded-lg bg-card/50">
                   <div className="text-2xl mb-3">🎯</div>
-                  <div className="font-semibold mb-1 text-sm sm:text-base">SEO Optimisé</div>
+                  <div className="font-semibold mb-1 text-sm sm:text-base">{t.blog.aiArticle.features.seo.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    Mots-clés intelligents, meta descriptions et structure parfaite
+                    {t.blog.aiArticle.features.seo.description}
                   </div>
                 </div>
               </div>
@@ -647,6 +645,8 @@ export default function Blog() {
                 disabled={loading}
                 className="mt-4 sm:mt-6 w-full sm:w-auto text-lg px-8 py-6"
               >
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                {t.blog.aiArticle.startButton}
                 <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                 Démarrer l'assistant
               </Button>
