@@ -1317,6 +1317,12 @@ Your mission: Create a compelling, emotionally engaging landing page that tells 
 - Style: ${style || enrichedProduct.style || ""}
 - Product URL: ${productUrl}
 
+📝 **PRODUCT RAW DETAILS** (PRIMARY SOURCE - USE THIS AS MAIN REFERENCE):
+${description || "No raw description available"}
+${enrichedProduct?.body_html ? `\nRaw HTML Body:\n${enrichedProduct.body_html}` : ""}
+
+💡 **IMPORTANT**: This raw product information is your PRIMARY source. Extract, structure, and reformulate, but DO NOT delete concrete elements (Volume, Number of packages, Glass content, Durability, Optional lighting, etc.). DO NOT invent information (manufacturing country, warranty duration, etc.) if not mentioned.
+
 ${enrichedSummary ? `✨ ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🎨 VISUAL AI INSIGHTS (USE THIS TO CRAFT YOUR STORY):\n${visualAnalysis}\n\n💡 Use these visual observations to create vivid, accurate descriptions that help customers imagine the product in their space.\n` : ""}
 ${
@@ -1339,7 +1345,7 @@ ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
 🚨 **USER OPTIONS (STRICTLY RESPECT THEM):**
 - Desired design style: ${designStyle} (${selectedStyle.name})
-- Content length: ${length || "medium"} → ${length === "short" ? "800 words (3-4 sections)" : length === "long" ? "1500 words (6-8 sections)" : "1000 words (4-5 sections)"}
+- Content length: ${length || "medium"} → ${length === "short" ? "400-500 words (3 sections)" : length === "long" ? "1500 words (6-8 sections)" : "800 words (4-5 sections)"}
 - Layout: ${layout || "default"}
 ${customHighlights ? `- Key highlights to emphasize:\n${customHighlights}` : ""}
 
@@ -1592,6 +1598,12 @@ Ta mission : Créer une landing page captivante, émotionnellement engageante qu
 - Style : ${style || enrichedProduct.style || ""}
 - URL produit : ${productUrl}
 
+📝 **DÉTAILS PRODUIT BRUTS** (SOURCE PRINCIPALE - UTILISEZ CECI COMME RÉFÉRENCE PRINCIPALE) :
+${description || "Aucune description brute disponible"}
+${enrichedProduct?.body_html ? `\nCorps HTML brut :\n${enrichedProduct.body_html}` : ""}
+
+💡 **IMPORTANT** : Ces informations produit brutes sont votre SOURCE PRINCIPALE. Extrayez, structurez et reformulez, mais NE supprimez PAS les éléments concrets (Volume, Nombre de colis, Teneur en verre, Durabilité, Éclairage optionnel, etc.). N'inventez PAS d'informations (pays de fabrication, durée de garantie, etc.) si elles ne sont pas mentionnées.
+
 ${enrichedSummary ? `✨ ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🎨 INSIGHTS IA VISUELLE (UTILISE CECI POUR CRÉER TON HISTOIRE) :\n${visualAnalysis}\n\n💡 Utilise ces observations visuelles pour créer des descriptions vivantes et précises qui aident les clients à imaginer le produit dans leur espace.\n` : ""}
 ${
@@ -1621,7 +1633,7 @@ ${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 
 🚨 **OPTIONS UTILISATEUR (RESPECTE-LES STRICTEMENT):**
 - Style design souhaité: ${designStyle} (${selectedStyle.name})
-- Longueur contenu: ${length || "medium"} (adapte le nombre de sections)
+- Longueur contenu: ${length || "medium"} → ${length === "short" ? "400-500 mots (3 sections)" : length === "long" ? "1500 mots (6-8 sections)" : "800 mots (4-5 sections)"}
 - Layout: ${layout || "default"}
 ${customHighlights ? `- Points forts à mettre en avant:\n${customHighlights}` : ""}
 
@@ -2044,11 +2056,62 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       });
     }
 
-    // Build dimension data from detected schemas OR existing analysis
-    const dims =
-      Object.keys(detectedDims).length > 0
-        ? detectedDims
-        : imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
+    // Build dimension data with comprehensive fallback system
+    // Priority: detectedDims > imageAnalysis > vision_attributes.technicalDimensions > parsed_dimensions > smart_* fields
+    
+    const buildDimensionsFromAllSources = () => {
+      // Start with detectedDims if available
+      if (Object.keys(detectedDims).length > 0) {
+        console.log("📐 Using dimensions from Gemini Vision schema detection");
+        return detectedDims;
+      }
+      
+      // Fallback to imageAnalysis technicalDimensions
+      if (imageAnalysis?.technicalDimensions && Object.keys(imageAnalysis.technicalDimensions).length > 0) {
+        console.log("📐 Using dimensions from image analysis");
+        return imageAnalysis.technicalDimensions;
+      }
+      
+      // Fallback to enrichedProduct vision_attributes technicalDimensions
+      if (enrichedProduct?.vision_attributes?.technicalDimensions && 
+          Object.keys(enrichedProduct.vision_attributes.technicalDimensions).length > 0) {
+        console.log("📐 Using dimensions from enriched product vision attributes");
+        return enrichedProduct.vision_attributes.technicalDimensions;
+      }
+      
+      // Fallback to parsed_dimensions from description text
+      if (enrichedProduct?.vision_attributes?.parsed_dimensions && 
+          Object.keys(enrichedProduct.vision_attributes.parsed_dimensions).length > 0) {
+        console.log("📐 Using dimensions parsed from product description");
+        const parsed = enrichedProduct.vision_attributes.parsed_dimensions;
+        return {
+          height: parsed.height ? `${parsed.height} ${parsed.height_unit || 'cm'}` : null,
+          width: parsed.width ? `${parsed.width} ${parsed.width_unit || 'cm'}` : null,
+          depth: parsed.depth ? `${parsed.depth} ${parsed.depth_unit || 'cm'}` : null,
+          length: parsed.length ? `${parsed.length} ${parsed.length_unit || 'cm'}` : null,
+          diameter: parsed.diameter ? `${parsed.diameter} ${parsed.diameter_unit || 'cm'}` : null,
+          weight: parsed.weight ? `${parsed.weight} ${parsed.weight_unit || 'kg'}` : null,
+        };
+      }
+      
+      // Final fallback to smart_* fields
+      if (enrichedProduct?.smart_length || enrichedProduct?.smart_width || 
+          enrichedProduct?.smart_height || enrichedProduct?.smart_weight) {
+        console.log("📐 Using dimensions from smart_* fields");
+        return {
+          height: enrichedProduct.smart_height ? `${enrichedProduct.smart_height} ${enrichedProduct.smart_height_unit || 'cm'}` : null,
+          width: enrichedProduct.smart_width ? `${enrichedProduct.smart_width} ${enrichedProduct.smart_width_unit || 'cm'}` : null,
+          depth: enrichedProduct.smart_depth ? `${enrichedProduct.smart_depth} ${enrichedProduct.smart_depth_unit || 'cm'}` : null,
+          length: enrichedProduct.smart_length ? `${enrichedProduct.smart_length} ${enrichedProduct.smart_length_unit || 'cm'}` : null,
+          diameter: enrichedProduct.smart_diameter ? `${enrichedProduct.smart_diameter} ${enrichedProduct.smart_diameter_unit || 'cm'}` : null,
+          weight: enrichedProduct.smart_weight ? `${enrichedProduct.smart_weight} ${enrichedProduct.smart_weight_unit || 'kg'}` : null,
+        };
+      }
+      
+      return null;
+    };
+    
+    const dims = buildDimensionsFromAllSources();
 
     if (dims) {
       const visualContext = enrichedProduct?.vision_attributes?.visualContext;

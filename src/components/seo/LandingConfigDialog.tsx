@@ -152,7 +152,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
       text: "#000000",
       textMuted: "#666666",
     },
-    contentLength: "moyenne (800 mots)",
+    contentLength: "medium",
     vendorSource: "shopify",
     customHighlights: "",
     designStyle: "modern",
@@ -537,9 +537,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                 <SelectValue placeholder={t.landingConfig.contentLength.title} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="courte (400 mots)">{t.landingConfig.contentLength.short}</SelectItem>
-                <SelectItem value="moyenne (800 mots)">{t.landingConfig.contentLength.medium}</SelectItem>
-                <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
+                <SelectItem value="short">{t.landingConfig.contentLength.short}</SelectItem>
+                <SelectItem value="medium">{t.landingConfig.contentLength.medium}</SelectItem>
+                <SelectItem value="long">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>
           </div>

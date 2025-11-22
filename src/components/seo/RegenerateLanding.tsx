@@ -105,11 +105,18 @@ export default function RegenerateLanding({
   const hasGeneratedRef = useRef(false);
   const isGeneratingRef = useRef(false);
 
-  // Reset le ref quand le produit change
+  // Reset states when product changes
   useEffect(() => {
-    console.log(`🔄 [Landing] Product changed to: ${product.id}, resetting refs`);
+    console.log(`🔄 [Landing] Product changed to: ${product.id}, resetting all states`);
     hasGeneratedRef.current = false;
     isGeneratingRef.current = false;
+    setHtmlContent("");
+    setSyncedProductUrl(null);
+    setTitleNeedsSync(false);
+    setOptimizedTitle(null);
+    setError(null);
+    setProgress(0);
+    setProgressMessage("");
   }, [product.id]);
 
   // Auto-generate simplifié avec double protection
@@ -253,30 +260,30 @@ export default function RegenerateLanding({
     switch (config.contentLength) {
       case "short":
         return {
-          maxTokens: 1500,
-          wordCount: "250-350 mots",
+          maxTokens: 1000,
+          wordCount: "400-500 words",
           sections: 3,
           description: "Contenu optimisé et impactant",
         };
       case "medium":
         return {
-          maxTokens: 2500,
-          wordCount: "500-700 mots",
-          sections: 4,
+          maxTokens: 2000,
+          wordCount: "800 words",
+          sections: "4-5",
           description: "Contenu riche et persuasif",
         };
       case "long":
         return {
-          maxTokens: 4000,
-          wordCount: "900-1200 mots",
-          sections: 6,
+          maxTokens: 3500,
+          wordCount: "1500 words",
+          sections: "6-8",
           description: "Contenu complet et détaillé",
         };
       default:
         return {
-          maxTokens: 2500,
-          wordCount: "500-700 mots",
-          sections: 4,
+          maxTokens: 2000,
+          wordCount: "800 words",
+          sections: "4-5",
           description: "Contenu riche",
         };
     }
@@ -669,10 +676,18 @@ export default function RegenerateLanding({
                   </>
                 )}
                 {progress >= 30 && progress < 45 && (
-                  <>
-                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Context Processing</span>
-                  </>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-primary flex-shrink-0" />
+                      <span className="text-sm font-semibold text-primary">Context Processing</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'fr' 
+                        ? "Note: Chaque produit a son propre état de synchronisation. Si le bouton Sync/Visualiser semble bloqué, régénérez la landing pour ce produit."
+                        : "Note: Each product has its own sync state. If the Sync/View button seems stuck, regenerate the landing for this product."
+                      }
+                    </p>
+                  </div>
                 )}
                 {progress >= 45 && progress < 65 && (
                   <>
