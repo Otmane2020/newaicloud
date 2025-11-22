@@ -238,6 +238,10 @@ verify_jwt = true
 verify_jwt = true
 memory_limit_mb = 512
 
+[functions.analyze-image-with-vision]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.convert-landing-to-mobile]
 verify_jwt = true
 
