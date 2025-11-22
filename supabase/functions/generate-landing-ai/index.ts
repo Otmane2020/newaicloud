@@ -1887,20 +1887,35 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
             if (analysis) {
               console.log(`📊 Vision analysis result: ${analysis.substring(0, 200)}...`);
 
-              // Parse JSON response
+              // Parse JSON response with robust error handling
               const jsonMatch = analysis.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
-                const parsedAnalysis = JSON.parse(jsonMatch[0]);
+                try {
+                  const cleanedJson = jsonMatch[0]
+                    .replace(/,\s*}/g, '}')  // Remove trailing commas
+                    .replace(/,\s*]/g, ']')
+                    .replace(/\n/g, ' ')
+                    .replace(/\r/g, '')
+                    .trim();
+                  
+                  const parsedAnalysis = JSON.parse(cleanedJson);
 
-                if (parsedAnalysis.isDimensionSchema) {
-                  console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
-                  detectedDimensionImages.push({
-                    src: imageUrl,
-                    dimensions: parsedAnalysis.dimensions || {},
-                    confidence: parsedAnalysis.confidence,
-                  });
-                } else {
-                  console.log(`📷 Regular product image (no dimensions)`);
+                  if (parsedAnalysis.isDimensionSchema) {
+                    console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
+                    detectedDimensionImages.push({
+                      src: imageUrl,
+                      dimensions: parsedAnalysis.dimensions || {},
+                      confidence: parsedAnalysis.confidence,
+                    });
+                  } else {
+                    console.log(`📷 Regular product image (no dimensions)`);
+                    detectedRegularImages.push(imageObj);
+                  }
+                } catch (parseError) {
+                  console.error('❌ JSON parsing failed for Vision AI analysis:', parseError);
+                  console.error('Raw JSON:', jsonMatch[0].substring(0, 200));
+                  // Continue without this image's analysis
+                  console.log(`📷 Treating as regular image due to parse error`);
                   detectedRegularImages.push(imageObj);
                 }
               } else {
@@ -2101,13 +2116,32 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
     // 🎯 OPTIMIZE PRODUCT TITLE WITH SMART-TITLE (GEMINI VISION + DEEPSEEK) BEFORE SAVING
     if (userId && product_id) {
       console.log("🎯 Optimizing product title with Smart Title (Vision AI + DeepSeek)...");
+      
+      // ✅ Get store language before calling smart-title
+      let storeLanguage = language || "fr";
+      if (enrichedProduct?.store_id) {
+        const { data: storeData } = await supabaseAdmin
+          .from('shopify_connections')
+          .select('primary_locale')
+          .eq('id', enrichedProduct.store_id)
+          .maybeSingle();
+        
+        if (storeData?.primary_locale) {
+          storeLanguage = storeData.primary_locale.split('-')[0];
+          console.log(`🌍 Using store language: ${storeLanguage}`);
+        }
+      }
+      
       try {
         const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke("smart-title", {
           body: {
             userId: userId,
             productId: product_id,
-            language: language || "fr",
+            language: storeLanguage,
           },
+          headers: {
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          }
         });
 
         if (titleError) {

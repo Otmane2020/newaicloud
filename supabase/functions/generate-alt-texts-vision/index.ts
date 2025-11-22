@@ -865,6 +865,32 @@ Deno.serve(async (req: Request) => {
       visionStructured = { visual_description: visualDescription };
     }
 
+    // ✅ PHASE 2: Call smart-title to get optimized product name for ALT text
+    let optimizedProductName = extractedProductName;
+    if (productTitle && imageType === "product") {
+      console.log("🎯 Step 2.5: Optimizing product name with Smart Title...");
+      try {
+        const { data: titleData, error: titleError } = await supabaseClient.functions.invoke("smart-title", {
+          body: {
+            productId: image.product_id,
+            language: storeLanguage || "fr",
+          },
+          headers: {
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          }
+        });
+
+        if (!titleError && titleData?.success && titleData?.optimizedTitle) {
+          optimizedProductName = titleData.optimizedTitle;
+          console.log(`✅ Using optimized product name: ${optimizedProductName}`);
+        } else {
+          console.warn("⚠️ Smart title failed, using DeepSeek extracted name");
+        }
+      } catch (err) {
+        console.warn("⚠️ Smart title error:", err);
+      }
+    }
+
     // Step 3: Create optimized mix
     console.log("🔀 Step 3: Creating Optimized Mix");
     
@@ -875,7 +901,8 @@ Deno.serve(async (req: Request) => {
     let finalAltText = "";
 
     if (productTitle && visionStructured) {
-      finalAltText = createOptimizedAltText(extractedProductName, seoKeywords, visionStructured, language);
+      // Use optimized product name from smart-title
+      finalAltText = createOptimizedAltText(optimizedProductName, seoKeywords, visionStructured, language);
     } else {
       // Fallback: use only visual description
       finalAltText = visualDescription;

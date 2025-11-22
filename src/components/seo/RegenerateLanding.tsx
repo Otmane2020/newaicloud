@@ -303,7 +303,6 @@ export default function RegenerateLanding({
       setProgress(15);
 
       // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision AI + DeepSeek)
-      setProgressMessage("Optimisation du titre avec Vision AI...");
       try {
         const { data: titleData, error: titleError } = await supabase.functions.invoke("smart-title", {
           body: {
@@ -314,22 +313,24 @@ export default function RegenerateLanding({
 
         if (titleError) {
           console.warn("[Landing] Smart Title optimization failed:", titleError);
+          setProgressMessage(t.landingGeneration.generating);
         } else if (titleData?.success && titleData?.optimizedTitle) {
           console.log("[Landing] Title optimized with Vision AI:", titleData.optimizedTitle);
           setOptimizedTitle(titleData.optimizedTitle);
           setTitleNeedsSync(true);
-          setTitleAnalysis({
-            visionAnalysis: titleData.visionAnalysis,
-            deepseekAnalysis: titleData.deepseekAnalysis,
-            confidence: titleData.confidence || 0.85,
+          
+          // ✅ PHASE 3: Show only optimized title in progress message
+          setProgressMessage(`📝 ${titleData.optimizedTitle}`);
+          
+          toast.success("Titre optimisé par IA", {
+            description: titleData.optimizedTitle.substring(0, 100)
           });
-          toast.success(`Titre optimisé par IA: ${titleData.optimizedTitle}`, {
-            description: "Synchronisez pour appliquer le nouveau titre"
-          });
+        } else {
+          setProgressMessage(t.landingGeneration.generating);
         }
       } catch (err) {
         console.warn("[Landing] Smart Title optimization error:", err);
-        // Continue even if title optimization fails
+        setProgressMessage(t.landingGeneration.generating);
       }
 
       setProgress(20);
@@ -490,82 +491,26 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
-      {/* Optimized Title Section */}
+      {/* Optimized Title Section - SIMPLIFIED */}
       {optimizedTitle && (
-        <div className="bg-gradient-to-br from-accent/5 to-accent/10 p-5 rounded-xl border border-accent/30">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-accent/20 blur-md rounded-full animate-pulse" />
-                <Sparkles className="w-6 h-6 text-accent relative z-10" />
+        <div className="bg-gradient-to-br from-accent/5 to-accent/10 p-4 rounded-xl border border-accent/30">
+          <div className="flex items-start gap-3">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-accent/20 blur-md rounded-full animate-pulse" />
+              <Sparkles className="w-5 h-5 text-accent relative z-10" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-accent font-medium">Titre optimisé par IA</p>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-base">Titre optimisé par Vision AI</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    <Brain className="w-3 h-3 mr-1" />
-                    Gemini + DeepSeek
-                  </Badge>
+              <p className="text-base font-semibold leading-snug">{optimizedTitle}</p>
+              
+              {titleNeedsSync && (
+                <div className="flex items-center gap-2 text-xs text-accent/80 font-medium pt-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  Synchronisez pour appliquer ce titre
                 </div>
-                
-                {/* Original vs Optimized */}
-                <div className="space-y-3">
-                  <div className="bg-muted/40 rounded-lg p-3 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1 font-medium">ORIGINAL</p>
-                    <p className="text-sm line-through opacity-60">{product.title}</p>
-                  </div>
-                  
-                  <div className="bg-accent/10 rounded-lg p-3 border border-accent/50">
-                    <p className="text-xs text-accent mb-1 font-medium">OPTIMISÉ</p>
-                    <p className="text-sm font-semibold">{optimizedTitle}</p>
-                  </div>
-                </div>
-
-                {/* AI Analysis Insights */}
-                {titleAnalysis && (
-                  <div className="mt-3 space-y-2">
-                    {titleAnalysis.visionAnalysis && (
-                      <div className="bg-background/50 rounded-lg p-2 border">
-                        <p className="text-xs text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> Vision AI
-                        </p>
-                        <p className="text-xs">{titleAnalysis.visionAnalysis}</p>
-                      </div>
-                    )}
-                    {titleAnalysis.deepseekAnalysis && (
-                      <div className="bg-background/50 rounded-lg p-2 border">
-                        <p className="text-xs text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                          <Brain className="w-3 h-3" /> DeepSeek AI
-                        </p>
-                        <div className="text-xs space-y-1">
-                          {typeof titleAnalysis.deepseekAnalysis === 'object' ? (
-                            <>
-                              {(titleAnalysis.deepseekAnalysis as any).category && (
-                                <p><span className="font-medium">Catégorie:</span> {(titleAnalysis.deepseekAnalysis as any).category}</p>
-                              )}
-                              {(titleAnalysis.deepseekAnalysis as any).style && (
-                                <p><span className="font-medium">Style:</span> {(titleAnalysis.deepseekAnalysis as any).style}</p>
-                              )}
-                              {(titleAnalysis.deepseekAnalysis as any).materials?.length > 0 && (
-                                <p><span className="font-medium">Matériaux:</span> {(titleAnalysis.deepseekAnalysis as any).materials.join(', ')}</p>
-                              )}
-                            </>
-                          ) : (
-                            <p>{titleAnalysis.deepseekAnalysis}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {titleNeedsSync && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-accent font-medium">
-                    <AlertCircle className="w-4 h-4" />
-                    Synchronisez avec Shopify pour appliquer ce titre
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
