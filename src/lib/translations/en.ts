@@ -2673,6 +2673,30 @@ export const translations = {
       netlinkingDesc: "Link management",
       settingsDesc: "Configuration",
     },
+    aiArticle: {
+      title: "Create AI Article",
+      description: "Generate an SEO-optimized article in a few clicks with artificial intelligence",
+      quickPress: {
+        title: "Quick Press Pro",
+        subtitle: "Create professional SEO-optimized articles in a few clicks",
+        description: "Our intelligent assistant guides you step by step: collection selection, layout choice, color customization, product selection, and generation of a complete article with images, table of contents and interactive galleries.",
+      },
+      features: {
+        design: {
+          title: "Professional Design",
+          description: "3 layouts and 5 color palettes inspired by top magazines",
+        },
+        gallery: {
+          title: "Interactive Galleries",
+          description: "Clickable images and elegant galleries for all your products",
+        },
+        seo: {
+          title: "SEO Optimized",
+          description: "Smart keywords, meta descriptions and perfect structure",
+        },
+      },
+      startButton: "Start assistant",
+    },
     createNew: "Create New Article",
     startCreating: "Start Creating",
     newCampaign: "New Campaign",
