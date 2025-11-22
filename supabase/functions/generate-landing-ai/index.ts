@@ -2004,7 +2004,6 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
           "smart-title",
           {
             body: {
-              userId: userId,
               productId: product_id,
               language: language || "fr"
             }
