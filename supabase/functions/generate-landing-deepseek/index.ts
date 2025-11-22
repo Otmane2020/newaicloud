@@ -15,8 +15,177 @@ const LUXURY_FONTS = {
   accent: ["Cinzel:wght@400;600;700", "Libre Baskerville:wght@400;700"],
 };
 
+// ========== WCAG COLOR CONTRAST UTILITIES (from generate-landing-ai) ==========
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+function hexToHsl(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "0 0% 0%";
+
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+
+  return `${h} ${s}% ${l}%`;
+}
+
+function getLuminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4),
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function calculateContrast(color1: string, color2: string): number {
+  const lum1 = getLuminance(color1);
+  const lum2 = getLuminance(color2);
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function ensureAccessibleText(bgColor: string): string {
+  const bgLum = getLuminance(bgColor);
+  return bgLum > 0.5 ? "#000000" : "#FFFFFF";
+}
+
+function adjustSaturation(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  // Adjust saturation
+  s = Math.min(1, s * factor);
+
+  // Convert back to RGB
+  let r2, g2, b2;
+  if (s === 0) {
+    r2 = g2 = b2 = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r2 = hue2rgb(p, q, h + 1 / 3);
+    g2 = hue2rgb(p, q, h);
+    b2 = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toHex = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
+}
+
+// Generate WCAG-compliant design tokens with HSL values
+function generateDesignTokens(colorScheme: any) {
+  const primaryHex = colorScheme?.primary || "#1a1a1a";
+  const secondaryHex = colorScheme?.secondary || "#4a4a4a";
+  const backgroundHex = colorScheme?.background || "#FFFFFF";
+  const surfaceHex = colorScheme?.surface || "#F8F8F8";
+  const textHex = colorScheme?.text || "#1a1a1a";
+  const textMutedHex = colorScheme?.textMuted || "#6b6b6b";
+
+  // Validate primary color contrast with white
+  const contrast = calculateContrast(primaryHex, "#FFFFFF");
+  const needsDarkText = contrast < 4.5;
+  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
+
+  // Ensure background is light enough and text is dark enough
+  const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
+  const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#1a1a1a";
+
+  // Create vibrant accent by increasing saturation
+  const accentHex = adjustSaturation(primaryHex, 1.4);
+
+  // Convert all colors to HSL format for CSS custom properties
+  return {
+    primary: hexToHsl(primaryHex),
+    secondary: hexToHsl(secondaryHex),
+    accent: hexToHsl(accentHex),
+    background: hexToHsl(validatedBackgroundHex),
+    surface: hexToHsl(surfaceHex),
+    text: hexToHsl(validatedTextHex),
+    textMuted: hexToHsl(textMutedHex),
+    ctaText: hexToHsl(ctaTextHex),
+    contrastRatio: contrast,
+  };
+}
+
 serve(async (req) => {
-  // Entry logging - very first thing
   console.log('[DEEPSEEK] ===== FUNCTION INVOKED =====', {
     timestamp: new Date().toISOString(),
     method: req.method,
@@ -182,8 +351,21 @@ serve(async (req) => {
             .join("\n")}`
         : "";
 
-    // DESIGN TOKENS + FONTS
-    const designTokens = generateDesignTokens(colorScheme);
+    // DESIGN TOKENS + FONTS - Enhanced with WCAG compliance
+    const designTokens = generateDesignTokens(colorScheme || { 
+      primary: "#1a1a1a",
+      secondary: "#4a4a4a",
+      background: "#FFFFFF",
+      surface: "#F8F8F8",
+      text: "#1a1a1a",
+      textMuted: "#6b6b6b"
+    });
+    
+    console.log("🎨 Design tokens generated:", {
+      contrastRatio: designTokens.contrastRatio.toFixed(2),
+      wcagCompliant: designTokens.contrastRatio >= 4.5
+    });
+    
     const fonts = selectLuxuryFonts(style);
 
     // Product Data - Enriched & Structured
@@ -599,44 +781,76 @@ ICÔNES RECOMMANDÉES :
 - Premium : sparkles, crown
 `;
 
-  /*  STYLE APPLICATION  */
+  /*  STYLE APPLICATION - Enhanced Luxury Instructions  */
   const styleBlock = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎨 STYLE : ${style}
+🎨 STYLE : ${style} (WCAG Contrast Ratio: ${designTokens.contrastRatio.toFixed(2)})
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${style === "minimalist" ? `
-• MINIMALIST :
-  - Beaucoup d'espace blanc : py-16 py-20 gap-12
-  - Couleurs neutres : text-gray-600 bg-gray-50
-  - Typographie simple : font-light font-normal
-  - Pas trop d'icônes, design épuré
-  - Bordures fines : border-gray-200
+• MINIMALIST LUXURY :
+  - Espace blanc généreux et intentionnel : py-20 lg:py-32 gap-16 lg:gap-24
+  - Palette épurée : text-gray-700 bg-gray-50/50
+  - Typographie raffinée : font-light tracking-tight leading-relaxed
+  - Icônes minimalistes et discrètes
+  - Lignes subtiles : border-gray-200/60
+  - Transitions douces : transition-all duration-500 ease-out
+  - Focus sur le contenu, design invisible
 ` : style === "premium" ? `
-• PREMIUM :
-  - Overlay gradients : bg-gradient-to-br
-  - Typographie élégante : font-['${heroFont}']
-  - Contraste fort : text-white on dark backgrounds
-  - Animations hover : hover:scale-105 transition-transform
-  - Ombres profondes : shadow-2xl
-  - Bordures accent : border-accent
-  - Sections avec fond : bg-muted/50
+• PREMIUM LUXURY :
+  - Overlay gradients sophistiqués : bg-gradient-to-br from-black/70 via-black/50 to-transparent
+  - Typographie élégante et imposante : font-['${heroFont}'] tracking-tight
+  - Contraste dramatique : text-white on dark with glow effects
+  - Animations premium : hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500
+  - Ombres profondes multicouches : shadow-2xl shadow-black/20
+  - Bordures accent subtiles : border-2 border-accent/20
+  - Backdrop blur effects : backdrop-blur-md backdrop-saturate-150
+  - Sections avec fond texturé : bg-gradient-to-b from-surface/50 to-background
+  - Gold/Metallic accents : text-amber-400 bg-gradient-to-r from-amber-500/10 to-amber-600/10
+  - Letter spacing : tracking-wide pour les titres, tracking-tight pour les headings
+  - Micro-interactions : hover:shadow-accent/20 hover:border-accent/40
 ` : `
-• MODERN :
-  - Sections bien segmentées : border-t divide-y
-  - Couleurs vives pour accents : bg-primary text-secondary
-  - Ombres marquées : shadow-lg shadow-xl
-  - Grid layouts : grid-cols-2 grid-cols-3
-  - Transitions : transition-all duration-300
-  - Contrastes nets
+• MODERN LUXURY :
+  - Sections architecturales : border-t-2 divide-y divide-gray-200/50
+  - Couleurs vibrantes avec équilibre : bg-primary/5 hover:bg-primary/10
+  - Ombres nettes et précises : shadow-lg hover:shadow-2xl
+  - Layouts géométriques : grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+  - Transitions fluides : transition-all duration-300 ease-in-out
+  - Contrastes calculés WCAG-compliant
+  - Typographie hiérarchique claire
+  - Espaces négatifs intentionnels
+  - Borders accent dynamiques : hover:border-accent/60
 `}
 
-🎨 COULEURS (HSL à utiliser) :
-- Primary : hsl(${designTokens.primary}) → Titres, accents principaux
-- Secondary : hsl(${designTokens.secondary}) → Sous-titres, séparateurs
-- Accent : hsl(${designTokens.accent}) → Badges, highlights
-- Background : hsl(${designTokens.background}) → Fond général
-- Text : hsl(${designTokens.text}) → Texte principal
+🎨 DESIGN TOKENS (HSL - WCAG Compliant) :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Primary : hsl(${designTokens.primary}) → Titres principaux, CTAs, liens
+- Secondary : hsl(${designTokens.secondary}) → Sous-sections, séparateurs
+- Accent : hsl(${designTokens.accent}) → Badges premium, highlights, hover states
+- Background : hsl(${designTokens.background}) → Fond principal de page
+- Surface : hsl(${designTokens.surface}) → Cartes, panels, sections
+- Text : hsl(${designTokens.text}) → Corps de texte principal
+- Text Muted : hsl(${designTokens.textMuted}) → Texte secondaire, descriptions
+- CTA Text : hsl(${designTokens.ctaText}) → Texte sur boutons primaires
+
+💎 LUXURY DESIGN PRINCIPLES :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Whitespace is luxury - Ne pas surcharger, laisser respirer
+2. Typographie précise - Hiérarchie visuelle claire (scale: 1.25 → 1.5 → 2 → 3 → 4)
+3. Contraste calculé - Respecter WCAG AA minimum (4.5:1 pour texte)
+4. Animations subtiles - Smooth, naturelles, jamais agressives
+5. Détails raffinés - Micro-interactions, hover states, transitions
+6. Qualité photographique - Images haute résolution, aspect ratio respecté
+7. Cohérence visuelle - Même spacing, même radius, même shadows
+8. Accessibilité premium - Focus states visibles, aria-labels, semantic HTML
+
+🎯 MICRO-INTERACTIONS OBLIGATOIRES :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Boutons : hover:shadow-lg hover:shadow-accent/20 active:scale-98
+- Images : hover:scale-105 transition-transform duration-700 ease-out
+- Cards : hover:-translate-y-2 hover:shadow-2xl transition-all duration-400
+- Links : hover:text-accent transition-colors duration-200
+- Icons : hover:rotate-12 hover:text-accent transition-all duration-300
 `;
 
   /*  LANGUE  */
@@ -770,42 +984,78 @@ Si dimensionImageUrl existe, dans la section "Dimensions détaillées" :
 ` : ''}
 `;
 
-  /*  RÈGLES TECHNIQUES  */
+  /*  RÈGLES TECHNIQUES ET QUALITÉ  */
   const technicalRules = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 RÈGLES TECHNIQUES OBLIGATOIRES
+🚨 RÈGLES TECHNIQUES ET QUALITÉ OBLIGATOIRES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1️⃣ PRIORITÉ DES DIMENSIONS
-   - Si dimensions.vision existe → utiliser EN PRIORITÉ
-   - Compléter avec dimensions.smart si vision incomplet
-   - Ne JAMAIS inventer de valeurs
+1️⃣ PRIORITÉ DES DIMENSIONS (Hiérarchie stricte)
+   - Vision AI dimensions (technicalDimensions) → PRIORITÉ ABSOLUE
+   - Smart dimensions (estimées) → Complément si Vision incomplet
+   - SERP dimensions → Dernier recours uniquement
+   - Ne JAMAIS inventer de valeurs arbitraires
+   - Afficher unités correctes (cm, kg, etc.)
 
-2️⃣ MATÉRIAUX / COULEURS
-   - Utiliser EXACTEMENT ce qui est dans productData
-   - Ne jamais inventer de matériaux
+2️⃣ MATÉRIAUX, COULEURS & FINITIONS
+   - Utiliser EXACTEMENT les données de productData.materials
+   - Respecter productData.colors pour la palette détectée
+   - Ne JAMAIS inventer de matériaux non documentés
+   - Valoriser les finitions et textures détectées
 
-3️⃣ SECTIONS REQUISES
-   - Points Forts (avec icônes Lucide)
-   - Galerie d'images
-   - Caractéristiques clés (liste à puces)
-   - Dimensions détaillées (tableau + image schéma si dispo)
-   - Spécifications techniques (tableau)
+3️⃣ SECTIONS REQUISES (Dans l'ordre)
+   ✅ Hero Section avec overlay et badge premium
+   ✅ Points Forts (4 icônes Lucide + descriptions)
+   ✅ Galerie d'images (layout asymétrique moderne)
+   ✅ Caractéristiques clés (liste avec check-circle icons)
+   ✅ Dimensions détaillées (schéma image + tableau propre)
+   ✅ Spécifications techniques (tableau structuré)
+   ✅ Matériaux & Finitions (cards ou badges visuels)
+   ✅ Description longue/Analyse visuelle (prose markup)
 
-4️⃣ FORMAT DE SORTIE
-   🔴 CRITIQUE : Retourne UNIQUEMENT du HTML complet :
-   - Commence par <!DOCTYPE html>
-   - Inclut <html lang="${language}">, <head>, <body>
-   - Tailwind CSS via CDN dans <head>
-   - Script Lucide dans <head>
-   - AUCUN texte explicatif
-   - AUCUNE phrase comme "Cette landing page..."
+4️⃣ FORMAT DE SORTIE HTML
+   🔴 CRITIQUE : Output UNIQUEMENT du HTML complet valide :
+   - Débuter par <!DOCTYPE html>
+   - Structure complète : <html lang="${language}">, <head>, <body>
+   - Meta tags : charset, viewport, description
+   - Tailwind CSS CDN dans <head>
+   - Lucide Icons script + init dans <head>
+   - Google Fonts links dans <head>
+   - ZÉRO texte explicatif ou méta-commentaire
+   - ZÉRO phrase type "Cette landing page respecte..."
+   - HTML uniquement, rien d'autre
 
-5️⃣ INTERDICTIONS
-   ❌ Aucun CTA commercial / bouton acheter
-   ❌ Aucune navigation ou footer
+5️⃣ INTERDICTIONS ABSOLUES
+   ❌ Aucun CTA commercial / bouton "Acheter maintenant"
+   ❌ Aucune navigation header ou footer
+   ❌ Aucun formulaire de contact
    ❌ Aucun prix affiché
-   ❌ Ne jamais inventer de données
+   ❌ Aucun lien externe
+   ❌ Aucun script de tracking ou analytics
+
+6️⃣ QUALITÉ & ACCESSIBILITÉ
+   ✅ Tous les images avec alt descriptifs en ${language}
+   ✅ Semantic HTML (section, article, header appropriés)
+   ✅ ARIA labels si nécessaire
+   ✅ Contraste WCAG AA minimum (ratio ${designTokens.contrastRatio.toFixed(2)}:1)
+   ✅ Focus states visibles pour keyboard navigation
+   ✅ Responsive images avec object-cover
+   ✅ Loading lazy pour images après le fold
+
+7️⃣ PERFORMANCE & OPTIMISATION
+   ✅ Classes Tailwind optimisées (éviter redondances)
+   ✅ Animations GPU-accelerated (transform, opacity)
+   ✅ Éviter JS custom (utiliser Tailwind + Lucide seulement)
+   ✅ Images: srcset si multiple résolutions disponibles
+   ✅ Preconnect pour fonts et CDN
+
+8️⃣ CONTENU TEXTUEL
+   - Longueur cible : ${wordCount} mots
+   - Tout en ${language} (titres, descriptions, labels, alt text)
+   - Ton professionnel et premium
+   - Vocabulaire technique précis
+   - Pas de sur-vente ni superlatifs excessifs
+   - Décrire factuellement les caractéristiques
 `;
 
   return `
@@ -834,41 +1084,6 @@ Commence la génération HTML maintenant :
 `;
 }
 
-function generateDesignTokens(colorScheme: any) {
-  const hexToHsl = (hex: string): string => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return "210 100% 50%";
-    
-    const r = parseInt(result[1], 16) / 255;
-    const g = parseInt(result[2], 16) / 255;
-    const b = parseInt(result[3], 16) / 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0, s = 0;
-    const l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
-      }
-    }
-
-    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-  };
-
-  return {
-    primary: hexToHsl(colorScheme?.primary || "#1e40af"),
-    secondary: hexToHsl(colorScheme?.secondary || "#7c3aed"),
-    accent: hexToHsl(colorScheme?.accent || "#059669"),
-    background: hexToHsl(colorScheme?.background || "#ffffff"),
-    text: hexToHsl(colorScheme?.text || "#1f2937"),
-  };
-}
 
 function selectLuxuryFonts(style: string) {
   const styleMap: { [key: string]: typeof LUXURY_FONTS } = {
