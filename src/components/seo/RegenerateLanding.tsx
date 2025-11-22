@@ -390,23 +390,15 @@ export default function RegenerateLanding({
         hasImageAnalysis: !!imageAnalysis,
       });
 
-      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+      // ✅ ÉTAPE 4 : Générer le landing avec DeepSeek + Vision AI + Product Enrichment
+      const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
         body: {
-          product_id: product.id,
-          productTitle: optimizedTitle || product.title,
-          imageUrl: product.image_url,
-          description: product.description,
-          vendor: resolvedVendor,
-          designStyle: config.designStyle || 'modern',
-          mainColor:
-            typeof config.colorScheme === "string" ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
-          colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
+          productId: product.id,
+          style: config.designStyle || 'modern',
           layout: config.layout,
-          length: config.contentLength,
+          colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
+          contentLength: config.contentLength,
           customHighlights: config.customHighlights,
-          imageAnalysis: imageAnalysis,
-          contentLengthParams: contentParams,
           language: language,
         },
       });
