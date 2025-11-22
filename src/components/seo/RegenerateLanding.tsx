@@ -676,18 +676,10 @@ export default function RegenerateLanding({
                   </>
                 )}
                 {progress >= 30 && progress < 45 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-primary flex-shrink-0" />
-                      <span className="text-sm font-semibold text-primary">Context Processing</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {language === 'fr' 
-                        ? "Note: Chaque produit a son propre état de synchronisation. Si le bouton Sync/Visualiser semble bloqué, régénérez la landing pour ce produit."
-                        : "Note: Each product has its own sync state. If the Sync/View button seems stuck, regenerate the landing for this product."
-                      }
-                    </p>
-                  </div>
+                  <>
+                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Context Processing</span>
+                  </>
                 )}
                 {progress >= 45 && progress < 65 && (
                   <>
