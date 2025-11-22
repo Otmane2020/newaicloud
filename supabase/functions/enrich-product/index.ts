@@ -397,6 +397,12 @@ AUTRES:
 
 Si une information n'est pas disponible ou applicable, utilise null.
 
+RÈGLES ABSOLUES:
+1. **CONSERVER LES DIMENSIONS EXACTES**: Si la description contient une section "Dimensions" (Hauteur, Largeur, Profondeur, Poids, Volume, Nombre de colis, Teneur en verre), tu DOIS conserver ces valeurs exactes. Ne les supprime PAS, ne les modifie PAS.
+2. **NE PAS INVENTER**: N'invente jamais de fabrication (pays), de durée de garantie, ou d'autres informations factices si elles ne sont pas mentionnées dans la description.
+3. Si certaines dimensions manquent, tu peux les estimer UNIQUEMENT si aucune dimension n'est fournie dans la description.
+4. Tu peux reformuler les caractéristiques, mais sans effacer les éléments concrets (Volume, Nombre de colis, Teneur en verre, Durabilité, Éclairage optionnel, etc.).
+
 Réponds UNIQUEMENT en JSON valide:
 {
   "ai_color": "string ou null",
@@ -574,8 +580,11 @@ Réponds UNIQUEMENT en JSON valide:
 
     // Update ALL AI attributes and dimensions
     const updatePayload = {
-      // Vision AI attributes (HIGHEST PRIORITY)
-      vision_attributes: visionAttributes || null,
+      // Vision AI attributes (HIGHEST PRIORITY) + parsed_dimensions
+      vision_attributes: visionAttributes ? {
+        ...visionAttributes,
+        parsed_dimensions: existingDimensions // 🆕 Store parsed dimensions from text
+      } : (Object.keys(existingDimensions).length > 0 ? { parsed_dimensions: existingDimensions } : null),
       vision_timestamp: visionAttributes ? new Date().toISOString() : null,
       vision_model: visionAttributes ? 'google/gemini-2.5-flash' : null,
       

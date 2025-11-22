@@ -26,6 +26,7 @@ export function stripMarkdownFences(html: string): string {
 
 /**
  * Normalizes HTML to ensure complete valid HTML5 structure
+ * ALWAYS injects Tailwind CDN to ensure styling works
  */
 export function normalizeHTML(
   rawHtml: string,
@@ -40,13 +41,14 @@ export function normalizeHTML(
   const hasHtmlTag = html.includes("<html");
   const hasClosingBody = html.includes("</body>");
   const hasClosingHtml = html.includes("</html>");
+  const hasTailwindCDN = html.includes("cdn.tailwindcss.com");
 
-  // If already complete, return as-is
-  if (hasDoctype && hasHtmlTag && hasClosingBody && hasClosingHtml) {
+  // If already complete AND has Tailwind, return as-is
+  if (hasDoctype && hasHtmlTag && hasClosingBody && hasClosingHtml && hasTailwindCDN) {
     return html;
   }
 
-  console.log("[Normalizer] HTML structure incomplete, wrapping in full HTML5 template");
+  console.log("[Normalizer] HTML structure incomplete or missing Tailwind, wrapping in full HTML5 template");
 
   // Extract body content if present
   let bodyContent = html;
@@ -54,6 +56,12 @@ export function normalizeHTML(
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)(?:<\/body>)?$/i);
     if (bodyMatch) {
       bodyContent = bodyMatch[1];
+    }
+  } else if (html.includes("<html")) {
+    // Extract everything between html tags if no body tags
+    const htmlMatch = html.match(/<html[^>]*>([\s\S]*?)(?:<\/html>)?$/i);
+    if (htmlMatch) {
+      bodyContent = htmlMatch[1];
     }
   }
 
