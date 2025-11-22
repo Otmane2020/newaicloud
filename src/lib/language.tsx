@@ -34,6 +34,13 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   });
 
   const translations = { fr, en };
+  
+  // Defensive loading - ensure translations are loaded
+  if (!translations[language]) {
+    console.error('[LanguageProvider] Missing translations for language:', language);
+    return <div>Loading translations...</div>;
+  }
+  
   const t = translations[language];
 
   const tf = (key: string, vars?: Record<string, any>): string => {
