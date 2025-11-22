@@ -205,8 +205,8 @@ serve(async (req) => {
               role: "system",
               content:
                 language === "fr"
-                  ? "Tu es un expert en création de landing pages e-commerce premium. Tu produis du HTML Tailwind propre, riche et sans CTA commercial."
-                  : "You are an expert in premium e-commerce landing page creation. Produce clean, rich Tailwind HTML without commercial CTAs.",
+                  ? "Tu es un expert en création de landing pages e-commerce premium. RÈGLE ABSOLUE : Tu renvoies UNIQUEMENT du code HTML valide complet. AUCUN texte explicatif, AUCUN commentaire de type 'cette landing page respecte', AUCUN markdown, AUCUN texte en dehors des balises HTML. Le document DOIT commencer par <!DOCTYPE html> et contenir <html>, <head>, <body>. Utilise Tailwind CSS via des classes. NE RENVOIE RIEN D'AUTRE QUE LE CODE HTML PUR."
+                  : "You are an expert in premium e-commerce landing page creation. ABSOLUTE RULE: Return ONLY valid complete HTML code. NO explanatory text, NO comments like 'this landing page respects', NO markdown, NO text outside HTML tags. The document MUST start with <!DOCTYPE html> and contain <html>, <head>, <body>. Use Tailwind CSS via classes. RETURN NOTHING BUT PURE HTML CODE.",
             },
             { role: "user", content: prompt },
           ],
@@ -234,6 +234,16 @@ serve(async (req) => {
 
     const deepseekJson = await deepseekResponse.json();
     let html = deepseekJson.choices[0].message.content;
+
+    // Debug: Preview first 500 chars of raw output
+    console.log("🔍 HTML preview (début):", html.slice(0, 500));
+
+    // Validate HTML structure before cleaning
+    const hasHtmlStructure = html.includes("<html") || html.includes("<body") || html.includes("<div");
+    if (!hasHtmlStructure) {
+      console.error("❌ DeepSeek did not return valid HTML. Raw content:", html.slice(0, 1000));
+      throw new Error("Le modèle n'a pas renvoyé de HTML valide. Veuillez réessayer.");
+    }
 
     html = cleanHTML(html);
 
@@ -330,6 +340,17 @@ Tu DOIS inclure :
 ❌ Ne jamais inventer
 ❌ Aucun CTA commercial
 ❌ Aucune navigation ou footer
+
+6️⃣ FORMAT DE SORTIE (OBLIGATOIRE)
+------------------------------------
+🔴 CRITIQUE : Retourne UNIQUEMENT un document HTML complet :
+- Commence par <!DOCTYPE html>
+- Inclut <html>, <head>, <body>
+- Utilise Tailwind CSS via des classes
+- NE PAS inclure de <script> ou <style> inline
+- NE RENVOIE RIEN D'AUTRE que le code HTML
+- AUCUNE phrase comme "Cette landing page respecte..."
+- AUCUN texte explicatif avant ou après le HTML
 `;
 
   return `
@@ -426,6 +447,18 @@ function selectLuxuryFonts(style: string) {
 function cleanHTML(html: string): string {
   // Supprimer les balises markdown
   html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
+  
+  // Supprimer les phrases méta typiques de DeepSeek
+  const metaPhrases = [
+    /Cette landing page premium respecte strictement.*$/gims,
+    /Cette landing page respecte.*$/gims,
+    /✅\s*\*\*.*?\*\*.*$/gims,
+    /Note :.*$/gims,
+  ];
+  
+  for (const pattern of metaPhrases) {
+    html = html.replace(pattern, "");
+  }
   
   // Supprimer les commentaires excessifs
   html = html.replace(/<!--[\s\S]*?-->/g, "");
