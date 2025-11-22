@@ -1723,6 +1723,127 @@ UTILISATION DES ICÔNES :
 
     console.log("✅ HTML generated and sanitized successfully");
 
+    // 📐 DETECT DIMENSION SCHEMA IMAGES WITH GEMINI VISION (BEFORE generating dimensions section)
+    console.log("📐 Analyzing images for dimension schemas...");
+    const detectedDimensionImages: Array<{ src: string; dimensions: any; confidence: string }> = [];
+    const detectedRegularImages: Array<{ src: string; alt_text: string }> = [];
+    
+    if (images && images.length > 0) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      
+      for (const imageObj of images) {
+        const imageUrl = imageObj.src;
+        if (!imageUrl) continue;
+        
+        try {
+          console.log(`🔍 Analyzing image for dimensions: ${imageUrl.substring(0, 60)}...`);
+          
+          // Fetch image and convert to base64
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) {
+            console.warn(`⚠️ Failed to fetch image: ${imageUrl}`);
+            detectedRegularImages.push(imageObj);
+            continue;
+          }
+          
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+          const imageDataUrl = `data:image/jpeg;base64,${base64Image}`;
+
+          // Call Gemini Vision to detect dimension schemas
+          const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: `Analyse cette image et détermine si elle contient un schéma technique avec des dimensions (mesures, cotes, lignes de dimension).
+
+Si OUI, c'est une photo de dimensions, extrais TOUTES les dimensions visibles au format JSON structuré :
+{
+  "isDimensionSchema": true,
+  "confidence": "high|medium|low",
+  "dimensions": {
+    "length": {"value": 120, "unit": "cm", "label": "Longueur"},
+    "width": {"value": 80, "unit": "cm", "label": "Largeur"},
+    "height": {"value": 45, "unit": "cm", "label": "Hauteur"},
+    "diameter": {"value": 60, "unit": "cm", "label": "Diamètre"},
+    "depth": {"value": 40, "unit": "cm", "label": "Profondeur"},
+    "seatHeight": {"value": 46, "unit": "cm", "label": "Hauteur d'assise"},
+    "armHeight": {"value": 65, "unit": "cm", "label": "Hauteur accoudoirs"}
+  },
+  "notes": "Description des mesures visibles sur le schéma"
+}
+
+Si NON, c'est une photo normale de produit :
+{
+  "isDimensionSchema": false,
+  "confidence": "high",
+  "reason": "Image lifestyle/produit sans mesures techniques"
+}
+
+IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N'estime rien.`
+                    },
+                    {
+                      type: "image_url",
+                      image_url: { url: imageDataUrl }
+                    }
+                  ]
+                }
+              ],
+              max_tokens: 1000
+            })
+          });
+
+          if (visionResponse.ok) {
+            const visionData = await visionResponse.json();
+            const analysis = visionData.choices?.[0]?.message?.content;
+            
+            if (analysis) {
+              console.log(`📊 Vision analysis result: ${analysis.substring(0, 200)}...`);
+              
+              // Parse JSON response
+              const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsedAnalysis = JSON.parse(jsonMatch[0]);
+                
+                if (parsedAnalysis.isDimensionSchema) {
+                  console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
+                  detectedDimensionImages.push({
+                    src: imageUrl,
+                    dimensions: parsedAnalysis.dimensions || {},
+                    confidence: parsedAnalysis.confidence
+                  });
+                } else {
+                  console.log(`📷 Regular product image (no dimensions)`);
+                  detectedRegularImages.push(imageObj);
+                }
+              } else {
+                console.warn(`⚠️ Could not parse vision response for: ${imageUrl}`);
+                detectedRegularImages.push(imageObj);
+              }
+            }
+          } else {
+            console.warn(`⚠️ Vision API error for ${imageUrl}: ${visionResponse.status}`);
+            detectedRegularImages.push(imageObj);
+          }
+        } catch (imageError) {
+          console.error(`❌ Error analyzing image ${imageUrl}:`, imageError);
+          detectedRegularImages.push(imageObj);
+        }
+      }
+    }
+    
+    console.log(`📐 Dimension analysis complete: ${detectedDimensionImages.length} schema images, ${detectedRegularImages.length} regular images`);
+
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
     
@@ -1901,127 +2022,6 @@ UTILISATION DES ICÔNES :
         // Continue even if title optimization fails
       }
     }
-
-    // 📐 DETECT DIMENSION SCHEMA IMAGES WITH GEMINI VISION
-    console.log("📐 Analyzing images for dimension schemas...");
-    const detectedDimensionImages: Array<{ src: string; dimensions: any; confidence: string }> = [];
-    const detectedRegularImages: Array<{ src: string; alt_text: string }> = [];
-    
-    if (images && images.length > 0) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      
-      for (const imageObj of images) {
-        const imageUrl = imageObj.src;
-        if (!imageUrl) continue;
-        
-        try {
-          console.log(`🔍 Analyzing image for dimensions: ${imageUrl.substring(0, 60)}...`);
-          
-          // Fetch image and convert to base64
-          const imageResponse = await fetch(imageUrl);
-          if (!imageResponse.ok) {
-            console.warn(`⚠️ Failed to fetch image: ${imageUrl}`);
-            detectedRegularImages.push(imageObj);
-            continue;
-          }
-          
-          const imageBuffer = await imageResponse.arrayBuffer();
-          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-          const imageDataUrl = `data:image/jpeg;base64,${base64Image}`;
-
-          // Call Gemini Vision to detect dimension schemas
-          const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: `Analyse cette image et détermine si elle contient un schéma technique avec des dimensions (mesures, cotes, lignes de dimension).
-
-Si OUI, c'est une photo de dimensions, extrais TOUTES les dimensions visibles au format JSON structuré :
-{
-  "isDimensionSchema": true,
-  "confidence": "high|medium|low",
-  "dimensions": {
-    "length": {"value": 120, "unit": "cm", "label": "Longueur"},
-    "width": {"value": 80, "unit": "cm", "label": "Largeur"},
-    "height": {"value": 45, "unit": "cm", "label": "Hauteur"},
-    "diameter": {"value": 60, "unit": "cm", "label": "Diamètre"},
-    "depth": {"value": 40, "unit": "cm", "label": "Profondeur"},
-    "seatHeight": {"value": 46, "unit": "cm", "label": "Hauteur d'assise"},
-    "armHeight": {"value": 65, "unit": "cm", "label": "Hauteur accoudoirs"}
-  },
-  "notes": "Description des mesures visibles sur le schéma"
-}
-
-Si NON, c'est une photo normale de produit :
-{
-  "isDimensionSchema": false,
-  "confidence": "high",
-  "reason": "Image lifestyle/produit sans mesures techniques"
-}
-
-IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N'estime rien.`
-                    },
-                    {
-                      type: "image_url",
-                      image_url: { url: imageDataUrl }
-                    }
-                  ]
-                }
-              ],
-              max_tokens: 1000
-            })
-          });
-
-          if (visionResponse.ok) {
-            const visionData = await visionResponse.json();
-            const analysis = visionData.choices?.[0]?.message?.content;
-            
-            if (analysis) {
-              console.log(`📊 Vision analysis result: ${analysis.substring(0, 200)}...`);
-              
-              // Parse JSON response
-              const jsonMatch = analysis.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const parsedAnalysis = JSON.parse(jsonMatch[0]);
-                
-                if (parsedAnalysis.isDimensionSchema) {
-                  console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
-                  detectedDimensionImages.push({
-                    src: imageUrl,
-                    dimensions: parsedAnalysis.dimensions || {},
-                    confidence: parsedAnalysis.confidence
-                  });
-                } else {
-                  console.log(`📷 Regular product image (no dimensions)`);
-                  detectedRegularImages.push(imageObj);
-                }
-              } else {
-                console.warn(`⚠️ Could not parse vision response for: ${imageUrl}`);
-                detectedRegularImages.push(imageObj);
-              }
-            }
-          } else {
-            console.warn(`⚠️ Vision API error for ${imageUrl}: ${visionResponse.status}`);
-            detectedRegularImages.push(imageObj);
-          }
-        } catch (imageError) {
-          console.error(`❌ Error analyzing image ${imageUrl}:`, imageError);
-          detectedRegularImages.push(imageObj);
-        }
-      }
-    }
-    
-    console.log(`📐 Dimension analysis complete: ${detectedDimensionImages.length} schema images, ${detectedRegularImages.length} regular images`);
 
     // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
