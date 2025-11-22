@@ -227,27 +227,30 @@ ${visionAnalysis || 'Non disponible'}
    - CATÉGORIE exacte (Table Basse, Meuble TV, Console...)
    - TOUTES les COULEURS visibles (Blanc, Bleu Marine, Doré...)
    - TOUS les MATÉRIAUX distincts du corps ET des pieds (Bois Laqué Blanc + Métal Doré, Marbre Blanc + Chrome...)
-   - TYPE de PIÈTEMENT si distinctif (Piètement Conique Doré, Pieds Chromés Ajourés, Piètement Hexagonal...)
-   - CARACTÉRISTIQUES physiques (Gigogne, Niches Rangement, Compartiments...)
-   - STYLE design (Moderne, Scandinave, Industriel, Art Déco...)
+   - FORME du plateau (Ronde, Ovale, Rectangulaire...)
+   - TYPE de PIÈTEMENT si distinctif (Piètement Conique Doré, Pieds Chromés Ajourés, Piètement Géométrique...)
+   - CARACTÉRISTIQUES physiques (Gigogne, Set de 2, Niches de Rangement, Compartiments Fermés...)
+   - STYLE design (Moderne, Scandinave, Industriel, Art Déco, Luxueux...)
 
 2. **STRUCTURE ENRICHIE (utilise TOUS les éléments visuels):**
-   CATÉGORIE + COULEUR CORPS + MATÉRIAU CORPS + PIÈTEMENT/PIEDS + CARACTÉRISTIQUE + STYLE
+   CATÉGORIE + FORME + COULEUR CORPS + MATÉRIAU CORPS + TYPE PIÈTEMENT + CARACTÉRISTIQUE + STYLE (1 à 2 max)
    
-   Exemple: "Table Basse Blanc Bois Laqué Pieds Métal Doré Coniques Niches Moderne"
+   Exemple: "Table Basse Ovale Blanche Marbre Blanc Piètement Métal Doré Géométrique Moderne Luxueux"
 
 3. **EXEMPLES DE TITRES RICHES:**
-   - Vision: "Blanc, Bois Laqué, Pieds Métal Doré Coniques, Niches" → "Table Basse Blanche Bois Laqué Piètement Métal Doré Conique Rangement Moderne"
-   - Vision: "Bleu Marine, Laminé, Pieds Métal Doré" → "Table Basse Bleu Marine Laminé Pieds Métal Doré Moderne"
-   - Vision: "Marbre Blanc, Piètement Chromé Ajouré Hexagonal" → "Table Basse Marbre Blanc Piètement Chromé Ajouré Hexagonal Moderne"
+   - Vision: "Blanc, Bois Laqué, Pieds Métal Doré Coniques, Niches" → "Table Basse Rectangulaire Blanche Bois Laqué Pieds Métal Doré Coniques Niches Rangement Moderne"
+   - Vision: "Bleu Marine, Laminé, Pieds Métal Doré" → "Table Basse Rectangulaire Bleu Marine Laminé Pieds Métal Doré Moderne"
+   - Vision: "Marbre Blanc, Piètement Chromé Ajouré Hexagonal" → "Table Basse Ronde Marbre Blanc Piètement Chromé Ajouré Hexagonal Moderne Luxueux"
 
 4. **RÈGLES STRICTES:**
    - Maximum 80 caractères (pour permettre plus de détails)
    - Majuscule à chaque mot important
    - Espaces uniquement (PAS de virgules)
-   - ${language === 'fr' ? 'En FRANÇAIS' : 'In ENGLISH'}
-   - Inclus OBLIGATOIREMENT: Couleur + Matériau Corps + Type Piètement si visible
-   - Ne sacrifie AUCUN détail visuel important
+   - ${language === 'fr' ? 'En FRANÇAIS UNIQUEMENT, PAS UN SEUL MOT ANGLAIS (ex: \"Moderne\" et pas \"Modern\")' : 'In ENGLISH ONLY when not French'}
+   - Inclus OBLIGATOIREMENT: Forme + Couleur + Matériau du corps + Type de Piètement s'ils sont visibles
+   - Si les caractéristiques mentionnent "Piètement géométrique", écris "Piètement Géométrique" dans le titre
+   - Pour le marbre, privilégie l'ordre "Marbre Blanc", "Marbre Noir" (MATÉRIAU + Couleur), jamais "Blanc Marbre"
+   - Ne sacrifie AUCUN détail visuel important tant que la limite de caractères le permet
 
 **⚡ GÉNÈRE LE TITRE RICHE (SEULEMENT LE TITRE):**`;
 
