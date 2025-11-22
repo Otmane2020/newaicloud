@@ -181,30 +181,53 @@ async function callDeepSeek(
 
 function generateAltPrompt(
   product: ShopifyProduct, 
-  language: string = 'French',
+  language: string = 'fr',
   style: string = 'seo_optimized'
 ): string {
-  return `Génère un texte ALT optimisé pour cette image produit en COMBINANT les informations produit ET les analyses visuelles disponibles :
+  // Map language codes to full names
+  const languageNames: Record<string, { name: string; instruction: string; example: string }> = {
+    'fr': { 
+      name: 'French', 
+      instruction: '🚨 OBLIGATOIRE : Réponds UNIQUEMENT en FRANÇAIS',
+      example: 'Cintre mural rembourré en chêne artisanal avec étagère métallique noire'
+    },
+    'en': { 
+      name: 'English', 
+      instruction: '🚨 MANDATORY: Reply ONLY in ENGLISH',
+      example: 'Padded oak wall coat rack with black metal shelf'
+    },
+    'es': { 
+      name: 'Spanish', 
+      instruction: '🚨 OBLIGATORIO: Responde SOLO en ESPAÑOL',
+      example: 'Perchero de pared acolchado en roble artesanal con estante metálico negro'
+    }
+  };
+  
+  const langConfig = languageNames[language] || languageNames['fr'];
+  
+  return `🌍 ${langConfig.instruction}
 
-Produit : ${product.title}
-Description : ${product.description?.substring(0, 200) || "Non fournie"}
-Catégorie : ${product.category || "Non spécifiée"}
+Generate an optimized ALT text for this product image by COMBINING product information AND visual analyses:
 
-Analyses visuelles disponibles :
-- Couleur : ${product.ai_color || 'non disponible'}
-- Matériau : ${product.ai_material || 'non disponible'}
+Product: ${product.title}
+Description: ${product.description?.substring(0, 200) || "Not provided"}
+Category: ${product.category || "Not specified"}
 
-RÈGLES :
-1. Intègre le titre du produit
-2. Incorpore les couleurs, matériaux détectés
-3. Décris visuellement le produit de manière naturelle
-4. 10-20 mots
-5. SEO-friendly et accessible
-6. En français
+Available visual analyses:
+- Color: ${product.ai_color || 'not available'}
+- Material: ${product.ai_material || 'not available'}
 
-Exemple : "Table basse ronde en bois massif naturel, style scandinave épuré avec plateau lisse"
+RULES:
+1. ✅ Integrate the product title naturally
+2. ✅ Incorporate detected colors and materials
+3. ✅ Describe the product visually in a natural way
+4. ✅ 10-20 words maximum
+5. ✅ SEO-friendly and accessible
+6. 🚨 CRITICAL: Write ONLY in ${langConfig.name}
 
-Réponds avec UN SEUL texte ALT, pas de JSON, pas d'explication.`;
+Example (${language.toUpperCase()}): "${langConfig.example}"
+
+Reply with ONE ALT text only, no JSON, no explanation.`;
 }
 
 function parseAltTextResponse(content: string, fallback: string): string {
@@ -359,7 +382,7 @@ Deno.serve(async (req: Request) => {
     // Get product data
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("title, description, category, ai_color, ai_material, seller_id")
+      .select("id, title, description, category, ai_color, ai_material, seller_id, store_id")
       .eq("id", image.product_id)
       .maybeSingle();
 
@@ -370,6 +393,44 @@ Deno.serve(async (req: Request) => {
 
     if (!product) {
       throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+    }
+
+    // Get store language
+    let storeLanguage = language;
+    try {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_language')
+        .eq('id', product.store_id)
+        .maybeSingle();
+      
+      if (storeData?.store_language) {
+        const detectedLang = storeData.store_language.split('-')[0].toLowerCase();
+        storeLanguage = ['fr', 'en', 'es'].includes(detectedLang) ? detectedLang : language;
+        console.log(`🌍 Using store language for ALT: ${storeLanguage}`);
+      }
+    } catch (error) {
+      console.warn('Could not fetch store language, using default:', error);
+    }
+
+    // Try to get optimized title from smart-title for coherence
+    let optimizedTitle = product.title;
+    try {
+      console.log('Calling smart-title for coherent ALT generation...');
+      const { data: titleData } = await supabaseClient.functions.invoke('smart-title', {
+        body: { 
+          productId: product.id,
+          userId: user.id,
+          language: storeLanguage 
+        }
+      });
+      
+      if (titleData?.optimized_title) {
+        optimizedTitle = titleData.optimized_title;
+        console.log(`✅ Using optimized title: ${optimizedTitle}`);
+      }
+    } catch (error) {
+      console.warn('Could not fetch optimized title, using original:', error);
     }
 
     // Check optimization limits using RPC
@@ -414,14 +475,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate ALT text using DeepSeek
-    console.log(`Generating ALT text with DeepSeek for image: ${image.id}`);
+    console.log(`Generating ALT text with DeepSeek for image: ${image.id}, language: ${storeLanguage}`);
 
-    const altPrompt = generateAltPrompt(product, language, style);
+    // Create enhanced product with optimized title
+    const enhancedProduct = { ...product, title: optimizedTitle };
+    const altPrompt = generateAltPrompt(enhancedProduct, storeLanguage, style);
     
     const altResponse = await callDeepSeek([
       {
         role: "system",
-        content: `You are an accessibility and SEO expert. Generate high-quality ALT texts in the requested language. Always respond with valid JSON only. Current language: ${language}`,
+        content: `You are an accessibility and SEO expert. Generate high-quality ALT texts STRICTLY in the requested language. 
+    🚨 CRITICAL: If language is "fr", write ONLY in French. If "en", ONLY in English. If "es", ONLY in Spanish.
+    Current language: ${storeLanguage}`,
       },
       {
         role: "user",
