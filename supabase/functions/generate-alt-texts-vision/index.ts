@@ -755,6 +755,7 @@ Deno.serve(async (req: Request) => {
     let storeLanguage: string | null = null;
 
     if (imageType === "product") {
+      // ✅ FIX: Use correct table name and LEFT join (not INNER)
       const { data: productData, error: productError } = await supabaseClient
         .from("shopify_products")
         .select(`
@@ -762,7 +763,7 @@ Deno.serve(async (req: Request) => {
           description, 
           category, 
           seller_id,
-          store:shopify_store_connections!inner(store_language)
+          store:shopify_connections(store_language)
         `)
         .eq("id", image.product_id)
         .maybeSingle();
