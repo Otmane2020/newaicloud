@@ -473,6 +473,9 @@ La landing page DOIT contenir ces sections DANS CET ORDRE :
    - Première image PLUS GRANDE : sm:col-span-2 sm:row-span-2
    - Images arrondies : rounded-lg shadow-lg hover:shadow-xl transition-shadow
    - Toutes les images en object-cover
+   - IMPORTANT: Utiliser TOUTES les images disponibles (${images?.length || 0} images fournies)
+   - Format pour chaque image: <img src="${images?.[0]?.src}" alt="Description produit" class="..." loading="lazy" />
+   - Vérifier que chaque src pointe vers une URL valide
    
 4️⃣ CARACTÉRISTIQUES CLÉS
    - Liste à puces avec icônes checkmark : <i data-lucide="check-circle"></i>
@@ -633,19 +636,44 @@ Si le titre ou la description du produit mélange plusieurs langues, tu DOIS tra
 NE JAMAIS laisser des morceaux dans d'autres langues.
 `;
 
+  /*  IMAGES DISPONIBLES  */
+  const imagesBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖼️ IMAGES DISPONIBLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📷 Nombre total d'images : ${images?.length || 0}
+
+${images?.length > 0 ? images.map((img: any, idx: number) => `
+Image ${idx + 1}:
+- URL: ${img.src}
+- Position: ${img.position || idx}
+- Alt: ${img.alt_text || productData.title}
+`).join('\n') : '⚠️ Aucune image disponible - utiliser des backgrounds colorés'}
+
+🔴 RÈGLES IMAGES :
+1. TOUJOURS utiliser loading="eager" pour la première image (hero)
+2. TOUJOURS utiliser loading="lazy" pour les autres images (galerie)
+3. Si aucune image hero, utiliser un background gradient
+4. Inclure TOUTES les images dans la galerie
+5. Format: <img src="URL_COMPLETE" alt="Description" class="..." />
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
   /*  TEMPLATES DE SECTIONS  */
   const templatesBlock = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📝 TEMPLATES DE SECTIONS (À UTILISER)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🎯 HERO SECTION :
 <section class="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+  ${images?.[0]?.src ? `
   <div class="absolute inset-0 z-0">
-    <img src="${images?.[0]?.src || ''}" alt="${productData.title}" class="w-full h-full object-cover" />
+    <img src="${images[0].src}" alt="${productData.title}" class="w-full h-full object-cover" loading="eager" />
     <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-transparent"></div>
   </div>
-  <div class="relative z-10 container mx-auto px-4 text-center text-white">
+  ` : `
+  <div class="absolute inset-0 z-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/5"></div>
+  `}
+  <div class="relative z-10 container mx-auto px-4 text-center ${images?.[0]?.src ? 'text-white' : 'text-foreground'}">
     <div class="inline-flex items-center gap-2 bg-accent/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
       <i data-lucide="sparkles" class="w-4 h-4"></i>
       <span class="font-['${accentFont}'] text-sm uppercase tracking-wide">Premium Collection</span>
@@ -778,6 +806,7 @@ ${layoutBlock}
 ${fontsIconsBlock}
 ${styleBlock}
 ${languageBlock}
+${imagesBlock}
 ${templatesBlock}
 ${technicalRules}
 
