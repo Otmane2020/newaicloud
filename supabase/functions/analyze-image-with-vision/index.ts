@@ -23,46 +23,46 @@ function cleanJSON(text: string): string {
 }
 
 // ---------------------------------------------------------
-//  🔥 OPENAI GPT-4o Vision
+//  🔥 VISION VIA LOVABLE AI (Gemini 2.5 Pro)
 // ---------------------------------------------------------
-async function callOpenAIVision(prompt: string, imageData: string, apiKey: string) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+async function callLovableVision(prompt: string, imageData: string, apiKey: string) {
+  const url = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+  const body = {
+    model: "google/gemini-2.5-pro",
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          {
+            type: "image_url",
+            image_url: { url: `data:image/jpeg;base64,${imageData}` },
+          },
+        ],
+      },
+    ],
+    modalities: ["image", "text"],
+    temperature: 0.1,
+  };
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      temperature: 0.1,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert vision model specialized in ecommerce product analysis. Always output strict JSON only.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "input_image",
-              image_url: `data:image/jpeg;base64,${imageData}`,
-            },
-          ],
-        },
-      ],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    console.error("OpenAI Vision Error:", await res.text());
-    throw new Error("OPENAI_VISION_FAILED");
+    const errorText = await res.text();
+    console.error("Lovable Vision Error:", res.status, errorText);
+    throw new Error(`VISION_FAILED_${res.status}`);
   }
 
   const json = await res.json();
-  return json.choices?.[0]?.message?.content || null;
+  return json?.choices?.[0]?.message?.content || null;
 }
 
 // ---------------------------------------------------------
@@ -74,8 +74,8 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_KEY) throw new Error("OPENAI_API_KEY not configured");
+    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const body: VisionRequest = await req.json();
     const { imageUrl, productContext } = body;
@@ -156,17 +156,17 @@ Retourne uniquement du JSON valide.
 `;
 
     // ----------------------------------------------
-    // CALL OPENAI VISON
+    // CALL LOVABLE VISION (Gemini 2.5 Pro)
     // ----------------------------------------------
-    const raw = await callOpenAIVision(prompt, imageData, OPENAI_KEY);
-    if (!raw) throw new Error("No analysis returned from OpenAI Vision");
+    const raw = await callLovableVision(prompt, imageData, LOVABLE_KEY);
+    if (!raw) throw new Error("No analysis returned from Lovable Vision");
 
     let parsed;
     try {
       parsed = JSON.parse(cleanJSON(raw));
     } catch (err) {
-      console.error("❌ Invalid JSON from OpenAI:", raw);
-      throw new Error("OpenAI returned invalid JSON");
+      console.error("❌ Invalid JSON from Lovable Vision:", raw);
+      throw new Error("Lovable Vision returned invalid JSON");
     }
 
     return new Response(JSON.stringify({ success: true, ...parsed }), {
