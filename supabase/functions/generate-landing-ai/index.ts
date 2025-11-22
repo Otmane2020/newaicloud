@@ -792,10 +792,10 @@ serve(async (req) => {
     console.log("📦 Fetching product data with enriched attributes...");
     const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
       supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
-      supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
+      supabaseAdmin.from("product_images").select("src, alt_text, position").eq("product_id", product_id).order("position"),
       supabaseAdmin
         .from("product_variants")
-        .select("title, image_url, shopify_variant_id")
+        .select("title, image_url, shopify_variant_id, option1, option2, option3")
         .eq("product_id", product_id),
       userId
         ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
@@ -837,6 +837,73 @@ serve(async (req) => {
     const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, detectedLanguage);
     if (enrichedSummary) {
       console.log("📊 Using enriched attributes in landing page generation");
+    }
+
+    // 🎨 ANALYZE VARIANTS: Detect colors, sizes, and variations
+    console.log("🎨 Analyzing product variants...");
+    let variantsSummary = "";
+    if (variants.length > 0) {
+      const colorVariants = new Set<string>();
+      const sizeVariants = new Set<string>();
+      const variantImages = new Map<string, string>(); // variant title -> image URL
+
+      variants.forEach((v: any) => {
+        // Collect options (color, size, material, etc.)
+        if (v.option1) {
+          if (/color|colour|couleur|colore/i.test(v.option1) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option1)) {
+            colorVariants.add(v.option1);
+          } else if (/size|taille|tamanho|größe/i.test(v.option1) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option1)) {
+            sizeVariants.add(v.option1);
+          }
+        }
+        if (v.option2) {
+          if (/color|colour|couleur|colore/i.test(v.option2) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option2)) {
+            colorVariants.add(v.option2);
+          } else if (/size|taille|tamanho|größe/i.test(v.option2) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option2)) {
+            sizeVariants.add(v.option2);
+          }
+        }
+        if (v.option3) {
+          if (/color|colour|couleur|colore/i.test(v.option3) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option3)) {
+            colorVariants.add(v.option3);
+          } else if (/size|taille|tamanho|größe/i.test(v.option3) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option3)) {
+            sizeVariants.add(v.option3);
+          }
+        }
+
+        // Map variant images
+        if (v.image_url && v.title) {
+          variantImages.set(v.title, v.image_url);
+        }
+      });
+
+      const summaryParts = [];
+      if (colorVariants.size > 0) {
+        summaryParts.push(
+          detectedLanguage === "en"
+            ? `Available in ${colorVariants.size} colors: ${Array.from(colorVariants).join(", ")}`
+            : `Disponible en ${colorVariants.size} couleurs : ${Array.from(colorVariants).join(", ")}`
+        );
+      }
+      if (sizeVariants.size > 0) {
+        summaryParts.push(
+          detectedLanguage === "en"
+            ? `Available sizes: ${Array.from(sizeVariants).join(", ")}`
+            : `Tailles disponibles : ${Array.from(sizeVariants).join(", ")}`
+        );
+      }
+      if (variantImages.size > 0) {
+        summaryParts.push(
+          detectedLanguage === "en"
+            ? `${variantImages.size} variant-specific images available`
+            : `${variantImages.size} images spécifiques aux variantes disponibles`
+        );
+      }
+
+      if (summaryParts.length > 0) {
+        variantsSummary = `\n${detectedLanguage === "en" ? "PRODUCT VARIATIONS:" : "VARIATIONS PRODUIT:"}\n${summaryParts.map(p => `- ${p}`).join("\n")}\n`;
+        console.log("✅ Variants summary generated:", variantsSummary);
+      }
     }
 
     // 🌍 Get store localization for SERP analysis
@@ -1263,9 +1330,18 @@ ${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Her
 
 IMAGES:
 ${imgs}
+
 VARIANTS:
 ${vars}
+${variantsSummary ? `${variantsSummary}` : ""}
+
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
+
+🚨 **USER OPTIONS (STRICTLY RESPECT THEM):**
+- Desired design style: ${designStyle} (${selectedStyle.name})
+- Content length: ${length || "medium"} (adapt number of sections accordingly)
+- Layout: ${layout || "default"}
+${customHighlights ? `- Key highlights to emphasize:\n${customHighlights}` : ""}
 
 COLOR PALETTE (HSL FORMAT ONLY):
 - Primary: hsl(${designTokens.primary})
@@ -1536,9 +1612,18 @@ ${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hé
 
 IMAGES :
 ${imgs}
+
 VARIANTES :
 ${vars}
+${variantsSummary ? `${variantsSummary}` : ""}
+
 ${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
+
+🚨 **OPTIONS UTILISATEUR (RESPECTE-LES STRICTEMENT):**
+- Style design souhaité: ${designStyle} (${selectedStyle.name})
+- Longueur contenu: ${length || "medium"} (adapte le nombre de sections)
+- Layout: ${layout || "default"}
+${customHighlights ? `- Points forts à mettre en avant:\n${customHighlights}` : ""}
 
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
