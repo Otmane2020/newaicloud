@@ -42,10 +42,10 @@ export function OptimizationConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-primary" />
-            Confirmer l'optimisation en masse
+            {t.dialogs.optimizationConfirm.title}
           </DialogTitle>
           <DialogDescription>
-            Vous êtes sur le point d'optimiser plusieurs produits. Vérifiez les détails ci-dessous.
+            {t.dialogs.optimizationConfirm.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -53,7 +53,7 @@ export function OptimizationConfirmDialog({
           {/* Détails de l'opération */}
           <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Produits sélectionnés</span>
+              <span className="text-sm text-muted-foreground">{t.dialogs.optimizationConfirm.productsSelected}</span>
               <span className="text-2xl font-bold text-primary">{selectedCount}</span>
             </div>
           </div>
@@ -64,7 +64,7 @@ export function OptimizationConfirmDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
-            Annuler
+            {t.dialogs.optimizationConfirm.cancel}
           </Button>
           <Button
             onClick={handleConfirm}

@@ -19,6 +19,7 @@ import { Sparkles, Check } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from "@/lib/language";
 
 interface OptimizationConfigDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function OptimizationConfigDialog({
   productImages = [],
   mainImageUrl
 }: OptimizationConfigDialogProps) {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<OptimizationConfig>({
     style: 'modern',
     layout: 'detailed',
@@ -66,10 +68,10 @@ export function OptimizationConfigDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Configuration de l'optimisation
+            {t.dialogs.optimizationConfig.title}
           </DialogTitle>
           <DialogDescription>
-            Personnalisez le style et la structure du contenu HTML pour {productCount} produit(s)
+            {t.dialogs.optimizationConfig.description} {productCount} {t.dialogs.optimizationConfig.products}
           </DialogDescription>
         </DialogHeader>
 
@@ -77,7 +79,7 @@ export function OptimizationConfigDialog({
           {/* Sélection d'image de galerie */}
           {productImages.length > 0 && (
             <div className="space-y-2">
-              <Label>Photo à analyser</Label>
+              <Label>{t.dialogs.optimizationConfig.photoToAnalyze}</Label>
               <div className="grid grid-cols-3 gap-3">
                 {mainImageUrl && (
                   <Card
@@ -100,7 +102,7 @@ export function OptimizationConfigDialog({
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-center mt-1 text-muted-foreground">Principale</p>
+                    <p className="text-xs text-center mt-1 text-muted-foreground">{t.dialogs.optimizationConfig.mainImage}</p>
                   </Card>
                 )}
                 {productImages.map((img) => (
@@ -126,7 +128,7 @@ export function OptimizationConfigDialog({
                       )}
                     </div>
                     <p className="text-xs text-center mt-1 text-muted-foreground truncate">
-                      {img.alt_text || 'Galerie'}
+                      {img.alt_text || t.dialogs.optimizationConfig.gallery}
                     </p>
                   </Card>
                 ))}
@@ -136,22 +138,22 @@ export function OptimizationConfigDialog({
 
           {/* Description personnalisée */}
           <div className="space-y-2">
-            <Label htmlFor="customDescription">Informations supplémentaires (optionnel)</Label>
+            <Label htmlFor="customDescription">{t.dialogs.optimizationConfig.additionalInfo}</Label>
             <Textarea
               id="customDescription"
-              placeholder="Ex: Matière premium, fabriqué en France, garantie 5 ans, inclut accessoires..."
+              placeholder={t.dialogs.optimizationConfig.additionalInfoPlaceholder}
               value={config.customDescription}
               onChange={(e) => setConfig({ ...config, customDescription: e.target.value })}
               rows={3}
               className="resize-none"
             />
             <p className="text-xs text-muted-foreground">
-              Ces détails seront intégrés dans la description générée
+              {t.dialogs.optimizationConfig.additionalInfoHelp}
             </p>
           </div>
           {/* Style */}
           <div className="space-y-2">
-            <Label htmlFor="style">Style de description</Label>
+            <Label htmlFor="style">{t.dialogs.optimizationConfig.descriptionStyle}</Label>
             <Select
               value={config.style}
               onValueChange={(value: any) => setConfig({ ...config, style: value })}
@@ -160,17 +162,17 @@ export function OptimizationConfigDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="modern">Moderne - Design épuré et minimaliste</SelectItem>
-                <SelectItem value="elegant">Élégant - Sophistiqué et raffiné</SelectItem>
-                <SelectItem value="professional">Professionnel - Sobre et direct</SelectItem>
-                <SelectItem value="creative">Créatif - Audacieux et original</SelectItem>
+                <SelectItem value="modern">{t.dialogs.optimizationConfig.styles.modern}</SelectItem>
+                <SelectItem value="elegant">{t.dialogs.optimizationConfig.styles.elegant}</SelectItem>
+                <SelectItem value="professional">{t.dialogs.optimizationConfig.styles.professional}</SelectItem>
+                <SelectItem value="creative">{t.dialogs.optimizationConfig.styles.creative}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Layout */}
           <div className="space-y-2">
-            <Label htmlFor="layout">Structure du contenu</Label>
+            <Label htmlFor="layout">{t.dialogs.optimizationConfig.contentStructure}</Label>
             <Select
               value={config.layout}
               onValueChange={(value: any) => setConfig({ ...config, layout: value })}
@@ -179,16 +181,16 @@ export function OptimizationConfigDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="compact">Compact - Présentation concise</SelectItem>
-                <SelectItem value="detailed">Détaillé - Sections riches</SelectItem>
-                <SelectItem value="story">Histoire - Narration engageante</SelectItem>
+                <SelectItem value="compact">{t.dialogs.optimizationConfig.layouts.compact}</SelectItem>
+                <SelectItem value="detailed">{t.dialogs.optimizationConfig.layouts.detailed}</SelectItem>
+                <SelectItem value="story">{t.dialogs.optimizationConfig.layouts.story}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Color Scheme */}
           <div className="space-y-2">
-            <Label htmlFor="colorScheme">Palette de couleurs</Label>
+            <Label htmlFor="colorScheme">{t.dialogs.optimizationConfig.colorPalette}</Label>
             <Select
               value={config.colorScheme}
               onValueChange={(value: any) => setConfig({ ...config, colorScheme: value })}
@@ -197,17 +199,17 @@ export function OptimizationConfigDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="vibrant">Vibrant - Couleurs vives</SelectItem>
-                <SelectItem value="pastel">Pastel - Tons doux</SelectItem>
-                <SelectItem value="monochrome">Monochrome - Noir & blanc</SelectItem>
-                <SelectItem value="warm">Chaleureux - Tons chauds</SelectItem>
+                <SelectItem value="vibrant">{t.dialogs.optimizationConfig.colors.vibrant}</SelectItem>
+                <SelectItem value="pastel">{t.dialogs.optimizationConfig.colors.pastel}</SelectItem>
+                <SelectItem value="monochrome">{t.dialogs.optimizationConfig.colors.monochrome}</SelectItem>
+                <SelectItem value="warm">{t.dialogs.optimizationConfig.colors.warm}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Content Length */}
           <div className="space-y-2">
-            <Label htmlFor="contentLength">Longueur du contenu</Label>
+            <Label htmlFor="contentLength">{t.dialogs.optimizationConfig.contentLength}</Label>
             <Select
               value={config.contentLength}
               onValueChange={(value: any) => setConfig({ ...config, contentLength: value })}
@@ -216,9 +218,9 @@ export function OptimizationConfigDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="short">Court - Essentiel (~500 mots)</SelectItem>
-                <SelectItem value="medium">Moyen - Équilibré (~1000 mots)</SelectItem>
-                <SelectItem value="long">Long - Détaillé (~2000 mots)</SelectItem>
+                <SelectItem value="short">{t.dialogs.optimizationConfig.lengths.short}</SelectItem>
+                <SelectItem value="medium">{t.dialogs.optimizationConfig.lengths.medium}</SelectItem>
+                <SelectItem value="long">{t.dialogs.optimizationConfig.lengths.long}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -226,11 +228,11 @@ export function OptimizationConfigDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t.dialogs.optimizationConfig.cancel}
           </Button>
           <Button onClick={handleConfirm} className="gap-2">
             <Sparkles className="h-4 w-4" />
-            Lancer l'optimisation
+            {t.dialogs.optimizationConfig.launchOptimization}
           </Button>
         </DialogFooter>
       </DialogContent>
