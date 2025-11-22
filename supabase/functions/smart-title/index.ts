@@ -34,19 +34,34 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from auth header
+    // Get user from auth header or request body (for internal calls)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    let userId: string;
+    const requestBody = await req.json();
+    const { productId, language = 'fr', userId: bodyUserId } = requestBody as SmartTitleRequest & { userId?: string };
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
+    // Check if this is an internal call with service role key
+    if (authHeader?.includes('service_role')) {
+      // Internal call from another edge function
+      if (!bodyUserId) {
+        throw new Error('userId required for internal calls');
+      }
+      userId = bodyUserId;
+      console.log('[SMART-TITLE] Internal call detected, using userId from body:', userId);
+    } else {
+      // External call - validate user token
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
 
-    const { productId, language = 'fr' }: SmartTitleRequest = await req.json();
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !user) {
+        throw new Error('Unauthorized');
+      }
+      userId = user.id;
+      console.log('[SMART-TITLE] External call detected, using userId from token:', userId);
+    }
 
     if (!productId) {
       throw new Error('Product ID is required');
@@ -314,7 +329,7 @@ ${visionAnalysis || 'Non disponible'}
 
     // Track usage
     await supabase.rpc('increment_usage', {
-      p_seller_id: user.id,
+      p_seller_id: userId,
       p_field: 'optimizations_count',
       p_increment: 1,
     });
