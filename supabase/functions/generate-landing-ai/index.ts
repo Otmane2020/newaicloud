@@ -251,7 +251,7 @@ function generateDesignTokens(colorScheme: any) {
 
   const contrast = calculateContrast(primaryHex, "#FFFFFF");
   const needsDarkText = contrast < 4.5;
-  
+
   // Use custom CTA colors if provided, otherwise calculate
   const ctaTextHex = colorScheme.ctaText || (needsDarkText ? "#000000" : "#FFFFFF");
   const ctaBackgroundHex = colorScheme.ctaBackground || colorScheme.accent || adjustSaturation(primaryHex, 1.3);
@@ -277,7 +277,6 @@ function generateDesignTokens(colorScheme: any) {
   };
 }
 
-// Helper to build enriched product summary
 // Helper to build Vision AI summary
 function buildVisionSummary(attributes: any, language = "fr") {
   if (!attributes) return "";
@@ -606,8 +605,162 @@ function detectLanguage(text: string): string {
   return maxLang;
 }
 
+// NOUVELLE FONCTION : Extraire les specs de la description
+function extractSpecsFromDescription(description: string, language = "fr"): string {
+  if (!description) return "";
+
+  const specs = [];
+
+  // Patterns pour détecter les caractéristiques techniques
+  const specPatterns = [
+    // Patterns pour volumes, dimensions, poids
+    /(\d+[\.,]?\d*)\s*(?:l|L|litres?|kg|kilos?|g|grammes?|cm|mm|m)/gi,
+    // Patterns pour matériaux
+    /(?:en|made of|matériau|material)\s+([a-zA-ZÀ-ÿ\s]+)(?=\.|,|$)/gi,
+    // Patterns pour caractéristiques avec deux-points
+    /([^:]+):\s*([^\.\n]+)/g,
+    // Patterns pour listes à puces
+    /[•\-*]\s*([^\.\n]+)/g,
+    // Patterns numériques simples
+    /(\d+[\.,]?\d*)\s*(?:ans|années|years|an)/gi,
+  ];
+
+  // Extraire les caractéristiques brutes
+  const rawLines = description.split("\n").filter((line) => {
+    const trimmed = line.trim();
+    return (
+      trimmed.length > 10 && // Lignes significatives
+      !trimmed.startsWith("http") && // Exclure les URLs
+      !trimmed.match(/^\s*$/)
+    ); // Exclure les lignes vides
+  });
+
+  // Ajouter les lignes brutes significatives
+  specs.push(...rawLines);
+
+  return specs.length > 0
+    ? (language === "en" ? "EXTRACTED SPECIFICATIONS:\n" : "CARACTÉRISTIQUES EXTRAITES:\n") +
+        specs.map((spec) => `- ${spec.trim()}`).join("\n")
+    : "";
+}
+
+// NOUVELLE FONCTION : Configurer Tailwind CSS
+function ensureTailwindConfig(html: string): string {
+  // Vérifier et corriger la configuration Tailwind
+  if (!html.includes("cdn.tailwindcss.com")) {
+    console.log("⚠️ Tailwind CDN manquant, ajout...");
+    const tailwindScript = `
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: 'hsl(var(--primary))',
+          secondary: 'hsl(var(--secondary))',
+          accent: 'hsl(var(--accent))',
+        }
+      }
+    }
+  }
+</script>
+`;
+
+    // Insérer après la balise head
+    const headEnd = html.indexOf("</head>");
+    if (headEnd > -1) {
+      html = html.slice(0, headEnd) + tailwindScript + html.slice(headEnd);
+    }
+  }
+
+  // S'assurer que les classes Tailwind de base sont présentes
+  const requiredClasses = ["container", "mx-auto", "px-4"];
+  const hasContainer = html.includes("mx-auto") || html.includes("container");
+
+  if (!hasContainer) {
+    console.log("⚠️ Classes container manquantes, ajustement...");
+    // Ajouter une classe container aux sections principales
+    html = html.replace(/<section[^>]*>/g, (match) => {
+      if (!match.includes("container") && !match.includes("mx-auto")) {
+        return match.replace(">", '><div class="container mx-auto px-4 sm:px-6 lg:px-8">');
+      }
+      return match;
+    });
+
+    // Fermer les divs container
+    html = html.replace(/<\/section>/g, "</div></section>");
+  }
+
+  return html;
+}
+
+// NOUVELLE FONCTION : Insertion améliorée de la section dimensions
+function insertDimensionsSection(html: string, dimensionsSection: string, language = "fr"): string {
+  if (!dimensionsSection) return html;
+
+  console.log("📐 Recherche de l'emplacement optimal pour la section dimensions...");
+
+  // Stratégies d'insertion par ordre de priorité
+  const insertionStrategies = [
+    {
+      name: "après caractéristiques techniques",
+      regex: /(<\/section>[\s\n]*<!--[^>]*characteristics|specifications|caractéristiques[^>]*-->)/i,
+      position: "after",
+    },
+    {
+      name: "avant galerie",
+      regex: /(<section[^>]*(?:gallery|galerie|images)[^>]*>)/i,
+      position: "before",
+    },
+    {
+      name: "après avantages",
+      regex: /(<\/section>[\s\n]*<!--[^>]*benefits|avantages[^>]*-->)/i,
+      position: "after",
+    },
+    {
+      name: "avant FAQ",
+      regex: /(<section[^>]*(?:faq|questions)[^>]*>)/i,
+      position: "before",
+    },
+  ];
+
+  for (const strategy of insertionStrategies) {
+    const match = html.match(strategy.regex);
+    if (match && match.index !== undefined) {
+      console.log(`✅ Section dimensions insérée ${strategy.name}`);
+
+      if (strategy.position === "after") {
+        const insertIndex = match.index + match[0].length;
+        return html.slice(0, insertIndex) + dimensionsSection + html.slice(insertIndex);
+      } else {
+        const insertIndex = match.index;
+        return html.slice(0, insertIndex) + dimensionsSection + html.slice(insertIndex);
+      }
+    }
+  }
+
+  // Fallback : insérer avant la dernière section
+  const sections = html.split("</section>");
+  if (sections.length > 2) {
+    console.log("✅ Section dimensions insérée avant la dernière section (fallback)");
+    sections.splice(sections.length - 2, 0, dimensionsSection);
+    return sections.join("</section>");
+  }
+
+  // Dernier recours : avant </body>
+  const bodyEnd = html.lastIndexOf("</body>");
+  if (bodyEnd > -1) {
+    console.log("✅ Section dimensions insérée avant </body> (dernier recours)");
+    return html.slice(0, bodyEnd) + dimensionsSection + html.slice(bodyEnd);
+  }
+
+  console.log("❌ Impossible d'insérer la section dimensions");
+  return html;
+}
+
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
+
   let out = html
     .replace(/^\s*```(?:html)?/gi, "")
     .replace(/```\s*$/g, "")
@@ -615,14 +768,25 @@ function sanitizeHtmlUnsafe(html: string): string {
     .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
     .replace(/\shref\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, ' href="#"')
     .replace(/<\/?(html|head|body)[^>]*>/gi, "");
+
+  // Nettoyer les styles mais garder les classes Tailwind importantes
   out = out.replace(/\sstyle\s*=\s*(['"])(.*?)\1/gi, (_m, q, css) => {
     const kept = css
       .split(";")
       .map((r: string) => r.trim())
-      .filter((r: string) => /^(color|background-color|border-color)\s*:/i.test(r))
+      .filter(
+        (r: string) =>
+          /^(color|background-color|border-color|width|height|padding|margin)\s*:/i.test(r) || r.includes("hsl("),
+      )
       .join("; ");
     return kept ? ` style=${q}${kept}${q}` : "";
   });
+
+  // Réparer les structures HTML courantes
+  out = out.replace(/<div>\s*<\/div>/g, ""); // Divs vides
+  out = out.replace(/(<img[^>]+)(?<!loading=)>/gi, '$1 loading="lazy">'); // Ajouter lazy loading
+  out = out.replace(/<br\s*\/?>\s*<br\s*\/?>/g, "<br/>"); // Multi <br> réduits
+
   return out.trim();
 }
 
@@ -686,12 +850,12 @@ serve(async (req) => {
       willAttemptSave: !!(userId && product_id),
     });
 
-    // Initialize version tracking variables
-    let versionSaved = false;
-    let savedVersionNumber = null;
-
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
+
+    // ✅ AMÉLIORATION : Extraire les specs de la description AVANT la génération AI
+    const extractedSpecs = extractSpecsFromDescription(description, detectedLanguage);
+    console.log("📋 Spécifications extraites de la description:", extractedSpecs ? "OUI" : "NON");
 
     // Generate design tokens
     const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
@@ -792,7 +956,11 @@ serve(async (req) => {
     console.log("📦 Fetching product data with enriched attributes...");
     const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
       supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
-      supabaseAdmin.from("product_images").select("src, alt_text, position").eq("product_id", product_id).order("position"),
+      supabaseAdmin
+        .from("product_images")
+        .select("src, alt_text, position")
+        .eq("product_id", product_id)
+        .order("position"),
       supabaseAdmin
         .from("product_variants")
         .select("title, image_url, shopify_variant_id, option1, option2, option3")
@@ -850,23 +1018,41 @@ serve(async (req) => {
       variants.forEach((v: any) => {
         // Collect options (color, size, material, etc.)
         if (v.option1) {
-          if (/color|colour|couleur|colore/i.test(v.option1) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option1)) {
+          if (
+            /color|colour|couleur|colore/i.test(v.option1) ||
+            /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option1)
+          ) {
             colorVariants.add(v.option1);
-          } else if (/size|taille|tamanho|größe/i.test(v.option1) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option1)) {
+          } else if (
+            /size|taille|tamanho|größe/i.test(v.option1) ||
+            /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option1)
+          ) {
             sizeVariants.add(v.option1);
           }
         }
         if (v.option2) {
-          if (/color|colour|couleur|colore/i.test(v.option2) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option2)) {
+          if (
+            /color|colour|couleur|colore/i.test(v.option2) ||
+            /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option2)
+          ) {
             colorVariants.add(v.option2);
-          } else if (/size|taille|tamanho|größe/i.test(v.option2) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option2)) {
+          } else if (
+            /size|taille|tamanho|größe/i.test(v.option2) ||
+            /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option2)
+          ) {
             sizeVariants.add(v.option2);
           }
         }
         if (v.option3) {
-          if (/color|colour|couleur|colore/i.test(v.option3) || /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option3)) {
+          if (
+            /color|colour|couleur|colore/i.test(v.option3) ||
+            /^(red|blue|green|white|black|beige|gris|noir|blanc|rouge|bleu|vert)/i.test(v.option3)
+          ) {
             colorVariants.add(v.option3);
-          } else if (/size|taille|tamanho|größe/i.test(v.option3) || /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option3)) {
+          } else if (
+            /size|taille|tamanho|größe/i.test(v.option3) ||
+            /^(xs|s|m|l|xl|xxl|\d+cm|\d+x\d+)/i.test(v.option3)
+          ) {
             sizeVariants.add(v.option3);
           }
         }
@@ -882,26 +1068,26 @@ serve(async (req) => {
         summaryParts.push(
           detectedLanguage === "en"
             ? `Available in ${colorVariants.size} colors: ${Array.from(colorVariants).join(", ")}`
-            : `Disponible en ${colorVariants.size} couleurs : ${Array.from(colorVariants).join(", ")}`
+            : `Disponible en ${colorVariants.size} couleurs : ${Array.from(colorVariants).join(", ")}`,
         );
       }
       if (sizeVariants.size > 0) {
         summaryParts.push(
           detectedLanguage === "en"
             ? `Available sizes: ${Array.from(sizeVariants).join(", ")}`
-            : `Tailles disponibles : ${Array.from(sizeVariants).join(", ")}`
+            : `Tailles disponibles : ${Array.from(sizeVariants).join(", ")}`,
         );
       }
       if (variantImages.size > 0) {
         summaryParts.push(
           detectedLanguage === "en"
             ? `${variantImages.size} variant-specific images available`
-            : `${variantImages.size} images spécifiques aux variantes disponibles`
+            : `${variantImages.size} images spécifiques aux variantes disponibles`,
         );
       }
 
       if (summaryParts.length > 0) {
-        variantsSummary = `\n${detectedLanguage === "en" ? "PRODUCT VARIATIONS:" : "VARIATIONS PRODUIT:"}\n${summaryParts.map(p => `- ${p}`).join("\n")}\n`;
+        variantsSummary = `\n${detectedLanguage === "en" ? "PRODUCT VARIATIONS:" : "VARIATIONS PRODUIT:"}\n${summaryParts.map((p) => `- ${p}`).join("\n")}\n`;
         console.log("✅ Variants summary generated:", variantsSummary);
       }
     }
@@ -1304,6 +1490,7 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
 
     console.log(`[Landing AI] Design style: ${selectedStyle.name} (received: ${designStyle})`);
 
+    // ✅ CORRECTION : PROMPT AMÉLIORÉ POUR INCLURE LES SPECS EXTRACTES
     const prompt =
       detectedLanguage === "en"
         ? `You are an expert e-commerce copywriter and UX designer specialized in creating high-converting product landing pages.
@@ -1319,6 +1506,9 @@ Your mission: Create a compelling, emotionally engaging landing page that tells 
 
 📝 **PRODUCT RAW DETAILS** (PRIMARY SOURCE - USE THIS AS MAIN REFERENCE):
 ${description || "No raw description available"}
+
+${extractedSpecs ? `🔧 **EXTRACTED TECHNICAL SPECS** (MUST INCLUDE THESE):\n${extractedSpecs}\n` : ""}
+
 ${enrichedProduct?.body_html ? `\nRaw HTML Body:\n${enrichedProduct.body_html}` : ""}
 
 💡 **IMPORTANT**: This raw product information is your PRIMARY source. Extract, structure, and reformulate, but DO NOT delete concrete elements (Volume, Number of packages, Glass content, Durability, Optional lighting, etc.). DO NOT invent information (manufacturing country, warranty duration, etc.) if not mentioned.
@@ -1341,7 +1531,9 @@ VARIANTS:
 ${vars}
 ${variantsSummary ? `${variantsSummary}` : ""}
 
-${customHighlights ? `
+${
+  customHighlights
+    ? `
 🎯 **USER'S KEY HIGHLIGHTS (MANDATORY - MAKE THEM PROMINENT)**:
 ${customHighlights}
 
@@ -1350,7 +1542,9 @@ ${customHighlights}
 - Bold titles
 - Clear descriptions
 - Positioned early in the page (after hero section)
-` : ""}
+`
+    : ""
+}
 
 🚨 **USER OPTIONS (STRICTLY RESPECT THEM):**
 - Desired design style: ${designStyle} (${selectedStyle.name})
@@ -1376,30 +1570,50 @@ COLOR PALETTE (HSL FORMAT ONLY):
 ${selectedStyle.description}
 ${selectedStyle.rules}
 
-${layout ? `
+${
+  layout
+    ? `
 🏗️ LAYOUT REQUIREMENTS (CRITICAL - MUST FOLLOW):
-${layout === 'classic' ? `
+${
+  layout === "classic"
+    ? `
 - Classic vertical flow with clearly defined sections
 - Traditional top-to-bottom reading pattern
 - Equal-width sections with consistent padding
 - Sequential storytelling approach
-` : ''}${layout === 'modern' ? `
+`
+    : ""
+}${
+        layout === "modern"
+          ? `
 - Modern grid-based layout with asymmetric elements
 - Dynamic spacing and varied column widths
 - Card-based components with elevated surfaces
 - Contemporary visual hierarchy with bold typography
-` : ''}${layout === 'magazine' ? `
+`
+          : ""
+      }${
+        layout === "magazine"
+          ? `
 - Magazine-style multi-column layout
 - Varied text column widths (2-3 columns)
 - Pull quotes and featured content blocks
 - Editorial typography with generous white space
-` : ''}${layout === 'split' ? `
+`
+          : ""
+      }${
+        layout === "split"
+          ? `
 - Split-screen hero section (50/50 or 60/40 division)
 - Alternating left/right content sections
 - Image/text pairings with clear visual rhythm
 - Balanced asymmetry throughout
-` : ''}
-` : ''}
+`
+          : ""
+      }
+`
+    : ""
+}
 
 🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
@@ -1613,6 +1827,9 @@ Ta mission : Créer une landing page captivante, émotionnellement engageante qu
 
 📝 **DÉTAILS PRODUIT BRUTS** (SOURCE PRINCIPALE - UTILISEZ CECI COMME RÉFÉRENCE PRINCIPALE) :
 ${description || "Aucune description brute disponible"}
+
+${extractedSpecs ? `🔧 **CARACTÉRISTIQUES TECHNIQUES EXTRAITES** (OBLIGATOIRE) :\n${extractedSpecs}\n` : ""}
+
 ${enrichedProduct?.body_html ? `\nCorps HTML brut :\n${enrichedProduct.body_html}` : ""}
 
 💡 **IMPORTANT** : Ces informations produit brutes sont votre SOURCE PRINCIPALE. Extrayez, structurez et reformulez, mais NE supprimez PAS les éléments concrets (Volume, Nombre de colis, Teneur en verre, Durabilité, Éclairage optionnel, etc.). N'inventez PAS d'informations (pays de fabrication, durée de garantie, etc.) si elles ne sont pas mentionnées.
@@ -1639,10 +1856,17 @@ Galerie d'Images : Photos produit en grille haute qualité
 
 📋 **CARACTÉRISTIQUES DÉTAILLÉES À CONSERVER** (OBLIGATOIRE):
 Les détails suivants DOIVENT apparaître dans la section "Spécifications Techniques" ou "Caractéristiques":
-${description ? `
+${
+  description
+    ? `
 Caractéristiques brutes de la description:
-${description.split('\n').filter((line: string) => line.includes(':') || line.includes('•')).join('\n')}
-` : ''}
+${description
+  .split("\n")
+  .filter((line: string) => line.includes(":") || line.includes("•"))
+  .join("\n")}
+`
+    : ""
+}
 
 🚨 CRITIQUE : Inclure TOUTES ces caractéristiques dans un tableau ou liste claire. NE PAS omettre de détails.
 Exemples à conserver :
@@ -1682,7 +1906,7 @@ ${selectedStyle.rules}
 ${selectedIcon}
 Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
 
-🖼️ IMAGES ET TITRES (CRITIQUE - LISIBILITÉ MAXIMALE) :
+🖼️ IMAGES ET TITLES (CRITIQUE - LISIBILITÉ MAXIMALE) :
 🚨 CRITICAL: Pour TOUS les titres/textes sur images, tu DOIS :
 1. Ajouter overlay sombre semi-transparent : <div class="absolute inset-0 bg-black/40"></div>
 2. Utiliser text-shadow pour contraste : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
@@ -1897,6 +2121,9 @@ UTILISATION DES ICÔNES :
     // 🧹 Apply HTML normalization and sanitization
     let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
 
+    // ✅ CORRECTION : CONFIGURATION TAILWIND CSS
+    html = ensureTailwindConfig(html);
+
     // 🧹 Remove any dimension-related content that Gemini might have added
     html = sanitizeDimensionsInHtml(html);
 
@@ -1943,7 +2170,7 @@ UTILISATION DES ICÔNES :
           const imageBuffer = await imageResponse.arrayBuffer();
           // Fix: Convert to base64 in chunks to avoid "Maximum call stack size exceeded"
           const uint8Array = new Uint8Array(imageBuffer);
-          let base64Image = '';
+          let base64Image = "";
           const chunkSize = 32768; // 32KB chunks
           for (let i = 0; i < uint8Array.length; i += chunkSize) {
             const chunk = uint8Array.slice(i, i + chunkSize);
@@ -2017,12 +2244,12 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
               if (jsonMatch) {
                 try {
                   const cleanedJson = jsonMatch[0]
-                    .replace(/,\s*}/g, '}')  // Remove trailing commas
-                    .replace(/,\s*]/g, ']')
-                    .replace(/\n/g, ' ')
-                    .replace(/\r/g, '')
+                    .replace(/,\s*}/g, "}") // Remove trailing commas
+                    .replace(/,\s*]/g, "]")
+                    .replace(/\n/g, " ")
+                    .replace(/\r/g, "")
                     .trim();
-                  
+
                   const parsedAnalysis = JSON.parse(cleanedJson);
 
                   if (parsedAnalysis.isDimensionSchema) {
@@ -2037,8 +2264,8 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
                     detectedRegularImages.push(imageObj);
                   }
                 } catch (parseError) {
-                  console.error('❌ JSON parsing failed for Vision AI analysis:', parseError);
-                  console.error('Raw JSON:', jsonMatch[0].substring(0, 200));
+                  console.error("❌ JSON parsing failed for Vision AI analysis:", parseError);
+                  console.error("Raw JSON:", jsonMatch[0].substring(0, 200));
                   // Continue without this image's analysis
                   console.log(`📷 Treating as regular image due to parse error`);
                   detectedRegularImages.push(imageObj);
@@ -2086,59 +2313,79 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
 
     // Build dimension data with comprehensive fallback system
     // Priority: detectedDims > imageAnalysis > vision_attributes.technicalDimensions > parsed_dimensions > smart_* fields
-    
+
     const buildDimensionsFromAllSources = () => {
       // Start with detectedDims if available
       if (Object.keys(detectedDims).length > 0) {
         console.log("📐 Using dimensions from Gemini Vision schema detection");
         return detectedDims;
       }
-      
+
       // Fallback to imageAnalysis technicalDimensions
       if (imageAnalysis?.technicalDimensions && Object.keys(imageAnalysis.technicalDimensions).length > 0) {
         console.log("📐 Using dimensions from image analysis");
         return imageAnalysis.technicalDimensions;
       }
-      
+
       // Fallback to enrichedProduct vision_attributes technicalDimensions
-      if (enrichedProduct?.vision_attributes?.technicalDimensions && 
-          Object.keys(enrichedProduct.vision_attributes.technicalDimensions).length > 0) {
+      if (
+        enrichedProduct?.vision_attributes?.technicalDimensions &&
+        Object.keys(enrichedProduct.vision_attributes.technicalDimensions).length > 0
+      ) {
         console.log("📐 Using dimensions from enriched product vision attributes");
         return enrichedProduct.vision_attributes.technicalDimensions;
       }
-      
+
       // Fallback to parsed_dimensions from description text
-      if (enrichedProduct?.vision_attributes?.parsed_dimensions && 
-          Object.keys(enrichedProduct.vision_attributes.parsed_dimensions).length > 0) {
+      if (
+        enrichedProduct?.vision_attributes?.parsed_dimensions &&
+        Object.keys(enrichedProduct.vision_attributes.parsed_dimensions).length > 0
+      ) {
         console.log("📐 Using dimensions parsed from product description");
         const parsed = enrichedProduct.vision_attributes.parsed_dimensions;
         return {
-          height: parsed.height ? `${parsed.height} ${parsed.height_unit || 'cm'}` : null,
-          width: parsed.width ? `${parsed.width} ${parsed.width_unit || 'cm'}` : null,
-          depth: parsed.depth ? `${parsed.depth} ${parsed.depth_unit || 'cm'}` : null,
-          length: parsed.length ? `${parsed.length} ${parsed.length_unit || 'cm'}` : null,
-          diameter: parsed.diameter ? `${parsed.diameter} ${parsed.diameter_unit || 'cm'}` : null,
-          weight: parsed.weight ? `${parsed.weight} ${parsed.weight_unit || 'kg'}` : null,
+          height: parsed.height ? `${parsed.height} ${parsed.height_unit || "cm"}` : null,
+          width: parsed.width ? `${parsed.width} ${parsed.width_unit || "cm"}` : null,
+          depth: parsed.depth ? `${parsed.depth} ${parsed.depth_unit || "cm"}` : null,
+          length: parsed.length ? `${parsed.length} ${parsed.length_unit || "cm"}` : null,
+          diameter: parsed.diameter ? `${parsed.diameter} ${parsed.diameter_unit || "cm"}` : null,
+          weight: parsed.weight ? `${parsed.weight} ${parsed.weight_unit || "kg"}` : null,
         };
       }
-      
+
       // Final fallback to smart_* fields
-      if (enrichedProduct?.smart_length || enrichedProduct?.smart_width || 
-          enrichedProduct?.smart_height || enrichedProduct?.smart_weight) {
+      if (
+        enrichedProduct?.smart_length ||
+        enrichedProduct?.smart_width ||
+        enrichedProduct?.smart_height ||
+        enrichedProduct?.smart_weight
+      ) {
         console.log("📐 Using dimensions from smart_* fields");
         return {
-          height: enrichedProduct.smart_height ? `${enrichedProduct.smart_height} ${enrichedProduct.smart_height_unit || 'cm'}` : null,
-          width: enrichedProduct.smart_width ? `${enrichedProduct.smart_width} ${enrichedProduct.smart_width_unit || 'cm'}` : null,
-          depth: enrichedProduct.smart_depth ? `${enrichedProduct.smart_depth} ${enrichedProduct.smart_depth_unit || 'cm'}` : null,
-          length: enrichedProduct.smart_length ? `${enrichedProduct.smart_length} ${enrichedProduct.smart_length_unit || 'cm'}` : null,
-          diameter: enrichedProduct.smart_diameter ? `${enrichedProduct.smart_diameter} ${enrichedProduct.smart_diameter_unit || 'cm'}` : null,
-          weight: enrichedProduct.smart_weight ? `${enrichedProduct.smart_weight} ${enrichedProduct.smart_weight_unit || 'kg'}` : null,
+          height: enrichedProduct.smart_height
+            ? `${enrichedProduct.smart_height} ${enrichedProduct.smart_height_unit || "cm"}`
+            : null,
+          width: enrichedProduct.smart_width
+            ? `${enrichedProduct.smart_width} ${enrichedProduct.smart_width_unit || "cm"}`
+            : null,
+          depth: enrichedProduct.smart_depth
+            ? `${enrichedProduct.smart_depth} ${enrichedProduct.smart_depth_unit || "cm"}`
+            : null,
+          length: enrichedProduct.smart_length
+            ? `${enrichedProduct.smart_length} ${enrichedProduct.smart_length_unit || "cm"}`
+            : null,
+          diameter: enrichedProduct.smart_diameter
+            ? `${enrichedProduct.smart_diameter} ${enrichedProduct.smart_diameter_unit || "cm"}`
+            : null,
+          weight: enrichedProduct.smart_weight
+            ? `${enrichedProduct.smart_weight} ${enrichedProduct.smart_weight_unit || "kg"}`
+            : null,
         };
       }
-      
+
       return null;
     };
-    
+
     const dims = buildDimensionsFromAllSources();
 
     if (dims) {
@@ -2226,7 +2473,7 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
                 .map(
                   (img: any) => `
               <img src="${img.src || img.url}" 
-                   alt="${detectedLanguage === 'en' ? 'Technical diagram with dimensions' : detectedLanguage === 'es' ? 'Diagrama técnico con dimensiones' : 'Schéma technique avec dimensions'}" 
+                   alt="${detectedLanguage === "en" ? "Technical diagram with dimensions" : detectedLanguage === "es" ? "Diagrama técnico con dimensiones" : "Schéma technique avec dimensions"}" 
                    class="w-32 sm:w-40 md:w-48 h-auto rounded-lg border-2 border-gray-200 shadow-md hover:shadow-xl transition-shadow"
                    loading="lazy" />
               `,
@@ -2249,59 +2496,28 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       }
     }
 
-    // Insert dimensions section AFTER "Caractéristiques" / "Technical Specifications" section
-    let finalHtml = html;
-    if (dimensionsSection) {
-      console.log("📐 Searching for Caractéristiques/Specifications section...");
-
-      // Stronger regex to find the section containing characteristics keywords
-      const caracteristiquesRegex =
-        /<section[^>]*>[\s\S]*?(?:caract[ée]ristiques|technical\s+specifications|specifications?\s+techniques?)[\s\S]*?<\/section>/i;
-      const match = html.match(caracteristiquesRegex);
-
-      let insertAt = -1;
-      if (match && match.index !== undefined) {
-        // Insert right after the matched </section> tag
-        insertAt = match.index + match[0].length;
-        console.log(`📐 ✅ Found Caractéristiques section at position ${match.index}, inserting dimensions after it`);
-      } else {
-        console.log("📐 ⚠️ Caractéristiques section not found, using fallback placement");
-      }
-
-      // Fallback: insert before </body> as last resort (not after 2nd section)
-      if (insertAt < 0) {
-        const bodyEnd = html.lastIndexOf("</body>");
-        if (bodyEnd > 0) {
-          insertAt = bodyEnd;
-          console.log("📐 Using fallback: inserting before </body>");
-        }
-      }
-
-      if (insertAt > 0) {
-        finalHtml = html.slice(0, insertAt) + dimensionsSection + html.slice(insertAt);
-        console.log("✅ Dimensions section successfully inserted");
-      }
-    }
+    // ✅ CORRECTION : INSERTION AMÉLIORÉE DE LA SECTION DIMENSIONS
+    let finalHtml = insertDimensionsSection(html, dimensionsSection, detectedLanguage);
 
     // 🎯 OPTIMIZE PRODUCT TITLE WITH SMART-TITLE (GEMINI VISION + DEEPSEEK) BEFORE SAVING
     if (userId && product_id) {
       console.log("🎯 Optimizing product title with Smart Title (Vision AI + DeepSeek)...");
-      
+
       // ✅ Get store language before calling smart-title
       let storeLanguage = language || "fr";
       if (enrichedProduct?.store_id) {
         const { data: storeData } = await supabaseAdmin
-          .from('shopify_connections')
-          .select('primary_locale')
-          .eq('id', enrichedProduct.store_id)
+          .from("shopify_connections")
+          .select("primary_locale")
+          .eq("id", enrichedProduct.store_id)
           .maybeSingle();
-        
+
         if (storeData?.primary_locale) {
-          storeLanguage = storeData.primary_locale.split('-')[0];
+          storeLanguage = storeData.primary_locale.split("-")[0];
           console.log(`🌍 Using store language: ${storeLanguage}`);
         }
       }
-      
+
       try {
         const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke("smart-title", {
           body: {
@@ -2310,8 +2526,8 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
             language: storeLanguage,
           },
           headers: {
-            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-          }
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
         });
 
         if (titleError) {
@@ -2322,14 +2538,11 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
           );
           console.log(`📊 Vision Analysis: ${titleData.visionAnalysis || "N/A"}`);
           console.log(`📝 DeepSeek Analysis:`, titleData.deepseekAnalysis);
-          
+
           // ✅ APPLY OPTIMIZED TITLE TO DATABASE AND LOCAL VARIABLE
           console.log("💾 Applying optimized title to product...");
-          await supabaseAdmin
-            .from("shopify_products")
-            .update({ title: titleData.optimizedTitle })
-            .eq("id", product_id);
-          
+          await supabaseAdmin.from("shopify_products").update({ title: titleData.optimizedTitle }).eq("id", product_id);
+
           // Update local variable for HTML generation
           productTitle = titleData.optimizedTitle;
           console.log(`✅ Product title updated successfully`);
