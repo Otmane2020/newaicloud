@@ -399,7 +399,7 @@ export default function RegenerateLanding({
           colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
           contentLength: config.contentLength,
           customHighlights: config.customHighlights,
-          language: language,
+          language: storeLanguage, // ✅ Use store language for entire landing page
         },
       });
 

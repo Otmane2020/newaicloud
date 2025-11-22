@@ -75,7 +75,16 @@ serve(async (req) => {
       .select("*")
       .eq("product_id", productId)
       .order("position")
-      .limit(5);
+      .limit(8);
+
+    // Detect dimension schema image
+    const dimensionImage = images?.find((img: any) => 
+      img.alt_text?.toLowerCase().includes('dimension') ||
+      img.alt_text?.toLowerCase().includes('schéma') ||
+      img.alt_text?.toLowerCase().includes('mesure') ||
+      img.alt_text?.toLowerCase().includes('plan') ||
+      img.src?.toLowerCase().includes('dimension')
+    );
 
     // Vision analysis
     let visualAnalysis = "";
@@ -148,28 +157,56 @@ serve(async (req) => {
     const designTokens = generateDesignTokens(colorScheme);
     const fonts = selectLuxuryFonts(style);
 
-    // Product Data
+    // Product Data - Enriched & Structured
     const productData = {
       title: product.title,
       description: product.body_html || product.seo_description || "",
+      excerpt: product.body_html?.substring(0, 200) || "",
       vendor: product.vendor,
+      
+      // Dimensions structurées avec priorité Vision > Smart
       dimensions: {
-        vision: enrichedProduct.vision_attributes?.technicalDimensions,
+        vision: enrichedProduct.vision_attributes?.technicalDimensions || {},
         smart: {
           length: enrichedProduct.smart_length,
           width: enrichedProduct.smart_width,
           height: enrichedProduct.smart_height,
+          depth: enrichedProduct.smart_depth,
           weight: enrichedProduct.smart_weight,
+          seat_height: enrichedProduct.smart_seat_height,
         },
+        summary: {
+          length: enrichedProduct.vision_attributes?.technicalDimensions?.length || enrichedProduct.smart_length,
+          width: enrichedProduct.vision_attributes?.technicalDimensions?.width || enrichedProduct.smart_width,
+          height: enrichedProduct.vision_attributes?.technicalDimensions?.height || enrichedProduct.smart_height,
+          depth: enrichedProduct.vision_attributes?.technicalDimensions?.depth || enrichedProduct.smart_depth,
+          weight: enrichedProduct.vision_attributes?.technicalDimensions?.weight || enrichedProduct.smart_weight,
+        }
       },
+      
+      // Matériaux et finitions
       materials: enrichedProduct.vision_attributes?.materials || [],
       colors: enrichedProduct.vision_attributes?.colors || [],
       styleDetected: enrichedProduct.vision_attributes?.style || [],
+      
+      // Caractéristiques et fonctionnalités
       features: enrichedProduct.vision_attributes?.features || [],
+      characteristics: enrichedProduct.characteristics || [],
       room_type: enrichedProduct.vision_attributes?.roomType || [],
+      
+      // Analyses visuelles
       visualAnalysis,
+      
+      // Variants & Options
       variants: variantsInfo,
+      hasVariants: (variants?.length || 0) > 1,
+      
+      // Custom highlights
       customHighlights,
+      
+      // Images avec dimension schema détectée
+      images: images || [],
+      dimensionImageUrl: dimensionImage?.src || null,
     };
 
     // BUILD PROMPT WITH MANDATORY BLOCK
@@ -281,7 +318,7 @@ serve(async (req) => {
   }
 });
 
-/* 🔥 PROMPT BUILDER AVEC BLOC CRITIQUE - VERSION FINALE */
+/* 🔥 PROMPT BUILDER PREMIUM TYPE SHOPIFY - VERSION COMPLÈTE */
 function buildDeepSeekPrompt(productData: any, config: any): string {
   const { style, layout, designTokens, fonts, contentLength, language, images } = config;
 
@@ -300,86 +337,355 @@ function buildDeepSeekPrompt(productData: any, config: any): string {
       ? "2000-3000"
       : "1200-1800";
 
-  /*  BLOC CRITIQUE — LE CŒUR  */
-  const mandatoryBlock = `
+  // Extract font family names for CSS
+  const heroFont = fonts.hero[0]?.split(':')[0].replace(/\+/g, ' ') || 'Playfair Display';
+  const headingFont = fonts.heading[0]?.split(':')[0].replace(/\+/g, ' ') || 'Montserrat';
+  const bodyFont = fonts.body[0]?.split(':')[0].replace(/\+/g, ' ') || 'Inter';
+  const accentFont = fonts.accent[0]?.split(':')[0].replace(/\+/g, ' ') || 'Cinzel';
+
+  /*  STRUCTURE HTML OBLIGATOIRE  */
+  const structureBlock = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 RÈGLES TECHNIQUES OBLIGATOIRES (NE PAS IGNORER)
+📐 STRUCTURE HTML OBLIGATOIRE (TYPE SHOPIFY PREMIUM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+La landing page DOIT contenir ces sections DANS CET ORDRE :
+
+1️⃣ HERO SECTION (Bannière principale premium)
+   - Grande image de fond ou image produit
+   - Overlay gradient : bg-gradient-to-br from-black/60 via-black/40 to-transparent
+   - Titre TRÈS GROS en font-['${heroFont}']
+   - Badge optionnel : bg-accent/20 backdrop-blur-sm avec icône Lucide
+   - Sous-titre/description courte
+   - Height: min-h-[60vh] sm:min-h-[70vh] lg:min-h-[75vh]
+   
+2️⃣ POINTS FORTS (Highlights avec icônes Lucide - SECTION CRITIQUE)
+   - Grid de 4 points forts : grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8
+   - Chaque point : Icône Lucide + Titre + Description courte
+   - Icônes dans cercles colorés : w-16 h-16 rounded-full bg-primary/10
+   - Utiliser <i data-lucide="icon-name"></i>
+   - Exemples d'icônes : truck, shield-check, zap, ruler, lightbulb, award, star
+   
+3️⃣ GALERIE D'IMAGES
+   - Grid responsive : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4
+   - Première image PLUS GRANDE : sm:col-span-2 sm:row-span-2
+   - Images arrondies : rounded-lg shadow-lg hover:shadow-xl transition-shadow
+   - Toutes les images en object-cover
+   
+4️⃣ CARACTÉRISTIQUES CLÉS
+   - Liste à puces avec icônes checkmark : <i data-lucide="check-circle"></i>
+   - 2 colonnes sur desktop : grid-cols-1 lg:grid-cols-2
+   - Police : font-['${bodyFont}']
+   
+5️⃣ DIMENSIONS DÉTAILLÉES
+   - Si dimensionImageUrl existe : afficher l'image EN PREMIER
+   - Image centrée : mx-auto max-w-md mb-8
+   - Puis tableau HTML propre : table-auto w-full border divide-y
+   - Lignes alternées : even:bg-muted/50
+   
+6️⃣ SPÉCIFICATIONS TECHNIQUES
+   - Tableau structuré avec bordures
+   - Headers : bg-muted font-semibold
+   - Données issues de productData (dimensions, matériaux, poids, etc.)
+   
+7️⃣ MATÉRIAUX & FINITIONS
+   - Section visuelle avec badges ou cards
+   - Grid : grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+   
+8️⃣ ANALYSE VISUELLE / DESCRIPTION LONGUE
+   - Paragraphes aérés : space-y-4
+   - Prose Tailwind : prose lg:prose-xl max-w-none
+   - Police : font-['${bodyFont}']
+`;
+
+  /*  LAYOUT INSTRUCTIONS  */
+  const layoutBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 APPLICATION DU LAYOUT : ${layout}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${layout === "one-column" ? `
+• LAYOUT "1 colonne" :
+  - Container : max-w-4xl mx-auto px-4
+  - Tout empilé verticalement
+  - Hero : Image pleine largeur, texte centré dessous
+  - Sections : text-center sauf galerie et tableaux
+` : layout === "two-column" ? `
+• LAYOUT "2 colonnes" :
+  - Hero : grid lg:grid-cols-2 gap-8 items-center
+  - Image à gauche (lg:order-1), texte à droite (lg:order-2)
+  - Sur mobile : stack vertical (image puis texte)
+  - Sections suivantes : 1 colonne centrée
+` : layout === "hero-left" ? `
+• LAYOUT "hero à gauche" :
+  - Hero : flex flex-col lg:flex-row items-center
+  - Grande image à gauche (lg:w-1/2)
+  - Texte à droite (lg:w-1/2 lg:pl-12)
+  - Sur mobile : image en haut, texte en bas
+` : `
+• LAYOUT "hero à droite" :
+  - Hero : flex flex-col lg:flex-row-reverse items-center
+  - Image à droite (lg:w-1/2)
+  - Texte à gauche (lg:w-1/2 lg:pr-12)
+  - Sur mobile : image en haut, texte en bas
+`}
+
+🔴 MOBILE-FIRST CRITIQUE :
+- Toujours classes mobile par défaut (sans préfixe)
+- Breakpoints : sm: (640px+), lg: (1024px+), xl: (1280px+)
+- Exemples OBLIGATOIRES :
+  * Texte : text-3xl sm:text-4xl lg:text-5xl xl:text-6xl
+  * Grid : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+  * Padding : px-4 sm:px-6 lg:px-8
+  * Gap : gap-4 sm:gap-6 lg:gap-8
+  * Hero height : min-h-[60vh] lg:min-h-[70vh]
+  * Stack : flex-col lg:flex-row
+- Boutons touch-friendly : min-h-[44px] px-6 py-3
+`;
+
+  /*  FONTS & ICONS  */
+  const fontsIconsBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✍️ POLICES GOOGLE FONTS & ICÔNES LUCIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔤 POLICES À UTILISER :
+${fontLinks}
+
+APPLICATION OBLIGATOIRE :
+- Hero title : font-['${heroFont}'] text-5xl sm:text-6xl lg:text-7xl font-bold
+- Section headings : font-['${headingFont}'] text-3xl sm:text-4xl font-semibold
+- Body text : font-['${bodyFont}'] text-base sm:text-lg
+- Badges/Labels : font-['${accentFont}'] text-sm uppercase tracking-wide
+
+🎨 LUCIDE ICONS (OBLIGATOIRE) :
+Dans le <head>, ajouter :
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+
+UTILISATION :
+<i data-lucide="truck" class="w-8 h-8 text-primary"></i>
+
+ICÔNES RECOMMANDÉES :
+- Livraison : truck, package
+- Qualité : shield-check, award, star
+- Dimensions : ruler, move
+- Montage : wrench, settings
+- LED/Éclairage : lightbulb, zap
+- Check : check-circle
+- Premium : sparkles, crown
+`;
+
+  /*  STYLE APPLICATION  */
+  const styleBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 STYLE : ${style}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${style === "minimalist" ? `
+• MINIMALIST :
+  - Beaucoup d'espace blanc : py-16 py-20 gap-12
+  - Couleurs neutres : text-gray-600 bg-gray-50
+  - Typographie simple : font-light font-normal
+  - Pas trop d'icônes, design épuré
+  - Bordures fines : border-gray-200
+` : style === "premium" ? `
+• PREMIUM :
+  - Overlay gradients : bg-gradient-to-br
+  - Typographie élégante : font-['${heroFont}']
+  - Contraste fort : text-white on dark backgrounds
+  - Animations hover : hover:scale-105 transition-transform
+  - Ombres profondes : shadow-2xl
+  - Bordures accent : border-accent
+  - Sections avec fond : bg-muted/50
+` : `
+• MODERN :
+  - Sections bien segmentées : border-t divide-y
+  - Couleurs vives pour accents : bg-primary text-secondary
+  - Ombres marquées : shadow-lg shadow-xl
+  - Grid layouts : grid-cols-2 grid-cols-3
+  - Transitions : transition-all duration-300
+  - Contrastes nets
+`}
+
+🎨 COULEURS (HSL à utiliser) :
+- Primary : hsl(${designTokens.primary}) → Titres, accents principaux
+- Secondary : hsl(${designTokens.secondary}) → Sous-titres, séparateurs
+- Accent : hsl(${designTokens.accent}) → Badges, highlights
+- Background : hsl(${designTokens.background}) → Fond général
+- Text : hsl(${designTokens.text}) → Texte principal
+`;
+
+  /*  LANGUE  */
+  const languageBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌍 LANGUE : ${language.toUpperCase()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 RÈGLE ABSOLUE : Toute la landing page (titres, textes, tableaux, labels, alt text) DOIT être en ${language}.
+Si le titre ou la description du produit mélange plusieurs langues, tu DOIS traduire et harmoniser tout en ${language}.
+NE JAMAIS laisser des morceaux dans d'autres langues.
+`;
+
+  /*  TEMPLATES DE SECTIONS  */
+  const templatesBlock = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 TEMPLATES DE SECTIONS (À UTILISER)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 HERO SECTION :
+<section class="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+  <div class="absolute inset-0 z-0">
+    <img src="${images?.[0]?.src || ''}" alt="${productData.title}" class="w-full h-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-transparent"></div>
+  </div>
+  <div class="relative z-10 container mx-auto px-4 text-center text-white">
+    <div class="inline-flex items-center gap-2 bg-accent/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+      <i data-lucide="sparkles" class="w-4 h-4"></i>
+      <span class="font-['${accentFont}'] text-sm uppercase tracking-wide">Premium Collection</span>
+    </div>
+    <h1 class="font-['${heroFont}'] text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 drop-shadow-lg">
+      ${productData.title}
+    </h1>
+    <p class="font-['${bodyFont}'] text-lg sm:text-xl lg:text-2xl max-w-2xl mx-auto mb-8 drop-shadow">
+      ${productData.excerpt || productData.description?.substring(0, 150) || ''}
+    </p>
+  </div>
+</section>
+
+🎯 POINTS FORTS (CRITIQUE POUR CONVERSION) :
+<section class="py-16 bg-background">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      ${productData.materials?.length > 0 ? `
+      <div class="flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <i data-lucide="shield-check" class="w-8 h-8 text-primary"></i>
+        </div>
+        <h3 class="font-['${headingFont}'] text-lg font-semibold mb-2">Qualité Premium</h3>
+        <p class="text-sm text-muted-foreground">${productData.materials[0]}</p>
+      </div>
+      ` : ''}
+      ${productData.dimensions?.summary?.length ? `
+      <div class="flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+          <i data-lucide="ruler" class="w-8 h-8 text-secondary"></i>
+        </div>
+        <h3 class="font-['${headingFont}'] text-lg font-semibold mb-2">Dimensions Idéales</h3>
+        <p class="text-sm text-muted-foreground">${productData.dimensions.summary.length}cm × ${productData.dimensions.summary.width || '?'}cm</p>
+      </div>
+      ` : ''}
+      <div class="flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+          <i data-lucide="zap" class="w-8 h-8 text-accent"></i>
+        </div>
+        <h3 class="font-['${headingFont}'] text-lg font-semibold mb-2">Fonctionnalité</h3>
+        <p class="text-sm text-muted-foreground">${productData.features?.[0] || 'Design moderne'}</p>
+      </div>
+      <div class="flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <i data-lucide="truck" class="w-8 h-8 text-primary"></i>
+        </div>
+        <h3 class="font-['${headingFont}'] text-lg font-semibold mb-2">Livraison Soignée</h3>
+        <p class="text-sm text-muted-foreground">Expédition rapide et sécurisée</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+🎯 GALERIE D'IMAGES :
+<section class="py-12 bg-muted/30">
+  <div class="container mx-auto px-4">
+    <h2 class="font-['${headingFont}'] text-3xl sm:text-4xl font-semibold mb-8 text-center">Galerie</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="sm:col-span-2 sm:row-span-2">
+        <img src="${images?.[0]?.src || ''}" alt="${images?.[0]?.alt_text || productData.title}" 
+             class="w-full h-full object-cover rounded-lg shadow-lg hover:shadow-xl transition-shadow" />
+      </div>
+      ${images?.slice(1, 5).map((img: any) => `
+      <div>
+        <img src="${img.src}" alt="${img.alt_text || productData.title}" 
+             class="w-full aspect-square object-cover rounded-lg shadow hover:shadow-lg transition-shadow" />
+      </div>
+      `).join('') || ''}
+    </div>
+  </div>
+</section>
+
+${productData.dimensionImageUrl ? `
+🎯 IMAGE SCHÉMA DIMENSIONS :
+Si dimensionImageUrl existe, dans la section "Dimensions détaillées" :
+<div class="mb-8 flex justify-center">
+  <img src="${productData.dimensionImageUrl}" alt="Schéma des dimensions" 
+       class="mx-auto max-w-md rounded-lg shadow-lg" />
+</div>
+` : ''}
+`;
+
+  /*  RÈGLES TECHNIQUES  */
+  const technicalRules = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 RÈGLES TECHNIQUES OBLIGATOIRES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1️⃣ PRIORITÉ DES DIMENSIONS
-------------------------------------
-Tu DOIS appliquer cette hiérarchie :
-- Si "dimensions.vision" existe → utiliser EXCLUSIVEMENT cela.
-- Si "vision" n'a pas toutes les infos → compléter avec "smart".
-- Ne JAMAIS inventer ou modifier les valeurs.
+   - Si dimensions.vision existe → utiliser EN PRIORITÉ
+   - Compléter avec dimensions.smart si vision incomplet
+   - Ne JAMAIS inventer de valeurs
 
-2️⃣ MATÉRIAUX / COULEURS / FINITIONS
-------------------------------------
-Tu DOIS refléter EXACTEMENT les matériaux visibles dans l'analyse visuelle.
-Ne JAMAIS mentionner un matériau absent des images.
+2️⃣ MATÉRIAUX / COULEURS
+   - Utiliser EXACTEMENT ce qui est dans productData
+   - Ne jamais inventer de matériaux
 
-3️⃣ RÉPÉTITION OBLIGATOIRE DES DONNÉES
-------------------------------------
-Tu DOIS répéter ces données dans :
-- "Caractéristiques clés"
-- "Spécifications techniques"
-- "Matériaux & Finitions"
-- "Analyse visuelle"
+3️⃣ SECTIONS REQUISES
+   - Points Forts (avec icônes Lucide)
+   - Galerie d'images
+   - Caractéristiques clés (liste à puces)
+   - Dimensions détaillées (tableau + image schéma si dispo)
+   - Spécifications techniques (tableau)
 
-4️⃣ SECTIONS TECHNIQUES REQUISES
-------------------------------------
-Tu DOIS inclure :
-- Un tableau « Spécifications techniques »
-- Une section « Dimensions détaillées »
-- Une section « Matériaux & Finitions »
-- Une section « Analyse visuelle »
+4️⃣ FORMAT DE SORTIE
+   🔴 CRITIQUE : Retourne UNIQUEMENT du HTML complet :
+   - Commence par <!DOCTYPE html>
+   - Inclut <html lang="${language}">, <head>, <body>
+   - Tailwind CSS via CDN dans <head>
+   - Script Lucide dans <head>
+   - AUCUN texte explicatif
+   - AUCUNE phrase comme "Cette landing page..."
 
 5️⃣ INTERDICTIONS
-------------------------------------
-❌ Ne jamais omettre de caractéristiques
-❌ Ne jamais inventer
-❌ Aucun CTA commercial
-❌ Aucune navigation ou footer
-
-6️⃣ FORMAT DE SORTIE (OBLIGATOIRE)
-------------------------------------
-🔴 CRITIQUE : Retourne UNIQUEMENT un document HTML complet :
-- Commence par <!DOCTYPE html>
-- Inclut <html>, <head>, <body>
-- Utilise Tailwind CSS via des classes
-- NE PAS inclure de <script> ou <style> inline
-- NE RENVOIE RIEN D'AUTRE que le code HTML
-- AUCUNE phrase comme "Cette landing page respecte..."
-- AUCUN texte explicatif avant ou après le HTML
+   ❌ Aucun CTA commercial / bouton acheter
+   ❌ Aucune navigation ou footer
+   ❌ Aucun prix affiché
+   ❌ Ne jamais inventer de données
 `;
 
   return `
-Tu dois générer une landing page HTML complète.
+Tu es un expert en création de landing pages e-commerce premium type Shopify (thèmes Prestige, Impulse, Broadcast).
 
 📦 DONNÉES PRODUIT (À UTILISER À 100%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${JSON.stringify(productData, null, 2)}
 
-${mandatoryBlock}
+${structureBlock}
+${layoutBlock}
+${fontsIconsBlock}
+${styleBlock}
+${languageBlock}
+${templatesBlock}
+${technicalRules}
 
-🎨 DESIGN
-Style: ${style}
-Couleurs (HSL):
-- Primary: hsl(${designTokens.primary})
-- Secondary: hsl(${designTokens.secondary})
-- Accent: hsl(${designTokens.accent})
-- Background: hsl(${designTokens.background})
-- Text: hsl(${designTokens.text})
+📊 VOLUME DE CONTENU : ${wordCount} mots
 
-🖼️ Images:
-${images?.map((i: any) => "- " + i.src).join("\n")}
+🎯 OBJECTIF FINAL :
+Créer une landing page PREMIUM, VISUELLEMENT IMPACTANTE, MOBILE-FIRST qui DONNE ENVIE D'ACHETER.
+Design type thème Shopify haut de gamme, avec icônes, galerie stylée, polices élégantes, sections structurées.
 
-✍️ Polices Google Fonts:
-${fontLinks}
-
-📋 TÂCHE :
-Créer une landing page premium, moderne, riche, sans CTA commercial et STRICTEMENT basée sur les données ci-dessus.
-
-Commence maintenant :
+Commence la génération HTML maintenant :
 `;
 }
 
