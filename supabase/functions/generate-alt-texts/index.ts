@@ -217,15 +217,30 @@ Available visual analyses:
 - Color: ${product.ai_color || 'not available'}
 - Material: ${product.ai_material || 'not available'}
 
-RULES:
-1. ✅ Integrate the product title naturally
-2. ✅ Incorporate detected colors and materials
-3. ✅ Describe the product visually in a natural way
-4. ✅ 10-20 words maximum
-5. ✅ SEO-friendly and accessible
-6. 🚨 CRITICAL: Write ONLY in ${langConfig.name}
+STRICT PROCESS (FOLLOW IN ORDER):
 
-Example (${language.toUpperCase()}): "${langConfig.example}"
+STEP 1 - BASE (MANDATORY):
+🎯 Start with the product title: "${product.title}"
+Identify key terms: product type, material, color, dimensions
+Example: "Table basse – Céramique effet travertin mat, pieds noir ou beige"
+→ Keep: "table basse", "céramique", "travertin", "mat"
+
+STEP 2 - VISUAL ENRICHMENT:
+🔍 Add precise visual details from analyses:
+- Color detected: ${product.ai_color || 'not available'}
+- Material detected: ${product.ai_material || 'not available'}
+Example: If you see "beige" and "black legs" → add them precisely
+
+STEP 3 - SIMPLIFICATION:
+✅ Merge into 10-20 words
+✅ Remove redundancy (e.g., "effet travertin mat" can become "travertin mat")
+✅ Make natural and SEO-friendly
+✅ 🚨 CRITICAL: Write ONLY in ${langConfig.name}
+
+🚨 NEVER describe from scratch like "Round table with light top...". 
+🚨 ALWAYS anchor on the product title as your base.
+
+Example result (${language.toUpperCase()}): "${langConfig.example}"
 
 Reply with ONE ALT text only, no JSON, no explanation.`;
 }
@@ -498,6 +513,23 @@ Deno.serve(async (req: Request) => {
     const fallbackAltText = `${product.title} - ${product.category || 'product'}`;
     
     const altText = parseAltTextResponse(altContent, fallbackAltText);
+
+    // Validation: Check if ALT anchors on product title
+    const productKeyTerms = optimizedTitle.toLowerCase()
+      .split(/[\s–-]+/)
+      .filter((term: string) => term.length > 4); // Keep significant words
+    
+    const altLower = altText.toLowerCase();
+    const anchoredTerms = productKeyTerms.filter((term: string) => altLower.includes(term));
+    
+    if (anchoredTerms.length < 2) {
+      console.warn(`⚠️ ALT text may not be properly anchored on title.
+      Title key terms: ${productKeyTerms.join(', ')}
+      Anchored: ${anchoredTerms.join(', ')}
+      Generated ALT: ${altText}`);
+    } else {
+      console.log(`✅ ALT text properly anchored. Anchored terms: ${anchoredTerms.join(', ')}`);
+    }
 
     // Update database with new ALT text
     const { error: updateError } = await supabaseClient
