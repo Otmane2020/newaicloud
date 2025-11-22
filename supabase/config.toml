@@ -234,6 +234,10 @@ verify_jwt = true
 [functions.generate-landing-ai]
 verify_jwt = true
 
+[functions.generate-landing-deepseek]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.convert-landing-to-mobile]
 verify_jwt = true
 
