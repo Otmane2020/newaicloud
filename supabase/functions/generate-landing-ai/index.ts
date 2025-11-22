@@ -1830,31 +1830,29 @@ UTILISATION DES ICÔNES :
       }
     }
 
-    // 🎯 OPTIMIZE PRODUCT TITLE WITH SERP BEFORE SAVING
+    // 🎯 OPTIMIZE PRODUCT TITLE WITH SMART-TITLE (GEMINI VISION + DEEPSEEK) BEFORE SAVING
     if (userId && product_id) {
-      console.log("🎯 Optimizing product title with SERP...");
+      console.log("🎯 Optimizing product title with Smart Title (Vision AI + DeepSeek)...");
       try {
         const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke(
-          "optimize-product-title-serp",
+          "smart-title",
           {
             body: {
               productId: product_id,
-              currentTitle: productTitle,
-              description: description,
-              productType: imageAnalysis?.productType,
-              vendor: vendor,
-              language: language
+              language: language || "fr"
             }
           }
         );
 
         if (titleError) {
-          console.error("⚠️ Title optimization failed:", titleError);
+          console.error("⚠️ Smart Title optimization failed:", titleError);
         } else if (titleData?.success) {
-          console.log(`✅ Title optimized: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`);
+          console.log(`✅ Title optimized with Vision AI: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`);
+          console.log(`📊 Vision Analysis: ${titleData.visionAnalysis || 'N/A'}`);
+          console.log(`📝 DeepSeek Analysis:`, titleData.deepseekAnalysis);
         }
       } catch (titleOptError) {
-        console.error("⚠️ Title optimization error:", titleOptError);
+        console.error("⚠️ Smart Title optimization error:", titleOptError);
         // Continue even if title optimization fails
       }
     }
