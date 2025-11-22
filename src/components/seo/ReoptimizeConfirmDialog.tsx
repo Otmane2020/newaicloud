@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingUp, Info } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface Collection {
   id: string;
@@ -23,6 +24,7 @@ export function ReoptimizeConfirmDialog({
   collections,
   onConfirm
 }: ReoptimizeConfirmDialogProps) {
+  const { t, tf } = useTranslation();
   const alreadyOptimized = collections.filter(c => (c.optimization_count || 0) > 0);
   const neverOptimized = collections.filter(c => (c.optimization_count || 0) === 0);
   
@@ -38,10 +40,10 @@ export function ReoptimizeConfirmDialog({
             </div>
             <div className="flex-1">
               <DialogTitle className="text-xl font-semibold">
-                Confirmer la réoptimisation ?
+                {t.dialogs.reoptimize.title}
               </DialogTitle>
               <DialogDescription className="text-sm mt-1">
-                Certaines collections ont déjà été optimisées
+                {t.dialogs.reoptimize.description}
               </DialogDescription>
             </div>
           </div>
@@ -55,7 +57,7 @@ export function ReoptimizeConfirmDialog({
                 {collections.length}
               </div>
               <div className="text-xs text-muted-foreground">
-                Collection{collections.length > 1 ? 's' : ''} sélectionnée{collections.length > 1 ? 's' : ''}
+                {tf(collections.length === 1 ? 'dialogs.reoptimize.selected_one' : 'dialogs.reoptimize.selected_other')}
               </div>
             </div>
             
@@ -65,7 +67,7 @@ export function ReoptimizeConfirmDialog({
                   {totalOptimizations}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Optimisation{totalOptimizations > 1 ? 's' : ''} précédente{totalOptimizations > 1 ? 's' : ''}
+                  {t.dialogs.reoptimize.previousOptimizations}
                 </div>
               </div>
             )}
@@ -78,10 +80,10 @@ export function ReoptimizeConfirmDialog({
                 <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                 <div className="space-y-2 text-sm">
                   <p className="font-semibold text-yellow-900 dark:text-yellow-100">
-                    ⚠️ Les données SEO actuelles seront écrasées
+                    {t.dialogs.reoptimize.warning}
                   </p>
                   <p className="text-yellow-800 dark:text-yellow-200">
-                    L'IA va générer de nouveaux titres et descriptions SEO. Les anciennes optimisations seront remplacées.
+                    {t.dialogs.reoptimize.warningText}
                   </p>
                 </div>
               </div>
@@ -93,7 +95,7 @@ export function ReoptimizeConfirmDialog({
             {alreadyOptimized.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">
-                  Déjà optimisées ({alreadyOptimized.length})
+                  {tf('dialogs.reoptimize.alreadyOptimized', { count: alreadyOptimized.length })}
                 </p>
                 {alreadyOptimized.map(collection => (
                   <div
@@ -105,7 +107,7 @@ export function ReoptimizeConfirmDialog({
                     </span>
                     <Badge variant="outline" className="ml-2 text-xs">
                       <TrendingUp className="w-3 h-3 mr-1" />
-                      {collection.optimization_count}x
+                      {tf('dialogs.reoptimize.optimizations', { count: collection.optimization_count })}
                     </Badge>
                   </div>
                 ))}
@@ -115,7 +117,7 @@ export function ReoptimizeConfirmDialog({
             {neverOptimized.length > 0 && (
               <div className="space-y-2 mt-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">
-                  Jamais optimisées ({neverOptimized.length})
+                  {tf('dialogs.reoptimize.neverOptimized', { count: neverOptimized.length })}
                 </p>
                 {neverOptimized.map(collection => (
                   <div
@@ -126,7 +128,7 @@ export function ReoptimizeConfirmDialog({
                       {collection.title}
                     </span>
                     <Badge variant="outline" className="ml-2 text-xs text-green-600">
-                      Nouveau
+                      {t.dialogs.reoptimize.new}
                     </Badge>
                   </div>
                 ))}
@@ -137,9 +139,13 @@ export function ReoptimizeConfirmDialog({
           {/* Note sur la facturation */}
           <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
             <p className="text-xs text-blue-800 dark:text-blue-200">
-              💡 <strong>Cette optimisation sera comptabilisée dans votre quota mensuel.</strong>
+              💡 <strong>{t.dialogs.reoptimize.quotaNote}</strong>
               <br />
-              {collections.length} optimisation{collections.length > 1 ? 's' : ''} sera{collections.length > 1 ? 'ont' : ''} consommée{collections.length > 1 ? 's' : ''}.
+              {tf('dialogs.reoptimize.consumedOptimizations', { 
+                count: collections.length, 
+                plural: collections.length > 1 ? 's' : '',
+                plural2: collections.length > 1 ? 'ont' : 'a'
+              })}
             </p>
           </div>
         </div>
@@ -150,7 +156,7 @@ export function ReoptimizeConfirmDialog({
             onClick={() => onOpenChange(false)}
             className="w-full sm:w-auto"
           >
-            Annuler
+            {t.dialogs.reoptimize.cancel}
           </Button>
           <Button
             onClick={() => {
@@ -159,7 +165,7 @@ export function ReoptimizeConfirmDialog({
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
           >
-            ✅ Confirmer la réoptimisation
+            {t.dialogs.reoptimize.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

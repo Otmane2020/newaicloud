@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { X } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface DemoBookingDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface DemoBookingDialogProps {
 }
 
 export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessEmail: "",
@@ -39,22 +41,22 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
     let isValid = true;
 
     if (!formData.businessEmail || !formData.businessEmail.includes('@')) {
-      newErrors.businessEmail = "Please enter a valid business email";
+      newErrors.businessEmail = t.dialogs.demoBooking.errors.invalidEmail;
       isValid = false;
     }
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
+      newErrors.firstName = t.dialogs.demoBooking.errors.firstNameRequired;
       isValid = false;
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
+      newErrors.lastName = t.dialogs.demoBooking.errors.lastNameRequired;
       isValid = false;
     }
 
     if (!formData.role) {
-      newErrors.role = "Please complete this required field.";
+      newErrors.role = t.dialogs.demoBooking.errors.roleRequired;
       isValid = false;
     }
 
@@ -84,8 +86,8 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
       if (error) throw error;
 
       toast({
-        title: "Demo request sent!",
-        description: "We'll contact you shortly at " + formData.businessEmail,
+        title: t.dialogs.demoBooking.success,
+        description: t.dialogs.demoBooking.successDesc + formData.businessEmail,
       });
 
       // Reset form
@@ -106,7 +108,7 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
       console.error('Error sending demo booking:', error);
       toast({
         title: "Error",
-        description: "Failed to send demo request. Please try again.",
+        description: t.dialogs.demoBooking.error,
         variant: "destructive",
       });
     } finally {
@@ -127,21 +129,22 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
 
         <DialogHeader className="space-y-3">
           <DialogTitle className="text-3xl font-bold text-center text-foreground">
-            See Quickshot in action
+            {t.dialogs.demoBooking.title}
           </DialogTitle>
           <p className="text-center text-lg text-muted-foreground">
-            Create lifestyle images in seconds
+            {t.dialogs.demoBooking.description}
           </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">
           <div className="space-y-2">
             <Label htmlFor="businessEmail" className="text-sm font-medium">
-              Business email <span className="text-red-500">*</span>
+              {t.dialogs.demoBooking.businessEmail} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
             </Label>
             <Input
               id="businessEmail"
               type="email"
+              placeholder={t.dialogs.demoBooking.businessEmailPlaceholder}
               value={formData.businessEmail}
               onChange={(e) => setFormData({ ...formData, businessEmail: e.target.value })}
               className="h-12"
@@ -155,11 +158,12 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName" className="text-sm font-medium">
-                First name <span className="text-red-500">*</span>
+                {t.dialogs.demoBooking.firstName} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
               </Label>
               <Input
                 id="firstName"
                 type="text"
+                placeholder={t.dialogs.demoBooking.firstNamePlaceholder}
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 className="h-12"
@@ -172,11 +176,12 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
 
             <div className="space-y-2">
               <Label htmlFor="lastName" className="text-sm font-medium">
-                Last name <span className="text-red-500">*</span>
+                {t.dialogs.demoBooking.lastName} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
               </Label>
               <Input
                 id="lastName"
                 type="text"
+                placeholder={t.dialogs.demoBooking.lastNamePlaceholder}
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 className="h-12"
@@ -190,22 +195,22 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
 
           <div className="space-y-2">
             <Label htmlFor="role" className="text-sm font-medium">
-              What describes your role best? <span className="text-red-500">*</span>
+              {t.dialogs.demoBooking.roleBest} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
             </Label>
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value })}
             >
               <SelectTrigger className="h-12">
-                <SelectValue placeholder="Please Select" />
+                <SelectValue placeholder={t.dialogs.demoBooking.selectPlaceholder} />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-gray-900 border shadow-lg z-50">
-                <SelectItem value="ecommerce-manager">E-commerce Manager</SelectItem>
-                <SelectItem value="marketing-director">Marketing Director</SelectItem>
-                <SelectItem value="ceo-founder">CEO/Founder</SelectItem>
-                <SelectItem value="product-manager">Product Manager</SelectItem>
-                <SelectItem value="designer">Designer</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="ecommerce-manager">{t.dialogs.demoBooking.roles.ecommerce_manager}</SelectItem>
+                <SelectItem value="marketing-director">{t.dialogs.demoBooking.roles.marketing_director}</SelectItem>
+                <SelectItem value="ceo-founder">{t.dialogs.demoBooking.roles.ceo_founder}</SelectItem>
+                <SelectItem value="product-manager">{t.dialogs.demoBooking.roles.product_manager}</SelectItem>
+                <SelectItem value="designer">{t.dialogs.demoBooking.roles.designer}</SelectItem>
+                <SelectItem value="other">{t.dialogs.demoBooking.roles.other}</SelectItem>
               </SelectContent>
             </Select>
             {errors.role && (
@@ -218,7 +223,7 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
             className="w-full h-12 text-lg bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
             disabled={isLoading}
           >
-            {isLoading ? "Sending..." : "See it live"}
+            {isLoading ? t.dialogs.demoBooking.submitting : t.dialogs.demoBooking.submit}
           </Button>
         </form>
       </DialogContent>

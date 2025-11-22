@@ -14,6 +14,7 @@ import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useStoreDomain } from '@/hooks/useStoreDomain';
+import { useTranslation } from '@/lib/language';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -87,28 +88,28 @@ export function ProgressDialog({
     return () => clearInterval(interval);
   }, [open, isComplete]);
 
+  const { t, tf } = useTranslation();
+  
   const getTitle = () => {
     if (isComplete) {
-      return operation === 'syncing' ? '✅ Synchronisation terminée !' : '✅ Optimisation terminée !';
+      return operation === 'syncing' ? t.dialogs.seoWorkflow.progress.completeSyncing : t.dialogs.seoWorkflow.progress.completeOptimizing;
     }
-    if (operation === 'syncing') return '🔄 Synchronisation en cours...';
+    if (operation === 'syncing') return t.dialogs.seoWorkflow.progress.syncingTitle;
     switch (type) {
-      case 'seo': return '✨ Optimisation SEO en cours...';
-      case 'tags': return '🏷️ Génération des tags...';
-      case 'alt': return '🖼️ Génération des textes ALT...';
+      case 'seo': return t.dialogs.seoWorkflow.progress.optimizingTitle;
+      case 'tags': return t.dialogs.seoWorkflow.progress.optimizingTitle;
+      case 'alt': return t.dialogs.seoWorkflow.progress.optimizingTitle;
     }
   };
 
   const getDescription = () => {
     if (isComplete) {
-      return operation === 'syncing' 
-        ? `✅ ${total} élément${total > 1 ? 's synchronisés' : ' synchronisé'}` 
-        : `✅ ${total} élément${total > 1 ? 's traités' : ' traité'}`;
+      return tf(operation === 'syncing' ? 'dialogs.seoWorkflow.progress.completeSyncing' : 'dialogs.seoWorkflow.progress.completeOptimizing', { count: total });
     }
     if (operation === 'syncing') {
-      return `Synchronisation avec Shopify : ${current} / ${total}`;
+      return tf('dialogs.seoWorkflow.progress.syncingDesc', { count: total });
     }
-    return `Traitement : ${current} / ${total}`;
+    return tf('dialogs.seoWorkflow.progress.step', { current, total });
   };
 
   return (
@@ -182,21 +183,23 @@ export function ResultsDialog({
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
   const { domain: storeDomain } = useStoreDomain();
   const { selectedStore } = useStore();
+  const { t, tf } = useTranslation();
 
   const getTitle = () => {
     switch (type) {
-      case 'seo': return '✅ Optimisation SEO terminée';
-      case 'tags': return '✅ Tags générés avec succès';
-      case 'alt': return '✅ Textes ALT générés';
+      case 'seo': return t.dialogs.seoWorkflow.results.seoComplete;
+      case 'tags': return t.dialogs.seoWorkflow.results.tagsComplete;
+      case 'alt': return t.dialogs.seoWorkflow.results.altComplete;
     }
   };
 
   const getDescription = () => {
     const count = items.length;
+    const typeKey = type === 'seo' ? 'products' : type === 'tags' ? 'products' : 'images';
     switch (type) {
-      case 'seo': return `${count} produit${count > 1 ? 's optimisés' : ' optimisé'} avec nouveaux titres et descriptions SEO`;
-      case 'tags': return `${count} produit${count > 1 ? 's' : ''} avec tags pertinents générés`;
-      case 'alt': return `${count} image${count > 1 ? 's optimisées' : ' optimisée'} avec textes ALT descriptifs`;
+      case 'seo': return tf('dialogs.seoWorkflow.results.seoCompleteDesc', { successCount: count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'tags': return tf('dialogs.seoWorkflow.results.tagsCompleteDesc', { successCount: count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'alt': return tf('dialogs.seoWorkflow.results.altCompleteDesc', { successCount: count });
     }
   };
 
@@ -245,7 +248,7 @@ export function ResultsDialog({
                           <div className="space-y-3">
                             {item.seo_title && item.seo_description && (
                               <div className="space-y-2">
-                                <Badge variant="outline" className="text-xs font-semibold">Aperçu Google</Badge>
+                                <Badge variant="outline" className="text-xs font-semibold">{t.dialogs.seoWorkflow.results.preview}</Badge>
                                 <GoogleSearchPreview
                                   title={item.seo_title}
                                   description={item.seo_description}
@@ -260,7 +263,7 @@ export function ResultsDialog({
                             )}
                             {item.body_html && (
                               <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs font-semibold">Description HTML</Badge>
+                                <Badge variant="outline" className="text-xs font-semibold">{t.dialogs.seoWorkflow.results.newDescription}</Badge>
                                 <div className="text-sm line-clamp-3" dangerouslySetInnerHTML={{ __html: item.body_html }} />
                               </div>
                             )}
@@ -272,7 +275,7 @@ export function ResultsDialog({
                                 className="w-full mt-2"
                               >
                                 <Eye className="w-4 h-4 mr-2" />
-                                Prévisualiser l'article
+                                {t.dialogs.seoWorkflow.results.previewArticles}
                               </Button>
                             )}
                             <div className="flex gap-2 mt-3">
@@ -283,7 +286,7 @@ export function ResultsDialog({
                                 className="flex-1"
                               >
                                 <TrendingUp className="w-4 h-4 mr-2" />
-                                Analyse SEO
+                                {t.dialogs.seoWorkflow.results.seoAnalysis}
                               </Button>
                             </div>
                           </div>
@@ -291,7 +294,7 @@ export function ResultsDialog({
 
                     {type === 'tags' && item.tags && (
                       <div className="space-y-1">
-                        <Badge variant="outline" className="text-xs">Tags générés</Badge>
+                        <Badge variant="outline" className="text-xs">{t.dialogs.seoWorkflow.results.generatedTags}</Badge>
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {item.tags.split(',').map((tag, idx) => (
                             <Badge key={idx} variant="secondary" className="text-xs font-normal">
@@ -304,7 +307,7 @@ export function ResultsDialog({
 
                     {type === 'alt' && item.alt_text && (
                       <div className="space-y-1">
-                        <Badge variant="outline" className="text-xs">Texte ALT</Badge>
+                        <Badge variant="outline" className="text-xs">{t.dialogs.seoWorkflow.results.altText}</Badge>
                         <p className="text-sm text-muted-foreground">{item.alt_text}</p>
                       </div>
                     )}
@@ -322,7 +325,7 @@ export function ResultsDialog({
             size="lg"
           >
             <Upload className="w-5 h-5 mr-2" />
-            Synchroniser avec Shopify
+            {t.dialogs.seoWorkflow.results.syncWithShopify}
           </Button>
           <Button
             onClick={onClose}
@@ -330,7 +333,7 @@ export function ResultsDialog({
             className="w-full h-11"
             size="lg"
           >
-            Fermer
+            {t.dialogs.seoWorkflow.results.close}
           </Button>
         </div>
         
@@ -371,19 +374,22 @@ export function SyncConfirmationDialog({
   onConfirm,
   loading,
 }: SyncConfirmationDialogProps) {
+  const { t, tf } = useTranslation();
+  
   const getTitle = () => {
     switch (type) {
-      case 'seo': return 'Synchroniser les optimisations SEO';
-      case 'tags': return 'Synchroniser les tags';
-      case 'alt': return 'Synchroniser les textes ALT';
+      case 'seo': return t.dialogs.seoWorkflow.confirmation.syncSeoTitle;
+      case 'tags': return t.dialogs.seoWorkflow.confirmation.syncTagsTitle;
+      case 'alt': return t.dialogs.seoWorkflow.confirmation.syncAltTitle;
     }
   };
 
   const getDescription = () => {
+    const typeKey = type === 'alt' ? 'images' : type === 'seo' ? 'collections' : 'products';
     switch (type) {
-      case 'seo': return `${itemCount} collection${itemCount > 1 ? 's seront mises à jour' : ' sera mise à jour'} sur Shopify avec les nouveaux titres et descriptions SEO.`;
-      case 'tags': return `${itemCount} produit${itemCount > 1 ? 's seront mis à jour' : ' sera mis à jour'} sur Shopify avec les nouveaux tags.`;
-      case 'alt': return `${itemCount} image${itemCount > 1 ? 's seront mises à jour' : ' sera mise à jour'} sur Shopify avec les nouveaux textes ALT.`;
+      case 'seo': return tf('dialogs.seoWorkflow.confirmation.syncSeoDesc', { count: itemCount, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'tags': return tf('dialogs.seoWorkflow.confirmation.syncTagsDesc', { count: itemCount, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'alt': return tf('dialogs.seoWorkflow.confirmation.syncAltDesc', { count: itemCount });
     }
   };
 
@@ -403,10 +409,10 @@ export function SyncConfirmationDialog({
         <div className="bg-muted/50 rounded-lg p-4 my-4">
           <div className="flex items-center gap-2 text-sm">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="font-medium">Prêt pour la synchronisation</span>
+            <span className="font-medium">{t.dialogs.seoWorkflow.confirmation.readyForSync}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Les modifications seront immédiatement visibles sur votre boutique Shopify.
+            {t.dialogs.seoWorkflow.confirmation.warning}
           </p>
         </div>
 
@@ -420,12 +426,12 @@ export function SyncConfirmationDialog({
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Synchronisation...
+                {t.dialogs.seoWorkflow.confirmation.syncing}
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Confirmer la synchronisation
+                {t.dialogs.seoWorkflow.confirmation.confirm}
               </>
             )}
           </Button>
@@ -435,7 +441,7 @@ export function SyncConfirmationDialog({
             disabled={loading}
             className="w-full"
           >
-            Annuler
+            {t.dialogs.seoWorkflow.confirmation.cancel}
           </Button>
         </div>
       </DialogContent>
@@ -461,19 +467,22 @@ export function SuccessDialog({
   items = [],
   onClose,
 }: SuccessDialogProps) {
+  const { t, tf } = useTranslation();
+  
   const getTitle = () => {
     switch (type) {
-      case 'seo': return 'Synchronisation réussie !';
-      case 'tags': return 'Tags synchronisés !';
-      case 'alt': return 'Images synchronisées !';
+      case 'seo': return t.dialogs.seoWorkflow.success.seoSyncedTitle;
+      case 'tags': return t.dialogs.seoWorkflow.success.tagsSyncedTitle;
+      case 'alt': return t.dialogs.seoWorkflow.success.altSyncedTitle;
     }
   };
 
   const getDescription = () => {
+    const typeKey = type === 'alt' ? 'images' : type === 'seo' ? 'collections' : 'products';
     switch (type) {
-      case 'seo': return `${count} produit${count > 1 ? 's ont été mis à jour' : ' a été mis à jour'} avec succès sur Shopify.`;
-      case 'tags': return `${count} produit${count > 1 ? 's ont été mis à jour' : ' a été mis à jour'} avec les nouveaux tags.`;
-      case 'alt': return `${count} image${count > 1 ? 's ont été mises à jour' : ' a été mise à jour'} avec les nouveaux textes ALT.`;
+      case 'seo': return tf('dialogs.seoWorkflow.success.seoSyncedDesc', { count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'tags': return tf('dialogs.seoWorkflow.success.tagsSyncedDesc', { count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
+      case 'alt': return tf('dialogs.seoWorkflow.success.altSyncedDesc', { count });
     }
   };
 
@@ -560,10 +569,10 @@ export function SuccessDialog({
           <div className="w-full bg-green-50 dark:bg-green-900/20 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
               <CheckCircle className="w-4 h-4" />
-              <span className="font-medium">Modifications en ligne</span>
+              <span className="font-medium">{t.dialogs.seoWorkflow.success.changesLive}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Les changements sont maintenant visibles sur votre boutique Shopify.
+              {t.dialogs.seoWorkflow.success.changesLive}
             </p>
           </div>
 
@@ -572,7 +581,7 @@ export function SuccessDialog({
             className="w-full h-11 font-semibold"
             size="lg"
           >
-            Parfait !
+            {t.dialogs.seoWorkflow.success.done}
           </Button>
         </div>
       </DialogContent>
