@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from './SeoWorkflowDialogs';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
@@ -119,6 +120,8 @@ export function SeoAltImage() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
+  const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
+  const [selectedImageForOptimize, setSelectedImageForOptimize] = useState<ImageWithProduct | null>(null);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
 
@@ -1071,62 +1074,10 @@ export function SeoAltImage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={handleImportContentImages}
-            disabled={importing}
-            className="gap-2"
-          >
-            {importing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Import...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                Importer contenu
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
             size="icon"
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
           >
             {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-          </Button>
-          <Button
-            onClick={() => handleGenerateForSelected(true)}
-            disabled={generating || selectedImages.size === 0}
-            className="gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Analyse Vision...
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4" />
-                ALT Vision ({selectedImages.size})
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleSyncSelected}
-            disabled={syncing || selectedImages.size === 0}
-            className="gap-2"
-          >
-            {syncing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Synchro...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                Synchroniser ({selectedImages.size})
-              </>
-            )}
           </Button>
           <Button variant="outline" size="icon" onClick={fetchImages}>
             <RefreshCw className="w-4 h-4" />
@@ -1211,12 +1162,8 @@ export function SeoAltImage() {
                           size="sm"
                           variant="default"
                           onClick={() => {
-                            if (!canDoAction('optimizations')) {
-                              toast.error("Limite d'optimisations atteinte");
-                              setShowUpgradeDialog(true);
-                              return;
-                            }
-                            handleOptimizeImage(img.id, true);
+                            setSelectedImageForOptimize(img);
+                            setShowOptimizeDialog(true);
                           }}
                           disabled={generating}
                           title="Optimiser avec Vision AI"
@@ -1302,12 +1249,8 @@ export function SeoAltImage() {
                       size="sm"
                       variant="default"
                       onClick={() => {
-                        if (!canDoAction('optimizations')) {
-                          toast.error("Limite d'optimisations atteinte");
-                          setShowUpgradeDialog(true);
-                          return;
-                        }
-                        handleOptimizeImage(img.id, true);
+                        setSelectedImageForOptimize(img);
+                        setShowOptimizeDialog(true);
                       }}
                       disabled={generating}
                       title="Optimiser avec Vision AI"
@@ -1353,6 +1296,92 @@ export function SeoAltImage() {
           </div>
         </div>
       )}
+
+      {/* Single Image Optimize Dialog */}
+      <Dialog open={showOptimizeDialog} onOpenChange={setShowOptimizeDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Optimiser l'image avec Vision AI
+            </DialogTitle>
+            <DialogDescription>
+              Générer un texte ALT optimisé pour le SEO avec l'analyse d'image par IA
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedImageForOptimize && (
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border">
+                  <img 
+                    src={selectedImageForOptimize.src} 
+                    alt={selectedImageForOptimize.alt_text || ''} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">
+                    {selectedImageForOptimize.product.title}
+                  </h3>
+                  {selectedImageForOptimize.product.vendor && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {selectedImageForOptimize.product.vendor}
+                    </p>
+                  )}
+                  {selectedImageForOptimize.alt_text && (
+                    <div className="mt-3">
+                      <Badge variant="secondary" className="gap-1 mb-2">
+                        <CheckCircle className="w-3 h-3" />
+                        ALT actuel
+                      </Badge>
+                      <p className="text-sm bg-muted/50 p-3 rounded-lg">
+                        {selectedImageForOptimize.alt_text}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOptimizeDialog(false)}
+                  disabled={generating}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!canDoAction('optimizations')) {
+                      toast.error("Limite d'optimisations atteinte");
+                      setShowUpgradeDialog(true);
+                      setShowOptimizeDialog(false);
+                      return;
+                    }
+                    setShowOptimizeDialog(false);
+                    await handleOptimizeImage(selectedImageForOptimize.id, true);
+                  }}
+                  disabled={generating}
+                  className="gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Optimisation...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Optimiser avec Vision AI
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Optimization Progress Dialog */}
       <ProgressDialog
