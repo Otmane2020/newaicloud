@@ -1341,13 +1341,21 @@ VARIANTS:
 ${vars}
 ${variantsSummary ? `${variantsSummary}` : ""}
 
-${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
+${customHighlights ? `
+🎯 **USER'S KEY HIGHLIGHTS (MANDATORY - MAKE THEM PROMINENT)**:
+${customHighlights}
+
+🚨 CRITICAL: These highlights MUST appear in a prominent section (e.g., "Key Benefits", "Why Choose This Product") with:
+- Large icons (SVG with gradients)
+- Bold titles
+- Clear descriptions
+- Positioned early in the page (after hero section)
+` : ""}
 
 🚨 **USER OPTIONS (STRICTLY RESPECT THEM):**
 - Desired design style: ${designStyle} (${selectedStyle.name})
 - Content length: ${length || "medium"} → ${length === "short" ? "400-500 words (3 sections)" : length === "long" ? "1500 words (6-8 sections)" : "800 words (4-5 sections)"}
 - Layout: ${layout || "default"}
-${customHighlights ? `- Key highlights to emphasize:\n${customHighlights}` : ""}
 
 COLOR PALETTE (HSL FORMAT ONLY):
 - Primary: hsl(${designTokens.primary})
@@ -1504,10 +1512,15 @@ ${
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎨 PROFESSIONAL SVG ICONS (CRITICAL - MANDATORY):
+🎨 PROFESSIONAL SVG ICONS (CRITICAL - ABSOLUTELY MANDATORY):
+🚨 WARNING: If you don't include SVG icons, the landing page will be REJECTED!
+
 - ✅ REQUIRED: Use inline SVG with gradient fills for ALL list items
-- ✅ REQUIRED: Apply theme colors (primary, accent) with HSL values
+- ✅ REQUIRED: Apply theme colors (primary, accent) with HSL values  
 - ✅ REQUIRED: Add elegant checkmark icons for bullet points
+- ✅ REQUIRED: Minimum 6 SVG icons total in the page
+- ❌ FORBIDDEN: Simple text bullets (-, *, •)
+- ❌ FORBIDDEN: Emoji icons (✓, ★, ✔)
 - 
 - 📋 MANDATORY SVG ICON TEMPLATE FOR LISTS:
   ${selectedIcon}
@@ -1622,27 +1635,32 @@ ${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hé
 3. Textes: Adapter les tailles avec classes responsive (text-base md:text-lg)
 4. Espacements: Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
 
-IMAGES :
-${imgs}
+Galerie d'Images : Photos produit en grille haute qualité
 
-VARIANTES :
-${vars}
-${variantsSummary ? `${variantsSummary}` : ""}
+📋 **CARACTÉRISTIQUES DÉTAILLÉES À CONSERVER** (OBLIGATOIRE):
+Les détails suivants DOIVENT apparaître dans la section "Spécifications Techniques" ou "Caractéristiques":
+${description ? `
+Caractéristiques brutes de la description:
+${description.split('\n').filter((line: string) => line.includes(':') || line.includes('•')).join('\n')}
+` : ''}
 
-${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
+🚨 CRITIQUE : Inclure TOUTES ces caractéristiques dans un tableau ou liste claire. NE PAS omettre de détails.
+Exemples à conserver :
+- Volume, Poids, Nombre de colis
+- Teneur en verre (nombre d'étagères)
+- Durabilité (bordure ABS, résistance aux chocs/humidité)
+- Design flexible (options d'assemblage)
+- Fonctionnalités optionnelles (rétroéclairage, etc.)
 
-🚨 **OPTIONS UTILISATEUR (RESPECTE-LES STRICTEMENT):**
-- Style design souhaité: ${designStyle} (${selectedStyle.name})
-- Longueur contenu: ${length || "medium"} → ${length === "short" ? "400-500 mots (3 sections)" : length === "long" ? "1500 mots (6-8 sections)" : "800 mots (4-5 sections)"}
-- Layout: ${layout || "default"}
-${customHighlights ? `- Points forts à mettre en avant:\n${customHighlights}` : ""}
+✅ SECTIONS REQUISES:
+1. Hero (avec image principale)
+2. Avantages Clés (avec points forts utilisateur si fournis)
+3. **Caractéristiques Techniques** (avec TOUS les détails de la description brute)
+4. Dimensions (si disponibles)
+5. Galerie d'Images
+6. FAQ
 
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
-- Primaire : hsl(${designTokens.primary})
-- Secondaire : hsl(${designTokens.secondary})
-- Accent : hsl(${designTokens.accent})
-- Fond : hsl(${designTokens.background})
-- Texte : hsl(${designTokens.text})
 
 🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
 1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
@@ -1781,6 +1799,16 @@ STRUCTURE :
 - Adresse les désirs et préoccupations non-dits des clients
 - Crée du FOMO (rareté du design, unicité)
 - Utilise des techniques de copywriting persuasif
+
+🎨 ICÔNES SVG PROFESSIONNELLES (CRITIQUE - ABSOLUMENT OBLIGATOIRE):
+🚨 ATTENTION : Si tu n'inclus pas d'icônes SVG, la landing page sera REJETÉE !
+
+- ✅ REQUIS : Utiliser SVG inline avec dégradés pour TOUTES les listes
+- ✅ REQUIS : Appliquer les couleurs du thème (primary, accent) en HSL
+- ✅ REQUIS : Ajouter icônes checkmark élégantes pour les puces
+- ✅ REQUIS : Minimum 6 icônes SVG au total dans la page
+- ❌ INTERDIT : Puces texte simples (-, *, •)
+- ❌ INTERDIT : Icônes emoji (✓, ★, ✔)
 
 UTILISATION DES ICÔNES :
 - Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
@@ -2212,13 +2240,6 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
             <!-- Dimension Details -->
             <div class="flex-1">
               <p class="text-xl md:text-2xl font-bold mb-2" style="color: hsl(${designTokens.primary})">${dimensionText}</p>
-              ${
-                isFromSchema && detectedDimensionImages.length > 0 && detectedDimensionImages[0].confidence
-                  ? `
-              <p class="text-xs text-gray-400 mt-1">Confiance: ${detectedDimensionImages[0].confidence}</p>
-              `
-                  : ""
-              }
             </div>
             
           </div>

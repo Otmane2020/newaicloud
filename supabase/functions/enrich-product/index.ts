@@ -398,10 +398,15 @@ AUTRES:
 Si une information n'est pas disponible ou applicable, utilise null.
 
 RÈGLES ABSOLUES:
-1. **CONSERVER LES DIMENSIONS EXACTES**: Si la description contient une section "Dimensions" (Hauteur, Largeur, Profondeur, Poids, Volume, Nombre de colis, Teneur en verre), tu DOIS conserver ces valeurs exactes. Ne les supprime PAS, ne les modifie PAS.
-2. **NE PAS INVENTER**: N'invente jamais de fabrication (pays), de durée de garantie, ou d'autres informations factices si elles ne sont pas mentionnées dans la description.
-3. Si certaines dimensions manquent, tu peux les estimer UNIQUEMENT si aucune dimension n'est fournie dans la description.
-4. Tu peux reformuler les caractéristiques, mais sans effacer les éléments concrets (Volume, Nombre de colis, Teneur en verre, Durabilité, Éclairage optionnel, etc.).
+1. **CONSERVER TOUTES LES CARACTÉRISTIQUES**: Copie EXACTEMENT les caractéristiques listées : Volume, Nombre de colis, Teneur en verre, Durabilité, Design flexible, Panneau laminé, Éclairage optionnel, etc.
+2. **DIMENSIONS EXACTES**: Si Dimensions présentes, conserve-les sans modification
+3. **N'INVENTE JAMAIS**: Pas de fabrication (pays), pas de garantie, pas d'autres infos si non mentionnées
+4. **NE RÉÉCRIS PAS**: Pour raw_characteristics, fais un COPIER-COLLER exact
+
+EXEMPLE:
+Si la description dit "Durabilité : Bordure ABS, résistant aux chocs", 
+tu DOIS copier exactement : "Durabilité : Bordure ABS, résistant aux chocs"
+PAS "Durable avec bordure ABS" ou autre reformulation.
 
 Réponds UNIQUEMENT en JSON valide:
 {
