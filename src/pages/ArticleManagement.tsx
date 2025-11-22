@@ -117,14 +117,44 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('blog_articles')
-        .select('*')
-        .eq('store_id', selectedStore.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setArticles(data || []);
+      // ✅ PAGINATION POUR DÉPASSER LA LIMITE DE 1000 ARTICLES
+      let allArticles: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
+      
+      console.log('🔄 [ARTICLES] Starting paginated fetch for store:', selectedStore.id);
+      
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [ARTICLES] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('blog_articles')
+          .select('*')
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order('created_at', { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (!pageData || pageData.length === 0) {
+          hasMore = false;
+        } else {
+          allArticles = [...allArticles, ...pageData];
+          page++;
+          
+          // Si on a reçu moins que PAGE_SIZE, c'est la dernière page
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          }
+        }
+      }
+      
+      console.log(`✅ [ARTICLES] Loaded ${allArticles.length} articles total for store ${selectedStore.store_name}`);
+      setArticles(allArticles);
     } catch (error) {
       console.error('Error loading articles:', error);
       toast.error('Error loading articles');

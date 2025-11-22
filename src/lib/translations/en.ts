@@ -113,6 +113,7 @@ export const translations = {
       title: "AI-Powered Landing Generation",
       badge: "Vision AI",
     },
+    optimizedTitle: "AI-Optimized Title",
 
     stages: {
       initializingDetail: "Initializing AI models...",

@@ -105,14 +105,16 @@ export const translations = {
 
   landingGeneration: {
     dialog: {
-      title: "Générateur de Landing Page IA",
-      description: "Créez une landing page personnalisée et optimisée pour votre produit",
+      title: "Générateur de Page de Destination IA",
+      description: "Créez une page de destination personnalisée et optimisée pour votre produit",
     },
 
     progressHeader: {
       title: "Génération IA de Landing Page",
       badge: "Vision IA",
     },
+    
+    optimizedTitle: "Titre optimisé par IA",
 
     stages: {
       initializingDetail: "Initialisation des modèles IA...",

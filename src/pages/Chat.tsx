@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -44,6 +45,7 @@ export default function Chat() {
   const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { selectedStore } = useStore();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -67,13 +69,13 @@ export default function Chat() {
   const [welcomeMessage, setWelcomeMessage] = useState(language === 'fr' ? t.seo.chat.welcome : 'Welcome! How can I assist you?');
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedStore) {
       loadProducts();
       createSession();
       loadStoreName();
       loadAssistantName();
     }
-  }, [user]);
+  }, [user, selectedStore]);
 
   const loadStoreName = async () => {
     if (!user?.id) return;
@@ -148,20 +150,57 @@ export default function Chat() {
   };
 
   const loadProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('shopify_products')
-        .select('*')
-        .eq('seller_id', user?.id)
-        .limit(100);
+    if (!selectedStore) {
+      console.log('⚠️ [CHAT] No store selected');
+      setProducts([]);
+      return;
+    }
 
-      if (error) throw error;
-      setProducts(data || []);
+    try {
+      // ✅ PAGINATION POUR DÉPASSER LA LIMITE DE 1000 PRODUITS
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const PAGE_SIZE = 1000;
+      
+      console.log('🔄 [CHAT] Starting paginated fetch for store:', selectedStore.id);
+      
+      while (hasMore) {
+        const start = page * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+        
+        console.log(`📄 [CHAT] Fetching page ${page + 1} (${start}-${end})...`);
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('shopify_products')
+          .select('*')
+          .eq('seller_id', user?.id)
+          .eq('store_id', selectedStore.id)
+          .range(start, end)
+          .order('created_at', { ascending: false });
+        
+        if (pageError) throw pageError;
+        
+        if (!pageData || pageData.length === 0) {
+          hasMore = false;
+        } else {
+          allProducts = [...allProducts, ...pageData];
+          page++;
+          
+          // Si on a reçu moins que PAGE_SIZE, c'est la dernière page
+          if (pageData.length < PAGE_SIZE) {
+            hasMore = false;
+          }
+        }
+      }
+      
+      console.log(`✅ [CHAT] Loaded ${allProducts.length} products total for store ${selectedStore.store_name}`);
+      setProducts(allProducts);
       
       // Calculate enrichment percentage
-      if (data && data.length > 0) {
-        const enrichedCount = data.filter(p => p.enrichment_status === 'enriched').length;
-        const percentage = Math.round((enrichedCount / data.length) * 100);
+      if (allProducts.length > 0) {
+        const enrichedCount = allProducts.filter(p => p.enrichment_status === 'enriched').length;
+        const percentage = Math.round((enrichedCount / allProducts.length) * 100);
         setEnrichmentPercentage(percentage);
       }
     } catch (error) {
