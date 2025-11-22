@@ -15,12 +15,94 @@ interface VisionRequest {
   };
 }
 
-// Nettoyage du JSON (supprime les ``` et texte parasite)
 function cleanJSON(text: string): string {
   return text
     .replace(/```json/gi, "")
     .replace(/```/g, "")
     .trim();
+}
+
+// -----------------------------------------------------
+// 🔥 Gemini Vision Call
+// -----------------------------------------------------
+async function callGeminiVision(prompt: string, imageData: string, apiKey: string) {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: imageData,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 2000,
+          },
+        }),
+      },
+    );
+
+    if (!res.ok) {
+      console.log("❌ Gemini error:", await res.text());
+      throw new Error("GEMINI_FAILED");
+    }
+
+    const json = await res.json();
+    return json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch {
+    throw new Error("GEMINI_FAILED");
+  }
+}
+
+// -----------------------------------------------------
+// 🔥 DeepSeek Fallback (vision multimodal)
+// -----------------------------------------------------
+async function callDeepSeek(prompt: string, imageData: string, apiKey: string) {
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-vl",
+      messages: [
+        { role: "system", content: "Return STRICT JSON only." },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "input_image",
+              image_url: `data:image/jpeg;base64,${imageData}`,
+            },
+          ],
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0.1,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`DEEPSEEK_ERROR_${res.status} - ${txt}`);
+  }
+
+  const json = await res.json();
+  return json?.choices?.[0]?.message?.content || null;
 }
 
 serve(async (req) => {
@@ -29,55 +111,52 @@ serve(async (req) => {
   }
 
   try {
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+
+    if (!DEEPSEEK_KEY) {
+      throw new Error("DEEPSEEK_API_KEY not configured (fallback required).");
+    }
 
     const body: VisionRequest = await req.json();
     const { imageUrl, productContext } = body;
 
     if (!imageUrl) throw new Error("imageUrl is required");
 
-    console.log(`🔍 Analyzing image with Gemini Vision…`);
-
-    // -----------------------------------------
-    // 🔄 CONVERT IMAGE TO BASE64
-    // -----------------------------------------
+    // --------------------------------------------------
+    //   BASE64 CONVERSION
+    // --------------------------------------------------
     let imageData = "";
 
     if (imageUrl.startsWith("data:image")) {
       imageData = imageUrl.split(",")[1];
     } else {
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+      const r = await fetch(imageUrl);
+      if (!r.ok) throw new Error("Cannot fetch image");
 
-      const buffer = await imageResponse.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
+      const buf = await r.arrayBuffer();
+      const bytes = new Uint8Array(buf);
 
-      // Chunk conversion → évite crash UTF-16
       let binary = "";
-      const chunkSize = 0x8000;
+      const chunk = 0x8000;
 
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
       }
 
       imageData = btoa(binary);
     }
 
     const contextInfo = productContext
-      ? `\nContexte produit: ${productContext.title || ""} ${productContext.category || ""} ${productContext.type || ""}`
+      ? `Contexte: ${productContext.title || ""} ${productContext.category || ""} ${productContext.type || ""}`
       : "";
 
-    // -----------------------------------------
-    // 📌 PROMPT
-    // -----------------------------------------
     const prompt = `
 Tu es un expert en vision IA spécialisé ecommerce.
-Analyse l’image et retourne **UNIQUEMENT un JSON valide**.
+Retourne **UNIQUEMENT un JSON strict**.
 
 ${contextInfo}
 
-Exige JSON strict :
 {
   "visualAttributes": {
     "primaryColor": "string",
@@ -113,69 +192,46 @@ Exige JSON strict :
   "confidence": number
 }`;
 
-    // -----------------------------------------
-    // 📡 GEMINI VISION CALL
-    // -----------------------------------------
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: imageData,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2000,
-          },
-        }),
-      },
-    );
+    // --------------------------------------------------
+    //   GEMINI → FALLBACK DEEPSEEK
+    // --------------------------------------------------
 
-    if (!geminiRes.ok) {
-      console.error(await geminiRes.text());
-      throw new Error("Gemini Vision failed");
+    let raw: string | null = null;
+
+    if (GEMINI_KEY) {
+      try {
+        console.log("📡 Trying Gemini…");
+        raw = await callGeminiVision(prompt, imageData, GEMINI_KEY);
+        console.log("✅ Gemini succeeded");
+      } catch {
+        console.log("⚠️ Gemini FAILED → using DeepSeek");
+      }
     }
 
-    const geminiJSON = await geminiRes.json();
-    const raw = geminiJSON?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!raw) {
+      raw = await callDeepSeek(prompt, imageData, DEEPSEEK_KEY);
+      console.log("🔥 DeepSeek succeeded");
+    }
 
-    if (!raw) throw new Error("Empty response from Gemini");
+    if (!raw) throw new Error("No analysis returned from any model");
 
-    // -----------------------------------------
-    // 🧹 CLEAN + PARSE JSON
-    // -----------------------------------------
     let parsed;
     try {
       parsed = JSON.parse(cleanJSON(raw));
     } catch (e) {
-      console.error("JSON PARSE ERROR:", raw);
-      throw new Error("Invalid JSON from Gemini");
+      console.error("❌ Parse error:", raw);
+      throw new Error("Invalid JSON returned");
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        visualAttributes: parsed.visualAttributes,
-        visualContext: parsed.visualContext,
-        confidence: parsed.confidence,
+        ...parsed,
         rawAnalysis: raw,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
-    console.error("❌ Vision analysis error:", e);
     return new Response(JSON.stringify({ success: false, error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
