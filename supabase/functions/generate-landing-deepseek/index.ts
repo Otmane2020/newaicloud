@@ -27,7 +27,7 @@ serve(async (req) => {
 
   try {
     const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -103,9 +103,9 @@ serve(async (req) => {
     // Vision analysis
     let visualAnalysis = "";
 
-    if (images?.length) {
+    if (images?.length && LOVABLE_API_KEY) {
       const imagesToAnalyze = Math.min(3, images.length);
-      console.log(`🖼️ Analyzing ${imagesToAnalyze} images with Gemini Vision`);
+      console.log(`🖼️ Analyzing ${imagesToAnalyze} images with Lovable AI Vision`);
 
       for (const img of images.slice(0, imagesToAnalyze)) {
         try {
@@ -113,38 +113,52 @@ serve(async (req) => {
             ? img.src.split(",")[1]
             : await fetchImageAsBase64(img.src);
 
-          const visionRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      {
-                        text:
-                          language === "fr"
-                            ? "Analyse cette image de produit. Donne les matériaux visibles, couleurs dominantes, style, finitions et dimensions apparentes (si visibles)."
-                            : "Analyze this product image. Describe visible materials, dominant colors, style, finish, and visible dimensions if any."
-                      },
-                      {
-                        inlineData: {
-                          mimeType: "image/jpeg",
-                          data: imgBase64,
-                        },
-                      },
-                    ],
-                  },
-                ],
-                generationConfig: { temperature: 0.4, maxOutputTokens: 400 },
-              }),
-            }
-          );
+          const visionRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: language === "fr"
+                        ? "Analyse cette image de produit. Donne les matériaux visibles, couleurs dominantes, style, finitions et dimensions apparentes (si visibles)."
+                        : "Analyze this product image. Describe visible materials, dominant colors, style, finish, and visible dimensions if any."
+                    },
+                    {
+                      type: "image_url",
+                      image_url: { url: `data:image/jpeg;base64,${imgBase64}` },
+                    },
+                  ],
+                },
+              ],
+              temperature: 0.4,
+            }),
+          });
 
-          if (visionRes.ok) {
-            const visionJson = await visionRes.json();
-            const text = visionJson?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (!visionRes.ok) {
+            const errorText = await visionRes.text();
+            console.warn(`⚠️ Lovable AI Vision error ${visionRes.status} for image ${img.position}:`, errorText);
+            
+            if (visionRes.status === 429) {
+              console.log("⚠️ Rate limit exceeded - skipping remaining images");
+              break;
+            } else if (visionRes.status === 402) {
+              console.log("⚠️ Payment required - skipping remaining images");
+              break;
+            }
+            continue;
+          }
+
+          const visionJson = await visionRes.json();
+          const text = visionJson?.choices?.[0]?.message?.content || "";
+          if (text) {
             visualAnalysis += `\n\nImage ${img.position}: ${text}`;
           }
         } catch (error) {
