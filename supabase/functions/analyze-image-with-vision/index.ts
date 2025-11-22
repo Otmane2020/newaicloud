@@ -85,8 +85,10 @@ async function callDeepSeek(prompt: string, imageData: string, apiKey: string) {
           content: [
             { type: "text", text: prompt },
             {
-              type: "input_image",
-              image_url: `data:image/jpeg;base64,${imageData}`,
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${imageData}`
+              }
             },
           ],
         },
