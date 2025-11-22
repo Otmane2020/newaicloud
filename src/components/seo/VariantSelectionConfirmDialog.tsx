@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Package, Image as ImageIcon, Check } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface Product {
   id: string;
@@ -44,6 +45,8 @@ export function VariantSelectionConfirmDialog({
   applyTo,
   onConfirm,
 }: VariantSelectionConfirmDialogProps) {
+  const { t, tf } = useTranslation();
+  
   const getTotalVariantsCount = (): number => {
     let count = 0;
     selectedVariants.forEach((variantIds) => {
@@ -63,10 +66,10 @@ export function VariantSelectionConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Confirmation de l'application
+            {t.dialogs.variantSelection.title}
           </DialogTitle>
           <DialogDescription>
-            Vérifiez les produits et variantes qui vont être traités avec l'arrière-plan IA
+            {t.dialogs.variantSelection.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,10 +79,10 @@ export function VariantSelectionConfirmDialog({
               <Card className="p-4 bg-primary/5 border-primary">
                 <div className="flex items-center gap-2 mb-2">
                   <ImageIcon className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Format Simple - Image principale</span>
+                  <span className="font-medium">{t.dialogs.variantSelection.simpleFormat}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  L'arrière-plan IA sera appliqué à l'image principale de chaque produit
+                  {t.dialogs.variantSelection.aiBackground}
                 </p>
                 <div className="space-y-2">
                   {selectedProducts.map((product) => (
@@ -96,11 +99,13 @@ export function VariantSelectionConfirmDialog({
               <Card className="p-4 bg-primary/5 border-primary">
                 <div className="flex items-center gap-2 mb-2">
                   <Package className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Format Variantes</span>
-                  <Badge variant="secondary">{getTotalVariantsCount()} variantes</Badge>
+                  <span className="font-medium">{t.dialogs.variantSelection.variantsFormat}</span>
+                  <Badge variant="secondary">
+                    {tf(getTotalVariantsCount() === 1 ? 'dialogs.variantSelection.variants_one' : 'dialogs.variantSelection.variants_other', { count: getTotalVariantsCount() })}
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  L'arrière-plan IA sera appliqué aux variantes sélectionnées de chaque produit
+                  {t.dialogs.variantSelection.aiBackgroundVariants}
                 </p>
                 <div className="space-y-3">
                   {selectedProducts.map((product) => {
@@ -117,7 +122,7 @@ export function VariantSelectionConfirmDialog({
                           <Check className="h-4 w-4 text-primary" />
                           <span className="text-sm font-semibold">{product.title}</span>
                           <Badge variant="outline" className="ml-auto">
-                            {productVariantIds.length} variantes
+                            {tf(productVariantIds.length === 1 ? 'dialogs.variantSelection.variants_one' : 'dialogs.variantSelection.variants_other', { count: productVariantIds.length })}
                           </Badge>
                         </div>
                         <div className="ml-6 space-y-1">
@@ -142,10 +147,10 @@ export function VariantSelectionConfirmDialog({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t.dialogs.variantSelection.cancel}
           </Button>
           <Button onClick={onConfirm}>
-            Confirmer et générer
+            {t.dialogs.variantSelection.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

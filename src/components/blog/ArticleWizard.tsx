@@ -189,11 +189,23 @@ export function ArticleWizard({
   // Initialize with opportunity data
   useEffect(() => {
     if (initialData && open) {
-      if (initialData.collectionId) setSelectedCollection(initialData.collectionId);
-      if (initialData.productIds) setSelectedProducts(initialData.productIds);
-      if (initialData.keywords) {
+      console.log('📋 ArticleWizard - Initializing with data:', initialData);
+      if (initialData.collectionId) {
+        setSelectedCollection(initialData.collectionId);
+        console.log('✅ Set collection:', initialData.collectionId);
+      }
+      if (initialData.productIds && initialData.productIds.length > 0) {
+        setSelectedProducts(initialData.productIds);
+        console.log('✅ Set products:', initialData.productIds);
+      }
+      if (initialData.keywords && initialData.keywords.length > 0) {
         setSelectedKeywords(initialData.keywords.slice(0, 3));
         setCustomKeywords(initialData.keywords.slice(3));
+        console.log('✅ Set keywords:', initialData.keywords);
+      }
+      if (initialData.title) {
+        setSuggestedTitle(initialData.title);
+        console.log('✅ Set title:', initialData.title);
       }
       if (initialData.angle) {
         const angleMap: Record<string, string> = {

@@ -803,10 +803,12 @@ Si aucune image n'est disponible pour un produit, n'affiche PAS d'image pour ce 
 
 7. **MENTION DE TOUS LES ${products.length} PRODUITS**:
    - Chaque produit DOIT apparaître dans l'article
-   - Avec son nom cliquable: <a href="${storeUrl}/products/[handle]" style="color: var(--color-accent); font-weight: 600;">[Nom du produit]</a>
+   - Avec son nom cliquable vers Shopify: <a href="${storeUrl}/products/HANDLE_DU_PRODUIT" style="color: var(--color-accent); font-weight: 600;">Nom du produit</a>
    - Son prix: <span class="product-price" style="color: var(--color-accent); font-weight: 700;">[prix]€</span>
    - Sa promotion si applicable
    - Une image dans la galerie
+   
+   IMPORTANT: Remplace HANDLE_DU_PRODUIT par le vrai handle de chaque produit (disponible dans le contexte)
 
 8. **NE PAS AFFICHER**:
    - Stock détaillé (juste "Disponible" ou "Stock limité")
