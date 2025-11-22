@@ -45,9 +45,23 @@ serve(async (req) => {
     } else {
       // Télécharger et convertir en base64
       const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+      }
       const imageBlob = await imageResponse.blob();
       const arrayBuffer = await imageBlob.arrayBuffer();
-      imageData = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Convert to base64 in chunks to avoid stack overflow
+      const bytes = new Uint8Array(arrayBuffer);
+      const chunkSize = 0x8000; // 32KB chunks
+      let binary = '';
+      
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        binary += String.fromCharCode(...chunk);
+      }
+      
+      imageData = btoa(binary);
     }
 
     const contextInfo = productContext 
