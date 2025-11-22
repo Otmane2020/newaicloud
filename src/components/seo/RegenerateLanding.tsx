@@ -415,10 +415,10 @@ export default function RegenerateLanding({
         language: storeLanguage
       });
 
-      // Add timeout protection (2 minutes)
-      const timeoutMs = 120000;
+      // Add timeout protection (5 minutes for AI generation)
+      const timeoutMs = 300000;
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La génération a pris plus de 2 minutes')), timeoutMs)
+        setTimeout(() => reject(new Error('Timeout: La génération a pris plus de 5 minutes. Veuillez réessayer.')), timeoutMs)
       );
 
       const invocationPromise = supabase.functions.invoke("generate-landing-deepseek", {
