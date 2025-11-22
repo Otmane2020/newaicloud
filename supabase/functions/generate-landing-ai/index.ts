@@ -1726,44 +1726,84 @@ UTILISATION DES ICÔNES :
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
     
-    // Use filtered dimension images (technical schema images)
-    const imagesWithDimensions = dimensionImages.length > 0 ? dimensionImages.slice(0, 2) : [];
+    // 1. Use NEW Gemini-detected dimension schema images (priority)
+    // 2. Fallback to existing filtered technical images
+    const finalDimensionImages = detectedDimensionImages.length > 0 
+      ? detectedDimensionImages 
+      : dimensionImages;
     
-    if (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions) {
-      const dims = imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
+    const imagesWithDimensions = finalDimensionImages.length > 0 ? finalDimensionImages.slice(0, 2) : [];
+    
+    // Collect all detected dimensions from schemas
+    let detectedDims: any = {};
+    if (detectedDimensionImages.length > 0) {
+      console.log("📐 Using dimensions from Gemini Vision schema detection");
+      // Merge dimensions from all detected schema images
+      detectedDimensionImages.forEach(img => {
+        if (img.dimensions) {
+          Object.assign(detectedDims, img.dimensions);
+        }
+      });
+    }
+    
+    // Build dimension data from detected schemas OR existing analysis
+    const dims = Object.keys(detectedDims).length > 0 
+      ? detectedDims 
+      : (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions);
+    
+    if (dims) {
       const visualContext = enrichedProduct?.vision_attributes?.visualContext;
+      const isFromSchema = detectedDimensionImages.length > 0;
       
-      console.log("📐 Gemini Vision Dimensions:", JSON.stringify(dims, null, 2));
+      console.log("📐 Final Dimensions Data:", JSON.stringify(dims, null, 2));
       
       const dimensionLabels = detectedLanguage === "en" ? {
         title: "DIMENSIONS",
-        subtitle: visualContext?.dimensionSource === "visible" ? "From technical diagram" : "Detected from analysis",
+        subtitle: isFromSchema ? "From technical diagram" : (visualContext?.dimensionSource === "visible" ? "From technical diagram" : "Detected from analysis"),
         height: "H",
-        width: "l", 
-        depth: "P",
+        width: "W", 
+        depth: "D",
         length: "L",
-        diameter: "Ø"
+        diameter: "Ø",
+        seatHeight: "Seat H",
+        armHeight: "Arm H"
       } : {
         title: "DIMENSIONS",
-        subtitle: visualContext?.dimensionSource === "visible" ? "Schéma technique" : "Détectées par analyse",
+        subtitle: isFromSchema ? "Schéma technique" : (visualContext?.dimensionSource === "visible" ? "Schéma technique" : "Détectées par analyse"),
         height: "H",
         width: "l",
         depth: "P", 
         length: "L",
-        diameter: "Ø"
+        diameter: "Ø",
+        seatHeight: "H assise",
+        armHeight: "H accoudoirs"
       };
       
-      // Build compact dimension string using EXACT Gemini Vision values
+      // Build compact dimension string using detected values
       const dimParts = [];
-      if (dims.height) dimParts.push(`${dimensionLabels.height} ${dims.height} ${dims.heightUnit || 'cm'}`);
-      if (dims.length) dimParts.push(`${dimensionLabels.length} ${dims.length} ${dims.lengthUnit || 'cm'}`);
-      if (dims.depth) dimParts.push(`${dimensionLabels.depth} ${dims.depth} ${dims.depthUnit || 'cm'}`);
-      if (dims.width) dimParts.push(`${dimensionLabels.width} ${dims.width} ${dims.widthUnit || 'cm'}`);
-      if (dims.diameter) dimParts.push(`${dimensionLabels.diameter} ${dims.diameter} ${dims.diameterUnit || 'cm'}`);
+      
+      // Handle both nested dimension objects and flat values
+      const extractValue = (dim: any) => {
+        if (typeof dim === 'object' && dim.value) {
+          return `${dim.value} ${dim.unit || 'cm'}`;
+        }
+        return dim;
+      };
+      
+      if (dims.height) dimParts.push(`${dimensionLabels.height} ${extractValue(dims.height)}`);
+      if (dims.length) dimParts.push(`${dimensionLabels.length} ${extractValue(dims.length)}`);
+      if (dims.depth) dimParts.push(`${dimensionLabels.depth} ${extractValue(dims.depth)}`);
+      if (dims.width) dimParts.push(`${dimensionLabels.width} ${extractValue(dims.width)}`);
+      if (dims.diameter) dimParts.push(`${dimensionLabels.diameter} ${extractValue(dims.diameter)}`);
+      if (dims.seatHeight) dimParts.push(`${dimensionLabels.seatHeight} ${extractValue(dims.seatHeight)}`);
+      if (dims.armHeight) dimParts.push(`${dimensionLabels.armHeight} ${extractValue(dims.armHeight)}`);
       
       if (dimParts.length > 0) {
         const dimensionText = dimParts.join(' × ');
         console.log("📏 Final dimension text:", dimensionText);
+        
+        // Build dimension characteristics for prompt injection
+        const dimensionCharacteristics = dimParts.map(part => `- ${part}`).join('\n');
         
         dimensionsSection = `
     <!-- Dimensions Section - Discrete placement after Caractéristiques -->
@@ -1774,12 +1814,14 @@ UTILISATION DES ICÔNES :
           <div class="flex flex-col sm:flex-row gap-4 items-start">
             
             ${imagesWithDimensions.length > 0 ? `
-            <!-- Technical Schema Image - Compact -->
-            <div class="shrink-0">
-              <img src="${imagesWithDimensions[0].src}" 
-                   alt="${imagesWithDimensions[0].alt_text || 'Technical dimensions'}" 
+            <!-- Technical Schema Image(s) - Compact Gallery -->
+            <div class="shrink-0 flex flex-col gap-2">
+              ${imagesWithDimensions.map((img: any) => `
+              <img src="${img.src || img.url}" 
+                   alt="Schéma technique avec dimensions" 
                    class="w-24 sm:w-28 h-auto rounded-md border border-gray-300 shadow-sm"
                    loading="lazy" />
+              `).join('')}
             </div>
             ` : ''}
             
@@ -1788,6 +1830,9 @@ UTILISATION DES ICÔNES :
               <h3 class="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">${dimensionLabels.title}</h3>
               <p class="text-base md:text-lg font-semibold mb-1" style="color: hsl(${designTokens.text})">${dimensionText}</p>
               <p class="text-xs text-gray-500">${dimensionLabels.subtitle}</p>
+              ${isFromSchema && detectedDimensionImages.length > 0 && detectedDimensionImages[0].confidence ? `
+              <p class="text-xs text-gray-400 mt-1">Confiance: ${detectedDimensionImages[0].confidence}</p>
+              ` : ''}
             </div>
             
           </div>
@@ -1856,6 +1901,127 @@ UTILISATION DES ICÔNES :
         // Continue even if title optimization fails
       }
     }
+
+    // 📐 DETECT DIMENSION SCHEMA IMAGES WITH GEMINI VISION
+    console.log("📐 Analyzing images for dimension schemas...");
+    const detectedDimensionImages: Array<{ src: string; dimensions: any; confidence: string }> = [];
+    const detectedRegularImages: Array<{ src: string; alt_text: string }> = [];
+    
+    if (images && images.length > 0) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      
+      for (const imageObj of images) {
+        const imageUrl = imageObj.src;
+        if (!imageUrl) continue;
+        
+        try {
+          console.log(`🔍 Analyzing image for dimensions: ${imageUrl.substring(0, 60)}...`);
+          
+          // Fetch image and convert to base64
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) {
+            console.warn(`⚠️ Failed to fetch image: ${imageUrl}`);
+            detectedRegularImages.push(imageObj);
+            continue;
+          }
+          
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+          const imageDataUrl = `data:image/jpeg;base64,${base64Image}`;
+
+          // Call Gemini Vision to detect dimension schemas
+          const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: `Analyse cette image et détermine si elle contient un schéma technique avec des dimensions (mesures, cotes, lignes de dimension).
+
+Si OUI, c'est une photo de dimensions, extrais TOUTES les dimensions visibles au format JSON structuré :
+{
+  "isDimensionSchema": true,
+  "confidence": "high|medium|low",
+  "dimensions": {
+    "length": {"value": 120, "unit": "cm", "label": "Longueur"},
+    "width": {"value": 80, "unit": "cm", "label": "Largeur"},
+    "height": {"value": 45, "unit": "cm", "label": "Hauteur"},
+    "diameter": {"value": 60, "unit": "cm", "label": "Diamètre"},
+    "depth": {"value": 40, "unit": "cm", "label": "Profondeur"},
+    "seatHeight": {"value": 46, "unit": "cm", "label": "Hauteur d'assise"},
+    "armHeight": {"value": 65, "unit": "cm", "label": "Hauteur accoudoirs"}
+  },
+  "notes": "Description des mesures visibles sur le schéma"
+}
+
+Si NON, c'est une photo normale de produit :
+{
+  "isDimensionSchema": false,
+  "confidence": "high",
+  "reason": "Image lifestyle/produit sans mesures techniques"
+}
+
+IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N'estime rien.`
+                    },
+                    {
+                      type: "image_url",
+                      image_url: { url: imageDataUrl }
+                    }
+                  ]
+                }
+              ],
+              max_tokens: 1000
+            })
+          });
+
+          if (visionResponse.ok) {
+            const visionData = await visionResponse.json();
+            const analysis = visionData.choices?.[0]?.message?.content;
+            
+            if (analysis) {
+              console.log(`📊 Vision analysis result: ${analysis.substring(0, 200)}...`);
+              
+              // Parse JSON response
+              const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsedAnalysis = JSON.parse(jsonMatch[0]);
+                
+                if (parsedAnalysis.isDimensionSchema) {
+                  console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
+                  detectedDimensionImages.push({
+                    src: imageUrl,
+                    dimensions: parsedAnalysis.dimensions || {},
+                    confidence: parsedAnalysis.confidence
+                  });
+                } else {
+                  console.log(`📷 Regular product image (no dimensions)`);
+                  detectedRegularImages.push(imageObj);
+                }
+              } else {
+                console.warn(`⚠️ Could not parse vision response for: ${imageUrl}`);
+                detectedRegularImages.push(imageObj);
+              }
+            }
+          } else {
+            console.warn(`⚠️ Vision API error for ${imageUrl}: ${visionResponse.status}`);
+            detectedRegularImages.push(imageObj);
+          }
+        } catch (imageError) {
+          console.error(`❌ Error analyzing image ${imageUrl}:`, imageError);
+          detectedRegularImages.push(imageObj);
+        }
+      }
+    }
+    
+    console.log(`📐 Dimension analysis complete: ${detectedDimensionImages.length} schema images, ${detectedRegularImages.length} regular images`);
 
     // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
