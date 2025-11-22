@@ -301,20 +301,21 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * ✨ Generate Landing via AI with Progress
+   * ✨ Generate Landing via AI with Progress (with retry logic)
    -----------------------------*/
-  const handleGenerate = async () => {
+  const handleGenerate = async (isRetry = false) => {
     console.log('[RegenerateLanding] Starting generation...', {
       productId: product.id,
       productTitle: product.title,
-      config
+      config,
+      isRetry
     });
 
     try {
       setLoading(true);
       setError(null);
       setProgress(0);
-      setProgressMessage(t.landingGeneration.preparing);
+      setProgressMessage(isRetry ? t.landingGeneration.errors.retrying : t.landingGeneration.preparing);
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
@@ -373,7 +374,7 @@ export default function RegenerateLanding({
           // ✅ PHASE 3: Show only optimized title in progress message
           setProgressMessage(`📝 ${titleData.optimizedTitle}`);
           
-          toast.success("Titre optimisé par IA", {
+          toast.success(t.landingGeneration.optimizedTitle, {
             description: titleData.optimizedTitle.substring(0, 100)
           });
         } else {
@@ -486,7 +487,32 @@ export default function RegenerateLanding({
       }
     } catch (err: any) {
       console.error('[RegenerateLanding] Generation failed:', err);
-      const errorMsg = err?.message || t.landingGeneration.errors.generation;
+      
+      // ✅ Detect network/relay errors and implement retry logic
+      const errorMessage = err?.message || '';
+      const isNetworkError = 
+        errorMessage.includes('FunctionsRelayError') || 
+        errorMessage.includes('Failed to send a request to the Edge Function') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Erreur réseau');
+      
+      if (isNetworkError && !isRetry) {
+        // First retry: wait 2.5 seconds and try again
+        console.log('[RegenerateLanding] Network error detected, retrying in 2.5s...');
+        setError(null);
+        setProgressMessage(t.landingGeneration.errors.retrying);
+        
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        
+        // Recursive call with retry flag
+        return handleGenerate(true);
+      }
+      
+      // Show clear error message
+      const errorMsg = isNetworkError 
+        ? t.landingGeneration.errors.networkError
+        : errorMessage || t.landingGeneration.errors.generation;
+      
       setError(errorMsg);
       toast.error(errorMsg);
       setProgress(0);
@@ -516,14 +542,16 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * 🔄 Sync to Shopify
+   * 🔄 Sync to Shopify (with retry logic)
    -----------------------------*/
-  const handleSyncToShopify = async () => {
+  const handleSyncToShopify = async (isRetry = false) => {
     if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
 
     try {
       setSyncing(true);
-      toast.info(t.landingGeneration.preview.syncInProgress);
+      if (!isRetry) {
+        toast.info(t.landingGeneration.preview.syncInProgress);
+      }
 
       const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
@@ -554,7 +582,30 @@ export default function RegenerateLanding({
       }
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || t.landingGeneration.errors.sync);
+      
+      // ✅ Detect network/relay errors and implement optional retry
+      const errorMessage = err?.message || '';
+      const isNetworkError = 
+        errorMessage.includes('FunctionsRelayError') || 
+        errorMessage.includes('Failed to send a request to the Edge Function') ||
+        errorMessage.includes('NetworkError');
+      
+      if (isNetworkError && !isRetry) {
+        // Optional retry: wait 2 seconds and try once
+        console.log('[RegenerateLanding] Sync network error, retrying in 2s...');
+        toast.info(t.landingGeneration.errors.retrying);
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        return handleSyncToShopify(true);
+      }
+      
+      // Show clear error message
+      const errorMsg = isNetworkError
+        ? t.landingGeneration.errors.syncNetworkError
+        : errorMessage || t.landingGeneration.errors.sync;
+      
+      toast.error(errorMsg);
     } finally {
       setSyncing(false);
     }
@@ -575,14 +626,14 @@ export default function RegenerateLanding({
             </div>
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2">
-                <p className="text-xs text-accent font-medium">Titre optimisé par IA</p>
+                <p className="text-xs text-accent font-medium">{t.landingGeneration.optimizedTitle}</p>
               </div>
               <p className="text-base font-semibold leading-snug">{optimizedTitle}</p>
               
               {titleNeedsSync && (
                 <div className="flex items-center gap-2 text-xs text-accent/80 font-medium pt-1">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  Synchronisez pour appliquer ce titre
+                  {t.landingGeneration.syncTitle}
                 </div>
               )}
             </div>
@@ -786,7 +837,7 @@ export default function RegenerateLanding({
             <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-3">
               <div>
-                <p className="font-semibold text-destructive">Échec de la génération</p>
+                <p className="font-semibold text-destructive">{t.landingGeneration.generationFailed}</p>
                 <p className="text-sm text-destructive/90 mt-1">{error}</p>
               </div>
               <Button 
@@ -799,7 +850,7 @@ export default function RegenerateLanding({
                 className="gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Réessayer
+                {t.landingGeneration.retry}
               </Button>
             </div>
           </div>
@@ -862,7 +913,7 @@ export default function RegenerateLanding({
 
               {!syncedProductUrl ? (
                 <Button
-                  onClick={handleSyncToShopify}
+                  onClick={() => handleSyncToShopify()}
                   disabled={syncing}
                   size="sm"
                   className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
