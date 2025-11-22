@@ -209,43 +209,47 @@ Sois concis, précis et concentre-toi sur ce qui rendra le titre vendeur.`;
     // Step 3: Generate optimized title with Google Gemini
     console.log('[SMART-TITLE] Step 3: Generate optimized title');
     
-    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Génère un titre ULTRA PRÉCIS en analysant l'image.
+    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Génère un titre ULTRA RICHE ET PRÉCIS.
 
-**🖼️ CE QUE TU VOIS DANS L'IMAGE (PRIORITÉ ABSOLUE):**
+**🖼️ ANALYSE VISUELLE GEMINI (SOURCE PRIORITAIRE):**
 ${visionAnalysis || 'Non disponible'}
 
-**📝 Données textuelles complémentaires:**
+**📝 Données complémentaires DeepSeek:**
 - Catégorie: ${deepseekAnalysis.category}
-- Matériaux mentionnés: ${deepseekAnalysis.materials?.join(', ')}
+- Matériaux: ${deepseekAnalysis.materials?.join(', ')}
 - Style: ${deepseekAnalysis.style || 'N/A'}
 
 **📌 Titre actuel:** ${product.title}
 
-**🎯 INSTRUCTIONS CRITIQUES - LIS L'ANALYSE VISUELLE:**
+**🎯 INSTRUCTIONS ULTRA PRÉCISES - EXTRAIS TOUT:**
 
-1. **EXTRAIS de l'analyse Gemini Vision:**
-   - La CATÉGORIE exacte du produit (Table Basse, Meuble TV, Lampe...)
-   - Les COULEURS visibles (ex: "Bleu Marine", "Bleu Foncé", "Doré", "Blanc Marbre")
-   - Les MATÉRIAUX visibles (ex: "Métal Doré", "Laminé Bleu", "Marbre Blanc", "Chrome")
-   - Le STYLE (Moderne, Scandinave, Industriel...)
-   - Les CARACTÉRISTIQUES uniques (Pieds Coniques, Gigogne, Compartiments...)
+1. **DE L'ANALYSE VISUELLE, EXTRAIS ET UTILISE:**
+   - CATÉGORIE exacte (Table Basse, Meuble TV, Console...)
+   - TOUTES les COULEURS visibles (Blanc, Bleu Marine, Doré...)
+   - TOUS les MATÉRIAUX distincts du corps ET des pieds (Bois Laqué Blanc + Métal Doré, Marbre Blanc + Chrome...)
+   - TYPE de PIÈTEMENT si distinctif (Piètement Conique Doré, Pieds Chromés Ajourés, Piètement Hexagonal...)
+   - CARACTÉRISTIQUES physiques (Gigogne, Niches Rangement, Compartiments...)
+   - STYLE design (Moderne, Scandinave, Industriel, Art Déco...)
 
-2. **STRUCTURE DU TITRE (dans cet ordre):**
-   CATÉGORIE + COULEUR + MATÉRIAU + CARACTÉRISTIQUE + STYLE
+2. **STRUCTURE ENRICHIE (utilise TOUS les éléments visuels):**
+   CATÉGORIE + COULEUR CORPS + MATÉRIAU CORPS + PIÈTEMENT/PIEDS + CARACTÉRISTIQUE + STYLE
+   
+   Exemple: "Table Basse Blanc Bois Laqué Pieds Métal Doré Coniques Niches Moderne"
 
-3. **EXEMPLES PRÉCIS basés sur analyses visuelles:**
-   - Vision: "bleu marine, pieds dorés métalliques" → "Table Basse Bleu Marine Pieds Métal Doré Moderne"
-   - Vision: "marbre blanc, structure chromée" → "Table Basse Marbre Blanc Piètement Chromé"
-   - Vision: "verre transparent, métal noir" → "Table Basse Verre Transparent Métal Noir"
+3. **EXEMPLES DE TITRES RICHES:**
+   - Vision: "Blanc, Bois Laqué, Pieds Métal Doré Coniques, Niches" → "Table Basse Blanche Bois Laqué Piètement Métal Doré Conique Rangement Moderne"
+   - Vision: "Bleu Marine, Laminé, Pieds Métal Doré" → "Table Basse Bleu Marine Laminé Pieds Métal Doré Moderne"
+   - Vision: "Marbre Blanc, Piètement Chromé Ajouré Hexagonal" → "Table Basse Marbre Blanc Piètement Chromé Ajouré Hexagonal Moderne"
 
-4. **RÈGLES:**
-   - 70 caractères maximum
+4. **RÈGLES STRICTES:**
+   - Maximum 80 caractères (pour permettre plus de détails)
    - Majuscule à chaque mot important
-   - Sépare par des espaces (PAS de virgules)
+   - Espaces uniquement (PAS de virgules)
    - ${language === 'fr' ? 'En FRANÇAIS' : 'In ENGLISH'}
-   - PRIORISE ce que tu VOIS dans l'image (couleurs, matériaux)
+   - Inclus OBLIGATOIREMENT: Couleur + Matériau Corps + Type Piètement si visible
+   - Ne sacrifie AUCUN détail visuel important
 
-**⚡ GÉNÈRE LE TITRE (SEULEMENT LE TITRE):**`;
+**⚡ GÉNÈRE LE TITRE RICHE (SEULEMENT LE TITRE):**`;
 
     const geminiTitleResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
