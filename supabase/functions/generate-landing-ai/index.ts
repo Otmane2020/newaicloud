@@ -1339,7 +1339,7 @@ ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
 🚨 **USER OPTIONS (STRICTLY RESPECT THEM):**
 - Desired design style: ${designStyle} (${selectedStyle.name})
-- Content length: ${length || "medium"} (adapt number of sections accordingly)
+- Content length: ${length || "medium"} → ${length === "short" ? "800 words (3-4 sections)" : length === "long" ? "1500 words (6-8 sections)" : "1000 words (4-5 sections)"}
 - Layout: ${layout || "default"}
 ${customHighlights ? `- Key highlights to emphasize:\n${customHighlights}` : ""}
 
@@ -2059,12 +2059,7 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       const dimensionLabels =
         detectedLanguage === "en"
           ? {
-              title: "DIMENSIONS",
-              subtitle: isFromSchema
-                ? "From technical diagram"
-                : visualContext?.dimensionSource === "visible"
-                  ? "From technical diagram"
-                  : "Detected from analysis",
+              title: "Dimensions",
               height: "H",
               width: "W",
               depth: "D",
@@ -2072,22 +2067,31 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
               diameter: "Ø",
               seatHeight: "Seat H",
               armHeight: "Arm H",
+              weight: "Weight",
             }
-          : {
-              title: "DIMENSIONS",
-              subtitle: isFromSchema
-                ? "Schéma technique"
-                : visualContext?.dimensionSource === "visible"
-                  ? "Schéma technique"
-                  : "Détectées par analyse",
-              height: "H",
-              width: "l",
-              depth: "P",
-              length: "L",
-              diameter: "Ø",
-              seatHeight: "H assise",
-              armHeight: "H accoudoirs",
-            };
+          : detectedLanguage === "es"
+            ? {
+                title: "Dimensiones",
+                height: "Alto",
+                width: "Ancho",
+                depth: "Profundo",
+                length: "Largo",
+                diameter: "Ø",
+                seatHeight: "Alto asiento",
+                armHeight: "Alto brazos",
+                weight: "Peso",
+              }
+            : {
+                title: "Dimensions",
+                height: "H",
+                width: "l",
+                depth: "P",
+                length: "L",
+                diameter: "Ø",
+                seatHeight: "H assise",
+                armHeight: "H accoudoirs",
+                weight: "Poids",
+              };
 
       // Build compact dimension string using detected values
       const dimParts = [];
@@ -2107,33 +2111,32 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       if (dims.diameter) dimParts.push(`${dimensionLabels.diameter} ${extractValue(dims.diameter)}`);
       if (dims.seatHeight) dimParts.push(`${dimensionLabels.seatHeight} ${extractValue(dims.seatHeight)}`);
       if (dims.armHeight) dimParts.push(`${dimensionLabels.armHeight} ${extractValue(dims.armHeight)}`);
+      if (dims.weight) dimParts.push(`${dimensionLabels.weight} ${extractValue(dims.weight)}`);
 
       if (dimParts.length > 0) {
         const dimensionText = dimParts.join(" × ");
         console.log("📏 Final dimension text:", dimensionText);
 
-        // Build dimension characteristics for prompt injection
-        const dimensionCharacteristics = dimParts.map((part) => `- ${part}`).join("\n");
-
         dimensionsSection = `
-    <!-- Dimensions Section - Discrete placement after Caractéristiques -->
-    <section class="py-6" style="background-color: hsl(${designTokens.background})">
+    <!-- Dimensions Section -->
+    <section class="py-8 md:py-12" style="background-color: hsl(${designTokens.background})">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white/50 rounded-lg p-4 border border-gray-200">
+        <div class="bg-white rounded-xl p-6 md:p-8 shadow-lg border border-gray-100">
+          <h2 class="text-2xl md:text-3xl font-bold mb-6" style="color: hsl(${designTokens.text})">${dimensionLabels.title}</h2>
           
-          <div class="flex flex-col sm:flex-row gap-4 items-start">
+          <div class="flex flex-col sm:flex-row gap-6 items-start">
             
             ${
               imagesWithDimensions.length > 0
                 ? `
-            <!-- Technical Schema Image(s) - Compact Gallery -->
-            <div class="shrink-0 flex flex-col gap-2">
+            <!-- Technical Schema Image(s) -->
+            <div class="shrink-0 flex flex-col gap-3">
               ${imagesWithDimensions
                 .map(
                   (img: any) => `
               <img src="${img.src || img.url}" 
-                   alt="Schéma technique avec dimensions" 
-                   class="w-24 sm:w-28 h-auto rounded-md border border-gray-300 shadow-sm"
+                   alt="${detectedLanguage === 'en' ? 'Technical diagram with dimensions' : detectedLanguage === 'es' ? 'Diagrama técnico con dimensiones' : 'Schéma technique avec dimensions'}" 
+                   class="w-32 sm:w-40 md:w-48 h-auto rounded-lg border-2 border-gray-200 shadow-md hover:shadow-xl transition-shadow"
                    loading="lazy" />
               `,
                 )
@@ -2143,11 +2146,9 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
                 : ""
             }
             
-            <!-- Dimension Text - Discrete -->
+            <!-- Dimension Details -->
             <div class="flex-1">
-              <h3 class="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">${dimensionLabels.title}</h3>
-              <p class="text-base md:text-lg font-semibold mb-1" style="color: hsl(${designTokens.text})">${dimensionText}</p>
-              <p class="text-xs text-gray-500">${dimensionLabels.subtitle}</p>
+              <p class="text-xl md:text-2xl font-bold mb-2" style="color: hsl(${designTokens.primary})">${dimensionText}</p>
               ${
                 isFromSchema && detectedDimensionImages.length > 0 && detectedDimensionImages[0].confidence
                   ? `
