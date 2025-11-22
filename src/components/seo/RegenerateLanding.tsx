@@ -19,6 +19,7 @@ import {
   Palette,
   FileCode,
   LucideIcon,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -67,6 +68,16 @@ export default function RegenerateLanding({
     deepseekAnalysis?: string;
     confidence?: number;
   } | null>(null);
+
+  // Log component mounting
+  useEffect(() => {
+    console.log('[RegenerateLanding] Component mounted', {
+      productId: product.id,
+      productTitle: product.title,
+      autoGenerate,
+      config
+    });
+  }, []);
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
@@ -293,6 +304,12 @@ export default function RegenerateLanding({
    * ✨ Generate Landing via AI with Progress
    -----------------------------*/
   const handleGenerate = async () => {
+    console.log('[RegenerateLanding] Starting generation...', {
+      productId: product.id,
+      productTitle: product.title,
+      config
+    });
+
     try {
       setLoading(true);
       setError(null);
@@ -391,7 +408,20 @@ export default function RegenerateLanding({
       });
 
       // ✅ ÉTAPE 4 : Générer le landing avec DeepSeek + Vision AI + Product Enrichment
-      const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
+      console.log('[RegenerateLanding] Invoking generate-landing-deepseek...', {
+        productId: product.id,
+        style: config.designStyle,
+        layout: config.layout,
+        language: storeLanguage
+      });
+
+      // Add timeout protection (2 minutes)
+      const timeoutMs = 120000;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La génération a pris plus de 2 minutes')), timeoutMs)
+      );
+
+      const invocationPromise = supabase.functions.invoke("generate-landing-deepseek", {
         body: {
           productId: product.id,
           style: config.designStyle || 'modern',
@@ -401,6 +431,23 @@ export default function RegenerateLanding({
           customHighlights: config.customHighlights,
           language: storeLanguage, // ✅ Use store language for entire landing page
         },
+      }).catch(err => {
+        console.error('[RegenerateLanding] Network error:', err);
+        throw new Error(`Erreur réseau: ${err.message}`);
+      });
+
+      const result = await Promise.race([
+        invocationPromise,
+        timeoutPromise
+      ]) as any;
+
+      const { data, error } = result;
+
+      console.log('[RegenerateLanding] Function invocation completed', {
+        hasError: !!error,
+        hasData: !!data,
+        dataKeys: data ? Object.keys(data) : [],
+        errorDetails: error
       });
 
       setProgress(60);
@@ -438,13 +485,14 @@ export default function RegenerateLanding({
         throw new Error(t.landingGeneration.errors.noGenerated);
       }
     } catch (err: any) {
-      console.error("Error generating landing:", err);
+      console.error('[RegenerateLanding] Generation failed:', err);
       const errorMsg = err?.message || t.landingGeneration.errors.generation;
       setError(errorMsg);
       toast.error(errorMsg);
       setProgress(0);
     } finally {
       setLoading(false);
+      console.log('[RegenerateLanding] Generation process finished');
     }
   };
 
@@ -735,14 +783,25 @@ export default function RegenerateLanding({
       {error && !loading && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
-              <p className="text-sm text-destructive/90 mt-1">{error}</p>
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className="font-semibold text-destructive">Échec de la génération</p>
+                <p className="text-sm text-destructive/90 mt-1">{error}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setError(null);
+                  handleGenerate();
+                }}
+                className="gap-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Réessayer
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleGenerate}>
-              {t.landingConfig.buttons.confirm}
-            </Button>
           </div>
         </div>
       )}

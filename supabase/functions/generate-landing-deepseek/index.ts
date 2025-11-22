@@ -16,6 +16,13 @@ const LUXURY_FONTS = {
 };
 
 serve(async (req) => {
+  // Entry logging - very first thing
+  console.log('[DEEPSEEK] ===== FUNCTION INVOKED =====', {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -25,6 +32,13 @@ serve(async (req) => {
     const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const body = await req.json();
+    console.log('[DEEPSEEK] Request body parsed', {
+      productId: body?.productId,
+      hasStyle: !!body?.style,
+      hasLayout: !!body?.layout,
+      language: body?.language
+    });
+
     const {
       productId,
       style = "modern",
@@ -326,6 +340,12 @@ serve(async (req) => {
 
     console.log("✅ HTML generated successfully");
 
+    // Update product with generated HTML
+    console.log('[DEEPSEEK] Updating product in database...', { 
+      productId, 
+      htmlLength: html.length 
+    });
+
     const { error: updateError } = await supabase
       .from("shopify_products")
       .update({
@@ -335,9 +355,23 @@ serve(async (req) => {
       .eq("id", productId);
 
     if (updateError) {
-      console.error("❌ Failed to save HTML to database:", updateError);
-      throw new Error(`Database update failed: ${updateError.message}`);
+      console.error('[DEEPSEEK] ❌ Database update failed:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint
+      });
+      // Still return HTML but log the error - don't fail the entire operation
+      console.warn('[DEEPSEEK] ⚠️ Continuing despite DB update error - HTML will still be returned');
+    } else {
+      console.log('[DEEPSEEK] ✅ Database updated successfully');
     }
+
+    console.log('[DEEPSEEK] ===== GENERATION SUCCESS =====', {
+      htmlLength: html.length,
+      timestamp: new Date().toISOString()
+    });
 
     return new Response(
       JSON.stringify({ 
@@ -355,7 +389,11 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error("❌ Error generating landing page:", error);
+    console.error('[DEEPSEEK] ===== FATAL ERROR =====', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     
     let statusCode = 500;
     let errorMessage = error.message || "Failed to generate landing page";

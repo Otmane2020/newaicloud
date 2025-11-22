@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
 import { AutoSyncProvider } from "./contexts/AutoSyncContext";
 import { LanguageProvider } from "@/lib/language";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AIAssistant } from "@/components/AIAssistant";
 import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
@@ -116,8 +117,9 @@ function AutoSyncMonitor() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <TooltipProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
             <AutoSyncProvider>
@@ -506,6 +508,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
     </LanguageProvider>
+    </ErrorBoundary>
   </QueryClientProvider>
 );
 
