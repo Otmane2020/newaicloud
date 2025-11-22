@@ -15,58 +15,69 @@ interface VisionRequest {
   };
 }
 
+// Nettoyage du JSON (supprime les ``` et texte parasite)
+function cleanJSON(text: string): string {
+  return text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
 
     const body: VisionRequest = await req.json();
     const { imageUrl, productContext } = body;
 
-    if (!imageUrl) {
-      throw new Error("imageUrl is required");
+    if (!imageUrl) throw new Error("imageUrl is required");
+
+    console.log(`🔍 Analyzing image with Gemini Vision…`);
+
+    // -----------------------------------------
+    // 🔄 CONVERT IMAGE TO BASE64
+    // -----------------------------------------
+    let imageData = "";
+
+    if (imageUrl.startsWith("data:image")) {
+      imageData = imageUrl.split(",")[1];
+    } else {
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+
+      const buffer = await imageResponse.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+
+      // Chunk conversion → évite crash UTF-16
+      let binary = "";
+      const chunkSize = 0x8000;
+
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+
+      imageData = btoa(binary);
     }
 
-    console.log(`🔍 Analyzing image with Lovable AI Vision: ${imageUrl.substring(0, 100)}...`);
-
-    const contextInfo = productContext 
-      ? `\nContexte produit: ${productContext.title || ""} - ${productContext.category || ""} ${productContext.type || ""}`
+    const contextInfo = productContext
+      ? `\nContexte produit: ${productContext.title || ""} ${productContext.category || ""} ${productContext.type || ""}`
       : "";
 
-    // Appel à Lovable AI Vision avec prompt détaillé
-    const prompt = `Tu es un expert en analyse visuelle de produits e-commerce. Analyse cette image de produit et extrait les informations suivantes:${contextInfo}
+    // -----------------------------------------
+    // 📌 PROMPT
+    // -----------------------------------------
+    const prompt = `
+Tu es un expert en vision IA spécialisé ecommerce.
+Analyse l’image et retourne **UNIQUEMENT un JSON valide**.
 
-OBJECTIF PRINCIPAL: DÉTECTER ET EXTRAIRE LES DIMENSIONS TECHNIQUES SI UN SCHÉMA EST PRÉSENT
+${contextInfo}
 
-1. DIMENSIONS TECHNIQUES (PRIORITÉ ABSOLUE):
-   - Cherche un schéma technique / plan côté / diagramme de dimensions
-   - Si présent, extrait TOUTES les dimensions visibles avec leurs unités
-   - Format attendu: { "length": 120, "length_unit": "cm", "width": 80, "width_unit": "cm", "height": 75, "height_unit": "cm", "diameter": null, "weight": null }
-   - Si aucun schéma visible, retourne des objets vides ou null
-
-2. CARACTÉRISTIQUES VISUELLES:
-   - Couleur principale et couleurs secondaires
-   - Matériaux visibles (bois, métal, verre, tissu, etc.)
-   - Style de design (moderne, classique, scandinave, industriel, etc.)
-   - Finition (mate, brillante, texturée)
-   - Type de pièce suggéré (salon, chambre, cuisine, etc.)
-   - Fonctionnalités visibles
-
-3. ANALYSE CONTEXTUELLE:
-   - Y a-t-il un schéma technique visible ? (true/false)
-   - Qualité de présentation (0-10)
-   - Niveau d'artisanat visible (standard, premium, luxury)
-   - Type d'éclairage (studio, naturel, etc.)
-   - Style de fond (neutre, lifestyle, etc.)
-
-Réponds UNIQUEMENT en JSON valide:
+Exige JSON strict :
 {
   "visualAttributes": {
     "primaryColor": "string",
@@ -102,102 +113,72 @@ Réponds UNIQUEMENT en JSON valide:
   "confidence": number
 }`;
 
-    const visionResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+    // -----------------------------------------
+    // 📡 GEMINI VISION CALL
+    // -----------------------------------------
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
+          contents: [
             {
-              role: "user",
-              content: [
+              parts: [
+                { text: prompt },
                 {
-                  type: "text",
-                  text: prompt
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: imageData,
+                  },
                 },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageUrl
-                  }
-                }
-              ]
-            }
+              ],
+            },
           ],
-          temperature: 0.3,
-          max_tokens: 2000
-        })
-      }
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 2000,
+          },
+        }),
+      },
     );
 
-    if (!visionResponse.ok) {
-      const errorText = await visionResponse.text();
-      console.error("Lovable AI Vision error:", errorText);
-      
-      if (visionResponse.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a moment and try again.");
-      }
-      if (visionResponse.status === 402) {
-        throw new Error("Payment required. Please add credits to your Lovable workspace.");
-      }
-      
-      throw new Error(`Lovable AI Vision error: ${visionResponse.status}`);
+    if (!geminiRes.ok) {
+      console.error(await geminiRes.text());
+      throw new Error("Gemini Vision failed");
     }
 
-    const visionData = await visionResponse.json();
-    const analysisText = visionData?.choices?.[0]?.message?.content || "";
+    const geminiJSON = await geminiRes.json();
+    const raw = geminiJSON?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    if (!analysisText) {
-      throw new Error("No analysis returned from Lovable AI Vision");
-    }
+    if (!raw) throw new Error("Empty response from Gemini");
 
-    console.log("✅ Vision analysis received");
-
-    // Parser le JSON de la réponse
-    let parsedAnalysis;
+    // -----------------------------------------
+    // 🧹 CLEAN + PARSE JSON
+    // -----------------------------------------
+    let parsed;
     try {
-      // Nettoyer les markdown blocks
-      const cleanedText = analysisText
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-      
-      parsedAnalysis = JSON.parse(cleanedText);
-    } catch (parseError) {
-      console.error("Failed to parse vision response:", analysisText);
-      throw new Error("Failed to parse vision analysis");
+      parsed = JSON.parse(cleanJSON(raw));
+    } catch (e) {
+      console.error("JSON PARSE ERROR:", raw);
+      throw new Error("Invalid JSON from Gemini");
     }
-
-    console.log("✅ Vision analysis parsed successfully");
 
     return new Response(
       JSON.stringify({
         success: true,
-        visualAttributes: parsedAnalysis.visualAttributes || {},
-        visualContext: parsedAnalysis.visualContext || {},
-        confidence: parsedAnalysis.confidence || 0.5,
-        rawAnalysis: analysisText,
+        visualAttributes: parsed.visualAttributes,
+        visualContext: parsed.visualContext,
+        confidence: parsed.confidence,
+        rawAnalysis: raw,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error: any) {
-    console.error("❌ Vision analysis error:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+  } catch (e: any) {
+    console.error("❌ Vision analysis error:", e);
+    return new Response(JSON.stringify({ success: false, error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
