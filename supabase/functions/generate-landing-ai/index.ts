@@ -241,6 +241,7 @@ function adjustSaturation(hex: string, factor: number): string {
 }
 
 function generateDesignTokens(colorScheme: any) {
+  // ✅ RESPECT CUSTOM COLORS FROM DIALOG IF PROVIDED
   const primaryHex = colorScheme.primary || "#000000";
   const secondaryHex = colorScheme.secondary || "#333333";
   const backgroundHex = colorScheme.background || "#FFFFFF";
@@ -250,13 +251,16 @@ function generateDesignTokens(colorScheme: any) {
 
   const contrast = calculateContrast(primaryHex, "#FFFFFF");
   const needsDarkText = contrast < 4.5;
-  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
+  
+  // Use custom CTA colors if provided, otherwise calculate
+  const ctaTextHex = colorScheme.ctaText || (needsDarkText ? "#000000" : "#FFFFFF");
+  const ctaBackgroundHex = colorScheme.ctaBackground || colorScheme.accent || adjustSaturation(primaryHex, 1.3);
 
   const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
   const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
 
-  // Create a more vibrant accent color by increasing saturation
-  const accentHex = adjustSaturation(primaryHex, 1.3);
+  // Use custom accent if provided, otherwise create vibrant accent from primary
+  const accentHex = colorScheme.accent || adjustSaturation(primaryHex, 1.3);
 
   // Convert all colors to HSL format
   return {
@@ -268,6 +272,7 @@ function generateDesignTokens(colorScheme: any) {
     text: hexToHsl(validatedTextHex),
     textMuted: hexToHsl(textMutedHex),
     ctaText: hexToHsl(ctaTextHex),
+    ctaBackground: hexToHsl(ctaBackgroundHex),
     contrastRatio: contrast,
   };
 }
@@ -648,7 +653,7 @@ serve(async (req) => {
     const body = await req.json();
     const {
       product_id,
-      productTitle,
+      productTitle: initialProductTitle,
       imageUrl,
       description,
       vendor,
@@ -662,6 +667,9 @@ serve(async (req) => {
       designStyle = "modern", // Default to modern if not provided
       imageAnalysis, // 🔥 Vision AI data if available
     } = body ?? {};
+
+    // Create mutable variable for product title (can be updated by smart-title)
+    let productTitle = initialProductTitle;
 
     console.log("📥 Request parameters:", {
       product_id,
@@ -1277,6 +1285,31 @@ COLOR PALETTE (HSL FORMAT ONLY):
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
 ${selectedStyle.rules}
+
+${layout ? `
+🏗️ LAYOUT REQUIREMENTS (CRITICAL - MUST FOLLOW):
+${layout === 'classic' ? `
+- Classic vertical flow with clearly defined sections
+- Traditional top-to-bottom reading pattern
+- Equal-width sections with consistent padding
+- Sequential storytelling approach
+` : ''}${layout === 'modern' ? `
+- Modern grid-based layout with asymmetric elements
+- Dynamic spacing and varied column widths
+- Card-based components with elevated surfaces
+- Contemporary visual hierarchy with bold typography
+` : ''}${layout === 'magazine' ? `
+- Magazine-style multi-column layout
+- Varied text column widths (2-3 columns)
+- Pull quotes and featured content blocks
+- Editorial typography with generous white space
+` : ''}${layout === 'split' ? `
+- Split-screen hero section (50/50 or 60/40 division)
+- Alternating left/right content sections
+- Image/text pairings with clear visual rhythm
+- Balanced asymmetry throughout
+` : ''}
+` : ''}
 
 🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
@@ -2079,12 +2112,23 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
 
         if (titleError) {
           console.error("⚠️ Smart Title optimization failed:", titleError);
-        } else if (titleData?.success) {
+        } else if (titleData?.success && titleData?.optimizedTitle) {
           console.log(
             `✅ Title optimized with Vision AI: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`,
           );
           console.log(`📊 Vision Analysis: ${titleData.visionAnalysis || "N/A"}`);
           console.log(`📝 DeepSeek Analysis:`, titleData.deepseekAnalysis);
+          
+          // ✅ APPLY OPTIMIZED TITLE TO DATABASE AND LOCAL VARIABLE
+          console.log("💾 Applying optimized title to product...");
+          await supabaseAdmin
+            .from("shopify_products")
+            .update({ title: titleData.optimizedTitle })
+            .eq("id", product_id);
+          
+          // Update local variable for HTML generation
+          productTitle = titleData.optimizedTitle;
+          console.log(`✅ Product title updated successfully`);
         }
       } catch (titleOptError) {
         console.error("⚠️ Smart Title optimization error:", titleOptError);
