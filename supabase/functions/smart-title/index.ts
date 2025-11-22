@@ -285,9 +285,15 @@ ${visionAnalysis || 'Non disponible'}
       throw new Error('Invalid response from Google Gemini');
     }
 
-    const optimizedTitle = geminiTitleData.candidates[0].content.parts[0].text.trim()
-      .replace(/^["']|["']$/g, '')
-      .slice(0, 60);
+    let optimizedTitle = geminiTitleData.candidates[0].content.parts[0].text.trim()
+      .replace(/^["']|["']$/g, '');
+    
+    // Si le titre dépasse 80 caractères, couper au dernier mot complet
+    if (optimizedTitle.length > 80) {
+      const truncated = optimizedTitle.slice(0, 80);
+      const lastSpace = truncated.lastIndexOf(' ');
+      optimizedTitle = lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated;
+    }
 
     console.log('[SMART-TITLE] Optimized title:', optimizedTitle);
 
