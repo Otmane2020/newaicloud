@@ -12,10 +12,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = "";
   const chunk = 8192;
   for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(
-      null,
-      Array.from(bytes.subarray(i, i + chunk))
-    );
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
   }
   return btoa(binary);
 }
@@ -27,10 +24,7 @@ serve(async (req) => {
     const { image_id } = await req.json();
     if (!image_id) throw new Error("image_id missing");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // 1. Image
     const { data: image } = await supabase
@@ -48,7 +42,7 @@ serve(async (req) => {
       .single();
     if (!product) throw new Error("Product not found");
 
-    // 3. Language
+    // 3. Store language
     const { data: store } = await supabase
       .from("shopify_connections")
       .select("store_language")
@@ -56,18 +50,36 @@ serve(async (req) => {
       .single();
     const lang = store?.store_language || "en-US";
 
-    // 4. Prompt
+    // Clean description
+    const cleanDescription = (product.body_html || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .slice(0, 400);
+
+    // 4. New improved prompt
     const prompt = `
-Langue: ${lang}
-Génère un ALT SEO naturel, descriptif, max 12 mots.
-Titre: ${product.title}
-Type: ${product.product_type}
-Catégorie: ${product.category}
-Texte: ${(product.body_html || "").replace(/<[^>]*>/g, " ").slice(0, 300)}
-Image: ${image.src}
+Détecte la langue : ${lang}.
+Génère uniquement un ALT court (8 à 12 mots), naturel, descriptif et fidèle.
+Règles strictes :
+- utilise la langue détectée, jamais une autre
+- aucun mot inventé (pas "cylinder", "wood", etc.)
+- jamais deux couleurs mélangées ("beige black")
+- pas de termes inutiles ("photo", "image", "frontal")
+- interdit d'ajouter des matériaux non visibles
+- reste fidèle à l’image
+- style simple, naturel, fluide
+
+Données produit :
+Titre : ${product.title}
+Type : ${product.product_type}
+Catégorie : ${product.category}
+Texte : ${cleanDescription}
+Image URL : ${image.src}
+
+Retourne uniquement le texte ALT final, sans guillemets.
 `;
 
-    // ---- DeepSeek ----
+    // ---- DeepSeek first pass
     const deepseekRes = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -79,10 +91,10 @@ Image: ${image.src}
         messages: [{ role: "user", content: prompt }],
       }),
     });
-    const deepseekText =
-      (await deepseekRes.json())?.choices?.[0]?.message?.content?.trim() || "";
 
-    // ---- Gemini Vision ----
+    const deepseekText = (await deepseekRes.json())?.choices?.[0]?.message?.content?.trim() || "";
+
+    // ---- Gemini Vision refinement
     const buffer = await fetch(image.src).then((r) => r.arrayBuffer());
     const base64 = arrayBufferToBase64(buffer);
 
@@ -96,22 +108,20 @@ Image: ${image.src}
           contents: [
             {
               parts: [
-                { text: "Améliore ce ALT descriptif, naturel, max 12 mots." },
+                { text: "Corrige le texte ALT suivant selon les règles strictes mentionnées." },
                 { text: deepseekText },
                 { inline_data: { mime_type: "image/jpeg", data: base64 } },
               ],
             },
           ],
         }),
-      }
+      },
     );
 
     const geminiText =
-      (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      deepseekText ||
-      "Image produit";
+      (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekText || "Image produit";
 
-    // 5. Update image
+    // ---- 5. Update database
     await supabase
       .from("product_images")
       .update({
@@ -122,7 +132,7 @@ Image: ${image.src}
       })
       .eq("id", image.id);
 
-    // 6. Correct RPC
+    // ---- 6. Increment usage
     await supabase.rpc("increment_usage", {
       p_seller_id: product.seller_id,
       p_field: "optimizations_count",
@@ -133,9 +143,12 @@ Image: ${image.src}
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Unknown error" }), {
-      status: 400,
-      headers: { ...cors, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: err instanceof Error ? err.message : "Unknown error",
+      }),
+      { status: 400, headers: { ...cors, "Content-Type": "application/json" } },
+    );
   }
 });
