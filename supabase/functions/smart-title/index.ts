@@ -228,29 +228,36 @@ ${visionAnalysis || 'Non disponible'}
    - TOUTES les COULEURS visibles (Blanc, Bleu Marine, Doré...)
    - TOUS les MATÉRIAUX distincts du corps ET des pieds (Bois Laqué Blanc + Métal Doré, Marbre Blanc + Chrome...)
    - FORME du plateau (Ronde, Ovale, Rectangulaire...)
-   - TYPE de PIÈTEMENT si distinctif (Piètement Conique Doré, Pieds Chromés Ajourés, Piètement Géométrique...)
-   - CARACTÉRISTIQUES physiques (Gigogne, Set de 2, Niches de Rangement, Compartiments Fermés...)
+   - **DISTINGUER PIÈTEMENT vs DÉCORATION:** 
+     * Piètement = structure porteuse métallique/bois (Piètement Conique Doré, Pieds Chromés Ajourés)
+     * Décoration = motifs/lignes/traits dorés sur le corps (Design Kintsugi, Lignes Dorées, Motif Géométrique)
+     * Si c'est un MONOBLOC avec juste des traits décoratifs → NE PAS mentionner de piètement
+   - CARACTÉRISTIQUES physiques (Gigogne, Set de 2, Niches de Rangement, Compartiments Fermés, Design Kintsugi, Monobloc...)
    - STYLE design (Moderne, Scandinave, Industriel, Art Déco, Luxueux...)
 
 2. **STRUCTURE ENRICHIE (utilise TOUS les éléments visuels):**
-   CATÉGORIE + FORME + COULEUR CORPS + MATÉRIAU CORPS + TYPE PIÈTEMENT + CARACTÉRISTIQUE + STYLE (1 à 2 max)
+   CATÉGORIE + FORME + COULEUR + MATÉRIAU CORPS + [TYPE PIÈTEMENT si existe] + CARACTÉRISTIQUE UNIQUE + STYLE (1 à 2 max)
    
-   Exemple: "Table Basse Ovale Blanche Marbre Blanc Piètement Métal Doré Géométrique Moderne Luxueux"
+   Exemples:
+   - Avec piètement: "Table Basse Ovale Blanche Marbre Blanc Piètement Métal Doré Géométrique Moderne Luxueux"
+   - Monobloc avec décor: "Table Basse Rectangulaire Blanche Marbre Design Kintsugi Doré Moderne Luxueux"
 
 3. **EXEMPLES DE TITRES RICHES:**
-   - Vision: "Blanc, Bois Laqué, Pieds Métal Doré Coniques, Niches" → "Table Basse Rectangulaire Blanche Bois Laqué Pieds Métal Doré Coniques Niches Rangement Moderne"
-   - Vision: "Bleu Marine, Laminé, Pieds Métal Doré" → "Table Basse Rectangulaire Bleu Marine Laminé Pieds Métal Doré Moderne"
-   - Vision: "Marbre Blanc, Piètement Chromé Ajouré Hexagonal" → "Table Basse Ronde Marbre Blanc Piètement Chromé Ajouré Hexagonal Moderne Luxueux"
+   - Vision avec piètement métallique: "Blanc, Bois Laqué, Pieds Métal Doré Coniques" → "Table Basse Rectangulaire Blanche Bois Laqué Pieds Métal Doré Coniques Moderne"
+   - Vision monobloc avec décor: "Marbre Blanc, Design Kintsugi, Lignes Dorées" → "Table Basse Rectangulaire Blanche Marbre Design Kintsugi Doré Moderne"
+   - Vision avec piètement: "Marbre Blanc, Piètement Chromé Ajouré" → "Table Basse Ronde Marbre Blanc Piètement Chromé Ajouré Moderne Luxueux"
 
 4. **RÈGLES STRICTES:**
    - Maximum 80 caractères (pour permettre plus de détails)
    - Majuscule à chaque mot important
    - Espaces uniquement (PAS de virgules)
    - ${language === 'fr' ? 'En FRANÇAIS UNIQUEMENT, PAS UN SEUL MOT ANGLAIS (ex: \"Moderne\" et pas \"Modern\")' : 'In ENGLISH ONLY when not French'}
-   - Inclus OBLIGATOIREMENT: Forme + Couleur + Matériau du corps + Type de Piètement s'ils sont visibles
-   - Si les caractéristiques mentionnent "Piètement géométrique", écris "Piètement Géométrique" dans le titre
-   - Pour le marbre, privilégie l'ordre "Marbre Blanc", "Marbre Noir" (MATÉRIAU + Couleur), jamais "Blanc Marbre"
-   - Ne sacrifie AUCUN détail visuel important tant que la limite de caractères le permet
+   - Inclus OBLIGATOIREMENT: Forme + Couleur + Matériau du corps
+   - **PIÈTEMENT: Ne mentionner QUE si structure porteuse métallique/bois RÉELLE et VISIBLE**
+   - Si MONOBLOC avec juste traits/lignes dorés décoratifs → utilise "Design Kintsugi" OU "Lignes Dorées" au lieu de Piètement
+   - Pour le marbre, privilégie "Marbre Blanc" / "Marbre Noir" (MATÉRIAU + Couleur), jamais "Blanc Marbre"
+   - Privilégie les caractéristiques UNIQUES de l'analyse visuelle (Design Kintsugi, Monobloc, etc.)
+   - Ne sacrifie AUCUN détail visuel important tant que la limite le permet
 
 **⚡ GÉNÈRE LE TITRE RICHE (SEULEMENT LE TITRE):**`;
 
