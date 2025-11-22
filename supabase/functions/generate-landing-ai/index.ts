@@ -1723,8 +1723,8 @@ UTILISATION DES ICÔNES :
 
     console.log("✅ HTML generated and sanitized successfully");
 
-    // 📐 DETECT DIMENSION SCHEMA IMAGES WITH GEMINI VISION (BEFORE generating dimensions section)
-    console.log("📐 Analyzing images for dimension schemas...");
+    // 📐 DETECT DIMENSION SCHEMA IMAGES WITH GEMINI VISION (MUST BE BEFORE dimensionsSection)
+    console.log("📐 Starting Gemini Vision analysis for dimension schemas...");
     const detectedDimensionImages: Array<{ src: string; dimensions: any; confidence: string }> = [];
     const detectedRegularImages: Array<{ src: string; alt_text: string }> = [];
     
