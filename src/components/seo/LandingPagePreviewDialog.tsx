@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, Send } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
+import { useTranslation } from "@/lib/language";
 
 
 interface LandingPagePreviewDialogProps {
@@ -34,6 +35,7 @@ export function LandingPagePreviewDialog({
   storeUrl,
   onGenerateClick,
 }: LandingPagePreviewDialogProps) {
+  const { t } = useTranslation();
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
@@ -55,7 +57,7 @@ export function LandingPagePreviewDialog({
       return data;
     },
     onSuccess: (data) => {
-      toast.success("Landing page synchronisée avec Shopify");
+      toast.success(t.dialogs.landingPagePreview.syncSuccess);
       if (data.productUrl) {
         setProductUrl(data.productUrl);
       }
@@ -63,7 +65,7 @@ export function LandingPagePreviewDialog({
     },
     onError: (error) => {
       console.error("Sync error:", error);
-      toast.error("Erreur lors de la synchronisation");
+      toast.error(t.common.error);
       setIsSyncing(false);
     },
   });
@@ -89,7 +91,7 @@ export function LandingPagePreviewDialog({
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Landing Page - {productTitle}
+                {t.dialogs.landingPagePreview.title} - {productTitle}
               </div>
               <div className="flex gap-2">
                 <TooltipProvider>
@@ -108,7 +110,7 @@ export function LandingPagePreviewDialog({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}
+                      {viewMode === "desktop" ? t.dialogs.landingPagePreview.viewMobile : t.dialogs.landingPagePreview.viewDesktop}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -118,7 +120,7 @@ export function LandingPagePreviewDialog({
                   onClick={handleDownload}
                   disabled={!currentLandingPage}
                 >
-                  Télécharger HTML
+                  {t.dialogs.landingPagePreview.downloadHtml}
                 </Button>
                 <Button
                   onClick={() => syncMutation.mutate(currentLandingPage)}
@@ -128,12 +130,12 @@ export function LandingPagePreviewDialog({
                   {isSyncing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Synchronisation...
+                      {t.dialogs.landingPagePreview.synchronizing}
                     </>
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      {productUrl ? "Re-synchroniser" : "Synchroniser avec Shopify"}
+                      {productUrl ? t.dialogs.landingPagePreview.resync : t.dialogs.landingPagePreview.syncWithShopify}
                     </>
                   )}
                 </Button>
@@ -145,7 +147,7 @@ export function LandingPagePreviewDialog({
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Visualiser en ligne
+                    {t.dialogs.landingPagePreview.viewOnline}
                   </Button>
                 )}
               </div>
@@ -183,9 +185,9 @@ export function LandingPagePreviewDialog({
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl" />
                     <FileText className="h-20 w-20 mx-auto text-muted-foreground/50 relative" />
                   </div>
-                  <p className="font-semibold text-lg mb-2">Aucune landing page disponible</p>
+                  <p className="font-semibold text-lg mb-2">{t.dialogs.landingPagePreview.noLandingPage}</p>
                   <p className="text-sm text-muted-foreground mb-6">
-                    Créez une landing page optimisée pour ce produit et visualisez-la instantanément
+                    {t.dialogs.landingPagePreview.createOptimized}
                   </p>
                   <Button 
                     onClick={() => {
@@ -198,10 +200,10 @@ export function LandingPagePreviewDialog({
                     size="lg"
                   >
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Générer ma Landing Page
+                    {t.dialogs.landingPagePreview.generateLandingPage}
                   </Button>
                   <p className="text-xs mt-4 text-muted-foreground/70">
-                    La génération prend quelques secondes
+                    {t.dialogs.landingPagePreview.generationTime}
                   </p>
                 </div>
               </div>
