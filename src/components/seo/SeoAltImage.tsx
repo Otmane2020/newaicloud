@@ -459,12 +459,10 @@ export function SeoAltImage() {
       }
 
       const imageType = image.image_type || 'product';
-      const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
-
-      const { data, error } = await supabase.functions.invoke(functionName, {
+      
+      const { data, error } = await supabase.functions.invoke('smart-alt-text', {
         body: { 
-          imageId: image.id,
-          imageType: useVision ? imageType : undefined
+          image_id: image.id
         }
       });
 
