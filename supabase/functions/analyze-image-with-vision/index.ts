@@ -66,46 +66,7 @@ async function callGeminiVision(prompt: string, imageData: string, apiKey: strin
   }
 }
 
-// -----------------------------------------------------
-// 🔥 DeepSeek Fallback (vision multimodal)
-// -----------------------------------------------------
-async function callDeepSeek(prompt: string, imageData: string, apiKey: string) {
-  const res = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "deepseek-vl",
-      messages: [
-        { role: "system", content: "Return STRICT JSON only." },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${imageData}`
-              }
-            },
-          ],
-        },
-      ],
-      max_tokens: 2000,
-      temperature: 0.1,
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`DEEPSEEK_ERROR_${res.status} - ${txt}`);
-  }
-
-  const json = await res.json();
-  return json?.choices?.[0]?.message?.content || null;
-}
+// DeepSeek fallback removed - DeepSeek API doesn't support vision/multimodal requests
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,10 +75,9 @@ serve(async (req) => {
 
   try {
     const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY");
 
-    if (!DEEPSEEK_KEY) {
-      throw new Error("DEEPSEEK_API_KEY not configured (fallback required).");
+    if (!GEMINI_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
     const body: VisionRequest = await req.json();
@@ -195,27 +155,17 @@ ${contextInfo}
 }`;
 
     // --------------------------------------------------
-    //   GEMINI → FALLBACK DEEPSEEK
+    //   GEMINI VISION ANALYSIS
     // --------------------------------------------------
 
-    let raw: string | null = null;
-
-    if (GEMINI_KEY) {
-      try {
-        console.log("📡 Trying Gemini…");
-        raw = await callGeminiVision(prompt, imageData, GEMINI_KEY);
-        console.log("✅ Gemini succeeded");
-      } catch {
-        console.log("⚠️ Gemini FAILED → using DeepSeek");
-      }
-    }
-
+    console.log("📡 Calling Gemini Vision API...");
+    const raw = await callGeminiVision(prompt, imageData, GEMINI_KEY);
+    
     if (!raw) {
-      raw = await callDeepSeek(prompt, imageData, DEEPSEEK_KEY);
-      console.log("🔥 DeepSeek succeeded");
+      throw new Error("No analysis returned from Gemini");
     }
-
-    if (!raw) throw new Error("No analysis returned from any model");
+    
+    console.log("✅ Gemini Vision analysis succeeded");
 
     let parsed;
     try {
