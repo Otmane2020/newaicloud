@@ -2922,10 +2922,10 @@ export default function ProductTitleDescription() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
-              Générateur de Landing Page IA
+              {t.landingGeneration.dialog.title}
             </DialogTitle>
             <DialogDescription>
-              Créez une landing page personnalisée et optimisée pour votre produit
+              {t.landingGeneration.dialog.description}
             </DialogDescription>
           </DialogHeader>
           {selectedLandingProduct && landingConfig && showLandingDialog && (
