@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 
+
 interface LandingPagePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -99,13 +100,24 @@ export function LandingPagePreviewDialog({
                         size="sm"
                         onClick={() => setViewMode(viewMode === "desktop" ? "mobile" : "desktop")}
                       >
-                        {viewMode === "desktop" ? <Smartphone className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                        {viewMode === "desktop" ? (
+                          <Smartphone className="h-4 w-4" />
+                        ) : (
+                          <Monitor className="h-4 w-4" />
+                        )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}</TooltipContent>
+                    <TooltipContent>
+                      {viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={!currentLandingPage}
+                >
                   Télécharger HTML
                 </Button>
                 {!productUrl ? (
@@ -126,7 +138,7 @@ export function LandingPagePreviewDialog({
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => window.open(productUrl, "_blank")}
+                    onClick={() => window.open(productUrl, '_blank')}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -140,55 +152,57 @@ export function LandingPagePreviewDialog({
 
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
           {currentLandingPage ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <iframe
-                srcDoc={currentLandingPage}
-                className={`h-full border-0 transition-all duration-300 ${
-                  viewMode === "mobile" ? "w-[375px] border-2 border-border rounded-lg shadow-xl" : "w-full"
-                }`}
-                sandbox="allow-same-origin allow-scripts"
-                title="Landing Page Preview"
-                onLoad={(e) => {
-                  const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
-                  if (iframeDoc) {
-                    const checkTailwind = setInterval(() => {
-                      if (iframeDoc.body?.classList.contains("tailwind-loaded")) {
-                        clearInterval(checkTailwind);
-                      }
-                    }, 50);
-                    setTimeout(() => clearInterval(checkTailwind), 3000);
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center p-8 max-w-md">
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl" />
-                  <FileText className="h-20 w-20 mx-auto text-muted-foreground/50 relative" />
-                </div>
-                <p className="font-semibold text-lg mb-2">Aucune landing page disponible</p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Créez une landing page optimisée pour ce produit et visualisez-la instantanément
-                </p>
-                <Button
-                  onClick={() => {
-                    onOpenChange(false);
-                    if (onGenerateClick) {
-                      onGenerateClick();
+              <div className="relative w-full h-full flex items-center justify-center">
+                <iframe
+                  srcDoc={currentLandingPage}
+                  className={`h-full border-0 transition-all duration-300 ${
+                    viewMode === "mobile" ? "w-[375px] border-2 border-border rounded-lg shadow-xl" : "w-full"
+                  }`}
+                  sandbox="allow-same-origin allow-scripts"
+                  title="Landing Page Preview"
+                  onLoad={(e) => {
+                    const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
+                    if (iframeDoc) {
+                      const checkTailwind = setInterval(() => {
+                        if (iframeDoc.body?.classList.contains('tailwind-loaded')) {
+                          clearInterval(checkTailwind);
+                        }
+                      }, 50);
+                      setTimeout(() => clearInterval(checkTailwind), 3000);
                     }
                   }}
-                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
-                  size="lg"
-                >
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Générer ma Landing Page
-                </Button>
-                <p className="text-xs mt-4 text-muted-foreground/70">La génération prend quelques secondes</p>
+                />
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center p-8 max-w-md">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl" />
+                    <FileText className="h-20 w-20 mx-auto text-muted-foreground/50 relative" />
+                  </div>
+                  <p className="font-semibold text-lg mb-2">Aucune landing page disponible</p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Créez une landing page optimisée pour ce produit et visualisez-la instantanément
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      onOpenChange(false);
+                      if (onGenerateClick) {
+                        onGenerateClick();
+                      }
+                    }}
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+                    size="lg"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Générer ma Landing Page
+                  </Button>
+                  <p className="text-xs mt-4 text-muted-foreground/70">
+                    La génération prend quelques secondes
+                  </p>
+                </div>
+              </div>
+            )}
         </div>
       </DialogContent>
     </Dialog>

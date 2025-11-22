@@ -66,7 +66,7 @@ export default function RegenerateLanding({
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
     let isMounted = true;
-
+    
     const loadExistingLanding = async () => {
       try {
         const { data, error } = await supabase
@@ -76,7 +76,7 @@ export default function RegenerateLanding({
           .single();
 
         if (error) throw error;
-
+        
         if (data?.landing_page && isMounted) {
           setHtmlContent(data.landing_page);
         }
@@ -90,7 +90,7 @@ export default function RegenerateLanding({
     };
 
     loadExistingLanding();
-
+    
     return () => {
       isMounted = false;
     };
@@ -109,16 +109,14 @@ export default function RegenerateLanding({
 
   // Auto-generate simplifié avec double protection
   useEffect(() => {
-    console.log(
-      `🔍 [Landing] Auto-generate check: autoGenerate=${autoGenerate}, loading=${loading}, hasContent=${!!htmlContent}, hasGenerated=${hasGeneratedRef.current}, isGenerating=${isGeneratingRef.current}`,
-    );
-
+    console.log(`🔍 [Landing] Auto-generate check: autoGenerate=${autoGenerate}, loading=${loading}, hasContent=${!!htmlContent}, hasGenerated=${hasGeneratedRef.current}, isGenerating=${isGeneratingRef.current}`);
+    
     if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current && !isGeneratingRef.current) {
-      console.log("🚀 [Landing] Starting generation...");
+      console.log('🚀 [Landing] Starting generation...');
       hasGeneratedRef.current = true;
       isGeneratingRef.current = true;
       handleGenerate().finally(() => {
-        console.log("✅ [Landing] Generation completed, releasing lock");
+        console.log('✅ [Landing] Generation completed, releasing lock');
         isGeneratingRef.current = false;
       });
     }
@@ -175,7 +173,7 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
+   * 🖼️ Analyze Image with AI Vision (with cache)
    -----------------------------*/
   const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
     if (!imageUrl) {
@@ -184,6 +182,24 @@ export default function RegenerateLanding({
     }
 
     try {
+      setProgressMessage("Vérification du cache...");
+      setProgress(22);
+
+      // 🔍 Vérifier si vision_attributes existe déjà dans la DB
+      const { data: productData, error: fetchError } = await supabase
+        .from("shopify_products")
+        .select("vision_attributes, vision_analyzed")
+        .eq("id", product.id)
+        .single();
+
+      if (!fetchError && productData?.vision_attributes && productData?.vision_analyzed) {
+        console.log("[Vision] Using cached analysis from DB");
+        setProgress(25);
+        return JSON.stringify(productData.vision_attributes);
+      }
+
+      // 🆕 Pas de cache, analyser l'image
+      console.log("[Vision] No cache found, analyzing image...");
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
@@ -199,8 +215,26 @@ export default function RegenerateLanding({
         return "";
       }
 
+      // 💾 Sauvegarder les résultats dans la DB
+      if (data?.visualAttributes) {
+        const { error: updateError } = await supabase
+          .from("shopify_products")
+          .update({
+            vision_attributes: data.visualAttributes,
+            vision_analyzed: true,
+            vision_confidence: data.confidence || 1
+          })
+          .eq("id", product.id);
+
+        if (updateError) {
+          console.error("[Vision] Failed to cache analysis:", updateError);
+        } else {
+          console.log("[Vision] Analysis cached to DB successfully");
+        }
+      }
+
       console.log("[Vision] Image analysis completed");
-      return data?.attributes ? JSON.stringify(data.attributes) : "";
+      return data?.visualAttributes ? JSON.stringify(data.visualAttributes) : "";
     } catch (err) {
       console.error("[Vision] Image analysis error:", err);
       return "";
@@ -283,7 +317,7 @@ export default function RegenerateLanding({
           setOptimizedTitle(serpData.optimizedTitle);
           setTitleNeedsSync(true);
           toast.success(`Titre optimisé: ${serpData.optimizedTitle}`, {
-            description: "N'oubliez pas de synchroniser avec Shopify pour appliquer le nouveau titre",
+            description: "N'oubliez pas de synchroniser avec Shopify pour appliquer le nouveau titre"
           });
         }
       } catch (err) {
@@ -322,7 +356,7 @@ export default function RegenerateLanding({
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
-          designStyle: config.designStyle || "modern",
+          designStyle: config.designStyle || 'modern',
           mainColor:
             typeof config.colorScheme === "string" ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
           colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
@@ -456,7 +490,9 @@ export default function RegenerateLanding({
             <Sparkles className="w-5 h-5 text-accent animate-pulse" />
             <div>
               <p className="font-medium text-sm">Titre optimisé SEO</p>
-              <p className="text-xs text-muted-foreground mb-1">{optimizedTitle}</p>
+              <p className="text-xs text-muted-foreground mb-1">
+                {optimizedTitle}
+              </p>
               <p className="text-xs text-accent font-medium">
                 ⚠️ Synchronisez avec Shopify pour appliquer le nouveau titre
               </p>
@@ -472,7 +508,9 @@ export default function RegenerateLanding({
             <CheckCircle2 className="w-5 h-5 text-primary" />
             <div>
               <p className="font-medium text-sm">Landing page existante</p>
-              <p className="text-xs text-muted-foreground">Dernière modification • {product.title}</p>
+              <p className="text-xs text-muted-foreground">
+                Dernière modification • {product.title}
+              </p>
             </div>
           </div>
         </div>
@@ -745,7 +783,7 @@ export default function RegenerateLanding({
                 </Button>
               ) : (
                 <Button
-                  onClick={() => window.open(syncedProductUrl, "_blank")}
+                  onClick={() => window.open(syncedProductUrl, '_blank')}
                   size="sm"
                   className="gap-2 w-full sm:w-auto text-xs sm:text-sm bg-green-600 hover:bg-green-700"
                 >
@@ -759,7 +797,9 @@ export default function RegenerateLanding({
 
           <div
             className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile" ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]" : "h-[500px] sm:h-[650px]"
+              previewMode === "mobile"
+                ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]"
+                : "h-[500px] sm:h-[650px]"
             }`}
           >
             <iframe
