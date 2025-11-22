@@ -84,101 +84,95 @@ function ensureAccessibleText(bgColor: string): string {
 // Translation utilities for French localization
 function translateMaterialsToFrench(materials: string): string {
   const materialMap: Record<string, string> = {
-    'ceramic': 'céramique',
-    'wood': 'bois',
-    'travertine': 'travertin',
-    'metal': 'métal',
-    'glass': 'verre',
-    'marble': 'marbre',
-    'stone': 'pierre',
-    'fabric': 'tissu',
-    'leather': 'cuir',
-    'plastic': 'plastique',
-    'steel': 'acier',
-    'aluminum': 'aluminium',
-    'brass': 'laiton',
-    'copper': 'cuivre',
-    'oak': 'chêne',
-    'pine': 'pin',
-    'walnut': 'noyer',
-    'cotton': 'coton',
-    'linen': 'lin',
-    'velvet': 'velours',
-    'concrete': 'béton',
-    'rattan': 'rotin',
-    'wicker': 'osier',
-    'bamboo': 'bambou'
+    ceramic: "céramique",
+    wood: "bois",
+    travertine: "travertin",
+    metal: "métal",
+    glass: "verre",
+    marble: "marbre",
+    stone: "pierre",
+    fabric: "tissu",
+    leather: "cuir",
+    plastic: "plastique",
+    steel: "acier",
+    aluminum: "aluminium",
+    brass: "laiton",
+    copper: "cuivre",
+    oak: "chêne",
+    pine: "pin",
+    walnut: "noyer",
+    cotton: "coton",
+    linen: "lin",
+    velvet: "velours",
+    concrete: "béton",
+    rattan: "rotin",
+    wicker: "osier",
+    bamboo: "bambou",
   };
 
   return materials
-    .split(',')
-    .map(m => {
+    .split(",")
+    .map((m) => {
       const trimmed = m.trim().toLowerCase();
       return materialMap[trimmed] || m.trim();
     })
-    .join(', ');
+    .join(", ");
 }
 
 function translateColorsToFrench(colors: string): string {
   const colorMap: Record<string, string> = {
-    'beige': 'beige',
-    'white': 'blanc',
-    'black': 'noir',
-    'brown': 'marron',
-    'gray': 'gris',
-    'grey': 'gris',
-    'blue': 'bleu',
-    'red': 'rouge',
-    'green': 'vert',
-    'yellow': 'jaune',
-    'orange': 'orange',
-    'purple': 'violet',
-    'pink': 'rose',
-    'gold': 'or',
-    'silver': 'argent',
-    'cream': 'crème',
-    'ivory': 'ivoire',
-    'navy': 'bleu marine',
-    'turquoise': 'turquoise'
+    beige: "beige",
+    white: "blanc",
+    black: "noir",
+    brown: "marron",
+    gray: "gris",
+    grey: "gris",
+    blue: "bleu",
+    red: "rouge",
+    green: "vert",
+    yellow: "jaune",
+    orange: "orange",
+    purple: "violet",
+    pink: "rose",
+    gold: "or",
+    silver: "argent",
+    cream: "crème",
+    ivory: "ivoire",
+    navy: "bleu marine",
+    turquoise: "turquoise",
   };
 
   return colors
-    .split(',')
-    .map(c => {
+    .split(",")
+    .map((c) => {
       const trimmed = c.trim().toLowerCase();
       return colorMap[trimmed] || c.trim();
     })
-    .join(', ');
+    .join(", ");
 }
 
 // Sanitize dimensions from Gemini-generated HTML to avoid duplicates
 function sanitizeDimensionsInHtml(html: string): string {
   console.log("🧹 Sanitizing dimensions from HTML...");
-  
+
   // Remove table rows containing dimension keywords (case insensitive)
   let cleaned = html.replace(
     /<tr[\s\S]*?(?:Dimensions?|DIMENSIONS?|Hauteur|Height|Largeur|Width|Profondeur|Depth|Longueur|Length)[\s\S]*?<\/tr>/gi,
-    ""
+    "",
   );
-  
+
   // Remove list items containing dimension keywords
-  cleaned = cleaned.replace(
-    /<li[^>]*>[\s\S]*?(?:Dimensions?|DIMENSIONS?)[\s\S]*?<\/li>/gi,
-    ""
-  );
-  
+  cleaned = cleaned.replace(/<li[^>]*>[\s\S]*?(?:Dimensions?|DIMENSIONS?)[\s\S]*?<\/li>/gi, "");
+
   // Remove dimension/technical schema images from gallery sections
   cleaned = cleaned.replace(
     /<img[^>]*alt="[^"]*(?:dimension|technical|schema|schéma|measure|mesure)[^"]*"[^>]*>/gi,
-    ""
+    "",
   );
-  
+
   // Remove paragraphs that are just dimension specifications
-  cleaned = cleaned.replace(
-    /<p[^>]*>[\s\S]*?(?:Dimensions?\s*:|\d+\s*(?:cm|mm|m)\s*[×x]\s*\d+)[\s\S]*?<\/p>/gi,
-    ""
-  );
-  
+  cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?(?:Dimensions?\s*:|\d+\s*(?:cm|mm|m)\s*[×x]\s*\d+)[\s\S]*?<\/p>/gi, "");
+
   console.log("✅ Dimensions sanitized from HTML");
   return cleaned;
 }
@@ -282,40 +276,43 @@ function generateDesignTokens(colorScheme: any) {
 // Helper to build Vision AI summary
 function buildVisionSummary(attributes: any, language = "fr") {
   if (!attributes) return "";
-  
-  const labels = language === "en" ? {
-    visualAnalysis: "VISUAL ANALYSIS:",
-    colors: "Colors",
-    materials: "Materials",
-    style: "Style",
-    condition: "Condition",
-    dimensions: "DIMENSIONS (detected):",
-    height: "Height",
-    width: "Width",
-    depth: "Depth",
-    length: "Length",
-    diameter: "Diameter"
-  } : {
-    visualAnalysis: "ANALYSE VISUELLE:",
-    colors: "Couleurs",
-    materials: "Matériaux",
-    style: "Style",
-    condition: "État",
-    dimensions: "DIMENSIONS (détectées):",
-    height: "Hauteur",
-    width: "Largeur",
-    depth: "Profondeur",
-    length: "Longueur",
-    diameter: "Diamètre"
-  };
-  
+
+  const labels =
+    language === "en"
+      ? {
+          visualAnalysis: "VISUAL ANALYSIS:",
+          colors: "Colors",
+          materials: "Materials",
+          style: "Style",
+          condition: "Condition",
+          dimensions: "DIMENSIONS (detected):",
+          height: "Height",
+          width: "Width",
+          depth: "Depth",
+          length: "Length",
+          diameter: "Diameter",
+        }
+      : {
+          visualAnalysis: "ANALYSE VISUELLE:",
+          colors: "Couleurs",
+          materials: "Matériaux",
+          style: "Style",
+          condition: "État",
+          dimensions: "DIMENSIONS (détectées):",
+          height: "Hauteur",
+          width: "Largeur",
+          depth: "Profondeur",
+          length: "Longueur",
+          diameter: "Diamètre",
+        };
+
   const sections = [];
-  
+
   if (attributes.visualDescription) {
     sections.push(labels.visualAnalysis);
     sections.push(attributes.visualDescription);
   }
-  
+
   const details = [];
   if (attributes.dominantColors?.length) {
     details.push(`${labels.colors}: ${attributes.dominantColors.join(", ")}`);
@@ -329,38 +326,38 @@ function buildVisionSummary(attributes: any, language = "fr") {
   if (attributes.condition) {
     details.push(`${labels.condition}: ${attributes.condition}`);
   }
-  
+
   if (details.length > 0) {
     sections.push("\n" + details.map((d: string) => `- ${d}`).join("\n"));
   }
-  
+
   // Add technical dimensions if available
   if (attributes.technicalDimensions) {
     const dims = attributes.technicalDimensions;
     const dimDetails = [];
-    
+
     if (dims.height) {
-      dimDetails.push(`${labels.height}: ${dims.height} ${dims.heightUnit || 'cm'}`);
+      dimDetails.push(`${labels.height}: ${dims.height} ${dims.heightUnit || "cm"}`);
     }
     if (dims.width) {
-      dimDetails.push(`${labels.width}: ${dims.width} ${dims.widthUnit || 'cm'}`);
+      dimDetails.push(`${labels.width}: ${dims.width} ${dims.widthUnit || "cm"}`);
     }
     if (dims.depth) {
-      dimDetails.push(`${labels.depth}: ${dims.depth} ${dims.depthUnit || 'cm'}`);
+      dimDetails.push(`${labels.depth}: ${dims.depth} ${dims.depthUnit || "cm"}`);
     }
     if (dims.length) {
-      dimDetails.push(`${labels.length}: ${dims.length} ${dims.lengthUnit || 'cm'}`);
+      dimDetails.push(`${labels.length}: ${dims.length} ${dims.lengthUnit || "cm"}`);
     }
     if (dims.diameter) {
-      dimDetails.push(`${labels.diameter}: ${dims.diameter} ${dims.diameterUnit || 'cm'}`);
+      dimDetails.push(`${labels.diameter}: ${dims.diameter} ${dims.diameterUnit || "cm"}`);
     }
-    
+
     if (dimDetails.length > 0) {
       sections.push(`\n${labels.dimensions}`);
       sections.push(dimDetails.map((d: string) => `- ${d}`).join("\n"));
     }
   }
-  
+
   return sections.join("\n");
 }
 
@@ -368,82 +365,86 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (!enriched) return "";
 
   const sections = [];
-  
+
   // Translation labels
-  const labels = language === "en" ? {
-    color: "Color",
-    material: "Material",
-    shape: "Shape",
-    texture: "Texture",
-    pattern: "Pattern",
-    finish: "Finish",
-    designElements: "Design Elements",
-    visualAttributes: "VISUAL ATTRIBUTES:",
-    dimensions: "DIMENSIONS",
-    dimensionsVisible: "DIMENSIONS (visible on image):",
-    dimensionsEstimated: "DIMENSIONS (estimated):",
-    dimensionsSerpVerified: "DIMENSIONS (SERP verified):",
-    technicalSpecs: "TECHNICAL SPECIFICATIONS (from Vision AI):",
-    categorization: "CATEGORIZATION:",
-    category: "Category",
-    subCategory: "Sub-category",
-    style: "Style",
-    room: "Room",
-    functionality: "Functionality",
-    qualityAnalysis: "QUALITY ANALYSIS:",
-    analysis: "Analysis",
-    presentationQuality: "Presentation Quality",
-    craftsmanshipLevel: "Craftsmanship Level",
-    conversationalDesc: "CONVERSATIONAL DESCRIPTION:",
-    height: "H",
-    length: "L",
-    width: "W",
-    depth: "D",
-    diameter: "Ø",
-    seatHeight: "Seat height",
-    weight: "Weight"
-  } : {
-    color: "Couleur",
-    material: "Matériau",
-    shape: "Forme",
-    texture: "Texture",
-    pattern: "Motif",
-    finish: "Finition",
-    designElements: "Éléments Design",
-    visualAttributes: "ATTRIBUTS VISUELS:",
-    dimensions: "DIMENSIONS",
-    dimensionsVisible: "DIMENSIONS (visibles sur image):",
-    dimensionsEstimated: "DIMENSIONS (estimées):",
-    dimensionsSerpVerified: "DIMENSIONS (vérifiées SERP):",
-    technicalSpecs: "SPÉCIFICATIONS TECHNIQUES (Vision IA):",
-    categorization: "CATÉGORISATION:",
-    category: "Catégorie",
-    subCategory: "Sous-catégorie",
-    style: "Style",
-    room: "Pièce",
-    functionality: "Fonctionnalité",
-    qualityAnalysis: "ANALYSE QUALITÉ:",
-    analysis: "Analyse",
-    presentationQuality: "Qualité Présentation",
-    craftsmanshipLevel: "Niveau Artisanat",
-    conversationalDesc: "DESCRIPTION CONVERSATIONNELLE:",
-    height: "H",
-    length: "L",
-    width: "l",
-    depth: "P",
-    diameter: "Ø",
-    seatHeight: "Hauteur d'assise",
-    weight: "Poids"
-  };
+  const labels =
+    language === "en"
+      ? {
+          color: "Color",
+          material: "Material",
+          shape: "Shape",
+          texture: "Texture",
+          pattern: "Pattern",
+          finish: "Finish",
+          designElements: "Design Elements",
+          visualAttributes: "VISUAL ATTRIBUTES:",
+          dimensions: "DIMENSIONS",
+          dimensionsVisible: "DIMENSIONS (visible on image):",
+          dimensionsEstimated: "DIMENSIONS (estimated):",
+          dimensionsSerpVerified: "DIMENSIONS (SERP verified):",
+          technicalSpecs: "TECHNICAL SPECIFICATIONS (from Vision AI):",
+          categorization: "CATEGORIZATION:",
+          category: "Category",
+          subCategory: "Sub-category",
+          style: "Style",
+          room: "Room",
+          functionality: "Functionality",
+          qualityAnalysis: "QUALITY ANALYSIS:",
+          analysis: "Analysis",
+          presentationQuality: "Presentation Quality",
+          craftsmanshipLevel: "Craftsmanship Level",
+          conversationalDesc: "CONVERSATIONAL DESCRIPTION:",
+          height: "H",
+          length: "L",
+          width: "W",
+          depth: "D",
+          diameter: "Ø",
+          seatHeight: "Seat height",
+          weight: "Weight",
+        }
+      : {
+          color: "Couleur",
+          material: "Matériau",
+          shape: "Forme",
+          texture: "Texture",
+          pattern: "Motif",
+          finish: "Finition",
+          designElements: "Éléments Design",
+          visualAttributes: "ATTRIBUTS VISUELS:",
+          dimensions: "DIMENSIONS",
+          dimensionsVisible: "DIMENSIONS (visibles sur image):",
+          dimensionsEstimated: "DIMENSIONS (estimées):",
+          dimensionsSerpVerified: "DIMENSIONS (vérifiées SERP):",
+          technicalSpecs: "SPÉCIFICATIONS TECHNIQUES (Vision IA):",
+          categorization: "CATÉGORISATION:",
+          category: "Catégorie",
+          subCategory: "Sous-catégorie",
+          style: "Style",
+          room: "Pièce",
+          functionality: "Fonctionnalité",
+          qualityAnalysis: "ANALYSE QUALITÉ:",
+          analysis: "Analyse",
+          presentationQuality: "Qualité Présentation",
+          craftsmanshipLevel: "Niveau Artisanat",
+          conversationalDesc: "DESCRIPTION CONVERSATIONNELLE:",
+          height: "H",
+          length: "L",
+          width: "l",
+          depth: "P",
+          diameter: "Ø",
+          seatHeight: "Hauteur d'assise",
+          weight: "Poids",
+        };
 
   // Visual Attributes with French translation
   const visualAttrs = [];
   if (enriched.ai_color) {
-    const translatedColor = language === 'fr' ? translateColorsToFrench(enriched.ai_color) : enriched.ai_color;
+    const translatedColor = language === "fr" ? translateColorsToFrench(enriched.ai_color) : enriched.ai_color;
     visualAttrs.push(`${labels.color}: ${translatedColor}`);
   }
   if (enriched.ai_material) {
-    const translatedMaterial = language === 'fr' ? translateMaterialsToFrench(enriched.ai_material) : enriched.ai_material;
+    const translatedMaterial =
+      language === "fr" ? translateMaterialsToFrench(enriched.ai_material) : enriched.ai_material;
     visualAttrs.push(`${labels.material}: ${translatedMaterial}`);
   }
   if (enriched.ai_shape) visualAttrs.push(`${labels.shape}: ${enriched.ai_shape}`);
@@ -460,7 +461,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   const techDims = enriched.vision_attributes?.technicalDimensions;
   const dims = [];
   let weightSource: string | null = null; // Track where weight comes from
-  
+
   // Detect if we have any smart_* dimensions available
   const hasSmartDims =
     enriched.smart_length ||
@@ -469,44 +470,47 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     enriched.smart_diameter ||
     enriched.smart_depth ||
     enriched.smart_seat_height;
-  
+
   if (techDims && Object.keys(techDims).length > 0) {
     // Use dimensions extracted from Gemini Vision (standard keys: height, width, depth, length, diameter)
     // Format: "H 87 cm × L 270 cm × P 196 cm × l 96 cm"
     const dimParts = [];
-    if (techDims.height) dimParts.push(`${labels.height} ${techDims.height} ${techDims.heightUnit || 'cm'}`);
-    if (techDims.length) dimParts.push(`${labels.length} ${techDims.length} ${techDims.lengthUnit || 'cm'}`);
-    if (techDims.depth) dimParts.push(`${labels.depth} ${techDims.depth} ${techDims.depthUnit || 'cm'}`);
-    if (techDims.width) dimParts.push(`${labels.width} ${techDims.width} ${techDims.widthUnit || 'cm'}`);
-    if (techDims.diameter) dimParts.push(`${labels.diameter} ${techDims.diameter} ${techDims.diameterUnit || 'cm'}`);
-    
+    if (techDims.height) dimParts.push(`${labels.height} ${techDims.height} ${techDims.heightUnit || "cm"}`);
+    if (techDims.length) dimParts.push(`${labels.length} ${techDims.length} ${techDims.lengthUnit || "cm"}`);
+    if (techDims.depth) dimParts.push(`${labels.depth} ${techDims.depth} ${techDims.depthUnit || "cm"}`);
+    if (techDims.width) dimParts.push(`${labels.width} ${techDims.width} ${techDims.widthUnit || "cm"}`);
+    if (techDims.diameter) dimParts.push(`${labels.diameter} ${techDims.diameter} ${techDims.diameterUnit || "cm"}`);
+
     // Extract weight from vision (HIGHEST PRIORITY)
     if (techDims.weight) {
-      dimParts.push(`${labels.weight} ${techDims.weight} ${techDims.weightUnit || 'kg'}`);
+      dimParts.push(`${labels.weight} ${techDims.weight} ${techDims.weightUnit || "kg"}`);
       weightSource = "vision";
     }
-    
+
     if (dimParts.length > 0) {
       sections.push(`\n${labels.dimensionsVisible}`);
       sections.push(`- ${dimParts.join(" × ")}`);
     }
   } else if (hasSmartDims) {
     // Fallback to estimated smart dimensions (SECOND PRIORITY, before SERP)
-    if (enriched.smart_length) dims.push(`${labels.length} ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
+    if (enriched.smart_length)
+      dims.push(`${labels.length} ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
     if (enriched.smart_width) dims.push(`${labels.width} ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
-    if (enriched.smart_height) dims.push(`${labels.height} ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
-    
+    if (enriched.smart_height)
+      dims.push(`${labels.height} ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
+
     // Add estimated weight only if not from vision
     if (!weightSource && enriched.smart_weight) {
       dims.push(`${labels.weight} ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
       weightSource = "estimated";
     }
-    
-    if (enriched.smart_diameter) dims.push(`${labels.diameter} ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
+
+    if (enriched.smart_diameter)
+      dims.push(`${labels.diameter} ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
     if (enriched.smart_depth) dims.push(`${labels.depth} ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
     if (enriched.smart_seat_height)
       dims.push(`${labels.seatHeight} ~${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
-    
+
     if (dims.length > 0) {
       sections.push(`\n${labels.dimensionsEstimated}`);
       sections.push(`- ${dims.join(" × ")}`);
@@ -517,13 +521,13 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     if (serpDims.length) dims.push(`${labels.length} ${serpDims.length}`);
     if (serpDims.width) dims.push(`${labels.width} ${serpDims.width}`);
     if (serpDims.height) dims.push(`${labels.height} ${serpDims.height}`);
-    
+
     // Add SERP weight only if not already extracted from vision/estimation
     if (!weightSource && enriched.serp_data.averageWeight) {
       dims.push(`${labels.weight} ${enriched.serp_data.averageWeight}`);
       weightSource = "serp";
     }
-    
+
     if (dims.length > 0) {
       sections.push(`\n${labels.dimensionsSerpVerified}`);
       sections.push(`- ${dims.join(" × ")}`);
@@ -554,7 +558,8 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   // Quality & Analysis
   const quality = [];
   if (enriched.ai_vision_analysis) quality.push(`${labels.analysis}: ${enriched.ai_vision_analysis}`);
-  if (enriched.ai_presentation_quality) quality.push(`${labels.presentationQuality}: ${enriched.ai_presentation_quality}`);
+  if (enriched.ai_presentation_quality)
+    quality.push(`${labels.presentationQuality}: ${enriched.ai_presentation_quality}`);
   if (enriched.ai_craftsmanship_level) quality.push(`${labels.craftsmanshipLevel}: ${enriched.ai_craftsmanship_level}`);
   if (quality.length > 0) {
     sections.push(`\n${labels.qualityAnalysis}`);
@@ -827,32 +832,32 @@ serve(async (req) => {
     }
 
     // 🌍 Get store localization for SERP analysis
-    let storeCountry = 'United States';
-    let storeLanguage = 'en';
-    
+    let storeCountry = "United States";
+    let storeLanguage = "en";
+
     if (enrichedProduct.store_id) {
       console.log("🔍 Fetching store localization info...");
       try {
         const { data: storeData } = await supabaseAdmin
-          .from('shopify_connections')
-          .select('primary_locale, country_code')
-          .eq('id', enrichedProduct.store_id)
+          .from("shopify_connections")
+          .select("primary_locale, country_code")
+          .eq("id", enrichedProduct.store_id)
           .maybeSingle();
-        
+
         if (storeData) {
-          storeCountry = storeData.country_code || 'United States';
-          storeLanguage = storeData.primary_locale?.split('-')[0] || 'en';
+          storeCountry = storeData.country_code || "United States";
+          storeLanguage = storeData.primary_locale?.split("-")[0] || "en";
           console.log(`📍 Store location: ${storeCountry}, language: ${storeLanguage}`);
         }
       } catch (error) {
-        console.warn('⚠️ Failed to fetch store info, using defaults:', error);
+        console.warn("⚠️ Failed to fetch store info, using defaults:", error);
       }
     }
 
     // 🔍 SERP Analysis for landing page structure
     console.log("🔍 Analyzing SERP competitors for landing page structure...");
     let serpInsights: any = null;
-    
+
     try {
       const { data: serpData, error: serpError } = await supabaseAdmin.functions.invoke("analyze-serp-competitors", {
         body: {
@@ -860,8 +865,8 @@ serve(async (req) => {
           analysisType: "landing",
           location: storeCountry,
           language: storeLanguage,
-          maxResults: 10
-        }
+          maxResults: 10,
+        },
       });
 
       if (serpError) {
@@ -870,7 +875,7 @@ serve(async (req) => {
         serpInsights = serpData.insights;
         console.log("✅ SERP analysis completed:", {
           commonSections: serpInsights?.commonSections?.length || 0,
-          ctaPatterns: serpInsights?.ctaPatterns?.length || 0
+          ctaPatterns: serpInsights?.ctaPatterns?.length || 0,
         });
       }
     } catch (serpErr) {
@@ -879,22 +884,22 @@ serve(async (req) => {
 
     // 🖼️ Multi-Image Vision AI Analysis - Analyze ALL product images
     console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
-    const imageAnalyses: Array<{ 
-      imageUrl: string; 
-      description: string; 
+    const imageAnalyses: Array<{
+      imageUrl: string;
+      description: string;
       index: number;
       visualAttributes?: any;
       visualContext?: any;
     }> = [];
-    
+
     // Analyze main image + all additional images (limit to 6 images max for performance)
     const imagesToAnalyze = images.slice(0, 6);
-    
+
     for (let i = 0; i < imagesToAnalyze.length; i++) {
       const img = imagesToAnalyze[i];
       try {
         console.log(`📸 Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${img.src.substring(0, 50)}...`);
-        
+
         const visionController = new AbortController();
         const visionTimeout = setTimeout(() => visionController.abort(), 15000);
 
@@ -933,65 +938,67 @@ serve(async (req) => {
         console.log(`⚠️ Vision AI timeout for image ${i + 1} (continuing):`, error.message);
       }
     }
-    
+
     console.log(`✅ Completed Vision AI analysis: ${imageAnalyses.length}/${imagesToAnalyze.length} images analyzed`);
-    
+
     // ============ SAVE VISION DATA TO DATABASE ============
     // Aggregate and save vision attributes from all analyzed images
     if (imageAnalyses.length > 0) {
-      console.log('💾 Saving Vision AI data to database...');
-      
+      console.log("💾 Saving Vision AI data to database...");
+
       // Merge vision attributes from all images
       const mergedVisionAttributes = imageAnalyses.reduce((acc: any, analysis: any, index: number) => {
         // First image is primary
         if (index === 0) {
           return analysis;
         }
-        
+
         // Merge materials from subsequent images
         if (analysis.visualAttributes?.materials) {
           acc.visualAttributes.materials = [
             ...(acc.visualAttributes?.materials || []),
-            ...analysis.visualAttributes.materials
+            ...analysis.visualAttributes.materials,
           ].filter((m: string, i: number, arr: string[]) => arr.indexOf(m) === i);
         }
-        
+
         // Take first technical dimensions found
         if (!acc.visualAttributes?.technicalDimensions && analysis.visualAttributes?.technicalDimensions) {
           acc.visualAttributes.technicalDimensions = analysis.visualAttributes.technicalDimensions;
         }
-        
+
         return acc;
       }, imageAnalyses[0]);
 
       // Update product with vision data
       const { error: visionUpdateError } = await supabaseAdmin
-        .from('shopify_products')
+        .from("shopify_products")
         .update({
           vision_attributes: mergedVisionAttributes.visualAttributes || null,
           vision_timestamp: new Date().toISOString(),
-          vision_model: 'google/gemini-2.5-flash',
+          vision_model: "google/gemini-2.5-flash",
         })
-        .eq('id', product_id);
+        .eq("id", product_id);
 
       if (visionUpdateError) {
-        console.error('❌ Failed to save vision data:', visionUpdateError);
+        console.error("❌ Failed to save vision data:", visionUpdateError);
       } else {
-        console.log('✅ Vision data saved to database');
+        console.log("✅ Vision data saved to database");
       }
     }
-    
+
     // Build comprehensive visual analysis summary
     let visualAnalysis = "";
     if (imageAnalyses.length > 0) {
-      visualAnalysis = detectedLanguage === "en" 
-        ? "\n🖼️ IMAGE ANALYSIS (Gemini Vision AI):\n\n"
-        : "\n🖼️ ANALYSE DES IMAGES (Gemini Vision AI):\n\n";
-      
+      visualAnalysis =
+        detectedLanguage === "en"
+          ? "\n🖼️ IMAGE ANALYSIS (Gemini Vision AI):\n\n"
+          : "\n🖼️ ANALYSE DES IMAGES (Gemini Vision AI):\n\n";
+
       imageAnalyses.forEach((analysis) => {
-        const imageLabel = detectedLanguage === "en" 
-          ? `Image ${analysis.index}${analysis.index === 1 ? " (main)" : ""}`
-          : `Photo ${analysis.index}${analysis.index === 1 ? " (principale)" : ""}`;
+        const imageLabel =
+          detectedLanguage === "en"
+            ? `Image ${analysis.index}${analysis.index === 1 ? " (main)" : ""}`
+            : `Photo ${analysis.index}${analysis.index === 1 ? " (principale)" : ""}`;
         visualAnalysis += `${imageLabel}:\n${analysis.description}\n\n`;
       });
     } else {
@@ -1001,22 +1008,18 @@ serve(async (req) => {
     // --- Filter dimension images from gallery ---
     console.log("🖼️ Filtering images for gallery...");
     const technicalSchemaImageUrls = imageAnalyses
-      .filter(a => a.visualContext?.hasTechnicalSchema)
-      .map(a => a.imageUrl);
-    
+      .filter((a) => a.visualContext?.hasTechnicalSchema)
+      .map((a) => a.imageUrl);
+
     console.log(`📐 Found ${technicalSchemaImageUrls.length} technical schema images to exclude from gallery`);
-    
-    const galleryImages = images.filter(img => 
-      !technicalSchemaImageUrls.includes(img.src)
-    );
-    
-    const dimensionImages = images.filter(img =>
-      technicalSchemaImageUrls.includes(img.src)
-    );
-    
+
+    const galleryImages = images.filter((img) => !technicalSchemaImageUrls.includes(img.src));
+
+    const dimensionImages = images.filter((img) => technicalSchemaImageUrls.includes(img.src));
+
     console.log(`🎨 Gallery will use ${galleryImages.length} lifestyle images`);
     console.log(`📏 Dimension section will use ${dimensionImages.length} technical images`);
-    
+
     // --- Prompt bilingual ---
     const imgs = galleryImages.length
       ? galleryImages.map((i) => `- ${i.src}`).join("\n")
@@ -1076,7 +1079,7 @@ LAYOUT - LINÉAIRE:
 - ❌ PAS d'asymétrie
 `,
       },
-      
+
       modern: {
         name: "MODERNE - Équilibré et Dynamique",
         description: "DESIGN 2024: Dégradés subtils, cartes flottantes, animations douces",
@@ -1119,7 +1122,7 @@ LAYOUT - GRILLES MODERNES:
 - Grid gap: gap-6 md:gap-8
 `,
       },
-      
+
       premium: {
         name: "PREMIUM - Luxueux et Sophistiqué",
         description: "ULTRA-LUXE: Backgrounds sombres, or/argent, typographie serif, effets riches",
@@ -1173,7 +1176,7 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
   <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" style="color: hsl(${designTokens.text})" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path>
   </svg>`,
-      
+
       modern: `
   <!-- MODERN: Gradient circle + check, clean & balanced -->
   <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -1186,7 +1189,7 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     <circle cx="16" cy="16" r="14" fill="url(#modernCheckGrad)" opacity="0.12"/>
     <path d="M10 16 L14 20 L22 12" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-      
+
       premium: `
   <!-- PREMIUM: Multi-layer gradient + glow effect, luxurious -->
   <svg class="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
@@ -1216,8 +1219,11 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     };
 
     // Select design style (default to modern if not provided)
-    const validDesignStyles = ['minimalist', 'modern', 'premium'];
-    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : 'modern') as 'minimalist' | 'modern' | 'premium';
+    const validDesignStyles = ["minimalist", "modern", "premium"];
+    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : "modern") as
+      | "minimalist"
+      | "modern"
+      | "premium";
     const selectedStyle = styleTemplates[selectedDesignStyle];
     const selectedIcon = iconTemplates[selectedDesignStyle];
 
@@ -1237,22 +1243,26 @@ PRODUCT:
 
 ${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🔍 VISUAL AI INSIGHTS (TRUST THESE OBSERVATIONS - THEY ARE WHAT IS ACTUALLY VISIBLE IN THE IMAGE):\n${visualAnalysis}\n\n🚨 CRITICAL: You MUST describe only what Vision AI observed. DO NOT mention features, colors, or materials that contradict the visual analysis above. If Vision AI says the product has wooden elements, DO NOT write about metal elements. BE 100% ACCURATE TO THE VISUAL OBSERVATIONS.\n` : ""}
-${serpInsights ? `
+${
+  serpInsights
+    ? `
 🎯 COMPETITOR LANDING PAGE ANALYSIS (USE THIS TO STRUCTURE YOUR PAGE):
 
 📋 Common Sections Found in Top Results:
-${serpInsights.commonSections?.map((s: string) => `- ${s}`).join('\n') || '- Hero section\n- Product benefits\n- FAQ'}
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hero section\n- Product benefits\n- FAQ"}
 
 💬 Effective CTA Patterns:
-${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join('\n') || '- Buy now\n- Learn more'}
+${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Buy now\n- Learn more"}
 
 🏗️ Structural Elements to Include:
-${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join('\n') || '- Clear headline\n- Visual imagery\n- Trust signals'}
+${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Clear headline\n- Visual imagery\n- Trust signals"}
 
-📊 Content Density: ${serpInsights.contentDensity || 'medium'}
+📊 Content Density: ${serpInsights.contentDensity || "medium"}
 
 💡 RECOMMENDATION: Structure your landing page using these proven patterns while maintaining uniqueness.
-` : ""}
+`
+    : ""
+}
 
 IMAGES:
 ${imgs}
@@ -1350,28 +1360,34 @@ STRUCTURE:
 🔍 PHASE 5: SPECIFICATIONS RELIABILITY BADGE (MANDATORY):
 ALWAYS include a reliability indicator in the technical specifications section:
 
-${enrichedProduct?.serp_verified ? `
+${
+  enrichedProduct?.serp_verified
+    ? `
 ✅ Badge for SERP-verified specs:
 <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-800 mb-4">
   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
   <span>Spécifications vérifiées</span>
 </div>
 <p class="text-xs text-gray-600 mb-6">Dimensions confirmées par ${enrichedProduct?.serp_data?.similarProducts?.length || 0} produits similaires</p>
-` : enrichedProduct?.vision_attributes?.technicalDimensions ? `
+`
+    : enrichedProduct?.vision_attributes?.technicalDimensions
+      ? `
 📐 Badge for image-extracted specs:
 <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800 mb-4">
   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
   <span>Mesures extraites du schéma technique</span>
 </div>
 <p class="text-xs text-gray-600 mb-6">Dimensions précises lues directement sur l'image produit</p>
-` : `
+`
+      : `
 ⚠️ Badge for estimated specs:
 <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-sm font-medium text-amber-800 mb-4">
   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
   <span>Dimensions approximatives</span>
 </div>
 <p class="text-xs text-gray-600 mb-6">Ces mesures sont estimées et peuvent varier légèrement</p>
-`}
+`
+}
 
 🚨 CRITICAL: Place this badge IMMEDIATELY BEFORE the technical specifications table/section
   <!-- Mobile cards -->
@@ -1468,22 +1484,26 @@ PRODUIT :
 
 ${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATIONS - C'EST CE QUI EST RÉELLEMENT VISIBLE DANS L'IMAGE) :\n${visualAnalysis}\n\n🚨 CRITIQUE : Tu DOIS décrire uniquement ce que l'IA visuelle a observé. NE mentionne PAS de caractéristiques, couleurs ou matériaux qui contredisent l'analyse visuelle ci-dessus. Si l'IA visuelle dit que le produit a des éléments en bois, NE parle PAS d'éléments métalliques. SOIS PRÉCIS À 100% PAR RAPPORT AUX OBSERVATIONS VISUELLES.\n` : ""}
-${serpInsights ? `
+${
+  serpInsights
+    ? `
 🎯 ANALYSE DES CONCURRENTS (UTILISE CECI POUR STRUCTURER TA PAGE) :
 
 📋 Sections Communes Trouvées dans les Meilleurs Résultats :
-${serpInsights.commonSections?.map((s: string) => `- ${s}`).join('\n') || '- Section héro\n- Avantages produit\n- FAQ'}
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Section héro\n- Avantages produit\n- FAQ"}
 
 💬 Modèles de CTA Efficaces :
-${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join('\n') || '- Acheter maintenant\n- En savoir plus'}
+${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Acheter maintenant\n- En savoir plus"}
 
 🏗️ Éléments Structurels à Inclure :
-${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join('\n') || '- Titre clair\n- Imagerie visuelle\n- Signaux de confiance'}
+${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Titre clair\n- Imagerie visuelle\n- Signaux de confiance"}
 
-📊 Densité du Contenu : ${serpInsights.contentDensity || 'moyenne'}
+📊 Densité du Contenu : ${serpInsights.contentDensity || "moyenne"}
 
 💡 RECOMMANDATION : Structure ta landing page en utilisant ces modèles éprouvés tout en maintenant l'unicité.
-` : ""}
+`
+    : ""
+}
 
 IMAGES :
 ${imgs}
@@ -1626,10 +1646,10 @@ UTILISATION DES ICÔNES :
 
     // --- AI call with Google Gemini Direct API (60s timeout) ---
     console.log("🤖 Starting AI generation with Google Gemini Direct API...");
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+
     if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
+      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
     const aiController = new AbortController();
@@ -1637,12 +1657,14 @@ UTILISATION DES ICÔNES :
 
     let aiResponse;
     try {
-      const systemPrompt = detectedLanguage === "en"
-        ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
-        : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.";
+      const systemPrompt =
+        detectedLanguage === "en"
+          ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
+          : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.";
 
       aiResponse = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + GOOGLE_GEMINI_API_KEY,
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" +
+          GOOGLE_GEMINI_API_KEY,
         {
           method: "POST",
           headers: {
@@ -1652,8 +1674,8 @@ UTILISATION DES ICÔNES :
             contents: [
               {
                 role: "user",
-                parts: [{ text: systemPrompt + "\n\n" + prompt }]
-              }
+                parts: [{ text: systemPrompt + "\n\n" + prompt }],
+              },
             ],
             generationConfig: {
               temperature: 0.7,
@@ -1661,7 +1683,7 @@ UTILISATION DES ICÔNES :
             },
           }),
           signal: aiController.signal,
-        }
+        },
       );
     } finally {
       clearTimeout(aiTimeout);
@@ -1680,10 +1702,10 @@ UTILISATION DES ICÔNES :
 
     const data = await aiResponse.json();
     console.log("📦 Google Gemini response structure:", JSON.stringify(data, null, 2));
-    
+
     // Extract content from Gemini response format
     let rawHtml = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    
+
     if (!rawHtml) {
       console.error("❌ No content in Gemini response");
       return new Response(JSON.stringify({ error: "No content generated" }), {
@@ -1702,7 +1724,7 @@ UTILISATION DES ICÔNES :
 
     // 🧹 Apply HTML normalization and sanitization
     let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
-    
+
     // 🧹 Remove any dimension-related content that Gemini might have added
     html = sanitizeDimensionsInHtml(html);
 
@@ -1727,17 +1749,17 @@ UTILISATION DES ICÔNES :
     console.log("📐 Starting Gemini Vision analysis for dimension schemas...");
     const detectedDimensionImages: Array<{ src: string; dimensions: any; confidence: string }> = [];
     const detectedRegularImages: Array<{ src: string; alt_text: string }> = [];
-    
+
     if (images && images.length > 0) {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      
+
       for (const imageObj of images) {
         const imageUrl = imageObj.src;
         if (!imageUrl) continue;
-        
+
         try {
           console.log(`🔍 Analyzing image for dimensions: ${imageUrl.substring(0, 60)}...`);
-          
+
           // Fetch image and convert to base64
           const imageResponse = await fetch(imageUrl);
           if (!imageResponse.ok) {
@@ -1745,7 +1767,7 @@ UTILISATION DES ICÔNES :
             detectedRegularImages.push(imageObj);
             continue;
           }
-          
+
           const imageBuffer = await imageResponse.arrayBuffer();
           const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
           const imageDataUrl = `data:image/jpeg;base64,${base64Image}`;
@@ -1754,7 +1776,7 @@ UTILISATION DES ICÔNES :
           const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -1790,37 +1812,37 @@ Si NON, c'est une photo normale de produit :
   "reason": "Image lifestyle/produit sans mesures techniques"
 }
 
-IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N'estime rien.`
+IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N'estime rien.`,
                     },
                     {
                       type: "image_url",
-                      image_url: { url: imageDataUrl }
-                    }
-                  ]
-                }
+                      image_url: { url: imageDataUrl },
+                    },
+                  ],
+                },
               ],
-              max_tokens: 1000
-            })
+              max_tokens: 1000,
+            }),
           });
 
           if (visionResponse.ok) {
             const visionData = await visionResponse.json();
             const analysis = visionData.choices?.[0]?.message?.content;
-            
+
             if (analysis) {
               console.log(`📊 Vision analysis result: ${analysis.substring(0, 200)}...`);
-              
+
               // Parse JSON response
               const jsonMatch = analysis.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 const parsedAnalysis = JSON.parse(jsonMatch[0]);
-                
+
                 if (parsedAnalysis.isDimensionSchema) {
                   console.log(`✅ Dimension schema detected with confidence: ${parsedAnalysis.confidence}`);
                   detectedDimensionImages.push({
                     src: imageUrl,
                     dimensions: parsedAnalysis.dimensions || {},
-                    confidence: parsedAnalysis.confidence
+                    confidence: parsedAnalysis.confidence,
                   });
                 } else {
                   console.log(`📷 Regular product image (no dimensions)`);
@@ -1841,76 +1863,88 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
         }
       }
     }
-    
-    console.log(`📐 Dimension analysis complete: ${detectedDimensionImages.length} schema images, ${detectedRegularImages.length} regular images`);
+
+    console.log(
+      `📐 Dimension analysis complete: ${detectedDimensionImages.length} schema images, ${detectedRegularImages.length} regular images`,
+    );
 
     // 📐 Generate dedicated dimensions section if technical dimensions are available
     let dimensionsSection = "";
-    
+
     // 1. Use NEW Gemini-detected dimension schema images (priority)
     // 2. Fallback to existing filtered technical images
-    const finalDimensionImages = detectedDimensionImages.length > 0 
-      ? detectedDimensionImages 
-      : dimensionImages;
-    
+    const finalDimensionImages = detectedDimensionImages.length > 0 ? detectedDimensionImages : dimensionImages;
+
     const imagesWithDimensions = finalDimensionImages.length > 0 ? finalDimensionImages.slice(0, 2) : [];
-    
+
     // Collect all detected dimensions from schemas
     let detectedDims: any = {};
     if (detectedDimensionImages.length > 0) {
       console.log("📐 Using dimensions from Gemini Vision schema detection");
       // Merge dimensions from all detected schema images
-      detectedDimensionImages.forEach(img => {
+      detectedDimensionImages.forEach((img) => {
         if (img.dimensions) {
           Object.assign(detectedDims, img.dimensions);
         }
       });
     }
-    
+
     // Build dimension data from detected schemas OR existing analysis
-    const dims = Object.keys(detectedDims).length > 0 
-      ? detectedDims 
-      : (imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions);
-    
+    const dims =
+      Object.keys(detectedDims).length > 0
+        ? detectedDims
+        : imageAnalysis?.technicalDimensions || enrichedProduct?.vision_attributes?.technicalDimensions;
+
     if (dims) {
       const visualContext = enrichedProduct?.vision_attributes?.visualContext;
       const isFromSchema = detectedDimensionImages.length > 0;
-      
+
       console.log("📐 Final Dimensions Data:", JSON.stringify(dims, null, 2));
-      
-      const dimensionLabels = detectedLanguage === "en" ? {
-        title: "DIMENSIONS",
-        subtitle: isFromSchema ? "From technical diagram" : (visualContext?.dimensionSource === "visible" ? "From technical diagram" : "Detected from analysis"),
-        height: "H",
-        width: "W", 
-        depth: "D",
-        length: "L",
-        diameter: "Ø",
-        seatHeight: "Seat H",
-        armHeight: "Arm H"
-      } : {
-        title: "DIMENSIONS",
-        subtitle: isFromSchema ? "Schéma technique" : (visualContext?.dimensionSource === "visible" ? "Schéma technique" : "Détectées par analyse"),
-        height: "H",
-        width: "l",
-        depth: "P", 
-        length: "L",
-        diameter: "Ø",
-        seatHeight: "H assise",
-        armHeight: "H accoudoirs"
-      };
-      
+
+      const dimensionLabels =
+        detectedLanguage === "en"
+          ? {
+              title: "DIMENSIONS",
+              subtitle: isFromSchema
+                ? "From technical diagram"
+                : visualContext?.dimensionSource === "visible"
+                  ? "From technical diagram"
+                  : "Detected from analysis",
+              height: "H",
+              width: "W",
+              depth: "D",
+              length: "L",
+              diameter: "Ø",
+              seatHeight: "Seat H",
+              armHeight: "Arm H",
+            }
+          : {
+              title: "DIMENSIONS",
+              subtitle: isFromSchema
+                ? "Schéma technique"
+                : visualContext?.dimensionSource === "visible"
+                  ? "Schéma technique"
+                  : "Détectées par analyse",
+              height: "H",
+              width: "l",
+              depth: "P",
+              length: "L",
+              diameter: "Ø",
+              seatHeight: "H assise",
+              armHeight: "H accoudoirs",
+            };
+
       // Build compact dimension string using detected values
       const dimParts = [];
-      
+
       // Handle both nested dimension objects and flat values
       const extractValue = (dim: any) => {
-        if (typeof dim === 'object' && dim.value) {
-          return `${dim.value} ${dim.unit || 'cm'}`;
+        if (typeof dim === "object" && dim.value) {
+          return `${dim.value} ${dim.unit || "cm"}`;
         }
         return dim;
       };
-      
+
       if (dims.height) dimParts.push(`${dimensionLabels.height} ${extractValue(dims.height)}`);
       if (dims.length) dimParts.push(`${dimensionLabels.length} ${extractValue(dims.length)}`);
       if (dims.depth) dimParts.push(`${dimensionLabels.depth} ${extractValue(dims.depth)}`);
@@ -1918,14 +1952,14 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       if (dims.diameter) dimParts.push(`${dimensionLabels.diameter} ${extractValue(dims.diameter)}`);
       if (dims.seatHeight) dimParts.push(`${dimensionLabels.seatHeight} ${extractValue(dims.seatHeight)}`);
       if (dims.armHeight) dimParts.push(`${dimensionLabels.armHeight} ${extractValue(dims.armHeight)}`);
-      
+
       if (dimParts.length > 0) {
-        const dimensionText = dimParts.join(' × ');
+        const dimensionText = dimParts.join(" × ");
         console.log("📏 Final dimension text:", dimensionText);
-        
+
         // Build dimension characteristics for prompt injection
-        const dimensionCharacteristics = dimParts.map(part => `- ${part}`).join('\n');
-        
+        const dimensionCharacteristics = dimParts.map((part) => `- ${part}`).join("\n");
+
         dimensionsSection = `
     <!-- Dimensions Section - Discrete placement after Caractéristiques -->
     <section class="py-6" style="background-color: hsl(${designTokens.background})">
@@ -1934,26 +1968,38 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
           
           <div class="flex flex-col sm:flex-row gap-4 items-start">
             
-            ${imagesWithDimensions.length > 0 ? `
+            ${
+              imagesWithDimensions.length > 0
+                ? `
             <!-- Technical Schema Image(s) - Compact Gallery -->
             <div class="shrink-0 flex flex-col gap-2">
-              ${imagesWithDimensions.map((img: any) => `
+              ${imagesWithDimensions
+                .map(
+                  (img: any) => `
               <img src="${img.src || img.url}" 
                    alt="Schéma technique avec dimensions" 
                    class="w-24 sm:w-28 h-auto rounded-md border border-gray-300 shadow-sm"
                    loading="lazy" />
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <!-- Dimension Text - Discrete -->
             <div class="flex-1">
               <h3 class="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">${dimensionLabels.title}</h3>
               <p class="text-base md:text-lg font-semibold mb-1" style="color: hsl(${designTokens.text})">${dimensionText}</p>
               <p class="text-xs text-gray-500">${dimensionLabels.subtitle}</p>
-              ${isFromSchema && detectedDimensionImages.length > 0 && detectedDimensionImages[0].confidence ? `
+              ${
+                isFromSchema && detectedDimensionImages.length > 0 && detectedDimensionImages[0].confidence
+                  ? `
               <p class="text-xs text-gray-400 mt-1">Confiance: ${detectedDimensionImages[0].confidence}</p>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
             
           </div>
@@ -1962,16 +2008,17 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
     </section>`;
       }
     }
-    
+
     // Insert dimensions section AFTER "Caractéristiques" / "Technical Specifications" section
     let finalHtml = html;
     if (dimensionsSection) {
       console.log("📐 Searching for Caractéristiques/Specifications section...");
-      
+
       // Stronger regex to find the section containing characteristics keywords
-      const caracteristiquesRegex = /<section[^>]*>[\s\S]*?(?:caract[ée]ristiques|technical\s+specifications|specifications?\s+techniques?)[\s\S]*?<\/section>/i;
+      const caracteristiquesRegex =
+        /<section[^>]*>[\s\S]*?(?:caract[ée]ristiques|technical\s+specifications|specifications?\s+techniques?)[\s\S]*?<\/section>/i;
       const match = html.match(caracteristiquesRegex);
-      
+
       let insertAt = -1;
       if (match && match.index !== undefined) {
         // Insert right after the matched </section> tag
@@ -1980,16 +2027,16 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       } else {
         console.log("📐 ⚠️ Caractéristiques section not found, using fallback placement");
       }
-      
+
       // Fallback: insert before </body> as last resort (not after 2nd section)
       if (insertAt < 0) {
-        const bodyEnd = html.lastIndexOf('</body>');
+        const bodyEnd = html.lastIndexOf("</body>");
         if (bodyEnd > 0) {
           insertAt = bodyEnd;
           console.log("📐 Using fallback: inserting before </body>");
         }
       }
-      
+
       if (insertAt > 0) {
         finalHtml = html.slice(0, insertAt) + dimensionsSection + html.slice(insertAt);
         console.log("✅ Dimensions section successfully inserted");
@@ -2000,21 +2047,20 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
     if (userId && product_id) {
       console.log("🎯 Optimizing product title with Smart Title (Vision AI + DeepSeek)...");
       try {
-        const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke(
-          "smart-title",
-          {
-            body: {
-              productId: product_id,
-              language: language || "fr"
-            }
-          }
-        );
+        const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke("smart-title", {
+          body: {
+            productId: product_id,
+            language: language || "fr",
+          },
+        });
 
         if (titleError) {
           console.error("⚠️ Smart Title optimization failed:", titleError);
         } else if (titleData?.success) {
-          console.log(`✅ Title optimized with Vision AI: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`);
-          console.log(`📊 Vision Analysis: ${titleData.visionAnalysis || 'N/A'}`);
+          console.log(
+            `✅ Title optimized with Vision AI: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`,
+          );
+          console.log(`📊 Vision Analysis: ${titleData.visionAnalysis || "N/A"}`);
           console.log(`📝 DeepSeek Analysis:`, titleData.deepseekAnalysis);
         }
       } catch (titleOptError) {
