@@ -1231,35 +1231,24 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
 
     const prompt =
       detectedLanguage === "en"
-        ? `You are a Shopify UX/UI expert specialized in product landing pages.
-Generate a complete, professional Tailwind HTML landing page.
+        ? `You are an expert e-commerce copywriter and UX designer specialized in creating high-converting product landing pages.
 
-PRODUCT:
+Your mission: Create a compelling, emotionally engaging landing page that tells a story and makes customers fall in love with this product.
+
+🎯 PRODUCT INFORMATION:
 - Title: ${productTitle}
 - Brand: ${vendor}
 - Description: ${description}
 - Style: ${style || enrichedProduct.style || ""}
 - Product URL: ${productUrl}
 
-${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
-${visualAnalysis ? `🔍 VISUAL AI INSIGHTS (TRUST THESE OBSERVATIONS - THEY ARE WHAT IS ACTUALLY VISIBLE IN THE IMAGE):\n${visualAnalysis}\n\n🚨 CRITICAL: You MUST describe only what Vision AI observed. DO NOT mention features, colors, or materials that contradict the visual analysis above. If Vision AI says the product has wooden elements, DO NOT write about metal elements. BE 100% ACCURATE TO THE VISUAL OBSERVATIONS.\n` : ""}
+${enrichedSummary ? `✨ ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `🎨 VISUAL AI INSIGHTS (USE THIS TO CRAFT YOUR STORY):\n${visualAnalysis}\n\n💡 Use these visual observations to create vivid, accurate descriptions that help customers imagine the product in their space.\n` : ""}
 ${
   serpInsights
     ? `
-🎯 COMPETITOR LANDING PAGE ANALYSIS (USE THIS TO STRUCTURE YOUR PAGE):
-
-📋 Common Sections Found in Top Results:
-${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hero section\n- Product benefits\n- FAQ"}
-
-💬 Effective CTA Patterns:
-${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Buy now\n- Learn more"}
-
-🏗️ Structural Elements to Include:
-${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Clear headline\n- Visual imagery\n- Trust signals"}
-
-📊 Content Density: ${serpInsights.contentDensity || "medium"}
-
-💡 RECOMMENDATION: Structure your landing page using these proven patterns while maintaining uniqueness.
+📊 COMPETITOR INSIGHTS (STRUCTURE INSPIRATION):
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hero with emotional appeal\n- Lifestyle benefits\n- Social proof"}
 `
     : ""
 }
@@ -1453,8 +1442,26 @@ ${
 - In Technical Specifications, focus ONLY on materials, finishes, features, care instructions - NEVER include size measurements
 - The image gallery section MUST ONLY include lifestyle/product photos - DO NOT include technical diagrams, dimension schema images, or measurement illustrations (they will be added in a separate dimensions section)
 
-✅ REQUIRED SECTIONS:
-Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
+✅ REQUIRED SECTIONS (RICH CONTENT):
+1. **Hero Section**: Compelling headline with emotional appeal, stunning hero image with overlay
+2. **Brand Story**: 2-3 paragraphs about the product's inspiration, craftsmanship, or unique value proposition
+3. **Key Benefits**: 4-6 benefit cards with engaging descriptions (not just bullet points)
+4. **Lifestyle Integration**: How this product transforms the customer's space/life with vivid examples
+5. **Technical Specifications**: Materials, dimensions, care (if data available)
+6. **Use Cases & Styling Ideas**: 3-4 specific scenarios showing versatility
+7. **Image Gallery**: Multiple lifestyle images with context
+8. **Social Proof Elements**: Quality indicators, craftsmanship details
+9. **FAQ**: 5-8 thoughtful questions addressing real customer concerns
+
+📝 CONTENT WRITING GUIDELINES:
+- Write in an engaging, aspirational tone that creates desire
+- Use sensory language (how it feels, looks, transforms a space)
+- Tell micro-stories within each section
+- Focus on emotional benefits, not just features
+- Paint vivid pictures of the product in use
+- Address unstated customer desires and concerns
+- Create FOMO (scarcity of design, uniqueness)
+- Use persuasive copywriting techniques
 
 ICONS USAGE (MANDATORY):
 🚨 CRITICAL: SVG icons are REQUIRED, not optional!
@@ -1465,8 +1472,27 @@ ICONS USAGE (MANDATORY):
 - ❌ NO simple text bullets (-, *, •)
 - ❌ NO emoji icons (✓, ★, ✔)
 - ❌ NO decorative icons elsewhere`
-        : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
-Génère une landing page Tailwind HTML complète et professionnelle.
+        : `Tu es un copywriter e-commerce expert et designer UX spécialisé dans la création de landing pages produit à fort taux de conversion.
+
+Ta mission : Créer une landing page captivante, émotionnellement engageante qui raconte une histoire et fait tomber amoureux les clients de ce produit.
+
+🎯 INFORMATIONS PRODUIT :
+- Titre : ${productTitle}
+- Marque : ${vendor}
+- Description : ${description}
+- Style : ${style || enrichedProduct.style || ""}
+- URL produit : ${productUrl}
+
+${enrichedSummary ? `✨ ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `🎨 INSIGHTS IA VISUELLE (UTILISE CECI POUR CRÉER TON HISTOIRE) :\n${visualAnalysis}\n\n💡 Utilise ces observations visuelles pour créer des descriptions vivantes et précises qui aident les clients à imaginer le produit dans leur espace.\n` : ""}
+${
+  serpInsights
+    ? `
+📊 INSIGHTS CONCURRENTS (INSPIRATION STRUCTURE) :
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Héro avec impact émotionnel\n- Bénéfices lifestyle\n- Preuve sociale"}
+`
+    : ""
+}
 
 📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE):
 🚨 TOUJOURS inclure ces optimisations:
@@ -1474,36 +1500,6 @@ Génère une landing page Tailwind HTML complète et professionnelle.
 2. Viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 3. Textes: Adapter les tailles avec classes responsive (text-base md:text-lg)
 4. Espacements: Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
-
-PRODUIT :
-- Titre : ${productTitle}
-- Marque : ${vendor}
-- Description : ${description}
-- Style : ${style || enrichedProduct.style || ""}
-- URL produit : ${productUrl}
-
-${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
-${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATIONS - C'EST CE QUI EST RÉELLEMENT VISIBLE DANS L'IMAGE) :\n${visualAnalysis}\n\n🚨 CRITIQUE : Tu DOIS décrire uniquement ce que l'IA visuelle a observé. NE mentionne PAS de caractéristiques, couleurs ou matériaux qui contredisent l'analyse visuelle ci-dessus. Si l'IA visuelle dit que le produit a des éléments en bois, NE parle PAS d'éléments métalliques. SOIS PRÉCIS À 100% PAR RAPPORT AUX OBSERVATIONS VISUELLES.\n` : ""}
-${
-  serpInsights
-    ? `
-🎯 ANALYSE DES CONCURRENTS (UTILISE CECI POUR STRUCTURER TA PAGE) :
-
-📋 Sections Communes Trouvées dans les Meilleurs Résultats :
-${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Section héro\n- Avantages produit\n- FAQ"}
-
-💬 Modèles de CTA Efficaces :
-${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Acheter maintenant\n- En savoir plus"}
-
-🏗️ Éléments Structurels à Inclure :
-${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Titre clair\n- Imagerie visuelle\n- Signaux de confiance"}
-
-📊 Densité du Contenu : ${serpInsights.contentDensity || "moyenne"}
-
-💡 RECOMMANDATION : Structure ta landing page en utilisant ces modèles éprouvés tout en maintenant l'unicité.
-`
-    : ""
-}
 
 IMAGES :
 ${imgs}
@@ -1635,8 +1631,26 @@ STRUCTURE :
 - Dans Caractéristiques Techniques, se concentrer UNIQUEMENT sur les matériaux, finitions, fonctionnalités, entretien - JAMAIS les mesures de taille
 - La galerie d'images DOIT UNIQUEMENT inclure des photos lifestyle/produit - NE PAS inclure de schémas techniques, images de dimensions, ou illustrations de mesures (elles seront ajoutées dans une section dimensions séparée)
 
-✅ SECTIONS REQUISES :
-Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
+✅ SECTIONS REQUISES (CONTENU RICHE) :
+1. **Section Héro** : Titre accrocheur avec impact émotionnel, image hero impressionnante avec overlay
+2. **Histoire de la Marque** : 2-3 paragraphes sur l'inspiration du produit, le savoir-faire ou la proposition de valeur unique
+3. **Avantages Clés** : 4-6 cartes de bénéfices avec descriptions engageantes (pas juste des listes)
+4. **Intégration Lifestyle** : Comment ce produit transforme l'espace/la vie du client avec exemples vivants
+5. **Spécifications Techniques** : Matériaux, dimensions, entretien (si données disponibles)
+6. **Cas d'Usage & Idées Déco** : 3-4 scénarios spécifiques montrant la versatilité
+7. **Galerie d'Images** : Plusieurs images lifestyle avec contexte
+8. **Éléments de Preuve Sociale** : Indicateurs de qualité, détails du savoir-faire
+9. **FAQ** : 5-8 questions réfléchies répondant aux vraies préoccupations clients
+
+📝 DIRECTIVES DE RÉDACTION :
+- Écris dans un ton engageant et aspirationnel qui crée le désir
+- Utilise un langage sensoriel (toucher, apparence, transformation d'espace)
+- Raconte des micro-histoires dans chaque section
+- Focus sur les bénéfices émotionnels, pas juste les caractéristiques
+- Peins des images vivantes du produit en usage
+- Adresse les désirs et préoccupations non-dits des clients
+- Crée du FOMO (rareté du design, unicité)
+- Utilise des techniques de copywriting persuasif
 
 UTILISATION DES ICÔNES :
 - Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
@@ -1769,7 +1783,15 @@ UTILISATION DES ICÔNES :
           }
 
           const imageBuffer = await imageResponse.arrayBuffer();
-          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+          // Fix: Convert to base64 in chunks to avoid "Maximum call stack size exceeded"
+          const uint8Array = new Uint8Array(imageBuffer);
+          let base64Image = '';
+          const chunkSize = 32768; // 32KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            base64Image += String.fromCharCode(...chunk);
+          }
+          base64Image = btoa(base64Image);
           const imageDataUrl = `data:image/jpeg;base64,${base64Image}`;
 
           // Call Gemini Vision to detect dimension schemas
@@ -2049,6 +2071,7 @@ IMPORTANT: Ne retourne QUE les dimensions réellement visibles sur le schéma. N
       try {
         const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke("smart-title", {
           body: {
+            userId: userId,
             productId: product_id,
             language: language || "fr",
           },

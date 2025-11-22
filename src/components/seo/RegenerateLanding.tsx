@@ -62,6 +62,11 @@ export default function RegenerateLanding({
   const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
   const [optimizedTitle, setOptimizedTitle] = useState<string | null>(null);
   const [titleNeedsSync, setTitleNeedsSync] = useState(false);
+  const [titleAnalysis, setTitleAnalysis] = useState<{
+    visionAnalysis?: string;
+    deepseekAnalysis?: string;
+    confidence?: number;
+  } | null>(null);
 
   // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
@@ -248,31 +253,31 @@ export default function RegenerateLanding({
     switch (config.contentLength) {
       case "short":
         return {
-          maxTokens: 800,
-          wordCount: "150-200 mots",
-          sections: 2,
-          description: "Contenu concis et impactant",
+          maxTokens: 1500,
+          wordCount: "250-350 mots",
+          sections: 3,
+          description: "Contenu optimisé et impactant",
         };
       case "medium":
         return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré avec détails modérés",
+          maxTokens: 2500,
+          wordCount: "500-700 mots",
+          sections: 4,
+          description: "Contenu riche et persuasif",
         };
       case "long":
         return {
-          maxTokens: 2000,
-          wordCount: "500-700 mots",
-          sections: 4,
-          description: "Contenu détaillé et complet",
+          maxTokens: 4000,
+          wordCount: "900-1200 mots",
+          sections: 6,
+          description: "Contenu complet et détaillé",
         };
       default:
         return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré",
+          maxTokens: 2500,
+          wordCount: "500-700 mots",
+          sections: 4,
+          description: "Contenu riche",
         };
     }
   };
@@ -297,32 +302,34 @@ export default function RegenerateLanding({
 
       setProgress(15);
 
-      // ✅ ÉTAPE 1.5 : Optimiser le titre avec SERP
-      setProgressMessage("Optimisation du titre avec SERP...");
+      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision AI + DeepSeek)
+      setProgressMessage("Optimisation du titre avec Vision AI...");
       try {
-        const { data: serpData, error: serpError } = await supabase.functions.invoke("optimize-product-title-serp", {
+        const { data: titleData, error: titleError } = await supabase.functions.invoke("smart-title", {
           body: {
             productId: product.id,
-            currentTitle: product.title,
-            description: product.description,
-            vendor: resolvedVendor,
             language: language,
           },
         });
 
-        if (serpError) {
-          console.warn("[Landing] SERP title optimization failed:", serpError);
-        } else if (serpData?.success && serpData?.optimizedTitle) {
-          console.log("[Landing] Title optimized:", serpData.optimizedTitle);
-          setOptimizedTitle(serpData.optimizedTitle);
+        if (titleError) {
+          console.warn("[Landing] Smart Title optimization failed:", titleError);
+        } else if (titleData?.success && titleData?.optimizedTitle) {
+          console.log("[Landing] Title optimized with Vision AI:", titleData.optimizedTitle);
+          setOptimizedTitle(titleData.optimizedTitle);
           setTitleNeedsSync(true);
-          toast.success(`Titre optimisé: ${serpData.optimizedTitle}`, {
-            description: "N'oubliez pas de synchroniser avec Shopify pour appliquer le nouveau titre"
+          setTitleAnalysis({
+            visionAnalysis: titleData.visionAnalysis,
+            deepseekAnalysis: titleData.deepseekAnalysis,
+            confidence: titleData.confidence || 0.85,
+          });
+          toast.success(`Titre optimisé par IA: ${titleData.optimizedTitle}`, {
+            description: "Synchronisez pour appliquer le nouveau titre"
           });
         }
       } catch (err) {
-        console.warn("[Landing] SERP optimization error:", err);
-        // Continue even if SERP optimization fails
+        console.warn("[Landing] Smart Title optimization error:", err);
+        // Continue even if title optimization fails
       }
 
       setProgress(20);
@@ -483,19 +490,66 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
-      {/* Optimized Title Alert */}
-      {optimizedTitle && titleNeedsSync && (
-        <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-            <div>
-              <p className="font-medium text-sm">Titre optimisé SEO</p>
-              <p className="text-xs text-muted-foreground mb-1">
-                {optimizedTitle}
-              </p>
-              <p className="text-xs text-accent font-medium">
-                ⚠️ Synchronisez avec Shopify pour appliquer le nouveau titre
-              </p>
+      {/* Optimized Title Section */}
+      {optimizedTitle && (
+        <div className="bg-gradient-to-br from-accent/5 to-accent/10 p-5 rounded-xl border border-accent/30">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-accent/20 blur-md rounded-full animate-pulse" />
+                <Sparkles className="w-6 h-6 text-accent relative z-10" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-base">Titre optimisé par Vision AI</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    <Brain className="w-3 h-3 mr-1" />
+                    Gemini + DeepSeek
+                  </Badge>
+                </div>
+                
+                {/* Original vs Optimized */}
+                <div className="space-y-3">
+                  <div className="bg-muted/40 rounded-lg p-3 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1 font-medium">ORIGINAL</p>
+                    <p className="text-sm line-through opacity-60">{product.title}</p>
+                  </div>
+                  
+                  <div className="bg-accent/10 rounded-lg p-3 border border-accent/50">
+                    <p className="text-xs text-accent mb-1 font-medium">OPTIMISÉ</p>
+                    <p className="text-sm font-semibold">{optimizedTitle}</p>
+                  </div>
+                </div>
+
+                {/* AI Analysis Insights */}
+                {titleAnalysis && (
+                  <div className="mt-3 space-y-2">
+                    {titleAnalysis.visionAnalysis && (
+                      <div className="bg-background/50 rounded-lg p-2 border">
+                        <p className="text-xs text-muted-foreground font-medium mb-1 flex items-center gap-1">
+                          <Eye className="w-3 h-3" /> Vision AI
+                        </p>
+                        <p className="text-xs">{titleAnalysis.visionAnalysis}</p>
+                      </div>
+                    )}
+                    {titleAnalysis.deepseekAnalysis && (
+                      <div className="bg-background/50 rounded-lg p-2 border">
+                        <p className="text-xs text-muted-foreground font-medium mb-1 flex items-center gap-1">
+                          <Brain className="w-3 h-3" /> DeepSeek AI
+                        </p>
+                        <p className="text-xs line-clamp-2">{titleAnalysis.deepseekAnalysis}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {titleNeedsSync && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-accent font-medium">
+                    <AlertCircle className="w-4 h-4" />
+                    Synchronisez avec Shopify pour appliquer ce titre
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
