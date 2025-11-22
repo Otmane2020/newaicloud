@@ -1,4 +1,42 @@
 export const translations = {
+  // ============= Toasts communs =============
+  toasts: {
+    success: {
+      saved: "Sauvegardé avec succès",
+      updated: "Mis à jour avec succès",
+      deleted: "Supprimé avec succès",
+      copied: "Copié dans le presse-papiers",
+      applied: "Appliqué avec succès",
+      synchronized: "Synchronisé avec succès",
+      taskCompleted: "Tâche terminée",
+      optimized: "Optimisé avec succès",
+    },
+    error: {
+      generic: "Une erreur s'est produite",
+      saving: "Erreur lors de la sauvegarde",
+      updating: "Erreur lors de la mise à jour",
+      deleting: "Erreur lors de la suppression",
+      loading: "Erreur lors du chargement",
+      payment: "Erreur de paiement",
+      notifications: "Échec de l'envoi de la notification",
+    },
+    warning: {
+      limitReached: "Limite atteinte",
+    },
+    info: {
+      processing: "Traitement en cours...",
+    },
+  },
+
+  // ============= Centre de notifications Toasts =============
+  notifications: {
+    toasts: {
+      archived: "Notification archivée",
+      allMarkedRead: "Toutes les notifications marquées comme lues",
+      completed: "Tâche marquée comme terminée",
+    },
+  },
+
   // ============= Offre promotionnelle =============
   announcement: {
     limitedSale: "Offre limitée jusqu'à 30% de RÉDUCTION",

@@ -1,66 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getNotificationTemplate } from "../_shared/notification-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Embedded notification templates
-const templates = {
-  products: {
-    low: {
-      en: { title: "🎯 Quick SEO Win!", message: (c: number) => `${c} products ready for SEO. 5 min = +20% traffic!` },
-      fr: { title: "🎯 Opportunité SEO!", message: (c: number) => `${c} produits prêts. 5 min = +20% trafic!` }
-    },
-    medium: {
-      en: { title: "⚡ SEO Boost!", message: (c: number) => `${c} products missing SEO. Don't fall behind!` },
-      fr: { title: "⚡ Amélioration SEO!", message: (c: number) => `${c} produits sans SEO. Ne manquez pas ça!` }
-    },
-    high: {
-      en: { title: "🚨 SEO Alert!", message: (c: number) => `URGENT: ${c} products invisible! Fix now!` },
-      fr: { title: "🚨 Alerte SEO!", message: (c: number) => `URGENT: ${c} produits invisibles!` }
-    }
-  },
-  collections: {
-    en: { title: "💰 Revenue Opportunity!", message: (c: number) => `${c} collections = 50-100 visitors/month each!` },
-    fr: { title: "💰 Opportunité Revenu!", message: (c: number) => `${c} collections = 50-100 visiteurs/mois!` }
-  },
-  images: {
-    medium: {
-      en: { title: "📸 Image SEO Missing!", message: (c: number) => `${c} images without ALT. 0% image traffic!` },
-      fr: { title: "📸 SEO d'Image!", message: (c: number) => `${c} images sans ALT. 0% de trafic!` }
-    },
-    high: {
-      en: { title: "🔍 Huge SEO Gap!", message: (c: number) => `${c} images invisible to search!` },
-      fr: { title: "🔍 Lacune SEO!", message: (c: number) => `${c} images invisibles!` }
-    }
-  },
-  blog: {
-    en: { title: "✍️ Blog Optimization!", message: (c: number) => `${c} articles = 2x more clicks!` },
-    fr: { title: "✍️ Optimisation Blog!", message: (c: number) => `${c} articles = 2x plus de clics!` }
-  },
-  milestone: {
-    en: { title: "🎊 Milestone Reached!", message: (p: number) => `${p}% optimized! Great work!` },
-    fr: { title: "🎊 Étape Franchie!", message: (p: number) => `${p}% optimisé! Bravo!` }
-  }
-};
-
-function getTemplate(type: string, count: number, lang: 'en' | 'fr' = 'fr') {
-  const l = lang;
-  if (type === 'products') {
-    if (count <= 5) return { ...templates.products.low[l], priority: 'low' };
-    if (count <= 15) return { ...templates.products.medium[l], priority: 'medium' };
-    return { ...templates.products.high[l], priority: 'high' };
-  }
-  if (type === 'images') {
-    return count > 20 
-      ? { ...templates.images.high[l], priority: 'high' }
-      : { ...templates.images.medium[l], priority: 'medium' };
-  }
-  if (type === 'collections') return { ...templates.collections[l], priority: 'high' };
-  if (type === 'blog') return { ...templates.blog[l], priority: 'medium' };
-  return { title: '', message: (_: number) => '', priority: 'medium' };
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -119,16 +63,16 @@ Deno.serve(async (req: Request) => {
             .limit(20);
 
           if (products && products.length > 0) {
-            const t = getTemplate('products', products.length, userLanguage);
+            const template = getNotificationTemplate('products', products.length, userLanguage);
             notifications.push({
               user_id: user.id,
-              title: t.title,
-              message: t.message(products.length),
+              title: template.title,
+              message: template.message,
               type: "seo_task",
-              priority: t.priority,
+              priority: template.priority,
               category: "products",
-              action_url: "/seo?tab=products",
-              action_label: userLanguage === 'fr' ? "Optimiser maintenant" : "Optimize now",
+              action_url: "/products/title-description",
+              action_label: userLanguage === 'fr' ? "🚀 Optimiser maintenant" : "🚀 Optimize now",
               due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
               metadata: { count: products.length, product_ids: products.map(p => p.id) }
             });
@@ -145,16 +89,16 @@ Deno.serve(async (req: Request) => {
             .limit(10);
 
           if (collections && collections.length > 0) {
-            const t = getTemplate('collections', collections.length, userLanguage);
+            const template = getNotificationTemplate('collections', collections.length, userLanguage);
             notifications.push({
               user_id: user.id,
-              title: t.title,
-              message: t.message(collections.length),
+              title: template.title,
+              message: template.message,
               type: "seo_task",
-              priority: t.priority,
+              priority: template.priority,
               category: "collections",
-              action_url: "/seo?tab=collections",
-              action_label: userLanguage === 'fr' ? "Optimiser maintenant" : "Optimize now",
+              action_url: "/collections",
+              action_label: userLanguage === 'fr' ? "💎 Optimiser maintenant" : "💎 Optimize now",
               due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
               metadata: { count: collections.length, collection_ids: collections.map(c => c.id) }
             });
@@ -173,16 +117,16 @@ Deno.serve(async (req: Request) => {
             .limit(50);
 
           if (images && images.length > 0) {
-            const t = getTemplate('images', images.length, userLanguage);
+            const template = getNotificationTemplate('images', images.length, userLanguage);
             notifications.push({
               user_id: user.id,
-              title: t.title,
-              message: t.message(images.length),
+              title: template.title,
+              message: template.message,
               type: "seo_task",
-              priority: t.priority,
+              priority: template.priority,
               category: "images",
-              action_url: "/products",
-              action_label: userLanguage === 'fr' ? "Optimiser les images" : "Optimize images",
+              action_url: "/products/images",
+              action_label: userLanguage === 'fr' ? "📸 Optimiser les images" : "📸 Optimize images",
               due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
               metadata: { count: images.length, image_ids: images.map(i => i.id) }
             });
@@ -199,16 +143,16 @@ Deno.serve(async (req: Request) => {
             .limit(10);
 
           if (articles && articles.length > 0) {
-            const t = getTemplate('blog', articles.length, userLanguage);
+            const template = getNotificationTemplate('blog', articles.length, userLanguage);
             notifications.push({
               user_id: user.id,
-              title: t.title,
-              message: t.message(articles.length),
+              title: template.title,
+              message: template.message,
               type: "seo_task",
-              priority: t.priority,
+              priority: template.priority,
               category: "blog",
               action_url: "/blog",
-              action_label: userLanguage === 'fr' ? "Voir les articles" : "View articles",
+              action_label: userLanguage === 'fr' ? "✍️ Voir les articles" : "✍️ View articles",
               due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
               metadata: { count: articles.length, article_ids: articles.map(a => a.id) }
             });
@@ -225,28 +169,43 @@ Deno.serve(async (req: Request) => {
           const optimizedCount = allProducts.filter(p => p.seo_title).length;
           const optimizationRate = Math.round((optimizedCount / allProducts.length) * 100);
 
-          // Milestone notifications (50%, 75%, 100%)
-          if (optimizationRate === 50 || optimizationRate === 75 || optimizationRate === 100) {
-            const t = templates.milestone[userLanguage];
+          // Milestone notifications (50%, 75%, 90%, 100%)
+          if ([50, 75, 90, 100].includes(optimizationRate)) {
+            const achievementMessages = {
+              fr: {
+                50: { title: "🎯 Mi-chemin atteint !", message: `Félicitations ! 50% de votre catalogue est optimisé. Continuez comme ça pour atteindre 100% !` },
+                75: { title: "🔥 75% complété !", message: `Incroyable ! Vous êtes à 75%. Plus que quelques produits pour atteindre l'excellence SEO !` },
+                90: { title: "⭐ 90% optimisé !", message: `Presque parfait ! 90% de votre catalogue brille. Terminez les derniers 10% pour le trophée !` },
+                100: { title: "🏆 CHAMPION SEO !", message: `🎊 100% COMPLET ! Votre catalogue est optimisé à la perfection. Bravo champion !` }
+              },
+              en: {
+                50: { title: "🎯 Halfway There!", message: `Congrats! 50% of your catalog is optimized. Keep going to reach 100%!` },
+                75: { title: "🔥 75% Complete!", message: `Amazing! You're at 75%. Just a few more products for SEO excellence!` },
+                90: { title: "⭐ 90% Optimized!", message: `Almost perfect! 90% of your catalog shines. Finish the last 10% for the trophy!` },
+                100: { title: "🏆 SEO CHAMPION!", message: `🎊 100% COMPLETE! Your catalog is perfectly optimized. Bravo champion!` }
+              }
+            };
+
+            const msg = achievementMessages[userLanguage][optimizationRate as 50 | 75 | 90 | 100];
             notifications.push({
               user_id: user.id,
-              title: t.title,
-              message: t.message(optimizationRate),
+              title: msg.title,
+              message: msg.message,
               type: "achievement",
               priority: "low",
               category: "achievements",
               action_url: "/dashboard",
-              action_label: userLanguage === 'fr' ? "Voir le tableau de bord" : "View dashboard",
-              metadata: { achievement_type: 'milestone', rate: optimizationRate }
+              action_label: userLanguage === 'fr' ? "🎉 Voir tableau de bord" : "🎉 View dashboard",
+              metadata: { achievement_type: 'milestone', rate: optimizationRate, optimized: optimizedCount, total: allProducts.length }
             });
           }
         }
       }
 
-      // Insert notifications in database
+      // Insert notifications in database (app_notifications instead of seo_notifications)
       if (notifications.length > 0 && settings?.in_app_enabled) {
         const { error: insertError } = await supabase
-          .from("seo_notifications")
+          .from("app_notifications")
           .insert(notifications);
 
         if (!insertError) {

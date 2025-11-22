@@ -134,7 +134,7 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      toast.success(language === 'fr' ? 'Notification archivée' : 'Notification archived');
+      toast.success(t.notifications.toasts.archived);
       fetchNotifications();
     } catch (error) {
       console.error('Error archiving notification:', error);
@@ -152,7 +152,7 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      toast.success(language === 'fr' ? 'Toutes les notifications marquées comme lues' : 'All notifications marked as read');
+      toast.success(t.notifications.toasts.allMarkedRead);
       fetchNotifications();
     } catch (error) {
       console.error('Error marking all as read:', error);
