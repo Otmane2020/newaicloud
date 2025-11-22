@@ -5140,6 +5140,75 @@ export const translations = {
       cancel: "Annuler",
       confirm: "✅ Confirmer la réoptimisation"
     },
+    landingPagePreview: {
+      title: "Aperçu Landing Page",
+      noLandingPage: "Aucune landing page générée",
+      generateFirst: "Veuillez d'abord générer une landing page",
+      desktop: "Desktop",
+      mobile: "Mobile",
+      download: "Télécharger HTML",
+      syncShopify: "Synchroniser avec Shopify",
+      downloading: "Téléchargement...",
+      syncing: "Synchronisation...",
+      downloadSuccess: "Téléchargement réussi !",
+      syncSuccess: "Synchronisation réussie !",
+      close: "Fermer",
+      viewMobile: "Voir en Mobile",
+      viewDesktop: "Voir en Desktop",
+      downloadHtml: "Télécharger HTML",
+      synchronizing: "Synchronisation...",
+      resync: "Re-synchroniser",
+      syncWithShopify: "Synchroniser avec Shopify",
+      viewOnline: "Voir en ligne",
+      createOptimized: "Créez une landing page optimisée pour ce produit",
+      generateLandingPage: "Générer Landing Page",
+      generationTime: "⚡ Génération en 30-60 secondes"
+    },
+    optimizationConfig: {
+      title: "Configuration de l'optimisation",
+      description: "Configurez votre optimisation pour",
+      products: "produits",
+      photoToAnalyze: "Photo à analyser",
+      mainImage: "Image principale",
+      gallery: "Galerie",
+      additionalInfo: "Informations complémentaires",
+      additionalInfoPlaceholder: "Ajoutez des détails spécifiques sur vos produits...",
+      additionalInfoHelp: "Ces informations aideront l'IA à mieux comprendre vos produits",
+      descriptionStyle: "Style de description",
+      styles: {
+        modern: "Moderne",
+        elegant: "Élégant",
+        professional: "Professionnel",
+        creative: "Créatif"
+      },
+      contentStructure: "Structure du contenu",
+      layouts: {
+        compact: "Compact",
+        detailed: "Détaillé",
+        story: "Storytelling"
+      },
+      colorPalette: "Palette de couleurs",
+      colors: {
+        vibrant: "Vibrant",
+        pastel: "Pastel",
+        monochrome: "Monochrome",
+        warm: "Chaleureux"
+      },
+      contentLength: "Longueur du contenu",
+      lengths: {
+        short: "Court",
+        medium: "Moyen",
+        long: "Long"
+      },
+      cancel: "Annuler",
+      launchOptimization: "Lancer l'optimisation"
+    },
+    optimizationConfirm: {
+      title: "Confirmer l'optimisation",
+      description: "Vous êtes sur le point d'optimiser les produits sélectionnés",
+      productsSelected: "Produits sélectionnés",
+      cancel: "Annuler"
+    },
     demoBooking: {
       title: "Voir Quickshot en action",
       description: "Créez des images lifestyle en quelques secondes",

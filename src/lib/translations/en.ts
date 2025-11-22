@@ -5125,6 +5125,75 @@ export const translations = {
       cancel: "Cancel",
       confirm: "✅ Confirm Reoptimization"
     },
+    landingPagePreview: {
+      title: "Landing Page Preview",
+      noLandingPage: "No landing page generated",
+      generateFirst: "Please generate a landing page first",
+      desktop: "Desktop",
+      mobile: "Mobile",
+      download: "Download HTML",
+      syncShopify: "Sync with Shopify",
+      downloading: "Downloading...",
+      syncing: "Syncing...",
+      downloadSuccess: "Download successful!",
+      syncSuccess: "Sync successful!",
+      close: "Close",
+      viewMobile: "View Mobile",
+      viewDesktop: "View Desktop",
+      downloadHtml: "Download HTML",
+      synchronizing: "Syncing...",
+      resync: "Re-sync",
+      syncWithShopify: "Sync with Shopify",
+      viewOnline: "View Online",
+      createOptimized: "Create an optimized landing page for this product",
+      generateLandingPage: "Generate Landing Page",
+      generationTime: "⚡ Generation in 30-60 seconds"
+    },
+    optimizationConfig: {
+      title: "Optimization Configuration",
+      description: "Configure your optimization for",
+      products: "products",
+      photoToAnalyze: "Photo to analyze",
+      mainImage: "Main image",
+      gallery: "Gallery",
+      additionalInfo: "Additional information",
+      additionalInfoPlaceholder: "Add specific details about your products...",
+      additionalInfoHelp: "This information will help AI better understand your products",
+      descriptionStyle: "Description style",
+      styles: {
+        modern: "Modern",
+        elegant: "Elegant",
+        professional: "Professional",
+        creative: "Creative"
+      },
+      contentStructure: "Content structure",
+      layouts: {
+        compact: "Compact",
+        detailed: "Detailed",
+        story: "Storytelling"
+      },
+      colorPalette: "Color palette",
+      colors: {
+        vibrant: "Vibrant",
+        pastel: "Pastel",
+        monochrome: "Monochrome",
+        warm: "Warm"
+      },
+      contentLength: "Content length",
+      lengths: {
+        short: "Short",
+        medium: "Medium",
+        long: "Long"
+      },
+      cancel: "Cancel",
+      launchOptimization: "Launch optimization"
+    },
+    optimizationConfirm: {
+      title: "Confirm optimization",
+      description: "You are about to optimize the selected products",
+      productsSelected: "Products selected",
+      cancel: "Cancel"
+    },
     demoBooking: {
       title: "See Quickshot in action",
       description: "Create lifestyle images in seconds",
