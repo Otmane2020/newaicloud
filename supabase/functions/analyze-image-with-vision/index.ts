@@ -23,58 +23,46 @@ function cleanJSON(text: string): string {
 }
 
 // ---------------------------------------------------------
-//  🔥 VISION VIA VERTEX AI (Gemini Pro Vision)
+//  🔥 VISION VIA LOVABLE AI (Gemini 2.5 Pro)
 // ---------------------------------------------------------
-async function callVertexAIVision(
-  prompt: string, 
-  imageData: string, 
-  apiKey: string,
-  projectId: string
-) {
-  const location = "us-central1"; // ou europe-west1
-  const model = "gemini-1.5-pro-002";
-  
-  const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
+async function callLovableVision(prompt: string, imageData: string, apiKey: string) {
+  const url = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
   const body = {
-    contents: [
+    model: "google/gemini-2.5-pro",
+    messages: [
       {
         role: "user",
-        parts: [
-          { text: prompt },
+        content: [
+          { type: "text", text: prompt },
           {
-            inline_data: {
-              mime_type: "image/jpeg",
-              data: imageData
-            }
-          }
-        ]
-      }
+            type: "image_url",
+            image_url: { url: `data:image/jpeg;base64,${imageData}` },
+          },
+        ],
+      },
     ],
-    generation_config: {
-      temperature: 0.1,
-      max_output_tokens: 2048,
-    }
+    modalities: ["image", "text"],
+    temperature: 0.1,
   };
 
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error("Vertex AI Vision Error:", res.status, errorText);
-    throw new Error(`VERTEX_VISION_FAILED_${res.status}`);
+    console.error("Lovable Vision Error:", res.status, errorText);
+    throw new Error(`VISION_FAILED_${res.status}`);
   }
 
   const json = await res.json();
-  const content = json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  return content;
+  return json?.choices?.[0]?.message?.content || null;
 }
 
 // ---------------------------------------------------------
@@ -86,11 +74,8 @@ serve(async (req) => {
   }
 
   try {
-    const VERTEX_API_KEY = Deno.env.get("VERTEX_AI_API_KEY");
-    const GOOGLE_PROJECT_ID = Deno.env.get("GOOGLE_CLOUD_PROJECT_ID");
-    
-    if (!VERTEX_API_KEY) throw new Error("VERTEX_AI_API_KEY not configured");
-    if (!GOOGLE_PROJECT_ID) throw new Error("GOOGLE_CLOUD_PROJECT_ID not configured");
+    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const body: VisionRequest = await req.json();
     const { imageUrl, productContext } = body;
@@ -171,17 +156,17 @@ Retourne uniquement du JSON valide.
 `;
 
     // ----------------------------------------------
-    // CALL VERTEX AI VISION
+    // CALL LOVABLE VISION (Gemini 2.5 Pro)
     // ----------------------------------------------
-    const raw = await callVertexAIVision(prompt, imageData, VERTEX_API_KEY, GOOGLE_PROJECT_ID);
-    if (!raw) throw new Error("No analysis returned from Vertex AI Vision");
+    const raw = await callLovableVision(prompt, imageData, LOVABLE_KEY);
+    if (!raw) throw new Error("No analysis returned from Lovable Vision");
 
     let parsed;
     try {
       parsed = JSON.parse(cleanJSON(raw));
     } catch (err) {
-      console.error("❌ Invalid JSON from Vertex AI Vision:", raw);
-      throw new Error("Vertex AI Vision returned invalid JSON");
+      console.error("❌ Invalid JSON from Lovable Vision:", raw);
+      throw new Error("Lovable Vision returned invalid JSON");
     }
 
     return new Response(JSON.stringify({ success: true, ...parsed }), {
