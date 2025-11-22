@@ -209,37 +209,43 @@ Sois concis, précis et concentre-toi sur ce qui rendra le titre vendeur.`;
     // Step 3: Generate optimized title with Google Gemini
     console.log('[SMART-TITLE] Step 3: Generate optimized title');
     
-    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Tu vas FUSIONNER les analyses suivantes pour créer UN SEUL titre produit optimisé:
+    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Génère un titre ULTRA PRÉCIS en analysant l'image.
 
-**🔍 ANALYSE VISUELLE GEMINI (Image du produit):**
+**🖼️ CE QUE TU VOIS DANS L'IMAGE (PRIORITÉ ABSOLUE):**
 ${visionAnalysis || 'Non disponible'}
 
-**📝 ANALYSE TEXTUELLE DEEPSEEK (Description):**
+**📝 Données textuelles complémentaires:**
 - Catégorie: ${deepseekAnalysis.category}
-- Matériaux: ${deepseekAnalysis.materials?.join(', ')}
+- Matériaux mentionnés: ${deepseekAnalysis.materials?.join(', ')}
 - Style: ${deepseekAnalysis.style || 'N/A'}
-- Caractéristiques: ${deepseekAnalysis.features?.join(', ')}
 
-**📌 TITRE ACTUEL:**
-${product.title}
+**📌 Titre actuel:** ${product.title}
 
-**🎯 TA MISSION - CRÉER UN TITRE OPTIMISÉ EN FUSIONNANT CES 3 SOURCES:**
+**🎯 INSTRUCTIONS CRITIQUES - LIS L'ANALYSE VISUELLE:**
 
-**RÈGLES STRICTES:**
-1. Priorise l'analyse VISUELLE Gemini (ce qu'on voit réellement)
-2. Complète avec l'analyse DeepSeek si info manquante
-3. Structure: CATÉGORIE + MATÉRIAUX + CARACTÉRISTIQUES + STYLE
-4. Maximum 70 caractères
-5. Chaque mot important commence par une majuscule
-6. Sépare par des espaces (pas de virgules)
-7. Langage: ${language === 'fr' ? 'Français' : 'Anglais'}
+1. **EXTRAIS de l'analyse Gemini Vision:**
+   - La CATÉGORIE exacte du produit (Table Basse, Meuble TV, Lampe...)
+   - Les COULEURS visibles (ex: "Bleu Marine", "Bleu Foncé", "Doré", "Blanc Marbre")
+   - Les MATÉRIAUX visibles (ex: "Métal Doré", "Laminé Bleu", "Marbre Blanc", "Chrome")
+   - Le STYLE (Moderne, Scandinave, Industriel...)
+   - Les CARACTÉRISTIQUES uniques (Pieds Coniques, Gigogne, Compartiments...)
 
-**EXEMPLES DE FUSION RÉUSSIE:**
-- Image: "table ronde, marbre blanc, pieds chromés" → "Table Basse Ronde Marbre Blanc Piètement Chromé"
-- Image: "lampe, métal doré, style moderne" → "Lampe Design Métal Doré Moderne"
-- Image: "vase, verre transparent, forme cylindrique" → "Vase Cylindrique Verre Transparent Moderne"
+2. **STRUCTURE DU TITRE (dans cet ordre):**
+   CATÉGORIE + COULEUR + MATÉRIAU + CARACTÉRISTIQUE + STYLE
 
-**⚡ GÉNÈRE MAINTENANT LE TITRE OPTIMISÉ (UNIQUEMENT LE TITRE, RIEN D'AUTRE):**`;
+3. **EXEMPLES PRÉCIS basés sur analyses visuelles:**
+   - Vision: "bleu marine, pieds dorés métalliques" → "Table Basse Bleu Marine Pieds Métal Doré Moderne"
+   - Vision: "marbre blanc, structure chromée" → "Table Basse Marbre Blanc Piètement Chromé"
+   - Vision: "verre transparent, métal noir" → "Table Basse Verre Transparent Métal Noir"
+
+4. **RÈGLES:**
+   - 70 caractères maximum
+   - Majuscule à chaque mot important
+   - Sépare par des espaces (PAS de virgules)
+   - ${language === 'fr' ? 'En FRANÇAIS' : 'In ENGLISH'}
+   - PRIORISE ce que tu VOIS dans l'image (couleurs, matériaux)
+
+**⚡ GÉNÈRE LE TITRE (SEULEMENT LE TITRE):**`;
 
     const geminiTitleResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
