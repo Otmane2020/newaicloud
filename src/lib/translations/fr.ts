@@ -1,4 +1,205 @@
 export const translations = {
+  // ============= Dialogs =============
+  dialogs: {
+    autoSync: {
+      title: "Synchronisation automatique",
+      storeName: "Votre boutique Shopify",
+      importing: "Importation de {{type}}...",
+      currentStep: "Étape en cours : {{type}}",
+      pleaseWait: "Veuillez patienter pendant la synchronisation...",
+      duration: "Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique",
+      types: {
+        products: "Produits",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        images: "Images"
+      }
+    },
+    shopifySync: {
+      successTitle: "Synchronisation SEO réussie !",
+      itemsSynced_one: "{{count}} élément synchronisé avec succès sur Shopify",
+      itemsSynced_other: "{{count}} éléments synchronisés avec succès sur Shopify",
+      howToVerify: "Comment vérifier votre SEO dans Shopify :",
+      step1: "Cliquez sur \"Voir dans Admin Shopify\" ci-dessous",
+      step2: "Scrollez jusqu'à la section",
+      step3: "Vérifiez que le titre et la description correspondent",
+      previewSection: "Prévisualisation sur les moteurs de recherche",
+      cacheNote: "Le cache Shopify peut prendre 5-10 minutes pour se rafraîchir sur le storefront.",
+      noteLabel: "Note :",
+      type: "Type",
+      title: "Titre",
+      status: "Statut",
+      action: "Action",
+      synchronized: "Synchronisé",
+      viewInAdmin: "Voir dans Admin Shopify",
+      close: "Fermer",
+      resourceTypes: {
+        product: "Produit",
+        collection: "Collection",
+        page: "Page",
+        article: "Article"
+      }
+    },
+    syncAll: {
+      inProgress: "Synchronisation en cours...",
+      completed: "Synchronisation terminée",
+      processing: "Traitement de {{item}}...",
+      success: "Succès",
+      errors: "Erreurs",
+      skipped: "Ignorés",
+      title: "Titre",
+      image: "Image",
+      status: "Statut",
+      error: "Erreur",
+      statusSuccess: "Succès",
+      statusError: "Erreur",
+      statusSkipped: "Ignoré",
+      close: "Fermer",
+      syncingType: "Synchronisation des {{type}}...",
+      processingItem: "En cours: {{item}}",
+      detailsTitle: "Détails de la synchronisation",
+      types: {
+        products: "produits",
+        collections: "collections",
+        pages: "pages",
+        articles: "articles",
+        tags: "tags",
+        "alt-images": "images alt"
+      }
+    },
+    seoWorkflow: {
+      progress: {
+        optimizingTitle: "Optimisation SEO en cours...",
+        optimizingDesc: "Génération des titres et descriptions optimisés pour {{count}} {{type}}...",
+        syncingTitle: "Synchronisation en cours...",
+        syncingDesc: "Envoi des données optimisées vers Shopify...",
+        step: "Étape {{current}} sur {{total}}",
+        completeOptimizing: "Optimisation terminée !",
+        completeSyncing: "Synchronisation terminée !"
+      },
+      results: {
+        seoComplete: "Optimisation SEO terminée",
+        seoCompleteDesc: "{{successCount}} {{type}} optimisés avec succès",
+        tagsComplete: "Tags générés avec succès",
+        tagsCompleteDesc: "{{successCount}} {{type}} ont reçu de nouveaux tags",
+        altComplete: "Textes ALT générés",
+        altCompleteDesc: "{{successCount}} images ont reçu des descriptions ALT optimisées",
+        preview: "Aperçu",
+        newTitle: "Nouveau titre",
+        newDescription: "Nouvelle description",
+        newTags: "Nouveaux tags",
+        newAlt: "Nouveau texte ALT",
+        syncWithShopify: "Synchroniser avec Shopify",
+        syncReminder: "N'oubliez pas de synchroniser vos modifications avec Shopify",
+        previewArticles: "Prévisualiser les articles",
+        close: "Fermer",
+        seoAnalysis: "Analyse SEO",
+        generatedTags: "Tags générés",
+        altText: "Texte ALT",
+        types: {
+          products: "produits",
+          collections: "collections",
+          articles: "articles"
+        }
+      },
+      confirmation: {
+        syncSeoTitle: "Synchroniser les optimisations SEO",
+        syncSeoDesc: "{{count}} {{type}} seront mis à jour sur Shopify avec les nouveaux titres et descriptions SEO.",
+        syncTagsTitle: "Synchroniser les tags",
+        syncTagsDesc: "{{count}} {{type}} seront mis à jour sur Shopify avec les nouveaux tags.",
+        syncAltTitle: "Synchroniser les textes ALT",
+        syncAltDesc: "{{count}} images seront mises à jour sur Shopify avec les nouveaux textes ALT.",
+        warning: "Les modifications seront immédiatement visibles sur votre boutique Shopify.",
+        syncing: "Synchronisation...",
+        cancel: "Annuler",
+        confirm: "Confirmer la synchronisation",
+        readyForSync: "Prêt pour la synchronisation"
+      },
+      success: {
+        seoSyncedTitle: "SEO synchronisé avec Shopify !",
+        seoSyncedDesc: "{{count}} {{type}} ont été mis à jour sur votre boutique Shopify",
+        tagsSyncedTitle: "Tags synchronisés avec Shopify !",
+        tagsSyncedDesc: "Les tags de {{count}} {{type}} ont été mis à jour",
+        altSyncedTitle: "Textes ALT synchronisés !",
+        altSyncedDesc: "{{count}} images ont été mises à jour",
+        changesLive: "Vos modifications sont maintenant en ligne",
+        viewStore: "Voir la boutique",
+        done: "Terminé"
+      }
+    },
+    variantSelection: {
+      title: "Confirmation de l'application",
+      description: "Vérifiez les produits et variantes qui vont être traités avec l'arrière-plan IA",
+      simpleFormat: "Format Simple - Image principale",
+      simpleDesc_one: "{{count}} produit sélectionné pour l'optimisation de l'image principale",
+      simpleDesc_other: "{{count}} produits sélectionnés pour l'optimisation de l'image principale",
+      aiBackground: "L'arrière-plan IA sera appliqué à l'image principale de chaque produit",
+      variantsFormat: "Format Variantes",
+      variantsDesc: "{{totalVariants}} variante(s) sélectionnée(s) sur {{totalProducts}} produit(s)",
+      aiBackgroundVariants: "L'arrière-plan IA sera appliqué aux variantes sélectionnées de chaque produit",
+      breakdown: "Détail par produit :",
+      variants_one: "{{count}} variante",
+      variants_other: "{{count}} variantes",
+      cancel: "Annuler",
+      confirm: "Confirmer et générer"
+    },
+    reoptimize: {
+      title: "Confirmer la réoptimisation ?",
+      description: "Certaines collections ont déjà été optimisées",
+      total_one: "{{count}} collection sera optimisée",
+      total_other: "{{count}} collections seront optimisées",
+      selected_one: "Collection sélectionnée",
+      selected_other: "Collections sélectionnées",
+      previousOptimizations: "Optimisations précédentes",
+      alreadyOptimized: "Déjà optimisées ({{count}})",
+      neverOptimized: "Jamais optimisées ({{count}})",
+      warning: "⚠️ Les données SEO actuelles seront écrasées",
+      warningText: "L'IA va générer de nouveaux titres et descriptions SEO. Les anciennes optimisations seront remplacées.",
+      lastOptimized: "Dernière optimisation : {{date}}",
+      optimizations: "{{count}}x",
+      new: "Nouveau",
+      quotaNote: "Cette optimisation sera comptabilisée dans votre quota mensuel.",
+      consumedOptimizations: "{{count}} optimisation{{plural}} sera{{plural2}} consommée{{plural}}.",
+      cancel: "Annuler",
+      confirm: "✅ Confirmer la réoptimisation"
+    },
+    demoBooking: {
+      title: "Voir Quickshot en action",
+      description: "Créez des images lifestyle en quelques secondes",
+      businessEmail: "Email professionnel",
+      businessEmailPlaceholder: "vous@votreentreprise.com",
+      firstName: "Prénom",
+      firstNamePlaceholder: "John",
+      lastName: "Nom",
+      lastNamePlaceholder: "Doe",
+      role: "Rôle",
+      rolePlaceholder: "Sélectionnez votre rôle",
+      roleBest: "Quel rôle vous décrit le mieux ?",
+      selectPlaceholder: "Veuillez sélectionner",
+      roles: {
+        ecommerce_manager: "Responsable E-commerce",
+        marketing_director: "Directeur Marketing",
+        ceo_founder: "CEO/Fondateur",
+        product_manager: "Chef de Produit",
+        designer: "Designer",
+        other: "Autre"
+      },
+      submitting: "Envoi en cours...",
+      submit: "Voir en direct",
+      required: "*",
+      errors: {
+        invalidEmail: "Veuillez entrer un email professionnel valide",
+        firstNameRequired: "Le prénom est requis",
+        lastNameRequired: "Le nom est requis",
+        roleRequired: "Veuillez compléter ce champ obligatoire."
+      },
+      success: "Demande de démo envoyée !",
+      successDesc: "Nous vous contacterons bientôt à ",
+      error: "Erreur lors de l'envoi de la demande"
+    }
+  },
+
   // ============= Offre promotionnelle =============
   announcement: {
     limitedSale: "Offre limitée jusqu'à 30% de RÉDUCTION",

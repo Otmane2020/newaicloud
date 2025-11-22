@@ -2,10 +2,12 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
 import { Loader2, Package, FileText, Image, FolderOpen, Newspaper } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 export function AutoSyncProgressDialog() {
   const { isSyncing, currentType, storeName } = useAutoSyncProgress();
   const location = useLocation();
+  const { t, tf } = useTranslation();
   
   // Afficher le dialog partout sauf sur onboarding SANS shopify_pending
   // Si on est sur onboarding AVEC shopify_pending, on affiche le dialog pour montrer le claim en cours
@@ -31,14 +33,14 @@ export function AutoSyncProgressDialog() {
   };
 
   const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      products: 'Produits',
-      collections: 'Collections',
-      pages: 'Pages',
-      articles: 'Articles',
-      images: 'Images'
+    const typeMap: Record<string, string> = {
+      products: t.dialogs.autoSync.types.products,
+      collections: t.dialogs.autoSync.types.collections,
+      pages: t.dialogs.autoSync.types.pages,
+      articles: t.dialogs.autoSync.types.articles,
+      images: t.dialogs.autoSync.types.images
     };
-    return labels[type] || type;
+    return typeMap[type] || type;
   };
 
   return (
@@ -56,15 +58,15 @@ export function AutoSyncProgressDialog() {
 
           <div className="text-center space-y-2">
             <h3 className="text-xl font-semibold">
-              Synchronisation automatique
+              {t.dialogs.autoSync.title}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {storeName || 'Votre boutique Shopify'}
+              {storeName || t.dialogs.autoSync.storeName}
             </p>
             <div className="flex items-center justify-center gap-2 pt-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
               <span className="text-sm font-medium">
-                Importation de {getTypeLabel(currentType)}...
+                {tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })}
               </span>
             </div>
           </div>
@@ -75,13 +77,13 @@ export function AutoSyncProgressDialog() {
                    style={{ width: '60%' }} />
             </div>
             <p className="text-xs text-center text-muted-foreground">
-              Étape en cours : {getTypeLabel(currentType)}
+              {tf('dialogs.autoSync.currentStep', { type: getTypeLabel(currentType) })}
             </p>
           </div>
 
           <div className="space-y-1 text-xs text-muted-foreground text-center max-w-xs">
-            <p className="font-medium">Veuillez patienter pendant la synchronisation...</p>
-            <p className="text-xs">Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique</p>
+            <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
+            <p className="text-xs">{t.dialogs.autoSync.duration}</p>
           </div>
         </div>
       </DialogContent>

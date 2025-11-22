@@ -2,8 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from '@/lib/language';
 
 interface SyncResult {
   id: string;
@@ -32,20 +32,21 @@ export function SyncAllDialog({
   currentItem,
   type,
 }: SyncAllDialogProps) {
+  const { t, tf } = useTranslation();
   const successCount = results.filter(r => r.status === 'success').length;
   const errorCount = results.filter(r => r.status === 'error').length;
   const skippedCount = results.filter(r => r.status === 'skipped').length;
 
   const getTypeLabel = () => {
-    switch (type) {
-      case 'products': return 'Produits';
-      case 'collections': return 'Collections';
-      case 'pages': return 'Pages';
-      case 'articles': return 'Articles';
-      case 'tags': return 'Tags';
-      case 'alt-images': return 'Images Alt';
-      default: return 'Éléments';
-    }
+    const typeMap: Record<string, string> = {
+      products: t.dialogs.syncAll.types.products,
+      collections: t.dialogs.syncAll.types.collections,
+      pages: t.dialogs.syncAll.types.pages,
+      articles: t.dialogs.syncAll.types.articles,
+      tags: t.dialogs.syncAll.types.tags,
+      'alt-images': t.dialogs.syncAll.types['alt-images']
+    };
+    return typeMap[type] || t.dialogs.syncAll.types.products;
   };
 
   return (
@@ -56,12 +57,12 @@ export function SyncAllDialog({
             {isProcessing ? (
               <>
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                Synchronisation en cours...
+                {t.dialogs.syncAll.inProgress}
               </>
             ) : (
               <>
                 <CheckCircle className="w-6 h-6 text-success" />
-                Synchronisation terminée
+                {t.dialogs.syncAll.completed}
               </>
             )}
           </DialogTitle>
@@ -72,14 +73,14 @@ export function SyncAllDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">
-                {isProcessing ? `Synchronisation des ${getTypeLabel().toLowerCase()}...` : 'Synchronisation terminée'}
+                {isProcessing ? tf('dialogs.syncAll.syncingType', { type: getTypeLabel() }) : t.dialogs.syncAll.completed}
               </span>
               <span className="text-muted-foreground">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
             {currentItem && (
               <p className="text-sm text-muted-foreground">
-                En cours: {currentItem}
+                {tf('dialogs.syncAll.processingItem', { item: currentItem })}
               </p>
             )}
           </div>
@@ -90,21 +91,21 @@ export function SyncAllDialog({
               <div className="bg-success/10 rounded-lg p-4 border border-success/20">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Succès</span>
+                  <span className="text-sm font-medium">{t.dialogs.syncAll.success}</span>
                 </div>
                 <p className="text-2xl font-bold text-success">{successCount}</p>
               </div>
               <div className="bg-destructive/10 rounded-lg p-4 border border-destructive/20">
                 <div className="flex items-center gap-2 mb-1">
                   <XCircle className="w-4 h-4 text-destructive" />
-                  <span className="text-sm font-medium">Erreurs</span>
+                  <span className="text-sm font-medium">{t.dialogs.syncAll.errors}</span>
                 </div>
                 <p className="text-2xl font-bold text-destructive">{errorCount}</p>
               </div>
               <div className="bg-warning/10 rounded-lg p-4 border border-warning/20">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertCircle className="w-4 h-4 text-warning" />
-                  <span className="text-sm font-medium">Ignorés</span>
+                  <span className="text-sm font-medium">{t.dialogs.syncAll.skipped}</span>
                 </div>
                 <p className="text-2xl font-bold text-warning">{skippedCount}</p>
               </div>
@@ -114,7 +115,7 @@ export function SyncAllDialog({
           {/* Detailed Results */}
           {results.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Détails de la synchronisation</h3>
+              <h3 className="font-semibold text-sm">{t.dialogs.syncAll.detailsTitle}</h3>
               <ScrollArea className="h-[300px] rounded-md border p-4">
                 <div className="space-y-3">
                   {results.map((result) => (
@@ -157,7 +158,7 @@ export function SyncAllDialog({
           <div className="flex justify-end gap-2">
             {!isProcessing && (
               <Button onClick={onClose} size="lg">
-                Fermer
+                {t.dialogs.syncAll.close}
               </Button>
             )}
           </div>
