@@ -25,31 +25,45 @@ function arrayBufferToBase64(buf: ArrayBuffer) {
 }
 
 // -----------------------------
-// 🟦 GEMINI VISION (fallback)
+// 🟦 SAFE GEMINI VISION (NO CRASH)
 // -----------------------------
-async function geminiVision(base64: string, prompt: string, apiKey: string) {
+async function safeGeminiVision(base64: string, prompt: string, apiKey: string) {
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }],
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: base64,
+                  },
+                },
+              ],
             },
           ],
         }),
       },
     );
 
-    if (!res.ok) throw new Error("GEMINI_FAIL_" + res.status);
+    const text = await res.text();
 
-    const data = await res.json();
+    // IMPORTANT: ne jamais throw -> éviter crash Supabase
+    if (!res.ok) {
+      console.log("⚠ Gemini Vision non-fatal:", text);
+      return null;
+    }
+
+    const data = JSON.parse(text);
     return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (e) {
-    console.log("⚠ Gemini Vision failed", e);
+    console.log("⚠ Gemini Vision exception:", e);
     return null;
   }
 }
@@ -111,13 +125,14 @@ async function deepseekText(prompt: string, apiKey: string) {
   return data.choices?.[0]?.message?.content || "";
 }
 
+// --------------------------------------------------
+//                  MAIN FUNCTION
+// --------------------------------------------------
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // -------------------------------
-    // INIT SUPABASE
-    // -------------------------------
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
@@ -130,9 +145,7 @@ Deno.serve(async (req) => {
 
     if (!productId) throw new Error("Product ID required");
 
-    // -------------------------------
     // LOAD PRODUCT
-    // -------------------------------
     const { data: product } = await supabase
       .from("shopify_products")
       .select("*, product_images(*)")
@@ -161,16 +174,15 @@ Analyse cette image et décris précisément:
 - Décoration (lignes dorées, motifs…)
 - Forme
 - Style
-
-Réponds en texte simple, phrases complètes.
+Réponds en phrases complètes.
 `;
 
-      // TRY GEMINI
+      // ESSAI GEMINI (NE CRASH JAMAIS)
       if (GEMINI_KEY) {
-        visionAnalysis = await geminiVision(base64, visionPrompt, GEMINI_KEY);
+        visionAnalysis = await safeGeminiVision(base64, visionPrompt, GEMINI_KEY);
       }
 
-      // FALLBACK DEEPSEEK ALWAYS WORKS
+      // FALLBACK
       if (!visionAnalysis) {
         visionAnalysis = await deepseekVision(base64, visionPrompt, DEEPSEEK_KEY);
       }
@@ -178,9 +190,7 @@ Réponds en texte simple, phrases complètes.
       console.log("VISION FINAL:", visionAnalysis);
     }
 
-    // -------------------------------
-    // DEEPSEEK PRODUCT ANALYSIS
-    // -------------------------------
+    // PRODUCT ANALYSIS
     const analysisPrompt = `
 Analyse ce produit et retourne un JSON strict:
 Titre: ${product.title}
@@ -199,9 +209,7 @@ Retourne:
     const analysis = await deepseekText(analysisPrompt, DEEPSEEK_KEY);
     const parsed = JSON.parse(cleanJSON(analysis));
 
-    // -------------------------------
-    // TITLE GENERATION
-    // -------------------------------
+    // TITLE
     const titlePrompt = `
 Génère un TITRE ULTRA SEO basé sur:
 
@@ -216,10 +224,10 @@ RÈGLES:
 - Majuscule à chaque mot
 - Français pur
 - Format: Catégorie + Forme + Couleur + Matériau + [Pieds si présents] + Style
-- Pas de virgules
-- Pas de guillemets
+Pas de virgules ni guillemets.
 
-Retourne UNIQUEMENT LE TITRE:
+Retourne:
+UN SEUL TITRE.
 `;
 
     let title = (await deepseekText(titlePrompt, DEEPSEEK_KEY)).trim();
@@ -239,6 +247,9 @@ Retourne UNIQUEMENT LE TITRE:
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
