@@ -173,11 +173,13 @@ export const useImageOptimization = () => {
       }
     },
     onSuccess: () => {
-      toast.success('4 variantes générées avec succès');
+      const language = localStorage.getItem('app-language') || 'fr';
+      toast.success(language === 'fr' ? '4 variantes générées avec succès' : '4 variants generated successfully');
     },
     onError: (error) => {
       console.error('Error generating variants:', error);
-      toast.error('Erreur lors de la génération des variantes');
+      const language = localStorage.getItem('app-language') || 'fr';
+      toast.error(language === 'fr' ? 'Erreur lors de la génération des variantes' : 'Error generating variants');
       setIsOptimizing(false);
     },
     onSettled: () => {
@@ -216,12 +218,14 @@ export const useImageOptimization = () => {
       }
     },
     onSuccess: () => {
-      toast.success('Description HTML générée avec succès');
+      const language = localStorage.getItem('app-language') || 'fr';
+      toast.success(language === 'fr' ? 'Description HTML générée avec succès' : 'HTML description generated successfully');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (error) => {
       console.error('Error generating description:', error);
-      toast.error('Erreur lors de la génération de la description');
+      const language = localStorage.getItem('app-language') || 'fr';
+      toast.error(language === 'fr' ? 'Erreur lors de la génération de la description' : 'Error generating description');
       setIsOptimizing(false);
     },
     onSettled: () => {
@@ -316,24 +320,45 @@ export const useImageOptimization = () => {
       await queryClient.invalidateQueries({ queryKey: ['product-images'] });
       await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       await queryClient.invalidateQueries({ queryKey: ['image-history'] });
-      toast.success('Image appliquée et synchronisée avec Shopify');
+      
+      const language = localStorage.getItem('app-language') || 'fr';
+      toast.success(language === 'fr' 
+        ? 'Image appliquée et synchronisée avec Shopify' 
+        : 'Image applied and synced with Shopify'
+      );
       
       // Send optimization notification
-      await sendOptimizationNotification(1);
+      const notificationResult = await sendOptimizationNotification(1);
+      if (!notificationResult.success && notificationResult.error) {
+        console.error('Notification error:', notificationResult.error);
+        toast.warning(language === 'fr'
+          ? 'Optimisation réussie mais la notification a échoué'
+          : 'Optimization successful but notification failed'
+        );
+      }
       
       setIsOptimizing(false);
     },
     onError: (error: Error) => {
       console.error('Error applying image:', error);
+      const language = localStorage.getItem('app-language') || 'fr';
       
       // Check if it's a Shopify authentication error
       if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('Token Shopify invalide')) {
-        toast.error('Token Shopify invalide', {
-          description: 'Veuillez reconnecter votre boutique Shopify dans les paramètres.',
+        toast.error(language === 'fr' 
+          ? 'Token Shopify invalide' 
+          : 'Invalid Shopify token', 
+        {
+          description: language === 'fr'
+            ? 'Veuillez reconnecter votre boutique Shopify dans les paramètres.'
+            : 'Please reconnect your Shopify store in settings.',
           duration: 6000,
         });
       } else {
-        toast.error('Erreur lors de l\'application de l\'image');
+        toast.error(language === 'fr' 
+          ? 'Erreur lors de l\'application de l\'image'
+          : 'Error applying image'
+        );
       }
       
       setIsOptimizing(false);

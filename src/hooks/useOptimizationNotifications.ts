@@ -1,35 +1,39 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const useOptimizationNotifications = () => {
-  const sendOptimizationNotification = async (count: number) => {
+  const sendOptimizationNotification = async (count: number): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return { success: false, error: 'User not authenticated' };
 
-      // Get user language from browser
-      const language = navigator.language.startsWith('fr') ? 'fr' : 'en';
+      // Get user language from storage
+      const language = localStorage.getItem('app-language') || 'fr';
 
       // Send notification
-      const { error } = await supabase.functions.invoke('send-notification', {
+      const { data, error } = await supabase.functions.invoke('send-notification', {
         body: {
           user_id: user.id,
           template_code: 'seo_optimization_complete',
           metadata: {
             count: count.toString()
           },
-          language,
+          language: language as 'fr' | 'en',
           force_browser: true
         }
       });
 
       if (error) {
         console.error('Error sending optimization notification:', error);
+        return { success: false, error: error.message };
       }
 
       // Update challenge progress
       await updateChallengeProgress(user.id, 'optimization', count);
+      
+      return { success: true };
     } catch (error) {
       console.error('Error in sendOptimizationNotification:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
