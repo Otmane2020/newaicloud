@@ -11,6 +11,19 @@ export const translations = {
     description: "Choose style and format",
     forProduct: "For",
 
+    designStyle: {
+      title: "Design model",
+      minimalist: "Minimalist",
+      minimalistShort: "Clean & elegant",
+      minimalistDesc: "Clean lines, generous white space",
+      modern: "Modern",
+      modernShort: "Dynamic & trendy",
+      modernDesc: "Gradients, soft shadows, animations",
+      premium: "Premium",
+      premiumShort: "Luxurious & sophisticated",
+      premiumDesc: "Rich visual effects, imposing typography"
+    },
+
     visualStyle: {
       title: "Visual style",
       modern: "Modern",
