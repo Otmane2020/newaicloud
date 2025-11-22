@@ -68,15 +68,29 @@ Vision Analysis Required:
 3. Key visual features
 4. Product positioning/angle
 
-Generate ONE concise ALT text (10-20 words) that:
-- Describes what you SEE in the image
-- Incorporates the product name naturally
-- Mentions visible colors and materials
-- Is accessible and SEO-friendly
+Generate ONE concise ALT text (10-20 words) following this STRICT 3-STEP PROCESS:
 
-Example (FR): "Cintre mural rembourré en chêne artisanal avec étagère métallique noire"
-Example (EN): "Padded oak wall coat rack with black metal shelf"
-Example (ES): "Perchero de pared acolchado en roble artesanal con estante metálico negro"
+STEP 1 - BASE (MANDATORY):
+🎯 Start with the optimized product title as your FOUNDATION
+Keep key descriptive terms: type, material, color, dimensions
+The product title is in the context above.
+
+STEP 2 - VISUAL ENRICHMENT:
+🔍 Add precise details from what you SEE in the image:
+- Exact colors visible (e.g., "beige" not "clair")
+- Visible materials/textures (e.g., "céramique", "bois")
+- Key features (e.g., "pieds noirs" not just "pieds")
+
+STEP 3 - SIMPLIFICATION:
+✅ Merge into natural ALT text (10-20 words)
+✅ Remove redundancy, keep essential terms
+✅ Make it SEO-friendly and accessible
+
+🚨 CRITICAL: The product title is your BASE, not optional. NEVER describe from scratch.
+
+Example (FR): "Table basse plateau céramique effet travertin mat beige avec pieds noirs"
+Example (EN): "Coffee table ceramic travertine effect matte beige top with black legs"
+Example (ES): "Mesa de centro sobre cerámica efecto travertino mate beige con patas negras"
 
 Reply with ONE ALT text only, no JSON, no explanation.`;
 
@@ -276,6 +290,23 @@ Category: ${product.category || 'Not specified'}
 
     const altText = visionResponse?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 
                     `${optimizedTitle} - ${product.category || 'product'}`;
+
+    // Validation: Check if ALT anchors on product title
+    const productKeyTerms = optimizedTitle.toLowerCase()
+      .split(/[\s–-]+/)
+      .filter((term: string) => term.length > 4); // Keep significant words
+    
+    const altLower = altText.toLowerCase();
+    const anchoredTerms = productKeyTerms.filter((term: string) => altLower.includes(term));
+    
+    if (anchoredTerms.length < 2) {
+      console.warn(`⚠️ ALT text may not be properly anchored on title.
+      Title key terms: ${productKeyTerms.join(', ')}
+      Anchored: ${anchoredTerms.join(', ')}
+      Generated ALT: ${altText}`);
+    } else {
+      console.log(`✅ ALT text properly anchored. Anchored terms: ${anchoredTerms.join(', ')}`);
+    }
 
     // Update database
     const { error: updateError } = await supabaseClient
