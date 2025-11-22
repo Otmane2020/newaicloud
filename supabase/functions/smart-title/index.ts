@@ -34,19 +34,43 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from auth header
+    // Detect if this is an internal (service role) or external (user token) call
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    let userId: string;
+    let productId: string;
+    let language: string;
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    if (authHeader?.includes('service_role')) {
+      // Internal call from another edge function (e.g., generate-landing-ai)
+      console.log('[SMART-TITLE] 🔧 Internal call detected (service_role)');
+      const body = await req.json();
+      userId = body.userId;
+      productId = body.productId;
+      language = body.language || 'fr';
+      
+      if (!userId) {
+        throw new Error('userId required for internal service role calls');
+      }
+    } else {
+      // External call from UI with user token
+      console.log('[SMART-TITLE] 👤 External call detected (user token)');
+      
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (userError || !user) {
+        throw new Error('Unauthorized');
+      }
+      
+      userId = user.id;
+      const body = await req.json();
+      productId = body.productId;
+      language = body.language || 'fr';
     }
-
-    const { productId, language = 'fr' }: SmartTitleRequest = await req.json();
 
     if (!productId) {
       throw new Error('Product ID is required');
@@ -314,7 +338,7 @@ ${visionAnalysis || 'Non disponible'}
 
     // Track usage
     await supabase.rpc('increment_usage', {
-      p_seller_id: user.id,
+      p_seller_id: userId,
       p_field: 'optimizations_count',
       p_increment: 1,
     });

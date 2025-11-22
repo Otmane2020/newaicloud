@@ -9,6 +9,11 @@ const corsHeaders = {
 interface AltTextVisionRequest {
   imageId: string;
   imageType?: "product" | "content";
+  smartTitleInsights?: {
+    visionAnalysis?: string;       // Detailed Vision description from smart-title
+    deepseekAnalysis?: any;        // Materials, features, style from smart-title
+    optimizedTitle?: string;       // Optimized title for additional context
+  };
 }
 
 function cleanJsonResponse(text: string): string {
@@ -787,6 +792,13 @@ Deno.serve(async (req: Request) => {
     console.log(`🎯 Starting Vision AI Analysis for image: ${image.id}`);
     console.log(`📝 Product Title: ${productTitle}`);
 
+    // ✅ CRITICAL FIX: Check isRegeneration BEFORE cleaning alt_text
+    const isRegeneration = !!image.alt_text;
+    
+    if (isRegeneration) {
+      console.log(`🔄 REGENERATION MODE: Existing ALT text will be cleaned`);
+    }
+
     // Clean existing ALT text before regeneration to prevent contamination
     if (image.alt_text) {
       console.log(`🧹 Cleaning existing ALT text: "${image.alt_text}"`);
@@ -806,7 +818,6 @@ Deno.serve(async (req: Request) => {
 
     if (productTitle) {
       console.log("🧠 Step 1: DeepSeek Title Analysis");
-      const isRegeneration = !!image.alt_text; // true if ALT text existed before cleaning
       deepSeekAnalysis = await analyzeTitleWithDeepSeek(productTitle, isRegeneration);
       seoKeywords = deepSeekAnalysis.keywords;
       extractedProductName = deepSeekAnalysis.productName;
