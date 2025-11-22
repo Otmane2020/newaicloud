@@ -152,24 +152,41 @@ Retourne UNIQUEMENT un objet JSON avec ces champs:
         const imageBuffer = await imageResponse.arrayBuffer();
         const base64Image = arrayBufferToBase64(imageBuffer);
 
-        const visionPrompt = `Tu es un expert en analyse de produits pour l'e-commerce. Analyse cette image de produit et extrais UNIQUEMENT les informations clés pour créer un titre de produit optimisé.
+        const visionPrompt = `Tu es un expert en analyse de produits mobilier pour l'e-commerce. Analyse cette image de produit et décris PRÉCISÉMENT sa structure et ses matériaux.
 
 **Titre actuel du produit:** ${product.title}
 
-**Instructions CRITIQUES:**
-Identifie et liste en format court (mots-clés séparés par des virgules):
-1. **Catégorie exacte** (ex: Table Basse, Lampe, Vase, Chaise)
-2. **Matériaux visibles** (ex: Marbre Blanc, Chrome, Verre, Bois)
-3. **Couleurs principales** (ex: Blanc, Noir, Doré, Argent)
-4. **Style/Design** (ex: Moderne, Scandinave, Industriel, Art Déco)
-5. **Caractéristiques uniques** (ex: Gigogne, Piètement Ajouré, LED, Réglable)
-6. **Forme** (ex: Ronde, Rectangulaire, Ovale)
+**Ta mission:** Décrire le produit avec des phrases COMPLÈTES et PRÉCISES qui expliquent sa construction.
 
-**Format de réponse (SEULEMENT mots-clés):**
-Réponds en ${language === 'fr' ? 'français' : 'anglais'} avec un format simple comme:
-"Catégorie: XXX, Matériaux: XXX XXX, Couleurs: XXX XXX, Style: XXX, Caractéristiques: XXX XXX, Forme: XXX"
+**IMPORTANT - Structure du meuble:**
+1. **Construction globale:** Est-ce un bloc monolithique (monobloc), ou a-t-il des pieds/piètement séparés ?
+2. **Corps principal:** Quel matériau ? Quelle couleur ? (ex: "Le corps est en marbre blanc")
+3. **Piètement/Support:** 
+   - S'il y a des PIEDS MÉTALLIQUES ou structure porteuse visible → décris-les précisément (ex: "4 pieds coniques en métal doré", "piètement chromé ajouré")
+   - S'il N'Y A PAS de pieds visibles (monobloc) → dis-le clairement (ex: "aucun piètement visible, c'est un bloc monolithique")
+4. **Décorations/Finitions:** Lignes décoratives ? Motifs ? (ex: "des lignes dorées de style Kintsugi parcourent la surface")
+5. **Forme générale:** Ronde, rectangulaire, ovale ?
+6. **Style:** Moderne, Art Déco, Scandinave, etc.
 
-Sois concis, précis et concentre-toi sur ce qui rendra le titre vendeur.`;
+**Format de réponse attendu (en ${language === 'fr' ? 'français' : 'anglais'}):**
+Réponds avec des PHRASES COMPLÈTES séparées par des retours à la ligne:
+
+Catégorie: [catégorie précise]
+Construction: [monobloc OU structure avec pieds - sois explicite]
+Corps: [matériau + couleur du corps principal]
+Piètement: [description détaillée des pieds SI PRÉSENTS, sinon écrire "Aucun - monobloc"]
+Décorations: [éléments décoratifs visibles comme lignes dorées, motifs, etc.]
+Forme: [forme du plateau/surface]
+Style: [style design]
+
+**Exemple pour table monobloc avec décor doré:**
+Catégorie: Table Basse
+Construction: Bloc monolithique sans pieds visibles
+Corps: Marbre blanc avec finition brillante
+Piètement: Aucun - monobloc
+Décorations: Lignes dorées de style Kintsugi qui traversent la surface du marbre
+Forme: Rectangulaire
+Style: Moderne, Luxueux, Design Kintsugi`;
 
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
@@ -211,7 +228,7 @@ Sois concis, précis et concentre-toi sur ce qui rendra le titre vendeur.`;
     
     const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Génère un titre ULTRA RICHE ET PRÉCIS.
 
-**🖼️ ANALYSE VISUELLE GEMINI (SOURCE PRIORITAIRE):**
+**🖼️ ANALYSE VISUELLE GEMINI (SOURCE PRIORITAIRE - phrases détaillées):**
 ${visionAnalysis || 'Non disponible'}
 
 **📝 Données complémentaires DeepSeek:**
@@ -221,45 +238,36 @@ ${visionAnalysis || 'Non disponible'}
 
 **📌 Titre actuel:** ${product.title}
 
-**🎯 INSTRUCTIONS ULTRA PRÉCISES - EXTRAIS TOUT:**
+**🎯 INSTRUCTIONS ULTRA PRÉCISES:**
 
-1. **DE L'ANALYSE VISUELLE, EXTRAIS ET UTILISE:**
-   - CATÉGORIE exacte (Table Basse, Meuble TV, Console...)
-   - TOUTES les COULEURS visibles (Blanc, Bleu Marine, Doré...)
-   - TOUS les MATÉRIAUX distincts du corps ET des pieds (Bois Laqué Blanc + Métal Doré, Marbre Blanc + Chrome...)
-   - FORME du plateau (Ronde, Ovale, Rectangulaire...)
-   - **DISTINGUER PIÈTEMENT vs DÉCORATION:** 
-     * Piètement = structure porteuse métallique/bois (Piètement Conique Doré, Pieds Chromés Ajourés)
-     * Décoration = motifs/lignes/traits dorés sur le corps (Design Kintsugi, Lignes Dorées, Motif Géométrique)
-     * Si c'est un MONOBLOC avec juste des traits décoratifs → NE PAS mentionner de piètement
-   - CARACTÉRISTIQUES physiques (Gigogne, Set de 2, Niches de Rangement, Compartiments Fermés, Design Kintsugi, Monobloc...)
-   - STYLE design (Moderne, Scandinave, Industriel, Art Déco, Luxueux...)
+1. **LIS ATTENTIVEMENT L'ANALYSE VISUELLE** qui te donne des phrases complètes sur:
+   - La construction (monobloc ou avec piètement)
+   - Le corps (matériau + couleur)
+   - Le piètement (présent ou absent)
+   - Les décorations (lignes dorées, motifs, etc.)
 
-2. **STRUCTURE ENRICHIE (utilise TOUS les éléments visuels):**
-   CATÉGORIE + FORME + COULEUR + MATÉRIAU CORPS + [TYPE PIÈTEMENT si existe] + CARACTÉRISTIQUE UNIQUE + STYLE (1 à 2 max)
+2. **DISTINGUE CLAIREMENT:**
+   - **PIÈTEMENT** = structure porteuse visible (pieds métalliques, piètement chromé, etc.)
+     → Si l'analyse dit "Aucun - monobloc" ou "pas de pieds visibles" → NE PAS mentionner de piètement
+   - **DÉCORATION** = éléments esthétiques (lignes dorées, motif Kintsugi, etc.)
+     → Utilise "Design Kintsugi", "Lignes Dorées", "Motif Géométrique"
+
+3. **STRUCTURE DU TITRE:**
+   CATÉGORIE + FORME + COULEUR + MATÉRIAU + [PIÈTEMENT si présent] + [DÉCORATION si notable] + STYLE
    
    Exemples:
-   - Avec piètement: "Table Basse Ovale Blanche Marbre Blanc Piètement Métal Doré Géométrique Moderne Luxueux"
-   - Monobloc avec décor: "Table Basse Rectangulaire Blanche Marbre Design Kintsugi Doré Moderne Luxueux"
-
-3. **EXEMPLES DE TITRES RICHES:**
-   - Vision avec piètement métallique: "Blanc, Bois Laqué, Pieds Métal Doré Coniques" → "Table Basse Rectangulaire Blanche Bois Laqué Pieds Métal Doré Coniques Moderne"
-   - Vision monobloc avec décor: "Marbre Blanc, Design Kintsugi, Lignes Dorées" → "Table Basse Rectangulaire Blanche Marbre Design Kintsugi Doré Moderne"
-   - Vision avec piètement: "Marbre Blanc, Piètement Chromé Ajouré" → "Table Basse Ronde Marbre Blanc Piètement Chromé Ajouré Moderne Luxueux"
+   - Avec piètement: "Table Basse Ovale Blanche Marbre Piètement Métal Doré Moderne"
+   - Monobloc avec décor: "Table Basse Rectangulaire Blanche Marbre Design Kintsugi Doré Moderne"
 
 4. **RÈGLES STRICTES:**
-   - Maximum 80 caractères (pour permettre plus de détails)
+   - Maximum 80 caractères
    - Majuscule à chaque mot important
    - Espaces uniquement (PAS de virgules)
-   - ${language === 'fr' ? 'En FRANÇAIS UNIQUEMENT, PAS UN SEUL MOT ANGLAIS (ex: \"Moderne\" et pas \"Modern\")' : 'In ENGLISH ONLY when not French'}
-   - Inclus OBLIGATOIREMENT: Forme + Couleur + Matériau du corps
-   - **PIÈTEMENT: Ne mentionner QUE si structure porteuse métallique/bois RÉELLE et VISIBLE**
-   - Si MONOBLOC avec juste traits/lignes dorés décoratifs → utilise "Design Kintsugi" OU "Lignes Dorées" au lieu de Piètement
-   - Pour le marbre, privilégie "Marbre Blanc" / "Marbre Noir" (MATÉRIAU + Couleur), jamais "Blanc Marbre"
-   - Privilégie les caractéristiques UNIQUES de l'analyse visuelle (Design Kintsugi, Monobloc, etc.)
-   - Ne sacrifie AUCUN détail visuel important tant que la limite le permet
+   - ${language === 'fr' ? 'FRANÇAIS UNIQUEMENT (ex: "Moderne" pas "Modern")' : 'ENGLISH ONLY'}
+   - Ordre matériau: "Marbre Blanc" jamais "Blanc Marbre"
+   - Ne sacrifie AUCUN détail visuel important
 
-**⚡ GÉNÈRE LE TITRE RICHE (SEULEMENT LE TITRE):**`;
+**⚡ GÉNÈRE LE TITRE (SEULEMENT LE TITRE):**`;
 
     const geminiTitleResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
