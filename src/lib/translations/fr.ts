@@ -104,6 +104,45 @@ export const translations = {
   },
 
   landingGeneration: {
+    dialog: {
+      title: "Générateur de Landing Page IA",
+      description: "Créez une landing page personnalisée et optimisée pour votre produit",
+    },
+
+    progressHeader: {
+      title: "Génération IA de Landing Page",
+      badge: "Vision IA",
+    },
+
+    stages: {
+      initializingDetail: "Initialisation des modèles IA...",
+      analyzingImageDetail: "Analyse de l'image produit avec Vision IA",
+      extractingAttributesDetail: "Extraction des attributs visuels et du style",
+      marketAnalysisDetail: "Analyse du positionnement marché",
+      generatingCopyDetail: "Génération du contenu persuasif",
+      craftingHeroDetail: "Création des sections hero",
+      buildingLayoutDetail: "Construction de la structure responsive",
+      applyingDesignDetail: "Application des motifs de design",
+      mobileOptimizationDetail: "Optimisation mobile",
+      finalOptimizationDetail: "Optimisation finale",
+      readyDetail: "Prêt !",
+      
+      chipInitializing: "Initialisation IA",
+      chipVision: "Analyse Vision",
+      chipContext: "Traitement du contexte",
+      chipContent: "Génération du contenu",
+      chipLayout: "Mise en page",
+      chipFinalAssembly: "Assemblage final",
+      chipComplete: "Terminé",
+    },
+
+    badges: {
+      visionAi: "Vision IA",
+      uxOptimized: "UX Optimisée",
+      mobileFirst: "Mobile First",
+      conversionFocused: "Orienté Conversion",
+    },
+
     preparing: "Préparation de la génération...",
     resolving: "Résolution de la marque/vendor...",
     analyzing: "Analyse du produit et de l'image...",

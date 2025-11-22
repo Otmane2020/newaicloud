@@ -579,77 +579,77 @@ export default function RegenerateLanding({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-foreground">AI-Powered Landing Generation</h3>
+                <h3 className="font-semibold text-lg text-foreground">{t.landingGeneration.progressHeader.title}</h3>
                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   <Zap className="w-3 h-3 mr-1" />
-                  Vision AI
+                  {t.landingGeneration.progressHeader.badge}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
                 {progress < 10 && (
                   <>
                     <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                    <span className="text-sm text-muted-foreground">Initializing AI models...</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.initializingDetail}</span>
                   </>
                 )}
                 {progress >= 10 && progress < 20 && (
                   <>
                     <Scan className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Analyzing product image with Vision AI</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.analyzingImageDetail}</span>
                   </>
                 )}
                 {progress >= 20 && progress < 30 && (
                   <>
                     <Eye className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Extracting visual attributes & styling</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.extractingAttributesDetail}</span>
                   </>
                 )}
                 {progress >= 30 && progress < 40 && (
                   <>
                     <Target className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Market positioning analysis</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.marketAnalysisDetail}</span>
                   </>
                 )}
                 {progress >= 40 && progress < 50 && (
                   <>
                     <Brain className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Generating persuasive copy</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.generatingCopyDetail}</span>
                   </>
                 )}
                 {progress >= 50 && progress < 60 && (
                   <>
                     <Wand2 className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Crafting hero sections</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.craftingHeroDetail}</span>
                   </>
                 )}
                 {progress >= 60 && progress < 70 && (
                   <>
                     <Layout className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Building responsive structure</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.buildingLayoutDetail}</span>
                   </>
                 )}
                 {progress >= 70 && progress < 80 && (
                   <>
                     <Palette className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Applying design patterns</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.applyingDesignDetail}</span>
                   </>
                 )}
                 {progress >= 80 && progress < 90 && (
                   <>
                     <Smartphone className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Mobile optimization</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.mobileOptimizationDetail}</span>
                   </>
                 )}
                 {progress >= 90 && progress < 100 && (
                   <>
                     <FileCode className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Final optimization</span>
+                    <span className="text-sm text-muted-foreground">{t.landingGeneration.stages.finalOptimizationDetail}</span>
                   </>
                 )}
                 {progress >= 100 && (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-sm text-green-600 font-medium">Landing page ready!</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                    <span className="text-sm text-green-600 font-medium">{t.landingGeneration.stages.readyDetail}</span>
                   </>
                 )}
               </div>
@@ -666,43 +666,43 @@ export default function RegenerateLanding({
                 {progress < 15 && (
                   <>
                     <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">AI Initialization</span>
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipInitializing}</span>
                   </>
                 )}
-                {progress >= 15 && progress < 30 && (
+                {progress >= 15 && progress < 25 && (
                   <>
-                    <Scan className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Vision Analysis</span>
+                    <Eye className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipVision}</span>
                   </>
                 )}
-                {progress >= 30 && progress < 45 && (
+                {progress >= 25 && progress < 40 && (
                   <>
-                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Context Processing</span>
+                    <Target className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipContext}</span>
                   </>
                 )}
-                {progress >= 45 && progress < 65 && (
+                {progress >= 40 && progress < 60 && (
                   <>
-                    <Wand2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Content Generation</span>
+                    <Brain className="w-5 h-5 text-primary flex-shrink-0 animate-pulse" />
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipContent}</span>
                   </>
                 )}
-                {progress >= 65 && progress < 85 && (
+                {progress >= 60 && progress < 80 && (
                   <>
                     <Layout className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Layout Optimization</span>
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipLayout}</span>
                   </>
                 )}
-                {progress >= 85 && progress < 100 && (
+                {progress >= 80 && progress < 100 && (
                   <>
-                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Final Assembly</span>
+                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0 animate-pulse" />
+                    <span className="text-sm font-semibold text-primary">{t.landingGeneration.stages.chipFinalAssembly}</span>
                   </>
                 )}
                 {progress >= 100 && (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-green-600">Complete</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-green-600">{t.landingGeneration.stages.chipComplete}</span>
                   </>
                 )}
               </div>
@@ -715,25 +715,25 @@ export default function RegenerateLanding({
               className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 20 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
               <Scan className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Vision AI</span>
+              <span className="font-medium">{t.landingGeneration.badges.visionAi}</span>
             </div>
             <div
               className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 50 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
               <Brain className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">UX Optimized</span>
+              <span className="font-medium">{t.landingGeneration.badges.uxOptimized}</span>
             </div>
             <div
               className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 70 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
               <Smartphone className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Mobile First</span>
+              <span className="font-medium">{t.landingGeneration.badges.mobileFirst}</span>
             </div>
             <div
               className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 90 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
               <Target className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Conversion Focused</span>
+              <span className="font-medium">{t.landingGeneration.badges.conversionFocused}</span>
             </div>
           </div>
         </div>
