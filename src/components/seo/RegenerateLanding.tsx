@@ -76,14 +76,14 @@ export default function RegenerateLanding({
       try {
         const { data, error } = await supabase
           .from("shopify_products")
-          .select("landing_page")
+          .select("landing_page_html")
           .eq("id", product.id)
           .single();
 
         if (error) throw error;
         
-        if (data?.landing_page && isMounted) {
-          setHtmlContent(data.landing_page);
+        if (data?.landing_page_html && isMounted) {
+          setHtmlContent(data.landing_page_html);
         }
       } catch (error) {
         console.error("Erreur chargement landing:", error);
