@@ -202,34 +202,46 @@ export const SmartTitle = () => {
                     <h3 className="font-semibold">Analyse textuelle DeepSeek</h3>
                   </div>
 
-                  <div className="space-y-3">
-                    {/* Catégorie */}
-                    {result.deepseekAnalysis.category && (
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Catégorie:
-                        </span>
-                        <Badge variant="secondary" className="ml-2">
-                          {result.deepseekAnalysis.category}
-                        </Badge>
-                      </div>
-                    )}
+            <div className="space-y-3">
+              {/* Catégorie */}
+              {result.deepseekAnalysis.category && (
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Catégorie:
+                  </span>
+                  <Badge variant="secondary" className="ml-2">
+                    {result.deepseekAnalysis.category}
+                  </Badge>
+                </div>
+              )}
 
-                    {/* Matériaux */}
-                    {result.deepseekAnalysis.materials?.length > 0 && (
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Matériaux:
-                        </span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {result.deepseekAnalysis.materials.map((material: string, idx: number) => (
-                            <Badge key={idx} variant="outline">
-                              {material}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              {/* Style */}
+              {result.deepseekAnalysis.style && (
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Style:
+                  </span>
+                  <Badge variant="secondary" className="ml-2">
+                    {result.deepseekAnalysis.style}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Matériaux */}
+              {result.deepseekAnalysis.materials?.length > 0 && (
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Matériaux:
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {result.deepseekAnalysis.materials.map((material: string, idx: number) => (
+                      <Badge key={idx} variant="outline">
+                        {material}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
                     {/* Caractéristiques */}
                     {result.deepseekAnalysis.features?.length > 0 && (

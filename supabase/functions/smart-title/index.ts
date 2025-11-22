@@ -75,25 +75,32 @@ Deno.serve(async (req) => {
     // Step 1: Analyze title/description with DeepSeek
     console.log('[SMART-TITLE] Step 1: DeepSeek analysis');
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    const deepseekPrompt = `Analyze this e-commerce product and extract key selling points:
+    const deepseekPrompt = `Tu es un expert en analyse de produits e-commerce. Analyse en détail ce produit et extrais toutes les informations pertinentes pour créer un titre SEO optimal.
 
-Title: ${product.title}
-Description: ${product.body_html || 'No description'}
-Product Type: ${product.product_type || 'Unknown'}
+**Produit:**
+Titre actuel: ${product.title}
+Type de produit: ${product.product_type || 'Non spécifié'}
+Description HTML: ${product.body_html || 'Aucune description'}
 
-Extract:
-1. Core product category/type
-2. Key features and materials
-3. Target use case
-4. Unique selling points
+**Instructions:**
+1. Identifie la catégorie principale du produit (ex: "Table Basse", "Lampe", "Canapé")
+2. Liste TOUS les matériaux mentionnés ou visibles (ex: "Marbre", "Chrome", "Acier", "Verre")
+3. Identifie les caractéristiques clés (ex: "Gigogne", "Réglable", "LED", "2 Places")
+4. Note le style/design (ex: "Moderne", "Scandinave", "Industriel", "Art Déco")
+5. Identifie les dimensions ou tailles si mentionnées
+6. Liste les points de vente uniques (ex: "Piètement ajouré", "Plateau rotatif")
 
-Return ONLY a JSON object with these fields:
+**IMPORTANT:** Sois très précis et exhaustif. N'utilise JAMAIS de termes génériques comme "Unknown", "unspecified", "placeholder". Si une information n'est pas claire, déduis-la du contexte.
+
+Retourne UNIQUEMENT un objet JSON avec ces champs:
 {
-  "category": "main product type",
-  "features": ["feature1", "feature2", ...],
-  "materials": ["material1", "material2", ...],
-  "use_case": "primary use",
-  "selling_points": ["point1", "point2", ...]
+  "category": "catégorie principale précise",
+  "materials": ["matériau1", "matériau2", ...],
+  "features": ["caractéristique1", "caractéristique2", ...],
+  "style": "style design",
+  "dimensions": "dimensions si mentionnées",
+  "use_case": "usage principal",
+  "selling_points": ["point unique 1", "point unique 2", ...]
 }`;
 
     const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -192,31 +199,36 @@ Be specific and descriptive in ${language === 'fr' ? 'French' : 'English'}.`;
     // Step 3: Generate optimized title with Google Gemini
     console.log('[SMART-TITLE] Step 3: Generate optimized title');
     
-    const titlePrompt = `You are an expert e-commerce SEO copywriter. Generate an optimized product title based on this analysis:
+    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Crée un titre de produit optimisé et riche en mots-clés basé sur ces analyses:
 
-**Text Analysis (DeepSeek):**
-- Category: ${deepseekAnalysis.category}
-- Features: ${deepseekAnalysis.features?.join(', ')}
-- Materials: ${deepseekAnalysis.materials?.join(', ')}
-- Use Case: ${deepseekAnalysis.use_case}
-- Selling Points: ${deepseekAnalysis.selling_points?.join(', ')}
+**Analyse Textuelle (DeepSeek):**
+- Catégorie: ${deepseekAnalysis.category}
+- Matériaux: ${deepseekAnalysis.materials?.join(', ')}
+- Caractéristiques: ${deepseekAnalysis.features?.join(', ')}
+- Style: ${deepseekAnalysis.style || 'N/A'}
+- Dimensions: ${deepseekAnalysis.dimensions || 'N/A'}
+- Usage: ${deepseekAnalysis.use_case}
+- Points forts: ${deepseekAnalysis.selling_points?.join(', ')}
 
-${visionAnalysis ? `**Visual Analysis (Gemini Vision):**
+${visionAnalysis ? `**Analyse Visuelle (Gemini Vision):**
 ${visionAnalysis}` : ''}
 
-**Current Title:** ${product.title}
+**Titre actuel:** ${product.title}
 
-**Language:** ${language === 'fr' ? 'French' : 'English'}
+**Instructions CRITIQUES:**
+1. Commence TOUJOURS par la catégorie principale (ex: "Table Basse", "Lampe Design")
+2. Ajoute IMMÉDIATEMENT les matériaux principaux (ex: "Marbre Blanc", "Acier Chromé")
+3. Inclus les caractéristiques clés (ex: "Gigogne", "Réglable", "LED")
+4. Si pertinent, ajoute le style (ex: "Moderne", "Scandinave", "Industriel")
+5. Maximum 70 caractères
+6. Utilise des majuscules pour chaque mot important
+7. Pas de virgules, sépare par des espaces
+8. Langage: ${language === 'fr' ? 'Français' : 'Anglais'}
 
-**Requirements:**
-- Maximum 60 characters
-- Include primary keyword at the beginning
-- Include 2-3 key attributes (material, color, size, style)
-- Natural and appealing to customers
-- SEO optimized for search engines
-- In ${language === 'fr' ? 'French' : 'English'}
+**EXEMPLE de titre optimal:**
+"Table Basse Marbre Blanc Gigogne Piètement Chromé Moderne"
 
-Generate ONLY the optimized title, no explanations.`;
+Génère UNIQUEMENT le titre optimisé, sans explications ni guillemets.`;
 
     const geminiTitleResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
