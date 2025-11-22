@@ -152,14 +152,24 @@ Retourne UNIQUEMENT un objet JSON avec ces champs:
         const imageBuffer = await imageResponse.arrayBuffer();
         const base64Image = arrayBufferToBase64(imageBuffer);
 
-        const visionPrompt = `Analyze this product image and describe:
-1. Visual style and design
-2. Color palette
-3. Key visual features
-4. Material appearance
-5. Shape and form
+        const visionPrompt = `Tu es un expert en analyse de produits pour l'e-commerce. Analyse cette image de produit et extrais UNIQUEMENT les informations clés pour créer un titre de produit optimisé.
 
-Be specific and descriptive in ${language === 'fr' ? 'French' : 'English'}.`;
+**Titre actuel du produit:** ${product.title}
+
+**Instructions CRITIQUES:**
+Identifie et liste en format court (mots-clés séparés par des virgules):
+1. **Catégorie exacte** (ex: Table Basse, Lampe, Vase, Chaise)
+2. **Matériaux visibles** (ex: Marbre Blanc, Chrome, Verre, Bois)
+3. **Couleurs principales** (ex: Blanc, Noir, Doré, Argent)
+4. **Style/Design** (ex: Moderne, Scandinave, Industriel, Art Déco)
+5. **Caractéristiques uniques** (ex: Gigogne, Piètement Ajouré, LED, Réglable)
+6. **Forme** (ex: Ronde, Rectangulaire, Ovale)
+
+**Format de réponse (SEULEMENT mots-clés):**
+Réponds en ${language === 'fr' ? 'français' : 'anglais'} avec un format simple comme:
+"Catégorie: XXX, Matériaux: XXX XXX, Couleurs: XXX XXX, Style: XXX, Caractéristiques: XXX XXX, Forme: XXX"
+
+Sois concis, précis et concentre-toi sur ce qui rendra le titre vendeur.`;
 
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
@@ -199,36 +209,37 @@ Be specific and descriptive in ${language === 'fr' ? 'French' : 'English'}.`;
     // Step 3: Generate optimized title with Google Gemini
     console.log('[SMART-TITLE] Step 3: Generate optimized title');
     
-    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Crée un titre de produit optimisé et riche en mots-clés basé sur ces analyses:
+    const titlePrompt = `Tu es un expert en rédaction de titres SEO pour l'e-commerce. Tu vas FUSIONNER les analyses suivantes pour créer UN SEUL titre produit optimisé:
 
-**Analyse Textuelle (DeepSeek):**
+**🔍 ANALYSE VISUELLE GEMINI (Image du produit):**
+${visionAnalysis || 'Non disponible'}
+
+**📝 ANALYSE TEXTUELLE DEEPSEEK (Description):**
 - Catégorie: ${deepseekAnalysis.category}
 - Matériaux: ${deepseekAnalysis.materials?.join(', ')}
-- Caractéristiques: ${deepseekAnalysis.features?.join(', ')}
 - Style: ${deepseekAnalysis.style || 'N/A'}
-- Dimensions: ${deepseekAnalysis.dimensions || 'N/A'}
-- Usage: ${deepseekAnalysis.use_case}
-- Points forts: ${deepseekAnalysis.selling_points?.join(', ')}
+- Caractéristiques: ${deepseekAnalysis.features?.join(', ')}
 
-${visionAnalysis ? `**Analyse Visuelle (Gemini Vision):**
-${visionAnalysis}` : ''}
+**📌 TITRE ACTUEL:**
+${product.title}
 
-**Titre actuel:** ${product.title}
+**🎯 TA MISSION - CRÉER UN TITRE OPTIMISÉ EN FUSIONNANT CES 3 SOURCES:**
 
-**Instructions CRITIQUES:**
-1. Commence TOUJOURS par la catégorie principale (ex: "Table Basse", "Lampe Design")
-2. Ajoute IMMÉDIATEMENT les matériaux principaux (ex: "Marbre Blanc", "Acier Chromé")
-3. Inclus les caractéristiques clés (ex: "Gigogne", "Réglable", "LED")
-4. Si pertinent, ajoute le style (ex: "Moderne", "Scandinave", "Industriel")
-5. Maximum 70 caractères
-6. Utilise des majuscules pour chaque mot important
-7. Pas de virgules, sépare par des espaces
-8. Langage: ${language === 'fr' ? 'Français' : 'Anglais'}
+**RÈGLES STRICTES:**
+1. Priorise l'analyse VISUELLE Gemini (ce qu'on voit réellement)
+2. Complète avec l'analyse DeepSeek si info manquante
+3. Structure: CATÉGORIE + MATÉRIAUX + CARACTÉRISTIQUES + STYLE
+4. Maximum 70 caractères
+5. Chaque mot important commence par une majuscule
+6. Sépare par des espaces (pas de virgules)
+7. Langage: ${language === 'fr' ? 'Français' : 'Anglais'}
 
-**EXEMPLE de titre optimal:**
-"Table Basse Marbre Blanc Gigogne Piètement Chromé Moderne"
+**EXEMPLES DE FUSION RÉUSSIE:**
+- Image: "table ronde, marbre blanc, pieds chromés" → "Table Basse Ronde Marbre Blanc Piètement Chromé"
+- Image: "lampe, métal doré, style moderne" → "Lampe Design Métal Doré Moderne"
+- Image: "vase, verre transparent, forme cylindrique" → "Vase Cylindrique Verre Transparent Moderne"
 
-Génère UNIQUEMENT le titre optimisé, sans explications ni guillemets.`;
+**⚡ GÉNÈRE MAINTENANT LE TITRE OPTIMISÉ (UNIQUEMENT LE TITRE, RIEN D'AUTRE):**`;
 
     const geminiTitleResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
