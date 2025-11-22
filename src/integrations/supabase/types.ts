@@ -3847,6 +3847,7 @@ export type Database = {
           landing_page: string | null
           landing_page_html: string | null
           last_enriched_at: string | null
+          last_landing_generation_at: string | null
           last_optimization_at: string | null
           last_pricing_analysis: string | null
           last_seo_sync_at: string | null
@@ -3976,6 +3977,7 @@ export type Database = {
           landing_page?: string | null
           landing_page_html?: string | null
           last_enriched_at?: string | null
+          last_landing_generation_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
           last_seo_sync_at?: string | null
@@ -4105,6 +4107,7 @@ export type Database = {
           landing_page?: string | null
           landing_page_html?: string | null
           last_enriched_at?: string | null
+          last_landing_generation_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
           last_seo_sync_at?: string | null

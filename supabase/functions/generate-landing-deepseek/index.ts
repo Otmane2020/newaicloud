@@ -69,13 +69,13 @@ serve(async (req) => {
 
     console.log("✅ Product enrichment complete");
 
-    // Load images
+    // Load images (limit to 4 for better performance)
     const { data: images } = await supabase
       .from("product_images")
       .select("*")
       .eq("product_id", productId)
       .order("position")
-      .limit(8);
+      .limit(4);
 
     // Detect dimension schema image
     const dimensionImage = images?.find((img: any) => 
@@ -90,9 +90,10 @@ serve(async (req) => {
     let visualAnalysis = "";
 
     if (images?.length) {
-      console.log(`🖼️ Analyzing ${images.length} images (Gemini Vision)`);
+      const imagesToAnalyze = Math.min(3, images.length);
+      console.log(`🖼️ Analyzing ${imagesToAnalyze} images with Gemini Vision`);
 
-      for (const img of images.slice(0, 3)) {
+      for (const img of images.slice(0, imagesToAnalyze)) {
         try {
           const imgBase64 = img.src.includes("base64")
             ? img.src.split(",")[1]
@@ -138,7 +139,7 @@ serve(async (req) => {
       }
     }
 
-    console.log("✅ Visual analysis complete");
+    console.log(`✅ Visual analysis complete: ${visualAnalysis.length} chars generated`);
 
     // Load variants
     const { data: variants } = await supabase
@@ -209,6 +210,31 @@ serve(async (req) => {
       dimensionImageUrl: dimensionImage?.src || null,
     };
 
+    // Check if recently generated (cache for 24h)
+    const { data: cached } = await supabase
+      .from("shopify_products")
+      .select("landing_page_html, last_landing_generation_at")
+      .eq("id", productId)
+      .single();
+
+    if (cached?.landing_page_html && cached?.last_landing_generation_at) {
+      const lastGen = new Date(cached.last_landing_generation_at);
+      const hoursSince = (Date.now() - lastGen.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSince < 24) {
+        console.log(`✅ Using cached landing page from ${hoursSince.toFixed(1)}h ago`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            html: cached.landing_page_html,
+            cached: true,
+            cacheAge: hoursSince.toFixed(1)
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // BUILD PROMPT WITH MANDATORY BLOCK
     const prompt = buildDeepSeekPrompt(productData, {
       style,
@@ -220,8 +246,9 @@ serve(async (req) => {
       images,
     });
 
+    const promptSizeKB = (new Blob([prompt]).size / 1024).toFixed(2);
     console.log("🤖 DeepSeek generating HTML...");
-    console.log(`📏 Prompt length: ${prompt.length} characters`);
+    console.log(`📏 Prompt: ${prompt.length} chars (${promptSizeKB} KB)`);
 
     let deepseekResponse;
     try {
@@ -238,14 +265,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
-            {
-              role: "system",
-              content:
-                language === "fr"
-                  ? "Tu es un expert en création de landing pages e-commerce premium. RÈGLE ABSOLUE : Tu renvoies UNIQUEMENT du code HTML valide complet. AUCUN texte explicatif, AUCUN commentaire de type 'cette landing page respecte', AUCUN markdown, AUCUN texte en dehors des balises HTML. Le document DOIT commencer par <!DOCTYPE html> et contenir <html>, <head>, <body>. Utilise Tailwind CSS via des classes. NE RENVOIE RIEN D'AUTRE QUE LE CODE HTML PUR."
-                  : "You are an expert in premium e-commerce landing page creation. ABSOLUTE RULE: Return ONLY valid complete HTML code. NO explanatory text, NO comments like 'this landing page respects', NO markdown, NO text outside HTML tags. The document MUST start with <!DOCTYPE html> and contain <html>, <head>, <body>. Use Tailwind CSS via classes. RETURN NOTHING BUT PURE HTML CODE.",
-            },
-            { role: "user", content: prompt },
+            { role: "user", content: prompt }
           ],
           temperature: 0.7,
           max_tokens: 8000,
@@ -257,7 +277,16 @@ serve(async (req) => {
 
       if (!deepseekResponse.ok) {
         const errorBody = await deepseekResponse.text();
-        console.error("❌ DeepSeek API error details:", errorBody);
+        console.error("❌ DeepSeek API error:", deepseekResponse.status, errorBody);
+        
+        if (deepseekResponse.status === 429) {
+          throw new Error("RATE_LIMIT: DeepSeek API rate limit exceeded. Please try again later.");
+        } else if (deepseekResponse.status === 402) {
+          throw new Error("PAYMENT_REQUIRED: DeepSeek API credits exhausted. Please add credits.");
+        } else if (deepseekResponse.status === 413) {
+          throw new Error("PAYLOAD_TOO_LARGE: Prompt exceeds DeepSeek limits. Try reducing product data.");
+        }
+        
         throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorBody}`);
       }
     } catch (error) {
@@ -283,16 +312,32 @@ serve(async (req) => {
     }
 
     html = cleanHTML(html);
+    
+    const htmlSizeKB = (html.length / 1024).toFixed(2);
+    console.log(`📏 Generated HTML: ${htmlSizeKB} KB`);
+    
+    // Validate HTML
+    const validation = validateCompleteHTML(html);
+    console.log("📊 Validation:", validation.valid ? "✅ PASS" : "⚠️ ISSUES", validation.issues);
+    
+    if (!validation.valid) {
+      console.warn("⚠️ Generated HTML has validation issues but proceeding:", validation.issues);
+    }
 
     console.log("✅ HTML generated successfully");
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("shopify_products")
       .update({
         landing_page_html: html,
         last_landing_generation_at: new Date().toISOString(),
       })
       .eq("id", productId);
+
+    if (updateError) {
+      console.error("❌ Failed to save HTML to database:", updateError);
+      throw new Error(`Database update failed: ${updateError.message}`);
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -310,11 +355,30 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error("❌ Error:", error);
-    return new Response(JSON.stringify({ error: String(error) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("❌ Error generating landing page:", error);
+    
+    let statusCode = 500;
+    let errorMessage = error.message || "Failed to generate landing page";
+    
+    if (errorMessage.includes("RATE_LIMIT")) {
+      statusCode = 429;
+    } else if (errorMessage.includes("PAYMENT_REQUIRED")) {
+      statusCode = 402;
+    } else if (errorMessage.includes("PAYLOAD_TOO_LARGE")) {
+      statusCode = 413;
+    }
+    
+    return new Response(
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.stack || "No additional details",
+        timestamp: new Date().toISOString()
+      }),
+      {
+        status: statusCode,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
 
@@ -751,33 +815,76 @@ function selectLuxuryFonts(style: string) {
 }
 
 function cleanHTML(html: string): string {
-  // Supprimer les balises markdown
+  // Remove markdown code blocks
   html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
   
-  // Supprimer les phrases méta typiques de DeepSeek
+  // Remove typical AI meta-phrases
   const metaPhrases = [
     /Cette landing page premium respecte strictement.*$/gims,
     /Cette landing page respecte.*$/gims,
+    /This landing page.*$/gims,
     /✅\s*\*\*.*?\*\*.*$/gims,
     /Note :.*$/gims,
+    /Note:.*$/gims,
   ];
   
   for (const pattern of metaPhrases) {
     html = html.replace(pattern, "");
   }
   
-  // Supprimer les commentaires excessifs
-  html = html.replace(/<!--[\s\S]*?-->/g, "");
+  // Remove excessive comments (but keep essential ones)
+  html = html.replace(/<!--\s*(Note|Remarque|Important|TODO)[^>]*-->/gi, "");
   
-  // Nettoyer les espaces multiples
+  // Clean multiple newlines
   html = html.replace(/\n{3,}/g, "\n\n");
   
-  // S'assurer que le DOCTYPE est présent
-  if (!html.includes("<!DOCTYPE html>")) {
+  // Ensure DOCTYPE is present at start
+  if (!html.includes("<!DOCTYPE html>") && !html.includes("<!doctype html>")) {
     html = "<!DOCTYPE html>\n" + html;
   }
   
   return html.trim();
+}
+
+function validateCompleteHTML(html: string): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+  
+  // Check for essential HTML structure
+  if (!html.includes("<!DOCTYPE html>") && !html.includes("<!doctype html>")) {
+    issues.push("Missing DOCTYPE declaration");
+  }
+  if (!html.includes("<html")) {
+    issues.push("Missing <html> tag");
+  }
+  if (!html.includes("</html>")) {
+    issues.push("Missing closing </html> tag");
+  }
+  if (!html.includes("<head")) {
+    issues.push("Missing <head> section");
+  }
+  if (!html.includes("<body")) {
+    issues.push("Missing <body> section");
+  }
+  
+  // Check for Lucide icons initialization
+  if (!html.includes("lucide.createIcons")) {
+    issues.push("Missing Lucide icons initialization script");
+  }
+  
+  // Check HTML size
+  if (html.length < 1000) {
+    issues.push("HTML suspiciously short (< 1KB)");
+  }
+  
+  // Check for Tailwind CDN
+  if (!html.includes("tailwindcss") && !html.includes("cdn.tailwindcss.com")) {
+    issues.push("Missing Tailwind CSS CDN");
+  }
+  
+  return {
+    valid: issues.length === 0,
+    issues
+  };
 }
 
 async function fetchImageAsBase64(url: string): Promise<string> {
