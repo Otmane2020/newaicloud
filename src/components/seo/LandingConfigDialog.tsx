@@ -323,7 +323,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Modèle de design */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎯 Modèle de design</Label>
+            <Label className="text-base font-semibold">🎯 {t.landingConfig.designStyle.title}</Label>
             <div className="grid grid-cols-3 gap-4">
               <button
                 type="button"
@@ -343,9 +343,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Minimaliste</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Épuré & élégant</div>
-                    <div className="text-xs text-muted-foreground">Lignes épurées, espaces blancs généreux</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.minimalist}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.minimalistShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.minimalistDesc}</div>
                   </div>
                 </div>
               </button>
@@ -368,9 +368,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Moderne</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Dynamique & tendance</div>
-                    <div className="text-xs text-muted-foreground">Dégradés, ombres douces, animations</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.modern}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.modernShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.modernDesc}</div>
                   </div>
                 </div>
               </button>
@@ -393,9 +393,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Premium</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Luxueux & sophistiqué</div>
-                    <div className="text-xs text-muted-foreground">Effets visuels riches, typographie imposante</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.premium}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.premiumShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.premiumDesc}</div>
                   </div>
                 </div>
               </button>
