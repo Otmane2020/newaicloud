@@ -56,27 +56,29 @@ serve(async (req) => {
       .replace(/\s+/g, " ")
       .slice(0, 400);
 
-    // 4. New improved prompt
+    // 4. Improved prompt - SINGLE result only
     const prompt = `
-Détecte la langue : ${lang}.
-Génère uniquement un ALT court (8 à 12 mots), naturel, descriptif et fidèle.
-Règles strictes :
-- utilise la langue détectée, jamais une autre
-- aucun mot inventé (pas "cylinder", "wood", etc.)
-- jamais deux couleurs mélangées ("beige black")
-- pas de termes inutiles ("photo", "image", "frontal")
-- interdit d'ajouter des matériaux non visibles
-- reste fidèle à l’image
-- style simple, naturel, fluide
+Tu es un expert SEO. Génère UN SEUL texte ALT descriptif et naturel.
 
-Données produit :
-Titre : ${product.title}
-Type : ${product.product_type}
-Catégorie : ${product.category}
-Texte : ${cleanDescription}
-Image URL : ${image.src}
+LANGUE: ${lang}
+LONGUEUR: 8-12 mots maximum
 
-Retourne uniquement le texte ALT final, sans guillemets.
+RÈGLES STRICTES:
+- UN SEUL résultat (pas de liste, pas d'options multiples)
+- Commence directement la description (pas de "Image de", "Voici", etc.)
+- Décris uniquement ce qui est visible dans l'image
+- Aucun mot inventé ou anglicisme inapproprié
+- Pas de couleurs contradictoires mélangées
+- Pas de termes inutiles comme "photo", "image", "frontal"
+- Style naturel et fluide
+
+INFORMATIONS PRODUIT:
+Titre: ${product.title}
+Type: ${product.product_type || 'Non spécifié'}
+Catégorie: ${product.category || 'Non spécifiée'}
+Description: ${cleanDescription}
+
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL, RIEN D'AUTRE.
 `;
 
     // ---- DeepSeek first pass
@@ -108,8 +110,21 @@ Retourne uniquement le texte ALT final, sans guillemets.
           contents: [
             {
               parts: [
-                { text: "Corrige le texte ALT suivant selon les règles strictes mentionnées." },
-                { text: deepseekText },
+                { 
+                  text: `Analyse cette image et génère UN SEUL texte ALT descriptif naturel de 8-12 mots maximum.
+
+Base suggérée: ${deepseekText}
+
+RÈGLES ABSOLUES:
+- UN SEUL texte final (jamais de liste ou options multiples)
+- Décris exactement ce que tu vois dans l'image
+- Maximum 12 mots
+- Langue: ${lang}
+- Naturel et fluide
+- Pas de préfixe comme "Voici" ou "Image de"
+
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL.` 
+                },
                 { inline_data: { mime_type: "image/jpeg", data: base64 } },
               ],
             },
@@ -118,8 +133,16 @@ Retourne uniquement le texte ALT final, sans guillemets.
       },
     );
 
-    const geminiText =
-      (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekText || "Image produit";
+    let geminiText = (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekText || "Image produit";
+    
+    // Nettoyer: prendre seulement la première ligne si multiple options retournées
+    geminiText = geminiText
+      .replace(/^(Voici|Image de|Photo de|ALT\s*:?\s*|Texte ALT\s*:?\s*)/i, "")
+      .replace(/^\*\s*/g, "")
+      .replace(/^-\s*/g, "")
+      .split(/\n|•/)[0]
+      .replace(/^\*\s*/g, "")
+      .trim();
 
     // ---- 5. Update database
     await supabase
