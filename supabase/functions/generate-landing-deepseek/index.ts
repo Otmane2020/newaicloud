@@ -234,8 +234,13 @@ serve(async (req) => {
 
     let enrichedProduct = product;
 
-    // Enrich if needed
-    if (!product.smart_length || !product.vision_analyzed) {
+    // Enrich if needed - Check if enrichment is recent (within 7 days)
+    const needsEnrichment = !product.smart_length || 
+                           !product.vision_analyzed || 
+                           (product.last_optimization_at && 
+                            (Date.now() - new Date(product.last_optimization_at).getTime()) > 7 * 24 * 60 * 60 * 1000);
+    
+    if (needsEnrichment) {
       console.log("🔄 Enriching product...");
       await supabase.functions.invoke("enrich-product", {
         body: { productId },
@@ -248,17 +253,19 @@ serve(async (req) => {
         .single();
 
       if (updated) enrichedProduct = updated;
+    } else {
+      console.log("⏭️ Skipping enrichment - recently done");
     }
 
     console.log("✅ Product enrichment complete");
 
-    // Load images (limit to 4 for better performance)
+    // Load images (limit to 3 for better performance)
     const { data: images } = await supabase
       .from("product_images")
       .select("*")
       .eq("product_id", productId)
       .order("position")
-      .limit(4);
+      .limit(3);
 
     // Detect dimension schema image
     const dimensionImage = images?.find((img: any) => 
@@ -269,11 +276,11 @@ serve(async (req) => {
       img.src?.toLowerCase().includes('dimension')
     );
 
-    // Vision analysis
+    // Vision analysis - Analyze only 2 images max for faster generation
     let visualAnalysis = "";
 
     if (images?.length && LOVABLE_API_KEY) {
-      const imagesToAnalyze = Math.min(3, images.length);
+      const imagesToAnalyze = Math.min(2, images.length); // Reduced from 3 to 2
       console.log(`🖼️ Analyzing ${imagesToAnalyze} images with Lovable AI Vision`);
 
       for (const img of images.slice(0, imagesToAnalyze)) {
@@ -462,9 +469,9 @@ serve(async (req) => {
 
     let deepseekResponse;
     try {
-      // Add timeout to avoid hanging indefinitely
+      // Increased timeout to 3 minutes for complex products
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes timeout
 
       deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: "POST",
@@ -503,7 +510,7 @@ serve(async (req) => {
       console.error("❌ DeepSeek API fetch error:", error);
       const err = error as Error;
       if (err.name === 'AbortError') {
-        throw new Error("DeepSeek API request timeout after 2 minutes");
+        throw new Error("TIMEOUT: La génération a pris plus de 3 minutes. Veuillez réessayer avec moins d'images ou un contenu plus court.");
       }
       throw new Error(`DeepSeek API fetch failed: ${err.message}`);
     }

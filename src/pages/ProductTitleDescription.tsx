@@ -83,7 +83,7 @@ interface Product {
   id: string;
   title: string;
   description: string | null;
-  landing_page: string | null;
+  landing_page_html: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -114,13 +114,13 @@ interface ProductImage {
 
 // Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
-  // Check landing_page first (AI-generated content)
-  if (product.landing_page) {
-    const hasHtmlTags = product.landing_page.includes('<div') || 
-                        product.landing_page.includes('<section') || 
-                        product.landing_page.includes('<h1') ||
-                        product.landing_page.includes('<article') ||
-                        product.landing_page.length > 500; // Long content is likely HTML
+  // Check landing_page_html first (AI-generated content)
+  if (product.landing_page_html) {
+    const hasHtmlTags = product.landing_page_html.includes('<div') || 
+                        product.landing_page_html.includes('<section') || 
+                        product.landing_page_html.includes('<h1') ||
+                        product.landing_page_html.includes('<article') ||
+                        product.landing_page_html.length > 500; // Long content is likely HTML
     if (hasHtmlTags) return true;
   }
   
@@ -270,7 +270,7 @@ export default function ProductTitleDescription() {
         
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
+          .select("id, title, description, landing_page_html, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
           .range(start, end)
@@ -555,14 +555,14 @@ export default function ProductTitleDescription() {
         // Update local state - Fetch fresh data from DB
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
+          .select("id, title, description, landing_page_html, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
-          // Check if landing_page or description already has HTML (skip regeneration if present)
-          const hasExistingHtml = (updatedProduct.landing_page && 
-            (updatedProduct.landing_page.includes('<div') || updatedProduct.landing_page.includes('<section'))) ||
+          // Check if landing_page_html or description already has HTML (skip regeneration if present)
+          const hasExistingHtml = (updatedProduct.landing_page_html && 
+            (updatedProduct.landing_page_html.includes('<div') || updatedProduct.landing_page_html.includes('<section'))) ||
             (updatedProduct.description && 
             (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section')));
 
@@ -595,10 +595,10 @@ export default function ProductTitleDescription() {
               if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
                 console.log("✅ HTML landing page généré (10 optimisations consommées)");
                 
-                // Save HTML to shopify_products.landing_page
+                // Save HTML to shopify_products.landing_page_html
                 const { error: updateError } = await supabase
                   .from("shopify_products")
-                  .update({ landing_page: htmlData.htmlLandingPage })
+                  .update({ landing_page_html: htmlData.htmlLandingPage })
                   .eq("id", productId);
                 
                 if (!updateError) {
@@ -618,8 +618,8 @@ export default function ProductTitleDescription() {
                     });
                   }
                   
-                  // Update local product with HTML in landing_page
-                  updatedProduct.landing_page = htmlData.htmlLandingPage;
+                  // Update local product with HTML in landing_page_html
+                  updatedProduct.landing_page_html = htmlData.htmlLandingPage;
                 }
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
@@ -1536,7 +1536,7 @@ export default function ProductTitleDescription() {
               productId: product.id,
               productTitle: product.title,
               productHandle: productData.handle,
-              htmlContent: product.landing_page || product.description || '', // Use landing_page first
+              htmlContent: product.landing_page_html || product.description || '', // Use landing_page_html first
             }
           });
 
@@ -2939,7 +2939,7 @@ export default function ProductTitleDescription() {
                 // Mettre à jour directement le produit avec le HTML généré (évite double aperçu)
                 const updatedProduct = {
                   ...selectedLandingProduct,
-                  landing_page: html
+                  landing_page_html: html
                 };
                 
                 // Fermer le dialog de génération et ouvrir le preview immédiatement
@@ -3003,7 +3003,7 @@ export default function ProductTitleDescription() {
         productId={previewProduct?.id || ""}
         productTitle={previewProduct?.title || ""}
         productHandle={previewProduct?.handle || ""}
-        currentLandingPage={previewProduct?.landing_page}
+        currentLandingPage={previewProduct?.landing_page_html}
         onGenerateClick={() => {
           if (previewProduct) {
             setSelectedLandingProduct(previewProduct);
