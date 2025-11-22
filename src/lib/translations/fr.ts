@@ -229,6 +229,9 @@ export const translations = {
     },
     
     optimizedTitle: "Titre optimisé par IA",
+    syncTitle: "Synchronisez pour appliquer ce titre",
+    generationFailed: "Échec de la génération",
+    retry: "Réessayer",
 
     stages: {
       initializingDetail: "Initialisation des modèles IA...",
@@ -283,6 +286,9 @@ export const translations = {
       paymentRequired: "Crédits IA épuisés. Contactez le support pour plus d'informations.",
       limitReached: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
       noGenerated: "Aucun contenu généré. Essayez avec un autre style ou layout.",
+      networkError: "Le service de génération est momentanément indisponible. Merci de réessayer dans quelques minutes.",
+      syncNetworkError: "Impossible de contacter le service de synchronisation. Merci de réessayer dans quelques minutes.",
+      retrying: "Nouvelle tentative en cours...",
     },
 
     preview: {

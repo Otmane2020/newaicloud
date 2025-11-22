@@ -228,6 +228,9 @@ export const translations = {
       badge: "Vision AI",
     },
     optimizedTitle: "AI-Optimized Title",
+    syncTitle: "Sync to apply this title",
+    generationFailed: "Generation failed",
+    retry: "Retry",
 
     stages: {
       initializingDetail: "Initializing AI models...",
@@ -282,6 +285,9 @@ export const translations = {
       paymentRequired: "AI credits exhausted. Contact support for more information.",
       limitReached: "Optimization limit reached. Upgrade to a higher plan.",
       noGenerated: "No content generated. Try with another style or layout.",
+      networkError: "Generation service temporarily unavailable. Please try again in a few minutes.",
+      syncNetworkError: "Unable to contact synchronization service. Please try again in a few minutes.",
+      retrying: "Retrying...",
     },
 
     preview: {
