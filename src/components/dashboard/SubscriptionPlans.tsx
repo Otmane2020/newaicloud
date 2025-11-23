@@ -301,6 +301,9 @@ export function SubscriptionPlans() {
         return "Upgrade";
       } else if (targetPlan.max_optimizations_monthly < currentPlan.max_optimizations_monthly) {
         return "Downgrade";
+      } else {
+        // Equal optimizations - not an upgrade
+        return t.dashboard.plans.currentPlan;
       }
     }
 
