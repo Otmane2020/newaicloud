@@ -772,12 +772,19 @@ serve(async (req) => {
 
     // --- Prompt bilingual ---
     const imgs = images.length
-      ? images.map((i) => `- ${i.src}`).join("\n")
+      ? images.map((i) => `- ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")
       : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
+    
+    // 🔥 AMÉLIORATION: Variantes avec images bien mises en évidence
     const vars = variants.length
-      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
+      ? variants.map((v) => {
+          if (v.image_url) {
+            return `- **${v.title}** → IMAGE DISPONIBLE: ${v.image_url}`;
+          }
+          return `- ${v.title} (pas d'image spécifique)`;
+        }).join("\n")
       : detectedLanguage === "en"
         ? "No variant"
         : "Aucune variante";
@@ -1016,22 +1023,97 @@ ${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "-
 
 IMAGES:
 ${imgs}
-VARIANTS:
+
+🖼️ VARIANTS WITH IMAGES (CRITICAL - MUST DISPLAY ALL):
 ${vars}
+${variants.length > 0 ? `
+🚨 CRITICAL VARIANT DISPLAY RULES:
+1. Create a dedicated "Variations disponibles" section AFTER the main product description
+2. For EACH variant with an image:
+   - Display the variant image in a gallery grid (grid-cols-2 md:grid-cols-3 lg:grid-cols-4)
+   - Add variant title as image caption below each image
+   - Ensure images are properly sized: aspect-square object-cover
+   - Use lazy loading: loading="lazy"
+3. Structure example:
+   <section class="py-12">
+     <h2 class="text-3xl font-bold mb-8">Variations disponibles</h2>
+     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+       ${variants.filter(v => v.image_url).map(v => `
+       <div class="group">
+         <div class="aspect-square overflow-hidden rounded-lg bg-gray-100 mb-3">
+           <img src="${v.image_url}" alt="${v.title}" loading="lazy" 
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+         </div>
+         <p class="text-sm font-medium text-center">${v.title}</p>
+       </div>
+       `).join('')}
+     </div>
+   </section>
+` : ""}
+
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
-COLOR PALETTE (HSL FORMAT ONLY):
+🎨 COMPLETE COLOR PALETTE (ALL 5 COLORS FROM THEME):
+${colorScheme ? `
+Palette ID: ${(colorScheme as any).paletteId || 'custom'}
+${(colorScheme as any).paletteId === 'modern' ? `
+- Color 1 (Darkest): #000000 → hsl(0 0% 0%)
+- Color 2: #333333 → hsl(0 0% 20%)
+- Color 3: #666666 → hsl(0 0% 40%)
+- Color 4: #999999 → hsl(0 0% 60%)
+- Color 5 (Lightest): #CCCCCC → hsl(0 0% 80%)
+` : (colorScheme as any).paletteId === 'blue' ? `
+- Color 1 (Darkest): #003366 → hsl(210 100% 20%)
+- Color 2: #0066CC → hsl(210 100% 40%)
+- Color 3: #3399FF → hsl(210 100% 60%)
+- Color 4: #66B3FF → hsl(210 100% 70%)
+- Color 5 (Lightest): #99CCFF → hsl(210 100% 80%)
+` : (colorScheme as any).paletteId === 'earth' ? `
+- Color 1 (Darkest): #5D4037 → hsl(16 31% 30%)
+- Color 2: #795548 → hsl(16 25% 40%)
+- Color 3: #A1887F → hsl(20 15% 56%)
+- Color 4: #D7CCC8 → hsl(14 20% 81%)
+- Color 5 (Lightest): #EFEBE9 → hsl(30 12% 93%)
+` : (colorScheme as any).paletteId === 'luxury' ? `
+- Color 1 (Darkest): #1A1A1A → hsl(0 0% 10%)
+- Color 2: #4A4A4A → hsl(0 0% 29%)
+- Color 3 (Gold): #B8860B → hsl(43 90% 38%)
+- Color 4: #DAA520 → hsl(43 87% 49%)
+- Color 5 (Brightest Gold): #FFD700 → hsl(51 100% 50%)
+` : (colorScheme as any).paletteId === 'fresh' ? `
+- Color 1 (Darkest): #1B5E20 → hsl(123 56% 24%)
+- Color 2: #388E3C → hsl(123 43% 39%)
+- Color 3: #66BB6A → hsl(122 39% 57%)
+- Color 4: #81C784 → hsl(120 39% 65%)
+- Color 5 (Lightest): #A5D6A7 → hsl(122 40% 75%)
+` : (colorScheme as any).paletteId === 'vibrant' ? `
+- Color 1 (Darkest): #B71C1C → hsl(0 73% 41%)
+- Color 2: #D32F2F → hsl(0 63% 50%)
+- Color 3: #F44336 → hsl(4 90% 58%)
+- Color 4: #EF5350 → hsl(2 85% 63%)
+- Color 5 (Lightest): #E57373 → hsl(0 71% 68%)
+` : `
+Custom palette - use provided design tokens below
+`}
+` : ''}
+
+DESIGN TOKENS (HSL FORMAT - FOR PRIMARY ELEMENTS):
 - Primary: hsl(${designTokens.primary})
 - Secondary: hsl(${designTokens.secondary})
 - Accent: hsl(${designTokens.accent})
 - Background: hsl(${designTokens.background})
 - Text: hsl(${designTokens.text})
 
-🚨 CRITICAL COLOR RULES (MANDATORY):
-1. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
-2. ALWAYS use inline HSL styles for hero, sections, and CTAs
-3. Examples:
-   - Hero: <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+🚨 CRITICAL COLOR USAGE RULES:
+1. USE ALL 5 COLORS from the palette throughout the design for visual richness
+2. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
+3. ALWAYS use inline HSL styles for hero, sections, and CTAs
+4. Apply the 5 palette colors progressively:
+   - Darkest colors (1-2): Headers, primary CTAs, bold text
+   - Middle colors (3): Backgrounds, sections, cards
+   - Lightest colors (4-5): Subtle backgrounds, hover states, borders
+5. Examples:
+   - Hero banner: <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
    - Section: <section style="background-color: hsl(${designTokens.surface})">
    - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
 
@@ -1049,25 +1131,52 @@ ${selectedIcon}
 🚨 CRITICAL: Adapt gradient IDs to be unique (iconGrad1, iconGrad2, etc.)
 🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
 
-🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
-🚨 CRITICAL: For ALL titles/text on images, you MUST:
-1. Add semi-transparent dark overlay: <div class="absolute inset-0 bg-black/40"></div>
-2. Use text-shadow for contrast: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
-3. Bright white text: class="text-white"
-4. Large font size: class="text-4xl md:text-6xl font-bold"
-5. MANDATORY structure example for hero with image:
-   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
-     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
-     <div class="absolute inset-0 bg-black/40"></div>
-     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
-       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+🖼️ HERO BANNER WITH IMAGE (CRITICAL - MANDATORY FIRST SECTION):
+🚨 CRITICAL: The landing page MUST start with a full-width hero banner with image overlay:
+
+1. MANDATORY HERO STRUCTURE (FIRST SECTION OF PAGE):
+   <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
+     <!-- Main product image as background -->
+     <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}" 
+          loading="eager" 
+          class="absolute inset-0 w-full h-full object-cover">
+     
+     <!-- Dark overlay for text readability -->
+     <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
+     
+     <!-- Hero content centered -->
+     <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
+       <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight" 
+           style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9)">
          ${productTitle}
        </h1>
-       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
-         Short description
+       <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed" 
+          style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8)">
+         ${description?.substring(0, 150) || 'Description du produit'}...
        </p>
+       
+       <!-- Optional CTA button in hero -->
+       <div class="flex gap-4">
+         <a href="#details" 
+            class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105" 
+            style="background-color: hsl(${designTokens.primary}); color: white; text-shadow: none;">
+           En savoir plus
+         </a>
+       </div>
      </div>
    </div>
+
+2. HERO VARIATIONS BY LAYOUT:
+   - "1 colonne": Full-width hero as above
+   - "2 colonnes": Keep full-width hero, then 2-column content below
+   - "hero à gauche": Image hero on left 50%, content on right 50%
+   - "hero à droite": Content on left 50%, image hero on right 50%
+
+3. FOR ALL TEXT ON IMAGES:
+   - Dark overlay: bg-black/40 to bg-black/60
+   - Text shadow: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+   - White text: text-white
+   - Large sizes: text-4xl md:text-6xl for titles
 
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:
