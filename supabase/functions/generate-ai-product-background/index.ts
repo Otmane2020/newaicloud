@@ -198,8 +198,9 @@ Si quelqu'un compare l'image avant/après, il doit dire :
    ✅ Qualité catalogue professionnel (Zara Home, La Redoute, West Elm)
    ✅ Éclairage naturel studio : doux, diffus, professionnel
    ✅ Netteté parfaite : produit 100% net, arrière-plan léger flou artistique
-   ✅ Color grading haut de gamme : tons chauds/froids selon style choisi
-   ✅ Matériaux premium visibles : bois, marbre, métal, velours, lin
+   🎨 IMAGE EN COULEUR OBLIGATOIRE : couleurs vibrantes, naturelles, réalistes (PAS de noir et blanc, PAS de grayscale, PAS de monochrome)
+   ✅ Color grading haut de gamme : tons chauds/froids selon style choisi, palette de couleurs riche et variée
+   ✅ Matériaux premium visibles : bois, marbre, métal, velours, lin avec leurs couleurs naturelles
    ✅ Composition magazine : équilibrée, aérée, sophistiquée
 
 🚫 INTERDICTIONS ABSOLUES :
@@ -240,7 +241,8 @@ Tu dois imaginer que tu TRANSPORTES le produit dans un NOUVEAU LIEU différent d
 - Éclairage naturel professionnel : doux, diffus, sans ombres dures
 - Netteté parfaite sur le produit (focus à 100%)
 - Léger flou artistique sur l'arrière-plan (profondeur de champ naturelle)
-- Color grading professionnel : tons harmonieux et sophistiqués
+- 🎨 IMAGE EN COULEUR COMPLÈTE : couleurs vives, naturelles et réalistes (ABSOLUMENT PAS de noir et blanc, grayscale ou monochrome)
+- Color grading professionnel : tons harmonieux et sophistiqués avec palette de couleurs riche
 - Composition magazine : équilibrée, aérée, élégante
 
 ✨ INTÉGRATION PRODUIT PARFAITE :
