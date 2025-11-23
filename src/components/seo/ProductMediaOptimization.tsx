@@ -43,6 +43,7 @@ interface ProductImage {
 interface ProductWithImages {
   id: string;
   title: string;
+  shopify_id?: number | null;
   product_images: ProductImage[];
 }
 
@@ -80,7 +81,7 @@ export const ProductMediaOptimization = () => {
         // Load products filtered by store
         const productsResponse: any = await (supabase as any)
           .from('shopify_products')
-          .select('id, title')
+          .select('id, title, shopify_id')
           .eq('seller_id', user.id)
           .eq('store_id', selectedStore.id)
           .order('title');
@@ -88,7 +89,7 @@ export const ProductMediaOptimization = () => {
         if (productsResponse.error) throw productsResponse.error;
         if (!productsResponse.data) return [];
 
-        const productsData = productsResponse.data as Array<{ id: string; title: string }>;
+        const productsData = productsResponse.data as Array<{ id: string; title: string; shopify_id?: number | null }>;
         if (productsData.length === 0) return [];
 
         // Load images for all products
@@ -106,6 +107,7 @@ export const ProductMediaOptimization = () => {
         const result: ProductWithImages[] = productsData.map((product: any) => ({
           id: product.id,
           title: product.title,
+          shopify_id: product.shopify_id,
           product_images: imagesData.filter((img: any) => img.product_id === product.id)
         }));
 
@@ -463,42 +465,74 @@ export const ProductMediaOptimization = () => {
         </TabsContent>
       </Tabs>
 
-      {/* White Background Preview Dialog */}
+      {/* White Background Preview Dialog - RESPONSIVE */}
       {showWhiteBgPreview && selectedImage && whiteBgResult && (
         <Dialog open={showWhiteBgPreview} onOpenChange={setShowWhiteBgPreview}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="w-[calc(100vw-1rem)] max-w-[95vw] sm:max-w-3xl md:max-w-4xl h-auto max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Fond Blanc HD - Résolution 2000x2000px</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base sm:text-lg">Fond Blanc HD - Résolution 2000x2000px</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
                 Comparez l'image originale avec le fond blanc généré
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
+
+            {/* Shopify Status Alert */}
+            {(() => {
+              const product = products?.find(p => p.id === selectedImage.product_id);
+              return !product?.shopify_id ? (
+                <Alert className="mb-3 sm:mb-4">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <span className="text-xs sm:text-sm">⚠️ Produit non synchronisé avec Shopify - L'optimisation sera locale uniquement</span>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => window.location.href = '/products'}
+                      className="text-xs"
+                    >
+                      Synchroniser
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : null;
+            })()}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-3 sm:py-4">
               <div className="space-y-2">
-                <p className="text-sm font-medium">Original</p>
+                <p className="text-xs sm:text-sm font-medium">Original</p>
                 <div className="aspect-square rounded-lg overflow-hidden border">
                   <img src={selectedImage.src} alt="Original" className="w-full h-full object-cover" />
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Fond Blanc HD</p>
+                <p className="text-xs sm:text-sm font-medium">Fond Blanc HD</p>
                 <div className="aspect-square rounded-lg overflow-hidden border bg-white">
                   <img src={whiteBgResult} alt="Optimized" className="w-full h-full object-contain" />
                 </div>
               </div>
             </div>
-            <div className="flex justify-between items-center pt-4 border-t">
-              <Button variant="outline" onClick={handleDownloadWhiteBg}>
+            <Separator />
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0 pt-3 sm:pt-4">
+              <Button
+                variant="outline"
+                onClick={handleDownloadWhiteBg}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Télécharger HD
               </Button>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowWhiteBgPreview(false)}>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 order-1 sm:order-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowWhiteBgPreview(false)}
+                  className="w-full sm:w-auto"
+                >
                   Annuler
                 </Button>
                 <Button 
                   onClick={handleApplyWhiteBackground}
                   disabled={applyOptimizedImage.isPending}
+                  className="w-full sm:w-auto"
                 >
                   {applyOptimizedImage.isPending ? (
                     <>

@@ -107,69 +107,93 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Create prompt for white background removal
+    // Create advanced prompt for true background removal and replacement
+    const startTime = Date.now();
     const isMainImage = imageType === "primary";
+    
     const photographyPrompt = `
-You are a professional e-commerce product photographer.
+🎯 CRITICAL TASK: BACKGROUND SEGMENTATION & REPLACEMENT
 
-PRODUCT: ${productTitle || "Product"}
+You are an AI background removal specialist. Your ONLY job is to:
+1. **SEGMENT** and extract the product (${productTitle || "product"}) from the current image
+2. **DELETE** everything that is NOT the product (walls, floors, furniture, decorations, lighting fixtures, shadows on background)
+3. **PLACE** the extracted product on a PURE WHITE (#FFFFFF) background
 
-🎯 YOUR CRITICAL MISSION:
-**COMPLETELY REMOVE AND REPLACE the existing background** with a pure white background (#FFFFFF).
+⚠️ CRITICAL RULES:
+- DO NOT regenerate, redraw, or recreate the product
+- DO NOT change the product's appearance, colors, textures, or details
+- ONLY perform background removal: product IN, everything else OUT
+- The product must look EXACTLY as it does in the original image
+- Think of this as "Photoshop Magic Wand + Delete Background + White Fill"
 
-⚠️ IMPORTANT: The image already has a background - you MUST:
-- Identify and isolate the main product (${productTitle || "the item"})
-- DELETE/REMOVE the entire existing background
-- REPLACE it with a NEW pure white (#FFFFFF) background
-- DO NOT keep or copy any part of the old background
-
-REQUIREMENTS:
+📐 TECHNICAL WORKFLOW:
 ${isMainImage ? `
-1. MAIN IMAGE REQUIREMENTS (CRITICAL):
-   - **EXTRACT the product from its current background**
-   - **PLACE the extracted product on pure white (#FFFFFF)**
-   - Product MUST be perfectly centered in the frame
-   - Product must be clear, sharp, and prominent (70-80% of frame)
-   - Product should face the camera directly
-   - All product details must be clearly visible
-   - Clean, professional look suitable for e-commerce
-   - Square format (1024x1024)
-   
-2. BACKGROUND REPLACEMENT:
-   - **Step 1: REMOVE the existing background completely**
-   - **Step 2: CREATE a new pure white background (#FFFFFF)**
-   - **Step 3: Place the product cleanly on the new white background**
-   - Professional lighting to highlight product
-   - Clean product cutout with smooth edges
-   - No shadows unless essential for depth
-   - NO traces of the original background
+STEP 1 - PRODUCT DETECTION:
+- Identify the main product: ${productTitle || "the item"}
+- Product should occupy 70-80% of the frame
+- Detect product edges with precision (smooth anti-aliasing)
+
+STEP 2 - BACKGROUND SEGMENTATION:
+- Classify EVERY pixel as "product" or "background"
+- Background = walls, floors, other objects, lighting, decorations, shadows on surfaces
+- Create a clean alpha mask around the product
+
+STEP 3 - BACKGROUND REMOVAL:
+- DELETE all background pixels completely
+- Keep ONLY the product pixels (with original colors, textures, details)
+
+STEP 4 - WHITE BACKGROUND APPLICATION:
+- Fill the deleted background area with pure white (#FFFFFF)
+- Product MUST be centered in the frame
+- Maintain product's original lighting and shadows (only those ON the product, not behind it)
+
+STEP 5 - QUALITY CONTROL:
+- Product edges must be clean (no halos, no background remnants)
+- Product colors/textures unchanged from original
+- White background must be uniform (#FFFFFF everywhere except product)
+- No artifacts, no blurring on product edges
 ` : `
-1. SECONDARY IMAGE:
-   - **EXTRACT the product from its current environment**
-   - **PLACE it on pure white (#FFFFFF) background**
-   - Product can be positioned artistically
-   - Creative composition (centering not required)
-   - Square format (1024x1024)
-   
-2. BACKGROUND REPLACEMENT:
-   - **COMPLETELY REMOVE the existing background**
-   - **REPLACE with pure white (#FFFFFF)**
-   - Clean product cutout
-   - Professional lighting
-   - NO remnants of original background
+STEP 1 - PRODUCT DETECTION:
+- Identify the product: ${productTitle || "the item"}
+- Detect precise product boundaries
+
+STEP 2 - BACKGROUND SEGMENTATION:
+- Classify pixels: product vs. background
+- Background = everything that is NOT the product
+
+STEP 3 - BACKGROUND REMOVAL:
+- DELETE all background pixels
+- Keep ONLY product pixels with original appearance
+
+STEP 4 - WHITE BACKGROUND:
+- Replace deleted area with pure white (#FFFFFF)
+- Product can be positioned artistically (not necessarily centered)
+
+STEP 5 - QUALITY CHECK:
+- Clean edges, no background traces
+- Product unchanged from original
 `}
 
-3. TECHNICAL SPECS:
-   - High resolution (1024×1024)
-   - Professional color grading
-   - Balanced exposure and contrast
-   - No watermarks, text, or logos
-   - Ready for e-commerce use
+🚫 FORBIDDEN ACTIONS:
+- DO NOT regenerate the product from scratch
+- DO NOT change product colors, materials, or textures
+- DO NOT add or remove product features
+- DO NOT keep any part of the original background (furniture, walls, decor)
+- DO NOT add new shadows behind the product (only keep shadows ON the product)
 
-🎨 FINAL CHECK: Ensure the product (${productTitle || "item"}) is isolated on a COMPLETELY NEW pure white background, with ZERO traces of the original setting.
+✅ SUCCESS CRITERIA:
+- Original product preserved 100% (same colors, textures, details)
+- Background is PURE white (#FFFFFF) everywhere except where product is
+- Clean product cutout with smooth edges
+- Professional e-commerce ready result
+- Resolution: 1024x1024px
 
-RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "product photo"} on a NEWLY CREATED pure white background.
+🎨 THINK: "I am a background eraser tool, not a product recreator"
+
+EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and placed on a new pure white background, as if you used professional image editing software to remove the background.
     `.trim();
+
+    console.log(`[white-bg] 📝 Prompt generated (${photographyPrompt.length} chars)`);
 
     // Helper function to try Lovable AI
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
@@ -332,7 +356,13 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
     }
 
     const { imageUrl: generatedImageUrl, model: usedModel } = result;
-    console.log(`✅ White background generated successfully using ${usedModel}`);
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ White background generated successfully using ${usedModel}`, {
+      processingTime: `${processingTime}ms`,
+      productTitle,
+      imageType,
+      promptLength: photographyPrompt.length
+    });
 
     return new Response(
       JSON.stringify({

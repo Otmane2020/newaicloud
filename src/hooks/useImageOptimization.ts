@@ -274,40 +274,60 @@ export const useImageOptimization = () => {
 
         // 🔥 CRITICAL: Sync with Shopify after applying image
         console.log('🔄 Syncing optimized image with Shopify...');
+        const syncToastId = toast.loading('Synchronisation avec Shopify...', {
+          description: 'Application de l\'image optimisée'
+        });
+        
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
             body: { productId }
           });
 
-          // 🆕 Vérifier si l'erreur est due au trial
-          if (syncError || syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
-            if (syncData?.requiresUpgrade) {
-              console.log('🚫 [OPTIMIZATION] Shopify sync blocked - trial user');
-              toast.error('Mise à jour Shopify bloquée', {
-                description: 'Upgradez votre plan pour synchroniser avec Shopify',
-                action: {
-                  label: '✨ Voir les plans',
-                  onClick: () => {
-                    window.location.href = '/subscription';
-                  }
-                },
-                duration: 10000,
-              });
-              
-              // L'optimisation locale a réussi, mais pas la sync Shopify
-              return { success: true, shopifySyncBlocked: true };
-            }
-            
+          // Handle different sync scenarios with detailed feedback
+          if (syncError) {
             console.error('❌ Shopify sync failed:', syncError);
-            toast.warning('Image appliquée mais synchronisation Shopify échouée', {
-              description: 'L\'image est mise à jour localement. Synchronisez manuellement si nécessaire.'
+            toast.error('Erreur de synchronisation Shopify', {
+              id: syncToastId,
+              description: syncError.message || 'Vérifiez votre connexion Shopify dans les paramètres',
+              action: {
+                label: '⚙️ Paramètres',
+                onClick: () => window.location.href = '/settings/integrations'
+              },
+              duration: 8000
+            });
+          } else if (syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
+            console.log('🚫 [OPTIMIZATION] Shopify sync blocked - trial user');
+            toast.warning('Synchronisation limitée', {
+              id: syncToastId,
+              description: 'Image appliquée localement. Upgradez pour synchroniser avec Shopify',
+              action: {
+                label: '✨ Voir les plans',
+                onClick: () => window.location.href = '/subscription'
+              },
+              duration: 10000
+            });
+            return { success: true, shopifySyncBlocked: true };
+          } else if (syncData?.error) {
+            console.error('❌ Shopify sync error:', syncData.error);
+            toast.warning('Image appliquée mais sync Shopify partielle', {
+              id: syncToastId,
+              description: 'L\'image est mise à jour localement. Certaines images n\'ont pas été synchronisées.',
+              duration: 6000
             });
           } else {
             console.log('✅ Shopify sync successful');
+            toast.success('Image synchronisée avec Shopify', {
+              id: syncToastId,
+              description: 'Votre boutique est à jour'
+            });
           }
         } catch (syncError) {
-          console.error('❌ Shopify sync error:', syncError);
-          // Don't throw - image is already applied locally
+          console.error('❌ Shopify sync exception:', syncError);
+          toast.error('Erreur de synchronisation', {
+            id: syncToastId,
+            description: 'L\'image est appliquée localement seulement',
+            duration: 5000
+          });
         }
         
         return { success: true };
