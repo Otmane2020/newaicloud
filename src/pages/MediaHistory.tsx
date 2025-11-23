@@ -145,7 +145,7 @@ export default function MediaHistory() {
       // 2. Sync to Shopify
       const { data: syncResult, error: syncError } = await supabase.functions.invoke(
         'sync-product-images-to-shopify',
-        { body: { product_id: productId } }
+        { body: { productId } }
       );
 
       if (syncError) {
