@@ -259,20 +259,46 @@ const Subscription = () => {
   const selectedProPlan = proPlans.find(p => p.id === selectedProTier);
   const selectedEnterprisePlan = enterprisePlans.find(p => p.id === selectedEnterpriseTier);
 
-  // Determine recommended upgrade plan
-  const getRecommendedPlan = () => {
-    if (!isUpgradeFlow || !currentPlan) return null;
+  // Determine if a plan is an upgrade or downgrade
+  const getPlanChangeType = (targetPlanId: string): 'upgrade' | 'downgrade' | 'current' | null => {
+    if (!currentPlan) return null;
+    if (isCurrentPlan(targetPlanId)) return 'current';
     
-    if (currentPlan.id === 'starter') return 'pro';
-    if (currentPlan.id.startsWith('pro')) return 'enterprise';
+    const currentPrice = currentPlan.price_monthly;
+    const targetPlan = plans.find(p => p.id === targetPlanId);
+    if (!targetPlan) return null;
+    
+    const targetPrice = targetPlan.price_monthly;
+    return targetPrice > currentPrice ? 'upgrade' : 'downgrade';
+  };
+
+  // Get next recommended upgrade
+  const getNextUpgrade = () => {
+    if (!currentPlan) return null;
+    
+    if (currentPlan.id === 'starter') {
+      return proPlans.length > 0 ? proPlans[0].id : null;
+    }
+    
+    if (currentPlan.id.startsWith('pro')) {
+      const currentIndex = proPlans.findIndex(p => p.id === currentPlan.id);
+      if (currentIndex >= 0 && currentIndex < proPlans.length - 1) {
+        return proPlans[currentIndex + 1].id;
+      }
+      return enterprisePlans.length > 0 ? enterprisePlans[0].id : null;
+    }
+    
     if (currentPlan.id.startsWith('enterprise')) {
       const currentIndex = enterprisePlans.findIndex(p => p.id === currentPlan.id);
-      return currentIndex < enterprisePlans.length - 1 ? 'enterprise' : null;
+      if (currentIndex >= 0 && currentIndex < enterprisePlans.length - 1) {
+        return enterprisePlans[currentIndex + 1].id;
+      }
     }
+    
     return null;
   };
 
-  const recommendedPlanType = getRecommendedPlan();
+  const nextUpgradePlanId = getNextUpgrade();
 
   if (loading) {
     return (
@@ -377,7 +403,7 @@ const Subscription = () => {
                 {t.seo.subscription.currentPlanBadge}
               </Badge>
             )}
-            {!(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && isUpgradeFlow && recommendedPlanType === 'pro' && (
+            {!(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && isUpgradeFlow && selectedProTier === nextUpgradePlanId && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-success text-xs sm:text-sm">
                 {t.seo.subscription.recommendedPlanBadge}
               </Badge>
@@ -455,8 +481,10 @@ const Subscription = () => {
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           {t.seo.subscription.currentPlanBadge}
                         </>
-                      ) : (
+                      ) : getPlanChangeType(selectedProTier) === 'upgrade' ? (
                         t.seo.subscription.upgrade
+                      ) : (
+                        'Rétrograder'
                       )}
                     </Button>
                   </div>
@@ -510,7 +538,7 @@ const Subscription = () => {
                 {t.seo.subscription.currentPlanBadge}
               </Badge>
             )}
-            {!currentPlan?.id.startsWith('enterprise-') && isUpgradeFlow && recommendedPlanType === 'enterprise' && (
+            {!currentPlan?.id.startsWith('enterprise-') && isUpgradeFlow && selectedEnterpriseTier === nextUpgradePlanId && (
               <Badge className="absolute -top-2.5 sm:-top-3 left-1/2 transform -translate-x-1/2 bg-success text-xs sm:text-sm">
                 {t.seo.subscription.recommendedPlanBadge}
               </Badge>
@@ -593,8 +621,10 @@ const Subscription = () => {
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           {t.seo.subscription.currentPlanBadge}
                         </>
-                      ) : (
+                      ) : getPlanChangeType(selectedEnterpriseTier) === 'upgrade' ? (
                         t.seo.subscription.upgrade
+                      ) : (
+                        'Rétrograder'
                       )}
                     </Button>
                   </div>
