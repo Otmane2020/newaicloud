@@ -188,6 +188,17 @@ export default function LandingOk() {
           addDebugLog(`  - ${key}: ${JSON.stringify(value)}`);
         });
       }
+      
+      // ✅ Afficher les tokens et config utilisés
+      if (functionData?.designTokens) {
+        addDebugLog('🎨 Design Tokens appliqués:');
+        Object.entries(functionData.designTokens).forEach(([key, value]) => {
+          addDebugLog(`  - ${key}: hsl(${value})`);
+        });
+      }
+      
+      addDebugLog(`📐 Layout utilisé: ${functionData?.usedLayout || 'N/A'}`);
+      addDebugLog(`🎨 Style utilisé: ${functionData?.usedStyle || 'N/A'}`);
 
       toast({
         title: 'Génération réussie',

@@ -597,9 +597,13 @@ serve(async (req) => {
         
       console.log("✅ User preferences applied:", {
         layout: selectedLayout?.option_key,
+        layoutLabel: selectedLayout?.option_label,
         style: userPreferences.designStyle,
+        styleLabel: selectedStyle?.name,
+        contentLength: selectedLength?.option_key,
+        contentLengthLabel: selectedLength?.option_label,
         colorScheme: Object.keys(selectedColorScheme).join(', '),
-        contentLength: selectedLength?.option_key
+        highlightsCount: selectedHighlights?.length || 0
       });
     } else {
       console.log("⚠️ No user preferences, using request parameters or defaults");
@@ -1042,12 +1046,25 @@ serve(async (req) => {
     const selectedDesignStyle = userPreferences?.designStyle || designStyle || "modern";
     const selectedIcon = iconTemplates[selectedDesignStyle as "minimalist" | "modern" | "premium"];
 
-    console.log(`[Landing AI] Design style: ${selectedStyle.name || 'Modern'} (received: ${selectedDesignStyle})`);
+    console.log(`[Landing AI] Design style: ${selectedStyle?.name || 'Modern'} (received: ${selectedDesignStyle})`);
+    console.log(`[Landing AI] Layout: ${selectedLayout?.option_label || 'Unknown'} (key: ${selectedLayout?.option_key})`);
+    console.log(`[Landing AI] Content Length: ${selectedLength?.option_label || 'Unknown'} (key: ${selectedLength?.option_key})`);
+    console.log(`[Landing AI] Color Scheme Keys:`, Object.keys(selectedColorScheme || {}));
 
     const prompt =
       detectedLanguage === "en"
         ? `You are a Shopify UX/UI expert specialized in product landing pages.
 Generate a complete, professional Tailwind HTML landing page.
+
+🎯 LAYOUT CONFIGURATION (CRITICAL - MUST FOLLOW):
+Layout Type: ${selectedLayout?.option_label || 'Standard'}
+Layout Description: ${selectedLayout?.description || 'Standard single-column layout'}
+${selectedLayout?.option_value ? `Layout Instructions:\n${selectedLayout.option_value}\n` : ''}
+
+📏 CONTENT LENGTH REQUIREMENT (CRITICAL):
+Target Length: ${selectedLength?.option_label || 'Medium'}
+Description: ${selectedLength?.description || 'Standard content length'}
+${selectedLength?.option_value ? `Content Instructions:\n${selectedLength.option_value}\n` : ''}
 
 PRODUCT:
 - Title: ${productTitle}
@@ -1471,11 +1488,19 @@ ICONS USAGE (MANDATORY):
 : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle en respectant STRICTEMENT la configuration suivante.
 
+🎯 CONFIGURATION LAYOUT (CRITIQUE - DOIT ÊTRE SUIVIE) :
+Type de layout : ${selectedLayout?.option_label || 'Standard'}
+Description du layout : ${selectedLayout?.description || 'Layout standard une colonne'}
+${selectedLayout?.option_value ? `Instructions de layout :\n${selectedLayout.option_value}\n` : ''}
+
+📏 EXIGENCE DE LONGUEUR DE CONTENU (CRITIQUE) :
+Longueur ciblée : ${selectedLength?.option_label || 'Moyen'}
+Description : ${selectedLength?.description || 'Longueur de contenu standard'}
+${selectedLength?.option_value ? `Instructions de contenu :\n${selectedLength.option_value}\n` : ''}
+
 ⚙️ CONFIGURATION UTILISATEUR (OBLIGATOIRE) :
-- Modèle de design sélectionné : ${selectedStyle.name} (config: ${designStyle})
-- Layout choisi : "${layout || "2 colonnes"}"
-- Longueur de contenu demandée : ${length === "long" ? "LONGUE - sections détaillées, storytelling, FAQ développée" : "COURTE - sections synthétiques, focus sur l'essentiel"}
-- Thème de couleurs : palette ${(colorScheme as any)?.paletteId || "personnalisée"}
+- Modèle de design sélectionné : ${selectedStyle.name} (config: ${selectedDesignStyle})
+- Thème de couleurs : palette ${(selectedColorScheme as any)?.paletteId || "personnalisée"}
 
 📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE) :
 🚨 TOUJOURS inclure ces optimisations :
@@ -1888,8 +1913,8 @@ UTILISATION DES ICÔNES :
               role: "system",
               content:
                 detectedLanguage === "en"
-                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. CRITICAL: When enriched product attributes are provided, you MUST create a comprehensive Technical Specifications section using the mobile-first table structure with TWO versions: 1) Mobile cards with 'block md:hidden space-y-4' class, 2) Desktop table with 'hidden md:block' class. ALWAYS include BOTH versions for proper responsive display. CRITICAL COLOR RULES: NEVER use CSS variables like var(--color-primary) or var(--color-background). ALWAYS use inline HSL values directly in style attributes (e.g., style=\"color: hsl(217 91% 60%);\"). NEVER define :root CSS variables. HERO SECTION: The page MUST start with a full-width hero banner with the main product image as background and a dark overlay with centered white text on top. NEVER use split layouts in the hero section."
-                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. CRITIQUE : Quand des attributs produit enrichis sont fournis, tu DOIS créer une section Caractéristiques Techniques complète en utilisant la structure de tableau mobile-first avec DEUX versions : 1) Cartes mobile avec class 'block md:hidden space-y-4', 2) Table bureau avec class 'hidden md:block'. Inclus TOUJOURS les DEUX versions pour un affichage responsive correct. RÈGLES COULEURS CRITIQUES : N'UTILISE JAMAIS de variables CSS comme var(--color-primary) ou var(--color-background). UTILISE TOUJOURS les valeurs HSL inline directement dans les attributs style (ex : style=\"color: hsl(217 91% 60%);\"). NE DÉFINIS JAMAIS de variables CSS :root. SECTION HERO : La page DOIT commencer par une bannière hero plein écran avec l'image produit principale en arrière-plan et un overlay sombre avec du texte blanc centré par-dessus. N'UTILISE JAMAIS de layouts split dans la section hero.",
+                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. CRITICAL: When enriched product attributes are provided, you MUST create a comprehensive Technical Specifications section using the mobile-first table structure with TWO versions: 1) Mobile cards with 'block md:hidden space-y-4' class, 2) Desktop table with 'hidden md:block' class. ALWAYS include BOTH versions for proper responsive display. CRITICAL COLOR RULES: ALWAYS use CSS variables like var(--color-primary), var(--color-background), var(--color-surface), etc. in style attributes. The CSS variables are already defined in the <head> section - you just need to use them with hsl() wrapper: style=\"color: hsl(var(--color-primary));\". NEVER use inline HSL values directly. HERO SECTION: The page MUST start with a full-width hero banner with the main product image as background and a dark overlay with centered white text on top. NEVER use split layouts in the hero section."
+                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. CRITIQUE : Quand des attributs produit enrichis sont fournis, tu DOIS créer une section Caractéristiques Techniques complète en utilisant la structure de tableau mobile-first avec DEUX versions : 1) Cartes mobile avec class 'block md:hidden space-y-4', 2) Table bureau avec class 'hidden md:block'. Inclus TOUJOURS les DEUX versions pour un affichage responsive correct. RÈGLES COULEURS CRITIQUES : UTILISE TOUJOURS les variables CSS comme var(--color-primary), var(--color-background), var(--color-surface), etc. dans les attributs style. Les variables CSS sont déjà définies dans la section <head> - tu dois juste les utiliser avec le wrapper hsl() : style=\"color: hsl(var(--color-primary));\". N'UTILISE JAMAIS de valeurs HSL inline directement. SECTION HERO : La page DOIT commencer par une bannière hero plein écran avec l'image produit principale en arrière-plan et un overlay sombre avec du texte blanc centré par-dessus. N'UTILISE JAMAIS de layouts split dans la section hero.",
             },
             { role: "user", content: prompt },
           ],
@@ -1924,7 +1949,53 @@ UTILISATION DES ICÔNES :
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
     // 🧹 Apply HTML normalization and sanitization
-    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+    let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+    
+    // 🎨 CRITICAL FIX: Inject CSS variables if missing (DeepSeek often forgets them)
+    if (!html.includes('--color-primary') && !html.includes(':root')) {
+      console.log("⚠️ CSS variables missing, injecting design tokens...");
+      
+      const cssVariables = `
+    <style>
+      :root {
+        --color-primary: ${designTokens.primary};
+        --color-secondary: ${designTokens.secondary};
+        --color-accent: ${designTokens.accent};
+        --color-background: ${designTokens.background};
+        --color-surface: ${designTokens.surface};
+        --color-text: ${designTokens.text};
+        --color-text-muted: ${designTokens.textMuted};
+      }
+      
+      [data-theme="dark"] {
+        --color-primary: ${designTokens.primary};
+        --color-secondary: ${designTokens.secondary};
+        --color-accent: ${designTokens.accent};
+        --color-background: 222 47% 11%;
+        --color-surface: 217 33% 17%;
+        --color-text: 210 40% 98%;
+        --color-text-muted: 215 20% 65%;
+      }
+      
+      body {
+        background-color: hsl(var(--color-background));
+        color: hsl(var(--color-text));
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+    </style>
+`;
+      
+      // Inject after <title> or before </head>
+      if (html.includes('</title>')) {
+        html = html.replace('</title>', `</title>${cssVariables}`);
+      } else if (html.includes('</head>')) {
+        html = html.replace('</head>', `${cssVariables}\n</head>`);
+      }
+      
+      console.log("✅ CSS variables injected successfully");
+    } else {
+      console.log("✅ CSS variables already present in HTML");
+    }
 
     // 📊 Validate final HTML
     const validation = validateHTML(html);
@@ -2003,6 +2074,16 @@ UTILISATION DES ICÔNES :
         html: finalHtml,
         enrichment_status: enrichmentStatus,
         attributes_count: attributesCount,
+        designTokens: designTokens, // ✅ Pour debug
+        usedLayout: selectedLayout?.option_key || 'unknown',
+        usedStyle: selectedDesignStyle || 'unknown',
+        debug: {
+          hasUserPreferences: !!userPreferences,
+          layoutApplied: selectedLayout?.option_label || 'N/A',
+          styleApplied: selectedStyle?.name || 'N/A',
+          colorsApplied: Object.keys(selectedColorScheme || {}).length,
+          cssVariablesInjected: !rawHtml.includes('--color-primary')
+        }
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
