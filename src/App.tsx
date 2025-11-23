@@ -80,6 +80,7 @@ import UpgradeSuccess from "./pages/UpgradeSuccess";
 import TestLandingGeneration from "./pages/TestLandingGeneration";
 import TestLectureImage from "./pages/TestLectureImage";
 import TestRedirection from "./pages/TestRedirection";
+import LandingTest from "./pages/LandingTest";
 import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
@@ -142,6 +143,7 @@ const App = () => (
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
             <Route path="/test-landing" element={<TestLandingGeneration />} />
             <Route path="/testlectureimage" element={<TestLectureImage />} />
+            <Route path="/landingtest" element={<LandingTest />} />
           <Route path="/shopify/install" element={<ShopifyInstall />} />
           <Route path="/shopify/recover" element={<ShopifyRecover />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />

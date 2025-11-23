@@ -202,11 +202,13 @@ async function analyzeImageWithVision(imageUrl: string, apiKey: string, productC
     }
 
     const prompt = `
-Analyse cette image d'un produit ecommerce et retourne STRICTEMENT un JSON.
+Analyse cette image d'un produit ecommerce et retourne STRICTEMENT un JSON ENRICHI.
 
 ${productContext ? `Contexte produit: ${productContext}` : ""}
 
-JSON attendu :
+🔥 PHASE 3: EXTRACTION ENRICHIE - DÉTECTE UN MAXIMUM D'INFORMATIONS
+
+JSON attendu (COMPLET):
 
 {
   "visualAttributes": {
@@ -230,8 +232,22 @@ JSON attendu :
       "depth": number | null,
       "depth_unit": "string" | null,
       "weight": number | null,
-      "weight_unit": "string" | null
+      "weight_unit": "string" | null,
+      "seat_height": number | null,
+      "seat_height_unit": "string" | null,
+      "armrest_height": number | null,
+      "armrest_height_unit": "string" | null
     }
+  },
+  "functionalAttributes": {
+    "mounting_required": boolean | null,
+    "mounting_difficulty": "easy" | "medium" | "hard" | null,
+    "storage_included": boolean | null,
+    "lighting_type": "LED" | "Halogen" | "None" | null,
+    "seating_capacity": number | null,
+    "warranty_years": number | null,
+    "adjustable_elements": ["string"] | null,
+    "assembly_time_minutes": number | null
   },
   "visualContext": {
     "hasTechnicalSchema": boolean,
@@ -243,6 +259,7 @@ JSON attendu :
   "confidence": number
 }
 
+⚠️ IMPORTANT: Extrais TOUTES les informations visibles sur l'image, même si elles sont partielles.
 Retourne uniquement du JSON valide.
 `;
 
@@ -874,56 +891,32 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
     });
 
     const promptSizeKB = (new Blob([prompt]).size / 1024).toFixed(2);
-    console.log(`🤖 ${generationMode === 'fast' ? 'Gemini-2.5-Flash' : 'DeepSeek'} generating HTML...`);
+    console.log(`🤖 DeepSeek generating HTML (exclusive mode)...`);
     console.log(`📏 Prompt: ${prompt.length} chars (${promptSizeKB} KB)`);
 
     let deepseekResponse;
     try {
-      // ✅ PHASE 7: Fast mode with Gemini-2.5-Flash (15-20s vs 30-60s)
-      if (generationMode === 'fast' && LOVABLE_API_KEY) {
-        console.log("⚡ Using FAST mode with Gemini-2.5-Flash");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
+      // 🔥 PHASE 1: DEEPSEEK EXCLUSIF - Plus de Gemini
+      console.log("🤖 Using DeepSeek EXCLUSIVELY (no Gemini)");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000);
 
-        deepseekResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: contentLength === "short" ? 10000 : 16000, // Short: 10K, Long: 16K
-          }),
-          signal: controller.signal,
-        });
+      deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: contentLength === "short" ? 16000 : 32000, // Short: 16K, Long: 32K
+        }),
+        signal: controller.signal,
+      });
 
-        clearTimeout(timeoutId);
-      } else {
-        // Premium mode with DeepSeek
-        console.log("💎 Using PREMIUM mode with DeepSeek");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000);
-
-        deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "deepseek-chat",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: contentLength === "short" ? 16000 : 32000, // Short: 16K, Long: 32K
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-      }
+      clearTimeout(timeoutId);
 
       if (!deepseekResponse.ok) {
         const errorBody = await deepseekResponse.text();
@@ -1436,6 +1429,87 @@ body {
 <p class="text-lg" style="color: hsl(var(--color-text-muted))">...</p>
 
 🏗️ LAYOUT OBLIGATOIRE À APPLIQUER: ${layout.toUpperCase()}
+⚠️⚠️⚠️ CRITIQUE ABSOLU ⚠️⚠️⚠️
+Tu DOIS appliquer CE LAYOUT EXACTEMENT dans TOUTES les sections HTML.
+VÉRIFIE 3 FOIS que tu as bien utilisé les bonnes classes Tailwind.
+
+${layout === 'single-column' ? `
+✅ SINGLE-COLUMN OBLIGATOIRE:
+EXEMPLE CONCRET DE HERO SECTION:
+<section class="relative h-screen w-full overflow-hidden flex items-center justify-center text-center p-4">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <h1>Titre</h1>
+    <p>Description</p>
+  </div>
+</section>
+
+EXEMPLE CONCRET DE SECTION POINTS FORTS:
+<section class="py-24">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 gap-8">
+      <!-- Cards en 1 colonne uniquement -->
+    </div>
+  </div>
+</section>
+` : ''}
+
+${layout === 'two-column' ? `
+✅ TWO-COLUMN OBLIGATOIRE:
+EXEMPLE CONCRET DE HERO SECTION:
+<section class="relative py-24">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div><img src="..." /></div>
+      <div><h1>...</h1></div>
+    </div>
+  </div>
+</section>
+
+EXEMPLE CONCRET DE SECTION POINTS FORTS:
+<section class="py-24">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Cards en 2 colonnes sur desktop -->
+    </div>
+  </div>
+</section>
+` : ''}
+
+${layout === 'hero-left' ? `
+✅ HERO-LEFT OBLIGATOIRE:
+EXEMPLE CONCRET:
+<section class="relative py-24">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div class="lg:col-span-1 order-1">
+        <img src="..." class="w-full h-full object-cover rounded-xl shadow-2xl" />
+      </div>
+      <div class="lg:col-span-1 order-2">
+        <h1>Titre</h1>
+        <p>Description</p>
+      </div>
+    </div>
+  </div>
+</section>
+` : ''}
+
+${layout === 'hero-right' ? `
+✅ HERO-RIGHT OBLIGATOIRE:
+EXEMPLE CONCRET:
+<section class="relative py-24">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div class="lg:col-span-1 order-2 lg:order-1">
+        <h1>Titre</h1>
+        <p>Description</p>
+      </div>
+      <div class="lg:col-span-1 order-1 lg:order-2">
+        <img src="..." class="w-full h-full object-cover rounded-xl shadow-2xl" />
+      </div>
+    </div>
+  </div>
+</section>
+` : ''}
 ------------------------------------------------------------------
 ${layout === 'single-column' ? `
 ✅ SINGLE-COLUMN: Une seule colonne centrée
@@ -1559,13 +1633,31 @@ ${reliabilityBadge}
    - Alt texts descriptifs
    - rounded-xl shadow-md hover:shadow-lg
 
-5️⃣ SPECS TECHNIQUES (tableau complet):
-   - REPRENDS les extractedInfo ci-dessus
-   - ⚠️ RÈGLE ABSOLUE: NE JAMAIS afficher les lignes avec valeur vide ou "Non communiqué"
-   - ✅ SUPPRIME COMPLÈTEMENT la ligne <tr> du HTML si la valeur est vide
-   - ✅ Affiche UNIQUEMENT les specs qui ont une vraie valeur
-   - Tableau avec bordures et hover effects
-   - Cards de caractéristiques avec icônes
+5️⃣ SPECS TECHNIQUES (tableau complet AVEC TOUTES LES INFOS EXTRAITES):
+   ⚠️ OBLIGATION ABSOLUE: Utilise TOUTES les caractéristiques extraites ci-dessus
+   - Dimensions (length, width, height, depth, weight, seat_height, armrest_height, etc.)
+   - Matériaux
+   - Couleurs
+   - Montage (si extractedInfo.mounting_options ou functionalAttributes.mounting_required existe)
+   - Éclairage (si functionalAttributes.lighting_type existe)
+   - Garantie (si functionalAttributes.warranty_years existe)
+   - Nombre de places (si functionalAttributes.seating_capacity existe)
+   - Temps d'assemblage (si functionalAttributes.assembly_time_minutes existe)
+   - Éléments ajustables (si functionalAttributes.adjustable_elements existe)
+   - Rangement (si functionalAttributes.storage_included existe)
+   
+   ✅ Crée un tableau HTML complet avec TOUTES ces lignes
+   ❌ NE SUPPRIME une ligne QUE si la valeur est vraiment vide/null
+   ⚠️ RÈGLE: NE JAMAIS afficher "Non communiqué" - supprime la ligne entière
+   
+   Exemple de code HTML à générer:
+   <table class="w-full border-collapse">
+     ${extractedInfo?.materials ? '<tr><td>Matériaux</td><td>' + extractedInfo.materials + '</td></tr>' : ''}
+     ${extractedInfo?.dimensions ? '<tr><td>Dimensions</td><td>' + extractedInfo.dimensions + '</td></tr>' : ''}
+     ${enrichedProduct?.vision_attributes?.functionalAttributes?.mounting_required !== null ? 
+       '<tr><td>Montage requis</td><td>' + (enrichedProduct.vision_attributes.functionalAttributes.mounting_required ? 'Oui' : 'Non') + '</td></tr>' : ''}
+     <!-- Continue pour TOUTES les propriétés -->
+   </table>
 
 6️⃣ DESCRIPTION LONGUE (prose styling):
    - Minimum ${wordCount} mots
