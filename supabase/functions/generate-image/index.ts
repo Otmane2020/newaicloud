@@ -31,9 +31,9 @@ serve(async (req) => {
     }
 
     // --- CONFIG ---
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY non configurée");
     }
 
     console.log("🧠 Generating image for:", prompt);
@@ -55,33 +55,30 @@ Requirements:
 - Professional lighting and composition
 - No text, watermarks, or borders`.trim();
 
-    // --- GOOGLE GEMINI DIRECT API IMAGE GENERATION ---
+    // --- LOVABLE AI IMAGE GENERATION ---
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         },
         body: JSON.stringify({
-          contents: [
+          model: "google/gemini-3-pro-image-preview",
+          messages: [
             {
               role: "user",
-              parts: [{ text: enhancedPrompt }]
+              content: enhancedPrompt
             }
           ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-            responseMimeType: "image/png"
-          },
         }),
       },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google Gemini Error:", response.status, errorText);
+      console.error("Lovable AI Error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
@@ -95,23 +92,36 @@ Requirements:
         );
       }
 
-      throw new Error(`Erreur Google Gemini: ${response.status}`);
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: "Crédits insuffisants. Veuillez recharger votre compte.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      throw new Error(`Erreur Lovable AI: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("✅ Google Gemini response received");
+    console.log("✅ Lovable AI response received");
 
-    // --- EXTRACT IMAGE BASE64 FROM GEMINI RESPONSE ---
-    // Gemini returns base64 directly in candidates[0].content.parts[0].inlineData.data
-    const base64Image = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    // --- EXTRACT IMAGE BASE64 FROM LOVABLE AI RESPONSE ---
+    // Lovable AI returns the image in the message content
+    const messageContent = data.choices?.[0]?.message?.content;
 
-    if (!base64Image) {
+    if (!messageContent) {
       console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
       throw new Error("Aucune image générée - format inattendu.");
     }
 
-    // Gemini returns base64 directly, no need to extract from data URL
-    const base64Data = base64Image;
+    // Extract base64 from data URL (format: data:image/png;base64,...)
+    const base64Match = messageContent.match(/data:image\/[^;]+;base64,(.+)/);
+    const base64Data = base64Match ? base64Match[1] : messageContent;
 
     const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
@@ -150,9 +160,9 @@ Requirements:
     return new Response(
       JSON.stringify({
         success: true,
-        image_url: publicUrl || base64Image,
+        image_url: publicUrl || `data:image/png;base64,${base64Data}`,
         metadata: {
-          model: "google/gemini-2.5-flash-image-preview",
+          model: "google/gemini-3-pro-image-preview",
           product_type,
           style,
           aspect_ratio: finalAspectRatio,
