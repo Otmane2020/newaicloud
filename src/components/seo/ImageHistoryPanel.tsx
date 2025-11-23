@@ -221,20 +221,20 @@ export const ImageHistoryPanel = ({ imageId, productId, onRestore }: ImageHistor
 
                       {/* Actions */}
                       <div className="flex gap-2 pt-2">
-                        {!entry.is_current && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              restoreMutation.mutate(entry.id);
-                            }}
-                            disabled={restoreMutation.isPending}
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Restaurer
-                          </Button>
-                        )}
+                      {!entry.is_current && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            restoreMutation.mutate(entry.id);
+                          }}
+                          disabled={restoreMutation.isPending}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          Appliquer
+                        </Button>
+                      )}
                         <Button
                           size="sm"
                           variant="ghost"

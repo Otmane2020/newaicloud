@@ -26,7 +26,7 @@ export function stripMarkdownFences(html: string): string {
 
 /**
  * Normalizes HTML to ensure complete valid HTML5 structure
- * ALWAYS injects Tailwind CDN to ensure styling works
+ * PRESERVES theme toggle and CSS variables from original HTML
  */
 export function normalizeHTML(
   rawHtml: string,
@@ -43,15 +43,131 @@ export function normalizeHTML(
   const hasClosingHtml = html.includes("</html>");
   const hasTailwindCDN = html.includes("cdn.tailwindcss.com");
 
-  // If already complete AND has Tailwind, return as-is
+  // If already complete AND has Tailwind, just ensure single DOCTYPE and clean duplicate tags
   if (hasDoctype && hasHtmlTag && hasClosingBody && hasClosingHtml && hasTailwindCDN) {
-    return html;
+    console.log("[Normalizer] HTML appears complete, cleaning duplicate tags");
+    
+    // Remove duplicate DOCTYPE declarations
+    let cleaned = html;
+    const doctypeCount = (cleaned.match(/<!DOCTYPE html>/gi) || []).length;
+    if (doctypeCount > 1) {
+      console.log(`[Normalizer] Found ${doctypeCount} DOCTYPE declarations, keeping only first`);
+      // Keep only the first DOCTYPE
+      let firstDoctypeFound = false;
+      cleaned = cleaned.replace(/<!DOCTYPE html>/gi, (match) => {
+        if (!firstDoctypeFound) {
+          firstDoctypeFound = true;
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    // Remove duplicate <html> opening tags
+    const htmlOpenCount = (cleaned.match(/<html[^>]*>/gi) || []).length;
+    if (htmlOpenCount > 1) {
+      console.log(`[Normalizer] Found ${htmlOpenCount} <html> opening tags, keeping only first`);
+      let firstHtmlFound = false;
+      cleaned = cleaned.replace(/<html[^>]*>/gi, (match) => {
+        if (!firstHtmlFound) {
+          firstHtmlFound = true;
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    // Remove duplicate <head> tags
+    const headOpenCount = (cleaned.match(/<head[^>]*>/gi) || []).length;
+    if (headOpenCount > 1) {
+      console.log(`[Normalizer] Found ${headOpenCount} <head> opening tags, keeping only first`);
+      let firstHeadFound = false;
+      cleaned = cleaned.replace(/<head[^>]*>/gi, (match) => {
+        if (!firstHeadFound) {
+          firstHeadFound = true;
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    // Remove duplicate </head> tags
+    const headCloseCount = (cleaned.match(/<\/head>/gi) || []).length;
+    if (headCloseCount > 1) {
+      console.log(`[Normalizer] Found ${headCloseCount} </head> closing tags, keeping only first`);
+      let firstHeadCloseFound = false;
+      cleaned = cleaned.replace(/<\/head>/gi, (match) => {
+        if (!firstHeadCloseFound) {
+          firstHeadCloseFound = true;
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    // Remove duplicate <body> opening tags
+    const bodyOpenCount = (cleaned.match(/<body[^>]*>/gi) || []).length;
+    if (bodyOpenCount > 1) {
+      console.log(`[Normalizer] Found ${bodyOpenCount} <body> opening tags, keeping only first`);
+      let firstBodyFound = false;
+      cleaned = cleaned.replace(/<body[^>]*>/gi, (match) => {
+        if (!firstBodyFound) {
+          firstBodyFound = true;
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    // Remove duplicate </body> tags
+    const bodyCloseCount = (cleaned.match(/<\/body>/gi) || []).length;
+    if (bodyCloseCount > 1) {
+      console.log(`[Normalizer] Found ${bodyCloseCount} </body> closing tags, keeping only last`);
+      const positions: number[] = [];
+      let match;
+      const regex = /<\/body>/gi;
+      while ((match = regex.exec(cleaned)) !== null) {
+        positions.push(match.index);
+      }
+      // Keep only the last one
+      positions.slice(0, -1).reverse().forEach(pos => {
+        cleaned = cleaned.substring(0, pos) + cleaned.substring(pos + 7);
+      });
+    }
+    
+    // Remove duplicate </html> tags
+    const htmlCloseCount = (cleaned.match(/<\/html>/gi) || []).length;
+    if (htmlCloseCount > 1) {
+      console.log(`[Normalizer] Found ${htmlCloseCount} </html> closing tags, keeping only last`);
+      const positions: number[] = [];
+      let match;
+      const regex = /<\/html>/gi;
+      while ((match = regex.exec(cleaned)) !== null) {
+        positions.push(match.index);
+      }
+      // Keep only the last one
+      positions.slice(0, -1).reverse().forEach(pos => {
+        cleaned = cleaned.substring(0, pos) + cleaned.substring(pos + 7);
+      });
+    }
+    
+    return cleaned;
   }
 
   console.log("[Normalizer] HTML structure incomplete or missing Tailwind, wrapping in full HTML5 template");
 
-  // Extract body content if present
+  // Extract head and body content if present
+  let headContent = '';
   let bodyContent = html;
+  
+  // Extract existing head content to preserve theme toggle and CSS variables
+  if (html.includes("<head>")) {
+    const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+    if (headMatch) {
+      headContent = headMatch[1];
+    }
+  }
+  
   if (html.includes("<body>")) {
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)(?:<\/body>)?$/i);
     if (bodyMatch) {
@@ -62,16 +178,19 @@ export function normalizeHTML(
     const htmlMatch = html.match(/<html[^>]*>([\s\S]*?)(?:<\/html>)?$/i);
     if (htmlMatch) {
       bodyContent = htmlMatch[1];
+      // Remove head from body if present
+      bodyContent = bodyContent.replace(/<head[^>]*>[\s\S]*?<\/head>/i, '');
     }
   }
 
-  // Build complete HTML5 document with optimized Tailwind loading
+  // Build complete HTML5 document preserving existing head content
   return `<!DOCTYPE html>
 <html lang="${language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${productTitle}</title>
+  ${headContent ? headContent : `
   <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -85,6 +204,7 @@ export function normalizeHTML(
       setTimeout(() => document.body.classList.add('tailwind-loaded'), 100);
     });
   </script>
+  `}
 </head>
 <body>
 ${bodyContent}
