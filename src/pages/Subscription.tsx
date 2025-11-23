@@ -99,24 +99,7 @@ const Subscription = () => {
       
       setPlans(validPlans);
 
-      // Initialize default selections for Pro and Enterprise
-      const proPlans = validPlans.filter(p => 
-        p.id === 'professional' || 
-        p.id === 'pro' || 
-        p.id.startsWith('pro-') || 
-        p.id.startsWith('professional')
-      );
-      const enterprisePlans = validPlans.filter(p => 
-        p.id.startsWith('enterprise')
-      );
-
-      if (proPlans.length > 0 && !selectedProTier) {
-        setSelectedProTier(proPlans[0].id);
-      }
-      if (enterprisePlans.length > 0 && !selectedEnterpriseTier) {
-        setSelectedEnterpriseTier(enterprisePlans[0].id);
-      }
-
+      // Get subscription and profile info
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('plan_id')
@@ -124,7 +107,6 @@ const Subscription = () => {
         .eq('status', 'active')
         .maybeSingle();
 
-      // Also check the profiles table for current_plan_id
       const { data: profile } = await supabase
         .from('profiles')
         .select('current_plan_id')
@@ -132,15 +114,61 @@ const Subscription = () => {
         .single();
 
       const activePlanId = subscription?.plan_id || profile?.current_plan_id;
+      const currentPlanData = activePlanId ? validPlans.find((p: Plan) => p.id === activePlanId) : null;
+      setCurrentPlan(currentPlanData || null);
 
-      if (activePlanId) {
-        const currentPlanData = validPlans.find((p: Plan) => p.id === activePlanId);
-        setCurrentPlan(currentPlanData || null);
+      // Initialize default selections for Pro and Enterprise
+      const proPlans = validPlans.filter(p => 
+        p.id === 'professional' || 
+        p.id === 'pro' || 
+        p.id.startsWith('pro-') || 
+        p.id.startsWith('professional')
+      ).sort((a, b) => a.display_order - b.display_order);
+      
+      const enterprisePlans = validPlans.filter(p => 
+        p.id.startsWith('enterprise')
+      ).sort((a, b) => a.display_order - b.display_order);
+
+      // Calculate next upgrade
+      let nextUpgrade: string | null = null;
+      if (currentPlanData) {
+        if (currentPlanData.id === 'starter') {
+          nextUpgrade = proPlans[0]?.id || null;
+        } else if (currentPlanData.id.startsWith('pro')) {
+          const currentIndex = proPlans.findIndex(p => p.id === currentPlanData.id);
+          if (currentIndex >= 0 && currentIndex < proPlans.length - 1) {
+            nextUpgrade = proPlans[currentIndex + 1].id;
+          } else {
+            nextUpgrade = enterprisePlans[0]?.id || null;
+          }
+        } else if (currentPlanData.id.startsWith('enterprise')) {
+          const currentIndex = enterprisePlans.findIndex(p => p.id === currentPlanData.id);
+          if (currentIndex >= 0 && currentIndex < enterprisePlans.length - 1) {
+            nextUpgrade = enterprisePlans[currentIndex + 1].id;
+          }
+        }
+      }
+
+      // Set selections based on upgrade mode
+      if (isUpgradeFlow && nextUpgrade) {
+        // In upgrade mode, select the next recommended upgrade
+        if (nextUpgrade.startsWith('pro')) {
+          setSelectedProTier(nextUpgrade);
+        } else if (nextUpgrade.startsWith('enterprise')) {
+          setSelectedEnterpriseTier(nextUpgrade);
+        }
+      } else {
+        // Normal mode: select current plan or first available
+        if (currentPlanData?.id.startsWith('pro')) {
+          setSelectedProTier(currentPlanData.id);
+        } else if (proPlans.length > 0 && !selectedProTier) {
+          setSelectedProTier(proPlans[0].id);
+        }
         
-        if (activePlanId === 'professional' || activePlanId.startsWith('pro')) {
-          setSelectedProTier(activePlanId);
-        } else if (activePlanId.startsWith('enterprise')) {
-          setSelectedEnterpriseTier(activePlanId);
+        if (currentPlanData?.id.startsWith('enterprise')) {
+          setSelectedEnterpriseTier(currentPlanData.id);
+        } else if (enterprisePlans.length > 0 && !selectedEnterpriseTier) {
+          setSelectedEnterpriseTier(enterprisePlans[0].id);
         }
       }
     } catch (error) {
