@@ -202,7 +202,7 @@ export default function RegenerateLanding({
    * 🖼️ Analyze Image with AI Vision (with cache)
    -----------------------------*/
   const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    // Vision analysis is now handled directly in generate-landing-deepseek
+    // Vision analysis is now handled directly in generate-landing-ai
     // This function is kept for backwards compatibility but does nothing
     console.log("[Vision] Image analysis is now integrated in landing page generation");
     return "";
@@ -339,8 +339,8 @@ export default function RegenerateLanding({
         hasImageAnalysis: !!imageAnalysis,
       });
 
-      // ✅ ÉTAPE 4 : Générer le landing avec DeepSeek + Vision AI + Product Enrichment
-      console.log('[RegenerateLanding] Invoking generate-landing-deepseek...', {
+      // ✅ ÉTAPE 4 : Générer le landing avec Lovable AI
+      console.log('[RegenerateLanding] Invoking generate-landing-ai...', {
         productId: product.id,
         style: config.designStyle,
         layout: config.layout,
@@ -353,17 +353,20 @@ export default function RegenerateLanding({
         setTimeout(() => reject(new Error('Timeout: La génération a pris plus de 5 minutes. Veuillez réessayer.')), timeoutMs)
       );
 
-      const invocationPromise = supabase.functions.invoke("generate-landing-deepseek", {
+      const invocationPromise = supabase.functions.invoke("generate-landing-ai", {
         body: {
-          productId: product.id,
+          product_id: product.id,
+          productTitle: product.title,
+          description: product.description || "",
+          vendor: resolvedVendor,
+          imageUrl: product.image_url,
           style: config.designStyle || 'modern',
           layout: config.layout,
           colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
-          contentLength: config.contentLength,
+          length: config.contentLength,
           customHighlights: config.customHighlights,
-          language: storeLanguage, // ✅ Use store language for entire landing page
-          generationMode, // ✅ Pass generation mode (fast/premium)
-          theme: config.theme || 'light', // ✅ Pass theme (light/dark)
+          language: storeLanguage,
+          designStyle: config.designStyle || 'modern',
         },
       }).catch(err => {
         console.error('[RegenerateLanding] Network error:', err);

@@ -59,9 +59,16 @@ export function TestProductCard({ product }: TestProductCardProps) {
     try {
       const { error } = await supabase.functions.invoke('generate-landing-ai', {
         body: { 
-          productId: product.id,
-          title: product.title,
-          images: product.images || []
+          product_id: product.id,
+          productTitle: product.title,
+          description: product.description || product.body_html || "",
+          vendor: product.vendor || "Marque",
+          imageUrl: product.image_url || product.images?.[0]?.src,
+          style: 'modern',
+          layout: 'single-column',
+          language: 'fr',
+          designStyle: 'modern',
+          length: 'short',
         }
       });
       if (error) throw error;
