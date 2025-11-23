@@ -13,7 +13,8 @@ export default function LandingTest() {
     style: 'modern',
     colorScheme: 'blue-white',
     theme: 'light',
-    contentLength: 'short'
+    contentLength: 'short',
+    highlights: [] as string[]
   });
   
   const [html, setHtml] = useState("");
@@ -21,6 +22,39 @@ export default function LandingTest() {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [product, setProduct] = useState<any>(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
+  
+  // ✅ Load options from database
+  const [layouts, setLayouts] = useState<any[]>([]);
+  const [designStyles, setDesignStyles] = useState<any[]>([]);
+  const [colorSchemes, setColorSchemes] = useState<any[]>([]);
+  const [contentLengths, setContentLengths] = useState<any[]>([]);
+  const [highlights, setHighlights] = useState<any[]>([]);
+
+  // Load configuration options from database
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const { data } = await supabase
+        .from('landing_page_config_options')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      
+      if (data) {
+        setLayouts(data.filter(o => o.category === 'layout'));
+        setDesignStyles(data.filter(o => o.category === 'design_style'));
+        setColorSchemes(data.filter(o => o.category === 'color_scheme'));
+        setContentLengths(data.filter(o => o.category === 'content_length'));
+        setHighlights(data.filter(o => o.category === 'highlight'));
+        
+        console.log('✅ Options chargées depuis DB:', {
+          layouts: data.filter(o => o.category === 'layout').length,
+          styles: data.filter(o => o.category === 'design_style').length,
+          colorSchemes: data.filter(o => o.category === 'color_scheme').length
+        });
+      }
+    };
+    fetchOptions();
+  }, []);
 
   // Fetch a real product with all details from the database
   useEffect(() => {
@@ -105,44 +139,56 @@ export default function LandingTest() {
     }
 
     setLoading(true);
-    console.log('🧪 [TEST] Génération Lovable AI avec config:', config);
-    console.log('🧪 [TEST] Product ID:', product.id, 'Title:', product.title);
+    console.log('🧪 [TEST] Génération avec config depuis DB:', config);
     
     try {
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+      // ✅ Get full color scheme from DB
+      const selectedColorScheme = colorSchemes.find(c => c.option_key === config.colorScheme);
+      
+      // ✅ Build userPreferences object
+      const testPreferences = {
+        layout: config.layout,
+        designStyle: config.style,
+        contentLength: config.contentLength,
+        colorScheme: selectedColorScheme?.option_value || {
+          primary: 'hsl(221, 83%, 53%)',
+          secondary: 'hsl(188, 78%, 41%)',
+          accent: 'hsl(38, 92%, 50%)',
+          background: 'hsl(0, 0%, 100%)',
+          surface: 'hsl(210, 40%, 98%)',
+          text: 'hsl(222, 47%, 11%)',
+          textMuted: 'hsl(215, 16%, 47%)'
+        },
+        highlights: config.highlights || []
+      };
+
+      console.log('🧪 [TEST] userPreferences:', testPreferences);
+
+      // ✅ Call generate-landing-ai with userPreferences
+      const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
         body: {
           product_id: product.id,
           productTitle: product.title,
           description: product.body_html || product.seo_description || "",
           vendor: product.vendor || "Marque",
           imageUrl: product.image_url,
-          designStyle: config.style,
-          layout: config.layout,
-          colorScheme: getPaletteColors(config.colorScheme),
-          length: config.contentLength,
-          language: 'fr',
-        },
+          userPreferences: testPreferences, // ✅ NEW
+          language: 'fr'
+        }
       });
 
-      if (error) {
-        console.error('🧪 [TEST] Erreur Lovable AI:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (data?.html) {
-        console.log('🧪 [TEST] HTML généré (Lovable AI):', {
-          length: data.html.length,
-          hasToggle: data.html.includes('theme-toggle'),
-          hasRoot: data.html.includes(':root'),
-        });
+        console.log('✅ HTML généré:', data.html.length, 'caractères');
         setHtml(data.html);
-        toast.success("✅ Landing page générée avec succès !");
+        toast.success("✅ Landing page générée !");
       } else {
         throw new Error("Pas de HTML retourné");
       }
     } catch (err: any) {
-      console.error('🧪 [TEST] Erreur fatale Lovable AI:', err);
-      toast.error("❌ Erreur: " + err.message);
+      console.error('❌ Erreur:', err);
+      toast.error("❌ " + err.message);
     } finally {
       setLoading(false);
     }
@@ -194,7 +240,7 @@ export default function LandingTest() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Layout */}
+              {/* Layout - Dynamic from DB */}
               <div className="space-y-2">
                 <Label>Layout</Label>
                 <Select value={config.layout} onValueChange={(v) => setConfig({...config, layout: v})}>
@@ -202,15 +248,16 @@ export default function LandingTest() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="single-column">Single Column</SelectItem>
-                    <SelectItem value="two-column">Two Column</SelectItem>
-                    <SelectItem value="hero-left">Hero Left</SelectItem>
-                    <SelectItem value="hero-right">Hero Right</SelectItem>
+                    {layouts.map(layout => (
+                      <SelectItem key={layout.id} value={layout.option_key}>
+                        {layout.option_label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               
-              {/* Style */}
+              {/* Style - Dynamic from DB */}
               <div className="space-y-2">
                 <Label>Style Visuel</Label>
                 <Select value={config.style} onValueChange={(v) => setConfig({...config, style: v})}>
@@ -218,14 +265,16 @@ export default function LandingTest() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="minimalist">Minimalist</SelectItem>
-                    <SelectItem value="modern">Modern</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
+                    {designStyles.map(style => (
+                      <SelectItem key={style.id} value={style.option_key}>
+                        {style.option_label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               
-              {/* Color Scheme */}
+              {/* Color Scheme - Dynamic from DB with preview */}
               <div className="space-y-2">
                 <Label>Palette de Couleurs</Label>
                 <Select value={config.colorScheme} onValueChange={(v) => setConfig({...config, colorScheme: v})}>
@@ -233,29 +282,22 @@ export default function LandingTest() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="blue-white">🔵 Blue & White</SelectItem>
-                    <SelectItem value="green-beige">🟢 Green & Beige</SelectItem>
-                    <SelectItem value="purple-gold">🟣 Purple & Gold</SelectItem>
-                    <SelectItem value="dark-luxury">⚫ Dark Luxury</SelectItem>
+                    {colorSchemes.map(scheme => (
+                      <SelectItem key={scheme.id} value={scheme.option_key}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <div className="w-4 h-4 rounded" style={{ background: scheme.option_value.primary }} />
+                            <div className="w-4 h-4 rounded" style={{ background: scheme.option_value.secondary }} />
+                          </div>
+                          {scheme.option_label}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               
-              {/* Theme */}
-              <div className="space-y-2">
-                <Label>Thème par Défaut</Label>
-                <Select value={config.theme} onValueChange={(v) => setConfig({...config, theme: v})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">☀️ Light</SelectItem>
-                    <SelectItem value="dark">🌙 Dark</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Content Length */}
+              {/* Content Length - Dynamic from DB */}
               <div className="space-y-2">
                 <Label>Longueur du Contenu</Label>
                 <Select value={config.contentLength} onValueChange={(v) => setConfig({...config, contentLength: v})}>
@@ -263,8 +305,11 @@ export default function LandingTest() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="short">📄 Short (500-800 mots)</SelectItem>
-                    <SelectItem value="long">📚 Long (1500-2500 mots)</SelectItem>
+                    {contentLengths.map(length => (
+                      <SelectItem key={length.id} value={length.option_key}>
+                        {length.option_label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
