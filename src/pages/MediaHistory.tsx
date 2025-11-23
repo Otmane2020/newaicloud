@@ -288,26 +288,33 @@ export default function MediaHistory() {
     if (type === 'product') {
       title = item.shopify_products?.title || 'Produit inconnu';
       
-      // Si on a une image_id d'origine, on applique directement
-      if (item.image_id) {
+      // Si on a une image_id d'origine ET un product_id, on applique directement
+      if (item.image_id && item.product_id) {
         onApply = (
           <Button
             variant="default"
             size="sm"
             disabled={applyProductImage.isPending}
-            onClick={() => applyProductImage.mutate({
-              historyId: item.id,
-              targetImageId: item.image_id,
-              optimizedUrl: item.optimized_url,
-              productId: item.product_id
-            })}
+            onClick={() => {
+              console.log('🔍 Applying image:', { 
+                historyId: item.id, 
+                targetImageId: item.image_id,
+                productId: item.product_id 
+              });
+              applyProductImage.mutate({
+                historyId: item.id,
+                targetImageId: item.image_id,
+                optimizedUrl: item.optimized_url,
+                productId: item.product_id
+              });
+            }}
             className="gap-2"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Appliquer à l'image d'origine</span>
           </Button>
         );
-      } else {
+      } else if (item.product_id) {
         // Sinon, on affiche le sélecteur
         onApply = (
           <DropdownMenu>
@@ -331,6 +338,19 @@ export default function MediaHistory() {
               />
             </DropdownMenuContent>
           </DropdownMenu>
+        );
+      } else {
+        // Pas de product_id valide
+        onApply = (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled
+            className="gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Produit introuvable</span>
+          </Button>
         );
       }
     } else if (type === 'collection') {
