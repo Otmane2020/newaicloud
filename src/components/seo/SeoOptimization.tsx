@@ -1129,9 +1129,9 @@ export function SeoOptimization() {
       </div>
 
       {/* Controls Section */}
-      <Card className="p-4">
+      <Card className="p-4 bg-background/50">
         <div className="flex flex-col gap-4">
-          {/* Large Search Bar and Category Filter */}
+          {/* Search Bars Row */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
@@ -1139,7 +1139,7 @@ export function SeoOptimization() {
                 placeholder={t.seo.optimization.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg relative z-20"
+                className="pl-12 h-12 text-base relative z-20"
               />
             </div>
 
@@ -1148,14 +1148,17 @@ export function SeoOptimization() {
                 placeholder="Filtrer par SKU..."
                 value={skuFilter}
                 onChange={(e) => setSkuFilter(e.target.value)}
-                className="h-12 relative z-20"
+                className="h-12 text-base relative z-20"
               />
             </div>
+          </div>
 
+          {/* Filters Row 1: Category, Collection, Product Status */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">{t.seo.optimization.allCategories}</option>
               {uniqueCategories.map((category) => (
@@ -1168,7 +1171,7 @@ export function SeoOptimization() {
             <select
               value={selectedCollection}
               onChange={(e) => setSelectedCollection(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">Toutes les collections</option>
               {uniqueCollections.map((collection) => (
@@ -1181,15 +1184,18 @@ export function SeoOptimization() {
             <select
               value={productStatusFilter}
               onChange={(e) => setProductStatusFilter(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">Tous les statuts</option>
               <option value="active">Publié</option>
               <option value="draft">Brouillon</option>
             </select>
+          </div>
 
+          {/* Filters Row 2: SEO Status, Sync Status, Quality */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder={t.seo.optimization.status} />
               </SelectTrigger>
               <SelectContent>
@@ -1200,7 +1206,7 @@ export function SeoOptimization() {
             </Select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder={t.seo.optimization.syncStatus} />
               </SelectTrigger>
               <SelectContent>
@@ -1211,7 +1217,7 @@ export function SeoOptimization() {
             </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder={t.seo.optimization.seoQuality} />
               </SelectTrigger>
               <SelectContent>
@@ -1266,7 +1272,7 @@ export function SeoOptimization() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleGenerateAll}
+                onClick={handleGenerateAllSeo}
                 disabled={generating || loading || notEnrichedCount === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
               >
