@@ -53,6 +53,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    
+    // ✅ Detect store language from request headers or default
+    const acceptLanguage = req.headers.get('accept-language') || 'en-US';
+    const language = acceptLanguage.split(',')[0].split('-')[0].toLowerCase(); // Extract 'fr', 'en', etc.
+    console.log(`🌍 Language detected from headers: ${acceptLanguage} → Using: ${language}`);
 
     let visionAnalysis = "";
     let productDimensions = "";
@@ -108,7 +113,8 @@ serve(async (req) => {
                   content: [
                     {
                       type: "text",
-                      text: `Analyse ce produit:
+                      text: language === 'fr' 
+                        ? `Analyse ce produit:
 
 1. Couleurs + matériaux (1 phrase)
 2. Style + design (1 phrase)
@@ -121,6 +127,19 @@ serve(async (req) => {
 ⚠️ CRITIQUE: Si schéma technique visible, TOUJOURS extraire les dimensions au format JSON structuré.
 
 Sois concis et précis.`
+                        : `Analyze this product:
+
+1. Colors + materials (1 sentence)
+2. Style + design (1 sentence)
+3. DIMENSIONS:
+   - If the image is a technical diagram with annotated measurements, extract ALL visible dimensions in structured JSON format:
+     technicalDimensions: {"total_height": "XXcm", "seat_height": "XXcm", "width": "XXcm", "depth": "XXcm", "diameter": "XXcm"}
+   - Otherwise, indicate visible dimensions in text format: "LxWxH in cm" or "dimensions not visible"
+4. 3 unique features
+
+⚠️ CRITICAL: If technical diagram visible, ALWAYS extract dimensions in structured JSON format.
+
+Be concise and precise.`
                     },
                     {
                       type: "image_url",

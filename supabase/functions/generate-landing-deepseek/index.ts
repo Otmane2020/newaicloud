@@ -541,7 +541,6 @@ serve(async (req) => {
       colorScheme,
       contentLength = "medium",
       customHighlights = "",
-      language = "fr",
       generationMode = "premium", // "fast" | "premium"
     } = body;
 
@@ -553,9 +552,14 @@ serve(async (req) => {
     // ✅ SPRINT 1 - PHASE 2: Optimized DB - Single query with JOIN
     const { data: product, error: productError } = await supabase
       .from("shopify_products")
-      .select("*")
+      .select("*, shopify_connections!inner(store_language)")
       .eq("id", productId)
       .single();
+
+    // ✅ Detect language from store
+    const storeLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
+    const language = storeLanguage.split("-")[0]; // Extract 'fr' from 'fr-FR', 'en' from 'en-US', etc.
+    console.log(`🌍 Store language detected: ${storeLanguage} → Using: ${language}`);
 
     if (productError || !product) {
       console.error('[DEEPSEEK] Product query error:', productError);
@@ -911,7 +915,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
             model: "deepseek-chat",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 16000, // ✅ Augmenté pour contenu complet
+            max_tokens: 20000, // ✅ Augmenté pour éviter la troncature
           }),
           signal: controller.signal,
         });
@@ -1545,42 +1549,118 @@ ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join(
 ------------------------------------------------------------------
 ⚠️ YOU MUST USE THESE HSL COLORS EVERYWHERE IN CSS:
 
-1. Primary: hsl(${designTokens.primary})
-   USE FOR: Main titles (text-primary), important icons, accent borders (border-primary)
-   
-2. Secondary: hsl(${designTokens.secondary})
-   USE FOR: Secondary buttons, alternating section backgrounds (bg-secondary/5)
-   
-3. Accent: hsl(${designTokens.accent})
-   USE FOR: CTAs, hover states, highlights cards (bg-accent/10), borders (border-accent)
-   
-4. Background: hsl(${designTokens.background})
-   USE FOR: Main section background (bg-white corresponds to background)
-   
-5. Surface: hsl(${designTokens.surface})
-   USE FOR: Cards, panels (use in gradients bg-gradient-to-br from-accent/5 to-surface)
-   
-6. Text: hsl(${designTokens.text})
-   USE FOR: Main text (text-primary), descriptions
-   
-7. Text-Muted: hsl(${designTokens.textMuted})
-   USE FOR: Secondary text, subtitles (text-gray-700 becomes style="color: hsl(${designTokens.textMuted})")
+**CRITICAL: DARK/LIGHT THEME SUPPORT - MANDATORY**
+
+1. HTML Setup with Theme Toggle:
+   \`\`\`html
+   <!DOCTYPE html>
+   <html lang="${language}" class="light">
+   <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>${productData.title}</title>
+     <script src="https://cdn.tailwindcss.com"></script>
+     <script>
+       // Theme toggle
+       function toggleTheme() {
+         const html = document.documentElement;
+         const isDark = html.classList.contains('dark');
+         html.classList.toggle('dark', !isDark);
+         html.classList.toggle('light', isDark);
+         localStorage.setItem('theme', isDark ? 'light' : 'dark');
+       }
+       // Load saved theme
+       (function() {
+         const theme = localStorage.getItem('theme') || 'light';
+         document.documentElement.classList.add(theme);
+       })();
+     </script>
+   </head>
+   <body class="transition-colors duration-300">
+     <!-- Theme Toggle (fixed top-right) -->
+     <button onclick="toggleTheme()" 
+             class="fixed top-4 right-4 z-50 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all" 
+             aria-label="${language === 'fr' ? 'Changer de thème' : 'Toggle theme'}">
+       <svg class="w-6 h-6 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+       </svg>
+       <svg class="w-6 h-6 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+       </svg>
+     </button>
+   \`\`\`
+
+2. CSS with Light/Dark Theme Variables:
+   \`\`\`html
+   <style>
+     /* Light theme (default) */
+     :root.light {
+       --color-primary: ${designTokens.primary};
+       --color-secondary: ${designTokens.secondary};
+       --color-accent: ${designTokens.accent};
+       --color-background: ${designTokens.background};
+       --color-surface: ${designTokens.surface};
+       --color-text: ${designTokens.text};
+       --color-text-muted: ${designTokens.textMuted};
+     }
+     
+     /* Dark theme */
+     :root.dark {
+       --color-primary: 200 80% 70%;
+       --color-secondary: 200 60% 50%;
+       --color-accent: 200 90% 65%;
+       --color-background: 220 20% 10%;
+       --color-surface: 220 18% 15%;
+       --color-text: 0 0% 95%;
+       --color-text-muted: 0 0% 70%;
+     }
+     
+     /* Apply theme colors */
+     body {
+       background-color: hsl(var(--color-background));
+       color: hsl(var(--color-text));
+     }
+     
+     .bg-background { background-color: hsl(var(--color-background)); }
+     .bg-surface { background-color: hsl(var(--color-surface)); }
+     .text-text { color: hsl(var(--color-text)); }
+     .text-text-muted { color: hsl(var(--color-text-muted)); }
+     .text-primary { color: hsl(var(--color-primary)); }
+     .text-accent { color: hsl(var(--color-accent)); }
+     .bg-primary { background-color: hsl(var(--color-primary)); }
+     .bg-accent { background-color: hsl(var(--color-accent)); }
+     .border-primary { border-color: hsl(var(--color-primary)); }
+     .border-accent { border-color: hsl(var(--color-accent)); }
+   </style>
+   \`\`\`
+
+3. Usage Examples:
+   - Primary: hsl(var(--color-primary))
+     USE FOR: Main titles, important icons, accent borders
+     
+   - Secondary: hsl(var(--color-secondary))
+     USE FOR: Secondary buttons, alternating sections
+     
+   - Accent: hsl(var(--color-accent))
+     USE FOR: CTAs, hover states, highlights, borders
+     
+   - Background: hsl(var(--color-background))
+     USE FOR: Body and section backgrounds
+     
+   - Surface: hsl(var(--color-surface))
+     USE FOR: Cards, panels
+     
+   - Text: hsl(var(--color-text))
+     USE FOR: Main text content
+     
+   - Text-Muted: hsl(var(--color-text-muted))
+     USE FOR: Secondary text, captions
 
 🚫 STRICT PROHIBITIONS:
 - NEVER use HEX (#003366, #FFFFFF, etc.) in HTML
-- NEVER use text-gray-XXX without replacing with hsl(${designTokens.textMuted})
-- NEVER use bg-white without checking if hsl(${designTokens.background}) is different
-- ALL text-primary, text-accent, bg-primary, bg-accent MUST use HSL above
-
-✅ CORRECT EXAMPLES:
-<!-- Icon with primary color -->
-<svg class="icon-stroke-primary" ... stroke="hsl(${designTokens.primary})" ...>
-
-<!-- Card with accent background -->
-<div class="bg-white border-l-4" style="border-color: hsl(${designTokens.accent})">
-
-<!-- Text with text-muted color -->
-<p class="text-lg" style="color: hsl(${designTokens.textMuted})">...</p>
+- NEVER use text-gray-XXX without replacing with hsl(var(--color-text-muted))
+- ALL colors MUST use the CSS custom properties defined above
+- ALWAYS use utility classes (.text-primary, .bg-accent) or inline style="color: hsl(var(--color-primary))"
 
 MANDATORY LAYOUT: ${layout}
 ${layout === 'single-column' ? '- Single centered column, max-w-7xl mx-auto' : ''}

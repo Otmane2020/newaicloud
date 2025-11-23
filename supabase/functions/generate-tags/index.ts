@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id, optimization_count, store_id")
+      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id, optimization_count, store_id, shopify_connections!inner(store_language)")
       .eq("id", productId)
       .maybeSingle();
 
@@ -154,23 +154,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get store language
-    let storeLanguage = 'fr';
-    if (product.store_id) {
-      const { data: storeData } = await supabaseClient
-        .from('shopify_connections')
-        .select('store_language')
-        .eq('id', product.store_id)
-        .single();
-      
-      if (storeData?.store_language) {
-        storeLanguage = storeData.store_language;
-      }
-    }
+    // ✅ Detect language from store
+    const storeLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
+    const language = storeLanguage.split("-")[0];
+    console.log(`🌍 Store language: ${storeLanguage} → ${language}`);
 
-    console.log(`Generating tags with DeepSeek for product: ${product.title} (language: ${storeLanguage})`);
+    console.log(`Generating tags with DeepSeek for product: ${product.title} (language: ${language})`);
 
-    const tagPrompt = getSeoPrompt(storeLanguage, 'tags', {
+    const tagPrompt = getSeoPrompt(language, 'tags', {
       title: product.title,
       description: product.description,
       product_type: product.product_type,
@@ -181,7 +172,7 @@ Deno.serve(async (req: Request) => {
       ai_material: product.ai_material
     });
 
-    const systemRole = getSystemRole(storeLanguage, 'tags');
+    const systemRole = getSystemRole(language, 'tags');
 
     const tagResponse = await callDeepSeek([
       {
