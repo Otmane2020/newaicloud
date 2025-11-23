@@ -7,11 +7,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
 import { AutoSyncProvider } from "./contexts/AutoSyncContext";
+import { OptimizationProvider } from "./contexts/OptimizationContext";
 import { LanguageProvider } from "@/lib/language";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AIAssistant } from "@/components/AIAssistant";
 import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
+import { BulkOptimizationIndicator } from "@/components/BulkOptimizationIndicator";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,9 +130,11 @@ const App = () => (
           <AuthProvider>
             <AutoSyncProvider>
               <StoreProvider>
-                <AppQuotaMonitor />
-                <AutoSyncMonitor />
-              <div className="overflow-x-hidden max-w-full">
+                <OptimizationProvider>
+                  <AppQuotaMonitor />
+                  <AutoSyncMonitor />
+                  <BulkOptimizationIndicator />
+                <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/translation" element={<TranslationAudit />} />
@@ -531,6 +535,7 @@ const App = () => (
           <NotificationPermissionPrompt />
           <AutoSyncProgressDialog />
             </div>
+                </OptimizationProvider>
               </StoreProvider>
             </AutoSyncProvider>
         </AuthProvider>
