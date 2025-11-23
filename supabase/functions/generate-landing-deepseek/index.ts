@@ -912,7 +912,13 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       // 🔥 PHASE 1: DEEPSEEK EXCLUSIF - Plus de Gemini
       console.log("🤖 Using DeepSeek EXCLUSIVELY (no Gemini)");
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180000);
+      const timeoutId = setTimeout(() => {
+        console.error("❌ [TIMEOUT] DeepSeek API call exceeded 120 seconds");
+        controller.abort();
+      }, 120000); // Reduced to 120s (2 min)
+
+      const deepseekStartTime = Date.now();
+      console.log(`[DEEPSEEK] Starting API call at ${new Date().toISOString()}`);
 
       deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: "POST",
@@ -921,7 +927,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
           "Content-Type": "application/json",
         },
         body: (() => {
-          const maxTokens = contentLength === "short" ? 4000 : 6000; // Balanced for rich content
+          const maxTokens = contentLength === "short" ? 3000 : 5000; // Reduced for faster response
           console.log(`[DEEPSEEK] Using max_tokens=${maxTokens} for contentLength=${contentLength}`);
           return JSON.stringify({
             model: "deepseek-chat",
@@ -934,6 +940,8 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       });
 
       clearTimeout(timeoutId);
+      const deepseekDuration = ((Date.now() - deepseekStartTime) / 1000).toFixed(2);
+      console.log(`[DEEPSEEK] API call completed in ${deepseekDuration}s`);
 
       if (!deepseekResponse.ok) {
         const errorBody = await deepseekResponse.text();
@@ -953,7 +961,8 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       console.error("❌ DeepSeek API fetch error:", error);
       const err = error as Error;
       if (err.name === 'AbortError') {
-        throw new Error("TIMEOUT: La génération a pris plus de 3 minutes. Veuillez réessayer avec moins d'images ou un contenu plus court.");
+        console.error("❌ [TIMEOUT] DeepSeek took more than 2 minutes to respond");
+        throw new Error("TIMEOUT: La génération a pris plus de 2 minutes. Essayez le mode 'Short' ou réduisez le nombre d'images.");
       }
       throw new Error(`DeepSeek API fetch failed: ${err.message}`);
     }
