@@ -12,6 +12,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useStore } from "@/contexts/StoreContext";
 import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { useImageOptimization } from "@/hooks/useImageOptimization";
 import {
   Sparkles,
   Wand2,
@@ -148,6 +149,7 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
+  const { applyOptimizedImage, isOptimizing: isApplyingOptimization } = useImageOptimization();
   const { t } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
@@ -1144,21 +1146,39 @@ export default function ProductTitleDescription() {
 
   const handleApplyWhiteBackground = async (productIds: string[], format: string, imageType: 'primary' | 'secondary') => {
     const toastId = toast.loading("Application des images...");
-    console.log('Applying white background with format:', format, 'imageType:', imageType, 'applyTo:', whiteBgApplyTo);
+    console.log('🔄 [WHITE BG] Applying with format:', format, 'imageType:', imageType, 'applyTo:', whiteBgApplyTo);
 
     try {
       if (whiteBgApplyTo === "simple") {
-        // Mode simple: appliquer à l'image principale ou secondaire
+        // Mode simple: utiliser le hook d'optimisation pour l'image principale
         for (const productId of productIds) {
           const preview = whiteBgPreviews.find((p) => p.productId === productId && !p.variantId);
           if (!preview?.generatedUrl) continue;
 
+          // Trouver l'ID de l'image pour l'historique
+          const { data: imageData } = await supabase
+            .from('product_images')
+            .select('id')
+            .eq('product_id', productId)
+            .eq('src', preview.originalUrl)
+            .maybeSingle();
+
+          const imageId = imageData?.id || 'main';
+
           if (imageType === 'primary') {
-            await supabase
-              .from("shopify_products")
-              .update({ image_url: preview.generatedUrl })
-              .eq("id", productId);
+            // Utiliser le hook d'optimisation qui gère tout (update + history + sync Shopify)
+            await applyOptimizedImage.mutateAsync({
+              imageId: imageId,
+              productId: productId,
+              optimizedUrl: preview.generatedUrl,
+              originalUrl: preview.originalUrl,
+              optimizationType: 'white_background',
+              aiModel: 'gemini-2.5-flash-image-preview',
+              resolution: '2000x2000',
+              qualityScore: 95
+            });
           } else {
+            // Pour les images secondaires, ajouter manuellement
             const maxPosition = await supabase
               .from("product_images")
               .select("position")
@@ -1177,6 +1197,11 @@ export default function ProductTitleDescription() {
                 alt_text: `${preview.productTitle} - Fond blanc IA`,
                 position: nextPosition
               });
+            
+            // Sync manuel pour images secondaires
+            await supabase.functions.invoke('sync-product-images-to-shopify', {
+              body: { productId }
+            });
           }
         }
       } else {
@@ -1186,7 +1211,6 @@ export default function ProductTitleDescription() {
         for (const preview of variantPreviews) {
           if (!preview.generatedUrl || !preview.variantId) continue;
 
-          // Obtenir la position maximale pour ce produit
           const { data: maxPosData } = await supabase
             .from("product_images")
             .select("position")
@@ -1197,7 +1221,6 @@ export default function ProductTitleDescription() {
 
           const nextPosition = (maxPosData?.position || 0) + 1;
 
-          // Créer une nouvelle image pour cette variante
           await supabase
             .from("product_images")
             .insert({
@@ -1207,84 +1230,26 @@ export default function ProductTitleDescription() {
               alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
               position: nextPosition
             });
+          
+          // Sync pour chaque variante
+          await supabase.functions.invoke('sync-product-images-to-shopify', {
+            body: { productId: preview.productId }
+          });
         }
       }
 
       const message = whiteBgApplyTo === "simple" && imageType === 'primary' 
-        ? "Images principales mises à jour avec succès" 
-        : "Images ajoutées avec succès";
+        ? "✅ Images appliquées et synchronisées avec Shopify" 
+        : "✅ Images ajoutées et synchronisées avec Shopify";
       toast.success(message, { id: toastId });
-
-      // Synchronisation automatique avec Shopify après l'application réussie
-      toast.loading("Synchronisation avec Shopify...", { id: toastId });
-      try {
-        let syncSuccessCount = 0;
-        let syncErrorCount = 0;
-        let notSyncedToShopify: string[] = [];
-
-        // Récupérer les IDs de produits uniques à synchroniser
-        const uniqueProductIds = [...new Set(whiteBgApplyTo === "simple" 
-          ? productIds 
-          : whiteBgPreviews.filter(p => p.variantId).map(p => p.productId)
-        )];
-
-        for (const productId of uniqueProductIds) {
-          try {
-            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId }
-            });
-
-            if (syncError) {
-              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
-              syncErrorCount++;
-            } else if (syncData?.skipped) {
-              // Produit pas encore synchronisé avec Shopify
-              notSyncedToShopify.push(productId);
-              console.log(`Produit ${productId} pas encore sur Shopify - sync passée`);
-            } else {
-              syncSuccessCount++;
-            }
-          } catch (syncErr) {
-            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
-            syncErrorCount++;
-          }
-        }
-
-        // Messages de résultat détaillés
-        if (syncSuccessCount > 0 && syncErrorCount === 0 && notSyncedToShopify.length === 0) {
-          toast.success(
-            `✅ ${syncSuccessCount} produit${syncSuccessCount > 1 ? 's' : ''} synchronisé${syncSuccessCount > 1 ? 's' : ''} avec Shopify`,
-            { id: toastId, duration: 4000 }
-          );
-        } else if (syncSuccessCount > 0) {
-          let msg = `✅ ${syncSuccessCount} synchronisé${syncSuccessCount > 1 ? 's' : ''}`;
-          if (notSyncedToShopify.length > 0) {
-            msg += ` • ℹ️ ${notSyncedToShopify.length} pas encore sur Shopify`;
-          }
-          if (syncErrorCount > 0) {
-            msg += ` • ❌ ${syncErrorCount} erreur${syncErrorCount > 1 ? 's' : ''}`;
-          }
-          toast.success(msg, { id: toastId, duration: 5000 });
-        } else if (notSyncedToShopify.length > 0) {
-          toast.info(
-            `ℹ️ Images sauvegardées ! ${notSyncedToShopify.length} produit${notSyncedToShopify.length > 1 ? 's' : ''} pas encore sur Shopify. Synchronisez-les d'abord pour voir les images.`,
-            { id: toastId, duration: 6000 }
-          );
-        } else {
-          toast.error(`❌ Erreur lors de la synchronisation avec Shopify`, { id: toastId });
-        }
-      } catch (syncError) {
-        console.error('Erreur globale sync Shopify:', syncError);
-        toast.warning('Images appliquées localement mais erreur de synchronisation Shopify', { id: toastId });
-      }
 
       await fetchProducts();
       setWhiteBgPreviews([]);
       setWhiteBgApplyTo("simple");
       setWhiteBgSelectedVariants(new Map());
-    } catch (error) {
-      console.error("Error applying images:", error);
-      toast.error("Erreur lors de l'application", { id: toastId });
+    } catch (error: any) {
+      console.error("❌ [WHITE BG] Error applying images:", error);
+      toast.error(error.message || "Erreur lors de l'application", { id: toastId });
     }
   };
 
@@ -1316,111 +1281,51 @@ export default function ProductTitleDescription() {
     const toastId = toast.loading("Application des images...");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🎨 [AI BG] Applying backgrounds for products:', productIds);
       
       for (const productId of productIds) {
         const preview = aiBgPreviews.find((p) => p.productId === productId);
-        if (!preview?.generatedUrl) continue;
-
-        // Update product image
-        await supabase
-          .from("shopify_products")
-          .update({ image_url: preview.generatedUrl })
-          .eq("id", productId);
-
-        // Save to history if user is authenticated
-        if (user) {
-          // Find or create the product image entry
-          const { data: existingImages } = await supabase
-            .from('product_images')
-            .select('id')
-            .eq('product_id', productId)
-            .eq('src', preview.originalUrl)
-            .single();
-
-          let imageId = existingImages?.id;
-
-          // If no image exists, create one (this is the main product image)
-          if (!imageId) {
-            const { data: newImage } = await supabase
-              .from('product_images')
-              .insert({
-                product_id: productId,
-                src: preview.originalUrl,
-                position: 1,
-                seller_id: user.id
-              })
-              .select('id')
-              .single();
-            
-            imageId = newImage?.id;
-          }
-
-          if (imageId) {
-            // Mark all versions as not current first
-            await supabase
-              .from('product_image_history')
-              .update({ is_current: false })
-              .eq('image_id', imageId);
-            
-            // Mark the generated image as current
-            await supabase
-              .from('product_image_history')
-              .update({ is_current: true })
-              .eq('image_id', imageId)
-              .eq('optimized_url', preview.generatedUrl);
-          }
+        if (!preview?.generatedUrl) {
+          console.warn(`⚠️ [AI BG] No generated URL for product ${productId}`);
+          continue;
         }
+
+        // Trouver l'ID de l'image
+        const { data: imageData } = await supabase
+          .from('product_images')
+          .select('id')
+          .eq('product_id', productId)
+          .eq('src', preview.originalUrl)
+          .maybeSingle();
+
+        const imageId = imageData?.id || 'main';
+
+        console.log(`🔄 [AI BG] Applying optimized image for product ${productId}, imageId: ${imageId}`);
+
+        // Utiliser le hook d'optimisation qui gère tout (update + history + sync Shopify)
+        await applyOptimizedImage.mutateAsync({
+          imageId: imageId,
+          productId: productId,
+          optimizedUrl: preview.generatedUrl,
+          originalUrl: preview.originalUrl,
+          optimizationType: 'ai_background',
+          aiModel: 'Lovable AI',
+          aiPrompt: pendingAiConfig?.enrichedPrompt || pendingAiConfig?.prompt,
+          resolution: '2000x2000',
+          qualityScore: 90
+        });
+
+        console.log(`✅ [AI BG] Successfully applied for product ${productId}`);
       }
 
-      toast.success("Images appliquées avec succès", { id: toastId });
+      toast.success("✅ Images appliquées et synchronisées avec Shopify", { id: toastId });
       await fetchProducts();
       setAiBgPreviews([]);
       setPendingAiConfig(null);
       setPendingApplyProductIds([]);
-
-      // Synchronisation automatique avec Shopify après l'application réussie
-      toast.loading("Synchronisation avec Shopify...", { id: toastId });
-      try {
-        let syncSuccessCount = 0;
-        let syncErrorCount = 0;
-
-        for (const productId of productIds) {
-          try {
-            const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId }
-            });
-
-            if (syncError) {
-              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
-              syncErrorCount++;
-            } else {
-              syncSuccessCount++;
-            }
-          } catch (syncErr) {
-            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
-            syncErrorCount++;
-          }
-        }
-
-        if (syncSuccessCount > 0) {
-          toast.success(
-            `Images synchronisées avec Shopify (${syncSuccessCount}/${productIds.length})`,
-            { id: toastId }
-          );
-        } else if (syncErrorCount > 0) {
-          toast.warning(
-            `Images appliquées mais synchronisation Shopify échouée pour ${syncErrorCount} produit(s)`,
-            { id: toastId }
-          );
-        }
-      } catch (syncError) {
-        console.error("Error syncing to Shopify:", syncError);
-        toast.warning("Images appliquées mais erreur lors de la synchronisation Shopify", { id: toastId });
-      }
-    } catch (error) {
-      console.error("Error applying images:", error);
-      toast.error("Erreur lors de l'application", { id: toastId });
+    } catch (error: any) {
+      console.error("❌ [AI BG] Error applying images:", error);
+      toast.error(error.message || "Erreur lors de l'application", { id: toastId });
     }
   };
 
