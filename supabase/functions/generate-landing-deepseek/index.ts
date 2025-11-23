@@ -1325,19 +1325,31 @@ STYLE: ${selectedStyleTemplate.name}
 ${selectedStyleTemplate.rules}
 
 RÈGLES CRITIQUES:
-✅ HSL uniquement: style="background-color: hsl(...)" - JAMAIS de HEX
+✅ HSL uniquement: style="color: hsl(...)" - JAMAIS de HEX
 ✅ Responsive: text-lg md:text-2xl (UN seul breakpoint/propriété)
 ✅ Images: loading="lazy" (sauf 1ère: "eager")
-✅ Icônes SVG avec gradients HSL (IDs uniques: icon1, icon2...)
+✅ Icônes Lucide: TOUJOURS text-primary ou text-accent (JAMAIS gris)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
+✅ Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
 
 ${reliabilityBadge}
 
-STRUCTURE: <!DOCTYPE html>, Tailwind CDN, viewport meta, ${wordCount} mots
-SECTIONS: Hero, Avantages (3-4), Specs Techniques, FAQ
-INTERDIT: Boutons achat, navigation, liens externes
+STRUCTURE HTML OBLIGATOIRE:
+1. Hero fullscreen avec gradient overlay sur image
+2. HIGHLIGHTS section (4 cards avec bg-accent/10, icônes primary, hover effects)
+3. POINTS FORTS section (grid avec gradient borders, icônes accent, shadow-lg)
+4. Galerie images responsive (grid asymétrique)
+5. Specs Techniques (tableau + cards avec icônes)
+6. Description longue avec prose styling
 
-GÉNÈRE le HTML complet maintenant.
+CSS AVANCÉ REQUIS:
+• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
+• Icônes: text-primary OU text-accent, jamais gris
+• Gradients: bg-gradient-to-br from-accent/5 to-primary/5
+• Borders: border-l-4 border-accent sur highlights
+• Hover: transform hover:scale-105 transition-transform
+
+${wordCount} mots minimum. GÉNÈRE maintenant.
 ` : `
 Expert landing page creator. Generate professional HTML5.
 
@@ -1368,19 +1380,31 @@ STYLE: ${selectedStyleTemplate.name}
 ${selectedStyleTemplate.rules}
 
 CRITICAL RULES:
-✅ HSL only: style="background-color: hsl(...)" - NO HEX
+✅ HSL only: style="color: hsl(...)" - NO HEX
 ✅ Responsive: text-lg md:text-2xl (ONE breakpoint/property)
 ✅ Images: loading="lazy" (1st: "eager")
-✅ SVG icons with HSL gradients (unique IDs: icon1, icon2...)
+✅ Lucide Icons: ALWAYS text-primary or text-accent (NEVER gray)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
+✅ Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
 
 ${reliabilityBadge}
 
-STRUCTURE: <!DOCTYPE html>, Tailwind CDN, viewport meta, ${wordCount} words
-SECTIONS: Hero, Benefits (3-4), Tech Specs, FAQ
-FORBIDDEN: Buy buttons, nav, external links
+MANDATORY HTML STRUCTURE:
+1. Fullscreen Hero with gradient overlay on image
+2. HIGHLIGHTS section (4 cards with bg-accent/10, primary icons, hover effects)
+3. KEY FEATURES section (grid with gradient borders, accent icons, shadow-lg)
+4. Responsive image gallery (asymmetric grid)
+5. Technical Specs (table + cards with icons)
+6. Long description with prose styling
 
-GENERATE complete HTML now.
+ADVANCED CSS REQUIRED:
+• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
+• Icons: text-primary OR text-accent, never gray
+• Gradients: bg-gradient-to-br from-accent/5 to-primary/5
+• Borders: border-l-4 border-accent on highlights
+• Hover: transform hover:scale-105 transition-transform
+
+${wordCount} words minimum. GENERATE now.
 `;
 }
 
