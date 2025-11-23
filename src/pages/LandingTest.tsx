@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,14 +19,37 @@ export default function LandingTest() {
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [productId, setProductId] = useState<string | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
 
-  // Produit de test avec vraies données
-  const testProduct = {
-    id: "test-product-123",
-    title: "Armoire Test Velmio Luxe",
-    description: "Armoire moderne blanche laquée mate avec structure dorée",
-    vendor: "Velmio",
-  };
+  // Fetch a real product from the database
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('shopify_products')
+          .select('id, title')
+          .limit(1)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setProductId(data.id);
+          console.log('✅ Produit chargé pour test:', data.title);
+        } else {
+          toast.error("Aucun produit trouvé dans la base de données");
+        }
+      } catch (err: any) {
+        console.error('❌ Erreur chargement produit:', err);
+        toast.error("Erreur: " + err.message);
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    fetchProduct();
+  }, []);
 
   // Palette de couleurs disponibles
   const getPaletteColors = (scheme: string) => {
@@ -68,13 +91,19 @@ export default function LandingTest() {
   };
 
   const handleGenerate = async () => {
+    if (!productId) {
+      toast.error("Aucun produit disponible pour le test");
+      return;
+    }
+
     setLoading(true);
     console.log('🧪 [TEST] Génération avec config:', config);
+    console.log('🧪 [TEST] Product ID:', productId);
     
     try {
       const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
         body: {
-          productId: testProduct.id,
+          productId: productId,
           style: config.style,
           layout: config.layout,
           colorScheme: getPaletteColors(config.colorScheme),
@@ -115,6 +144,28 @@ export default function LandingTest() {
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
   };
+
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Chargement d'un produit pour le test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!productId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">Aucun produit trouvé dans la base de données</p>
+          <p className="text-muted-foreground">Veuillez d'abord importer des produits</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
