@@ -482,6 +482,7 @@ serve(async (req) => {
 
     // Helper to convert HSL to Hex
     const hslToHex = (hsl: string): string => {
+      if (!hsl) return '#000000'; // Handle undefined/null
       if (hsl.startsWith('#')) return hsl; // Already hex
       
       const match = hsl.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/);
