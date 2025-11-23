@@ -1638,13 +1638,13 @@ ${reliabilityBadge}
    - Dimensions (length, width, height, depth, weight, seat_height, armrest_height, etc.)
    - Matériaux
    - Couleurs
-   - Montage (si extractedInfo.mounting_options ou functionalAttributes.mounting_required existe)
-   - Éclairage (si functionalAttributes.lighting_type existe)
-   - Garantie (si functionalAttributes.warranty_years existe)
-   - Nombre de places (si functionalAttributes.seating_capacity existe)
-   - Temps d'assemblage (si functionalAttributes.assembly_time_minutes existe)
-   - Éléments ajustables (si functionalAttributes.adjustable_elements existe)
-   - Rangement (si functionalAttributes.storage_included existe)
+   - Montage (si extractedInfo.mounting_options existe)
+   - Éclairage (si extractedInfo.lighting existe)
+   - Garantie (si détectée dans description)
+   - Nombre de places (si détecté dans description)
+   - Temps d'assemblage (si mentionné)
+   - Éléments ajustables (si mentionnés)
+   - Rangement (si mentionné)
    
    ✅ Crée un tableau HTML complet avec TOUTES ces lignes
    ❌ NE SUPPRIME une ligne QUE si la valeur est vraiment vide/null
@@ -1654,9 +1654,9 @@ ${reliabilityBadge}
    <table class="w-full border-collapse">
      ${extractedInfo?.materials ? '<tr><td>Matériaux</td><td>' + extractedInfo.materials + '</td></tr>' : ''}
      ${extractedInfo?.dimensions ? '<tr><td>Dimensions</td><td>' + extractedInfo.dimensions + '</td></tr>' : ''}
-     ${enrichedProduct?.vision_attributes?.functionalAttributes?.mounting_required !== null ? 
-       '<tr><td>Montage requis</td><td>' + (enrichedProduct.vision_attributes.functionalAttributes.mounting_required ? 'Oui' : 'Non') + '</td></tr>' : ''}
-     <!-- Continue pour TOUTES les propriétés -->
+     ${extractedInfo?.mounting_options ? '<tr><td>Montage</td><td>' + extractedInfo.mounting_options + '</td></tr>' : ''}
+     ${extractedInfo?.lighting ? '<tr><td>Éclairage</td><td>' + extractedInfo.lighting + '</td></tr>' : ''}
+     <!-- Continue pour TOUTES les propriétés disponibles -->
    </table>
 
 6️⃣ DESCRIPTION LONGUE (prose styling):
