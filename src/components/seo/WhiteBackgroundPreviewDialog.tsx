@@ -238,11 +238,11 @@ export function WhiteBackgroundPreviewDialog({
                   {/* Original */}
                   <div className="space-y-2">
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Image originale</p>
-                    <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
+                    <div className="relative w-full aspect-square max-h-[300px] sm:max-h-none bg-muted rounded-lg overflow-hidden border">
                       <img
                         src={preview.originalUrl}
                         alt="Original"
-                        className="w-full h-full object-contain"
+                        className="absolute inset-0 w-full h-full object-contain"
                       />
                     </div>
                   </div>
@@ -252,9 +252,9 @@ export function WhiteBackgroundPreviewDialog({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                       Fond blanc IA
                     </p>
-                    <div className="aspect-square bg-white rounded-lg overflow-hidden border">
+                    <div className="relative w-full aspect-square max-h-[300px] sm:max-h-none bg-white rounded-lg overflow-hidden border">
                       {preview.status === 'generating' && (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center justify-center">
                           <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-muted-foreground" />
                         </div>
                       )}
@@ -262,11 +262,11 @@ export function WhiteBackgroundPreviewDialog({
                         <img
                           src={preview.generatedUrl}
                           alt="Fond blanc"
-                          className="w-full h-full object-contain"
+                          className="absolute inset-0 w-full h-full object-contain"
                         />
                       )}
                       {preview.status === 'error' && (
-                        <div className="w-full h-full flex items-center justify-center text-center p-2 sm:p-4">
+                        <div className="absolute inset-0 flex items-center justify-center text-center p-2 sm:p-4">
                           <div>
                             <X className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mx-auto mb-2" />
                             <p className="text-xs sm:text-sm text-muted-foreground">{preview.error}</p>
