@@ -810,9 +810,10 @@ serve(async (req) => {
       `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
     );
 
-    // Build enriched summary
-    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, detectedLanguage);
-    if (enrichedSummary) {
+    // Build enriched summary (truncated to avoid huge prompts)
+    const rawEnrichedSummary = buildEnrichedProductSummary(enrichedProduct, detectedLanguage);
+    const enrichedSummary = rawEnrichedSummary ? rawEnrichedSummary.substring(0, 1500) : "";
+    if (rawEnrichedSummary) {
       console.log("📊 Using enriched attributes in landing page generation");
     }
 
@@ -976,7 +977,7 @@ serve(async (req) => {
           detectedLanguage === "en"
             ? `Image ${analysis.index}${analysis.index === 1 ? " (main)" : ""}`
             : `Photo ${analysis.index}${analysis.index === 1 ? " (principale)" : ""}`;
-        visualAnalysis += `${imageLabel}:\n${analysis.description}\n\n`;
+        visualAnalysis = (visualAnalysis + `${imageLabel}:\n${analysis.description}\n\n`).substring(0, 1200);
       });
     } else {
       console.log("⏭️ No images analyzed by Vision AI");
@@ -1089,7 +1090,7 @@ ${selectedLength?.option_value ? `Content Instructions:\n${typeof selectedLength
 PRODUCT:
 - Title: ${productTitle}
 - Brand: ${vendor}
-- Description: ${description}
+- Description: ${description ? description.substring(0, 800) : ''}
 - Style: ${style || enrichedProduct.style || ""}
 - Product URL: ${productUrl}
 
@@ -1101,13 +1102,13 @@ ${
 🎯 COMPETITOR LANDING PAGE ANALYSIS (USE THIS TO STRUCTURE YOUR PAGE):
 
 📋 Common Sections Found in Top Results:
-${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hero section\n- Product benefits\n- FAQ"}
+${"- Hero section\n- Product benefits\n- FAQ"}
 
 💬 Effective CTA Patterns:
-${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Buy now\n- Learn more"}
+${"- Buy now\n- Learn more"}
 
 🏗️ Structural Elements to Include:
-${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Clear headline\n- Visual imagery\n- Trust signals"}
+${"- Clear headline\n- Visual imagery\n- Trust signals"}
 
 📊 Content Density: ${serpInsights.contentDensity || "medium"}
 
@@ -1938,7 +1939,7 @@ UTILISATION DES ICÔNES :
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 12000,
+          max_tokens: 8000,
           temperature: 0.7,
         }),
         signal: aiController.signal,
