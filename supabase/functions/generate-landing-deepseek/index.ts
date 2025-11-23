@@ -585,6 +585,44 @@ serve(async (req) => {
 
     console.log(`✅ DB query optimized: loaded product + ${images.length} images + ${variants.length} variants in 1 query`);
 
+    // ✅ Extract structured info from description using DeepSeek
+    let extractedInfo = null;
+    if (product.body_html && DEEPSEEK_API_KEY) {
+      try {
+        console.log('[DEEPSEEK] Extracting structured info from description...');
+        const extractionPrompt = `Extract all technical specifications, materials, dimensions, colors, and features from this product description. Return ONLY a JSON object with keys: materials, colors, dimensions, weight, features, mounting_options, lighting, technical_specs.
+
+Description:
+${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
+
+        const extractionResponse = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: extractionPrompt }],
+            temperature: 0.3,
+            max_tokens: 500,
+          }),
+        });
+
+        if (extractionResponse.ok) {
+          const extractionData = await extractionResponse.json();
+          const content = extractionData.choices?.[0]?.message?.content || '';
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            extractedInfo = JSON.parse(jsonMatch[0]);
+            console.log('[DEEPSEEK] Extracted info:', extractedInfo);
+          }
+        }
+      } catch (err) {
+        console.error('[DEEPSEEK] Extraction error:', err);
+      }
+    }
+
     // ✅ SPRINT 1 - PHASE 3: Extended cache to 7 days (was 24h)
     const needsVisionAnalysis = !product.vision_analyzed || 
                                 (product.last_optimization_at &&
@@ -822,6 +860,7 @@ serve(async (req) => {
       language,
       images,
       enrichedProduct,
+      extractedInfo,
     });
 
     const promptSizeKB = (new Blob([prompt]).size / 1024).toFixed(2);
@@ -1022,7 +1061,8 @@ function buildDeepSeekPrompt(productData: any, config: any): string {
     contentLength, 
     language, 
     images,
-    enrichedProduct 
+    enrichedProduct,
+    extractedInfo
   } = config;
 
   const fontLinks = Object.values(fonts)
@@ -1261,6 +1301,17 @@ Tu es expert en landing pages Shopify. Crée un HTML5 complet et professionnel.
 PRODUIT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
+${extractedInfo ? `
+SPECS TECHNIQUES EXTRAITES:
+- Matériaux: ${extractedInfo.materials || 'N/A'}
+- Coloris: ${extractedInfo.colors || 'N/A'}
+- Dimensions: ${extractedInfo.dimensions || 'N/A'}
+- Poids: ${extractedInfo.weight || 'N/A'}
+- Caractéristiques: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
+- Montage: ${extractedInfo.mounting_options || 'N/A'}
+- Éclairage: ${extractedInfo.lighting || 'N/A'}
+` : ''}
+
 ${productData.enrichedSummary ? `ATTRIBUTS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
 ${productData.visualAnalysis ? `VISUEL:\n${productData.visualAnalysis.substring(0, 400)}\n` : ""}
 
@@ -1292,6 +1343,17 @@ Expert landing page creator. Generate professional HTML5.
 
 PRODUCT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
+
+${extractedInfo ? `
+TECHNICAL SPECS EXTRACTED:
+- Materials: ${extractedInfo.materials || 'N/A'}
+- Colors: ${extractedInfo.colors || 'N/A'}
+- Dimensions: ${extractedInfo.dimensions || 'N/A'}
+- Weight: ${extractedInfo.weight || 'N/A'}
+- Features: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
+- Mounting: ${extractedInfo.mounting_options || 'N/A'}
+- Lighting: ${extractedInfo.lighting || 'N/A'}
+` : ''}
 
 ${productData.enrichedSummary ? `ATTRS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
 ${productData.visualAnalysis ? `VISUAL:\n${productData.visualAnalysis.substring(0, 400)}\n` : ""}
