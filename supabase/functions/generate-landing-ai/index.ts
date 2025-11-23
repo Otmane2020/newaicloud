@@ -566,13 +566,21 @@ serve(async (req) => {
       
       selectedLayout = dbLayouts.find(l => l.option_key === userPreferences.layout) || dbLayouts[0];
       
-      // Build styleTemplates from DB
+      // Build styleTemplates from DB - Extract instructions from option_value
       const styleTemplatesFromDB: any = {};
       dbStyles.forEach(style => {
+        // option_value can be either a string or an object with 'instructions' field
+        let styleInstructions = '';
+        if (typeof style.option_value === 'string') {
+          styleInstructions = style.option_value;
+        } else if (style.option_value && typeof style.option_value === 'object') {
+          styleInstructions = (style.option_value as any).instructions || '';
+        }
+        
         styleTemplatesFromDB[style.option_key] = {
           name: style.option_label,
           description: style.description || '',
-          rules: style.option_value || ''
+          rules: styleInstructions
         };
       });
       
@@ -610,13 +618,21 @@ serve(async (req) => {
       
       selectedLayout = dbLayouts.find(l => l.option_key === layout) || dbLayouts[0];
       
-      // Build styleTemplates from DB as fallback
+      // Build styleTemplates from DB as fallback - Extract instructions from option_value
       const styleTemplatesFromDB: any = {};
       dbStyles.forEach(style => {
+        // option_value can be either a string or an object with 'instructions' field
+        let styleInstructions = '';
+        if (typeof style.option_value === 'string') {
+          styleInstructions = style.option_value;
+        } else if (style.option_value && typeof style.option_value === 'object') {
+          styleInstructions = (style.option_value as any).instructions || '';
+        }
+        
         styleTemplatesFromDB[style.option_key] = {
           name: style.option_label,
           description: style.description || '',
-          rules: style.option_value || ''
+          rules: styleInstructions
         };
       });
       
@@ -1048,7 +1064,9 @@ serve(async (req) => {
 
     console.log(`[Landing AI] Design style: ${selectedStyle?.name || 'Modern'} (received: ${selectedDesignStyle})`);
     console.log(`[Landing AI] Layout: ${selectedLayout?.option_label || 'Unknown'} (key: ${selectedLayout?.option_key})`);
+    console.log(`[Landing AI] Layout instructions:`, typeof selectedLayout?.option_value === 'string' ? selectedLayout.option_value.substring(0, 100) : (selectedLayout?.option_value as any)?.instructions?.substring(0, 100));
     console.log(`[Landing AI] Content Length: ${selectedLength?.option_label || 'Unknown'} (key: ${selectedLength?.option_key})`);
+    console.log(`[Landing AI] Content length instructions:`, typeof selectedLength?.option_value === 'string' ? selectedLength.option_value.substring(0, 100) : (selectedLength?.option_value as any)?.instructions?.substring(0, 100));
     console.log(`[Landing AI] Color Scheme Keys:`, Object.keys(selectedColorScheme || {}));
 
     const prompt =
@@ -1059,12 +1077,12 @@ Generate a complete, professional Tailwind HTML landing page.
 🎯 LAYOUT CONFIGURATION (CRITICAL - MUST FOLLOW):
 Layout Type: ${selectedLayout?.option_label || 'Standard'}
 Layout Description: ${selectedLayout?.description || 'Standard single-column layout'}
-${selectedLayout?.option_value ? `Layout Instructions:\n${selectedLayout.option_value}\n` : ''}
+${selectedLayout?.option_value ? `Layout Instructions:\n${typeof selectedLayout.option_value === 'string' ? selectedLayout.option_value : (selectedLayout.option_value as any).instructions || ''}\n` : ''}
 
 📏 CONTENT LENGTH REQUIREMENT (CRITICAL):
 Target Length: ${selectedLength?.option_label || 'Medium'}
 Description: ${selectedLength?.description || 'Standard content length'}
-${selectedLength?.option_value ? `Content Instructions:\n${selectedLength.option_value}\n` : ''}
+${selectedLength?.option_value ? `Content Instructions:\n${typeof selectedLength.option_value === 'string' ? selectedLength.option_value : (selectedLength.option_value as any).instructions || ''}\n` : ''}
 
 PRODUCT:
 - Title: ${productTitle}
@@ -1491,12 +1509,12 @@ Génère une landing page Tailwind HTML complète et professionnelle en respecta
 🎯 CONFIGURATION LAYOUT (CRITIQUE - DOIT ÊTRE SUIVIE) :
 Type de layout : ${selectedLayout?.option_label || 'Standard'}
 Description du layout : ${selectedLayout?.description || 'Layout standard une colonne'}
-${selectedLayout?.option_value ? `Instructions de layout :\n${selectedLayout.option_value}\n` : ''}
+${selectedLayout?.option_value ? `Instructions de layout :\n${typeof selectedLayout.option_value === 'string' ? selectedLayout.option_value : (selectedLayout.option_value as any).instructions || ''}\n` : ''}
 
 📏 EXIGENCE DE LONGUEUR DE CONTENU (CRITIQUE) :
 Longueur ciblée : ${selectedLength?.option_label || 'Moyen'}
 Description : ${selectedLength?.description || 'Longueur de contenu standard'}
-${selectedLength?.option_value ? `Instructions de contenu :\n${selectedLength.option_value}\n` : ''}
+${selectedLength?.option_value ? `Instructions de contenu :\n${typeof selectedLength.option_value === 'string' ? selectedLength.option_value : (selectedLength.option_value as any).instructions || ''}\n` : ''}
 
 ⚙️ CONFIGURATION UTILISATEUR (OBLIGATOIRE) :
 - Modèle de design sélectionné : ${selectedStyle.name} (config: ${selectedDesignStyle})
