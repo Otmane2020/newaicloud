@@ -105,6 +105,7 @@ export function AppSidebar() {
 
   const mainMenuItems = [
     { title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
+    ...(isTestAccount ? [{ title: "🧪 Test Landing OK", url: "/landingok", icon: Sparkles, key: "landingok" }] : []),
   ];
 
   const productOptimizationSubItems = [
