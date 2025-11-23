@@ -65,13 +65,14 @@ Requirements:
           "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-3-pro-image-preview",
+          model: "google/gemini-2.5-flash-image-preview",
           messages: [
             {
               role: "user",
               content: enhancedPrompt
             }
           ],
+          modalities: ["image", "text"]
         }),
       },
     );
@@ -111,17 +112,17 @@ Requirements:
     console.log("✅ Lovable AI response received");
 
     // --- EXTRACT IMAGE BASE64 FROM LOVABLE AI RESPONSE ---
-    // Lovable AI returns the image in the message content
-    const messageContent = data.choices?.[0]?.message?.content;
+    // Lovable AI returns the image in data.choices[0].message.images[0].image_url.url
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
-    if (!messageContent) {
+    if (!imageUrl) {
       console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
       throw new Error("Aucune image générée - format inattendu.");
     }
 
     // Extract base64 from data URL (format: data:image/png;base64,...)
-    const base64Match = messageContent.match(/data:image\/[^;]+;base64,(.+)/);
-    const base64Data = base64Match ? base64Match[1] : messageContent;
+    const base64Match = imageUrl.match(/data:image\/[^;]+;base64,(.+)/);
+    const base64Data = base64Match ? base64Match[1] : imageUrl;
 
     const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
@@ -160,9 +161,9 @@ Requirements:
     return new Response(
       JSON.stringify({
         success: true,
-        image_url: publicUrl || `data:image/png;base64,${base64Data}`,
+        image_url: publicUrl || imageUrl,
         metadata: {
-          model: "google/gemini-3-pro-image-preview",
+          model: "google/gemini-2.5-flash-image-preview",
           product_type,
           style,
           aspect_ratio: finalAspectRatio,
