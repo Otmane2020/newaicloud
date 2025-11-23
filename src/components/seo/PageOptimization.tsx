@@ -109,6 +109,7 @@ export function PageOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -430,26 +431,45 @@ export function PageOptimization() {
   const handleConfirmOptimizeAll = async () => {
     const pagesToOptimize = pages.filter(p => !p.optimized);
     
+    if (pagesToOptimize.length === 0) {
+      toast.info('All pages are already optimized');
+      setShowOptimizeAllConfirmDialog(false);
+      return;
+    }
+
+    setShowOptimizeAllConfirmDialog(false);
     setOptimizing(true);
+    setShowProgressDialog(true);
+    setProgress({ current: 0, total: pagesToOptimize.length });
+    
+    // Start global optimization tracking
+    startOptimization('pages', pagesToOptimize.length, 'optimizing');
+
     let successCount = 0;
     
     for (let i = 0; i < pagesToOptimize.length; i++) {
+      const page = pagesToOptimize[i];
       try {
         const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: pagesToOptimize[i].id, force: true }
+          body: { pageId: page.id, force: true }
         });
         
         if (error) throw error;
         successCount++;
+        updateProgress(i + 1, page.id, 'success');
       } catch (error) {
         console.error('Error:', error);
+        updateProgress(i + 1, page.id, 'error');
       }
+      setProgress({ current: i + 1, total: pagesToOptimize.length });
     }
     
     setOptimizing(false);
+    setShowProgressDialog(false);
     toast.success(`${successCount}/${pagesToOptimize.length} pages optimized!`);
     await fetchPages();
     await refreshLimits();
+    completeOptimization();
     
     // Check if auto-sync is enabled
     const { data: { user } } = await supabase.auth.getUser();
@@ -968,6 +988,18 @@ export function PageOptimization() {
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
+
+                {optimizing && (
+                  <div className="w-full sm:w-auto">
+                    <ProgressBanner
+                      current={progress.current}
+                      total={progress.total}
+                      label="Optimisation des pages"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
               </div>
             </div>
 

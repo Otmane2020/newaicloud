@@ -39,6 +39,8 @@ import { Loader2 } from 'lucide-react';
 import { GoogleSearchPreview } from '@/components/seo/GoogleSearchPreview';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import { useStoreDomain } from '@/hooks/useStoreDomain';
+import { useOptimization } from '@/contexts/OptimizationContext';
+import { ProgressBanner } from '@/components/seo/ProgressBanner';
 
 interface Article {
   id: string;
@@ -94,6 +96,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   );
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
+  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
 
   const loadCategories = async () => {
     try {
@@ -582,6 +585,16 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
+
+          {showProgressDialog && (
+            <div className="w-full sm:w-auto mt-2 sm:mt-0">
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label="Optimisation des articles"
+              />
+            </div>
+          )}
         </div>
       </div>
 

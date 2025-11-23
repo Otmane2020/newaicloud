@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { ProgressBanner } from "./ProgressBanner";
 import { useOptimization } from "@/contexts/OptimizationContext";
 import {
   ProgressDialog,
@@ -952,12 +953,22 @@ export function SeoOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {!generating && (
+            {generating ? (
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label="Optimisation des produits"
+              />
+            ) : (
               <>
                 <div className="text-center">
                   <div
                     className={`text-3xl md:text-4xl font-bold ${
-                      globalSeoScore >= 80 ? "text-green-600" : globalSeoScore >= 60 ? "text-orange-600" : "text-red-600"
+                      globalSeoScore >= 80
+                        ? "text-green-600"
+                        : globalSeoScore >= 60
+                        ? "text-orange-600"
+                        : "text-red-600"
                     }`}
                   >
                     {globalSeoScore}/100
@@ -970,12 +981,12 @@ export function SeoOptimization() {
                 <Button
                   size="lg"
                   onClick={() => {
-                    console.log('🔘 [BUTTON_CLICKED]', {
+                    console.log("🔘 [BUTTON_CLICKED]", {
                       notEnrichedCount,
                       loading,
                       generating,
                       totalProducts: products.length,
-                      buttonDisabled: generating || loading || notEnrichedCount === 0
+                      buttonDisabled: generating || loading || notEnrichedCount === 0,
                     });
                     handleGenerateAllSeo();
                   }}
@@ -983,7 +994,11 @@ export function SeoOptimization() {
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Sparkles className="w-5 h-5" />
-                  {loading ? t.common.loading : (notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization)}
+                  {loading
+                    ? t.common.loading
+                    : notEnrichedCount === 0
+                    ? t.seo.optimization.allOptimized
+                    : t.seo.optimization.startOptimization}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </>

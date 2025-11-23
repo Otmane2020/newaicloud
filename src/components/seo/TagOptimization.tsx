@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
+import { ProgressBanner } from './ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
@@ -781,7 +782,13 @@ export function TagOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {!showProgressDialog && (
+            {showProgressDialog ? (
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label={currentOperation === 'syncing' ? 'Synchronisation des tags' : 'Optimisation des tags'}
+              />
+            ) : (
               <>
                 <div className="text-center">
                   <div className={`text-3xl md:text-4xl font-bold ${

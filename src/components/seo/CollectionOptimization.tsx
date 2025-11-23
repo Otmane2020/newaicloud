@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
+import { ProgressBanner } from './ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
@@ -1044,7 +1045,13 @@ export function CollectionOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {!optimizing && (
+            {optimizing ? (
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label="Optimisation des collections"
+              />
+            ) : (
               <>
                 <div className="text-center">
                   <div className={`text-3xl md:text-4xl font-bold ${

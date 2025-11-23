@@ -23,6 +23,8 @@ import { calculateArticleSeoScore, calculateDetailedSeoScore } from '@/lib/seoQu
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
+import { ProgressBanner } from '@/components/seo/ProgressBanner';
+import { useOptimization } from '@/contexts/OptimizationContext';
 
 export default function SEO() {
   const { t } = useTranslation();
@@ -33,6 +35,7 @@ export default function SEO() {
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
   const articleManagementRef = useRef<ArticleManagementRef>(null);
+  const { state: optimizationState } = useOptimization();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -217,27 +220,37 @@ export default function SEO() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
-                  <div className="text-center">
-                    <div className={`text-3xl sm:text-4xl font-bold ${
-                      loadingScores ? 'text-muted-foreground' :
-                      pagesSeoScore >= 80 ? 'text-green-600' : 
-                      pagesSeoScore >= 60 ? 'text-purple-600' : 
-                      pagesSeoScore >= 40 ? 'text-yellow-600' : 
-                      'text-red-600'
-                    }`}>
-                      {loadingScores ? '...' : `${pagesSeoScore}/100`}
-                    </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
-                  </div>
-                  <Button
-                    size="lg"
-                    onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg w-full lg:w-auto"
-                  >
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    <span className="truncate">{t.seo.banners.pages.optimizeBtn}</span>
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  </Button>
+                  {optimizationState.isRunning && optimizationState.type === 'pages' ? (
+                    <ProgressBanner
+                      current={optimizationState.current}
+                      total={optimizationState.total}
+                      label="Optimisation des pages"
+                    />
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <div className={`text-3xl sm:text-4xl font-bold ${
+                          loadingScores ? 'text-muted-foreground' :
+                          pagesSeoScore >= 80 ? 'text-green-600' : 
+                          pagesSeoScore >= 60 ? 'text-purple-600' : 
+                          pagesSeoScore >= 40 ? 'text-yellow-600' : 
+                          'text-red-600'
+                        }`}>
+                          {loadingScores ? '...' : `${pagesSeoScore}/100`}
+                        </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
+                      </div>
+                      <Button
+                        size="lg"
+                        onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg w-full lg:w-auto"
+                      >
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                        <span className="truncate">{t.seo.banners.pages.optimizeBtn}</span>
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
@@ -275,27 +288,37 @@ export default function SEO() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
-                  <div className="text-center">
-                    <div className={`text-3xl sm:text-4xl font-bold ${
-                      loadingScores ? 'text-muted-foreground' :
-                      articlesSeoScore >= 80 ? 'text-green-600' : 
-                      articlesSeoScore >= 60 ? 'text-blue-600' : 
-                      articlesSeoScore >= 40 ? 'text-yellow-600' : 
-                      'text-red-600'
-                    }`}>
-                      {loadingScores ? '...' : `${articlesSeoScore}/100`}
-                    </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
-                  </div>
-                  <Button
-                    size="lg"
-                    onClick={() => articleManagementRef.current?.optimizeAllArticles()}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg w-full lg:w-auto"
-                  >
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    <span className="truncate">{t.seo.banners.articles.optimizeBtn}</span>
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  </Button>
+                  {optimizationState.isRunning && optimizationState.type === 'articles' ? (
+                    <ProgressBanner
+                      current={optimizationState.current}
+                      total={optimizationState.total}
+                      label="Optimisation des articles"
+                    />
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <div className={`text-3xl sm:text-4xl font-bold ${
+                          loadingScores ? 'text-muted-foreground' :
+                          articlesSeoScore >= 80 ? 'text-green-600' : 
+                          articlesSeoScore >= 60 ? 'text-blue-600' : 
+                          articlesSeoScore >= 40 ? 'text-yellow-600' : 
+                          'text-red-600'
+                        }`}>
+                          {loadingScores ? '...' : `${articlesSeoScore}/100`}
+                        </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
+                      </div>
+                      <Button
+                        size="lg"
+                        onClick={() => articleManagementRef.current?.optimizeAllArticles()}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg w-full lg:w-auto"
+                      >
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                        <span className="truncate">{t.seo.banners.articles.optimizeBtn}</span>
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
