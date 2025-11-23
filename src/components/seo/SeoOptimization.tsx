@@ -685,7 +685,18 @@ export function SeoOptimization() {
       return;
     }
 
-    const productsToGenerate = products.filter((p) => !p.seo_title || !p.seo_description);
+    const productsToGenerate = products.filter((p) => p.enrichment_status !== "enriched");
+
+    console.log('🔍 [GENERATE_ALL_DEBUG]', {
+      totalProducts: products.length,
+      productsToGenerate: productsToGenerate.length,
+      sampleProducts: productsToGenerate.slice(0, 3).map(p => ({
+        id: p.id,
+        title: p.title?.substring(0, 30),
+        enrichment_status: p.enrichment_status,
+        seo_title: p.seo_title?.substring(0, 30)
+      }))
+    });
 
     if (productsToGenerate.length === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
@@ -950,7 +961,7 @@ export function SeoOptimization() {
                   totalProducts: products.length,
                   buttonDisabled: generating || loading || notEnrichedCount === 0
                 });
-                handleGenerateAll();
+                handleGenerateAllSeo();
               }}
               disabled={generating || loading || notEnrichedCount === 0}
               className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
