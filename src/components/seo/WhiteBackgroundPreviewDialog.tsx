@@ -238,11 +238,11 @@ export function WhiteBackgroundPreviewDialog({
                   {/* Original */}
                   <div className="space-y-2">
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Image originale</p>
-                    <div className="relative w-full aspect-square max-h-[300px] sm:max-h-none bg-muted rounded-lg overflow-hidden border">
+                    <div className="relative w-full bg-muted rounded-lg overflow-hidden border flex items-center justify-center">
                       <img
                         src={preview.originalUrl}
-                        alt="Original"
-                        className="absolute inset-0 w-full h-full object-contain"
+                        alt="Image originale du produit"
+                        className="w-full h-auto object-contain"
                       />
                     </div>
                   </div>
@@ -252,7 +252,7 @@ export function WhiteBackgroundPreviewDialog({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                       Fond blanc IA
                     </p>
-                    <div className="relative w-full aspect-square max-h-[300px] sm:max-h-none bg-white rounded-lg overflow-hidden border">
+                    <div className="relative w-full bg-white rounded-lg overflow-hidden border flex items-center justify-center min-h-[160px]">
                       {preview.status === 'generating' && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-muted-foreground" />
@@ -261,8 +261,8 @@ export function WhiteBackgroundPreviewDialog({
                       {preview.status === 'success' && preview.generatedUrl && (
                         <img
                           src={preview.generatedUrl}
-                          alt="Fond blanc"
-                          className="absolute inset-0 w-full h-full object-contain"
+                          alt="Image générée avec fond blanc"
+                          className="w-full h-auto object-contain"
                         />
                       )}
                       {preview.status === 'error' && (
