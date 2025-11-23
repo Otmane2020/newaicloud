@@ -38,53 +38,28 @@ serve(async (req) => {
   }
 
   try {
-    // Parse and validate request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (jsonError) {
-      console.error("❌ Invalid JSON in request body:", jsonError);
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON in request body" }), 
-        { 
-          status: 400, 
-          headers: { ...cors, "Content-Type": "application/json" } 
-        }
-      );
-    }
+    const body = await req.json();
 
-    // Validate required fields
-    if (!body || !body.productTitle) {
-      console.error("❌ Missing required field: productTitle");
-      return new Response(
-        JSON.stringify({ error: "Missing required field: productTitle" }), 
-        { 
-          status: 400, 
-          headers: { ...cors, "Content-Type": "application/json" } 
-        }
-      );
+    if (!body.productTitle) {
+      return new Response(JSON.stringify({ error: "Missing productTitle" }), {
+        status: 400,
+        headers: { ...cors, "Content-Type": "application/json" }
+      });
     }
 
     const opts = body.options || {};
 
-    // Load all config options from DB
+    // Load dynamic options from DB
     const layout = await getOption("layout", opts.layout);
     const design = await getOption("design_style", opts.designStyle);
     const length = await getOption("content_length", opts.contentLength);
     const palette = await getOption("color_scheme", opts.colorScheme);
     const vendor = await getOption("vendor_source", opts.vendorSource);
 
-    console.log("🔵 Loaded options from DB:", {
-      layout: opts.layout,
-      design: opts.designStyle,
-      palette: opts.colorScheme,
-      contentLength: opts.contentLength,
-      vendorSource: opts.vendorSource
-    });
+    console.log("🔵 Loaded Options:", opts);
 
-    // Build final IA prompt
     const prompt = `
-Generate a modern, mobile-optimized product landing page.
+GENERATE A CONVERSION-OPTIMIZED, MOBILE-FIRST PRODUCT LANDING PAGE IN HTML ONLY.
 
 PRODUCT TITLE:
 ${body.productTitle}
@@ -98,7 +73,7 @@ ${layout?.instructions || ""}
 DESIGN STYLE:
 ${design?.instructions || ""}
 
-CONTENT LENGTH / STRUCTURE:
+CONTENT STRUCTURE:
 ${length?.instructions || ""}
 
 COLOR PALETTE:
@@ -109,61 +84,46 @@ Background: ${palette?.background}
 Surface: ${palette?.surface}
 Text: ${palette?.text}
 
-REQUIREMENTS:
-- clean HTML
-- mobile-first
-- beautiful hero section
-- CTA buttons
-- semantic structure
-- avoid boilerplate
-- do NOT wrap in <html> or <body>
-
-Now generate the final responsive HTML.
+RULES:
+- ONLY RETURN HTML (no head/body)
+- MUST be beautiful, modern, mobile-first
+- Strong hero section
+- Responsive grid sections
+- Clean CTAs
+- No lorem ipsum
+- No markdown
 `;
 
-    // 🔥 CALL AI MODEL (DeepSeek / Lovable)
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // 🔥 Correct Lovable API endpoint
+    const response = await fetch("https://api.lovable.dev/generate", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are an expert HTML/CSS developer specialized in creating beautiful, conversion-optimized product landing pages." },
-          { role: "user", content: prompt }
-        ]
+        model: "gemini-2.5-flash",
+        prompt
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ AI API error:", response.status, errorText);
-      throw new Error(`AI_API_ERROR: ${response.status}`);
-    }
-
     const ai = await response.json();
-    const generatedContent = ai.choices?.[0]?.message?.content;
 
-    if (!generatedContent) {
-      return new Response(JSON.stringify({ error: "AI_GENERATION_FAILED" }), {
-        status: 500,
-        headers: { ...cors, "Content-Type": "application/json" }
-      });
+    if (!ai.output) {
+      console.error("❌ AI FAILED:", ai);
+      throw new Error("AI_GENERATION_FAILED");
     }
 
     return new Response(
       JSON.stringify({
-        html: generatedContent,
+        html: ai.output,
         optimizedTitle: body.productTitle
       }),
       { headers: { ...cors, "Content-Type": "application/json" } }
     );
 
   } catch (err) {
-    console.error("❌ generate-landing-ai error:", err);
+    console.error("❌ generate-landing-ai ERROR:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
       headers: { ...cors, "Content-Type": "application/json" }
