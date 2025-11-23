@@ -188,6 +188,51 @@ async function getMergedConfig(
 // =====================================================
 // BLOC 2 / 3 — SERP + VISION + PROMPT BUILDER + AI CALL
 // =====================================================
+// ---------------- LOVABLE AI CALL (SAFE) ----------------
+async function callAI(prompt: string) {
+  const response = await fetch("https://api.lovable.dev/generate", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gemini-2.5-flash",
+      prompt, // PARAM CORRECT POUR LOVABLE
+    }),
+  });
+
+  let data: any = null;
+
+  // 1️⃣ Try JSON decoding normally
+  try {
+    data = await response.json();
+  } catch {
+    // 2️⃣ Fallback: read text for debugging
+    const raw = await response.text();
+    console.error("❌ Lovable returned invalid JSON:", raw);
+    throw new Error("INVALID_JSON_FROM_LOVABLE");
+  }
+
+  // 3️⃣ Ensure structure is valid
+  if (!data || typeof data !== "object") {
+    throw new Error("INVALID_LOVABLE_RESPONSE_OBJECT");
+  }
+
+  if (!data.output) {
+    console.error("❌ Lovable OUTPUT missing:", data);
+    throw new Error("AI_OUTPUT_EMPTY");
+  }
+
+  // 4️⃣ Convert output safely to string
+  const html = typeof data.output === "string" ? data.output : JSON.stringify(data.output, null, 2);
+
+  // 5️⃣ Clean HTML
+  return html
+    .replace(/```html/gi, "")
+    .replace(/```/g, "")
+    .trim();
+}
 
 // ---------------- SERP ANALYSIS ----------------
 async function analyzeSerp(keyword: string, country: string, lang: string) {
