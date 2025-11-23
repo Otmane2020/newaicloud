@@ -26,6 +26,22 @@ export function LandingPagePreview({
   colors,
   highlights
 }: LandingPagePreviewProps) {
+  // Ne rien afficher si les valeurs ne sont pas encore initialisées
+  if (!layout || !designStyle || !contentLength || !colors.primary) {
+    return (
+      <div className="w-full h-full flex items-center justify-center rounded-lg border bg-muted/20">
+        <div className="text-center space-y-2 p-8">
+          <p className="text-lg font-medium text-muted-foreground">
+            Sélectionnez les options pour voir la prévisualisation
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Choisissez un layout, un style, une longueur de contenu et une palette de couleurs
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const isMinimal = designStyle === 'minimal';
   const isModern = designStyle === 'modern';
   const isLuxury = designStyle === 'luxury';
