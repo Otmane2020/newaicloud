@@ -422,6 +422,17 @@ export default function RegenerateLanding({
         console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
 
         setHtmlContent(data.html);
+        
+        // ✅ Extract and store optimized title if available
+        if (data?.optimizedTitle && data.optimizedTitle !== product.title) {
+          setOptimizedTitle(data.optimizedTitle);
+          setTitleNeedsSync(true);
+          console.log('[Landing] Optimized title extracted:', {
+            original: product.title,
+            optimized: data.optimizedTitle
+          });
+        }
+        
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
 
@@ -501,7 +512,7 @@ export default function RegenerateLanding({
       const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
           productId: product.id,
-          productTitle: product.title,
+          productTitle: optimizedTitle || product.title, // ✅ Use optimized title if available
           productHandle: product.handle,
           htmlContent,
         },
