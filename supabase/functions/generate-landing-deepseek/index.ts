@@ -545,10 +545,13 @@ serve(async (req) => {
     const body = await req.json();
     console.log('[DEEPSEEK] Request body parsed', {
       productId: body?.productId,
-      hasStyle: !!body?.style,
-      hasLayout: !!body?.layout,
+      style: body?.style,
+      layout: body?.layout,
+      contentLength: body?.contentLength,
+      theme: body?.theme,
+      hasColorScheme: !!body?.colorScheme,
       language: body?.language,
-      generationMode: body?.generationMode
+      generationMode: body?.generationMode,
     });
 
     const {
@@ -561,6 +564,16 @@ serve(async (req) => {
       generationMode = "premium", // "fast" | "premium"
       theme = "light", // "light" | "dark"
     } = body;
+
+    console.log('[DEEPSEEK] Effective generation config', {
+      productId,
+      style,
+      layout,
+      contentLength,
+      theme,
+      hasColorScheme: !!colorScheme,
+      generationMode,
+    });
 
     console.log(`🚀 Generating landing page for product ${productId}`);
 
@@ -958,7 +971,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
     }
 
     // 🧹 Apply robust HTML normalization and sanitization (from generate-landing-ai)
-    const html = sanitizeGeneratedHTML(rawHtml, product.title, language || "en");
+    const html = sanitizeGeneratedHTML(rawHtml, product.title, language || "en", { allowRootCss: true });
     
     // 📊 Validate final HTML
     const validation = validateHTML(html);
