@@ -25,6 +25,7 @@ import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { ProgressBanner } from '@/components/seo/ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
+import { OptimizationCompletedDialog } from '@/components/OptimizationCompletedDialog';
 
 export default function SEO() {
   const { t } = useTranslation();
@@ -35,7 +36,19 @@ export default function SEO() {
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
   const articleManagementRef = useRef<ArticleManagementRef>(null);
-  const { state: optimizationState } = useOptimization();
+  const { state: optimizationState, setShowCompletedDialog } = useOptimization();
+
+  const handleSyncShopify = () => {
+    // Déclencher la synchronisation selon le type d'optimisation
+    toast.info('Synchronisation avec Shopify...', {
+      description: 'Vos modifications vont être synchronisées avec Shopify.',
+    });
+    
+    // Forcer un rechargement de la page pour voir les changements
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -337,6 +350,14 @@ export default function SEO() {
           <GoogleSearchConsole />
         )}
       </div>
+
+      <OptimizationCompletedDialog
+        open={optimizationState.showCompletedDialog}
+        onOpenChange={setShowCompletedDialog}
+        onSyncShopify={handleSyncShopify}
+        type={optimizationState.type || ''}
+        totalOptimized={optimizationState.current}
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ interface OptimizationState {
   items: Array<{ id: string; title: string; status: 'pending' | 'success' | 'error' }>;
   cancelRequested: boolean;
   showDialog: boolean;
+  showCompletedDialog: boolean;
 }
 
 interface OptimizationContextType {
@@ -22,6 +23,7 @@ interface OptimizationContextType {
   resetCancellation: () => void;
   toggleDialog: () => void;
   setShowDialog: (show: boolean) => void;
+  setShowCompletedDialog: (show: boolean) => void;
 }
 
 const OptimizationContext = createContext<OptimizationContextType | undefined>(undefined);
@@ -35,6 +37,7 @@ const initialState: OptimizationState = {
   items: [],
   cancelRequested: false,
   showDialog: false,
+  showCompletedDialog: false,
 };
 
 export function OptimizationProvider({ children }: { children: ReactNode }) {
@@ -50,6 +53,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
       items: [],
       cancelRequested: false,
       showDialog: true,
+      showCompletedDialog: false,
     });
   }, []);
 
@@ -76,6 +80,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       isRunning: false,
+      showCompletedDialog: prev.operation === 'optimizing' && prev.current > 0,
     }));
   }, []);
 
@@ -107,6 +112,13 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setShowCompletedDialog = useCallback((show: boolean) => {
+    setState(prev => ({
+      ...prev,
+      showCompletedDialog: show,
+    }));
+  }, []);
+
   return (
     <OptimizationContext.Provider
       value={{
@@ -118,6 +130,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
         resetCancellation,
         toggleDialog,
         setShowDialog,
+        setShowCompletedDialog,
       }}
     >
       {children}
