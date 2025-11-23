@@ -44,7 +44,7 @@ interface RegenerateLandingProps {
   onClose?: () => void;
 }
 
-type GenerationMode = "fast" | "premium";
+
 
 export default function RegenerateLanding({
   product,
@@ -70,7 +70,7 @@ export default function RegenerateLanding({
     deepseekAnalysis?: string;
     confidence?: number;
   } | null>(null);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>("fast"); // ✅ New: Fast/Premium mode
+  
 
   // Log component mounting
   useEffect(() => {
@@ -608,35 +608,6 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
-      {/* ✅ NEW: Generation Mode Selector */}
-      {!loading && !htmlContent && (
-        <div className="bg-gradient-to-br from-primary/5 to-accent/10 p-4 rounded-xl border border-primary/20">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-sm">Mode de génération</h3>
-            </div>
-            <Tabs value={generationMode} onValueChange={(v) => setGenerationMode(v as GenerationMode)}>
-              <TabsList className="h-9">
-                <TabsTrigger value="fast" className="text-xs gap-1.5">
-                  <Zap className="w-3.5 h-3.5" />
-                  Rapide (15-20s)
-                </TabsTrigger>
-                <TabsTrigger value="premium" className="text-xs gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Premium (30-60s)
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {generationMode === "fast" 
-              ? "⚡ Génération ultra-rapide avec Gemini 2.5 Flash - Qualité optimale en 15-20 secondes"
-              : "💎 Génération premium avec DeepSeek - Qualité maximale et détails avancés"}
-          </p>
-        </div>
-      )}
-
       {/* Optimized Title Section - SIMPLIFIED */}
       {optimizedTitle && (
         <div className="bg-gradient-to-br from-accent/5 to-accent/10 p-4 rounded-xl border border-accent/30">
