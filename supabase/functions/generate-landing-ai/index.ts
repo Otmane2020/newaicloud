@@ -1449,18 +1449,18 @@ ${selectedIcon}
 Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
 
 🖼️ HERO AVEC BANNIÈRE IMAGE (CRITIQUE - PREMIÈRE SECTION OBLIGATOIRE) :
-1. La page DOIT commencer par une bannière hero plein écran avec l'image produit principale :
-   <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
+1. La page DOIT commencer par une bannière hero optimisée mobile-first :
+   <div class="relative min-h-[400px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[70vh] w-full overflow-hidden">
      <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}"
           loading="eager"
           class="absolute inset-0 w-full h-full object-cover">
      <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
-     <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
-       <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight"
+     <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center text-center">
+       <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2"
            style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9)">
          ${productTitle}
        </h1>
-       <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed"
+       <p class="text-base sm:text-lg md:text-xl lg:text-2xl text-white/95 max-w-3xl mb-6 sm:mb-8 leading-relaxed px-4"
           style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8)">
          ${(description || '').substring(0, 150)}...
        </p>
@@ -1470,14 +1470,38 @@ Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégr
 2. VARIATIONS SELON LE LAYOUT :
    - "1 colonne" : hero plein écran comme ci-dessus puis sections en 1 colonne centrée
    - "2 colonnes" : hero plein écran, puis section principale en 2 colonnes (image + texte)
-   - "hero à gauche" : image hero à gauche (50%), contenu à droite (50%)
-   - "hero à droite" : contenu à gauche (50%), image hero à droite (50%)
+   - "hero à gauche" : flex flex-col md:flex-row, image 50% gauche, contenu 50% droite
+   - "hero à droite" : flex flex-col md:flex-row-reverse, image 50% droite, contenu 50% gauche
+   
+   Exemple "hero à droite" mobile-first :
+   <div class="relative min-h-[400px] md:min-h-[70vh] w-full overflow-hidden flex flex-col md:flex-row-reverse">
+     <!-- Contenu à gauche sur desktop -->
+     <div class="relative z-10 w-full md:w-1/2 min-h-[300px] md:h-full flex flex-col justify-center p-6 sm:p-8 md:p-12 lg:p-16"
+          style="background-color: var(--color-surface); color: var(--color-text-main);">
+       <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4 sm:mb-6"
+           style="color: var(--color-primary);">
+         ${productTitle}
+       </h1>
+       <p class="text-base md:text-lg leading-relaxed max-w-xl"
+          style="color: var(--color-text-main);">
+         ${(description || '').substring(0, 200)}...
+       </p>
+     </div>
+     <!-- Image à droite sur desktop -->
+     <div class="relative w-full md:w-1/2 min-h-[300px] md:h-full overflow-hidden">
+       <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}"
+            loading="eager"
+            class="absolute inset-0 w-full h-full object-cover">
+       <div class="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-transparent to-black/20"></div>
+     </div>
+   </div>
 
 3. POUR TOUS LES TEXTES SUR IMAGE :
    - Overlay sombre obligatoire : bg-black/40 à bg-black/60
    - Text-shadow obligatoire : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
    - Texte en blanc : class="text-white"
-   - Titres grands : class="text-4xl md:text-6xl font-bold"
+   - Contraste minimum WCAG AA : 4.5:1
+   - Titres adaptés mobile : text-3xl sm:text-4xl md:text-6xl font-bold
 
 DESIGN & TON (CRITIQUE) :
 ✅ STYLE PROFESSIONNEL REQUIS :
@@ -1503,14 +1527,54 @@ DESIGN & TON (CRITIQUE) :
 - Espaces blancs professionnels
 - Titres de section clairs
 
-STRUCTURE :
-- HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
+STRUCTURE MOBILE-FIRST (CRITIQUE) :
+- HTML5 complet : <!DOCTYPE html>, <html lang="${language}"">, <head>, <body>
 - <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+- <meta name="description" content="${(description || '').substring(0, 160)}">
 - <script src="https://cdn.tailwindcss.com"></script> dans <head>
-- 🚨 TOUTES les images DOIVENT avoir l'attribut loading="lazy"
-- Mobile-first (sm:, md:, lg:)
-- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- 🚨 Hero image : loading="eager", autres images : loading="lazy"
+
+📱 APPROCHE MOBILE-FIRST (CRITIQUE) :
+1. TOUJOURS commencer par le style mobile (sans préfixe de breakpoint)
+2. Ajouter les breakpoints progressivement : sm: (640px) → md: (768px) → lg: (1024px) → xl: (1280px)
+3. UNE SEULE classe par propriété et par breakpoint
+
+🎯 HIÉRARCHIE TYPOGRAPHIQUE MOBILE :
+- H1 Hero : "text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight"
+  (mobile 30px → tablette 36px → desktop 48px → large 60px)
+- H2 Section : "text-2xl sm:text-3xl md:text-4xl font-bold"
+  (mobile 24px → tablette 30px → desktop 36px)
+- H3 Cards : "text-lg sm:text-xl md:text-2xl font-semibold"
+  (mobile 18px → tablette 20px → desktop 24px)
+- Body : "text-base md:text-lg leading-relaxed"
+  (mobile 16px → desktop 18px)
+
+📐 SPACING MOBILE-FIRST :
+- Section padding : "py-8 sm:py-12 md:py-16 lg:py-24"
+  (mobile 32px → tablette 48px → desktop 64px → large 96px)
+- Container : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+  (mobile 16px → tablette 24px → desktop 32px)
+- Card padding : "p-4 sm:p-6 md:p-8"
+  (mobile 16px → tablette 24px → desktop 32px)
+- Grid gaps : "gap-4 sm:gap-6 md:gap-8"
+  (mobile 16px → tablette 24px → desktop 32px)
+
+🔲 LAYOUTS MOBILE-FIRST :
+- Grilles basiques : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
+- Galerie photos : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+- Features : "grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
+- Hero 50/50 : "flex flex-col md:flex-row" avec "w-full md:w-1/2"
+
+🖼️ IMAGES OPTIMISÉES :
+- Fluidité : "w-full h-full object-cover"
+- Ratio : "aspect-square" ou "aspect-video"
+- Hero : "min-h-[400px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[70vh]"
+- Lazy loading : loading="lazy" (sauf hero avec loading="eager")
+
+✋ TOUCH TARGETS :
+- Boutons/liens : Minimum "min-h-[44px] min-w-[44px]" (spec Apple/Google)
+- Padding boutons : "px-6 py-3 sm:px-8 sm:py-4"
+- Espace entre éléments cliquables : minimum 8px
 
 📱 TABLEAUX RESPONSIFS (CRITIQUE) :
 - Bureau (md:) : Utiliser <table> standard avec class "hidden md:table"
