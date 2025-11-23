@@ -103,36 +103,30 @@ export default function LandingTest() {
     }
 
     setLoading(true);
-    console.log('🧪 [TEST] Génération avec config:', config);
-    console.log('🧪 [TEST] Product:', product.title);
-    
-    // Get first image if available
-    const firstImage = product.product_images?.[0];
+    console.log('🧪 [TEST] Génération DeepSeek avec config:', config);
+    console.log('🧪 [TEST] Product ID:', product.id, 'Title:', product.title);
     
     try {
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+      const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
         body: {
-          product_id: product.id,
-          productTitle: product.title,
-          description: product.body_html,
-          vendor: product.vendor,
-          imageUrl: firstImage?.src,
+          productId: product.id,
           style: config.style,
           layout: config.layout,
           colorScheme: getPaletteColors(config.colorScheme),
-          length: config.contentLength,
+          contentLength: config.contentLength,
+          theme: config.theme,
+          generationMode: "fast",
           language: 'fr',
-          designStyle: config.style,
         },
       });
 
       if (error) {
-        console.error('🧪 [TEST] Erreur:', error);
+        console.error('🧪 [TEST] Erreur DeepSeek:', error);
         throw error;
       }
       
       if (data?.html) {
-        console.log('🧪 [TEST] HTML généré:', {
+        console.log('🧪 [TEST] HTML généré (DeepSeek):', {
           length: data.html.length,
           hasToggle: data.html.includes('theme-toggle'),
           hasRoot: data.html.includes(':root'),
@@ -143,7 +137,7 @@ export default function LandingTest() {
         throw new Error("Pas de HTML retourné");
       }
     } catch (err: any) {
-      console.error('🧪 [TEST] Erreur fatale:', err);
+      console.error('🧪 [TEST] Erreur fatale DeepSeek:', err);
       toast.error("❌ Erreur: " + err.message);
     } finally {
       setLoading(false);
@@ -286,7 +280,7 @@ export default function LandingTest() {
                   </>
                 ) : (
                   <>
-                    🚀 Générer Landing Page (Lovable AI)
+                    🚀 Générer Landing Page (DeepSeek)
                   </>
                 )}
               </Button>
