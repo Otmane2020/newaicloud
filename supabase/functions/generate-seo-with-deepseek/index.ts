@@ -231,10 +231,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[SEO-GENERATION] Début pour le produit: ${productId}`);
 
-    // Fetch product with enhanced error handling
+    // Fetch product with enhanced error handling and store language
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("*, optimization_count, product_images(src, position)")
+      .select("*, optimization_count, product_images(src, position), shopify_connections!inner(store_language)")
       .eq("id", productId)
       .maybeSingle();
 
@@ -249,6 +249,11 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ✅ Detect language from store
+    const storeLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
+    const language = storeLanguage.split("-")[0]; // Extract 'fr' from 'fr-FR'
+    console.log(`🌍 Store language detected: ${storeLanguage} → Using: ${language}`);
 
     // Enhanced trial and subscription check
     const { data: profile } = await supabaseClient
@@ -354,22 +359,6 @@ Deno.serve(async (req: Request) => {
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
-    // Get store language
-    let storeLanguage = 'fr';
-    if (product.store_id) {
-      const { data: storeData } = await supabaseClient
-        .from('shopify_connections')
-        .select('store_language')
-        .eq('id', product.store_id)
-        .single();
-      
-      if (storeData?.store_language) {
-        storeLanguage = storeData.store_language;
-      }
-    }
-
-    console.log(`[SEO-GENERATION] Using language: ${storeLanguage}`);
 
     // Enhanced SEO prompt generation
     const productKeywords = extractProductKeywords(product);
