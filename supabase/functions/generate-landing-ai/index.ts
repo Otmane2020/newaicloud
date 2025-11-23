@@ -1952,8 +1952,10 @@ UTILISATION DES ICÔNES :
     let html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
     
     // 🎨 CRITICAL FIX: Inject CSS variables if missing (DeepSeek often forgets them)
-    if (!html.includes('--color-primary') && !html.includes(':root')) {
-      console.log("⚠️ CSS variables missing, injecting design tokens...");
+    // Inject CSS variable definitions if they are missing (usage alone is not enough)
+    // We specifically look for definition patterns like "--color-primary:" or ":root {".
+    if (!html.includes('--color-primary:') && !html.includes(':root {')) {
+      console.log("⚠️ CSS variable definitions missing, injecting design tokens...");
       
       const cssVariables = `
     <style>
@@ -1994,7 +1996,7 @@ UTILISATION DES ICÔNES :
       
       console.log("✅ CSS variables injected successfully");
     } else {
-      console.log("✅ CSS variables already present in HTML");
+      console.log("✅ CSS variable definitions already present in HTML");
     }
 
     // 📊 Validate final HTML
