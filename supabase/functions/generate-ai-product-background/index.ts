@@ -163,82 +163,118 @@ serve(async (req) => {
       landscape: "1024x768 landscape orientation (4:3)",
     };
 
-    // Force full background replacement
+    // Force COMPLETE background replacement - ULTRA EXPLICIT
     const forceFullBackgroundReplace = `
-🎯 ULTRA-CRITICAL E-COMMERCE PROFESSIONAL MODE:
+🚨 MISSION CRITIQUE : REMPLACEMENT TOTAL DE L'ARRIÈRE-PLAN
 
-1. BACKGROUND DESTRUCTION (MANDATORY):
-   ❌ REMOVE 100% of the original background
-   ❌ NO walls, floors, furniture, decorations from original
-   ❌ NO colors, lighting, shadows from original scene
-   ✅ ONLY keep the product itself (perfectly intact)
+⚠️ ÉTAPE 1 - SUPPRESSION COMPLÈTE (NON-NÉGOCIABLE) :
+Tu DOIS d'abord DÉTRUIRE et SUPPRIMER ENTIÈREMENT l'arrière-plan existant :
+   ❌ SUPPRIME : Tous les murs visibles dans l'image originale
+   ❌ SUPPRIME : Tous les sols/planchers de l'image originale  
+   ❌ SUPPRIME : Tous les meubles qui NE SONT PAS le produit principal
+   ❌ SUPPRIME : Tous les canapés, fauteuils, chaises de l'arrière-plan
+   ❌ SUPPRIME : Toutes les décorations, tableaux, lampes, vases de l'arrière-plan
+   ❌ SUPPRIME : Toutes les plantes de l'image originale
+   ❌ SUPPRIME : Tous les rideaux, fenêtres de l'arrière-plan
+   ❌ SUPPRIME : L'éclairage, les ombres, les couleurs de la scène originale
+   ✅ GARDE UNIQUEMENT : Le produit principal lui-même (table, chaise, meuble, etc.)
 
-2. E-COMMERCE PROFESSIONAL RENDERING (MANDATORY):
-   ✅ Studio-quality photography (like Zara Home, La Redoute, West Elm)
-   ✅ Professional lighting: soft, natural, no harsh shadows
-   ✅ Perfect focus: product 100% sharp and detailed
-   ✅ High-end lifestyle context (luxury but realistic)
-   ✅ Harmonious neutral colors (beige, cream, taupe, white, grey)
-   ✅ Premium materials visible (wood, marble, velvet, linen)
-   
-3. TECHNICAL REQUIREMENTS (MANDATORY):
-   ✅ Ultra-high resolution and sharpness
-   ✅ Professional color grading (warm, inviting, luxurious)
-   ✅ Natural depth of field (slight blur on background)
-   ✅ Perfect product integration (no floating, no cut edges)
-   ✅ Realistic shadows and reflections matching new scene
-   ✅ Clean, uncluttered composition
+⚡ ÉTAPE 2 - CRÉATION D'UN NOUVEL ENVIRONNEMENT (OBLIGATOIRE) :
+Tu DOIS créer un environnement COMPLÈTEMENT DIFFÉRENT et NOUVEAU :
+   ✅ Nouveau décor : DIFFÉRENT de l'original (si c'était un salon → change pour un autre style)
+   ✅ Nouvelle palette : DIFFÉRENTE de l'original (si c'était beige → utilise gris, blanc, bleu, etc.)
+   ✅ Nouveaux meubles d'ambiance : DIFFÉRENTS de l'original (nouvelles formes, couleurs)
+   ✅ Nouveau style : Modern, scandinave, industriel, bohème (CHOISIS-EN UN DIFFÉRENT)
+   ✅ Nouveaux accessoires : plantes différentes, objets déco différents
+   ✅ Nouvel éclairage : lumière du jour, golden hour, lumière douce (DIFFÉRENT)
 
-4. CONTEXT RULES:
-   ✅ Minimal but elegant staging (2-3 complementary elements max)
-   ✅ Natural materials (plants, wood, stone, textiles)
-   ✅ Bright, airy atmosphere
-   ✅ Product is the hero (80% focus on product)
-   
-THIS IS A FULL SCENE RECONSTRUCTION FOR PROFESSIONAL E-COMMERCE.
-NOT an edit. NOT an enhancement. TOTAL REPLACEMENT.
+🎯 CRITÈRES DE RÉUSSITE :
+Si quelqu'un compare l'image avant/après, il doit dire :
+"Wow, c'est un ENVIRONNEMENT COMPLÈTEMENT DIFFÉRENT !"
+"Le produit est le même, mais TOUT LE RESTE a changé !"
+"On dirait une AUTRE MAISON, un AUTRE STYLE !"
+
+📸 QUALITÉ E-COMMERCE PREMIUM (OBLIGATOIRE) :
+   ✅ Qualité catalogue professionnel (Zara Home, La Redoute, West Elm)
+   ✅ Éclairage naturel studio : doux, diffus, professionnel
+   ✅ Netteté parfaite : produit 100% net, arrière-plan léger flou artistique
+   ✅ Color grading haut de gamme : tons chauds/froids selon style choisi
+   ✅ Matériaux premium visibles : bois, marbre, métal, velours, lin
+   ✅ Composition magazine : équilibrée, aérée, sophistiquée
+
+🚫 INTERDICTIONS ABSOLUES :
+   ❌ PAS de simple "ajout" sur l'arrière-plan existant
+   ❌ PAS de "légère modification" de l'existant
+   ❌ PAS de conservation des murs/sols/meubles originaux
+   ❌ PAS de même palette de couleurs que l'original
+   ❌ PAS de même style déco que l'original
+   ❌ PAS d'effet "collage" ou "montage"
+
+✨ RÉSULTAT ATTENDU :
+Une NOUVELLE PHOTOGRAPHIE professionnelle dans un NOUVEL ENVIRONNEMENT.
+Le produit est identique, mais TOUT LE CONTEXTE est DIFFÉRENT et NOUVEAU.
+Changement radical d'ambiance = RÉUSSITE.
+Simple retouche = ÉCHEC.
 `;
 
-    // Nouveau prompt lifestyle premium pour Lovable - Ultra précis pour rendu e-commerce professionnel
+    // Nouveau prompt lifestyle premium pour Lovable - INSISTE sur le CHANGEMENT RADICAL
     const premiumLifestylePrompt = `
-🏆 PHOTOGRAPHIE PRODUIT E-COMMERCE PREMIUM - STANDARD PROFESSIONNEL
+🏆 PHOTOGRAPHIE E-COMMERCE PREMIUM - NOUVEL ENVIRONNEMENT OBLIGATOIRE
 
-Tu dois créer une PHOTOGRAPHIE PROFESSIONNELLE de qualité catalogue haut de gamme (Zara Home, La Redoute Intérieurs, West Elm).
+⚠️ RÈGLE #1 : CRÉER UN NOUVEL ENVIRONNEMENT (PAS une retouche)
+Tu dois imaginer que tu TRANSPORTES le produit dans un NOUVEAU LIEU différent de l'original.
 
-📸 QUALITÉ PHOTOGRAPHIQUE OBLIGATOIRE :
-- Qualité studio professionnel : ultra-nette, haute résolution
-- Éclairage naturel doux et diffus (style lumière du jour, golden hour)
-- Color grading professionnel : tons chauds, invitants, luxueux
-- Mise au point parfaite sur le produit (net à 100%)
-- Profondeur de champ naturelle (léger flou artistique sur l'arrière-plan)
+🎬 NOUVELLE SCÈNE - CHANGEMENT RADICAL :
+- 🏠 Nouveau décor intérieur : Style DIFFÉRENT (moderne, scandinave, industriel, bohème, minimaliste)
+- 🎨 Nouvelle palette : Couleurs DIFFÉRENTES de l'original
+  Exemples : Si l'original était beige → passe à gris/blanc/bleu clair
+             Si l'original était sombre → passe à lumineux/aéré
+             Si l'original était minimaliste → ajoute du caractère
+- 🪑 Nouveaux meubles d'ambiance : Formes et styles DIFFÉRENTS
+- 🌿 Nouveaux accessoires : DIFFÉRENTS objets déco, plantes, textiles
+- 💡 Nouveau type d'éclairage : Lumière du jour / Golden hour / Éclairage doux (DIFFÉRENT)
+- 🏛️ Nouvelle architecture : Murs, sol, fenêtres DIFFÉRENTS
+
+📸 QUALITÉ PHOTOGRAPHIQUE PROFESSIONNELLE :
+- Qualité studio haut de gamme (Zara Home, La Redoute, West Elm, CB2)
+- Éclairage naturel professionnel : doux, diffus, sans ombres dures
+- Netteté parfaite sur le produit (focus à 100%)
+- Léger flou artistique sur l'arrière-plan (profondeur de champ naturelle)
+- Color grading professionnel : tons harmonieux et sophistiqués
 - Composition magazine : équilibrée, aérée, élégante
 
-🎨 MISE EN SCÈNE LIFESTYLE :
-- Décor intérieur contemporain haut de gamme
-- Palette harmonieuse : beige, crème, taupe, blanc cassé, gris doux, tons terre
-- Matériaux premium visibles : bois naturel, marbre, velours, lin, céramique
-- 2-3 éléments déco maximum (pas de surcharge)
-- Plantes naturelles, textiles fins, objets design épurés
-- Ambiance lumineuse, spacieuse, aérée
-
-✨ INTÉGRATION PRODUIT :
+✨ INTÉGRATION PRODUIT PARFAITE :
+- Le produit reste IDENTIQUE : mêmes couleurs, textures, proportions, détails
+- Placement naturel dans la nouvelle scène (pas d'effet flottant)
+- Ombres et reflets réalistes adaptés au NOUVEAU contexte
 - Le produit est la STAR (80% du focus visuel)
-- Placement naturel, pas d'effet "flottant"
-- Ombres et reflets réalistes adaptés à la nouvelle scène
-- Aucune déformation du produit
-- Préservation exacte : couleurs, textures, proportions, détails
 
-🚫 INTERDICTIONS STRICTES :
-- Pas de flou artificiel ou effets IA visibles
-- Pas de lens flare exagéré
-- Pas de décor cheap ou générique
-- Pas de sur-saturation des couleurs
-- Pas d'objets incohérents ou mal intégrés
-- Pas de composition encombrée
+🎯 MATÉRIAUX & AMBIANCE PREMIUM :
+- Matériaux nobles visibles : bois naturel, marbre, velours, lin, céramique, métal brossé
+- 2-3 éléments déco maximum (pas de surcharge)
+- Ambiance lumineuse, spacieuse, raffinée
+- Atmosphère aspirationnelle mais réaliste
 
-✅ RÉSULTAT ATTENDU :
+🚫 ERREURS À ÉVITER ABSOLUMENT :
+- ❌ Conserver des éléments de l'arrière-plan original
+- ❌ Faire une simple "retouche" de l'existant
+- ❌ Garder la même ambiance/style que l'original
+- ❌ Effet "collage" visible ou intégration artificielle
+- ❌ Flou artificiel ou effets IA visibles
+- ❌ Sur-saturation des couleurs
+- ❌ Décor générique ou cheap
+- ❌ Composition encombrée
+
+✅ TEST DE RÉUSSITE :
+Si quelqu'un compare avant/après, il doit remarquer immédiatement :
+"Le produit est le même, mais c'est un ENVIRONNEMENT COMPLÈTEMENT NOUVEAU !"
+"Ça ressemble à une autre maison, un autre style déco !"
+"Changement radical d'ambiance tout en gardant le produit intact !"
+
+🎯 RÉSULTAT FINAL :
 Une photo qui pourrait être publiée IMMÉDIATEMENT sur un site e-commerce premium.
-Qualité = shooting photo professionnel par photographe e-commerce expert.
+Qualité = shooting professionnel par photographe e-commerce expert.
+Nouveauté = environnement totalement différent et frais.
 Style = luxueux mais accessible, réaliste, vendeur.
 `;
 
@@ -256,20 +292,42 @@ ${productContext}${variantOptions ? ` (Variante: ${variantOptions})` : ""}
 🎯 PARAMÈTRES SÉLECTIONNÉS :
 - Style demandé : ${style}
 - Format image : ${format}
+- Type : ${isMainImage ? "Image principale" : "Image variante"}
+
+🎲 RÈGLE DE VARIÉTÉ (CRITIQUE) :
+Chaque génération DOIT être UNIQUE et DIFFÉRENTE des autres.
+Si tu génères plusieurs images pour le même produit :
+- Change l'angle de vue
+- Change la palette de couleurs
+- Change le style de décoration
+- Change les accessoires
+- Change l'éclairage
+JAMAIS deux générations identiques ou similaires !
 
 ⚠️ RÈGLES FINALES NON-NÉGOCIABLES :
-1. Le produit original doit rester 100% intact (forme, couleur, texture, dimensions)
-2. Aucune modification du produit n'est autorisée
-3. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
-4. La scène doit être digne d'un catalogue e-commerce haut de gamme
-5. L'image finale doit être utilisable IMMÉDIATEMENT sur un site e-commerce premium
+1. L'arrière-plan DOIT être COMPLÈTEMENT NOUVEAU et DIFFÉRENT de l'original
+2. Le produit original doit rester 100% intact (forme, couleur, texture, dimensions)
+3. Aucune modification du produit n'est autorisée
+4. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
+5. La scène doit être digne d'un catalogue e-commerce haut de gamme
+6. L'image finale doit être utilisable IMMÉDIATEMENT sur un site e-commerce premium
+7. Si l'original avait un canapé beige → utilise des meubles DIFFÉRENTS (autre couleur, forme, matériau)
+8. Si l'original était dans une pièce lumineuse → tu peux garder lumineux mais CHANGE tout le reste
 
-MISSION : Créer une photographie professionnelle qui maximise l'attractivité du produit tout en respectant son intégrité absolue.
+🎯 OBJECTIF FINAL :
+Créer une photographie professionnelle qui TRANSFORME l'environnement du produit tout en respectant son intégrité absolue.
+Changement d'ambiance = OBLIGATOIRE.
+Variété = OBLIGATOIRE.
+Qualité = OBLIGATOIRE.
 `.trim();
 
     if (enrichedPrompt) {
       console.log("✨ Using SERP-enriched prompt for generation");
+    } else {
+      console.log("📝 Using standard premium lifestyle prompt");
     }
+    
+    console.log("🎯 Final prompt preview (first 500 chars):", finalPrompt.substring(0, 500) + "...");
 
     // Helper function to try Lovable AI
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
