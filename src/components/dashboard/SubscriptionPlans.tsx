@@ -286,8 +286,24 @@ export function SubscriptionPlans() {
     const currentLevel = getPlanLevel(currentPlanId || "");
     const targetLevel = getPlanLevel(planId);
 
-    if (targetLevel > currentLevel) return "Upgrade";
-    if (targetLevel < currentLevel) return "Downgrade";
+    // If different category levels, compare levels
+    if (targetLevel !== currentLevel) {
+      if (targetLevel > currentLevel) return "Upgrade";
+      if (targetLevel < currentLevel) return "Downgrade";
+    }
+
+    // Same category level - compare actual plan metrics (max_optimizations)
+    const currentPlan = plans.find(p => p.id === currentPlanId);
+    const targetPlan = plans.find(p => p.id === planId);
+    
+    if (currentPlan && targetPlan) {
+      if (targetPlan.max_optimizations_monthly > currentPlan.max_optimizations_monthly) {
+        return "Upgrade";
+      } else if (targetPlan.max_optimizations_monthly < currentPlan.max_optimizations_monthly) {
+        return "Downgrade";
+      }
+    }
+
     return "Upgrade";
   };
 
