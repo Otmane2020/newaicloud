@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PreferencesConfigurator } from '@/components/landing/PreferencesConfigurator';
 import { LandingPagePreview } from '@/components/landing/LandingPagePreview';
 import { PreferencesDebugPanel } from '@/components/landing/PreferencesDebugPanel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +17,11 @@ export default function LandingOk() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState<string>('');
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  
+  // Product selection
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [loadingProducts, setLoadingProducts] = useState(true);
   
   const [previewConfig, setPreviewConfig] = useState({
     layout: '',
@@ -32,6 +39,37 @@ export default function LandingOk() {
     highlights: [] as string[]
   });
 
+  // Load products on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('shopify_products')
+          .select('id, title, image_url, price, body_html, vendor')
+          .eq('seller_id', user.id)
+          .limit(50)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        setProducts(data || []);
+        if (data && data.length > 0) {
+          setSelectedProductId(data[0].id);
+          addDebugLog(`✅ ${data.length} produits chargés`);
+        }
+      } catch (error: any) {
+        console.error('Error loading products:', error);
+        addDebugLog(`❌ Erreur chargement produits: ${error.message}`);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchProducts();
+  }, [user?.id]);
+
   const addDebugLog = (message: string) => {
     setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
   };
@@ -41,6 +79,15 @@ export default function LandingOk() {
       toast({
         title: 'Erreur',
         description: 'Utilisateur non connecté',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!selectedProductId) {
+      toast({
+        title: 'Produit manquant',
+        description: 'Veuillez sélectionner un produit',
         variant: 'destructive',
       });
       return;
@@ -58,6 +105,9 @@ export default function LandingOk() {
     setIsGenerating(true);
     setDebugLogs([]);
     addDebugLog('🚀 Démarrage de la génération...');
+    
+    const selectedProduct = products.find(p => p.id === selectedProductId);
+    addDebugLog(`📦 Produit sélectionné: ${selectedProduct?.title}`);
 
     try {
       // 1. Sauvegarder la préférence en base de données
@@ -92,29 +142,31 @@ export default function LandingOk() {
 
       // 2. Appeler la fonction generate-landing-ai
       addDebugLog('🎨 Appel de generate-landing-ai...');
+      addDebugLog(`📊 Config envoyée: layout=${previewConfig.layout}, style=${previewConfig.designStyle}, length=${previewConfig.contentLength}`);
+      addDebugLog(`🎨 Couleurs: primary=${previewConfig.colors.primary}, secondary=${previewConfig.colors.secondary}`);
+      addDebugLog(`✨ Highlights: ${previewConfig.highlights.length} items`);
       
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-landing-ai', {
-        body: {
-          productId: 'test-product-' + Date.now(),
-          productData: {
-            title: 'Produit Test Landing Page',
-            description: 'Description test pour la génération de landing page',
-            price: '99.99',
-            images: [
-              { src: 'https://placehold.co/600x400', alt: 'Image test' }
-            ],
-            vendor: 'Test Vendor',
-            productType: 'Test Type',
-            tags: ['test', 'landing', 'page']
-          },
-          preferenceId: preference.id,
+      const payload = {
+        product_id: selectedProduct.id,
+        productTitle: selectedProduct.title,
+        description: selectedProduct.body_html || '',
+        vendor: selectedProduct.vendor || 'Marque',
+        imageUrl: selectedProduct.image_url || '',
+        price: selectedProduct.price,
+        userPreferences: {
           layout: previewConfig.layout,
           designStyle: previewConfig.designStyle,
           contentLength: previewConfig.contentLength,
           colors: previewConfig.colors,
-          highlights: previewConfig.highlights,
-          debug: true
-        }
+          highlights: previewConfig.highlights
+        },
+        debug: true
+      };
+      
+      addDebugLog(`📤 Payload complet: ${JSON.stringify(payload, null, 2).substring(0, 500)}...`);
+      
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-landing-ai', {
+        body: payload
       });
 
       if (functionError) {
@@ -167,13 +219,46 @@ export default function LandingOk() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configurateur */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
+          {/* Sélecteur de produit */}
+          <Card className="p-6">
+            <Label className="text-lg font-semibold mb-3 block">Produit à tester</Label>
+            {loadingProducts ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Chargement des produits...</span>
+              </div>
+            ) : products.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Aucun produit trouvé. Importez des produits depuis Shopify d'abord.
+              </p>
+            ) : (
+              <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un produit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      <div className="flex items-center gap-2">
+                        {product.image_url && (
+                          <img src={product.image_url} alt="" className="w-8 h-8 object-cover rounded" />
+                        )}
+                        <span className="truncate">{product.title}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Card>
+          
           <PreferencesConfigurator onConfigChange={setPreviewConfig} />
           
-          <Card className="p-6 mt-6">
+          <Card className="p-6">
             <Button 
               onClick={handleGenerateLanding}
-              disabled={isGenerating || !previewConfig.layout}
+              disabled={isGenerating || !previewConfig.layout || !selectedProductId}
               className="w-full"
               size="lg"
             >
@@ -190,9 +275,9 @@ export default function LandingOk() {
               )}
             </Button>
             
-            {!previewConfig.layout && (
+            {(!previewConfig.layout || !selectedProductId) && (
               <p className="text-sm text-muted-foreground mt-2 text-center">
-                Sélectionnez toutes les options pour activer la génération
+                {!selectedProductId ? 'Sélectionnez un produit' : 'Sélectionnez toutes les options'}
               </p>
             )}
           </Card>
