@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/lib/language';
 
 interface AdsCampaignWizardProps {
   open: boolean;
@@ -45,6 +46,7 @@ interface FormData {
 }
 
 export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaignWizardProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [generatingLanding, setGeneratingLanding] = useState(false);
@@ -106,7 +108,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       setCollections(data || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
-      toast.error('Erreur lors du chargement des collections');
+      toast.error(t.adsCampaign.toasts.collectionsLoadError);
     } finally {
       setLoadingData(false);
     }
@@ -144,7 +146,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error(t.adsCampaign.toasts.productsLoadError);
     } finally {
       setLoadingData(false);
     }
@@ -163,7 +165,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         .limit(1);
       
       if (!stores || stores.length === 0) {
-        toast.error('Aucune boutique Shopify connectée');
+        toast.error(t.adsCampaign.toasts.noShopifyStore);
         return;
       }
       
@@ -174,12 +176,12 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       if (error) throw error;
       
       setFormData(prev => ({ ...prev, storeSummary: data.summary }));
-      toast.success('Résumé généré avec succès');
+      toast.success(t.adsCampaign.toasts.summaryGenerated);
       // Auto-advance to next step
       setTimeout(() => setStep(3), 500);
     } catch (error) {
       console.error('Error generating summary:', error);
-      toast.error('Erreur lors de la génération du résumé');
+      toast.error(t.adsCampaign.toasts.summaryError);
     } finally {
       setLoadingSummary(false);
     }
@@ -188,7 +190,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
   const generateLandingPage = async (campaignId: string) => {
     setGeneratingLanding(true);
     try {
-      toast.info('Création de votre landing page artistique...');
+      toast.info(t.adsCampaign.toasts.creatingLanding);
       
       const { data, error } = await supabase.functions.invoke('generate-ads-landing-page', {
         body: { campaignId }
@@ -200,7 +202,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         throw new Error(data.error);
       }
       
-      toast.success('Landing page créée avec succès !');
+      toast.success(t.adsCampaign.toasts.landingCreated);
       
       // Wait a bit to ensure DB update is committed
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -208,7 +210,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       return { landingPageUrl: data.landingPageUrl, html: data.code };
     } catch (error) {
       console.error('Error generating landing page:', error);
-      toast.error('Erreur lors de la génération de la landing page');
+      toast.error(t.adsCampaign.toasts.landingError);
       throw error;
     } finally {
       setGeneratingLanding(false);
@@ -217,11 +219,11 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
   const handleNext = async () => {
     if (step === 1 && !formData.campaignType) {
-      toast.error('Veuillez sélectionner un type de campagne');
+      toast.error(t.adsCampaign.validation.selectType);
       return;
     }
     if (step === 1 && !formData.name) {
-      toast.error('Veuillez donner un nom à votre campagne');
+      toast.error(t.adsCampaign.validation.enterName);
       return;
     }
     if (step === 2 && formData.campaignType === 'store' && !formData.storeSummary) {
@@ -229,11 +231,11 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       return;
     }
     if (step === 2 && formData.selectedCollections.length === 0 && formData.campaignType !== 'store') {
-      toast.error('Veuillez sélectionner au moins une collection');
+      toast.error(t.adsCampaign.validation.selectCollection);
       return;
     }
     if (step === 3 && formData.selectedProducts.length === 0) {
-      toast.error('Veuillez sélectionner au moins un produit');
+      toast.error(t.adsCampaign.validation.selectProduct);
       return;
     }
 
@@ -263,7 +265,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
   const handleSubmit = async () => {
     if (!formData.ctaText || !formData.headline) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(t.adsCampaign.validation.fillRequired);
       return;
     }
 
@@ -271,7 +273,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Vous devez être connecté');
+        toast.error(t.adsCampaign.validation.mustBeLoggedIn);
         setLoading(false);
         return;
       }
@@ -336,7 +338,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
       // Create Shopify page (with additional delay to ensure DB commit)
       try {
-        toast.info('Création de la page Shopify...');
+        toast.info(t.adsCampaign.toasts.creatingShopifyPage);
         
         // Additional safety delay to ensure landing_page_html is committed to DB
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -351,7 +353,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         if (shopifyError) throw shopifyError;
         
         if (shopifyData?.shopifyPageUrl) {
-          toast.success('Page Shopify créée avec succès !', {
+          toast.success(t.adsCampaign.toasts.shopifyPageCreated, {
             action: {
               label: 'Voir sur Shopify',
               onClick: () => window.open(shopifyData.shopifyPageUrl, '_blank')
@@ -361,11 +363,11 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         }
       } catch (shopifyErr) {
         console.error('Shopify page creation error:', shopifyErr);
-        toast.warning('Landing page créée, mais erreur lors de la création de la page Shopify');
+        toast.warning(t.adsCampaign.toasts.landingCreatedShopifyError);
       }
 
-      toast.success('Campagne créée avec succès !');
-      toast.info('Landing page artistique générée', {
+      toast.success(t.adsCampaign.toasts.campaignCreated);
+      toast.info(t.adsCampaign.toasts.artisticLandingGenerated, {
         action: {
           label: 'Voir',
           onClick: () => window.open(landingPageData.landingPageUrl, '_blank')
@@ -392,7 +394,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       });
     } catch (error) {
       console.error('Error creating campaign:', error);
-      toast.error('Erreur lors de la création de la campagne');
+      toast.error(t.adsCampaign.toasts.campaignError);
     } finally {
       setLoading(false);
     }
