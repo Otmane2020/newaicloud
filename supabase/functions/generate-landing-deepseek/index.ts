@@ -911,7 +911,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
             model: "deepseek-chat",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 8000,
+            max_tokens: 16000, // ✅ Augmenté pour contenu complet
           }),
           signal: controller.signal,
         });
@@ -1306,14 +1306,16 @@ PRODUIT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
 ${extractedInfo ? `
-SPECS TECHNIQUES EXTRAITES (CONTEXTE, NE PAS AFFICHER TEL QUEL) :
-- Matériaux: ${extractedInfo.materials || 'non précisé'}
-- Coloris: ${extractedInfo.colors || 'non précisé'}
-- Dimensions: ${extractedInfo.dimensions || 'non précisées'}
-- Poids: ${extractedInfo.weight || 'non précisé'}
+🔧 SPECS TECHNIQUES EXTRAITES (À INTÉGRER DANS LA SECTION SPECS):
+- Matériaux: ${extractedInfo.materials || 'Non communiqué'}
+- Coloris: ${extractedInfo.colors || 'Plusieurs coloris disponibles'}
+- Dimensions: ${extractedInfo.dimensions || 'Non communiqué'}
+- Poids: ${extractedInfo.weight || 'Non communiqué'}
 - Caractéristiques: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
-- Montage: ${extractedInfo.mounting_options || 'non précisé'}
-- Éclairage: ${extractedInfo.lighting || 'non précisé'}
+- Montage: ${extractedInfo.mounting_options || 'Non communiqué'}
+- Éclairage: ${extractedInfo.lighting || 'Non communiqué'}
+
+⚠️ UTILISE CES SPECS dans le tableau technique (pas "N/A", écris "Non communiqué" si vide)
 ` : ''}
 
 ${productData.enrichedSummary ? `ATTRIBUTS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
@@ -1323,14 +1325,46 @@ ${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes 
 IMAGES (${Math.min(images?.length || 0, 2)} principales):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
 
-PALETTE HSL COMPLÈTE (UTILISE TOUTES CES COULEURS):
-- Primary: hsl(${designTokens.primary}) [Couleur principale, CTAs, icônes importantes]
-- Secondary: hsl(${designTokens.secondary}) [Couleur secondaire, éléments complémentaires]
-- Accent: hsl(${designTokens.accent}) [Accents, highlights, hover states]
-- Background: hsl(${designTokens.background}) [Fond principal des sections]
-- Surface: hsl(${designTokens.surface}) [Cartes, panneaux, surfaces secondaires]
-- Text: hsl(${designTokens.text}) [Texte principal]
-- Text-Muted: hsl(${designTokens.textMuted}) [Texte secondaire, descriptions]
+🎨 PALETTE HSL COMPLÈTE - UTILISATION STRICTE OBLIGATOIRE:
+------------------------------------------------------------------
+⚠️ TU DOIS UTILISER CES COULEURS HSL PARTOUT DANS LE CSS:
+
+1. Primary: hsl(${designTokens.primary})
+   UTILISE POUR: Titres principaux (text-primary), icônes importantes, bordures accent (border-primary)
+   
+2. Secondary: hsl(${designTokens.secondary})
+   UTILISE POUR: Boutons secondaires, backgrounds de sections alternées (bg-secondary/5)
+   
+3. Accent: hsl(${designTokens.accent})
+   UTILISE POUR: CTAs, hover states, highlights cards (bg-accent/10), bordures (border-accent)
+   
+4. Background: hsl(${designTokens.background})
+   UTILISE POUR: Fond principal des sections (bg-white correspond à background)
+   
+5. Surface: hsl(${designTokens.surface})
+   UTILISE POUR: Cards, panneaux (utilise dans les gradients bg-gradient-to-br from-accent/5 to-surface)
+   
+6. Text: hsl(${designTokens.text})
+   UTILISE POUR: Texte principal (text-primary), descriptions
+   
+7. Text-Muted: hsl(${designTokens.textMuted})
+   UTILISE POUR: Texte secondaire, sous-titres (text-gray-700 devient style="color: hsl(${designTokens.textMuted})")
+
+🚫 INTERDICTIONS STRICTES:
+- NE JAMAIS utiliser de HEX (#003366, #FFFFFF, etc.) dans le HTML
+- NE JAMAIS utiliser text-gray-XXX sans le remplacer par hsl(${designTokens.textMuted})
+- NE JAMAIS utiliser bg-white sans vérifier si hsl(${designTokens.background}) est différent
+- TOUS les text-primary, text-accent, bg-primary, bg-accent DOIVENT utiliser les HSL ci-dessus
+
+✅ EXEMPLE CORRECT:
+<!-- Icône avec couleur primary -->
+<svg class="icon-stroke-primary" ... stroke="hsl(${designTokens.primary})" ...>
+
+<!-- Card avec accent background -->
+<div class="bg-white border-l-4" style="border-color: hsl(${designTokens.accent})">
+
+<!-- Texte avec couleur text-muted -->
+<p class="text-lg" style="color: hsl(${designTokens.textMuted})">...</p>
 
 LAYOUT OBLIGATOIRE: ${layout}
 ${layout === 'single-column' ? '- Une seule colonne centrée, max-w-7xl mx-auto' : ''}
@@ -1353,22 +1387,57 @@ RÈGLES CRITIQUES:
 
 ${reliabilityBadge}
 
-STRUCTURE HTML OBLIGATOIRE:
-1. Hero fullscreen avec gradient overlay sur image
-2. HIGHLIGHTS section (4 cards avec bg-accent/10, icônes primary, hover effects)
-3. POINTS FORTS section (grid avec gradient borders, icônes accent, shadow-lg)
-4. Galerie images responsive (grid asymétrique)
-5. Specs Techniques (tableau + cards avec icônes)
-6. Description longue avec prose styling
+📐 STRUCTURE HTML COMPLÈTE OBLIGATOIRE (NE RIEN OUBLIER):
+=================================================================
 
-CSS AVANCÉ REQUIS:
-• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
-• Icônes: text-primary OU text-accent, jamais gris
-• Gradients: bg-gradient-to-br from-accent/5 to-primary/5
-• Borders: border-l-4 border-accent sur highlights
-• Hover: transform hover:scale-105 transition-transform
+1️⃣ HERO SECTION (fullscreen, h-screen):
+   - Image en background-image (URL complète)
+   - Gradient overlay: bg-gradient-to-br from-black/60 via-black/40 to-transparent
+   - Titre H1 gigantesque + sous-titre + CTA button
 
-${wordCount} mots minimum. GÉNÈRE maintenant.
+2️⃣ HIGHLIGHTS SECTION (4 cards bg-accent/10):
+   - 4 cards avec border-l-4 border-accent
+   - Icônes SVG Lucide avec stroke="hsl(${designTokens.primary})"
+   - UTILISE les customHighlights fournis ci-dessus
+   - Shadow-lg + hover:shadow-2xl
+
+3️⃣ POINTS FORTS SECTION (grid 3 colonnes):
+   - Minimum 6 points forts détaillés
+   - Cards avec gradient borders
+   - Icônes accent avec effet hover scale-110
+   - Padding généreux p-8
+
+4️⃣ GALERIE IMAGES RESPONSIVE:
+   - Grid asymétrique: première image large (lg:col-span-2), autres plus petites
+   - UTILISE TOUTES les images fournies (${images?.length || 0} images)
+   - URLs COMPLÈTES de Shopify CDN
+   - Alt texts descriptifs
+   - rounded-xl shadow-md hover:shadow-lg
+
+5️⃣ SPECS TECHNIQUES (tableau complet):
+   - REPRENDS les extractedInfo ci-dessus
+   - Tableau avec bordures et hover effects
+   - Cards de caractéristiques avec icônes
+   - JAMAIS "N/A", écris "Non communiqué" ou masque la ligne
+
+6️⃣ DESCRIPTION LONGUE (prose styling):
+   - Minimum ${wordCount} mots
+   - Paragraphes structurés avec <p>
+   - Listes <ul> si pertinent
+   - Style prose avec leading-relaxed
+
+7️⃣ FOOTER (obligatoire pour HTML complet):
+   - Doit fermer </body> et </html>
+   - NE PAS TRONQUER le HTML
+
+🎨 CSS AVANCÉ OBLIGATOIRE:
+• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 md:p-8
+• Icônes: stroke="hsl(${designTokens.primary})" ou stroke="hsl(${designTokens.accent})"
+• Gradients: style="background-image: linear-gradient(to bottom right, hsla(${designTokens.accent}, 0.05), hsla(${designTokens.primary}, 0.05))"
+• Borders: style="border-color: hsl(${designTokens.accent})"
+• Hover: transform hover:scale-105 transition-transform duration-300
+
+⚠️ IMPÉRATIF: Génère un HTML COMPLET jusqu'à </html> - ${wordCount} mots. COMMENCE MAINTENANT.
 ` : `
 Expert landing page creator. Generate professional HTML5.
 
@@ -1376,14 +1445,16 @@ PRODUCT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
 ${extractedInfo ? `
-TECHNICAL SPECS EXTRACTED (CONTEXT, DO NOT RENDER RAW):
-- Materials: ${extractedInfo.materials || 'not specified'}
-- Colors: ${extractedInfo.colors || 'not specified'}
-- Dimensions: ${extractedInfo.dimensions || 'not specified'}
-- Weight: ${extractedInfo.weight || 'not specified'}
+🔧 TECHNICAL SPECS EXTRACTED (INTEGRATE IN SPECS SECTION):
+- Materials: ${extractedInfo.materials || 'Not specified'}
+- Colors: ${extractedInfo.colors || 'Multiple colors available'}
+- Dimensions: ${extractedInfo.dimensions || 'Not specified'}
+- Weight: ${extractedInfo.weight || 'Not specified'}
 - Features: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
-- Mounting: ${extractedInfo.mounting_options || 'not specified'}
-- Lighting: ${extractedInfo.lighting || 'not specified'}
+- Mounting: ${extractedInfo.mounting_options || 'Not specified'}
+- Lighting: ${extractedInfo.lighting || 'Not specified'}
+
+⚠️ USE THESE SPECS in the technical table (not "N/A", write "Not specified" if empty)
 ` : ''}
 
 ${productData.enrichedSummary ? `ATTRS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
@@ -1393,14 +1464,46 @@ ${productData.customHighlights ? `PRIORITY HIGHLIGHTS (USE these texts for the H
 IMAGES (${Math.min(images?.length || 0, 2)} main):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
 
-FULL HSL PALETTE (USE ALL THESE COLORS):
-- Primary: hsl(${designTokens.primary}) [Main color, CTAs, important icons]
-- Secondary: hsl(${designTokens.secondary}) [Secondary color, complementary elements]
-- Accent: hsl(${designTokens.accent}) [Accents, highlights, hover states]
-- Background: hsl(${designTokens.background}) [Main section background]
-- Surface: hsl(${designTokens.surface}) [Cards, panels, secondary surfaces]
-- Text: hsl(${designTokens.text}) [Main text]
-- Text-Muted: hsl(${designTokens.textMuted}) [Secondary text, descriptions]
+🎨 FULL HSL PALETTE - STRICT MANDATORY USAGE:
+------------------------------------------------------------------
+⚠️ YOU MUST USE THESE HSL COLORS EVERYWHERE IN CSS:
+
+1. Primary: hsl(${designTokens.primary})
+   USE FOR: Main titles (text-primary), important icons, accent borders (border-primary)
+   
+2. Secondary: hsl(${designTokens.secondary})
+   USE FOR: Secondary buttons, alternating section backgrounds (bg-secondary/5)
+   
+3. Accent: hsl(${designTokens.accent})
+   USE FOR: CTAs, hover states, highlights cards (bg-accent/10), borders (border-accent)
+   
+4. Background: hsl(${designTokens.background})
+   USE FOR: Main section background (bg-white corresponds to background)
+   
+5. Surface: hsl(${designTokens.surface})
+   USE FOR: Cards, panels (use in gradients bg-gradient-to-br from-accent/5 to-surface)
+   
+6. Text: hsl(${designTokens.text})
+   USE FOR: Main text (text-primary), descriptions
+   
+7. Text-Muted: hsl(${designTokens.textMuted})
+   USE FOR: Secondary text, subtitles (text-gray-700 becomes style="color: hsl(${designTokens.textMuted})")
+
+🚫 STRICT PROHIBITIONS:
+- NEVER use HEX (#003366, #FFFFFF, etc.) in HTML
+- NEVER use text-gray-XXX without replacing with hsl(${designTokens.textMuted})
+- NEVER use bg-white without checking if hsl(${designTokens.background}) is different
+- ALL text-primary, text-accent, bg-primary, bg-accent MUST use HSL above
+
+✅ CORRECT EXAMPLES:
+<!-- Icon with primary color -->
+<svg class="icon-stroke-primary" ... stroke="hsl(${designTokens.primary})" ...>
+
+<!-- Card with accent background -->
+<div class="bg-white border-l-4" style="border-color: hsl(${designTokens.accent})">
+
+<!-- Text with text-muted color -->
+<p class="text-lg" style="color: hsl(${designTokens.textMuted})">...</p>
 
 MANDATORY LAYOUT: ${layout}
 ${layout === 'single-column' ? '- Single centered column, max-w-7xl mx-auto' : ''}
@@ -1423,22 +1526,67 @@ CRITICAL RULES:
 
 ${reliabilityBadge}
 
-MANDATORY HTML STRUCTURE:
-1. Fullscreen Hero with gradient overlay on image
-2. HIGHLIGHTS section (4 cards with bg-accent/10, primary icons, hover effects)
-3. KEY FEATURES section (grid with gradient borders, accent icons, shadow-lg)
-4. Responsive image gallery (asymmetric grid)
-5. Technical Specs (table + cards with icons)
-6. Long description with prose styling
+📐 COMPLETE HTML STRUCTURE MANDATORY (DON'T FORGET ANYTHING):
+=================================================================
 
-ADVANCED CSS REQUIRED:
-• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
-• Icons: text-primary OR text-accent, never gray
-• Gradients: bg-gradient-to-br from-accent/5 to-primary/5
-• Borders: border-l-4 border-accent on highlights
-• Hover: transform hover:scale-105 transition-transform
+1️⃣ HERO SECTION (fullscreen, h-screen):
+   - Image as background-image (full URL)
+   - Gradient overlay: bg-gradient-to-br from-black/60 via-black/40 to-transparent
+   - Giant H1 title + subtitle + CTA button
 
-${wordCount} words minimum. GENERATE now.
+2️⃣ HIGHLIGHTS SECTION (4 cards bg-accent/10):
+   - 4 cards with border-l-4 style="border-color: hsl(${designTokens.accent})"
+   - Lucide SVG icons with stroke="hsl(${designTokens.primary})"
+   - USE the customHighlights provided above
+   - Shadow-lg + hover:shadow-2xl
+
+3️⃣ KEY FEATURES SECTION (grid 3 columns):
+   - Minimum 6 detailed key features
+   - Cards with gradient borders
+   - Accent icons with hover scale-110 effect
+   - Generous padding p-8
+
+4️⃣ RESPONSIVE IMAGE GALLERY:
+   ⚠️ CRITICAL: 
+   - Grid layout: first image large (lg:col-span-2 lg:row-span-2), others smaller
+   - USE ALL ${images?.length || 0} provided images
+   - FULL Shopify CDN URLs (https://cdn.shopify.com/...)
+   - Descriptive alt texts
+   - rounded-xl shadow-md hover:shadow-lg transition
+   - Example structure:
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+       <div class="lg:col-span-2 lg:row-span-2">
+         <img src="[first_image]" alt="..." class="w-full h-full object-cover rounded-xl shadow-lg" loading="eager">
+       </div>
+       <div><img src="[second_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
+       <div><img src="[third_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
+       ...
+     </div>
+
+5️⃣ TECHNICAL SPECS (complete table):
+   - TAKE the extractedInfo above
+   - Table with borders and hover effects
+   - Feature cards with icons
+   - NEVER "N/A", write "Non communiqué" / "Not specified" or hide the row
+
+6️⃣ LONG DESCRIPTION (prose styling):
+   - Minimum ${wordCount} words
+   - Structured paragraphs with <p>
+   - Lists <ul> if relevant
+   - Prose style with leading-relaxed
+
+7️⃣ FOOTER (mandatory for complete HTML):
+   - Must close </body> and </html>
+   - DO NOT TRUNCATE the HTML
+
+🎨 ADVANCED CSS MANDATORY:
+• Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 md:p-8
+• Icons: stroke="hsl(${designTokens.primary})" or stroke="hsl(${designTokens.accent})"
+• Gradients: style="background-image: linear-gradient(to bottom right, hsla(${designTokens.accent}, 0.05), hsla(${designTokens.primary}, 0.05))"
+• Borders: style="border-color: hsl(${designTokens.accent})"
+• Hover: transform hover:scale-105 transition-transform duration-300
+
+⚠️ IMPERATIVE: Generate COMPLETE HTML until </html> - ${wordCount} words. START NOW.
 `;
 }
 
