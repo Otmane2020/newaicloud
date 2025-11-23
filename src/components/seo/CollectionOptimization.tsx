@@ -1493,11 +1493,11 @@ export function CollectionOptimization() {
                       <TableCell>
                         <div className="max-w-[200px]">
                           {collection.body_html ? (
-                            <p className="text-sm line-clamp-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: collection.body_html.substring(0, 150) + '...' }} />
+                            <p className="text-base line-clamp-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: collection.body_html.substring(0, 150) + '...' }} />
                           ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Pas de description
-                            </Badge>
+                            <p className="text-sm text-muted-foreground/70 italic">
+                              Ajouter une description...
+                            </p>
                           )}
                         </div>
                       </TableCell>
