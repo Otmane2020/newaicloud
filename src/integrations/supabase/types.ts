@@ -2210,6 +2210,45 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_config_options: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          option_key: string
+          option_label: string
+          option_value: Json
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          option_key: string
+          option_label: string
+          option_value: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          option_key?: string
+          option_label?: string
+          option_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       landing_page_history: {
         Row: {
           created_at: string
