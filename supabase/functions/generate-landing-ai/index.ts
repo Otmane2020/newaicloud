@@ -1940,10 +1940,10 @@ UTILISATION DES ICÔNES :
             {
               role: "user",
               // Hard cap on prompt length to avoid Lovable AI context overflow
-              content: prompt.length > 20000 ? prompt.slice(0, 20000) : prompt,
+              content: prompt.length > 10000 ? prompt.slice(0, 10000) : prompt,
             },
           ],
-          max_tokens: 8000,
+          max_tokens: 4000,
           temperature: 0.7,
         }),
         signal: aiController.signal,
