@@ -215,31 +215,18 @@ export default function RegenerateLanding({
     switch (config.contentLength) {
       case "short":
         return {
-          maxTokens: 1000,
-          wordCount: "400-500 words",
-          sections: 3,
-          description: "Contenu optimisé et impactant",
-        };
-      case "medium":
-        return {
           maxTokens: 2000,
-          wordCount: "800 words",
-          sections: "4-5",
-          description: "Contenu riche et persuasif",
+          description: "Concis mais complet - toutes les sections essentielles",
         };
       case "long":
         return {
-          maxTokens: 3500,
-          wordCount: "1500 words",
-          sections: "6-8",
-          description: "Contenu complet et détaillé",
+          maxTokens: 4000,
+          description: "Détaillé avec exemples - sections étoffées",
         };
       default:
         return {
           maxTokens: 2000,
-          wordCount: "800 words",
-          sections: "4-5",
-          description: "Contenu riche",
+          description: "Concis mais complet",
         };
     }
   };
@@ -348,7 +335,7 @@ export default function RegenerateLanding({
       console.log("[Landing] Content parameters:", {
         length: config.contentLength,
         maxTokens: contentParams.maxTokens,
-        sections: contentParams.sections,
+        description: contentParams.description,
         hasImageAnalysis: !!imageAnalysis,
       });
 
@@ -851,7 +838,7 @@ export default function RegenerateLanding({
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
               <div className="flex-1">
                 <p className="font-semibold text-green-700 text-sm sm:text-base">
-                  {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
+                  {t.landingGeneration.success.generated} • {getContentLengthParams().description}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {t.landingGeneration.preview.description} • Optimisé mobile

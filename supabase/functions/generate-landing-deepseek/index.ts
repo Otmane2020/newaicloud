@@ -895,7 +895,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
             model: "google/gemini-2.5-flash",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 8000,
+            max_tokens: contentLength === "short" ? 10000 : 16000, // Short: 10K, Long: 16K
           }),
           signal: controller.signal,
         });
@@ -917,7 +917,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
             model: "deepseek-chat",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 20000, // ✅ Augmenté pour éviter la troncature
+            max_tokens: contentLength === "short" ? 16000 : 32000, // Short: 16K, Long: 32K
           }),
           signal: controller.signal,
         });
@@ -1098,12 +1098,44 @@ function buildDeepSeekPrompt(productData: any, config: any): string {
     )
     .join("\n");
 
+  // ✅ SPRINT 2 - PHASE 5: Content guidelines based on length
+  const contentGuidelines = contentLength === "short" 
+    ? `
+📝 MODE CONCIS (TOUTES LES SECTIONS OBLIGATOIRES):
+⚠️ CRITIQUE: Toutes les sections doivent être présentes, mais avec des descriptions COURTES et PERCUTANTES
+
+- ✅ Hero Section: Titre percutant + sous-titre court (1-2 lignes max)
+- ✅ Highlights Section: 4 engagements avec descriptions COURTES (2-3 lignes max par card)
+- ✅ Points Forts Section: 6 points avec descriptions CONCISES (3-4 lignes max par point)
+- ✅ Galerie Images: ${images?.length || 3} images avec alt texts courts mais descriptifs
+- ✅ Specs Techniques: Tableau complet mais sans descriptions longues
+- ✅ Description Produit: 2-3 paragraphes courts et impactants
+- ✅ CTA Final: Bouton d'action avec texte court
+
+⚠️ DENSITÉ: Descriptions courtes et percutantes, pas de répétitions, style direct
+⚠️ LONGUEUR TOTALE: Environ 500-800 mots mais TOUTES LES SECTIONS PRÉSENTES
+`
+    : `
+📝 MODE DÉTAILLÉ (SECTIONS ÉTOFFÉES):
+⚠️ CRITIQUE: Toutes les sections doivent être présentes avec des descriptions RICHES et DÉTAILLÉES
+
+- ✅ Hero Section: Titre + sous-titre développé (2-4 lignes) + arguments de vente
+- ✅ Highlights Section: 4 engagements avec descriptions DÉTAILLÉES (5-7 lignes par card, exemples concrets)
+- ✅ Points Forts Section: 6-9 points avec descriptions ÉTOFFÉES et EXEMPLES (6-10 lignes par point, storytelling)
+- ✅ Galerie Images: ${images?.length || 5} images avec alt texts riches et contextuels
+- ✅ Specs Techniques: Tableau complet avec descriptions et explications détaillées
+- ✅ Description Produit: 4-6 paragraphes riches avec exemples d'utilisation et bénéfices
+- ✅ Section Bénéfices Additionnels: Points supplémentaires avec cas d'usage
+- ✅ CTA Final: Bouton d'action avec arguments de réassurance détaillés
+
+⚠️ DENSITÉ: Descriptions riches, exemples concrets, storytelling, arguments de vente développés
+⚠️ LONGUEUR TOTALE: Environ 1500-2500 mots avec toutes les sections complètes et détaillées
+`;
+
   const wordCount =
     contentLength === "short"
-      ? "800-1200"
-      : contentLength === "long"
-      ? "2000-3000"
-      : "1200-1800";
+      ? "500-800"
+      : "1500-2500";
 
   const heroFont = fonts.hero[0]?.split(':')[0].replace(/\+/g, ' ') || 'Playfair Display';
   const headingFont = fonts.heading[0]?.split(':')[0].replace(/\+/g, ' ') || 'Montserrat';
@@ -1298,25 +1330,34 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
   return language === "fr" ? `
 Tu es expert en landing pages Shopify. Crée un HTML5 complet et professionnel.
 
+${contentGuidelines}
+
 PRODUIT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
 ${extractedInfo ? `
 🔧 SPECS TECHNIQUES EXTRAITES (À INTÉGRER DANS LA SECTION SPECS):
-- Matériaux: ${extractedInfo.materials || 'Non communiqué'}
-- Coloris: ${extractedInfo.colors || 'Plusieurs coloris disponibles'}
-- Dimensions: ${extractedInfo.dimensions || 'Non communiqué'}
-- Poids: ${extractedInfo.weight || 'Non communiqué'}
+- Matériaux: ${extractedInfo.materials || ''}
+- Coloris: ${extractedInfo.colors || ''}
+- Dimensions: ${extractedInfo.dimensions || ''}
+- Poids: ${extractedInfo.weight || ''}
 - Caractéristiques: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
-- Montage: ${extractedInfo.mounting_options || 'Non communiqué'}
-- Éclairage: ${extractedInfo.lighting || 'Non communiqué'}
+- Montage: ${extractedInfo.mounting_options || ''}
+- Éclairage: ${extractedInfo.lighting || ''}
 
-⚠️ UTILISE CES SPECS dans le tableau technique (pas "N/A", écris "Non communiqué" si vide)
+⚠️ CRITIQUE: Dans le tableau HTML des specs techniques:
+   - ❌ NE JAMAIS afficher de ligne avec une valeur vide ou "Non communiqué"
+   - ✅ SUPPRIME COMPLÈTEMENT la ligne <tr> si la valeur est vide
+   - ✅ Affiche UNIQUEMENT les specs qui ont une vraie valeur
+   
+   EXEMPLE CORRECT (masquer lignes vides):
+   ${extractedInfo.materials ? '<tr><td>Matériaux</td><td>' + extractedInfo.materials + '</td></tr>' : '<!-- Matériaux vide, ligne supprimée -->'}
+   ${extractedInfo.weight ? '<tr><td>Poids</td><td>' + extractedInfo.weight + '</td></tr>' : '<!-- Poids vide, ligne supprimée -->'}
 ` : ''}
 
 ${productData.enrichedSummary ? `ATTRIBUTS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
 ${productData.visualAnalysis ? `VISUEL:\n${productData.visualAnalysis.substring(0, 400)}\n` : ""}
-${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes pour la section HIGHLIGHTS et POINTS FORTS) :\n${productData.customHighlights}\n` : ""}
+${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes EXACTEMENT pour la section HIGHLIGHTS et POINTS FORTS):\n${productData.customHighlights}\n` : ""}
 
 IMAGES (${Math.min(images?.length || 0, 2)} principales):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
@@ -1432,53 +1473,63 @@ ${selectedStyleTemplate.rules}
 RÈGLES CRITIQUES:
 ✅ HSL uniquement: style="color: hsl(...)" - JAMAIS de HEX
 ✅ Responsive: text-lg md:text-2xl (UN seul breakpoint/propriété)
-✅ Images: TOUJOURS afficher les vraies images produit avec <img src="..."> - JAMAIS d'icônes placeholder
+✅ Images: 
+   ⚠️ INTERDICTION ABSOLUE: JAMAIS de images placeholder (via.placeholder.com est INTERDIT)
+   ✅ TOUJOURS afficher les vraies images produit avec <img src="url-complete-shopify">
+   ✅ Si tu n'as pas assez d'images réelles, NE METS PAS D'IMAGE DU TOUT plutôt qu'un placeholder
+   ✅ UTILISE les ${images?.length || 0} images fournies ci-dessus avec leurs URLs COMPLÈTES
 ✅ Images: loading="lazy" (sauf 1ère: "eager")
 ✅ Icônes Lucide: TOUJOURS text-primary ou text-accent (JAMAIS gris)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
 ✅ Cards: Utilise STRICTEMENT les couleurs HSL de la palette fournie (background, surface, accent)
-✅ NE JAMAIS afficher de ligne avec "Non communiqué" - MASQUE ces lignes complètement
+✅ Specs Techniques: NE JAMAIS afficher de ligne <tr> avec valeur vide ou "Non communiqué" - SUPPRIME complètement ces lignes
 
 ${reliabilityBadge}
 
 📐 STRUCTURE HTML COMPLÈTE OBLIGATOIRE (NE RIEN OUBLIER):
 =================================================================
 
-0️⃣ DARK/LIGHT MODE TOGGLE (OBLIGATOIRE EN HAUT À DROITE):
+0️⃣ DARK/LIGHT MODE TOGGLE (OBLIGATOIRE EN PREMIÈRE POSITION DANS <body>):
+   ⚠️ CRITIQUE: Ce bouton DOIT être présent dans le HTML final
    - Bouton fixe en haut à droite: fixed top-4 right-4 z-50
    - Icône soleil/lune avec transition
    - Script JavaScript pour toggle la classe 'dark' sur <body>
-   - EXEMPLE OBLIGATOIRE:
-     <button id="theme-toggle" class="fixed top-4 right-4 z-50 p-3 rounded-full shadow-lg transition-all" style="background-color: hsl(var(--color-surface))">
-       <svg class="w-6 h-6 theme-icon-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-       </svg>
-       <svg class="w-6 h-6 theme-icon-dark hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-       </svg>
-     </button>
-      <script>
-        const toggleBtn = document.getElementById('theme-toggle');
-        const body = document.body;
-        const lightIcon = document.querySelector('.theme-icon-light');
-        const darkIcon = document.querySelector('.theme-icon-dark');
-        
-        // Load theme: use configured default theme (${theme}) or saved theme from localStorage
-        const savedTheme = localStorage.getItem('theme') || '${theme}';
-        if (savedTheme === 'dark') {
-          body.classList.add('dark');
-          lightIcon.classList.add('hidden');
-          darkIcon.classList.remove('hidden');
-        }
-        
-        toggleBtn?.addEventListener('click', () => {
-          body.classList.toggle('dark');
-          const isDark = body.classList.contains('dark');
-          lightIcon.classList.toggle('hidden', isDark);
-          darkIcon.classList.toggle('hidden', !isDark);
-          localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-      </script>
+   - Thème par défaut: ${theme}
+   - EXEMPLE OBLIGATOIRE (À COPIER TEL QUEL):
+     <body class="relative">
+       <button id="theme-toggle" class="fixed top-4 right-4 z-50 p-3 rounded-full shadow-lg transition-all duration-300 ease-in-out" style="background-color: hsl(var(--color-surface)); color: hsl(var(--color-text));">
+         <svg class="w-6 h-6 theme-icon-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+         </svg>
+         <svg class="w-6 h-6 theme-icon-dark hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+         </svg>
+       </button>
+       <script>
+         const toggleBtn = document.getElementById('theme-toggle');
+         const body = document.body;
+         const lightIcon = document.querySelector('.theme-icon-light');
+         const darkIcon = document.querySelector('.theme-icon-dark');
+         
+         // Load theme: use configured default theme (${theme}) or saved theme from localStorage
+         const savedTheme = localStorage.getItem('theme') || '${theme}';
+         if (savedTheme === 'dark') {
+           body.classList.add('dark');
+           lightIcon.classList.add('hidden');
+           darkIcon.classList.remove('hidden');
+         } else {
+           lightIcon.classList.remove('hidden');
+           darkIcon.classList.add('hidden');
+         }
+         
+         toggleBtn?.addEventListener('click', () => {
+           body.classList.toggle('dark');
+           const isDark = body.classList.contains('dark');
+           lightIcon.classList.toggle('hidden', isDark);
+           darkIcon.classList.toggle('hidden', !isDark);
+           localStorage.setItem('theme', isDark ? 'dark' : 'light');
+         });
+       </script>
 
 1️⃣ HERO SECTION (fullscreen, h-screen):
    - Image en background-image (URL complète)
@@ -1499,19 +1550,22 @@ ${reliabilityBadge}
 
 4️⃣ GALERIE IMAGES RESPONSIVE:
    - Grid asymétrique: première image large (lg:col-span-2), autres plus petites
-   - ⚠️ CRITIQUE: UTILISE TOUJOURS les vraies images produit avec <img src="url-complete-shopify">
-   - JAMAIS d'icônes, JAMAIS de placeholder, JAMAIS de titre avec icône
+   - ⚠️ CRITIQUE ABSOLU: 
+     ❌ INTERDICTION TOTALE d'utiliser via.placeholder.com ou toute autre URL placeholder
+     ✅ UTILISE TOUJOURS les vraies images produit avec les URLs Shopify COMPLÈTES fournies
+     ✅ Si tu n'as pas assez d'images réelles, NE METS PAS D'IMAGE plutôt qu'un placeholder
    - UTILISE TOUTES les images fournies (${images?.length || 0} images)
-   - URLs COMPLÈTES de Shopify CDN
+   - URLs COMPLÈTES de Shopify CDN (https://cdn.shopify.com/...)
    - Alt texts descriptifs
    - rounded-xl shadow-md hover:shadow-lg
 
 5️⃣ SPECS TECHNIQUES (tableau complet):
    - REPRENDS les extractedInfo ci-dessus
+   - ⚠️ RÈGLE ABSOLUE: NE JAMAIS afficher les lignes avec valeur vide ou "Non communiqué"
+   - ✅ SUPPRIME COMPLÈTEMENT la ligne <tr> du HTML si la valeur est vide
+   - ✅ Affiche UNIQUEMENT les specs qui ont une vraie valeur
    - Tableau avec bordures et hover effects
    - Cards de caractéristiques avec icônes
-   - ⚠️ CRITIQUE: NE JAMAIS afficher les lignes avec "Non communiqué" - MASQUE/SUPPRIME complètement ces lignes du HTML
-   - Seulement afficher les specs qui ont une vraie valeur
 
 6️⃣ DESCRIPTION LONGUE (prose styling):
    - Minimum ${wordCount} mots

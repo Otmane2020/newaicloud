@@ -334,17 +334,45 @@ export function sanitizeGeneratedHTML(
 
   let html = rawHtml;
 
-  // 1. Remove duplicate responsive classes
+  // 1. Verify theme toggle is present
+  if (!html.includes('id="theme-toggle"')) {
+    console.warn("[Sanitization] ⚠️ Dark/Light theme toggle missing from generated HTML");
+  }
+
+  // 2. Check for placeholder images
+  if (html.includes('via.placeholder.com')) {
+    console.warn("[Sanitization] ⚠️ Placeholder images detected - these should be replaced with real product images");
+  }
+
+  // 3. Check for "Non communiqué" in visible content
+  if (html.includes('Non communiqué') || html.includes('Not specified')) {
+    console.warn("[Sanitization] ⚠️ 'Non communiqué' found in HTML - these should be hidden in table rows");
+  }
+
+  // 4. Remove duplicate responsive classes
   html = removeDuplicateResponsiveClasses(html);
 
-  // 2. Clean forbidden CSS
+  // 5. Clean forbidden CSS
   html = cleanForbiddenCSS(html);
 
-  // 3. Remove footers
+  // 6. Remove footers
   html = removeFooters(html);
 
-  // 4. Normalize HTML structure
+  // 7. Normalize HTML structure
   html = normalizeHTML(html, productTitle, language);
+
+  // 8. Verify HTML completeness
+  if (!html.endsWith('</html>')) {
+    console.warn("[Sanitization] ⚠️ HTML appears truncated - missing closing </html> tag");
+    if (!html.includes('</body>')) {
+      console.log("[Sanitization] Adding missing </body> tag");
+      html += '\n</body>';
+    }
+    if (!html.includes('</html>')) {
+      console.log("[Sanitization] Adding missing </html> tag");
+      html += '\n</html>';
+    }
+  }
 
   console.log("[Sanitization] HTML normalized and validated");
 
