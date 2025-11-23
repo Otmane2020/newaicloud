@@ -106,23 +106,29 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
 
       if (error) throw error;
 
-      console.log('🔍 Config options loaded:', {
-        total: data?.length,
-        layouts: data?.filter(d => d.category === 'layout').length,
-        designStyles: data?.filter(d => d.category === 'design_style').length,
-        contentLengths: data?.filter(d => d.category === 'content_length').length,
-        colorSchemes: data?.filter(d => d.category === 'color_scheme').length,
-        highlights: data?.filter(d => d.category === 'highlight').length,
-      });
-
       const layoutsData = data?.filter(d => d.category === 'layout') || [];
-      const designStylesData = data?.filter(d => d.category === 'design_style') || [];
+      const allDesignStylesData = data?.filter(d => d.category === 'design_style') || [];
       const contentLengthsData = data?.filter(d => d.category === 'content_length') || [];
-      const colorSchemesData = data?.filter(d => d.category === 'color_scheme') || [];
+      const allColorSchemesData = data?.filter(d => d.category === 'color_scheme') || [];
       const highlightsData = data?.filter(d => d.category === 'highlight') || [];
 
-      console.log('📋 Design Styles:', designStylesData.map(s => s.option_label));
-      console.log('🎨 Color Schemes:', colorSchemesData.length, 'palettes');
+      // 🎯 Filtrer pour ne garder que 3 styles de design spécifiques
+      const allowedDesignStyles = ['minimalist', 'modern', 'premium'];
+      const designStylesData = allDesignStylesData.filter(style => 
+        allowedDesignStyles.includes(style.option_key)
+      ).slice(0, 3);
+
+      // 🎨 Filtrer pour ne garder que 6 palettes de couleur
+      const colorSchemesData = allColorSchemesData.slice(0, 6);
+
+      console.log('🔍 Config options loaded:', {
+        total: data?.length,
+        layouts: layoutsData.length,
+        designStyles: designStylesData.length,
+        contentLengths: contentLengthsData.length,
+        colorSchemes: colorSchemesData.length,
+        highlights: highlightsData.length,
+      });
 
       setLayouts(layoutsData);
       setDesignStyles(designStylesData);
