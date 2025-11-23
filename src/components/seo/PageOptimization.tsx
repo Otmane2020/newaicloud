@@ -10,6 +10,8 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
+import { ProgressBanner } from './ProgressBanner';
+import { useOptimization } from '@/contexts/OptimizationContext';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
   ProgressDialog, 
@@ -1000,8 +1002,6 @@ export function PageOptimization() {
                 )}
               </div>
             </div>
-              </div>
-            </div>
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
               <div>
@@ -1268,9 +1268,8 @@ export function PageOptimization() {
               </TableBody>
             </Table>
             </div>
-          </div>
           
-          {/* Pagination */}
+            {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center py-4 border-t">
               <Pagination>
@@ -1319,6 +1318,7 @@ export function PageOptimization() {
               </Pagination>
             </div>
           )}
+          </div>
         </Card>
       )}
       
