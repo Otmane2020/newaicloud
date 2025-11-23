@@ -38,7 +38,33 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    // Parse and validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      console.error("❌ Invalid JSON in request body:", jsonError);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }), 
+        { 
+          status: 400, 
+          headers: { ...cors, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    // Validate required fields
+    if (!body || !body.productTitle) {
+      console.error("❌ Missing required field: productTitle");
+      return new Response(
+        JSON.stringify({ error: "Missing required field: productTitle" }), 
+        { 
+          status: 400, 
+          headers: { ...cors, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
     const opts = body.options || {};
 
     // Load all config options from DB
