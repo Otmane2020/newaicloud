@@ -831,12 +831,14 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       dimensionImageUrl: dimensionImage?.src || null,
     };
 
-    // ✅ SPRINT 1 - PHASE 3: Extended cache to 7 days (was 24h)
+    // ✅ CACHE DÉSACTIVÉ: Toujours générer une nouvelle landing page
+    // (Pour activer le cache, décommentez le bloc ci-dessous)
+    /*
     if (product.landing_page_html && product.last_landing_generation_at) {
       const lastGen = new Date(product.last_landing_generation_at);
       const daysSince = (Date.now() - lastGen.getTime()) / (1000 * 60 * 60 * 24);
       
-      if (daysSince < 7) {
+      if (daysSince < 0.5) { // Cache de 12h seulement
         console.log(`✅ Using cached landing page from ${daysSince.toFixed(1)} days ago`);
         return new Response(
           JSON.stringify({ 
@@ -849,6 +851,8 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
         );
       }
     }
+    */
+    console.log('🔄 Generating fresh landing page (cache disabled)');
 
     // BUILD PROMPT WITH ENHANCED INSTRUCTIONS
     const prompt = buildDeepSeekPrompt(productData, {
@@ -1319,8 +1323,21 @@ ${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes 
 IMAGES (${Math.min(images?.length || 0, 2)} principales):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
 
-PALETTE HSL:
-Primary: hsl(${designTokens.primary}) | Accent: hsl(${designTokens.accent}) | BG: hsl(${designTokens.background}) | Text: hsl(${designTokens.text})
+PALETTE HSL COMPLÈTE (UTILISE TOUTES CES COULEURS):
+- Primary: hsl(${designTokens.primary}) [Couleur principale, CTAs, icônes importantes]
+- Secondary: hsl(${designTokens.secondary}) [Couleur secondaire, éléments complémentaires]
+- Accent: hsl(${designTokens.accent}) [Accents, highlights, hover states]
+- Background: hsl(${designTokens.background}) [Fond principal des sections]
+- Surface: hsl(${designTokens.surface}) [Cartes, panneaux, surfaces secondaires]
+- Text: hsl(${designTokens.text}) [Texte principal]
+- Text-Muted: hsl(${designTokens.textMuted}) [Texte secondaire, descriptions]
+
+LAYOUT OBLIGATOIRE: ${layout}
+${layout === 'single-column' ? '- Une seule colonne centrée, max-w-7xl mx-auto' : ''}
+${layout === 'two-column' ? '- Grille 2 colonnes (image + texte), lg:grid-cols-2' : ''}
+${layout === 'hero-left' ? '- Hero avec image dominante à gauche, texte à droite' : ''}
+${layout === 'hero-right' ? '- Hero avec texte à gauche, image dominante à droite' : ''}
+
 
 STYLE: ${selectedStyleTemplate.name}
 ${selectedStyleTemplate.rules}
@@ -1376,8 +1393,21 @@ ${productData.customHighlights ? `PRIORITY HIGHLIGHTS (USE these texts for the H
 IMAGES (${Math.min(images?.length || 0, 2)} main):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
 
-PALETTE HSL:
-Primary: hsl(${designTokens.primary}) | Accent: hsl(${designTokens.accent}) | BG: hsl(${designTokens.background}) | Text: hsl(${designTokens.text})
+FULL HSL PALETTE (USE ALL THESE COLORS):
+- Primary: hsl(${designTokens.primary}) [Main color, CTAs, important icons]
+- Secondary: hsl(${designTokens.secondary}) [Secondary color, complementary elements]
+- Accent: hsl(${designTokens.accent}) [Accents, highlights, hover states]
+- Background: hsl(${designTokens.background}) [Main section background]
+- Surface: hsl(${designTokens.surface}) [Cards, panels, secondary surfaces]
+- Text: hsl(${designTokens.text}) [Main text]
+- Text-Muted: hsl(${designTokens.textMuted}) [Secondary text, descriptions]
+
+MANDATORY LAYOUT: ${layout}
+${layout === 'single-column' ? '- Single centered column, max-w-7xl mx-auto' : ''}
+${layout === 'two-column' ? '- 2-column grid (image + text), lg:grid-cols-2' : ''}
+${layout === 'hero-left' ? '- Hero with dominant image on left, text on right' : ''}
+${layout === 'hero-right' ? '- Hero with text on left, dominant image on right' : ''}
+
 
 STYLE: ${selectedStyleTemplate.name}
 ${selectedStyleTemplate.rules}
