@@ -56,21 +56,37 @@ serve(async (req) => {
       .replace(/\s+/g, " ")
       .slice(0, 400);
 
-    // 4. Improved prompt - SINGLE result only
+    // 4. Improved prompt - FOCUS ON PRODUCT ONLY
     const prompt = `
-Tu es un expert SEO. Génère UN SEUL texte ALT descriptif et naturel.
+Tu es un expert SEO e-commerce. Génère UN SEUL texte ALT descriptif qui se concentre UNIQUEMENT sur le produit.
 
 LANGUE: ${lang}
 LONGUEUR: 8-12 mots maximum
 
+🎯 FOCUS ABSOLU : LE PRODUIT UNIQUEMENT
+- Décris SEULEMENT le produit lui-même
+- Concentre-toi sur : matériaux, fabrication, look, style, finitions
+- IGNORE COMPLÈTEMENT le contexte (meubles, déco, vases, tables, murs, etc.)
+- IGNORE les objets autour du produit
+
 RÈGLES STRICTES:
 - UN SEUL résultat (pas de liste, pas d'options multiples)
 - Commence directement la description (pas de "Image de", "Voici", etc.)
-- Décris uniquement ce qui est visible dans l'image
+- Décris uniquement les caractéristiques intrinsèques du produit
 - Aucun mot inventé ou anglicisme inapproprié
-- Pas de couleurs contradictoires mélangées
 - Pas de termes inutiles comme "photo", "image", "frontal"
 - Style naturel et fluide
+
+❌ À ÉVITER ABSOLUMENT:
+- "sur une table", "avec un vase", "dans un salon"
+- Toute mention d'objets ou de contexte autour du produit
+- Descriptions de l'environnement ou de la mise en scène
+
+✅ À PRIVILÉGIER:
+- Matériaux (bois, métal, verre, tissu, etc.)
+- Finitions (naturel, doré, poli, mat, brillant)
+- Style (scandinave, moderne, industriel, vintage)
+- Caractéristiques visibles (lignes, formes, textures)
 
 INFORMATIONS PRODUIT:
 Titre: ${product.title}
@@ -78,7 +94,7 @@ Type: ${product.product_type || 'Non spécifié'}
 Catégorie: ${product.category || 'Non spécifiée'}
 Description: ${cleanDescription}
 
-RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL, RIEN D'AUTRE.
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL CONCENTRÉ SUR LE PRODUIT.
 `;
 
     // ---- DeepSeek first pass
@@ -111,19 +127,27 @@ RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL, RIEN D'AUTRE.
             {
               parts: [
                 { 
-                  text: `Analyse cette image et génère UN SEUL texte ALT descriptif naturel de 8-12 mots maximum.
+                  text: `Analyse cette image de produit e-commerce et génère UN SEUL texte ALT de 8-12 mots maximum.
 
 Base suggérée: ${deepseekText}
 
+🎯 FOCUS ABSOLU : DÉCRIS UNIQUEMENT LE PRODUIT
+- Concentre-toi sur : matériaux, finitions, style, caractéristiques visibles
+- IGNORE complètement le contexte : objets autour, meubles, déco, environnement
+- IGNORE les vases, tables, murs, lampes, accessoires de mise en scène
+
 RÈGLES ABSOLUES:
 - UN SEUL texte final (jamais de liste ou options multiples)
-- Décris exactement ce que tu vois dans l'image
+- Décris SEULEMENT le produit en lui-même (pas "sur une table", pas "avec un vase")
 - Maximum 12 mots
 - Langue: ${lang}
 - Naturel et fluide
 - Pas de préfixe comme "Voici" ou "Image de"
 
-RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL.` 
+❌ INTERDIT: Mentionner le contexte ou les objets autour
+✅ PRIVILÉGIER: Matériaux, style, finitions, caractéristiques intrinsèques
+
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL CONCENTRÉ SUR LE PRODUIT.` 
                 },
                 { inline_data: { mime_type: "image/jpeg", data: base64 } },
               ],
