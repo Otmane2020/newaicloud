@@ -152,7 +152,7 @@ export function ProgressDialog({
             </div>
             
             <p className="text-lg font-bold text-blue-600 mt-2 animate-fade-in">
-              {Math.round(animatedPercentage)}%
+              {total > 0 ? Math.round((current / total) * 100) : 0}%
             </p>
           </div>
         </div>
