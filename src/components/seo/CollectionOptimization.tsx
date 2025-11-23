@@ -107,6 +107,7 @@ export function CollectionOptimization() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [collectionStatusFilter, setCollectionStatusFilter] = useState('all');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
@@ -331,6 +332,13 @@ export function CollectionOptimization() {
     if (qualityFilter !== 'all') {
       const score = calculateCollectionSeoScore(collection);
       if (!passesQualityFilter(score, qualityFilter)) return false;
+    }
+    
+    // Collection status filter
+    if (collectionStatusFilter !== 'all') {
+      const collectionStatus = (collection as any).status?.toLowerCase() || 'active';
+      if (collectionStatusFilter === 'active' && collectionStatus !== 'active') return false;
+      if (collectionStatusFilter === 'draft' && collectionStatus !== 'draft') return false;
     }
 
     if (searchTerm) {
@@ -1199,12 +1207,12 @@ export function CollectionOptimization() {
           {/* Search Bar */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
               <Input
                 placeholder="Rechercher des collections par titre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="pl-12 h-12 text-lg relative z-20"
               />
             </div>
 
@@ -1212,12 +1220,22 @@ export function CollectionOptimization() {
               <SelectTrigger className="h-12 min-w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-background">
                 <SelectItem value="all">Tous Statuts</SelectItem>
                 <SelectItem value="optimized">Optimisées</SelectItem>
                 <SelectItem value="not-optimized">Non Optimisées</SelectItem>
               </SelectContent>
             </Select>
+            
+            <select
+              value={collectionStatusFilter}
+              onChange={(e) => setCollectionStatusFilter(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="active">Publié</option>
+              <option value="draft">Brouillon</option>
+            </select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
               <SelectTrigger className="h-12 min-w-[180px]">

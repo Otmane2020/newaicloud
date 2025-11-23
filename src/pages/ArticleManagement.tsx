@@ -88,6 +88,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
+  const [collectionFilter, setCollectionFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState<'all' | 'excellent' | 'good' | 'medium' | 'poor'>(
     (searchParams.get("filter") as 'all' | 'excellent' | 'good' | 'medium' | 'poor') || 'all'
   );
@@ -242,6 +243,9 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
       (syncFilter === 'synced' && article.shopify_blog_id) ||
       (syncFilter === 'not_synced' && !article.shopify_blog_id);
     
+    // Collection filter (placeholder for future implementation)
+    const matchesCollection = collectionFilter === 'all';
+    
     // Quality filter
     const matchesQuality = qualityFilter === 'all' || (() => {
       const seoScore = calculateArticleSeoScore(
@@ -256,7 +260,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
       return passesQualityFilter(seoScore.score, qualityFilter);
     })();
     
-    return matchesSearch && matchesStatus && matchesSource && matchesSync && matchesQuality;
+    return matchesSearch && matchesStatus && matchesSource && matchesSync && matchesQuality && matchesCollection;
   });
 
   const stats = {
@@ -587,12 +591,12 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
           <div className="flex flex-col gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
               <Input
                 placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 relative z-20"
               />
             </div>
 
@@ -606,11 +610,11 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                   Filtres avancés
                 </span>
                 <Badge variant="secondary" className="text-xs">
-                  {[sourceFilter, statusFilter, syncFilter, qualityFilter].filter(f => f !== 'all').length} actif(s)
+                  {[sourceFilter, statusFilter, syncFilter, qualityFilter, collectionFilter].filter(f => f !== 'all').length} actif(s)
                 </Badge>
               </summary>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t">
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Source" />
@@ -641,6 +645,15 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                     <SelectItem value="all">Tous</SelectItem>
                     <SelectItem value="synced">Synchronisé</SelectItem>
                     <SelectItem value="not_synced">Non synchronisé</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Collection" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="all">Toutes collections</SelectItem>
                   </SelectContent>
                 </Select>
 

@@ -92,6 +92,7 @@ export function PageOptimization() {
   const [syncing, setSyncing] = useState(false);
   const [importingPages, setImportingPages] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pageStatusFilter, setPageStatusFilter] = useState('all');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
@@ -250,6 +251,13 @@ export function PageOptimization() {
       ).score;
 
       if (!passesQualityFilter(score, qualityFilter)) return false;
+    }
+    
+    // Page status filter
+    if (pageStatusFilter !== 'all') {
+      const pageStatus = (page as any).status?.toLowerCase() || 'active';
+      if (pageStatusFilter === 'active' && pageStatus !== 'active') return false;
+      if (pageStatusFilter === 'draft' && pageStatus !== 'draft') return false;
     }
 
     if (!searchTerm) return true;
@@ -1012,13 +1020,13 @@ export function PageOptimization() {
 
             <div className="relative flex-1 mb-4 flex gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
                 <Input
                   type="text"
                   placeholder="Search for a page..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 relative z-20"
                 />
               </div>
 
@@ -1026,7 +1034,7 @@ export function PageOptimization() {
                 <SelectTrigger className="min-w-[150px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-background">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="optimized">Optimized</SelectItem>
                   <SelectItem value="not-optimized">Not Optimized</SelectItem>
@@ -1037,18 +1045,28 @@ export function PageOptimization() {
                 <SelectTrigger className="min-w-[150px]">
                   <SelectValue placeholder="Sync" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-background">
                   <SelectItem value="all">All Sync</SelectItem>
                   <SelectItem value="synced">Synced</SelectItem>
                   <SelectItem value="not-synced">Not Synced</SelectItem>
                 </SelectContent>
               </Select>
+              
+              <select
+                value={pageStatusFilter}
+                onChange={(e) => setPageStatusFilter(e.target.value)}
+                className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[180px] relative z-20"
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="active">Publié</option>
+                <option value="draft">Brouillon</option>
+              </select>
 
               <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
                 <SelectTrigger className="min-w-[150px]">
                   <SelectValue placeholder="SEO Quality" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-background">
                   <SelectItem value="all">All Qualities</SelectItem>
                   <SelectItem value="excellent">Excellent (≥80)</SelectItem>
                   <SelectItem value="good">Good (60-79)</SelectItem>
