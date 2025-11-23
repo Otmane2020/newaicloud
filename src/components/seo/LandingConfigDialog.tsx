@@ -325,7 +325,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Thème clair/sombre */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🌓 Thème</Label>
+            <Label className="text-base font-semibold">🌓 {t.landingConfig.theme.title}</Label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -345,8 +345,8 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Clair</div>
-                    <div className="text-xs text-muted-foreground">Fond lumineux et texte sombre</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.light}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.lightDesc}</div>
                   </div>
                 </div>
               </button>
@@ -369,8 +369,8 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Sombre</div>
-                    <div className="text-xs text-muted-foreground">Fond sombre et texte lumineux</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.dark}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.darkDesc}</div>
                   </div>
                 </div>
               </button>
@@ -594,10 +594,10 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="short">
-                  {t.landingConfig.contentLength.short} - Concis mais complet
+                  {t.landingConfig.contentLength.short} - {t.landingConfig.contentLength.shortDesc}
                 </SelectItem>
                 <SelectItem value="long">
-                  {t.landingConfig.contentLength.long} - Détaillé avec exemples
+                  {t.landingConfig.contentLength.long} - {t.landingConfig.contentLength.longDesc}
                 </SelectItem>
               </SelectContent>
             </Select>
