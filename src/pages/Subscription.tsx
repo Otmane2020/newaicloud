@@ -49,6 +49,8 @@ const Subscription = () => {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [selectedProTier, setSelectedProTier] = useState<string>('');
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
+  const [prorationInfo, setProrationInfo] = useState<any>(null);
+  const [loadingProration, setLoadingProration] = useState(false);
 
   const isUpgradeFlow = searchParams.get('upgrade') === 'true';
 
@@ -185,6 +187,49 @@ const Subscription = () => {
     }
   };
 
+  // Load proration preview when tier selection changes in upgrade flow
+  useEffect(() => {
+    if (isUpgradeFlow && selectedProTier && user) {
+      loadProrationPreview(selectedProTier);
+    }
+  }, [selectedProTier, isUpgradeFlow, user]);
+
+  useEffect(() => {
+    if (isUpgradeFlow && selectedEnterpriseTier && user) {
+      loadProrationPreview(selectedEnterpriseTier);
+    }
+  }, [selectedEnterpriseTier, isUpgradeFlow, user]);
+
+  const loadProrationPreview = async (planId: string) => {
+    if (!user) return;
+
+    setLoadingProration(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data, error } = await supabase.functions.invoke('calculate-proration', {
+        body: {
+          new_plan_id: planId,
+          billing_period: 'monthly',
+        },
+      });
+
+      if (error) {
+        console.error('Error calculating proration:', error);
+        setProrationInfo(null);
+        return;
+      }
+
+      setProrationInfo(data);
+    } catch (error) {
+      console.error('Error loading proration preview:', error);
+      setProrationInfo(null);
+    } finally {
+      setLoadingProration(false);
+    }
+  };
+
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
       navigate('/auth?mode=signup');
@@ -196,57 +241,65 @@ const Subscription = () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error('Not authenticated');
 
-      // In upgrade flow with an existing paid subscription, use update-subscription
-      if (isUpgradeFlow) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_status, trial_ends_at')
-          .eq('id', authUser.id)
-          .single();
+      // Check user status
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, trial_ends_at')
+        .eq('id', authUser.id)
+        .single();
 
-        const isInTrial = profile?.subscription_status === 'trialing' ||
-          (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+      const isInTrial = profile?.subscription_status === 'trialing' ||
+        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
 
-        if (!isInTrial) {
-          const { data: subscription } = await supabase
-            .from('subscriptions')
-            .select('stripe_subscription_id, status')
-            .eq('seller_id', authUser.id)
-            .eq('status', 'active')
-            .single();
+      // Check for active PAID subscription (not trial)
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('seller_id', authUser.id)
+        .in('status', ['active', 'past_due'])
+        .maybeSingle();
 
-          const hasActivePaidSubscription = !!subscription?.stripe_subscription_id;
+      const hasActivePaidSubscription = !!subscription?.stripe_subscription_id && !isInTrial;
 
-          if (hasActivePaidSubscription) {
-            const { data, error } = await supabase.functions.invoke('update-subscription', {
-              body: {
-                new_plan_id: planId,
-                billing_period: 'monthly',
-              },
-            });
+      // ALWAYS use update-subscription for paid active customers
+      if (hasActivePaidSubscription) {
+        console.log('✅ Using update-subscription for paid customer with proration');
+        
+        const { data, error } = await supabase.functions.invoke('update-subscription', {
+          body: {
+            new_plan_id: planId,
+            billing_period: 'monthly',
+          },
+        });
 
-            if (error) throw error;
+        if (error) throw error;
 
-            const upgradeDetails = data?.upgrade_details;
-            if (upgradeDetails?.proration_applied) {
-              toast.success('✅ Plan mis à niveau ! Prorata appliqué et compteurs réinitialisés.', { duration: 6000 });
-            } else {
-              toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
-            }
-
-            await loadPlansAndCurrentPlan();
-            setCheckoutLoading(null);
-            return;
-          }
+        const upgradeDetails = data?.upgrade_details;
+        if (upgradeDetails?.proration) {
+          const prorata = upgradeDetails.proration;
+          toast.success(
+            `✅ Plan mis à niveau !\n` +
+            `💰 Montant prélevé: ${prorata.prorated_amount}${prorata.currency}\n` +
+            `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+            { duration: 6000 }
+          );
+        } else {
+          toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
         }
+
+        await loadPlansAndCurrentPlan();
+        setCheckoutLoading(null);
+        setProrationInfo(null);
+        return;
       }
 
-      // Default: create a new checkout session (new customer or trial)
+      // For trial or new customers: use create-checkout
+      console.log('📝 Using create-checkout for trial/new customer');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,
           billing_period: 'monthly',
-          force_immediate_payment: true,
+          force_immediate_payment: isInTrial,
         },
       });
 
@@ -501,6 +554,35 @@ const Subscription = () => {
 
                   {/* Bloc 4bis: Bouton */}
                   <div className="pt-2">
+                    {/* Affichage du prorata */}
+                    {prorationInfo && prorationInfo.proration_needed && selectedProTier && (
+                      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                            💰 Prorata calculé
+                          </p>
+                          <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                            <p><strong>Plan actuel:</strong> {prorationInfo.old_plan_price}{prorationInfo.currency}/mois</p>
+                            <p><strong>Nouveau plan:</strong> {prorationInfo.new_plan_price}{prorationInfo.currency}/mois</p>
+                            <p><strong>Différence:</strong> +{prorationInfo.price_difference}{prorationInfo.currency}</p>
+                            <p><strong>Jours restants:</strong> {prorationInfo.days_remaining}/{prorationInfo.total_cycle_days} jours</p>
+                            <p className="text-lg font-bold text-blue-900 dark:text-blue-100 pt-2">
+                              À payer maintenant: {prorationInfo.amount_to_pay_now}{prorationInfo.currency}
+                            </p>
+                            <p className="text-xs italic">{prorationInfo.explanation}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {loadingProration && selectedProTier && (
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Calcul du prorata...</span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <Button 
                       className="w-full text-sm sm:text-base" 
                       size="lg"
@@ -641,6 +723,35 @@ const Subscription = () => {
 
                   {/* Bloc 4bis: Bouton */}
                   <div className="pt-2">
+                    {/* Affichage du prorata */}
+                    {prorationInfo && prorationInfo.proration_needed && selectedEnterpriseTier && (
+                      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                            💰 Prorata calculé
+                          </p>
+                          <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                            <p><strong>Plan actuel:</strong> {prorationInfo.old_plan_price}{prorationInfo.currency}/mois</p>
+                            <p><strong>Nouveau plan:</strong> {prorationInfo.new_plan_price}{prorationInfo.currency}/mois</p>
+                            <p><strong>Différence:</strong> +{prorationInfo.price_difference}{prorationInfo.currency}</p>
+                            <p><strong>Jours restants:</strong> {prorationInfo.days_remaining}/{prorationInfo.total_cycle_days} jours</p>
+                            <p className="text-lg font-bold text-blue-900 dark:text-blue-100 pt-2">
+                              À payer maintenant: {prorationInfo.amount_to_pay_now}{prorationInfo.currency}
+                            </p>
+                            <p className="text-xs italic">{prorationInfo.explanation}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {loadingProration && selectedEnterpriseTier && (
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Calcul du prorata...</span>
+                        </div>
+                      </div>
+                    )}
+
                     <Button 
                       className="w-full text-sm sm:text-base" 
                       size="lg"
