@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
-import { ProgressBanner } from './ProgressBanner';
+import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -79,6 +79,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 export function TagOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
+  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -549,6 +550,9 @@ export function TagOptimization() {
     setShowProgressDialog(true);
     setCurrentOperation('optimizing');
     setProgress({ current: 0, total: productIds.length });
+    
+    // Start global optimization tracking
+    startOptimization('tags', productIds.length, 'optimizing');
 
     let successCount = 0;
     let skipCount = 0;
@@ -588,6 +592,7 @@ export function TagOptimization() {
         if (response.ok && result.success) {
           if (result.skipped) {
             skipCount++;
+            updateProgress(i + 1, productIds[i], 'success');
           } else {
             successCount++;
             const product = products.find(p => p.id === productIds[i]);
@@ -599,19 +604,23 @@ export function TagOptimization() {
                 image_url: product.image_url
               });
             }
+            updateProgress(i + 1, productIds[i], 'success');
           }
         } else {
           console.error(`Error for product ${productIds[i]}:`, result);
           errorCount++;
+          updateProgress(i + 1, productIds[i], 'error');
         }
       } catch (error) {
         console.error('Error generating tags:', error);
         errorCount++;
+        updateProgress(i + 1, productIds[i], 'error');
       }
       setProgress({ current: i + 1, total: productIds.length });
     }
 
     await fetchProducts();
+    completeOptimization();
     
     const updatedProducts = await Promise.all(
       productIds.map(async (id) => {
@@ -661,6 +670,9 @@ export function TagOptimization() {
     setShowProgressDialog(true);
     setCurrentOperation('syncing');
     setProgress({ current: 0, total: productIds.length });
+    
+    // Start global sync tracking
+    startOptimization('tags', productIds.length, 'syncing');
 
     let successCount = 0;
     let errorCount = 0;
@@ -688,16 +700,19 @@ export function TagOptimization() {
 
         if (response.ok) {
           successCount++;
+          updateProgress(i + 1, productIds[i], 'success');
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           errorCount++;
           errors.push(`Product ${i + 1}: ${errorData.error || 'Unknown error'}`);
           console.error(`Sync error for product ${productIds[i]}:`, errorData);
+          updateProgress(i + 1, productIds[i], 'error');
         }
       } catch (error) {
         console.error('Error syncing:', error);
         errorCount++;
         errors.push(`Product ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        updateProgress(i + 1, productIds[i], 'error');
       }
       setProgress({ current: i + 1, total: productIds.length });
     }
@@ -705,6 +720,7 @@ export function TagOptimization() {
     setShowProgressDialog(false);
     setShowSuccessDialog(true);
     setSelectedProducts(new Set());
+    completeOptimization();
     
     if (errorCount > 0) {
       console.error('Sync errors:', errors);
@@ -765,13 +781,7 @@ export function TagOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {showProgressDialog ? (
-              <ProgressBanner
-                current={progress.current}
-                total={progress.total}
-                label={currentOperation === 'syncing' ? 'Synchronisation' : 'Optimisation'}
-              />
-            ) : (
+            {!showProgressDialog && (
               <>
                 <div className="text-center">
                   <div className={`text-3xl md:text-4xl font-bold ${

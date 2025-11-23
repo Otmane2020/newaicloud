@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
-import { ProgressBanner } from "./ProgressBanner";
+import { useOptimization } from "@/contexts/OptimizationContext";
 import {
   ProgressDialog,
   ResultsDialog,
@@ -578,6 +578,8 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
+  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+
   const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
     if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
@@ -627,6 +629,9 @@ export function SeoOptimization() {
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToGenerate.length });
+    
+    // Start global optimization tracking
+    startOptimization('products', productsToGenerate.length, 'optimizing');
 
     for (let i = 0; i < productsToGenerate.length; i++) {
       try {
@@ -634,6 +639,7 @@ export function SeoOptimization() {
           body: { productId: productsToGenerate[i].id },
         });
         setProgress({ current: i + 1, total: productsToGenerate.length });
+        updateProgress(i + 1, productsToGenerate[i].id, 'success');
       } catch (error: any) {
         console.error("Error generating SEO:", error);
 
@@ -658,6 +664,7 @@ export function SeoOptimization() {
 
     setGenerating(false);
     setIsOptimizationComplete(true);
+    completeOptimization();
     await fetchProducts();
     await refreshLimits();
 
@@ -844,6 +851,9 @@ export function SeoOptimization() {
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
+    
+    // Start global sync tracking
+    startOptimization('products', productIds.length, 'syncing');
 
     let successCount = 0;
 
@@ -860,13 +870,16 @@ export function SeoOptimization() {
 
         successCount++;
         setProgress({ current: i + 1, total: productIds.length });
+        updateProgress(i + 1, productIds[i], 'success');
       } catch (error) {
         console.error("Error syncing:", error);
+        updateProgress(i + 1, productIds[i], 'error');
       }
     }
 
     setSyncing(false);
     setIsOptimizationComplete(true);
+    completeOptimization();
 
     await fetchProducts();
     await refreshLimits();
@@ -939,13 +952,7 @@ export function SeoOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {generating ? (
-              <ProgressBanner
-                current={progress.current}
-                total={progress.total}
-                label="Optimisation"
-              />
-            ) : (
+            {!generating && (
               <>
                 <div className="text-center">
                   <div
