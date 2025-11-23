@@ -908,7 +908,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
           "Content-Type": "application/json",
         },
         body: (() => {
-          const maxTokens = contentLength === "short" ? 2000 : 4000; // Safe range within [1, 8192]
+          const maxTokens = contentLength === "short" ? 4000 : 6000; // Balanced for rich content
           console.log(`[DEEPSEEK] Using max_tokens=${maxTokens} for contentLength=${contentLength}`);
           return JSON.stringify({
             model: "deepseek-chat",
