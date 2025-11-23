@@ -100,18 +100,37 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
     try {
       const { data, error } = await supabase
         .from('landing_page_config_options')
-        .select('*')
+        .select('id, category, option_key, option_label, option_value, display_order')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (error) throw error;
 
-      setLayouts(data?.filter(d => d.category === 'layout') || []);
-      setDesignStyles(data?.filter(d => d.category === 'design_style') || []);
-      setContentLengths(data?.filter(d => d.category === 'content_length') || []);
-      setColorSchemes(data?.filter(d => d.category === 'color_scheme') || []);
-      setHighlights(data?.filter(d => d.category === 'highlight') || []);
+      console.log('🔍 Config options loaded:', {
+        total: data?.length,
+        layouts: data?.filter(d => d.category === 'layout').length,
+        designStyles: data?.filter(d => d.category === 'design_style').length,
+        contentLengths: data?.filter(d => d.category === 'content_length').length,
+        colorSchemes: data?.filter(d => d.category === 'color_scheme').length,
+        highlights: data?.filter(d => d.category === 'highlight').length,
+      });
+
+      const layoutsData = data?.filter(d => d.category === 'layout') || [];
+      const designStylesData = data?.filter(d => d.category === 'design_style') || [];
+      const contentLengthsData = data?.filter(d => d.category === 'content_length') || [];
+      const colorSchemesData = data?.filter(d => d.category === 'color_scheme') || [];
+      const highlightsData = data?.filter(d => d.category === 'highlight') || [];
+
+      console.log('📋 Design Styles:', designStylesData.map(s => s.option_label));
+      console.log('🎨 Color Schemes:', colorSchemesData.length, 'palettes');
+
+      setLayouts(layoutsData);
+      setDesignStyles(designStylesData);
+      setContentLengths(contentLengthsData);
+      setColorSchemes(colorSchemesData);
+      setHighlights(highlightsData);
     } catch (error: any) {
+      console.error('❌ Error loading config options:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger les options de configuration',
