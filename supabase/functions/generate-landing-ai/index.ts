@@ -527,7 +527,7 @@ serve(async (req) => {
       selectedStyle = styleTemplatesFromDB[userPreferences.designStyle] || styleTemplatesFromDB['modern'];
       
       // Convert HSL colors from preferences to Hex
-      selectedColorScheme = {
+      selectedColorScheme = userPreferences.colorScheme ? {
         primary: hslToHex(userPreferences.colorScheme.primary),
         secondary: hslToHex(userPreferences.colorScheme.secondary),
         accent: hslToHex(userPreferences.colorScheme.accent),
@@ -535,7 +535,7 @@ serve(async (req) => {
         surface: hslToHex(userPreferences.colorScheme.surface),
         text: hslToHex(userPreferences.colorScheme.text),
         textMuted: hslToHex(userPreferences.colorScheme.textMuted)
-      };
+      } : { primary: mainColor };
       
       selectedLength = dbContentLengths.find(c => c.option_key === userPreferences.contentLength) || dbContentLengths[1];
       
