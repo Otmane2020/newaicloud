@@ -841,63 +841,94 @@ export function SeoAltImage() {
         </div>
       </Card>
 
-      {/* Dashboard Stats */}
+      {/* Clickable Filter Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                <ImageIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              </div>
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Images</h3>
+        <Card
+          className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950 dark:to-slate-950 border-gray-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('all');
+            toast.info(`Affichage de toutes les images (${images.length})`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Toutes les images
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{images.length}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Dans votre catalogue
+              </p>
             </div>
+            <ImageIcon className="w-8 h-8 text-gray-600" />
           </div>
-          <p className="text-4xl font-bold mb-1">{images.length}</p>
-          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
+          <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">Cliquez pour voir</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
-                <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Sans ALT text</h3>
+        <Card
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('needs-alt');
+            toast.info(`Affichage des images sans ALT (${imagesNeedingAlt})`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                Sans ALT text
+              </p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{imagesNeedingAlt}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                À optimiser
+              </p>
             </div>
+            <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-1">{imagesNeedingAlt}</p>
-          <p className="text-sm text-orange-700 dark:text-orange-300">À optimiser</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Cliquez pour voir</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+        <Card
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('has-alt');
+            toast.info(`Affichage des images avec ALT (${imagesWithAlt})`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                Avec ALT text
+              </p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{imagesWithAlt}</p>
+              <div className="flex gap-2 mt-1 text-xs text-green-600 dark:text-green-400">
+                <span>Shopify: {imagesWithExistingAlt}</span>
+                <span>•</span>
+                <span>AI: {imagesWithAIAlt}</span>
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100">Avec ALT text</h3>
             </div>
-            <Badge className="bg-green-600 text-white">{altCompletionRate}%</Badge>
+            <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{imagesWithAlt}</p>
-          <div className="flex gap-2 mt-1 text-xs text-green-700 dark:text-green-300">
-            <span>Shopify: {imagesWithExistingAlt}</span>
-            <span>•</span>
-            <span>AI: {imagesWithAIAlt}</span>
-          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquez pour voir</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
-                <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="font-semibold text-purple-900 dark:text-purple-100">AI-optimisées</h3>
+        <Card
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('to-sync');
+            toast.info(`Affichage des images à synchroniser (${imagesWithAlt})`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                À synchroniser
+              </p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{imagesWithAlt}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">AI-optimisées uniquement</p>
             </div>
+            <Upload className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-1">{imagesWithAIAlt}</p>
-          <p className="text-sm text-purple-700 dark:text-purple-300">Générées par IA</p>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Cliquez pour voir</p>
         </Card>
       </div>
 
