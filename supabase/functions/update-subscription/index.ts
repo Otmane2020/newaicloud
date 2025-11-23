@@ -283,7 +283,8 @@ serve(async (req) => {
             price: new_price_id,
           },
         ],
-        proration_behavior: 'always_invoice', // Let Stripe handle proration automatically
+        // Create proration adjustments now, we'll invoice them explicitly just after
+        proration_behavior: 'create_prorations',
         billing_cycle_anchor: 'unchanged',
       }
     );
@@ -356,34 +357,38 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Get proration details from Stripe (for display purposes)
+    // Generate and finalize a proration invoice for mid-cycle upgrades
     let prorationDetails: any = null;
-    try {
-      // Retrieve upcoming invoice to see Stripe's automatic proration
-      const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
-        customer: profile.stripe_customer_id,
-        subscription: subscriptionData.stripe_subscription_id,
-      });
 
-      const prorationItem = upcomingInvoice.lines.data.find((line: any) => line.proration);
-      
-      if (prorationItem && isMidCycleUpgrade) {
+    if (isMidCycleUpgrade) {
+      try {
+        const invoice = await stripe.invoices.create({
+          customer: profile.stripe_customer_id,
+          subscription: subscriptionData.stripe_subscription_id,
+          auto_advance: true,
+        });
+
+        const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
         const daysRemaining = totalCycleDays - daysIntoCycle;
+
         prorationDetails = {
-          prorated_amount: (prorationItem.amount || 0) / 100,
+          amount_due: (finalized.amount_due || 0) / 100,
+          currency: finalized.currency?.toUpperCase(),
+          invoice_id: finalized.id,
           days_remaining: daysRemaining,
           total_cycle_days: totalCycleDays,
-          currency: upcomingInvoice.currency.toUpperCase(),
-          next_invoice_total: upcomingInvoice.total / 100,
-          logic: "stripe_automatic_proration",
-          explanation: `Stripe a calculé le prorata automatiquement pour ${daysRemaining}j restants`
+          logic: "stripe_proration_invoice",
+          explanation: "Proration applied automatically by Stripe on invoice creation",
         };
-        
-        logStep("Prorated amount calculated", prorationDetails);
+
+        logStep("Proration invoice generated", prorationDetails);
+      } catch (error) {
+        logStep("Proration invoice generation failed", { error });
+        prorationDetails = { error: "Proration invoice failed" };
       }
-    } catch (error) {
-      logStep("Warning: Could not retrieve proration details", { error });
-      prorationDetails = { error: "Could not retrieve proration details" };
+    } else {
+      logStep("No proration invoice generated (renewal upgrade)");
+      prorationDetails = { info: "No mid-cycle proration for renewal upgrade" };
     }
 
     return new Response(
