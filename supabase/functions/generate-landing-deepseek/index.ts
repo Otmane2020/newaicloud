@@ -1437,6 +1437,32 @@ ${reliabilityBadge}
 • Borders: style="border-color: hsl(${designTokens.accent})"
 • Hover: transform hover:scale-105 transition-transform duration-300
 
+🚫 NE JAMAIS ÉCRIRE:
+- "Informations indicatives"
+- "Ces mesures et descriptions sont indicatives et peuvent varier légèrement selon les lots de fabrication"
+- Ces phrases sont INTERDITES dans le HTML généré
+
+📝 STRUCTURE DU TEXTE - RÈGLES D'ESPACEMENT CRITIQUE:
+- Chaque <p> doit avoir class="leading-relaxed mb-6" (interligne et espacement)
+- Sections avec space-y-8 ou space-y-12 entre blocs
+- NE PAS coller les paragraphes: TOUJOURS ajouter mb-6 ou mb-8
+- Titres avec mb-4 ou mb-6 pour respiration
+- Listes <ul> avec space-y-3 et leading-relaxed
+- Exemple CORRECT de paragraphes:
+  <p class="text-lg leading-relaxed mb-6">Premier paragraphe...</p>
+  <p class="text-lg leading-relaxed mb-6">Deuxième paragraphe...</p>
+  
+🖼️ OVERLAYS SOMBRES SUR IMAGES AVEC TEXTE BLANC - OBLIGATOIRE:
+- TOUJOURS ajouter un overlay sombre quand du texte blanc est sur une image
+- Hero section: bg-gradient-to-t from-black/70 via-black/50 to-transparent
+- Images avec texte overlay: bg-black/60 ou bg-gradient-to-br from-black/70 to-black/40
+- Utilise TOUJOURS opacity suffisante (minimum 0.5) pour garantir la lisibilité
+- Exemple CORRECT:
+  <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent"></div>
+  <div class="relative z-10">
+    <h1 class="text-white">Titre lisible</h1>
+  </div>
+
 ⚠️ IMPÉRATIF: Génère un HTML COMPLET jusqu'à </html> - ${wordCount} mots. COMMENCE MAINTENANT.
 ` : `
 Expert landing page creator. Generate professional HTML5.
@@ -1585,6 +1611,32 @@ ${reliabilityBadge}
 • Gradients: style="background-image: linear-gradient(to bottom right, hsla(${designTokens.accent}, 0.05), hsla(${designTokens.primary}, 0.05))"
 • Borders: style="border-color: hsl(${designTokens.accent})"
 • Hover: transform hover:scale-105 transition-transform duration-300
+
+🚫 NEVER WRITE:
+- "Indicative information"
+- "These measurements and descriptions are indicative and may vary slightly depending on manufacturing batches"
+- These sentences are FORBIDDEN in generated HTML
+
+📝 TEXT STRUCTURE - CRITICAL SPACING RULES:
+- Each <p> must have class="leading-relaxed mb-6" (line height and spacing)
+- Sections with space-y-8 or space-y-12 between blocks
+- DO NOT stick paragraphs together: ALWAYS add mb-6 or mb-8
+- Headings with mb-4 or mb-6 for breathing room
+- Lists <ul> with space-y-3 and leading-relaxed
+- CORRECT example of paragraphs:
+  <p class="text-lg leading-relaxed mb-6">First paragraph...</p>
+  <p class="text-lg leading-relaxed mb-6">Second paragraph...</p>
+  
+🖼️ DARK OVERLAYS ON IMAGES WITH WHITE TEXT - MANDATORY:
+- ALWAYS add a dark overlay when white text is on an image
+- Hero section: bg-gradient-to-t from-black/70 via-black/50 to-transparent
+- Images with text overlay: bg-black/60 or bg-gradient-to-br from-black/70 to-black/40
+- ALWAYS use sufficient opacity (minimum 0.5) to ensure readability
+- CORRECT example:
+  <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent"></div>
+  <div class="relative z-10">
+    <h1 class="text-white">Readable title</h1>
+  </div>
 
 ⚠️ IMPERATIVE: Generate COMPLETE HTML until </html> - ${wordCount} words. START NOW.
 `;
