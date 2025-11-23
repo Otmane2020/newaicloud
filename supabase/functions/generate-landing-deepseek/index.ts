@@ -551,23 +551,36 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // ✅ SPRINT 1 - PHASE 2: Optimized DB - Single query with JOIN
-    const { data: fullProductData } = await supabase
+    const { data: product, error: productError } = await supabase
       .from("shopify_products")
-      .select(`
-        *,
-        product_images!inner(id, src, alt_text, position),
-        product_variants(id, title, price, option1, option2, option3)
-      `)
+      .select("*")
       .eq("id", productId)
-      .order("product_images(position)")
-      .limit(3, { foreignTable: "product_images" })
       .single();
 
-    if (!fullProductData) throw new Error("Product not found");
+    if (productError || !product) {
+      console.error('[DEEPSEEK] Product query error:', productError);
+      throw new Error("Product not found");
+    }
 
-    const product = fullProductData;
-    const images = fullProductData.product_images || [];
-    const variants = fullProductData.product_variants || [];
+    // Fetch images and variants in parallel
+    const [
+      { data: imagesData },
+      { data: variantsData }
+    ] = await Promise.all([
+      supabase
+        .from("product_images")
+        .select("id, src, alt_text, position")
+        .eq("product_id", productId)
+        .order("position", { ascending: true })
+        .limit(3),
+      supabase
+        .from("product_variants")
+        .select("id, title, price, option1, option2, option3")
+        .eq("product_id", productId)
+    ]);
+
+    const images = imagesData || [];
+    const variants = variantsData || [];
     let enrichedProduct = product;
 
     console.log(`✅ DB query optimized: loaded product + ${images.length} images + ${variants.length} variants in 1 query`);
