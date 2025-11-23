@@ -9,17 +9,17 @@ import { Settings, Eye, List } from 'lucide-react';
 
 export default function LandingPreferences() {
   const [previewConfig, setPreviewConfig] = useState({
-    layout: 'hero_split',
-    designStyle: 'modern',
-    contentLength: 'medium',
+    layout: '',
+    designStyle: '',
+    contentLength: '',
     colors: {
-      primary: 'hsl(210, 100%, 50%)',
-      secondary: 'hsl(200, 95%, 45%)',
-      accent: 'hsl(45, 100%, 55%)',
-      background: 'hsl(0, 0%, 100%)',
-      surface: 'hsl(0, 0%, 98%)',
-      text: 'hsl(0, 0%, 10%)',
-      textMuted: 'hsl(0, 0%, 45%)'
+      primary: '',
+      secondary: '',
+      accent: '',
+      background: '',
+      surface: '',
+      text: '',
+      textMuted: ''
     },
     highlights: [] as string[]
   });

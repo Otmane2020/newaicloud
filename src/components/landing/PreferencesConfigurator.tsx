@@ -59,6 +59,42 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
     fetchConfigOptions();
   }, []);
 
+  // Initialize with first options when loaded
+  useEffect(() => {
+    if (layouts.length > 0 && !selectedLayout) {
+      const firstLayout = layouts[0].option_key;
+      setSelectedLayout(firstLayout);
+      notifyConfigChange(firstLayout, selectedDesign, selectedLength, customColors, selectedHighlights);
+    }
+  }, [layouts]);
+
+  useEffect(() => {
+    if (designStyles.length > 0 && !selectedDesign) {
+      const firstDesign = designStyles[0].option_key;
+      setSelectedDesign(firstDesign);
+      notifyConfigChange(selectedLayout, firstDesign, selectedLength, customColors, selectedHighlights);
+    }
+  }, [designStyles]);
+
+  useEffect(() => {
+    if (contentLengths.length > 0 && !selectedLength) {
+      const firstLength = contentLengths[0].option_key;
+      setSelectedLength(firstLength);
+      notifyConfigChange(selectedLayout, selectedDesign, firstLength, customColors, selectedHighlights);
+    }
+  }, [contentLengths]);
+
+  useEffect(() => {
+    if (colorSchemes.length > 0 && !selectedColorScheme) {
+      const firstScheme = colorSchemes[0];
+      setSelectedColorScheme(firstScheme.option_key);
+      if (firstScheme.option_value) {
+        setCustomColors(firstScheme.option_value);
+        notifyConfigChange(selectedLayout, selectedDesign, selectedLength, firstScheme.option_value, selectedHighlights);
+      }
+    }
+  }, [colorSchemes]);
+
   const fetchConfigOptions = async () => {
     setLoading(true);
     try {
@@ -293,7 +329,11 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
                     <Input
                       type="text"
                       value={value}
-                      onChange={(e) => setCustomColors(prev => ({ ...prev, [key]: e.target.value }))}
+                      onChange={(e) => {
+                        const newColors = { ...customColors, [key]: e.target.value };
+                        setCustomColors(newColors);
+                        notifyConfigChange(selectedLayout, selectedDesign, selectedLength, newColors, selectedHighlights);
+                      }}
                       className="flex-1 text-xs"
                     />
                   </div>
