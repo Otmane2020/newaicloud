@@ -6,8 +6,13 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLandingPreferences } from "@/hooks/useLandingPreferences";
 
 export default function LandingTest() {
+  const { user } = useAuth();
+  const { preferences, isLoading: loadingPreferences } = useLandingPreferences(user?.id);
+  const [selectedPreferenceId, setSelectedPreferenceId] = useState<string | null>(null);
   const [config, setConfig] = useState({
     layout: 'single-column',
     style: 'modern',
@@ -29,6 +34,21 @@ export default function LandingTest() {
   const [colorSchemes, setColorSchemes] = useState<any[]>([]);
   const [contentLengths, setContentLengths] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
+
+  // Synchroniser automatiquement la config avec la préférence par défaut
+  useEffect(() => {
+    if (!preferences || preferences.length === 0) return;
+    const defaultPref = (preferences as any[]).find((p: any) => p.is_default);
+    if (defaultPref) {
+      setSelectedPreferenceId(defaultPref.id);
+      setConfig((prev) => ({
+        ...prev,
+        layout: defaultPref.layout || prev.layout,
+        style: defaultPref.design_style || prev.style,
+        contentLength: defaultPref.content_length || prev.contentLength,
+      }));
+    }
+  }, [preferences]);
 
   // Load configuration options from database
   useEffect(() => {
@@ -142,24 +162,45 @@ export default function LandingTest() {
     console.log('🧪 [TEST] Génération avec config depuis DB:', config);
     
     try {
-      // ✅ Get full color scheme from DB
+      // ✅ Chercher la préférence sélectionnée (si existante)
+      const selectedPreference = (preferences as any[] | undefined)?.find(
+        (p: any) => p.id === selectedPreferenceId
+      );
+
+      // ✅ Couleurs provenant de la préférence (si définies)
+      let colorSchemeFromPreference: any | null = null;
+      if (selectedPreference) {
+        colorSchemeFromPreference = {
+          primary: selectedPreference.color_primary,
+          secondary: selectedPreference.color_secondary,
+          accent: selectedPreference.color_accent,
+          background: selectedPreference.color_background,
+          surface: selectedPreference.color_surface,
+          text: selectedPreference.color_text,
+          textMuted: selectedPreference.color_text_muted,
+        };
+      }
+
+      // ✅ Palette depuis la table d'options (fallback)
       const selectedColorScheme = colorSchemes.find(c => c.option_key === config.colorScheme);
-      
-      // ✅ Build userPreferences object
+
+      // ✅ Construire l'objet userPreferences
       const testPreferences = {
-        layout: config.layout,
-        designStyle: config.style,
-        contentLength: config.contentLength,
-        colorScheme: selectedColorScheme?.option_value || {
-          primary: 'hsl(221, 83%, 53%)',
-          secondary: 'hsl(188, 78%, 41%)',
-          accent: 'hsl(38, 92%, 50%)',
-          background: 'hsl(0, 0%, 100%)',
-          surface: 'hsl(210, 40%, 98%)',
-          text: 'hsl(222, 47%, 11%)',
-          textMuted: 'hsl(215, 16%, 47%)'
-        },
-        highlights: config.highlights || []
+        layout: selectedPreference?.layout || config.layout,
+        designStyle: selectedPreference?.design_style || config.style,
+        contentLength: selectedPreference?.content_length || config.contentLength,
+        colorScheme:
+          colorSchemeFromPreference ||
+          selectedColorScheme?.option_value || {
+            primary: 'hsl(221, 83%, 53%)',
+            secondary: 'hsl(188, 78%, 41%)',
+            accent: 'hsl(38, 92%, 50%)',
+            background: 'hsl(0, 0%, 100%)',
+            surface: 'hsl(210, 40%, 98%)',
+            text: 'hsl(222, 47%, 11%)',
+            textMuted: 'hsl(215, 16%, 47%)',
+          },
+        highlights: selectedPreference?.custom_highlights || config.highlights || [],
       };
 
       console.log('🧪 [TEST] userPreferences:', testPreferences);
@@ -239,6 +280,49 @@ export default function LandingTest() {
             <CardTitle>⚙️ Configuration de Test</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Sélecteur de préférences sauvegardées */}
+            {loadingPreferences && (
+              <p className="mb-4 text-sm text-muted-foreground">
+                Chargement de vos préférences enregistrées...
+              </p>
+            )}
+            {!loadingPreferences && preferences && (preferences as any[]).length > 0 && (
+              <div className="mb-6 space-y-2">
+                <Label>Préférence sauvegardée</Label>
+                <Select
+                  value={selectedPreferenceId || 'manual'}
+                  onValueChange={(value) => {
+                    if (value === 'manual') {
+                      setSelectedPreferenceId(null);
+                      return;
+                    }
+                    setSelectedPreferenceId(value);
+                    const pref = (preferences as any[]).find((p: any) => p.id === value);
+                    if (pref) {
+                      setConfig((prev) => ({
+                        ...prev,
+                        layout: pref.layout || prev.layout,
+                        style: pref.design_style || prev.style,
+                        contentLength: pref.content_length || prev.contentLength,
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir une préférence (optionnel)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Configuration manuelle</SelectItem>
+                    {(preferences as any[]).map((pref: any) => (
+                      <SelectItem key={pref.id} value={pref.id}>
+                        {pref.is_default ? '⭐ ' : ''}
+                        {pref.layout} / {pref.design_style} / {pref.content_length}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Layout - Dynamic from DB */}
               <div className="space-y-2">
@@ -400,14 +484,34 @@ export default function LandingTest() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Toggle Dark/Light:</span>
-                  <span className={html.includes('theme-toggle') ? 'text-green-600' : 'text-red-600'}>
-                    {html.includes('theme-toggle') ? '✅ Présent' : '❌ Manquant'}
+                  <span
+                    className={
+                      html.includes('theme-toggle') ||
+                      html.includes('toggleTheme(') ||
+                      html.includes('data-theme')
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {html.includes('theme-toggle') ||
+                    html.includes('toggleTheme(') ||
+                    html.includes('data-theme')
+                      ? '✅ Présent'
+                      : '❌ Manquant'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CSS :root:</span>
-                  <span className={html.includes(':root {') ? 'text-green-600' : 'text-red-600'}>
-                    {html.includes(':root {') ? '✅ Présent' : '❌ Manquant'}
+                  <span
+                    className={
+                      html.includes(':root {') || html.includes(':root{')
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {html.includes(':root {') || html.includes(':root{')
+                      ? '✅ Présent'
+                      : '❌ Manquant'}
                   </span>
                 </div>
                 <div className="flex justify-between">
