@@ -143,20 +143,32 @@ export default function MediaHistory() {
       if (updateError) throw updateError;
 
       // 2. Sync to Shopify
-      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+      const { data: syncData, error: syncError } = await supabase.functions.invoke(
         'sync-product-images-to-shopify',
         { body: { productId } }
       );
+
+      console.log('[MediaHistory] Shopify sync response', { productId, syncData, syncError });
 
       if (syncError) {
         console.error('⚠️ Shopify sync error:', syncError);
         throw new Error('Image appliquée mais synchronisation Shopify échouée');
       }
 
-      return syncResult;
+      return { syncData, syncError };
     },
-    onSuccess: () => {
-      toast.success('Image appliquée et synchronisée avec Shopify ✅');
+    onSuccess: (result) => {
+      const { syncData } = result;
+      
+      if (syncData?.skipped) {
+        toast.warning('Image appliquée localement uniquement', {
+          description: 'Le produit n\'est pas encore relié à Shopify.',
+          duration: 8000,
+        });
+      } else {
+        toast.success('Image appliquée et synchronisée avec Shopify ✅');
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
       queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
@@ -181,20 +193,32 @@ export default function MediaHistory() {
       if (error) throw error;
 
       // 2. Sync to Shopify
-      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+      const { data: syncData, error: syncError } = await supabase.functions.invoke(
         'sync-collection-image-to-shopify',
         { body: { collection_id: collectionId } }
       );
+
+      console.log('[MediaHistory] Collection sync response', { collectionId, syncData, syncError });
 
       if (syncError) {
         console.error('⚠️ Shopify sync error:', syncError);
         throw new Error('Image appliquée mais synchronisation Shopify échouée');
       }
 
-      return syncResult;
+      return { syncData, syncError };
     },
-    onSuccess: () => {
-      toast.success('Image appliquée et synchronisée avec Shopify ✅');
+    onSuccess: (result) => {
+      const { syncData } = result;
+      
+      if (syncData?.skipped) {
+        toast.warning('Image appliquée localement uniquement', {
+          description: 'La collection n\'est pas encore reliée à Shopify.',
+          duration: 8000,
+        });
+      } else {
+        toast.success('Image appliquée et synchronisée avec Shopify ✅');
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['collection-image-history'] });
       queryClient.invalidateQueries({ queryKey: ['shopify-collections'] });
     },
