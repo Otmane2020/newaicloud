@@ -911,7 +911,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
           model: "deepseek-chat",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          max_tokens: contentLength === "short" ? 16000 : 32000, // Short: 16K, Long: 32K
+          max_tokens: contentLength === "short" ? 6000 : 8192, // DeepSeek max: 8192
         }),
         signal: controller.signal,
       });
