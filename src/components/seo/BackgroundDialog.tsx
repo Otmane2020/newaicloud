@@ -145,6 +145,39 @@ export function BackgroundDialog({
     setApplying(true);
     try {
       await onApply(Array.from(selectedIds));
+      
+      // 🔥 AUTO-SYNC to Shopify after applying
+      console.log('🔄 Auto-syncing applied images to Shopify...');
+      const toastId = toast.loading('Synchronisation avec Shopify...');
+      
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const productId of Array.from(selectedIds)) {
+          try {
+            const { error } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+              body: { productId }
+            });
+            
+            if (error) throw error;
+            successCount++;
+          } catch (error: any) {
+            console.error(`Erreur sync produit ${productId}:`, error);
+            errorCount++;
+          }
+        }
+        
+        if (errorCount === 0) {
+          toast.success(`✅ Images appliquées et synchronisées avec Shopify`, { id: toastId });
+        } else {
+          toast.warning(`Images appliquées. ${successCount} synchronisée(s), ${errorCount} erreur(s)`, { id: toastId });
+        }
+      } catch (error: any) {
+        console.error('Erreur synchronisation:', error);
+        toast.warning('Images appliquées mais sync Shopify partiel', { id: toastId });
+      }
+      
       onOpenChange(false);
     } finally {
       setApplying(false);
