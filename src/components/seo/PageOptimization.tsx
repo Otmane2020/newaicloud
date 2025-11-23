@@ -1018,63 +1018,69 @@ export function PageOptimization() {
               </div>
             </div>
 
-            <div className="relative flex-1 mb-4 flex gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
-                <Input
-                  type="text"
-                  placeholder="Search for a page..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 relative z-20"
-                />
+            <Card className="p-4 bg-background/50">
+              <div className="flex flex-col gap-4">
+                {/* Search Bar */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
+                  <Input
+                    type="text"
+                    placeholder="Search for a page..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12 text-base relative z-20"
+                  />
+                </div>
+
+                {/* Filters Row */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                    <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-background">
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="optimized">Optimized</SelectItem>
+                      <SelectItem value="not-optimized">Not Optimized</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+                    <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                      <SelectValue placeholder="Sync" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-background">
+                      <SelectItem value="all">All Sync</SelectItem>
+                      <SelectItem value="synced">Synced</SelectItem>
+                      <SelectItem value="not-synced">Not Synced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <select
+                    value={pageStatusFilter}
+                    onChange={(e) => setPageStatusFilter(e.target.value)}
+                    className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
+                  >
+                    <option value="all">Tous les statuts</option>
+                    <option value="active">Publié</option>
+                    <option value="draft">Brouillon</option>
+                  </select>
+
+                  <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
+                    <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                      <SelectValue placeholder="SEO Quality" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-background">
+                      <SelectItem value="all">All Qualities</SelectItem>
+                      <SelectItem value="excellent">Excellent (≥80)</SelectItem>
+                      <SelectItem value="good">Good (60-79)</SelectItem>
+                      <SelectItem value="medium">Medium (40-59)</SelectItem>
+                      <SelectItem value="poor">Poor (&lt;40)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-                <SelectTrigger className="min-w-[150px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="optimized">Optimized</SelectItem>
-                  <SelectItem value="not-optimized">Not Optimized</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-                <SelectTrigger className="min-w-[150px]">
-                  <SelectValue placeholder="Sync" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">All Sync</SelectItem>
-                  <SelectItem value="synced">Synced</SelectItem>
-                  <SelectItem value="not-synced">Not Synced</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <select
-                value={pageStatusFilter}
-                onChange={(e) => setPageStatusFilter(e.target.value)}
-                className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[180px] relative z-20"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Publié</option>
-                <option value="draft">Brouillon</option>
-              </select>
-
-              <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
-                <SelectTrigger className="min-w-[150px]">
-                  <SelectValue placeholder="SEO Quality" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">All Qualities</SelectItem>
-                  <SelectItem value="excellent">Excellent (≥80)</SelectItem>
-                  <SelectItem value="good">Good (60-79)</SelectItem>
-                  <SelectItem value="medium">Medium (40-59)</SelectItem>
-                  <SelectItem value="poor">Poor (&lt;40)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            </Card>
 
             <div className="overflow-x-auto">
               <Table>
