@@ -162,6 +162,7 @@ USER REQUEST: ${prompt}
 - IMAGE RATIO: ${format === "square" ? "1:1 (equal width and height)" : format === "portrait" ? "3:4 (vertical orientation)" : "4:3 (horizontal orientation)"}
 - NO OTHER DIMENSIONS ARE ACCEPTABLE
 - SIMILARITY TO ORIGINAL: ${similarityInfo.strength} - ${similarityInfo.description}
+- 🎨 COLOR: MUST be a FULL COLOR image with vibrant, natural colors. NO black and white, NO grayscale, NO monochrome. Rich color palette required.
 
 YOUR MISSION:
 Create a ${isMainImage ? "main product" : "lifestyle/ambiance"} photo with custom background.
@@ -205,7 +206,9 @@ ${
 3. TECHNICAL SPECS (CRITICAL):
    - High resolution: EXACTLY ${aspectRatio}
    - ${format === "square" ? "Perfect square (1:1 ratio)" : format === "portrait" ? "Portrait orientation (3:4 ratio - taller than wide)" : "Landscape orientation (4:3 ratio - wider than tall)"}
-   - Professional color grading
+   - 🎨 FULL COLOR image: vibrant, natural, realistic colors
+   - Professional color grading with rich color palette
+   - NO black and white, NO grayscale, NO monochrome
    - Balanced exposure and contrast
    - No watermarks, text, or logos
    - Ready for e-commerce use
