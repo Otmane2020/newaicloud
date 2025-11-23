@@ -253,13 +253,21 @@ serve(async (req) => {
     } else {
       logStep('No active subscription found in Stripe, checking Supabase profile');
       
-      // Fallback: check if user has active plan in Supabase using admin client
+      // CRITICAL: Always check Supabase for manual subscriptions or enterprise plans
       const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('subscription_status, current_plan_id')
+        .select('subscription_status, current_plan_id, stripe_customer_id, trial_ends_at')
         .eq('id', user.id)
         .single();
       
+      logStep('Profile data retrieved', {
+        subscription_status: profile?.subscription_status,
+        current_plan_id: profile?.current_plan_id,
+        has_stripe_customer: !!profile?.stripe_customer_id,
+        trial_ends_at: profile?.trial_ends_at
+      });
+      
+      // Check for active subscription in Supabase (including enterprise plans)
       if (profile?.subscription_status === 'active' && profile.current_plan_id) {
         logStep('Found active plan in Supabase, returning as subscribed', {
           plan_id: profile.current_plan_id,
@@ -270,11 +278,33 @@ serve(async (req) => {
           subscribed: true,
           status: 'active',
           plan_id: profile.current_plan_id,
-          source: 'supabase_fallback'
+          source: 'supabase_active_plan'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
+      }
+      
+      // Check for valid trial in Supabase
+      if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
+        try {
+          const trialEnd = new Date(profile.trial_ends_at);
+          if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
+            logStep('Valid trial found in Supabase profile');
+            return new Response(JSON.stringify({
+              subscribed: true,
+              status: 'trialing',
+              plan_id: profile.current_plan_id || 'trial',
+              trial_end: profile.trial_ends_at,
+              source: 'supabase_trial_fallback'
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+        } catch (dateError) {
+          logStep('Invalid trial date in profile', { trial_ends_at: profile.trial_ends_at });
+        }
       }
       
       logStep('No active subscription found anywhere');
