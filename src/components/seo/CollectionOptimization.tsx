@@ -25,6 +25,7 @@ import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
+import { GenerateDescriptionDialog } from './GenerateDescriptionDialog';
 import {
   Table,
   TableBody,
@@ -131,6 +132,8 @@ export function CollectionOptimization() {
   const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [pendingOptimizationCollections, setPendingOptimizationCollections] = useState<Collection[]>([]);
   const [previewCollectionId, setPreviewCollectionId] = useState<string | null>(null);
+  const [showGenerateDescriptionDialog, setShowGenerateDescriptionDialog] = useState(false);
+  const [selectedCollectionForDescription, setSelectedCollectionForDescription] = useState<Collection | null>(null);
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -1495,9 +1498,18 @@ export function CollectionOptimization() {
                           {collection.body_html ? (
                             <p className="text-base line-clamp-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: collection.body_html.substring(0, 150) + '...' }} />
                           ) : (
-                            <p className="text-sm text-muted-foreground/70 italic">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto py-1 px-2 text-sm text-muted-foreground/70 italic hover:text-primary"
+                              onClick={() => {
+                                setSelectedCollectionForDescription(collection);
+                                setShowGenerateDescriptionDialog(true);
+                              }}
+                            >
+                              <Sparkles className="w-3 h-3 mr-1" />
                               Ajouter une description...
-                            </p>
+                            </Button>
                           )}
                         </div>
                       </TableCell>
@@ -1811,6 +1823,17 @@ export function CollectionOptimization() {
         collections={pendingOptimizationCollections}
         onConfirm={() => executeOptimization(pendingOptimizationCollections)}
       />
+
+      {selectedCollectionForDescription && (
+        <GenerateDescriptionDialog
+          open={showGenerateDescriptionDialog}
+          onOpenChange={setShowGenerateDescriptionDialog}
+          collectionId={selectedCollectionForDescription.id}
+          collectionTitle={selectedCollectionForDescription.title}
+          collectionHandle={selectedCollectionForDescription.handle}
+          onSuccess={() => fetchCollections()}
+        />
+      )}
 
       {selectedCollectionForImage && (
         <CollectionImageDialog
