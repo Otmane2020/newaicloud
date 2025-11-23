@@ -84,6 +84,8 @@ export function TagOptimization() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCollection, setSelectedCollection] = useState('all');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editTags, setEditTags] = useState('');
   const [saving, setSaving] = useState(false);
@@ -931,19 +933,19 @@ export function TagOptimization() {
           {/* Large Search Bar and Category Filter */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
               <Input
                 placeholder="Search products by title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="pl-12 h-12 text-lg relative z-20"
               />
             </div>
             
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
             >
               <option value="all">All Categories</option>
               {uniqueCategories.map((category) => (
@@ -952,12 +954,30 @@ export function TagOptimization() {
                 </option>
               ))}
             </select>
+            
+            <select
+              value={selectedCollection}
+              onChange={(e) => setSelectedCollection(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+            >
+              <option value="all">Toutes les collections</option>
+            </select>
+            
+            <select
+              value={productStatusFilter}
+              onChange={(e) => setProductStatusFilter(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="active">Publié</option>
+              <option value="draft">Brouillon</option>
+            </select>
 
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
               <SelectTrigger className="h-12 min-w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-background">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="optimized">Optimized</SelectItem>
                 <SelectItem value="not-optimized">Not Optimized</SelectItem>

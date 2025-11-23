@@ -125,6 +125,8 @@ export function SeoOptimization() {
   const [searchTerm, setSearchTerm] = useState("");
   const [skuFilter, setSkuFilter] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCollection, setSelectedCollection] = useState("all");
+  const [productStatusFilter, setProductStatusFilter] = useState("all");
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>("none");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
@@ -349,6 +351,9 @@ export function SeoOptimization() {
 
   // Get unique categories
   const uniqueCategories = Array.from(new Set(products.map((p) => p.product_type).filter(Boolean))).sort();
+  
+  // Get unique collections (placeholder - needs proper collection data)
+  const uniqueCollections: string[] = [];
 
   // Helper function for SEO score calculation with memoization
   const getSeoScore = (() => {
@@ -411,6 +416,18 @@ export function SeoOptimization() {
 
       // Category and search filters
       if (selectedCategory !== "all" && product_type !== selectedCategory) return false;
+      
+      // Product status filter
+      if (productStatusFilter !== "all") {
+        const productStatus = (product as any).status?.toLowerCase() || "active";
+        if (productStatusFilter === "active" && productStatus !== "active") return false;
+        if (productStatusFilter === "draft" && productStatus !== "draft") return false;
+      }
+      
+      // Collection filter (placeholder for future implementation)
+      if (selectedCollection !== "all") {
+        // TODO: Add proper collection filtering when collection data is available
+      }
 
       // SKU filter
       if (skuFilter) {
@@ -1117,12 +1134,12 @@ export function SeoOptimization() {
           {/* Large Search Bar and Category Filter */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
               <Input
                 placeholder={t.seo.optimization.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="pl-12 h-12 text-lg relative z-20"
               />
             </div>
 
@@ -1131,14 +1148,14 @@ export function SeoOptimization() {
                 placeholder="Filtrer par SKU..."
                 value={skuFilter}
                 onChange={(e) => setSkuFilter(e.target.value)}
-                className="h-12"
+                className="h-12 relative z-20"
               />
             </div>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
             >
               <option value="all">{t.seo.optimization.allCategories}</option>
               {uniqueCategories.map((category) => (
@@ -1146,6 +1163,29 @@ export function SeoOptimization() {
                   {category}
                 </option>
               ))}
+            </select>
+            
+            <select
+              value={selectedCollection}
+              onChange={(e) => setSelectedCollection(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+            >
+              <option value="all">Toutes les collections</option>
+              {uniqueCollections.map((collection) => (
+                <option key={collection} value={collection}>
+                  {collection}
+                </option>
+              ))}
+            </select>
+            
+            <select
+              value={productStatusFilter}
+              onChange={(e) => setProductStatusFilter(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="active">Publié</option>
+              <option value="draft">Brouillon</option>
             </select>
 
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
