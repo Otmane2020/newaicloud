@@ -199,80 +199,10 @@ export default function RegenerateLanding({
    * 🖼️ Analyze Image with AI Vision (with cache)
    -----------------------------*/
   const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    if (!imageUrl) {
-      console.log("[Vision] No image URL provided");
-      return "";
-    }
-
-    try {
-      setProgressMessage("Vérification du cache...");
-      setProgress(22);
-
-      // 🔍 Vérifier si vision_attributes existe déjà dans la DB
-      const { data: productData, error: fetchError } = await supabase
-        .from("shopify_products")
-        .select("vision_attributes, vision_analyzed")
-        .eq("id", product.id)
-        .single();
-
-      if (!fetchError && productData?.vision_attributes && productData?.vision_analyzed) {
-        console.log("[Vision] Using cached analysis from DB");
-        setProgress(25);
-        return JSON.stringify(productData.vision_attributes);
-      }
-
-      // 🆕 Pas de cache, analyser l'image
-      console.log("[Vision] No cache found, analyzing image...");
-      setProgressMessage(t.landingGeneration.analyzing);
-      setProgress(25);
-
-      try {
-        const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
-          body: {
-            imageUrl: imageUrl,
-            productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
-          },
-        });
-
-        if (error) {
-          console.warn("[Vision] Image analysis failed, continuing without visual analysis:", error);
-          toast("Analyse visuelle indisponible", {
-            description: "La génération continue sans l'analyse d'images.",
-          });
-          return "";
-        }
-
-        // 💾 Sauvegarder les résultats dans la DB
-        if (data?.visualAttributes) {
-          const { error: updateError } = await supabase
-            .from("shopify_products")
-            .update({
-              vision_attributes: data.visualAttributes,
-              vision_analyzed: true,
-              vision_confidence: data.confidence || 1
-            })
-            .eq("id", product.id);
-
-          if (updateError) {
-            console.error("[Vision] Failed to cache analysis:", updateError);
-          } else {
-            console.log("[Vision] Analysis cached to DB successfully");
-          }
-        }
-
-        console.log("[Vision] Image analysis completed");
-        return data?.visualAttributes ? JSON.stringify(data.visualAttributes) : "";
-      } catch (visionError: any) {
-        console.warn("[Vision] Vision analysis unavailable in your region:", visionError);
-        toast("Analyse visuelle indisponible", {
-          description: "Cette fonctionnalité n'est pas disponible dans votre région. La génération continue sans elle.",
-        });
-        return "";
-      }
-    } catch (err) {
-      console.error("[Vision] Image analysis error:", err);
-      return "";
-    }
+    // Vision analysis is now handled directly in generate-landing-deepseek
+    // This function is kept for backwards compatibility but does nothing
+    console.log("[Vision] Image analysis is now integrated in landing page generation");
+    return "";
   };
 
   /** ----------------------------

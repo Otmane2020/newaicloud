@@ -186,6 +186,142 @@ function generateDesignTokens(colorScheme: any) {
   };
 }
 
+// ---------------------------------------------------------
+//  🔥 VISION AI - Analyse d'image intégrée
+// ---------------------------------------------------------
+async function analyzeImageWithVision(imageUrl: string, apiKey: string, productContext?: string): Promise<any> {
+  try {
+    console.log("🎨 Analyzing image with Lovable AI Vision...");
+    
+    // Convert image to base64
+    let imageData = "";
+    if (imageUrl.startsWith("data:image")) {
+      imageData = imageUrl.split(",")[1];
+    } else {
+      imageData = await fetchImageAsBase64(imageUrl);
+    }
+
+    const prompt = `
+Analyse cette image d'un produit ecommerce et retourne STRICTEMENT un JSON.
+
+${productContext ? `Contexte produit: ${productContext}` : ""}
+
+JSON attendu :
+
+{
+  "visualAttributes": {
+    "primaryColor": "string",
+    "secondaryColors": ["string"],
+    "materials": ["string"],
+    "style": ["string"],
+    "finish": "string",
+    "texture": "string",
+    "roomType": ["string"],
+    "features": ["string"],
+    "technicalDimensions": {
+      "length": number | null,
+      "length_unit": "string" | null,
+      "width": number | null,
+      "width_unit": "string" | null,
+      "height": number | null,
+      "height_unit": "string" | null,
+      "diameter": number | null,
+      "diameter_unit": "string" | null,
+      "depth": number | null,
+      "depth_unit": "string" | null,
+      "weight": number | null,
+      "weight_unit": "string" | null
+    }
+  },
+  "visualContext": {
+    "hasTechnicalSchema": boolean,
+    "presentationQuality": number,
+    "craftmanshipLevel": "standard" | "premium" | "luxury",
+    "lightingType": "string",
+    "backgroundStyle": "string"
+  },
+  "confidence": number
+}
+
+Retourne uniquement du JSON valide.
+`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/jpeg;base64,${imageData}` },
+              },
+            ],
+          },
+        ],
+        modalities: ["image", "text"],
+        temperature: 0.1,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Lovable Vision Error:", res.status, errorText);
+
+      // Check for region restriction
+      let isRegionRestricted = false;
+      try {
+        const parsedError = JSON.parse(errorText);
+        const raw = parsedError?.error?.metadata?.raw;
+        if (typeof raw === "string" && raw.includes("Image generation is not available in your country")) {
+          isRegionRestricted = true;
+        }
+      } catch {
+        // Ignore JSON parsing issues
+      }
+
+      if (isRegionRestricted) {
+        console.warn("⚠️ Image analysis not available in your region - continuing without visual analysis");
+        return null;
+      }
+
+      throw new Error(`VISION_FAILED_${res.status}`);
+    }
+
+    const json = await res.json();
+    const raw = json?.choices?.[0]?.message?.content || null;
+    if (!raw) {
+      console.warn("⚠️ No analysis returned from Lovable Vision");
+      return null;
+    }
+
+    // Clean and parse JSON
+    const cleanedJSON = raw
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(cleanedJSON);
+      console.log("✅ Vision analysis successful");
+      return parsed;
+    } catch (err) {
+      console.error("❌ Invalid JSON from Lovable Vision:", raw);
+      return null;
+    }
+  } catch (err: any) {
+    console.warn("⚠️ Vision analysis failed:", err.message);
+    return null;
+  }
+}
+
 // Helper to build Vision AI summary (separated from buildEnrichedProductSummary)
 function buildVisionSummary(attributes: any, language = "fr") {
   if (!attributes) return "";
@@ -423,32 +559,12 @@ serve(async (req) => {
 
     let enrichedProduct = product;
 
-    // Enrich if needed - Check if enrichment is recent (within 7 days)
-    const needsEnrichment = !product.smart_length || 
-                           !product.vision_analyzed || 
-                           (product.last_optimization_at &&
-                            (Date.now() - new Date(product.last_optimization_at).getTime()) > 7 * 24 * 60 * 60 * 1000);
-    
-    if (needsEnrichment) {
-      console.log("🔄 Enriching product...");
-      await supabase.functions.invoke("enrich-product", {
-        body: { productId },
-      });
+    // Check if we need to analyze images with Vision AI
+    const needsVisionAnalysis = !product.vision_analyzed || 
+                               (product.last_optimization_at &&
+                                (Date.now() - new Date(product.last_optimization_at).getTime()) > 7 * 24 * 60 * 60 * 1000);
 
-      const { data: updated } = await supabase
-        .from("shopify_products")
-        .select("*")
-        .eq("id", productId)
-        .single();
-
-      if (updated) enrichedProduct = updated;
-    } else {
-      console.log("⏭️ Skipping enrichment - recently done");
-    }
-
-    console.log("✅ Product enrichment complete");
-
-    // Load images (limit to 3 for better performance)
+    // Load images for analysis
     const { data: images } = await supabase
       .from("product_images")
       .select("*")
@@ -456,21 +572,52 @@ serve(async (req) => {
       .order("position")
       .limit(3);
 
-    // Detect dimension schema image
-    const dimensionImage = images?.find((img: any) => 
-      img.alt_text?.toLowerCase().includes('dimension') ||
-      img.alt_text?.toLowerCase().includes('schéma') ||
-      img.alt_text?.toLowerCase().includes('mesure') ||
-      img.alt_text?.toLowerCase().includes('plan') ||
-      img.src?.toLowerCase().includes('dimension')
-    );
+    // Perform Vision AI analysis directly if needed
+    let visionAnalysisResult = null;
+    if (needsVisionAnalysis && images?.length && LOVABLE_API_KEY) {
+      console.log("🎨 Starting integrated vision analysis...");
+      
+      // Analyze first image with structured JSON prompt
+      const firstImage = images[0];
+      visionAnalysisResult = await analyzeImageWithVision(
+        firstImage.src,
+        LOVABLE_API_KEY,
+        `${product.title} ${product.vendor || ""}`
+      );
 
-    // Vision analysis - Analyze only 2 images max for faster generation
+      // Save vision analysis to database if successful
+      if (visionAnalysisResult?.visualAttributes) {
+        console.log("💾 Saving vision analysis to database...");
+        await supabase
+          .from("shopify_products")
+          .update({
+            vision_attributes: visionAnalysisResult.visualAttributes,
+            vision_analyzed: true,
+            vision_confidence: visionAnalysisResult.confidence || 1,
+          })
+          .eq("id", productId);
+
+        // Reload product with new vision data
+        const { data: updated } = await supabase
+          .from("shopify_products")
+          .select("*")
+          .eq("id", productId)
+          .single();
+
+        if (updated) enrichedProduct = updated;
+        console.log("✅ Vision analysis saved to database");
+      } else {
+        console.log("⚠️ Vision analysis unavailable - continuing without it");
+      }
+    } else {
+      console.log("⏭️ Skipping vision analysis - recently done or no images");
+    }
+
+    // Additional quick visual description for landing page
     let visualAnalysis = "";
-
-    if (images?.length && LOVABLE_API_KEY) {
+    if (images?.length && LOVABLE_API_KEY && !visionAnalysisResult) {
       const imagesToAnalyze = Math.min(2, images.length);
-      console.log(`🖼️ Analyzing ${imagesToAnalyze} images with Lovable AI Vision`);
+      console.log(`🖼️ Generating quick visual descriptions for ${imagesToAnalyze} images`);
 
       for (const img of images.slice(0, imagesToAnalyze)) {
         try {
@@ -533,6 +680,15 @@ serve(async (req) => {
     }
 
     console.log(`✅ Visual analysis complete: ${visualAnalysis.length} chars generated`);
+
+    // Detect dimension schema image
+    const dimensionImage = images?.find((img: any) => 
+      img.alt_text?.toLowerCase().includes('dimension') ||
+      img.alt_text?.toLowerCase().includes('schéma') ||
+      img.alt_text?.toLowerCase().includes('mesure') ||
+      img.alt_text?.toLowerCase().includes('plan') ||
+      img.src?.toLowerCase().includes('dimension')
+    );
 
     // Load variants
     const { data: variants } = await supabase
