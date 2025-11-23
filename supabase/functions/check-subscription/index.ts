@@ -235,20 +235,36 @@ serve(async (req) => {
         endDate: subscriptionEnd 
       });
       
-      planId = subscription.items.data[0].price.product as string;
-      logStep('Determined subscription plan', { planId });
+      const stripePriceId = subscription.items.data[0].price.id;
+      logStep('Stripe price ID found', { stripePriceId });
       
-      // Update profile with correct status AND plan_id using admin client
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          subscription_status: status,
-          current_plan_id: planId,
-          stripe_customer_id: customerId,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      // Find the matching plan_id in our database using the Stripe price ID
+      const { data: matchingPlan } = await supabaseAdmin
+        .from('subscription_plans')
+        .select('id')
+        .or(`stripe_price_id_monthly.eq.${stripePriceId},stripe_price_id_yearly.eq.${stripePriceId}`)
+        .single();
+      
+      if (matchingPlan) {
+        planId = matchingPlan.id;
+        logStep('Matched to plan in database', { planId });
+        
+        // Update profile with correct plan_id using admin client
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            subscription_status: status,
+            current_plan_id: planId,
+            stripe_customer_id: customerId,
+            onboarding_completed: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      } else {
+        logStep('WARNING: No matching plan found for Stripe price', { stripePriceId });
+        // Fallback: use Stripe product ID as-is
+        planId = subscription.items.data[0].price.product as string;
+      }
       
       logStep('Profile updated with subscription status');
     } else {
