@@ -347,6 +347,17 @@ export default function RegenerateLanding({
         language: storeLanguage
       });
 
+      // ✅ Load user default preferences
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: defaultPref } = await supabase
+        .from('landing_page_preferences')
+        .select('*')
+        .eq('user_id', userData?.user?.id)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      console.log('[RegenerateLanding] User preferences:', defaultPref ? 'Found' : 'None (using defaults)');
+
       // Add timeout protection (5 minutes for AI generation)
       const timeoutMs = 300000;
       const timeoutPromise = new Promise((_, reject) => 
@@ -360,13 +371,22 @@ export default function RegenerateLanding({
           description: product.description || "",
           vendor: resolvedVendor,
           imageUrl: product.image_url,
-          style: config.designStyle || 'modern',
-          layout: config.layout,
-          colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
-          length: config.contentLength,
-          customHighlights: config.customHighlights,
+          userPreferences: defaultPref ? {
+            layout: defaultPref.layout,
+            designStyle: defaultPref.design_style,
+            contentLength: defaultPref.content_length,
+            colorScheme: {
+              primary: defaultPref.color_primary,
+              secondary: defaultPref.color_secondary,
+              accent: defaultPref.color_accent,
+              background: defaultPref.color_background,
+              surface: defaultPref.color_surface,
+              text: defaultPref.color_text,
+              textMuted: defaultPref.color_text_muted
+            },
+            highlights: defaultPref.custom_highlights
+          } : null,
           language: storeLanguage,
-          designStyle: config.designStyle || 'modern',
         },
       }).catch(err => {
         console.error('[RegenerateLanding] Network error:', err);

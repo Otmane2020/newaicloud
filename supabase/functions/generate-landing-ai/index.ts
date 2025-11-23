@@ -402,6 +402,49 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
+    // ============ LOAD CONFIGURATION FROM DATABASE ============
+    console.log("📚 Loading configuration options from database...");
+
+    const [layoutsRes, stylesRes, colorSchemesRes, lengthsRes, highlightsRes] = await Promise.all([
+      supabaseAdmin.from('landing_page_config_options')
+        .select('*')
+        .eq('category', 'layout')
+        .eq('is_active', true)
+        .order('display_order'),
+      
+      supabaseAdmin.from('landing_page_config_options')
+        .select('*')
+        .eq('category', 'design_style')
+        .eq('is_active', true)
+        .order('display_order'),
+      
+      supabaseAdmin.from('landing_page_config_options')
+        .select('*')
+        .eq('category', 'color_scheme')
+        .eq('is_active', true)
+        .order('display_order'),
+      
+      supabaseAdmin.from('landing_page_config_options')
+        .select('*')
+        .eq('category', 'content_length')
+        .eq('is_active', true)
+        .order('display_order'),
+      
+      supabaseAdmin.from('landing_page_config_options')
+        .select('*')
+        .eq('category', 'highlight')
+        .eq('is_active', true)
+        .order('display_order')
+    ]);
+
+    const dbLayouts = layoutsRes.data || [];
+    const dbStyles = stylesRes.data || [];
+    const dbColorSchemes = colorSchemesRes.data || [];
+    const dbContentLengths = lengthsRes.data || [];
+    const dbHighlights = highlightsRes.data || [];
+
+    console.log(`✅ Loaded from DB: ${dbLayouts.length} layouts, ${dbStyles.length} styles, ${dbColorSchemes.length} color schemes`);
+
     // Get authenticated user
     let userId = null;
     if (authHeader) {
@@ -431,7 +474,102 @@ serve(async (req) => {
       language,
       designStyle = "modern", // Default to modern if not provided
       imageAnalysis, // 🔥 Vision AI data if available
+      userPreferences, // ✅ NEW: User preferences from landing_page_preferences
     } = body ?? {};
+
+    // ============ USE USER PREFERENCES IF PROVIDED ============
+    let selectedLayout, selectedStyle, selectedColorScheme, selectedLength, selectedHighlights;
+
+    // Helper to convert HSL to Hex
+    const hslToHex = (hsl: string): string => {
+      if (hsl.startsWith('#')) return hsl; // Already hex
+      
+      const match = hsl.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/);
+      if (!match) return '#000000';
+      
+      const [, h, s, l] = match.map(Number);
+      const hue = h / 360;
+      const sat = s / 100;
+      const lum = l / 100;
+      
+      const c = (1 - Math.abs(2 * lum - 1)) * sat;
+      const x = c * (1 - Math.abs((hue * 6) % 2 - 1));
+      const m = lum - c / 2;
+      let r = 0, g = 0, b = 0;
+      
+      if (hue < 1/6) [r, g, b] = [c, x, 0];
+      else if (hue < 2/6) [r, g, b] = [x, c, 0];
+      else if (hue < 3/6) [r, g, b] = [0, c, x];
+      else if (hue < 4/6) [r, g, b] = [0, x, c];
+      else if (hue < 5/6) [r, g, b] = [x, 0, c];
+      else [r, g, b] = [c, 0, x];
+      
+      const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    if (userPreferences) {
+      console.log("✅ Using user preferences from landing_page_preferences");
+      
+      selectedLayout = dbLayouts.find(l => l.option_key === userPreferences.layout) || dbLayouts[0];
+      
+      // Build styleTemplates from DB
+      const styleTemplatesFromDB: any = {};
+      dbStyles.forEach(style => {
+        styleTemplatesFromDB[style.option_key] = {
+          name: style.option_label,
+          description: style.description || '',
+          rules: style.option_value || ''
+        };
+      });
+      
+      selectedStyle = styleTemplatesFromDB[userPreferences.designStyle] || styleTemplatesFromDB['modern'];
+      
+      // Convert HSL colors from preferences to Hex
+      selectedColorScheme = {
+        primary: hslToHex(userPreferences.colorScheme.primary),
+        secondary: hslToHex(userPreferences.colorScheme.secondary),
+        accent: hslToHex(userPreferences.colorScheme.accent),
+        background: hslToHex(userPreferences.colorScheme.background),
+        surface: hslToHex(userPreferences.colorScheme.surface),
+        text: hslToHex(userPreferences.colorScheme.text),
+        textMuted: hslToHex(userPreferences.colorScheme.textMuted)
+      };
+      
+      selectedLength = dbContentLengths.find(c => c.option_key === userPreferences.contentLength) || dbContentLengths[1];
+      
+      selectedHighlights = userPreferences.highlights 
+        ? dbHighlights.filter(h => userPreferences.highlights.includes(h.option_label))
+        : dbHighlights.slice(0, 3);
+        
+      console.log("✅ User preferences applied:", {
+        layout: selectedLayout?.option_key,
+        style: userPreferences.designStyle,
+        colorScheme: Object.keys(selectedColorScheme).join(', '),
+        contentLength: selectedLength?.option_key
+      });
+    } else {
+      console.log("⚠️ No user preferences, using request parameters or defaults");
+      
+      selectedLayout = dbLayouts.find(l => l.option_key === layout) || dbLayouts[0];
+      
+      // Build styleTemplates from DB as fallback
+      const styleTemplatesFromDB: any = {};
+      dbStyles.forEach(style => {
+        styleTemplatesFromDB[style.option_key] = {
+          name: style.option_label,
+          description: style.description || '',
+          rules: style.option_value || ''
+        };
+      });
+      
+      selectedStyle = styleTemplatesFromDB[designStyle] || styleTemplatesFromDB['modern'];
+      selectedColorScheme = colorScheme || { primary: mainColor };
+      selectedLength = dbContentLengths.find(c => c.option_key === length) || dbContentLengths[1];
+      selectedHighlights = customHighlights 
+        ? dbHighlights.filter(h => customHighlights.includes(h.option_label))
+        : dbHighlights.slice(0, 3);
+    }
 
     console.log("📥 Request parameters:", {
       product_id,
@@ -792,139 +930,8 @@ serve(async (req) => {
     // Build product URLs
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
 
-    // Design style templates - DISTINCT VISUAL IDENTITIES
-    const styleTemplates = {
-      minimalist: {
-        name: "MINIMALISTE - Épuré et Zen",
-        description: "ULTRA-MINIMAL: Espaces blancs massifs, typographie géante, palette monochrome",
-        rules: `
-🎨 STYLE MINIMALISTE (STRICTEMENT APPLIQUÉ):
-========================================
-PALETTE COULEURS - MONOCHROME:
-- ❌ PAS de dégradés colorés
-- ✅ Noir + Blanc + 1 seul accent de couleur (primary)
-- Background: Blanc pur ou gris très clair (bg-white, bg-gray-50)
-- Texte: Noir intense (text-gray-900)
-
-TYPOGRAPHIE - GÉANTE ET AÉRÉE:
-- Titres H1: text-5xl md:text-7xl lg:text-8xl (ÉNORME)
-- Titres sections: text-4xl md:text-5xl
-- Line-height: leading-tight, letterspacing: tracking-tight
-- Font-weight: 300 (léger) ou 700 (bold), jamais moyen
-
-ESPACES - MASSIFS:
-- Sections: py-12 md:py-32 lg:py-40 (adapté mobile)
-- Entre éléments: space-y-16 md:space-y-20
-- Containers: max-w-4xl (ÉTROIT pour focus)
-
-ÉLÉMENTS VISUELS - MINIMALISTES:
-- ❌ AUCUNE ombre (pas de shadow)
-- ❌ AUCUN arrondi (angles droits, sharp corners)
-- Bordures: border border-gray-200 (fines et discrètes)
-- Images: Pleine largeur, aucun effet, aspect-video ou aspect-square
-
-ICÔNES - ULTRA-SIMPLES:
-- Taille: w-5 h-5 (PETIT et discret)
-- Style: Traits fins (stroke-width="1.5")
-- Couleur: Monochrome (noir ou primary)
-- ❌ PAS de dégradés, PAS de remplissage
-
-LAYOUT - LINÉAIRE:
-- 1 seule colonne principale
-- Maximum 2 colonnes sur desktop (grid-cols-1 md:grid-cols-2)
-- Alignement: Centré, symétrique
-- ❌ PAS d'asymétrie
-`,
-      },
-
-      modern: {
-        name: "MODERNE - Équilibré et Dynamique",
-        description: "DESIGN 2024: Dégradés subtils, cartes flottantes, animations douces",
-        rules: `
-🎨 STYLE MODERNE (STRICTEMENT APPLIQUÉ):
-========================================
-PALETTE COULEURS - VIBRANTE:
-- ✅ Dégradés subtils partout (primary → accent)
-- ✅ 2-3 couleurs vives bien équilibrées
-- Background: Blanc/gris avec touches colorées
-- Sections alternées: bg-white / bg-gray-50
-
-TYPOGRAPHIE - ÉQUILIBRÉE:
-- Titres H1: text-4xl md:text-6xl (GRAND mais pas géant)
-- Mix de font-weights: 300 (light), 500 (medium), 700 (bold)
-- Line-height: leading-snug
-- Contraste weight entre titres et texte
-
-ESPACES - HARMONIEUX:
-- Sections: py-12 md:py-24 (adapté mobile)
-- Entre éléments: space-y-8 md:space-y-12
-- Containers: max-w-7xl (standard large)
-
-ÉLÉMENTS VISUELS - CARTES FLOTTANTES:
-- ✅ Ombres progressives: shadow-md hover:shadow-xl
-- ✅ Bordures arrondies: rounded-xl, rounded-2xl
-- Cartes: bg-white p-6 rounded-2xl shadow-lg
-- Images: rounded-xl avec shadow-md
-
-ICÔNES - DÉGRADÉS ÉLÉGANTS:
-- Taille: w-8 h-8 (taille moyenne, bien visible)
-- Style: Dégradés (primary → accent)
-- Background: Cercle avec opacity 0.15
-- Stroke: stroke-width="2" (épaisseur moyenne)
-- ✅ Effets hover: scale-110 transition
-
-LAYOUT - GRILLES MODERNES:
-- 3 colonnes sur desktop (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
-- Asymétrie légère (images alternées)
-- Grid gap: gap-6 md:gap-8
-`,
-      },
-
-      premium: {
-        name: "PREMIUM - Luxueux et Sophistiqué",
-        description: "ULTRA-LUXE: Backgrounds sombres, or/argent, typographie serif, effets riches",
-        rules: `
-🎨 STYLE PREMIUM (STRICTEMENT APPLIQUÉ):
-========================================
-PALETTE COULEURS - SOPHISTIQUÉE SOMBRE:
-- ✅ Background SOMBRE: bg-gray-900, bg-slate-900
-- ✅ Accents métalliques: or (#D4AF37 converti en HSL), argent
-- ✅ Dégradés complexes multi-stops
-- Texte sur fond sombre: text-gray-100, text-white
-
-TYPOGRAPHIE - LUXUEUSE SERIF:
-- ✅ Serif pour les titres: font-serif tracking-wide
-- Titres H1: text-5xl md:text-7xl lg:text-9xl (GIGANTESQUE)
-- Letterspacing: tracking-wide, tracking-wider
-- Font-weight: 300 (ultra-light) ou 800 (extra-bold)
-
-ESPACES - TRÈS GÉNÉREUX:
-- Sections: py-12 md:py-36 lg:py-48 (adapté mobile)
-- Entre éléments: space-y-16 md:space-y-24
-- Containers: max-w-7xl avec beaucoup de breathing room
-
-ÉLÉMENTS VISUELS - PROFONDEUR RICHE:
-- ✅ Ombres profondes multiples: shadow-2xl, drop-shadow-2xl
-- ✅ Bordures très arrondies: rounded-3xl, rounded-full
-- ✅ Overlays subtils: backdrop-blur, gradient overlays
-- Images: Cadres élégants, effets de profondeur
-
-ICÔNES - COMPLEXES ET BRILLANTES:
-- Taille: w-12 h-12 lg:w-16 lg:h-16 (GRANDES et imposantes)
-- Style: Dégradés 3+ couleurs avec effet glow
-- Filters: feGaussianBlur pour effet lumineux
-- Strokes: stroke-width="3" (épais)
-- ✅ Effets brillance: multiple layers, opacity variations
-
-LAYOUT - CRÉATIF ASYMÉTRIQUE:
-- Overlaps créatifs (z-index layers)
-- Asymétrie contrôlée
-- Grid cols variées: grid-cols-2 lg:grid-cols-5
-- Effets parallax hints
-- Sections alternées sombres/claires
-`,
-      },
-    };
+    // Design style templates loaded from DB (already built above in userPreferences section)
+    // No hardcoded templates needed anymore - all dynamic from landing_page_config_options
 
     // Icon templates by style - CLEARLY DIFFERENTIATED
     const iconTemplates = {
@@ -976,15 +983,12 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     };
 
     // Select design style (default to modern if not provided)
+    // selectedStyle is already defined above in the userPreferences or fallback section
     const validDesignStyles = ["minimalist", "modern", "premium"];
-    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : "modern") as
-      | "minimalist"
-      | "modern"
-      | "premium";
-    const selectedStyle = styleTemplates[selectedDesignStyle];
-    const selectedIcon = iconTemplates[selectedDesignStyle];
+    const selectedDesignStyle = userPreferences?.designStyle || designStyle || "modern";
+    const selectedIcon = iconTemplates[selectedDesignStyle as "minimalist" | "modern" | "premium"];
 
-    console.log(`[Landing AI] Design style: ${selectedStyle.name} (received: ${designStyle})`);
+    console.log(`[Landing AI] Design style: ${selectedStyle.name || 'Modern'} (received: ${selectedDesignStyle})`);
 
     const prompt =
       detectedLanguage === "en"

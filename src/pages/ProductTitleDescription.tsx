@@ -589,14 +589,16 @@ export default function ProductTitleDescription() {
               
               console.log("🎨 Préférence utilisateur:", defaultPref ? 'Trouvée' : 'Aucune (utilisation des défauts)');
               
+              // ✅ Call generate-landing-ai (the official function) with userPreferences
               const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
-                'generate-product-description-html',
+                'generate-landing-ai',
                 {
                   body: {
-                    title: updatedProduct.seo_title || updatedProduct.title,
-                    existingDescription: updatedProduct.seo_description,
-                    images: [updatedProduct.image_url].filter(Boolean),
-                    visionAnalysis: productData?.vision_attributes || null,
+                    product_id: productId,
+                    productTitle: updatedProduct.seo_title || updatedProduct.title,
+                    description: updatedProduct.seo_description,
+                    imageUrl: updatedProduct.image_url,
+                    vendor: updatedProduct.vendor || '',
                     userPreferences: defaultPref ? {
                       layout: defaultPref.layout,
                       designStyle: defaultPref.design_style,
@@ -612,18 +614,18 @@ export default function ProductTitleDescription() {
                       },
                       highlights: defaultPref.custom_highlights
                     } : null,
-                    productId: productId
+                    language: 'fr'
                   }
                 }
               );
 
-              if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
-                console.log("✅ HTML landing page généré (10 optimisations consommées)");
+              if (!htmlError && htmlData?.html) {
+                console.log("✅ HTML landing page généré");
                 
                 // Save HTML to shopify_products.landing_page_html
                 const { error: updateError } = await supabase
                   .from("shopify_products")
-                  .update({ landing_page_html: htmlData.htmlLandingPage })
+                  .update({ landing_page_html: htmlData.html })
                   .eq("id", productId);
                 
                 if (!updateError) {
@@ -637,14 +639,14 @@ export default function ProductTitleDescription() {
                     await supabase.from("landing_page_history").insert({
                       product_id: productId,
                       user_id: userData.user.id,
-                      landing_page_html: htmlData.htmlLandingPage,
+                      landing_page_html: htmlData.html,
                       version_number: versionData || 1,
                       is_current: true
                     });
                   }
                   
                   // Update local product with HTML in landing_page_html
-                  updatedProduct.landing_page_html = htmlData.htmlLandingPage;
+                  updatedProduct.landing_page_html = htmlData.html;
                 }
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
