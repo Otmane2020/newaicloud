@@ -310,6 +310,17 @@ export function SubscriptionPlans() {
     return "Upgrade";
   };
 
+  const isUpgradePlan = (planId: string) => {
+    if (isCurrentPlan(planId) || !currentPlanId) return false;
+    
+    const currentPlan = plans.find(p => p.id === currentPlanId);
+    const targetPlan = plans.find(p => p.id === planId);
+    
+    if (!currentPlan || !targetPlan) return false;
+    
+    return targetPlan.max_optimizations_monthly > currentPlan.max_optimizations_monthly;
+  };
+
   // Group plans by category
   const starterPlan = plans.find((p) => p.id === "starter");
   const proPlans = plans.filter((p) => p.id.startsWith("pro-")).sort((a, b) => a.display_order - b.display_order);
@@ -345,11 +356,23 @@ export function SubscriptionPlans() {
         {/* Starter Plan */}
         {starterPlan && (
           <Card
-            className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? "border-2 border-primary shadow-primary" : ""}`}
+            className={`p-8 relative flex flex-col ${
+              isCurrentPlan(starterPlan.id) 
+                ? "border-2 border-primary shadow-primary" 
+                : isUpgradePlan(starterPlan.id)
+                ? "border-2 border-success/50 shadow-lg"
+                : ""
+            }`}
           >
             {isCurrentPlan(starterPlan.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
+              </Badge>
+            )}
+            {isUpgradePlan(starterPlan.id) && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Upgrade recommandé
               </Badge>
             )}
 
@@ -419,11 +442,23 @@ export function SubscriptionPlans() {
         {/* Pro Plans */}
         {selectedPro && (
           <Card
-            className={`p-8 relative flex flex-col ${isCurrentPlan(selectedPro.id) ? "border-2 border-primary shadow-primary" : "border-2 border-primary/20"}`}
+            className={`p-8 relative flex flex-col ${
+              isCurrentPlan(selectedPro.id) 
+                ? "border-2 border-primary shadow-primary" 
+                : isUpgradePlan(selectedPro.id)
+                ? "border-2 border-success/50 shadow-lg"
+                : "border-2 border-primary/20"
+            }`}
           >
             {isCurrentPlan(selectedPro.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
+              </Badge>
+            )}
+            {isUpgradePlan(selectedPro.id) && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Upgrade recommandé
               </Badge>
             )}
 
@@ -523,11 +558,23 @@ export function SubscriptionPlans() {
         {/* Enterprise Plans */}
         {selectedEnterprise && (
           <Card
-            className={`p-8 relative flex flex-col ${isCurrentPlan(selectedEnterprise.id) ? "border-2 border-primary shadow-primary" : ""}`}
+            className={`p-8 relative flex flex-col ${
+              isCurrentPlan(selectedEnterprise.id) 
+                ? "border-2 border-primary shadow-primary" 
+                : isUpgradePlan(selectedEnterprise.id)
+                ? "border-2 border-success/50 shadow-lg"
+                : ""
+            }`}
           >
             {isCurrentPlan(selectedEnterprise.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 {t.dashboard.plans.currentPlan}
+              </Badge>
+            )}
+            {isUpgradePlan(selectedEnterprise.id) && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Upgrade recommandé
               </Badge>
             )}
 
