@@ -18,58 +18,58 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { 
-      basePrompt = '', 
-      productTitle, 
+    const {
+      basePrompt = "",
+      productTitle,
       productDescription,
       seoTitle,
       seoDescription,
       visionAiData,
       serpData,
-      style = 'professional', 
-      format = 'square' 
+      style = "professional",
+      format = "square",
     } = await req.json();
-    
+
     if (!productTitle) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing productTitle' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Missing productTitle" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Construire un prompt enrichi avec toutes les données produit
     let enrichedContext = productTitle;
-    
+
     if (seoTitle && seoTitle !== productTitle) {
       enrichedContext += `. ${seoTitle}`;
     }
-    
+
     if (productDescription) {
       enrichedContext += `. ${productDescription.slice(0, 200)}`;
     } else if (seoDescription) {
       enrichedContext += `. ${seoDescription.slice(0, 200)}`;
     }
-    
+
     if (visionAiData?.description) {
       enrichedContext += `. Visual analysis: ${visionAiData.description.slice(0, 150)}`;
     }
-    
+
     if (serpData?.dominantStyles?.length > 0) {
-      enrichedContext += `. Trending styles: ${serpData.dominantStyles.slice(0, 3).join(', ')}`;
+      enrichedContext += `. Trending styles: ${serpData.dominantStyles.slice(0, 3).join(", ")}`;
     }
 
-    console.log('🎨 Enriched product context:', enrichedContext);
+    console.log("🎨 Enriched product context:", enrichedContext);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, error: 'API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error("LOVABLE_API_KEY not configured");
+      return new Response(JSON.stringify({ success: false, error: "API key not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log('🎨 Creating 4 background variants from text prompt for:', productTitle);
+    console.log("🎨 Creating 4 background variants from text prompt for:", productTitle);
 
     // ---------- Variants avec contexte enrichi et décoratif ----------
     const variants = [
@@ -105,32 +105,29 @@ serve(async (req) => {
       variants.map(async (variant, i) => {
         try {
           console.log(`🧠 Generating variant ${i + 1}/5: ${variant.style}`);
-          
-          const res = await fetch(
-            "https://ai.gateway.lovable.dev/v1/chat/completions",
-            {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "google/gemini-2.5-flash-image-preview",
-                messages: [
-                  {
-                    role: "user",
-                    content: variant.prompt
-                  }
-                ],
-                modalities: ["image", "text"]
-              }),
-            }
-          );
+
+          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-image-preview",
+              messages: [
+                {
+                  role: "user",
+                  content: variant.prompt,
+                },
+              ],
+              modalities: ["image", "text"],
+            }),
+          });
 
           if (!res.ok) {
             const errText = await res.text();
             console.error(`❌ Gemini API error (${res.status}) for variant ${variant.style}:`, errText);
-            
+
             if (res.status === 429) {
               console.error(`⏳ Rate limit exceeded for ${variant.style}`);
             } else if (res.status === 403) {
@@ -143,19 +140,22 @@ serve(async (req) => {
 
           const data = await res.json();
           const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-          
+
           if (!imageUrl) {
-            console.error(`⚠️ No image in response for variant ${variant.style}. Response structure:`, JSON.stringify(data, null, 2));
+            console.error(
+              `⚠️ No image in response for variant ${variant.style}. Response structure:`,
+              JSON.stringify(data, null, 2),
+            );
             return null;
           }
 
           // Extract base64 from data URL
-          const base64 = imageUrl.split(',')[1];
+          const base64 = imageUrl.split(",")[1];
 
           const qualityScore = Math.floor(85 + Math.random() * 15);
 
           console.log(`✅ Variant ${i + 1}/4 (${variant.style}) generated successfully`);
-          
+
           return {
             variantId: crypto.randomUUID(),
             imageUrl: `data:image/png;base64,${base64}`, // ✅ Format data URL complet pour affichage direct
@@ -173,9 +173,9 @@ serve(async (req) => {
     );
 
     const successful = results.filter((r) => r !== null);
-    
+
     console.log(`🎉 Successfully generated ${successful.length}/4 variants`);
-    
+
     if (successful.length < 2) {
       throw new Error(`Only ${successful.length} variant(s) succeeded. At least 2 required.`);
     }

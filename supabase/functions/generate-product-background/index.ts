@@ -15,24 +15,25 @@ serve(async (req) => {
     const { imageUrl, productTitle, style = "contextual", imageType = "primary" } = await req.json();
 
     if (!imageUrl || !productTitle) {
-      return new Response(
-        JSON.stringify({ error: "imageUrl and productTitle are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "imageUrl and productTitle are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log("🎨 Generating beautiful contextual background for:", productTitle, "imageType:", imageType);
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader! } } }
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader! } },
+    });
 
     // Get authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       console.error("Authentication error:", userError);
     }
@@ -54,7 +55,9 @@ YOUR MISSION:
 Create a beautiful, high-quality product photo with a contextual background that complements and enhances the product.
 
 REQUIREMENTS:
-${isMainImage ? `
+${
+  isMainImage
+    ? `
 1. MAIN IMAGE REQUIREMENTS (CRITICAL):
    - Product MUST be perfectly centered and sharp
    - Product occupies 70-80% of the frame
@@ -63,14 +66,16 @@ ${isMainImage ? `
    - Preserve all product details, textures, and colors
    - Natural product shadows for depth
    - Clean, professional look suitable for main product listing
-` : `
+`
+    : `
 1. LIFESTYLE/AMBIANCE IMAGE:
    - Creative composition (centering not mandatory)
    - Product can be positioned artistically
    - More creative freedom with framing and angles
    - Contextual, lifestyle setting
    - Preserve product details but focus on atmosphere
-`}
+`
+}
 
 2. LIGHTING & ATMOSPHERE (CRITICAL FOR SALES):
    - **NATURAL DAYLIGHT** - bright, well-lit scene with abundant natural light
@@ -118,7 +123,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -128,33 +133,33 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
             role: "user",
             content: [
               { type: "text", text: contextualPrompt },
-              { type: "image_url", image_url: { url: imageUrl } }
-            ]
-          }
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
+          },
         ],
         modalities: ["image", "text"],
         generationConfig: {
-          aspectRatio: "1:1"
-        }
+          aspectRatio: "1:1",
+        },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ Lovable AI error:", response.status, errorText);
-      
+
       // Handle rate limiting
       if (response.status === 429) {
         return new Response(
           JSON.stringify({
             success: false,
             error: "Rate limit exceeded. Please try again in a few moments.",
-            rateLimited: true
+            rateLimited: true,
           }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      
+
       throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
     }
 
@@ -177,7 +182,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
         await supabaseClient.rpc("increment_usage", {
           p_seller_id: user.id,
           p_field: "optimizations_count",
-          p_increment: optimizationCost
+          p_increment: optimizationCost,
         });
         console.log(`✅ Usage tracked: ${optimizationCost} optimizations (${style})`);
       } catch (trackError) {
@@ -197,7 +202,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
           generatedAt: new Date().toISOString(),
         },
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("💥 Error in generate-product-background:", error);
@@ -207,7 +212,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
         error: error instanceof Error ? error.message : String(error),
         suggestion: "Try with a higher-quality product photo or check your Lovable AI credits.",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
