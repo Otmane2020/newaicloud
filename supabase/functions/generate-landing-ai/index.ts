@@ -1181,13 +1181,36 @@ DESIGN TOKENS (HSL FORMAT - FOR THE 7 THEME COLORS):
      </svg>
    </button>
 
-9. Examples using CSS variables (COPY THESE PATTERNS):
-   - Hero banner: <div style="background: linear-gradient(135deg, hsl(var(--color-primary)), hsl(var(--color-accent))); color: white;">
-   - Section: <section style="background-color: hsl(var(--color-surface));">
-   - Card: <div style="background-color: hsl(var(--color-background));">
-   - Title: <h2 style="color: hsl(var(--color-primary));">
-   - Text: <p style="color: hsl(var(--color-text-muted));">
-   - Button: <button style="background-color: hsl(var(--color-accent)); color: white;">
+9. ✅ SIMPLIFIED COLOR SYSTEM (USE THESE EXACT PATTERNS):
+   
+   The design tokens are ALREADY in correct HSL format: "${designTokens.primary}" = "221, 83%, 53%"
+   
+   🎨 MANDATORY PATTERNS TO COPY:
+   
+   a) In :root CSS variables (strip "hsl()" wrapper):
+      <style>
+        :root {
+          --color-primary: ${designTokens.primary};      /* ✅ Direct value: "221, 83%, 53%" */
+          --color-secondary: ${designTokens.secondary};  /* ✅ Direct value */
+          --color-accent: ${designTokens.accent};        /* ✅ Direct value */
+          --color-text: ${designTokens.text};            /* ✅ Direct value */
+        }
+      </style>
+   
+   b) Using CSS variables in styles (wrap with hsl()):
+      - Hero: style="background: linear-gradient(135deg, hsl(var(--color-primary)), hsl(var(--color-accent)));"
+      - Section: style="background-color: hsl(var(--color-surface));"
+      - Card: style="background-color: hsl(var(--color-background));"
+      - Title: style="color: hsl(var(--color-primary));"
+      - Text: style="color: hsl(var(--color-text));"
+      - Button: style="background-color: hsl(var(--color-accent)); color: white;"
+   
+   c) Using tokens directly (NO CSS variables):
+      - Direct use: style="color: hsl(${designTokens.primary});"
+      - Gradient: style="background: linear-gradient(to right, hsl(${designTokens.primary}), hsl(${designTokens.accent}));"
+   
+   ❌ NEVER use HEX colors (#rrggbb) - ONLY use hsl() format
+   ❌ NEVER write colors as "hsl(hsl(...))" - that's double wrapping
 
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1206,17 +1229,18 @@ ${selectedIcon}
 🖼️ HERO BANNER WITH IMAGE (CRITICAL - MANDATORY FIRST SECTION):
 🚨 CRITICAL: The landing page MUST start with a full-width hero banner with the MAIN product image as background and text overlay:
 
-1. ✅ MANDATORY HERO STRUCTURE (FIRST SECTION OF PAGE - ALWAYS USE THIS):
+1. ✅ MANDATORY HERO STRUCTURE (FIRST SECTION OF PAGE - ALWAYS USE THIS EXACT CODE):
    <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
-     <!-- Main product image as background (ALWAYS use images[0].src, NOT imageUrl) -->
-     <img src="${images[0]?.src || imageUrl || ''}" alt="${productTitle}" 
+     <!-- ✅ PRIORITY: Use images[0].src first, fallback to imageUrl -->
+     <img src="${images[0]?.src || imageUrl || 'https://via.placeholder.com/1920x1080'}" 
+          alt="${productTitle}" 
           loading="eager" 
           class="absolute inset-0 w-full h-full object-cover">
      
-     <!-- Dark overlay for text readability (MANDATORY) -->
+     <!-- ✅ MANDATORY dark overlay (NEVER skip this) -->
      <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
      
-     <!-- Hero content centered (MANDATORY) -->
+     <!-- ✅ Hero content (ALWAYS centered) -->
      <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight" 
            style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9);">
@@ -1224,29 +1248,39 @@ ${selectedIcon}
        </h1>
        <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed" 
           style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8);">
-         ${description?.substring(0, 150) || 'Description du produit'}...
+         ${description?.substring(0, 180) || 'Découvrez ce produit exceptionnel'}
        </p>
        
-       <!-- CTA button in hero -->
-       <div class="flex gap-4">
+       <!-- ✅ CTA button using primary color -->
+       <div class="flex flex-col sm:flex-row gap-4">
          <a href="#details" 
-            class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105" 
-            style="background-color: hsl(${designTokens.primary}); color: white; text-shadow: none;">
+            class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl" 
+            style="background-color: hsl(${designTokens.accent}); color: white; text-shadow: none;">
+           Découvrir
+         </a>
+         <a href="#features" 
+            class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 border-2 border-white text-white backdrop-blur-sm hover:bg-white/10">
            En savoir plus
          </a>
        </div>
      </div>
    </div>
 
-2. ❌ DO NOT USE SPLIT LAYOUTS for hero section - always use full-width image with overlay
-3. ❌ NEVER use side-by-side image+text layouts in the hero
-4. ✅ ALWAYS use the structure above exactly as shown
+2. 🚨 NON-NEGOTIABLE HERO RULES:
+   - ✅ ALWAYS use full-width image background
+   - ✅ ALWAYS add dark overlay (bg-black/50 minimum)
+   - ✅ ALWAYS add text-shadow to ALL text on images
+   - ✅ ALWAYS use images[0].src as PRIMARY source
+   - ❌ NEVER use side-by-side layouts in hero
+   - ❌ NEVER put image in a container/column
+   - ❌ NEVER forget the dark overlay
 
-5. FOR ALL TEXT ON IMAGES (MANDATORY):
-   - Dark overlay: bg-black/40 to bg-black/60
-   - Text shadow: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8);"
-   - White text: text-white
-   - Large sizes: text-4xl md:text-6xl for titles
+3. 📐 TEXT READABILITY ON IMAGES (APPLIES TO ALL SECTIONS WITH IMAGE BACKGROUNDS):
+   - Dark overlay: "bg-gradient-to-b from-black/50 via-black/40 to-black/60"
+   - Title shadow: style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9);"
+   - Text shadow: style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8);"
+   - Always white text: "text-white"
+   - Large responsive sizes: "text-4xl sm:text-5xl md:text-6xl lg:text-7xl"
 
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:

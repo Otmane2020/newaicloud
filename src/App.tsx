@@ -49,6 +49,7 @@ import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
 import LandingPreferences from "./pages/LandingPreferences";
+import LandingConfigurator from "./pages/LandingConfigurator";
 import ArticleLanding from "./pages/ArticleLanding";
 import SeoSerpAnalysis from "./pages/SeoSerpAnalysis";
 import LandingPage from "./pages/LandingPage";
@@ -211,6 +212,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <LandingPreferences />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/landing-configurator"
+              element={
+                <ProtectedLayout>
+                  <LandingConfigurator />
                 </ProtectedLayout>
               }
             />
