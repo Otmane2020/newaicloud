@@ -1916,6 +1916,30 @@ UTILISATION DES ICÔNES :
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
+    
+    // ✅ CRITICAL: Prepare prompt with hard truncation and detailed logging
+    const rawPromptString = typeof prompt === 'string' ? prompt : JSON.stringify(prompt || "");
+    const rawPromptLength = rawPromptString.length;
+    
+    // Hard cap to 8000 characters to avoid token overflow (1 char ≈ 1.3 tokens)
+    const SAFE_PROMPT_MAX_LENGTH = 8000;
+    const safePrompt = rawPromptString.slice(0, SAFE_PROMPT_MAX_LENGTH);
+    
+    console.log(`📏 [Prompt Stats] Raw: ${rawPromptLength} chars, Safe: ${safePrompt.length} chars, Truncated: ${rawPromptLength > SAFE_PROMPT_MAX_LENGTH ? 'YES' : 'NO'}`);
+    
+    // ✅ Short-circuit if prompt is absurdly large (>200k chars = ~260k tokens)
+    if (rawPromptLength > 200000) {
+      console.error(`🚨 [Prompt] ABSURDLY LARGE: ${rawPromptLength} chars - rejecting before API call`);
+      return new Response(
+        JSON.stringify({ 
+          error: detectedLanguage === "en" 
+            ? "Prompt too large. Please reduce product description or image count." 
+            : "Prompt trop volumineux. Veuillez réduire la description produit ou le nombre d'images." 
+        }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 60000);
 
@@ -1939,8 +1963,8 @@ UTILISATION DES ICÔNES :
             },
             {
               role: "user",
-              // Hard cap on prompt length to avoid Lovable AI context overflow
-              content: prompt.length > 10000 ? prompt.slice(0, 10000) : prompt,
+              // ✅ CRITICAL: Use the safe truncated prompt
+              content: safePrompt,
             },
           ],
           max_tokens: 4000,
