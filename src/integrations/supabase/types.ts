@@ -2248,6 +2248,77 @@ export type Database = {
           },
         ]
       }
+      landing_page_preferences: {
+        Row: {
+          color_accent: string
+          color_background: string
+          color_primary: string
+          color_secondary: string
+          color_surface: string
+          color_text: string
+          color_text_muted: string
+          content_length: string
+          created_at: string
+          custom_highlights: string[] | null
+          design_style: string
+          id: string
+          is_default: boolean | null
+          layout: string
+          palette_id: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color_accent: string
+          color_background: string
+          color_primary: string
+          color_secondary: string
+          color_surface: string
+          color_text: string
+          color_text_muted: string
+          content_length?: string
+          created_at?: string
+          custom_highlights?: string[] | null
+          design_style?: string
+          id?: string
+          is_default?: boolean | null
+          layout?: string
+          palette_id?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color_accent?: string
+          color_background?: string
+          color_primary?: string
+          color_secondary?: string
+          color_surface?: string
+          color_text?: string
+          color_text_muted?: string
+          content_length?: string
+          created_at?: string
+          custom_highlights?: string[] | null
+          design_style?: string
+          id?: string
+          is_default?: boolean | null
+          layout?: string
+          palette_id?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_preferences_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_feed_settings: {
         Row: {
           auto_sync_enabled: boolean | null
