@@ -586,7 +586,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
       </div>
 
       {/* Filters & Actions */}
-      <Card className="mb-6">
+      <Card className="mb-6 bg-background/50">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4">
             {/* Search */}
@@ -596,84 +596,73 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                 placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 relative z-20"
+                className="pl-10 h-12 text-base relative z-20"
               />
             </div>
 
-            {/* Collapsible Filters */}
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Filtres avancés
-                </span>
-                <Badge variant="secondary" className="text-xs">
-                  {[sourceFilter, statusFilter, syncFilter, qualityFilter, collectionFilter].filter(f => f !== 'all').length} actif(s)
-                </Badge>
-              </summary>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t">
-                <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Source" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="all">Toutes sources</SelectItem>
-                    <SelectItem value="ai">IA Généré</SelectItem>
-                    <SelectItem value="shopify">Shopify</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Filters Row 1 */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background">
+                  <SelectItem value="all">Toutes sources</SelectItem>
+                  <SelectItem value="ai">IA Généré</SelectItem>
+                  <SelectItem value="shopify">Shopify</SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Statut" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="all">Tous statuts</SelectItem>
-                    <SelectItem value="draft">Brouillon</SelectItem>
-                    <SelectItem value="published">Publié</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background">
+                  <SelectItem value="all">Tous statuts</SelectItem>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="published">Publié</SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Select value={syncFilter} onValueChange={setSyncFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Synchronisation" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="all">Tous</SelectItem>
-                    <SelectItem value="synced">Synchronisé</SelectItem>
-                    <SelectItem value="not_synced">Non synchronisé</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Select value={collectionFilter} onValueChange={setCollectionFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Collection" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="all">Toutes collections</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Select value={syncFilter} onValueChange={setSyncFilter}>
+                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                  <SelectValue placeholder="Synchronisation" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background">
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="synced">Synchronisé</SelectItem>
+                  <SelectItem value="not_synced">Non synchronisé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <Select 
-                  value={qualityFilter} 
-                  onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Score SEO" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="all">Tous scores</SelectItem>
-                    <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
-                    <SelectItem value="good">Bon (55-79%)</SelectItem>
-                    <SelectItem value="medium">Moyen (40-54%)</SelectItem>
-                    <SelectItem value="poor">Faible (&lt;40%)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </details>
+            {/* Filters Row 2 */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                  <SelectValue placeholder="Collection" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background">
+                  <SelectItem value="all">Toutes collections</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select 
+                value={qualityFilter} 
+                onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
+              >
+                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
+                  <SelectValue placeholder="Score SEO" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-background">
+                  <SelectItem value="all">Tous scores</SelectItem>
+                  <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
+                  <SelectItem value="good">Bon (55-79%)</SelectItem>
+                  <SelectItem value="medium">Moyen (40-54%)</SelectItem>
+                  <SelectItem value="poor">Faible (&lt;40%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Bulk Actions */}

@@ -928,9 +928,9 @@ export function TagOptimization() {
       </div>
 
       {/* Controls Section */}
-      <Card className="p-4">
+      <Card className="p-4 bg-background/50">
         <div className="flex flex-col gap-4">
-          {/* Large Search Bar and Category Filter */}
+          {/* Search Bar */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
@@ -938,14 +938,17 @@ export function TagOptimization() {
                 placeholder="Search products by title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg relative z-20"
+                className="pl-12 h-12 text-base relative z-20"
               />
             </div>
-            
+          </div>
+
+          {/* Filters Row 1: Category, Collection, Product Status */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">All Categories</option>
               {uniqueCategories.map((category) => (
@@ -958,7 +961,7 @@ export function TagOptimization() {
             <select
               value={selectedCollection}
               onChange={(e) => setSelectedCollection(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">Toutes les collections</option>
             </select>
@@ -966,15 +969,18 @@ export function TagOptimization() {
             <select
               value={productStatusFilter}
               onChange={(e) => setProductStatusFilter(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">Tous les statuts</option>
               <option value="active">Publié</option>
               <option value="draft">Brouillon</option>
             </select>
+          </div>
 
+          {/* Filters Row 2: SEO Status, Sync Status, Quality */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -985,7 +991,7 @@ export function TagOptimization() {
             </Select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder="Sync" />
               </SelectTrigger>
               <SelectContent>
@@ -996,7 +1002,7 @@ export function TagOptimization() {
             </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder="SEO Quality" />
               </SelectTrigger>
               <SelectContent>
@@ -1008,7 +1014,12 @@ export function TagOptimization() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+      </Card>
 
+      {/* Action Buttons Section */}
+      <Card className="p-4">
+        <div className="flex flex-col gap-4">
           {/* Action Buttons Row */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1084,31 +1095,31 @@ export function TagOptimization() {
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* Mobile Filters */}
-        {showMobileFilters && (
-          <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
-            <div className="grid grid-cols-2 gap-2">
-              {filters.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
-                    filter === f.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-background text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {f.label}
-                  <Badge variant={filter === f.id ? 'secondary' : 'outline'}>
-                    {f.count}
-                  </Badge>
-                </button>
-              ))}
+          {/* Mobile Filters */}
+          {showMobileFilters && (
+            <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-2 gap-2">
+                {filters.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
+                      filter === f.id
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-background text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {f.label}
+                    <Badge variant={filter === f.id ? 'secondary' : 'outline'}>
+                      {f.count}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </Card>
 
       {/* Desktop Filters */}

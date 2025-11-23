@@ -1202,7 +1202,7 @@ export function CollectionOptimization() {
       </div>
 
       {/* Controls Section */}
-      <Card className="p-4">
+      <Card className="p-4 bg-background/50">
         <div className="flex flex-col gap-4">
           {/* Search Bar */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -1212,12 +1212,15 @@ export function CollectionOptimization() {
                 placeholder="Rechercher des collections par titre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-lg relative z-20"
+                className="pl-12 h-12 text-base relative z-20"
               />
             </div>
+          </div>
 
+          {/* Filters Row */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="z-50 bg-background">
@@ -1230,7 +1233,7 @@ export function CollectionOptimization() {
             <select
               value={collectionStatusFilter}
               onChange={(e) => setCollectionStatusFilter(e.target.value)}
-              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px] relative z-20"
+              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
             >
               <option value="all">Tous les statuts</option>
               <option value="active">Publié</option>
@@ -1238,7 +1241,7 @@ export function CollectionOptimization() {
             </select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-12 min-w-[180px]">
+              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder="Sync" />
               </SelectTrigger>
               <SelectContent>
