@@ -42,15 +42,15 @@ export function LimitWarningBanner() {
     try {
       setUpgrading(true);
 
-      // For trial users, navigate to subscription page
+      // For trial users, navigate to account subscription tab
       if (limits.isTrialing) {
-        navigate("/subscription");
+        navigate("/account?tab=subscription");
         return;
       }
 
-      // For paid users who reached limits, navigate to subscription page to choose upgrade
+      // For paid users who reached limits, navigate to account subscription tab to choose upgrade
       // This is safer than auto-selecting the next plan
-      navigate("/subscription");
+      navigate("/account?tab=subscription");
     } catch (error) {
       console.error("Upgrade error:", error);
       toast.error("Erreur lors de la redirection");
