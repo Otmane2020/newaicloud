@@ -2,8 +2,9 @@
  * Subscription Upgrade Logic:
  * 
  * UPGRADE BILLING:
- * - ALWAYS applies proration (user pays only the difference for remaining days)
- * - Formula: (new_price - old_price) × days_remaining / total_cycle_days
+ * - Uses Stripe automatic proration (proration_behavior: 'always_invoice')
+ * - Stripe calculates, invoices, and charges the prorated difference automatically
+ * - No manual invoice creation needed
  * - Fair billing regardless of upgrade timing in the cycle
  * 
  * USAGE COUNTER RESETS:
@@ -14,7 +15,7 @@
  *   - No usage reset (cycle just started, counters already at 0)
  * 
  * This ensures users get immediate access to new limits when upgrading
- * and always pay a fair prorated amount.
+ * and Stripe handles all billing automatically.
  */
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -272,104 +273,27 @@ serve(async (req) => {
     const subscriptionItemId = stripeSubscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
-    // Update subscription WITHOUT automatic proration
-    const updateParams: any = {
-      items: [
-        {
-          id: subscriptionItemId,
-          price: new_price_id,
-        },
-      ],
-      proration_behavior: 'none', // Disable Stripe's automatic proration (we handle it manually)
-      billing_cycle_anchor: 'unchanged',
-    };
-
+    // Update subscription WITH automatic proration
     const updatedSubscription = await stripe.subscriptions.update(
       subscriptionData.stripe_subscription_id,
-      updateParams
+      {
+        items: [
+          {
+            id: subscriptionItemId,
+            price: new_price_id,
+          },
+        ],
+        proration_behavior: 'always_invoice', // Let Stripe handle proration automatically
+        billing_cycle_anchor: 'unchanged',
+      }
     );
 
-    logStep("Subscription updated in Stripe", {
+    logStep("Subscription updated in Stripe with automatic proration", {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status,
-      prorationBehavior: 'none',
+      prorationBehavior: 'always_invoice',
       periodPreserved: true
     });
-
-    // Force immediate payment for any upgrade (trial→paid, paid→paid)
-    try {
-      const oldPriceAmount = currentPrice?.unit_amount || 0;
-      const newPriceObj = await stripe.prices.retrieve(new_price_id);
-      const newPriceAmount = newPriceObj.unit_amount || 0;
-      const priceDifference = newPriceAmount - oldPriceAmount;
-
-      if (priceDifference > 0) {
-        // ALWAYS charge prorated difference based on remaining days
-        const daysRemaining = totalCycleDays - daysIntoCycle;
-        const chargeAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
-        const description = `Upgrade proraté: ${daysRemaining}j/${totalCycleDays}j (${oldPriceAmount / 100}→${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
-
-        logStep("Creating immediate charge for upgrade", {
-          chargeAmount: chargeAmount / 100,
-          currency: newPriceObj.currency,
-          daysRemaining,
-          totalCycleDays,
-          proratedPercentage: Math.round((daysRemaining / totalCycleDays) * 100)
-        });
-
-        // Create invoice item
-        await stripe.invoiceItems.create({
-          customer: profile.stripe_customer_id,
-          amount: chargeAmount,
-          currency: newPriceObj.currency,
-          description: description,
-        });
-
-        // Create invoice
-        const invoice = await stripe.invoices.create({
-          customer: profile.stripe_customer_id,
-          auto_advance: false, // Manual control for immediate payment
-          collection_method: 'charge_automatically',
-        });
-
-        // Finalize invoice
-        await stripe.invoices.finalizeInvoice(invoice.id);
-
-        // FORCE IMMEDIATE PAYMENT
-        const paidInvoice = await stripe.invoices.pay(invoice.id, {
-          paid_out_of_band: false,
-        });
-
-        logStep("Immediate payment processed", {
-          invoiceId: paidInvoice.id,
-          status: paidInvoice.status,
-          amountPaid: paidInvoice.amount_paid / 100,
-          paymentIntent: paidInvoice.payment_intent
-        });
-
-        if (paidInvoice.status !== 'paid') {
-          throw new Error(`Le paiement a échoué: ${paidInvoice.status}`);
-        }
-      } else if (priceDifference === 0) {
-        logStep("No price difference, no charge needed");
-      }
-    } catch (error) {
-      logStep("ERROR: Payment failed", { error });
-      // Rollback the subscription change if payment fails
-      await stripe.subscriptions.update(
-        subscriptionData.stripe_subscription_id,
-        {
-          items: [
-            {
-              id: subscriptionItemId,
-              price: currentPrice?.id,
-            },
-          ],
-          proration_behavior: 'none',
-        }
-      );
-      throw new Error(`Échec du paiement lors de l'upgrade: ${error instanceof Error ? error.message : String(error)}`);
-    }
 
     // Update profile with new plan
     if (new_plan_id) {
@@ -432,37 +356,34 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Calculate prorated amount for upgrade details
+    // Get proration details from Stripe (for display purposes)
     let prorationDetails: any = null;
-    if (isMidCycleUpgrade) {
-      try {
-        // Get old and new price amounts
-        const oldPriceAmount = currentPrice?.unit_amount || 0; // in cents
-        const newPriceObj = await stripe.prices.retrieve(new_price_id);
-        const newPriceAmount = newPriceObj.unit_amount || 0; // in cents
-        
-        // Calculate prorated amount based on remaining days
-        const priceDifference = newPriceAmount - oldPriceAmount;
+    try {
+      // Retrieve upcoming invoice to see Stripe's automatic proration
+      const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
+        customer: profile.stripe_customer_id,
+        subscription: subscriptionData.stripe_subscription_id,
+      });
+
+      const prorationItem = upcomingInvoice.lines.data.find((line: any) => line.proration);
+      
+      if (prorationItem && isMidCycleUpgrade) {
         const daysRemaining = totalCycleDays - daysIntoCycle;
-        const proratedAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
-        
         prorationDetails = {
-          old_plan_price: oldPriceAmount / 100,
-          new_plan_price: newPriceAmount / 100,
-          price_difference: priceDifference / 100,
-          prorated_amount: proratedAmount / 100,
+          prorated_amount: (prorationItem.amount || 0) / 100,
           days_remaining: daysRemaining,
           total_cycle_days: totalCycleDays,
-          currency: newPriceObj.currency.toUpperCase(),
-          logic: "prorated_by_days",
-          explanation: `Montant proraté: (${priceDifference / 100} × ${daysRemaining}j) / ${totalCycleDays}j = ${proratedAmount / 100}${newPriceObj.currency.toUpperCase()}`
+          currency: upcomingInvoice.currency.toUpperCase(),
+          next_invoice_total: upcomingInvoice.total / 100,
+          logic: "stripe_automatic_proration",
+          explanation: `Stripe a calculé le prorata automatiquement pour ${daysRemaining}j restants`
         };
         
         logStep("Prorated amount calculated", prorationDetails);
-      } catch (error) {
-        logStep("Warning: Could not calculate proration", { error });
-        prorationDetails = { error: "Could not calculate proration" };
       }
+    } catch (error) {
+      logStep("Warning: Could not retrieve proration details", { error });
+      prorationDetails = { error: "Could not retrieve proration details" };
     }
 
     return new Response(
