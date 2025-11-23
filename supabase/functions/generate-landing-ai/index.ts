@@ -1097,22 +1097,26 @@ Custom palette - use provided design tokens below
 `}
 ` : ''}
 
-DESIGN TOKENS (HSL FORMAT - FOR PRIMARY ELEMENTS):
+DESIGN TOKENS (HSL FORMAT - FOR THE 7 THEME COLORS):
 - Primary: hsl(${designTokens.primary})
 - Secondary: hsl(${designTokens.secondary})
 - Accent: hsl(${designTokens.accent})
 - Background: hsl(${designTokens.background})
-- Text: hsl(${designTokens.text})
+- Surface: hsl(${designTokens.surface})
+- Text main: hsl(${designTokens.text})
+- Text muted: hsl(${designTokens.textMuted})
+- CTA text: hsl(${designTokens.ctaText})
 
 🚨 CRITICAL COLOR USAGE RULES:
-1. USE ALL 5 COLORS from the palette throughout the design for visual richness
-2. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
-3. ALWAYS use inline HSL styles for hero, sections, and CTAs
-4. Apply the 5 palette colors progressively:
-   - Darkest colors (1-2): Headers, primary CTAs, bold text
-   - Middle colors (3): Backgrounds, sections, cards
-   - Lightest colors (4-5): Subtle backgrounds, hover states, borders
-5. Examples:
+1. USE ALL 7 THEME COLORS (primary, secondary, accent, background, surface, text, textMuted) across the layout
+2. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) and NEVER define your own :root or prefers-color-scheme based dark mode
+3. ALWAYS assume a LIGHT THEME and ensure high contrast on light backgrounds (WCAG AA 4.5:1 minimum)
+4. ALWAYS use inline HSL styles for hero, sections, cards, tables and CTAs
+5. Apply palette progressively:
+   - Darkest colors (primary/secondary): headers, primary CTAs, bold text, key icons
+   - Middle colors (accent/surface): section and card backgrounds
+   - Lightest tones (background + textMuted): subtle backgrounds, borders, hover states
+6. Examples:
    - Hero banner: <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
    - Section: <section style="background-color: hsl(${designTokens.surface})">
    - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
@@ -1414,7 +1418,7 @@ Palette personnalisée - utilise les tokens ci-dessous
 `}
 ` : ''}
 
-TOKENS DE DESIGN (FORMAT HSL - À UTILISER PARTOUT) :
+TOKENS DE DESIGN (FORMAT HSL - 7 COULEURS DU THÈME) :
 - Primaire : hsl(${designTokens.primary})
 - Secondaire : hsl(${designTokens.secondary})
 - Accent : hsl(${designTokens.accent})
@@ -1425,13 +1429,15 @@ TOKENS DE DESIGN (FORMAT HSL - À UTILISER PARTOUT) :
 - Texte sur CTA : hsl(${designTokens.ctaText})
 
 🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
-1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
-2. TOUJOURS utiliser des styles inline HSL pour hero, sections et CTAs
-3. Utilise PROGRESSIVEMENT les 5 couleurs de la palette :
-   - Couleurs les plus foncées (1-2) : titres, CTAs principaux, textes importants
-   - Couleur intermédiaire (3) : fonds de sections et cartes
-   - Couleurs les plus claires (4-5) : fonds subtils, bords, états hover
-4. Exemples :
+1. UTILISE LES 7 COULEURS DU THÈME (primaire, secondaire, accent, fond, surface, texte, texte atténué) dans TOUTE la mise en page
+2. N'UTILISE JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) et NE CRÉE JAMAIS ton propre dark mode (pas de :root, pas de @media (prefers-color-scheme))
+3. SUPPOSE TOUJOURS UN THÈME CLAIR et garantis un contraste fort sur fond clair (WCAG AA 4.5:1 minimum)
+4. Utilise des styles inline HSL pour hero, sections, cartes, tableaux et CTA
+5. Utilise PROGRESSIVEMENT les couleurs de la palette :
+   - Couleurs les plus foncées (primaire/secondaire) : titres, CTAs principaux, icônes
+   - Couleurs intermédiaires (accent/surface) : fonds de sections et cartes
+   - Tons les plus clairs (fond + texte atténué) : fonds subtils, bords, états hover
+6. Exemples :
    - Hero : <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
    - Section : <section style="background-color: hsl(${designTokens.surface})">
    - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
