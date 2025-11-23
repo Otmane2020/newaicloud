@@ -243,32 +243,63 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
             <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
               <h4 className="font-semibold text-sm">Résumé du changement</h4>
               
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3 text-sm">
                 {currentPlan && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Plan actuel:</span>
-                    <span className="font-medium">
-                      {currentPlan.name} - ${currentPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Nouveau plan:</span>
-                  <span className="font-medium">
-                    {selectedPlan.name} - ${newPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
-                  </span>
-                </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Prix actuel:</span>
+                      <span className="font-semibold text-base">
+                        {currentPlan.name} à ${currentPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Nouveau prix:</span>
+                      <span className="font-semibold text-base text-primary">
+                        {selectedPlan.name} à ${newPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                      </span>
+                    </div>
 
-                {!isSamePlan && (
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="text-muted-foreground">
-                      {isUpgrade ? 'Coût supplémentaire' : 'Remboursement'} (prorata):
-                    </span>
-                    <span className={`font-semibold ${isUpgrade ? 'text-orange-600' : 'text-green-600'}`}>
-                      {isUpgrade ? '+' : ''}${priceChange.toFixed(2)}
-                    </span>
-                  </div>
+                    {!isSamePlan && prorationInfo && (
+                      <div className="pt-3 border-t space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Différence de prix:</span>
+                          <span className="font-medium">
+                            ${Math.abs(priceChange).toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                          </span>
+                        </div>
+                        
+                        {prorationInfo.willProrate && (
+                          <>
+                            <div className="flex justify-between items-start">
+                              <span className="text-muted-foreground">Formule de prorata:</span>
+                              <div className="text-right font-mono text-xs bg-background/50 px-2 py-1 rounded">
+                                ({newPrice.toFixed(2)} - {currentPrice.toFixed(2)}) × ({prorationInfo.daysRemaining}j / {prorationInfo.daysIntoCycle + prorationInfo.daysRemaining}j)
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t">
+                              <span className="font-medium">
+                                {isUpgrade ? 'À payer aujourd\'hui' : 'Crédit appliqué'} (prorata):
+                              </span>
+                              <span className={`font-bold text-lg ${isUpgrade ? 'text-orange-600' : 'text-green-600'}`}>
+                                {isUpgrade ? '' : '-'}${Math.abs(prorationInfo.prorationAmount).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        
+                        {!prorationInfo.willProrate && (
+                          <div className="flex justify-between items-center pt-2 border-t">
+                            <span className="font-medium">À payer (prix complet):</span>
+                            <span className="font-bold text-lg text-orange-600">
+                              ${newPrice.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
