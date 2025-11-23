@@ -101,16 +101,15 @@ export default function LandingTest() {
     console.log('🧪 [TEST] Product ID:', productId);
     
     try {
-      const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
+      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
-          productId: productId,
+          product_id: productId,
           style: config.style,
           layout: config.layout,
           colorScheme: getPaletteColors(config.colorScheme),
-          contentLength: config.contentLength,
-          theme: config.theme,
+          length: config.contentLength,
           language: 'fr',
-          generationMode: 'premium', // Toujours DeepSeek
+          designStyle: config.style,
         },
       });
 
@@ -274,7 +273,7 @@ export default function LandingTest() {
                   </>
                 ) : (
                   <>
-                    🚀 Générer Landing Page (DeepSeek)
+                    🚀 Générer Landing Page (Lovable AI)
                   </>
                 )}
               </Button>
