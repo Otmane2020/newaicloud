@@ -238,11 +238,12 @@ serve(async (req) => {
       planId = subscription.items.data[0].price.product as string;
       logStep('Determined subscription plan', { planId });
       
-      // Update profile with correct status using admin client
+      // Update profile with correct status AND plan_id using admin client
       await supabaseAdmin
         .from('profiles')
         .update({
           subscription_status: status,
+          current_plan_id: planId,
           stripe_customer_id: customerId,
           onboarding_completed: true,
           updated_at: new Date().toISOString()
