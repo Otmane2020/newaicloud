@@ -5,9 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLandingPreferences } from "@/hooks/useLandingPreferences";
+import { Link } from "react-router-dom";
 
 export default function LandingTest() {
   const { user } = useAuth();
@@ -267,11 +268,19 @@ export default function LandingTest() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">🧪 Landing Page Test Lab</h1>
-          <p className="text-muted-foreground">
-            Teste toutes les options de génération avec DeepSeek
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="text-center space-y-2 flex-1">
+            <h1 className="text-4xl font-bold text-foreground">🧪 Landing Page Test Lab</h1>
+            <p className="text-muted-foreground">
+              Teste toutes les options de génération avec DeepSeek
+            </p>
+          </div>
+          <Link to="/landing-configurator">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              Gérer les préférences
+            </Button>
+          </Link>
         </div>
         
         {/* Configuration Panel */}
