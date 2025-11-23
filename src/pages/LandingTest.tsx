@@ -31,8 +31,10 @@ export default function LandingTest() {
           .select(`
             id, 
             title, 
-            body_html, 
+            body_html,
+            seo_description,
             vendor,
+            image_url,
             product_images (src, alt_text)
           `)
           .limit(1)
@@ -103,30 +105,32 @@ export default function LandingTest() {
     }
 
     setLoading(true);
-    console.log('🧪 [TEST] Génération DeepSeek avec config:', config);
+    console.log('🧪 [TEST] Génération Lovable AI avec config:', config);
     console.log('🧪 [TEST] Product ID:', product.id, 'Title:', product.title);
     
     try {
-      const { data, error } = await supabase.functions.invoke("generate-landing-deepseek", {
+      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
-          productId: product.id,
-          style: config.style,
+          product_id: product.id,
+          productTitle: product.title,
+          description: product.body_html || product.seo_description || "",
+          vendor: product.vendor || "Marque",
+          imageUrl: product.image_url,
+          designStyle: config.style,
           layout: config.layout,
           colorScheme: getPaletteColors(config.colorScheme),
-          contentLength: config.contentLength,
-          theme: config.theme,
-          generationMode: "fast",
+          length: config.contentLength,
           language: 'fr',
         },
       });
 
       if (error) {
-        console.error('🧪 [TEST] Erreur DeepSeek:', error);
+        console.error('🧪 [TEST] Erreur Lovable AI:', error);
         throw error;
       }
       
       if (data?.html) {
-        console.log('🧪 [TEST] HTML généré (DeepSeek):', {
+        console.log('🧪 [TEST] HTML généré (Lovable AI):', {
           length: data.html.length,
           hasToggle: data.html.includes('theme-toggle'),
           hasRoot: data.html.includes(':root'),
@@ -137,7 +141,7 @@ export default function LandingTest() {
         throw new Error("Pas de HTML retourné");
       }
     } catch (err: any) {
-      console.error('🧪 [TEST] Erreur fatale DeepSeek:', err);
+      console.error('🧪 [TEST] Erreur fatale Lovable AI:', err);
       toast.error("❌ Erreur: " + err.message);
     } finally {
       setLoading(false);
@@ -280,7 +284,7 @@ export default function LandingTest() {
                   </>
                 ) : (
                   <>
-                    🚀 Générer Landing Page (DeepSeek)
+                    🚀 Générer Landing Page (Lovable AI)
                   </>
                 )}
               </Button>
