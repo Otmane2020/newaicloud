@@ -1288,33 +1288,8 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
   const selectedStyleTemplate = styleTemplates[style as keyof typeof styleTemplates] || styleTemplates.modern;
   const selectedIcon = iconTemplates[style as keyof typeof iconTemplates] || iconTemplates.modern;
 
-  // Build reliability badge based on data source
-  const reliabilityBadge = enrichedProduct?.serp_verified
-    ? `
-✅ Badge for SERP-verified specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <span>Spécifications vérifiées</span>
-</div>
-<p class="text-xs text-gray-600 mb-6">Dimensions confirmées par ${enrichedProduct?.serp_data?.similarProducts?.length || 0} produits similaires</p>
-`
-    : enrichedProduct?.vision_attributes?.technicalDimensions
-      ? `
-📐 Badge for image-extracted specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-  <span>Mesures extraites du schéma technique</span>
-</div>
-<p class="text-xs text-gray-600 mb-6">Dimensions précises lues directement sur l'image produit</p>
-`
-      : `
-⚠️ Badge for estimated specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-sm font-medium text-amber-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-  <span>Dimensions approximatives</span>
-</div>
-<p class="text-xs text-gray-600 mb-6">Ces mesures sont estimées et peuvent varier légèrement</p>
-`;
+  // ❌ SUPPRIMÉ : Les badges de fiabilité des dimensions ne sont plus affichés
+  const reliabilityBadge = "";
 
   // ✅ SPRINT 2 - PHASE 4: Optimized prompt (reduced by ~40%)
   return language === "fr" ? `
@@ -1345,7 +1320,10 @@ ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join(
 
 🎨 DÉFINITION CSS OBLIGATOIRE EN DÉBUT DE <style>:
 ------------------------------------------------------------------
+⚠️ CRITIQUE: Ajoute STRICTEMENT ces CSS vars pour le toggle dark/light mode
+
 :root {
+  /* Mode Clair (par défaut) */
   --color-primary: ${designTokens.primary};
   --color-secondary: ${designTokens.secondary};
   --color-accent: ${designTokens.accent};
@@ -1353,6 +1331,23 @@ ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join(
   --color-surface: ${designTokens.surface};
   --color-text: ${designTokens.text};
   --color-text-muted: ${designTokens.textMuted};
+}
+
+.dark {
+  /* Mode Sombre - S'active quand la classe 'dark' est sur <body> */
+  --color-primary: ${designTokens.primaryDark};
+  --color-secondary: ${designTokens.secondaryDark};
+  --color-accent: ${designTokens.accentDark};
+  --color-background: ${designTokens.backgroundDark};
+  --color-surface: ${designTokens.surfaceDark};
+  --color-text: ${designTokens.textDark};
+  --color-text-muted: ${designTokens.textMutedDark};
+}
+
+body {
+  background-color: hsl(var(--color-background));
+  color: hsl(var(--color-text));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ⚠️ ENSUITE TU UTILISES CES CSS VARS PARTOUT:
@@ -1434,16 +1429,53 @@ ${selectedStyleTemplate.rules}
 RÈGLES CRITIQUES:
 ✅ HSL uniquement: style="color: hsl(...)" - JAMAIS de HEX
 ✅ Responsive: text-lg md:text-2xl (UN seul breakpoint/propriété)
+✅ Images: TOUJOURS afficher les vraies images produit avec <img src="..."> - JAMAIS d'icônes placeholder
 ✅ Images: loading="lazy" (sauf 1ère: "eager")
 ✅ Icônes Lucide: TOUJOURS text-primary ou text-accent (JAMAIS gris)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
-✅ Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
-✅ NE JAMAIS afficher "N/A" dans le HTML des spécifications (si info manquante: phrase complète type "Non communiqué" ou masquer la ligne)
+✅ Cards: Utilise STRICTEMENT les couleurs HSL de la palette fournie (background, surface, accent)
+✅ NE JAMAIS afficher de ligne avec "Non communiqué" - MASQUE ces lignes complètement
 
 ${reliabilityBadge}
 
 📐 STRUCTURE HTML COMPLÈTE OBLIGATOIRE (NE RIEN OUBLIER):
 =================================================================
+
+0️⃣ DARK/LIGHT MODE TOGGLE (OBLIGATOIRE EN HAUT À DROITE):
+   - Bouton fixe en haut à droite: fixed top-4 right-4 z-50
+   - Icône soleil/lune avec transition
+   - Script JavaScript pour toggle la classe 'dark' sur <body>
+   - EXEMPLE OBLIGATOIRE:
+     <button id="theme-toggle" class="fixed top-4 right-4 z-50 p-3 rounded-full shadow-lg transition-all" style="background-color: hsl(var(--color-surface))">
+       <svg class="w-6 h-6 theme-icon-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+       </svg>
+       <svg class="w-6 h-6 theme-icon-dark hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+       </svg>
+     </button>
+     <script>
+       const toggleBtn = document.getElementById('theme-toggle');
+       const body = document.body;
+       const lightIcon = document.querySelector('.theme-icon-light');
+       const darkIcon = document.querySelector('.theme-icon-dark');
+       
+       // Load saved theme
+       const savedTheme = localStorage.getItem('theme') || 'light';
+       if (savedTheme === 'dark') {
+         body.classList.add('dark');
+         lightIcon.classList.add('hidden');
+         darkIcon.classList.remove('hidden');
+       }
+       
+       toggleBtn?.addEventListener('click', () => {
+         body.classList.toggle('dark');
+         const isDark = body.classList.contains('dark');
+         lightIcon.classList.toggle('hidden', isDark);
+         darkIcon.classList.toggle('hidden', !isDark);
+         localStorage.setItem('theme', isDark ? 'dark' : 'light');
+       });
+     </script>
 
 1️⃣ HERO SECTION (fullscreen, h-screen):
    - Image en background-image (URL complète)
@@ -1464,6 +1496,8 @@ ${reliabilityBadge}
 
 4️⃣ GALERIE IMAGES RESPONSIVE:
    - Grid asymétrique: première image large (lg:col-span-2), autres plus petites
+   - ⚠️ CRITIQUE: UTILISE TOUJOURS les vraies images produit avec <img src="url-complete-shopify">
+   - JAMAIS d'icônes, JAMAIS de placeholder, JAMAIS de titre avec icône
    - UTILISE TOUTES les images fournies (${images?.length || 0} images)
    - URLs COMPLÈTES de Shopify CDN
    - Alt texts descriptifs
@@ -1473,7 +1507,8 @@ ${reliabilityBadge}
    - REPRENDS les extractedInfo ci-dessus
    - Tableau avec bordures et hover effects
    - Cards de caractéristiques avec icônes
-   - JAMAIS "N/A", écris "Non communiqué" ou masque la ligne
+   - ⚠️ CRITIQUE: NE JAMAIS afficher les lignes avec "Non communiqué" - MASQUE/SUPPRIME complètement ces lignes du HTML
+   - Seulement afficher les specs qui ont une vraie valeur
 
 6️⃣ DESCRIPTION LONGUE (prose styling):
    - Minimum ${wordCount} mots
@@ -1732,7 +1767,8 @@ ${reliabilityBadge}
    - TAKE the extractedInfo above
    - Table with borders and hover effects
    - Feature cards with icons
-   - NEVER "N/A", write "Non communiqué" / "Not specified" or hide the row
+   - ⚠️ CRITICAL: NEVER display rows with "Non communiqué" / "Not specified" - HIDE/REMOVE these rows completely from HTML
+   - Only display specs that have actual values
 
 6️⃣ LONG DESCRIPTION (prose styling):
    - Minimum ${wordCount} words
