@@ -1113,24 +1113,73 @@ DESIGN TOKENS (HSL FORMAT - FOR THE 7 THEME COLORS):
 - Text muted: hsl(${designTokens.textMuted})
 - CTA text: hsl(${designTokens.ctaText})
 
-🚨 CRITICAL COLOR USAGE RULES:
-1. USE ALL 7 THEME COLORS (primary, secondary, accent, background, surface, text, textMuted) across the layout
-2. ❌ NEVER USE HEX COLORS (#FFFFFF, #000000, etc.)
-3. ❌ NEVER USE CSS VARIABLES (var(--color-primary), var(--color-background-main), etc.)
-4. ❌ NEVER define :root or @media (prefers-color-scheme) 
-5. ✅ ALWAYS use INLINE HSL values directly in style attributes
-6. ✅ ALWAYS assume a LIGHT THEME and ensure high contrast on light backgrounds (WCAG AA 4.5:1 minimum)
-7. Apply palette progressively:
-   - Darkest colors (primary/secondary): headers, primary CTAs, bold text, key icons
-   - Middle colors (accent/surface): section and card backgrounds
-   - Lightest tones (background + textMuted): subtle backgrounds, borders, hover states
-8. Examples (COPY THESE EXACT PATTERNS):
-   - Hero banner: <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white;">
-   - Section background: <section style="background-color: hsl(${designTokens.surface});">
-   - Card background: <div style="background-color: hsl(${designTokens.background});">
-   - Text color: <h2 style="color: hsl(${designTokens.primary});">
-   - Muted text: <p style="color: hsl(${designTokens.textMuted});">
-   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText});">
+🚨 CRITICAL COLOR & THEME USAGE RULES:
+1. ✅ MANDATORY: Include dark/light theme toggle in the <head> section with :root CSS variables
+2. ✅ MANDATORY: Define BOTH light and dark theme variables in :root
+3. ✅ Use CSS variables (var(--color-primary), var(--color-background), etc.) for all styling
+4. ❌ NEVER USE HEX COLORS directly in elements (#FFFFFF, #000000, etc.)
+5. ❌ NEVER use inline HSL values - ALWAYS use CSS variables
+6. ✅ Provide a theme toggle button in the top-right corner of the page
+7. MANDATORY THEME SYSTEM - Include this EXACT code in <head>:
+   <style>
+     :root {
+       --color-primary: ${designTokens.primary};
+       --color-secondary: ${designTokens.secondary};
+       --color-accent: ${designTokens.accent};
+       --color-background: ${designTokens.background};
+       --color-surface: ${designTokens.surface};
+       --color-text: ${designTokens.text};
+       --color-text-muted: ${designTokens.textMuted};
+     }
+     
+     [data-theme="dark"] {
+       --color-primary: ${designTokens.primary};
+       --color-secondary: ${designTokens.secondary};
+       --color-accent: ${designTokens.accent};
+       --color-background: 222 47% 11%;
+       --color-surface: 217 33% 17%;
+       --color-text: 210 40% 98%;
+       --color-text-muted: 215 20% 65%;
+     }
+     
+     body {
+       background-color: hsl(var(--color-background));
+       color: hsl(var(--color-text));
+       transition: background-color 0.3s ease, color 0.3s ease;
+     }
+   </style>
+   
+   <script>
+     // Theme toggle functionality
+     const theme = localStorage.getItem('theme') || 'light';
+     document.documentElement.setAttribute('data-theme', theme);
+     
+     function toggleTheme() {
+       const current = document.documentElement.getAttribute('data-theme');
+       const next = current === 'light' ? 'dark' : 'light';
+       document.documentElement.setAttribute('data-theme', next);
+       localStorage.setItem('theme', next);
+     }
+   </script>
+
+8. MANDATORY THEME TOGGLE BUTTON - Add this in the top-right corner:
+   <button onclick="toggleTheme()" 
+           class="theme-toggle fixed top-4 right-4 z-50 p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
+           style="background-color: hsl(var(--color-surface)); color: hsl(var(--color-text));"
+           aria-label="Toggle theme">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+     </svg>
+   </button>
+
+9. Examples using CSS variables (COPY THESE PATTERNS):
+   - Hero banner: <div style="background: linear-gradient(135deg, hsl(var(--color-primary)), hsl(var(--color-accent))); color: white;">
+   - Section: <section style="background-color: hsl(var(--color-surface));">
+   - Card: <div style="background-color: hsl(var(--color-background));">
+   - Title: <h2 style="color: hsl(var(--color-primary));">
+   - Text: <p style="color: hsl(var(--color-text-muted));">
+   - Button: <button style="background-color: hsl(var(--color-accent)); color: white;">
 
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1441,26 +1490,74 @@ TOKENS DE DESIGN (FORMAT HSL - 7 COULEURS DU THÈME) :
 - Texte atténué : hsl(${designTokens.textMuted})
 - Texte sur CTA : hsl(${designTokens.ctaText})
 
-🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
-1. ✅ UTILISE LES 7 COULEURS DU THÈME (primaire, secondaire, accent, fond, surface, texte, texte atténué) dans TOUTE la mise en page
-2. ❌ N'UTILISE JAMAIS de couleurs HEX (#FFFFFF, #000000, #333333, etc.)
-3. ❌ N'UTILISE JAMAIS de CSS VARIABLES (var(--color-primary), var(--color-background-main), etc.)
-4. ❌ NE CRÉE JAMAIS de :root ou @media (prefers-color-scheme)
-5. ✅ TOUJOURS utiliser les valeurs HSL DIRECTEMENT dans les attributs style
-6. ✅ TOUJOURS supposer un THÈME CLAIR et garantir un contraste fort sur fond clair (WCAG AA 4.5:1 minimum)
-7. Applique la palette PROGRESSIVEMENT :
-   - Couleurs les plus foncées (primaire/secondaire) : titres, CTAs principaux, icônes
-   - Couleurs intermédiaires (accent/surface) : fonds de sections et cartes
-   - Tons les plus clairs (fond + texte atténué) : fonds subtils, bords, états hover
-8. Exemples EXACTS à copier :
-   - Hero : <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white;">
-   - Section : <section style="background-color: hsl(${designTokens.surface});">
-   - Carte : <div style="background-color: hsl(${designTokens.background});">
-   - Titre : <h2 style="color: hsl(${designTokens.primary});">
-   - Texte : <p style="color: hsl(${designTokens.text});">
-   - Texte atténué : <span style="color: hsl(${designTokens.textMuted});">
-   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText});">
-   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+🚨 RÈGLES COULEURS ET THÈME CRITIQUES (OBLIGATOIRE) :
+1. ✅ OBLIGATOIRE : Inclure le toggle dark/light dans le <head> avec les variables CSS :root
+2. ✅ OBLIGATOIRE : Définir les variables de thème clair ET foncé dans :root
+3. ✅ Utiliser des CSS variables (var(--color-primary), var(--color-background), etc.) pour TOUS les styles
+4. ❌ N'UTILISE JAMAIS de couleurs HEX directement dans les éléments (#FFFFFF, #000000, etc.)
+5. ❌ N'utilise JAMAIS de valeurs HSL inline - TOUJOURS utiliser les CSS variables
+6. ✅ Fournir un bouton toggle de thème dans le coin supérieur droit
+
+7. SYSTÈME DE THÈME OBLIGATOIRE - Inclure ce code EXACT dans <head> :
+   <style>
+     :root {
+       --color-primary: ${designTokens.primary};
+       --color-secondary: ${designTokens.secondary};
+       --color-accent: ${designTokens.accent};
+       --color-background: ${designTokens.background};
+       --color-surface: ${designTokens.surface};
+       --color-text: ${designTokens.text};
+       --color-text-muted: ${designTokens.textMuted};
+     }
+     
+     [data-theme="dark"] {
+       --color-primary: ${designTokens.primary};
+       --color-secondary: ${designTokens.secondary};
+       --color-accent: ${designTokens.accent};
+       --color-background: 222 47% 11%;
+       --color-surface: 217 33% 17%;
+       --color-text: 210 40% 98%;
+       --color-text-muted: 215 20% 65%;
+     }
+     
+     body {
+       background-color: hsl(var(--color-background));
+       color: hsl(var(--color-text));
+       transition: background-color 0.3s ease, color 0.3s ease;
+     }
+   </style>
+   
+   <script>
+     // Fonctionnalité de toggle de thème
+     const theme = localStorage.getItem('theme') || 'light';
+     document.documentElement.setAttribute('data-theme', theme);
+     
+     function toggleTheme() {
+       const current = document.documentElement.getAttribute('data-theme');
+       const next = current === 'light' ? 'dark' : 'light';
+       document.documentElement.setAttribute('data-theme', next);
+       localStorage.setItem('theme', next);
+     }
+   </script>
+
+8. BOUTON TOGGLE OBLIGATOIRE - Ajouter ce bouton en haut à droite :
+   <button onclick="toggleTheme()" 
+           class="theme-toggle fixed top-4 right-4 z-50 p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
+           style="background-color: hsl(var(--color-surface)); color: hsl(var(--color-text));"
+           aria-label="Changer de thème">
+     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+     </svg>
+   </button>
+
+9. Exemples avec CSS variables (COPIER CES PATTERNS) :
+   - Hero : <div style="background: linear-gradient(135deg, hsl(var(--color-primary)), hsl(var(--color-accent))); color: white;">
+   - Section : <section style="background-color: hsl(var(--color-surface));">
+   - Carte : <div style="background-color: hsl(var(--color-background));">
+   - Titre : <h2 style="color: hsl(var(--color-primary));">
+   - Texte : <p style="color: hsl(var(--color-text-muted));">
+   - Bouton : <button style="background-color: hsl(var(--color-accent)); color: white;">
 
 🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
 ${selectedStyle.description}
