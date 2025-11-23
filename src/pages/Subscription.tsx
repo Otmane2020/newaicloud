@@ -154,20 +154,26 @@ const Subscription = () => {
         // In upgrade mode, select the next recommended upgrade
         if (nextUpgrade.startsWith('pro')) {
           setSelectedProTier(nextUpgrade);
+          if (enterprisePlans.length > 0) {
+            setSelectedEnterpriseTier(enterprisePlans[0].id);
+          }
         } else if (nextUpgrade.startsWith('enterprise')) {
           setSelectedEnterpriseTier(nextUpgrade);
+          if (proPlans.length > 0) {
+            setSelectedProTier(proPlans[0].id);
+          }
         }
       } else {
         // Normal mode: select current plan or first available
         if (currentPlanData?.id.startsWith('pro')) {
           setSelectedProTier(currentPlanData.id);
-        } else if (proPlans.length > 0 && !selectedProTier) {
+        } else if (proPlans.length > 0) {
           setSelectedProTier(proPlans[0].id);
         }
         
         if (currentPlanData?.id.startsWith('enterprise')) {
           setSelectedEnterpriseTier(currentPlanData.id);
-        } else if (enterprisePlans.length > 0 && !selectedEnterpriseTier) {
+        } else if (enterprisePlans.length > 0) {
           setSelectedEnterpriseTier(enterprisePlans[0].id);
         }
       }
@@ -452,7 +458,7 @@ const Subscription = () => {
               <div>
                 <Select value={selectedProTier} onValueChange={setSelectedProTier}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue placeholder="Sélectionnez un plan" />
                   </SelectTrigger>
                   <SelectContent>
                     {proPlans.map((plan) => (
@@ -592,7 +598,7 @@ const Subscription = () => {
               <div>
                 <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue placeholder="Sélectionnez un plan" />
                   </SelectTrigger>
                   <SelectContent>
                     {enterprisePlans.map((plan) => (
