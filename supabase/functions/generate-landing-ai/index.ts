@@ -64,33 +64,34 @@ const SYSTEM_DEFAULTS: LandingConfig = {
 };
 
 // ------------------------------------------------------
-// UTILITIES — TEXT EXTRACTION
+// TEXT UTILITIES
 // ------------------------------------------------------
 function detectLanguage(text: string): "fr" | "en" {
   const t = (text || "").toLowerCase();
-  const fr = [" le ", " la ", " les ", " une ", " des ", " avec "];
-  const en = [" the ", " and ", " with ", " for ", " from "];
+  const fr = [" le ", " la ", " les ", " une ", " des "];
+  const en = [" the ", " and ", " with ", " for "];
+
   return en.some((w) => t.includes(w)) ? "en" : "fr";
 }
 
 function extractFromText(description: string) {
-  const lower = description.toLowerCase();
+  const txt = description.toLowerCase();
 
   const materials = [];
-  if (lower.includes("bois")) materials.push("bois");
-  if (lower.includes("métal") || lower.includes("acier")) materials.push("métal");
-  if (lower.includes("verre")) materials.push("verre");
-  if (lower.includes("pvc")) materials.push("pvc");
+  if (txt.includes("bois")) materials.push("bois");
+  if (txt.includes("métal") || txt.includes("acier")) materials.push("métal");
+  if (txt.includes("verre")) materials.push("verre");
+  if (txt.includes("pvc")) materials.push("pvc");
 
   let style = null;
-  if (lower.includes("scandinave")) style = "scandinave";
-  if (lower.includes("moderne")) style = "moderne";
-  if (lower.includes("minimaliste")) style = "minimaliste";
+  if (txt.includes("scandinave")) style = "scandinave";
+  if (txt.includes("moderne")) style = "moderne";
+  if (txt.includes("minimaliste")) style = "minimaliste";
 
   let category = null;
-  if (lower.includes("table basse")) category = "table basse";
-  if (lower.includes("chaise")) category = "chaise";
-  if (lower.includes("canapé")) category = "canapé";
+  if (txt.includes("chaise")) category = "chaise";
+  if (txt.includes("canapé")) category = "canapé";
+  if (txt.includes("table basse")) category = "table basse";
 
   return { materials, style, category };
 }
@@ -98,9 +99,8 @@ function extractFromText(description: string) {
 function extractDimensions(text: string | null) {
   if (!text) return null;
 
-  const regex = /(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(cm|mm)?/i;
-
-  const m = text.match(regex);
+  const reg = /(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})(cm|mm)?/i;
+  const m = text.match(reg);
   if (!m) return null;
 
   return {
@@ -111,9 +111,6 @@ function extractDimensions(text: string | null) {
   };
 }
 
-// ------------------------------------------------------
-// MERGE FINAL ATTRIBUTES
-// ------------------------------------------------------
 function finalProductAttributes(vision: any, text: any, serp: any, dims: any) {
   return {
     materials: [...new Set([...(vision?.materials || []), ...(text?.materials || [])])],
@@ -140,7 +137,7 @@ async function loadUserPreferences(userId: string) {
 }
 
 // ------------------------------------------------------
-// MERGE OPTIONS
+// MERGE OPTIONS (FINAL)
 // ------------------------------------------------------
 function mergeOptions({ override, userDefault }: { override: UserOverrideConfig; userDefault: any }): LandingConfig {
   return {
@@ -174,9 +171,6 @@ function mergeOptions({ override, userDefault }: { override: UserOverrideConfig;
   };
 }
 
-// ------------------------------------------------------
-// MERGE CONFIG WRAPPER
-// ------------------------------------------------------
 async function getMergedConfig(
   userId: string,
   storeId: string | null,
@@ -188,97 +182,6 @@ async function getMergedConfig(
 // =====================================================
 // BLOC 2 / 3 — SERP + VISION + PROMPT BUILDER + AI CALL
 // =====================================================
-// ---------------- LOVABLE AI CALL (SAFE) ----------------
-// ---------------- LOVABLE AI CALL (SAFE) ----------------
-async function callAI(prompt: string) {
-  const response = await fetch("https://api.lovable.dev/generate", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gemini-2.5-flash",
-      prompt, // PARAM CORRECT POUR LOVABLE
-    }),
-  });
-
-  let data: any = null;
-
-  // 1️⃣ Try JSON decoding normally
-  try {
-    data = await response.json();
-  } catch {
-    // 2️⃣ Fallback: read text for debugging
-    const raw = await response.text();
-    console.error("❌ Lovable returned invalid JSON:", raw);
-    throw new Error("INVALID_JSON_FROM_LOVABLE");
-  }
-
-  // 3️⃣ Ensure structure is valid
-  if (!data || typeof data !== "object") {
-    throw new Error("INVALID_LOVABLE_RESPONSE_OBJECT");
-  }
-
-  if (!data.output) {
-    console.error("❌ Lovable OUTPUT missing:", data);
-    throw new Error("AI_OUTPUT_EMPTY");
-  }
-
-  // 4️⃣ Convert output safely to string
-  const html = typeof data.output === "string" ? data.output : JSON.stringify(data.output, null, 2);
-
-  // 5️⃣ Clean HTML
-  return html
-    .replace(/```html/gi, "")
-    .replace(/```/g, "")
-    .trim();
-}
-
-async function callAI(prompt: string) {
-  const response = await fetch("https://api.lovable.dev/generate", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gemini-2.5-flash",
-      prompt, // PARAM CORRECT POUR LOVABLE
-    }),
-  });
-
-  let data: any = null;
-
-  // 1️⃣ Try JSON decoding normally
-  try {
-    data = await response.json();
-  } catch {
-    // 2️⃣ Fallback: read text for debugging
-    const raw = await response.text();
-    console.error("❌ Lovable returned invalid JSON:", raw);
-    throw new Error("INVALID_JSON_FROM_LOVABLE");
-  }
-
-  // 3️⃣ Ensure structure is valid
-  if (!data || typeof data !== "object") {
-    throw new Error("INVALID_LOVABLE_RESPONSE_OBJECT");
-  }
-
-  if (!data.output) {
-    console.error("❌ Lovable OUTPUT missing:", data);
-    throw new Error("AI_OUTPUT_EMPTY");
-  }
-
-  // 4️⃣ Convert output safely to string
-  const html = typeof data.output === "string" ? data.output : JSON.stringify(data.output, null, 2);
-
-  // 5️⃣ Clean HTML
-  return html
-    .replace(/```html/gi, "")
-    .replace(/```/g, "")
-    .trim();
-}
 
 // ---------------- SERP ANALYSIS ----------------
 async function analyzeSerp(keyword: string, country: string, lang: string) {
@@ -302,10 +205,7 @@ async function analyzeSerp(keyword: string, country: string, lang: string) {
 async function analyzeImageWithVision(imageUrl: string, productTitle: string, category: string | null) {
   try {
     const { data } = await supabase.functions.invoke("analyze-image-with-vision", {
-      body: {
-        imageUrl,
-        productContext: { title: productTitle, category },
-      },
+      body: { imageUrl, productContext: { title: productTitle, category } },
     });
     return data?.visualAttributes || null;
   } catch {
@@ -313,7 +213,7 @@ async function analyzeImageWithVision(imageUrl: string, productTitle: string, ca
   }
 }
 
-// ------------- FALLBACK GEMINI VISION -------------
+// ---------------- FALLBACK GEMINI VISION ----------------
 async function geminiFallbackVision(imageUrl: string, productTitle: string) {
   try {
     const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
@@ -325,12 +225,7 @@ async function geminiFallbackVision(imageUrl: string, productTitle: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `Analyze the product.` }],
-          },
-        ],
+        contents: [{ role: "user", parts: [{ text: `Analyze the product image` }] }],
       }),
     });
 
@@ -360,46 +255,36 @@ function buildPrompt({
   return `
 You are an expert landing page designer.
 
-⚠ OUTPUT: HTML ONLY  
-❌ No markdown  
-❌ No <html>  
-❌ No <body>  
+⚠ OUTPUT: HTML ONLY
+❌ No markdown
+❌ No <html>
+❌ No <body>
 
-====================================
-PRODUCT
-====================================
-Title: ${productTitle}
+== PRODUCT ==
+${productTitle}
 Vendor: ${vendor}
 
 Attributes:
 ${JSON.stringify(attributes, null, 2)}
 
-SERP Insights:
+SERP:
 ${JSON.stringify(serp, null, 2)}
 
-====================================
-USER DESIGN PREFERENCES
-====================================
+PREFERENCES:
 ${JSON.stringify(config, null, 2)}
 
-====================================
-REQUIREMENTS
-====================================
-- Premium modern design
-- High-end layout
-- Mobile-first
-- Strong hero section
-- Specs section
-- Features based on materials + style
-- Smooth micro-animations
-- CTA sections
-- Language: ${lang === "fr" ? "French" : "English"}
+RULES:
+- high-end design
+- mobile-first
+- strong hero
+- CTA
+- French if lang=fr else English
 
-Generate the complete HTML now.
+Generate full HTML now.
 `;
 }
 
-// ---------------- STABLE LOVABLE AI CALL ----------------
+// ---------------- 🔥 UNIQUE / SAFE / FINAL callAI() ----------------
 async function callAI(prompt: string) {
   const res = await fetch("https://api.lovable.dev/generate", {
     method: "POST",
@@ -413,31 +298,28 @@ async function callAI(prompt: string) {
     }),
   });
 
-  // Try JSON first
-  let data: any = null;
+  let json: any = null;
 
   try {
-    data = await res.json();
-  } catch (e) {
+    json = await res.json();
+  } catch {
     const raw = await res.text();
-    console.error("❌ RAW RESPONSE FROM AI:", raw);
-    throw new Error("INVALID_JSON_FROM_LOVABLE");
+    console.error("❌ RAW FROM LOVABLE:", raw);
+    throw new Error("INVALID_JSON_FROM_AI");
   }
 
-  if (!data || typeof data !== "object") {
-    throw new Error("INVALID_LOVABLE_RESPONSE");
+  if (!json || typeof json !== "object") {
+    throw new Error("INVALID_AI_RESPONSE_OBJECT");
   }
 
-  if (!data.output) {
+  if (!json.output) {
+    console.error("❌ OUTPUT MISSING:", json);
     throw new Error("AI_OUTPUT_EMPTY");
   }
 
-  const html = typeof data.output === "string" ? data.output : JSON.stringify(data.output);
+  const html = typeof json.output === "string" ? json.output : JSON.stringify(json.output);
 
-  return html
-    .replace(/```html/gi, "")
-    .replace(/```/g, "")
-    .trim();
+  return html.replace(/```html|```/gi, "").trim();
 }
 // =====================================================
 // BLOC 3 / 3 — FINAL HTTP ENDPOINT
@@ -470,9 +352,9 @@ serve(async (req) => {
       });
     }
 
-    console.log("🚀 START GENERATION:", productId);
+    console.log("🚀 GENERATE LANDING:", productId);
 
-    // 1) Load preferences
+    // 1) Load merged user config
     const finalConfig = await getMergedConfig(userId, storeId, userOverride);
 
     // 2) Detect language
@@ -481,31 +363,30 @@ serve(async (req) => {
     // 3) Extract text info
     const txt = extractFromText(description);
 
-    // 4) SERP analysis
+    // 4) SERP
     const serp = await analyzeSerp(productTitle, "fr", lang);
 
-    // 5) Vision
-    let visionResult: any = null;
+    // 5) Vision (first valid result)
+    let vision: any = null;
 
-    for (const img of images.slice(0, 5)) {
+    for (const img of images.slice(0, 6)) {
       const v = await analyzeImageWithVision(img, productTitle, txt.category);
       if (v) {
-        visionResult = v;
+        vision = v;
         break;
       }
     }
 
-    // fallback
-    if (!visionResult && images[0]) {
-      visionResult = await geminiFallbackVision(images[0], productTitle);
+    if (!vision && images[0]) {
+      vision = await geminiFallbackVision(images[0], productTitle);
     }
 
     // 6) Dimensions
-    const dimsFromText = extractDimensions(description);
-    const dims = dimsFromText || visionResult?.technicalDimensions || null;
+    const dimsTxt = extractDimensions(description);
+    const dims = dimsTxt || vision?.technicalDimensions || null;
 
     // 7) Final attributes
-    const attributes = finalProductAttributes(visionResult || {}, txt, serp, dims);
+    const attributes = finalProductAttributes(vision || {}, txt, serp, dims);
 
     // 8) Build prompt
     const prompt = buildPrompt({
