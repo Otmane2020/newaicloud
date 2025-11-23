@@ -79,11 +79,8 @@ const Subscription = () => {
 
       if (plansError) throw plansError;
       
-      // Filter plans - include Trial (free) and plans with valid Stripe price IDs
+      // Filter plans - only include plans with valid Stripe price IDs
       const validPlans = plansData?.filter(plan => {
-        // Always include Trial plan (no Stripe required)
-        if (plan.id === 'trial') return true;
-        
         const monthlyId = plan.stripe_price_id_monthly || '';
         const yearlyId = plan.stripe_price_id_yearly || '';
         
@@ -157,12 +154,6 @@ const Subscription = () => {
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
       navigate('/auth?mode=signup');
-      return;
-    }
-
-    // Special handling for Trial plan - no Stripe checkout needed
-    if (planId === 'trial') {
-      navigate('/auth?mode=signup&plan=trial');
       return;
     }
 
@@ -259,70 +250,6 @@ const Subscription = () => {
         <>
           <CurrentPlanCard />
 
-          {plans.find(p => p.id === 'trial') && (
-            <Card className="border-2 border-success bg-success/5 hover:shadow-lg transition-shadow">
-              <div className="p-6 lg:p-8 space-y-6 flex flex-col">
-                {/* Bloc 1: Icon aligné au centre */}
-                <div className="flex justify-center">
-                  <div className="text-4xl sm:text-5xl">🎁</div>
-                </div>
-
-                {/* Bloc 2: Name avec badges */}
-                <div className="text-center space-y-2">
-                  <h3 className="text-2xl sm:text-3xl font-bold">{t.trial.title}</h3>
-                  <div className="flex justify-center gap-2 flex-wrap">
-                    <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
-                    <Badge variant="outline" className="border-success text-success">{t.trial.noCreditCard}</Badge>
-                  </div>
-                </div>
-
-                {/* Bloc 3: Price - 0€ */}
-                <div className="text-center">
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-4xl sm:text-5xl font-bold text-success">
-                      0€
-                    </span>
-                    <span className="text-muted-foreground text-base">
-                      / 14 jours
-                    </span>
-                  </div>
-                </div>
-
-                {/* Bloc 4: Description */}
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">{t.trial.description}</p>
-                </div>
-
-                {/* Bloc 4bis: Bouton */}
-                <div className="pt-2">
-                  <Button 
-                    size="lg" 
-                    className="w-full bg-success hover:bg-success/90 text-success-foreground"
-                    onClick={() => handleSelectPlan('trial')}
-                  >
-                    {t.trial.startButton}
-                  </Button>
-                </div>
-
-                {/* Bloc 5: Trait de séparation et détails */}
-                <div className="pt-4 border-t space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                    <span>{t.trial.features.optimizations}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                    <span>{t.trial.features.article}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                    <span>{t.trial.features.duration}</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
       {isUpgradeFlow && currentPlan && (
         <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
           <div className="space-y-3 sm:space-y-4">
@@ -370,7 +297,7 @@ const Subscription = () => {
         </Card>
       )}
 
-      <div className={`grid grid-cols-1 gap-6 ${plans.find(p => p.id === 'trial') ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} max-w-7xl mx-auto`}>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
         {starterPlan && (
           <PricingCard
             icon={getPlanIcon(starterPlan.id)}
