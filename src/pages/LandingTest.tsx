@@ -19,23 +19,29 @@ export default function LandingTest() {
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [productId, setProductId] = useState<string | null>(null);
+  const [product, setProduct] = useState<any>(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
 
-  // Fetch a real product from the database
+  // Fetch a real product with all details from the database
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data, error } = await supabase
           .from('shopify_products')
-          .select('id, title')
+          .select(`
+            id, 
+            title, 
+            body_html, 
+            vendor,
+            product_images (src, alt_text)
+          `)
           .limit(1)
           .single();
 
         if (error) throw error;
         
         if (data) {
-          setProductId(data.id);
+          setProduct(data);
           console.log('✅ Produit chargé pour test:', data.title);
         } else {
           toast.error("Aucun produit trouvé dans la base de données");
@@ -91,19 +97,26 @@ export default function LandingTest() {
   };
 
   const handleGenerate = async () => {
-    if (!productId) {
+    if (!product) {
       toast.error("Aucun produit disponible pour le test");
       return;
     }
 
     setLoading(true);
     console.log('🧪 [TEST] Génération avec config:', config);
-    console.log('🧪 [TEST] Product ID:', productId);
+    console.log('🧪 [TEST] Product:', product.title);
+    
+    // Get first image if available
+    const firstImage = product.product_images?.[0];
     
     try {
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
-          product_id: productId,
+          product_id: product.id,
+          productTitle: product.title,
+          description: product.body_html,
+          vendor: product.vendor,
+          imageUrl: firstImage?.src,
           style: config.style,
           layout: config.layout,
           colorScheme: getPaletteColors(config.colorScheme),
@@ -155,7 +168,7 @@ export default function LandingTest() {
     );
   }
 
-  if (!productId) {
+  if (!product) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
