@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,7 +87,18 @@ serve(async (req) => {
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis, dimensions, template = "ecommerce", colorScheme } = await req.json();
+    const { 
+      title, 
+      existingDescription, 
+      images, 
+      visionAnalysis, 
+      dimensions, 
+      template = "ecommerce", 
+      colorScheme,
+      layout,
+      contentLength,
+      highlights 
+    } = await req.json();
 
     if (!title) {
       throw new Error("Product title is required");
@@ -99,31 +111,47 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Generate design tokens with WCAG-compliant contrast
-    const designTokens = generateDesignTokens(colorScheme || {});
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Template-specific tone and style
-    const templateStyles = {
-      ecommerce: {
-        tone: "Direct, persuasive, focused on conversion and ease of use. Highlight benefits and social proof.",
-        structure: "Hero with main image, feature sections with icons, specs, gallery, reviews, CTA.",
-        language: "Simple, engaging, persuasive. Emphasize value, comfort, and urgency.",
-      },
-      luxury: {
-        tone: "Elegant, emotional, sensory. Use aspirational storytelling and subtle persuasion.",
-        structure: "Full-width hero, craftsmanship section, materials story, detail gallery, CTA.",
-        language: "Sophisticated vocabulary. Focus on design, exclusivity, and experience.",
-      },
-      technical: {
-        tone: "Informative, professional, and precise. Focus on data, compatibility, and performance.",
-        structure: "Hero with main specs, features grid, performance table, compatibility section, CTA.",
-        language: "Use technical clarity, avoid fluff, emphasize measurable performance.",
-      },
+    // Fetch available options from database
+    console.log("📋 Fetching configuration options from database...");
+    const { data: configOptions } = await supabase
+      .from('landing_page_config_options')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order');
+
+    const layouts = configOptions?.filter(opt => opt.category === 'layout') || [];
+    const designStyles = configOptions?.filter(opt => opt.category === 'design_style') || [];
+    const colorSchemes = configOptions?.filter(opt => opt.category === 'color_scheme') || [];
+    const contentLengths = configOptions?.filter(opt => opt.category === 'content_length') || [];
+    const highlightOptions = configOptions?.filter(opt => opt.category === 'highlight') || [];
+
+    console.log(`✅ Loaded ${layouts.length} layouts, ${designStyles.length} styles, ${colorSchemes.length} color schemes`);
+
+    // Get selected options or use defaults
+    const selectedLayout = layouts.find(l => l.option_key === layout) || layouts[0];
+    const selectedStyle = designStyles.find(s => s.option_key === template) || designStyles.find(s => s.option_key === 'ecommerce');
+    const selectedLength = contentLengths.find(c => c.option_key === contentLength) || contentLengths.find(c => c.option_key === 'medium');
+    const selectedHighlights = highlights 
+      ? highlightOptions.filter(h => highlights.includes(h.option_key))
+      : highlightOptions.slice(0, 3);
+
+    // Generate design tokens with WCAG-compliant contrast
+    const designTokens = generateDesignTokens(colorScheme || (selectedStyle?.option_value as any) || {});
+
+    // Use selected style description or fallback to default
+    const styleConfig = {
+      tone: selectedStyle?.description || "Direct, persuasive, focused on conversion",
+      layout: selectedLayout?.option_label || "Single column",
+      contentStrategy: selectedLength?.description || "Balanced content",
+      highlights: selectedHighlights.map(h => h.option_label).join(", ") || "Quality, shipping, warranty"
     };
 
-    const selectedTemplate = templateStyles[template as keyof typeof templateStyles] || templateStyles.ecommerce;
-
-    // 🔹 Prompt with strict WCAG contrast rules
+    // 🔹 Prompt with strict WCAG contrast rules and dynamic configuration
     const prompt = `
 You are an expert e-commerce UX copywriter and web designer.
 Generate a premium, responsive, mobile-first product *landing page* in Tailwind HTML.
@@ -136,6 +164,14 @@ ${existingDescription ? `Existing Description: ${existingDescription}` : ""}
 ${visionAnalysis ? `Internal Visual Analysis (DO NOT DISPLAY TO CUSTOMER - USE ONLY FOR CONTENT ENRICHMENT): ${JSON.stringify(visionAnalysis)}` : ""}
 ${dimensions ? `Dimensions: ${JSON.stringify(dimensions)}` : ""}
 ${images?.length ? `Product Images:\n${images.map((img: any, i: number) => `  ${i + 1}. ${img.src || img}`).join("\n")}` : "No images"}
+
+==============================
+SELECTED CONFIGURATION
+==============================
+Layout Style: ${styleConfig.layout}
+Design Tone: ${styleConfig.tone}
+Content Strategy: ${styleConfig.contentStrategy}
+Highlight Features: ${styleConfig.highlights}
 
 ==============================
 DESIGN SYSTEM - COLORS (STRICT RULES)
@@ -186,11 +222,15 @@ MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
    Use it to inform your writing but keep it invisible.
 
 ==============================
-TEMPLATE STYLE (${template.toUpperCase()})
+DESIGN STYLE GUIDELINES
 ==============================
-Tone: ${selectedTemplate.tone}
-Structure: ${selectedTemplate.structure}
-Language: ${selectedTemplate.language}
+Apply the following style: ${selectedStyle?.option_label || 'E-commerce'}
+${selectedStyle?.description || ''}
+
+Layout Configuration: ${selectedLayout?.description || 'Single column layout with clear sections'}
+
+Content Highlights to Emphasize:
+${selectedHighlights.map(h => `  • ${h.option_label}: ${h.description || ''}`).join('\n')}
 
 ==============================
 PAGE STRUCTURE REQUIREMENTS (NO BUTTONS)
