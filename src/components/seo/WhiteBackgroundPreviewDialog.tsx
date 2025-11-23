@@ -47,6 +47,20 @@ export function WhiteBackgroundPreviewDialog({
   const isGenerating = previews.some(p => p.status === 'generating');
   const isSingleImage = previews.length === 1;
 
+  // ✅ DEBUG: Log previews when dialog opens or previews change
+  useEffect(() => {
+    if (open && previews.length > 0) {
+      console.log(`🖼️ [WhiteBgPreviewDialog] Dialog opened with ${previews.length} preview(s):`, previews.map(p => ({
+        productId: p.productId,
+        productTitle: p.productTitle,
+        status: p.status,
+        hasGeneratedUrl: !!p.generatedUrl,
+        generatedUrl: p.generatedUrl,
+        error: p.error
+      })));
+    }
+  }, [open, previews]);
+
   // Sélectionner automatiquement si une seule image avec succès
   useEffect(() => {
     if (isSingleImage && successfulPreviews.length === 1) {
@@ -238,7 +252,7 @@ export function WhiteBackgroundPreviewDialog({
                   {/* Original */}
                   <div className="space-y-2">
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">Image originale</p>
-                    <div className="relative w-full bg-muted rounded-lg overflow-hidden border flex items-center justify-center">
+                    <div className="relative w-full bg-muted rounded-lg overflow-hidden border-2 border-border flex items-center justify-center shadow-sm">
                       <img
                         src={preview.originalUrl}
                         alt="Image originale du produit"
@@ -252,18 +266,39 @@ export function WhiteBackgroundPreviewDialog({
                     <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                       Fond blanc IA
                     </p>
-                    <div className="relative w-full bg-white rounded-lg overflow-hidden border flex items-center justify-center min-h-[160px]">
+                    {/* ✅ IMPROVED: bg-muted instead of bg-white for better visibility */}
+                    <div className="relative w-full bg-muted rounded-lg overflow-hidden border-2 border-primary/20 flex items-center justify-center min-h-[160px] shadow-sm">
                       {preview.status === 'generating' && (
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/50">
                           <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-muted-foreground" />
                         </div>
                       )}
                       {preview.status === 'success' && preview.generatedUrl && (
-                        <img
-                          src={preview.generatedUrl}
-                          alt="Image générée avec fond blanc"
-                          className="w-full h-auto object-contain"
-                        />
+                        <>
+                          <img
+                            src={preview.generatedUrl}
+                            alt="Image générée avec fond blanc"
+                            className="w-full h-auto object-contain"
+                            onLoad={() => {
+                              console.log(`✅ [WhiteBgPreview] Image loaded successfully:`, {
+                                productId: preview.productId,
+                                url: preview.generatedUrl,
+                                status: preview.status
+                              });
+                            }}
+                            onError={(e) => {
+                              console.error(`❌ [WhiteBgPreview] Image failed to load:`, {
+                                productId: preview.productId,
+                                url: preview.generatedUrl,
+                                error: e
+                              });
+                            }}
+                          />
+                          {/* Visual indicator for very light images */}
+                          <div className="absolute bottom-2 right-2 bg-primary/10 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-muted-foreground">
+                            IA générée
+                          </div>
+                        </>
                       )}
                       {preview.status === 'error' && (
                         <div className="absolute inset-0 flex items-center justify-center text-center p-2 sm:p-4">

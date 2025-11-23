@@ -336,25 +336,21 @@ export const useImageOptimization = () => {
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['product-images'] });
       await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       await queryClient.invalidateQueries({ queryKey: ['image-history'] });
       
-      const language = localStorage.getItem('app-language') || 'fr';
-      toast.success(language === 'fr' 
-        ? 'Image appliquée et synchronisée avec Shopify' 
-        : 'Image applied and synced with Shopify'
-      );
+      // ✅ CRITICAL: Do NOT show success toast here anymore
+      // Toast is already shown conditionally during mutationFn based on Shopify sync result
+      // This prevents duplicate/misleading success messages
+      
+      console.log('✅ [ImageOptimization] Image applied, sync handled in mutationFn');
       
       // Send optimization notification
       const notificationResult = await sendOptimizationNotification(1);
       if (!notificationResult.success && notificationResult.error) {
         console.error('Notification error:', notificationResult.error);
-        toast.warning(language === 'fr'
-          ? 'Optimisation réussie mais la notification a échoué'
-          : 'Optimization successful but notification failed'
-        );
       }
       
       setIsOptimizing(false);

@@ -161,7 +161,15 @@ export const ProductMediaOptimization = () => {
     const product = products?.find(p => p.id === selectedImage.product_id);
     if (!product) return;
 
+    console.log(`🎨 [WhiteBg] Applying white background for product:`, {
+      productId: selectedImage.product_id,
+      productTitle: product.title,
+      imageId: selectedImage.id,
+      optimizedUrl: whiteBgResult
+    });
+
     try {
+      // ✅ STEP 1: Apply image locally and save to history
       await applyOptimizedImage.mutateAsync({
         imageId: selectedImage.id,
         productId: selectedImage.product_id,
@@ -173,11 +181,80 @@ export const ProductMediaOptimization = () => {
         qualityScore: 95
       });
 
+      console.log(`✅ [WhiteBg] Image applied locally, now syncing to Shopify...`);
+
+      // ✅ STEP 2: Sync with Shopify and handle different scenarios
+      let syncErrors = 0;
+      let syncBlocked = 0;
+      let syncPartial = 0;
+      let syncOk = 0;
+
+      try {
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: { productId: selectedImage.product_id }
+        });
+
+        console.log(`🔍 [WhiteBg] Shopify sync response:`, {
+          hasError: !!syncError,
+          hasData: !!syncData,
+          syncData,
+          syncError
+        });
+
+        if (syncError) {
+          console.error(`❌ [WhiteBg] Shopify sync error (technical):`, syncError);
+          syncErrors++;
+        } else if (syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
+          console.log(`🚫 [WhiteBg] Shopify sync blocked - trial user`);
+          syncBlocked++;
+        } else if (syncData?.error) {
+          console.warn(`⚠️ [WhiteBg] Shopify sync partial error:`, syncData.error);
+          syncPartial++;
+        } else {
+          console.log(`✅ [WhiteBg] Shopify sync successful`);
+          syncOk++;
+        }
+      } catch (syncException) {
+        console.error(`❌ [WhiteBg] Shopify sync exception:`, syncException);
+        syncErrors++;
+      }
+
+      // ✅ STEP 3: Display conditional toasts based on sync results
+      if (syncErrors > 0) {
+        toast.error('Erreur de synchronisation Shopify', {
+          description: 'Image appliquée localement seulement. Vérifiez votre connexion Shopify.',
+          action: {
+            label: '⚙️ Paramètres',
+            onClick: () => window.location.href = '/settings/integrations'
+          },
+          duration: 8000
+        });
+      } else if (syncBlocked > 0) {
+        toast.warning('Synchronisation limitée', {
+          description: 'Image appliquée localement. Upgradez pour synchroniser avec Shopify.',
+          action: {
+            label: '✨ Voir les plans',
+            onClick: () => window.location.href = '/subscription'
+          },
+          duration: 10000
+        });
+      } else if (syncPartial > 0) {
+        toast.warning('Synchronisation partielle', {
+          description: 'Image appliquée localement. Certaines images n\'ont pas été synchronisées avec Shopify.',
+          duration: 6000
+        });
+      } else if (syncOk > 0) {
+        toast.success('Image appliquée et synchronisée', {
+          description: 'Votre boutique Shopify est à jour'
+        });
+      }
+
       setShowWhiteBgPreview(false);
       setWhiteBgResult(null);
       setSelectedImage(null);
     } catch (error) {
-      console.error('Error applying white background:', error);
+      console.error('❌ [WhiteBg] Error applying white background:', error);
+      toast.error('Erreur lors de l\'application de l\'image');
     }
   };
 

@@ -364,31 +364,56 @@ export default function RegenerateLanding({
         setTimeout(() => reject(new Error('Timeout: La génération a pris plus de 5 minutes. Veuillez réessayer.')), timeoutMs)
       );
 
-      const invocationPromise = supabase.functions.invoke("generate-landing-ai", {
-        body: {
-          product_id: product.id,
-          productTitle: product.title,
-          description: product.description || "",
-          vendor: resolvedVendor,
-          imageUrl: product.image_url,
-          userPreferences: defaultPref ? {
-            layout: defaultPref.layout,
-            designStyle: defaultPref.design_style,
-            contentLength: defaultPref.content_length,
-            colorScheme: {
-              primary: defaultPref.color_primary,
-              secondary: defaultPref.color_secondary,
-              accent: defaultPref.color_accent,
-              background: defaultPref.color_background,
-              surface: defaultPref.color_surface,
-              text: defaultPref.color_text,
-              textMuted: defaultPref.color_text_muted
-            },
-            highlights: defaultPref.custom_highlights
-          } : null,
-          language: storeLanguage,
+      // ✅ Prepare body with both userPreferences and session config options
+      const requestBody: any = {
+        product_id: product.id,
+        productTitle: product.title,
+        description: product.description || "",
+        vendor: resolvedVendor,
+        imageUrl: product.image_url,
+        language: storeLanguage,
+        
+        // ✅ CRITICAL: Pass session config options (will be used if no userPreferences)
+        layout: config.layout,
+        colorScheme: {
+          primary: config.colorScheme.primary,
+          secondary: config.colorScheme.secondary,
+          accent: config.colorScheme.primary, // ✅ Use primary as accent if not defined
+          background: config.colorScheme.background,
+          surface: config.colorScheme.surface,
+          text: config.colorScheme.text,
+          textMuted: config.colorScheme.textMuted
         },
-      }).catch(err => {
+        length: config.contentLength,
+        customHighlights: config.customHighlights,
+        designStyle: config.designStyle,
+        
+        // ✅ User preferences override session config if available
+        userPreferences: defaultPref ? {
+          layout: defaultPref.layout,
+          designStyle: defaultPref.design_style,
+          contentLength: defaultPref.content_length,
+          colorScheme: {
+            primary: defaultPref.color_primary,
+            secondary: defaultPref.color_secondary,
+            accent: defaultPref.color_accent,
+            background: defaultPref.color_background,
+            surface: defaultPref.color_surface,
+            text: defaultPref.color_text,
+            textMuted: defaultPref.color_text_muted
+          },
+          highlights: defaultPref.custom_highlights
+        } : null,
+      };
+
+      console.log('[RegenerateLanding] Request body prepared:', {
+        hasUserPreferences: !!defaultPref,
+        layout: requestBody.layout,
+        designStyle: requestBody.designStyle,
+        contentLength: requestBody.length
+      });
+
+      const invocationPromise = supabase.functions.invoke("generate-landing-ai", requestBody).catch(err => {
         console.error('[RegenerateLanding] Network error:', err);
         throw new Error(`Erreur réseau: ${err.message}`);
       });
