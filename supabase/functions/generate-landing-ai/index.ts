@@ -871,8 +871,8 @@ serve(async (req) => {
     console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
     const imageAnalyses: Array<{ imageUrl: string; description: string; index: number }> = [];
 
-    // Analyze main image + all additional images (limit to 6 images max for performance)
-    const imagesToAnalyze = images.slice(0, 6);
+    // Analyze main image + max 2 additional images (limit to 3 total for token optimization)
+    const imagesToAnalyze = images.slice(0, 3);
 
     for (let i = 0; i < imagesToAnalyze.length; i++) {
       const img = imagesToAnalyze[i];
@@ -982,20 +982,22 @@ serve(async (req) => {
       console.log("⏭️ No images analyzed by Vision AI");
     }
 
-    // --- Prompt bilingual ---
-    const imgs = images.length
-      ? images.map((i) => `- ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")
+    // --- Prompt bilingual (limit to 5 images max to reduce token usage) ---
+    const limitedImages = images.slice(0, 5);
+    const imgs = limitedImages.length
+      ? limitedImages.map((i) => `- ${i.src}${i.alt_text ? ` (alt: ${i.alt_text.substring(0, 50)})` : ""}`).join("\n")
       : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
     
-    // 🔥 AMÉLIORATION: Variantes avec images bien mises en évidence
-    const vars = variants.length
-      ? variants.map((v) => {
+    // 🔥 AMÉLIORATION: Variantes avec images bien mises en évidence (limit to 8 variants)
+    const limitedVariants = variants.slice(0, 8);
+    const vars = limitedVariants.length
+      ? limitedVariants.map((v) => {
           if (v.image_url) {
-            return `- **${v.title}** → IMAGE DISPONIBLE: ${v.image_url}`;
+            return `- **${v.title.substring(0, 40)}** → ${v.image_url}`;
           }
-          return `- ${v.title} (pas d'image spécifique)`;
+          return `- ${v.title.substring(0, 40)}`;
         }).join("\n")
       : detectedLanguage === "en"
         ? "No variant"
@@ -1530,12 +1532,12 @@ ${selectedLength?.option_value ? `Instructions de contenu :\n${typeof selectedLe
 PRODUIT :
 - Titre : ${productTitle}
 - Marque : ${vendor}
-- Description : ${description}
+- Description : ${description ? description.substring(0, 800) : ''}
 - Style : ${style || enrichedProduct.style || ""}
 - URL produit : ${productUrl}
 
-${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
-${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATIONS - C'EST CE QUI EST RÉELLEMENT VISIBLE DANS L'IMAGE) :\n${visualAnalysis}\n\n🚨 CRITIQUE : Tu DOIS décrire uniquement ce que l'IA visuelle a observé. NE mentionne PAS de caractéristiques, couleurs ou matériaux qui contredisent l'analyse visuelle ci-dessus. Si l'IA visuelle dit que le produit a des éléments en bois, NE parle PAS d'éléments métalliques. SOIS PRÉCIS À 100% PAR RAPPORT AUX OBSERVATIONS VISUELLES.\n` : ""}
+${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary.substring(0, 1500)}\n` : ""}
+${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE :\n${visualAnalysis.substring(0, 1000)}\n\n🚨 CRITIQUE : Décrire uniquement ce qui est visible.\n` : ""}
 
 IMAGES :
 ${imgs}
@@ -1936,7 +1938,7 @@ UTILISATION DES ICÔNES :
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 16000,
+          max_tokens: 12000,
           temperature: 0.7,
         }),
         signal: aiController.signal,
