@@ -159,12 +159,61 @@ const Subscription = () => {
 
     setCheckoutLoading(planId);
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not authenticated');
+
+      // In upgrade flow with an existing paid subscription, use update-subscription
+      if (isUpgradeFlow) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status, trial_ends_at')
+          .eq('id', authUser.id)
+          .single();
+
+        const isInTrial = profile?.subscription_status === 'trialing' ||
+          (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+
+        if (!isInTrial) {
+          const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('stripe_subscription_id, status')
+            .eq('seller_id', authUser.id)
+            .eq('status', 'active')
+            .single();
+
+          const hasActivePaidSubscription = !!subscription?.stripe_subscription_id;
+
+          if (hasActivePaidSubscription) {
+            const { data, error } = await supabase.functions.invoke('update-subscription', {
+              body: {
+                new_plan_id: planId,
+                billing_period: 'monthly',
+              },
+            });
+
+            if (error) throw error;
+
+            const upgradeDetails = data?.upgrade_details;
+            if (upgradeDetails?.proration_applied) {
+              toast.success('✅ Plan mis à niveau ! Prorata appliqué et compteurs réinitialisés.', { duration: 6000 });
+            } else {
+              toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
+            }
+
+            await loadPlansAndCurrentPlan();
+            setCheckoutLoading(null);
+            return;
+          }
+        }
+      }
+
+      // Default: create a new checkout session (new customer or trial)
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,
           billing_period: 'monthly',
-          force_immediate_payment: true
-        }
+          force_immediate_payment: true,
+        },
       });
 
       if (error) throw error;
@@ -173,7 +222,7 @@ const Subscription = () => {
         window.open(data.url, '_blank');
       }
     } catch (error) {
-      console.error('Error creating checkout:', error);
+      console.error('Error creating checkout or upgrading subscription:', error);
       toast.error(t.seo.subscription.errors.createCheckout);
     } finally {
       setCheckoutLoading(null);
