@@ -938,38 +938,59 @@ export function SeoOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            <div className="text-center">
-              <div
-                className={`text-3xl md:text-4xl font-bold ${
-                  globalSeoScore >= 80 ? "text-green-600" : globalSeoScore >= 60 ? "text-orange-600" : "text-red-600"
-                }`}
-              >
-                {globalSeoScore}/100
+            {generating ? (
+              // Affichage de la progression en cours
+              <div className="text-center space-y-3 w-full max-w-md">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="font-semibold text-lg">Optimisation en cours...</span>
+                </div>
+                <Progress value={progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0} className="h-3" />
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{progress.current} / {progress.total} produits</span>
+                  <span className="font-bold text-primary">{progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 Le traitement continue en arrière-plan
+                </p>
               </div>
-              <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
-              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {optimizationRate}% {t.seo.optimization.optimized}
-              </div>
-            </div>
-            <Button
-              size="lg"
-              onClick={() => {
-                console.log('🔘 [BUTTON_CLICKED]', {
-                  notEnrichedCount,
-                  loading,
-                  generating,
-                  totalProducts: products.length,
-                  buttonDisabled: generating || loading || notEnrichedCount === 0
-                });
-                handleGenerateAllSeo();
-              }}
-              disabled={generating || loading || notEnrichedCount === 0}
-              className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
-            >
-              <Sparkles className="w-5 h-5" />
-              {loading ? t.common.loading : (notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization)}
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+            ) : (
+              // Affichage normal (score + bouton)
+              <>
+                <div className="text-center">
+                  <div
+                    className={`text-3xl md:text-4xl font-bold ${
+                      globalSeoScore >= 80 ? "text-green-600" : globalSeoScore >= 60 ? "text-orange-600" : "text-red-600"
+                    }`}
+                  >
+                    {globalSeoScore}/100
+                  </div>
+                  <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {optimizationRate}% {t.seo.optimization.optimized}
+                  </div>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    console.log('🔘 [BUTTON_CLICKED]', {
+                      notEnrichedCount,
+                      loading,
+                      generating,
+                      totalProducts: products.length,
+                      buttonDisabled: generating || loading || notEnrichedCount === 0
+                    });
+                    handleGenerateAllSeo();
+                  }}
+                  disabled={generating || loading || notEnrichedCount === 0}
+                  className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  {loading ? t.common.loading : (notEnrichedCount === 0 ? t.seo.optimization.allOptimized : t.seo.optimization.startOptimization)}
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Card>
@@ -1749,7 +1770,12 @@ export function SeoOptimization() {
       {/* Dialogs */}
       <ProgressDialog
         open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
+        onOpenChange={(open) => {
+          // Empêcher la fermeture pendant le traitement
+          if (!generating && !syncing) {
+            setShowProgressDialog(open);
+          }
+        }}
         type="seo"
         operation={syncing ? "syncing" : "optimizing"}
         current={progress.current}
