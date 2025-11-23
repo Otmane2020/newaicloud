@@ -1150,39 +1150,60 @@ export default function ProductTitleDescription() {
 
     try {
       if (whiteBgApplyTo === "simple") {
-        // Mode simple: utiliser le hook d'optimisation pour l'image principale
-        for (const productId of productIds) {
-          const preview = whiteBgPreviews.find((p) => p.productId === productId && !p.variantId);
+        // Mode simple
+        for (const pid of productIds) {
+          const preview = whiteBgPreviews.find((p) => p.productId === pid && !p.variantId);
           if (!preview?.generatedUrl) continue;
 
-          // Trouver l'ID de l'image pour l'historique
-          const { data: imageData } = await supabase
-            .from('product_images')
-            .select('id')
-            .eq('product_id', productId)
-            .eq('src', preview.originalUrl)
-            .maybeSingle();
-
-          const imageId = imageData?.id || 'main';
-
           if (imageType === 'primary') {
-            // Utiliser le hook d'optimisation qui gère tout (update + history + sync Shopify)
-            await applyOptimizedImage.mutateAsync({
-              imageId: imageId,
-              productId: productId,
-              optimizedUrl: preview.generatedUrl,
-              originalUrl: preview.originalUrl,
-              optimizationType: 'white_background',
-              aiModel: 'gemini-2.5-flash-image-preview',
-              resolution: '2000x2000',
-              qualityScore: 95
+            // Mettre à jour l'image principale du produit
+            await supabase
+              .from("shopify_products")
+              .update({ image_url: preview.generatedUrl })
+              .eq("id", pid);
+
+            // Trouver l'ID de l'image pour l'historique
+            const { data: imageData } = await supabase
+              .from('product_images')
+              .select('id')
+              .eq('product_id', pid)
+              .eq('src', preview.originalUrl)
+              .maybeSingle();
+
+            const imgId = imageData?.id || 'main';
+
+            // Sauvegarder dans l'historique
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && imgId !== 'main') {
+              const { data: versionData } = await supabase.rpc('get_next_image_version', {
+                p_image_id: imgId
+              });
+              
+              await supabase.from('product_image_history').insert({
+                product_id: pid,
+                image_id: imgId,
+                user_id: user.id,
+                version_number: versionData || 1,
+                optimization_type: 'white_background',
+                original_url: preview.originalUrl,
+                optimized_url: preview.generatedUrl,
+                ai_model: 'gemini-2.5-flash-image-preview',
+                resolution: '2000x2000',
+                quality_score: 95,
+                is_current: true
+              });
+            }
+
+            // Synchroniser avec Shopify
+            await supabase.functions.invoke('sync-product-images-to-shopify', {
+              body: { productId: pid }
             });
           } else {
             // Pour les images secondaires, ajouter manuellement
             const maxPosition = await supabase
               .from("product_images")
               .select("position")
-              .eq("product_id", productId)
+              .eq("product_id", pid)
               .order("position", { ascending: false })
               .limit(1)
               .single();
@@ -1192,7 +1213,7 @@ export default function ProductTitleDescription() {
             await supabase
               .from("product_images")
               .insert({
-                product_id: productId,
+                product_id: pid,
                 src: preview.generatedUrl,
                 alt_text: `${preview.productTitle} - Fond blanc IA`,
                 position: nextPosition
@@ -1200,7 +1221,7 @@ export default function ProductTitleDescription() {
             
             // Sync manuel pour images secondaires
             await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId }
+              body: { productId: pid }
             });
           }
         }
@@ -1283,39 +1304,67 @@ export default function ProductTitleDescription() {
     try {
       console.log('🎨 [AI BG] Applying backgrounds for products:', productIds);
       
-      for (const productId of productIds) {
-        const preview = aiBgPreviews.find((p) => p.productId === productId);
+      for (const pid of productIds) {
+        const preview = aiBgPreviews.find((p) => p.productId === pid);
         if (!preview?.generatedUrl) {
-          console.warn(`⚠️ [AI BG] No generated URL for product ${productId}`);
+          console.warn(`⚠️ [AI BG] No generated URL for product ${pid}`);
           continue;
         }
 
-        // Trouver l'ID de l'image
-        const { data: imageData } = await supabase
-          .from('product_images')
-          .select('id')
-          .eq('product_id', productId)
-          .eq('src', preview.originalUrl)
-          .maybeSingle();
+        console.log(`🔄 [AI BG] Updating product ${pid} with new image`);
 
-        const imageId = imageData?.id || 'main';
+        // Mettre à jour l'image principale du produit
+        await supabase
+          .from("shopify_products")
+          .update({ image_url: preview.generatedUrl })
+          .eq("id", pid);
 
-        console.log(`🔄 [AI BG] Applying optimized image for product ${productId}, imageId: ${imageId}`);
+        // Sauvegarder dans l'historique
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: imageData } = await supabase
+            .from('product_images')
+            .select('id')
+            .eq('product_id', pid)
+            .eq('src', preview.originalUrl)
+            .maybeSingle();
 
-        // Utiliser le hook d'optimisation qui gère tout (update + history + sync Shopify)
-        await applyOptimizedImage.mutateAsync({
-          imageId: imageId,
-          productId: productId,
-          optimizedUrl: preview.generatedUrl,
-          originalUrl: preview.originalUrl,
-          optimizationType: 'ai_background',
-          aiModel: 'Lovable AI',
-          aiPrompt: pendingAiConfig?.enrichedPrompt || pendingAiConfig?.prompt,
-          resolution: '2000x2000',
-          qualityScore: 90
+          const imgId = imageData?.id;
+
+          if (imgId) {
+            const { data: versionData } = await supabase.rpc('get_next_image_version', {
+              p_image_id: imgId
+            });
+            
+            await supabase.from('product_image_history').insert({
+              product_id: pid,
+              image_id: imgId,
+              user_id: user.id,
+              version_number: versionData || 1,
+              optimization_type: 'ai_background',
+              original_url: preview.originalUrl,
+              optimized_url: preview.generatedUrl,
+              ai_model: 'Lovable AI',
+              ai_prompt: pendingAiConfig?.enrichedPrompt || pendingAiConfig?.prompt,
+              resolution: '2000x2000',
+              quality_score: 90,
+              is_current: true
+            });
+          }
+        }
+
+        console.log(`🔄 [AI BG] Syncing with Shopify for product ${pid}`);
+        
+        // Synchroniser avec Shopify
+        const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: { productId: pid }
         });
 
-        console.log(`✅ [AI BG] Successfully applied for product ${productId}`);
+        if (syncError) {
+          console.error(`❌ [AI BG] Sync error for ${pid}:`, syncError);
+        } else {
+          console.log(`✅ [AI BG] Successfully synced product ${pid}`);
+        }
       }
 
       toast.success("✅ Images appliquées et synchronisées avec Shopify", { id: toastId });
