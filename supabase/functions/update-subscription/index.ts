@@ -271,7 +271,7 @@ serve(async (req) => {
     const subscriptionItemId = stripeSubscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
-    // Update subscription WITH automatic proration
+    // Update subscription WITHOUT automatic proration
     const updateParams: any = {
       items: [
         {
@@ -279,7 +279,7 @@ serve(async (req) => {
           price: new_price_id,
         },
       ],
-      proration_behavior: 'always_invoice', // Enable Stripe's automatic proration
+      proration_behavior: 'none', // Disable Stripe's automatic proration (we handle it manually)
       billing_cycle_anchor: 'unchanged',
     };
 
@@ -291,7 +291,7 @@ serve(async (req) => {
     logStep("Subscription updated in Stripe", {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status,
-      prorationBehavior: 'always_invoice',
+      prorationBehavior: 'none',
       periodPreserved: true
     });
 
