@@ -578,6 +578,17 @@ export default function ProductTitleDescription() {
                 .eq('id', productId)
                 .single();
               
+              // Récupérer la préférence par défaut de l'utilisateur
+              const { data: userData } = await supabase.auth.getUser();
+              const { data: defaultPref } = await supabase
+                .from('landing_page_preferences')
+                .select('*')
+                .eq('user_id', userData?.user?.id)
+                .eq('is_default', true)
+                .maybeSingle();
+              
+              console.log("🎨 Préférence utilisateur:", defaultPref ? 'Trouvée' : 'Aucune (utilisation des défauts)');
+              
               const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
                 'generate-product-description-html',
                 {
@@ -586,7 +597,21 @@ export default function ProductTitleDescription() {
                     existingDescription: updatedProduct.seo_description,
                     images: [updatedProduct.image_url].filter(Boolean),
                     visionAnalysis: productData?.vision_attributes || null,
-                    template: 'ecommerce',
+                    userPreferences: defaultPref ? {
+                      layout: defaultPref.layout,
+                      designStyle: defaultPref.design_style,
+                      contentLength: defaultPref.content_length,
+                      colorScheme: {
+                        primary: defaultPref.color_primary,
+                        secondary: defaultPref.color_secondary,
+                        accent: defaultPref.color_accent,
+                        background: defaultPref.color_background,
+                        surface: defaultPref.color_surface,
+                        text: defaultPref.color_text,
+                        textMuted: defaultPref.color_text_muted
+                      },
+                      highlights: defaultPref.custom_highlights
+                    } : null,
                     productId: productId
                   }
                 }

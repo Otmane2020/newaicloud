@@ -87,18 +87,15 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      title, 
-      existingDescription, 
-      images, 
-      visionAnalysis, 
-      dimensions, 
-      template = "ecommerce", 
-      colorScheme,
-      layout,
-      contentLength,
-      highlights 
-    } = await req.json();
+  const { 
+    title, 
+    existingDescription, 
+    images, 
+    visionAnalysis, 
+    dimensions,
+    userPreferences,
+    productId
+  } = await req.json();
 
     if (!title) {
       throw new Error("Product title is required");
@@ -132,16 +129,82 @@ serve(async (req) => {
 
     console.log(`✅ Loaded ${layouts.length} layouts, ${designStyles.length} styles, ${colorSchemes.length} color schemes`);
 
-    // Get selected options or use defaults
-    const selectedLayout = layouts.find(l => l.option_key === layout) || layouts[0];
-    const selectedStyle = designStyles.find(s => s.option_key === template) || designStyles.find(s => s.option_key === 'ecommerce');
-    const selectedLength = contentLengths.find(c => c.option_key === contentLength) || contentLengths.find(c => c.option_key === 'medium');
-    const selectedHighlights = highlights 
-      ? highlightOptions.filter(h => highlights.includes(h.option_key))
-      : highlightOptions.slice(0, 3);
+    // Function to convert HSL to Hex
+    const hslToHex = (hsl: string): string => {
+      const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+      if (!match) return hsl;
+      
+      const h = parseInt(match[1]);
+      const s = parseInt(match[2]) / 100;
+      const l = parseInt(match[3]) / 100;
+      
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = l - c / 2;
+      
+      let r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; }
+      else if (h < 120) { r = x; g = c; }
+      else if (h < 180) { g = c; b = x; }
+      else if (h < 240) { g = x; b = c; }
+      else if (h < 300) { r = x; b = c; }
+      else { r = c; b = x; }
+      
+      const toHex = (n: number) => {
+        const hex = Math.round((n + m) * 255).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      };
+      
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    let selectedLayout, selectedStyle, selectedLength, baseColors, selectedHighlights;
+
+    // Use user preferences if provided
+    if (userPreferences) {
+      console.log("✅ Utilisation des préférences utilisateur");
+      
+      selectedLayout = layouts.find(l => l.option_key === userPreferences.layout) || layouts[0];
+      selectedStyle = designStyles.find(s => s.option_key === userPreferences.designStyle) || designStyles[0];
+      selectedLength = contentLengths.find(c => c.option_key === userPreferences.contentLength) || contentLengths[0];
+      
+      // Convert HSL colors to Hex
+      baseColors = {
+        primary: hslToHex(userPreferences.colorScheme.primary),
+        secondary: hslToHex(userPreferences.colorScheme.secondary),
+        accent: hslToHex(userPreferences.colorScheme.accent),
+        background: hslToHex(userPreferences.colorScheme.background),
+        surface: hslToHex(userPreferences.colorScheme.surface),
+        text: hslToHex(userPreferences.colorScheme.text),
+        textMuted: hslToHex(userPreferences.colorScheme.textMuted)
+      };
+      
+      selectedHighlights = userPreferences.highlights 
+        ? highlightOptions.filter(h => userPreferences.highlights.includes(h.option_key))
+        : highlightOptions.slice(0, 3);
+    } else {
+      console.log("⚠️ Pas de préférences utilisateur, utilisation des défauts");
+      
+      selectedLayout = layouts[0];
+      selectedStyle = designStyles[0];
+      selectedLength = contentLengths[0];
+      
+      const selectedColorScheme = colorSchemes.find(c => c.option_key === 'default') || colorSchemes[0];
+      baseColors = selectedColorScheme?.option_value || {
+        primary: '#2563eb',
+        secondary: '#0891b2',
+        accent: '#f59e0b',
+        background: '#ffffff',
+        surface: '#f9fafb',
+        text: '#1f2937',
+        textMuted: '#6b7280'
+      };
+      
+      selectedHighlights = highlightOptions.slice(0, 3);
+    }
 
     // Generate design tokens with WCAG-compliant contrast
-    const designTokens = generateDesignTokens(colorScheme || (selectedStyle?.option_value as any) || {});
+    const designTokens = generateDesignTokens(baseColors);
 
     // Use selected style description or fallback to default
     const styleConfig = {
