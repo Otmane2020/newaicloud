@@ -160,7 +160,9 @@ serve(async (req) => {
 
     const shopifyProductId = productData.shopify_id;
     
-    console.log(`🎯 [SYNC] Product title to sync: "${productData.title}"`);
+    // ✅ Use productTitle parameter if provided (optimized title), otherwise fallback to DB title
+    const titleToSync = productTitle || productData.title;
+    console.log(`🎯 [SYNC] Product title to sync: "${titleToSync}"`);
     
     // 🆕 Update local description with landing_page content before syncing
     let contentToSync = htmlContent || productData.description || '';
@@ -191,7 +193,7 @@ serve(async (req) => {
     }
 
     // Mettre à jour la description ET le titre du produit dans Shopify
-    console.log("🔄 Syncing to Shopify - Title:", productData.title?.substring(0, 50), "...");
+    console.log("🔄 Syncing to Shopify - Title:", titleToSync?.substring(0, 50), "...");
     const updateProductResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/products/${shopifyProductId}.json`, {
       method: "PUT",
       headers: {
@@ -201,7 +203,7 @@ serve(async (req) => {
       body: JSON.stringify({
         product: {
           id: shopifyProductId,
-          title: productData.title, // 🔥 Sync optimized title from SERP optimization
+          title: titleToSync, // 🔥 Use optimized title from landing generation if provided
           body_html: contentToSync, // Use landing_page > description > htmlContent parameter
         },
       }),

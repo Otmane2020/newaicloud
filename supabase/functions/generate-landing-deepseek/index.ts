@@ -977,9 +977,21 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
     console.log("✅ HTML generated and sanitized successfully");
 
     // Update product with generated HTML
+    // Extract optimized title from generated HTML
+    let optimizedTitle = product.title;
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      optimizedTitle = titleMatch[1]
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 255); // Shopify title limit
+      console.log('[DEEPSEEK] Extracted optimized title:', optimizedTitle);
+    }
+
     console.log('[DEEPSEEK] Updating product in database...', { 
       productId, 
-      htmlLength: html.length 
+      htmlLength: html.length,
+      optimizedTitle 
     });
 
     const { error: updateError } = await supabase
@@ -1005,6 +1017,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
 
     console.log('[DEEPSEEK] ===== GENERATION SUCCESS =====', {
       htmlLength: html.length,
+      optimizedTitle,
       timestamp: new Date().toISOString()
     });
 
@@ -1012,6 +1025,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       JSON.stringify({ 
         success: true, 
         html,
+        optimizedTitle, // ✅ Return optimized title for potential Shopify sync
         productData: {
           title: product.title,
           hasVariants: (variants?.length || 0) > 1,
@@ -1325,52 +1339,89 @@ ${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes 
 IMAGES (${Math.min(images?.length || 0, 2)} principales):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
 
-🎨 PALETTE HSL COMPLÈTE - UTILISATION STRICTE OBLIGATOIRE:
+🎨 DÉFINITION CSS OBLIGATOIRE EN DÉBUT DE <style>:
 ------------------------------------------------------------------
-⚠️ TU DOIS UTILISER CES COULEURS HSL PARTOUT DANS LE CSS:
+:root {
+  --color-primary: ${designTokens.primary};
+  --color-secondary: ${designTokens.secondary};
+  --color-accent: ${designTokens.accent};
+  --color-background: ${designTokens.background};
+  --color-surface: ${designTokens.surface};
+  --color-text: ${designTokens.text};
+  --color-text-muted: ${designTokens.textMuted};
+}
 
-1. Primary: hsl(${designTokens.primary})
-   UTILISE POUR: Titres principaux (text-primary), icônes importantes, bordures accent (border-primary)
+⚠️ ENSUITE TU UTILISES CES CSS VARS PARTOUT:
+
+1. Primary: hsl(var(--color-primary))
+   UTILISE POUR: Titres principaux, icônes importantes, bordures accent
+   Exemple: style="color: hsl(var(--color-primary))"
    
-2. Secondary: hsl(${designTokens.secondary})
-   UTILISE POUR: Boutons secondaires, backgrounds de sections alternées (bg-secondary/5)
+2. Secondary: hsl(var(--color-secondary))
+   UTILISE POUR: Boutons secondaires, backgrounds de sections alternées
    
-3. Accent: hsl(${designTokens.accent})
-   UTILISE POUR: CTAs, hover states, highlights cards (bg-accent/10), bordures (border-accent)
+3. Accent: hsl(var(--color-accent))
+   UTILISE POUR: CTAs, hover states, highlights cards, bordures
+   Exemple: style="border-color: hsl(var(--color-accent))"
    
-4. Background: hsl(${designTokens.background})
-   UTILISE POUR: Fond principal des sections (bg-white correspond à background)
+4. Background: hsl(var(--color-background))
+   UTILISE POUR: Fond principal des sections
    
-5. Surface: hsl(${designTokens.surface})
-   UTILISE POUR: Cards, panneaux (utilise dans les gradients bg-gradient-to-br from-accent/5 to-surface)
+5. Surface: hsl(var(--color-surface))
+   UTILISE POUR: Cards, panneaux
    
-6. Text: hsl(${designTokens.text})
-   UTILISE POUR: Texte principal (text-primary), descriptions
+6. Text: hsl(var(--color-text))
+   UTILISE POUR: Texte principal, descriptions
    
-7. Text-Muted: hsl(${designTokens.textMuted})
-   UTILISE POUR: Texte secondaire, sous-titres (text-gray-700 devient style="color: hsl(${designTokens.textMuted})")
+7. Text-Muted: hsl(var(--color-text-muted))
+   UTILISE POUR: Texte secondaire, sous-titres
+   Exemple: style="color: hsl(var(--color-text-muted))"
 
 🚫 INTERDICTIONS STRICTES:
 - NE JAMAIS utiliser de HEX (#003366, #FFFFFF, etc.) dans le HTML
-- NE JAMAIS utiliser text-gray-XXX sans le remplacer par hsl(${designTokens.textMuted})
-- NE JAMAIS utiliser bg-white sans vérifier si hsl(${designTokens.background}) est différent
-- TOUS les text-primary, text-accent, bg-primary, bg-accent DOIVENT utiliser les HSL ci-dessus
+- NE JAMAIS écrire text-primary en classe Tailwind, utilise style="color: hsl(var(--color-primary))"
+- TOUJOURS utiliser hsl(var(--color-XXX)) avec les CSS vars définies en :root
 
 ✅ EXEMPLE CORRECT:
 <!-- Icône avec couleur primary -->
-<svg class="icon-stroke-primary" ... stroke="hsl(${designTokens.primary})" ...>
+<svg stroke="hsl(var(--color-primary))" ...>
 
 <!-- Card avec accent background -->
-<div class="bg-white border-l-4" style="border-color: hsl(${designTokens.accent})">
+<div class="bg-white border-l-4" style="border-color: hsl(var(--color-accent))">
 
 <!-- Texte avec couleur text-muted -->
-<p class="text-lg" style="color: hsl(${designTokens.textMuted})">...</p>
+<p class="text-lg" style="color: hsl(var(--color-text-muted))">...</p>
 
-LAYOUT OBLIGATOIRE: ${layout}
-${layout === 'single-column' ? '- Une seule colonne centrée, max-w-7xl mx-auto' : ''}
-${layout === 'two-column' ? '- Grille 2 colonnes (image + texte), lg:grid-cols-2' : ''}
-${layout === 'hero-left' ? '- Hero avec image dominante à gauche, texte à droite' : ''}
-${layout === 'hero-right' ? '- Hero avec texte à gauche, image dominante à droite' : ''}
+🏗️ LAYOUT OBLIGATOIRE À APPLIQUER: ${layout.toUpperCase()}
+------------------------------------------------------------------
+${layout === 'single-column' ? `
+✅ SINGLE-COLUMN: Une seule colonne centrée
+- Container: max-w-7xl mx-auto
+- Toutes les sections: une seule colonne verticale
+- Hero: texte centré au milieu
+- Sections: grid-cols-1 partout
+` : ''}
+${layout === 'two-column' ? `
+✅ TWO-COLUMN: Grille 2 colonnes (image + texte)
+- Hero: lg:grid-cols-2 (image à gauche, texte à droite)
+- Sections principales: lg:grid-cols-2 (alterne image gauche/droite)
+- Points forts: lg:grid-cols-2 (2 colonnes)
+- Gallery: lg:grid-cols-2
+` : ''}
+${layout === 'hero-left' ? `
+✅ HERO-LEFT: Image dominante à gauche
+- Hero: lg:grid-cols-2 avec image LARGE (lg:col-span-1) à GAUCHE + texte COMPACT à droite
+- Image hero: aspect-square object-cover h-full
+- Reste des sections: layout standard (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+` : ''}
+${layout === 'hero-right' ? `
+✅ HERO-RIGHT: Image dominante à droite
+- Hero: lg:grid-cols-2 avec texte COMPACT à GAUCHE + image LARGE (lg:col-span-1) à DROITE
+- Image hero: aspect-square object-cover h-full
+- Reste des sections: layout standard (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+` : ''}
+
+⚠️ APPLIQUE CE LAYOUT STRICTEMENT DANS TOUTES LES SECTIONS
 
 
 STYLE: ${selectedStyleTemplate.name}
@@ -1576,6 +1627,8 @@ ${reliabilityBadge}
    ⚠️ CRITICAL: 
    - Grid layout: first image large (lg:col-span-2 lg:row-span-2), others smaller
    - USE ALL ${images?.length || 0} provided images
+   - ❌ JAMAIS de placeholder images (via.placeholder.com INTERDIT)
+   - ✅ TOUJOURS utiliser les URLs Shopify CDN complètes fournies
    - FULL Shopify CDN URLs (https://cdn.shopify.com/...)
    - Descriptive alt texts
    - rounded-xl shadow-md hover:shadow-lg transition
@@ -1584,6 +1637,12 @@ ${reliabilityBadge}
        <div class="lg:col-span-2 lg:row-span-2">
          <img src="[first_image]" alt="..." class="w-full h-full object-cover rounded-xl shadow-lg" loading="eager">
        </div>
+       <div><img src="[second_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
+       <div><img src="[third_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
+       <!-- Répète pour TOUTES les images fournies -->
+     </div>
+   - SI seulement 2 images: grid simple 2 colonnes égales
+   - SI 1 seule image: pleine largeur avec max-w-5xl mx-auto
        <div><img src="[second_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
        <div><img src="[third_image]" alt="..." class="w-full aspect-square object-cover rounded-xl shadow-md" loading="lazy"></div>
        ...
