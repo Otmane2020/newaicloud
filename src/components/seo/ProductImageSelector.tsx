@@ -132,7 +132,7 @@ export function ProductImageSelector({
                     // 2. Sync to Shopify
                     const { error: syncError } = await supabase.functions.invoke(
                       'sync-product-images-to-shopify',
-                      { body: { product_id: productId } }
+                      { body: { productId } }
                     );
 
                     if (syncError) {
