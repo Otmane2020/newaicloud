@@ -1576,19 +1576,34 @@ STRUCTURE MOBILE-FIRST (CRITIQUE) :
 - Padding boutons : "px-6 py-3 sm:px-8 sm:py-4"
 - Espace entre éléments cliquables : minimum 8px
 
-📱 TABLEAUX RESPONSIFS (CRITIQUE) :
-- Bureau (md:) : Utiliser <table> standard avec class "hidden md:table"
-- Mobile : Utiliser des cartes avec class "block md:hidden space-y-4"
-- Structure exemple :
-  <!-- Cartes mobile -->
-  <div class="block md:hidden space-y-4">
-    <div class="bg-white rounded-lg p-4 shadow">
-      <div class="font-semibold mb-2">Label</div>
-      <div class="text-secondary">Valeur</div>
-    </div>
+📱 TABLEAUX RESPONSIFS (CRITIQUE - OBLIGATOIRE) :
+CETTE STRUCTURE DOIT TOUJOURS ÊTRE UTILISÉE POUR LES CARACTÉRISTIQUES TECHNIQUES !
+
+- Mobile : Cartes empilées avec "block md:hidden space-y-4"
+- Bureau : Table HTML avec "hidden md:block"
+- Structure COMPLÈTE obligatoire :
+
+<!-- VERSION MOBILE - Cartes (TOUJOURS CRÉER) -->
+<div class="block md:hidden space-y-4">
+  <div class="bg-white rounded-xl p-6 shadow-md" style="background-color: var(--color-background-main);">
+    <div class="font-semibold mb-2" style="color: var(--color-primary);">Nom du champ</div>
+    <div class="text-base" style="color: var(--color-text-main);">Valeur</div>
   </div>
-  <!-- Table bureau -->
-  <table class="hidden md:table min-w-full">
+  <!-- Répéter pour chaque caractéristique -->
+</div>
+
+<!-- VERSION BUREAU - Table (TOUJOURS CRÉER) -->
+<div class="hidden md:block bg-white rounded-2xl shadow-lg p-8" style="background-color: var(--color-background-main);">
+  <table class="min-w-full divide-y divide-gray-200">
+    <tbody class="divide-y divide-gray-200">
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap text-base font-semibold" style="color: var(--color-primary);">Nom du champ</td>
+        <td class="px-6 py-4 whitespace-nowrap text-base" style="color: var(--color-text-main);">Valeur</td>
+      </tr>
+      <!-- Répéter pour chaque caractéristique -->
+    </tbody>
+  </table>
+</div>
 
 🎨 ICÔNES SVG PROFESSIONNELLES (CRITIQUE) :
 - Utiliser des SVG inline avec dégradés pour un look premium
@@ -1619,7 +1634,10 @@ STRUCTURE MOBILE-FIRST (CRITIQUE) :
 ✅ SECTIONS REQUISES :
 - Hero avec bannière image
 - Points Forts (3-4 cartes) incluant les HIGHLIGHTS fournis
-- Caractéristiques Techniques (si données enrichies)
+- **Caractéristiques Techniques** (OBLIGATOIRE si données enrichies disponibles)
+  ⚠️ CRITIQUE : DOIT UTILISER la structure tableau responsive décrite ci-dessus
+  ⚠️ DEUX VERSIONS : Cartes mobile (block md:hidden) + Table bureau (hidden md:block)
+  ⚠️ Afficher TOUS les metafields disponibles (dimensions, poids, matériaux, couleurs, etc.)
 - Matériaux & Composition (si disponible)
 - Galerie d'Images (y compris variantes si disponibles)
 - Conseils d'Entretien
@@ -1651,8 +1669,8 @@ UTILISATION DES ICÔNES :
               role: "system",
               content:
                 detectedLanguage === "en"
-                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
-                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.",
+                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. CRITICAL: When enriched product attributes are provided, you MUST create a comprehensive Technical Specifications section using the mobile-first table structure with TWO versions: 1) Mobile cards with 'block md:hidden space-y-4' class, 2) Desktop table with 'hidden md:block' class. ALWAYS include BOTH versions for proper responsive display."
+                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. CRITIQUE : Quand des attributs produit enrichis sont fournis, tu DOIS créer une section Caractéristiques Techniques complète en utilisant la structure de tableau mobile-first avec DEUX versions : 1) Cartes mobile avec class 'block md:hidden space-y-4', 2) Table bureau avec class 'hidden md:block'. Inclus TOUJOURS les DEUX versions pour un affichage responsive correct.",
             },
             { role: "user", content: prompt },
           ],
