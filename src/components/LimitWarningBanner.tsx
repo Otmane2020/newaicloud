@@ -50,7 +50,7 @@ export function LimitWarningBanner() {
 
       // For paid users who reached limits, navigate to subscription page to choose upgrade
       // This is safer than auto-selecting the next plan
-      navigate("/subscription?upgrade=true");
+      navigate("/subscription");
     } catch (error) {
       console.error("Upgrade error:", error);
       toast.error("Erreur lors de la redirection");
