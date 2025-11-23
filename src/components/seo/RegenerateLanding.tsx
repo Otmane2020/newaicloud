@@ -44,6 +44,8 @@ interface RegenerateLandingProps {
   onClose?: () => void;
 }
 
+type GenerationMode = "fast" | "premium";
+
 export default function RegenerateLanding({
   product,
   config,
@@ -68,6 +70,7 @@ export default function RegenerateLanding({
     deepseekAnalysis?: string;
     confidence?: number;
   } | null>(null);
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("fast"); // ✅ New: Fast/Premium mode
 
   // Log component mounting
   useEffect(() => {
@@ -372,6 +375,7 @@ export default function RegenerateLanding({
           contentLength: config.contentLength,
           customHighlights: config.customHighlights,
           language: storeLanguage, // ✅ Use store language for entire landing page
+          generationMode, // ✅ Pass generation mode (fast/premium)
         },
       }).catch(err => {
         console.error('[RegenerateLanding] Network error:', err);
@@ -557,6 +561,35 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
+      {/* ✅ NEW: Generation Mode Selector */}
+      {!loading && !htmlContent && (
+        <div className="bg-gradient-to-br from-primary/5 to-accent/10 p-4 rounded-xl border border-primary/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-sm">Mode de génération</h3>
+            </div>
+            <Tabs value={generationMode} onValueChange={(v) => setGenerationMode(v as GenerationMode)}>
+              <TabsList className="h-9">
+                <TabsTrigger value="fast" className="text-xs gap-1.5">
+                  <Zap className="w-3.5 h-3.5" />
+                  Rapide (15-20s)
+                </TabsTrigger>
+                <TabsTrigger value="premium" className="text-xs gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Premium (30-60s)
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {generationMode === "fast" 
+              ? "⚡ Génération ultra-rapide avec Gemini 2.5 Flash - Qualité optimale en 15-20 secondes"
+              : "💎 Génération premium avec DeepSeek - Qualité maximale et détails avancés"}
+          </p>
+        </div>
+      )}
+
       {/* Optimized Title Section - SIMPLIFIED */}
       {optimizedTitle && (
         <div className="bg-gradient-to-br from-accent/5 to-accent/10 p-4 rounded-xl border border-accent/30">
@@ -887,20 +920,32 @@ export default function RegenerateLanding({
             </div>
           </div>
 
-          <div
-            className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile"
-                ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]"
-                : "h-[500px] sm:h-[650px]"
-            }`}
-          >
-            <iframe
-              srcDoc={htmlContent}
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin allow-scripts"
-              title="Landing Page Preview"
-            />
-          </div>
+            {/* ✅ FIXED: Preview iframe with proper error handling */}
+            {htmlContent ? (
+              <div
+                className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
+                  previewMode === "mobile"
+                    ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]"
+                    : "h-[500px] sm:h-[650px]"
+                }`}
+              >
+                <iframe
+                  srcDoc={htmlContent}
+                  className="w-full h-full border-0"
+                  sandbox="allow-same-origin allow-scripts"
+                  title="Landing Page Preview"
+                  onError={(e) => {
+                    console.error("Iframe loading error:", e);
+                    toast.error("Erreur de chargement de l'aperçu");
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="border rounded-xl p-8 bg-muted/30 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">Aucun contenu à prévisualiser</p>
+              </div>
+            )}
         </div>
       )}
 
