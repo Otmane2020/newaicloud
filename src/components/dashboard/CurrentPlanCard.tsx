@@ -208,20 +208,10 @@ export function CurrentPlanCard() {
 
           <div className="flex gap-2">
             <Button 
-              onClick={() => setUpgradeDialogOpen(true)}
-              disabled={portalLoading}
-              variant="outline"
-              className="flex-1"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {t.account.subscription.changePlan}
-            </Button>
-
-            <Button 
               onClick={handleManageSubscription}
               disabled={portalLoading}
               variant="default"
-              className="flex-1"
+              className="w-full"
             >
               {portalLoading ? (
                 <>
