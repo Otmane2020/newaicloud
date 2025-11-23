@@ -193,54 +193,21 @@ export default function LandingTest() {
         (p: any) => p.id === selectedPreferenceId
       );
 
-      // ✅ Couleurs provenant de la préférence (si définies)
-      let colorSchemeFromPreference: any | null = null;
-      if (selectedPreference) {
-        colorSchemeFromPreference = {
-          primary: selectedPreference.color_primary,
-          secondary: selectedPreference.color_secondary,
-          accent: selectedPreference.color_accent,
-          background: selectedPreference.color_background,
-          surface: selectedPreference.color_surface,
-          text: selectedPreference.color_text,
-          text_muted: selectedPreference.color_text_muted,
-        };
-      }
-
-      // ✅ Palette depuis la table d'options (fallback)
-      const selectedColorScheme = colorSchemes.find(c => c.option_key === config.colorScheme);
-
-      // ✅ Construire l'objet userPreferences avec normalisation
-      const rawColorScheme = colorSchemeFromPreference ||
-        selectedColorScheme?.option_value || {
-          primary: 'hsl(199, 89%, 48%)',
-          secondary: 'hsl(187, 85%, 53%)',
-          accent: 'hsl(172, 66%, 50%)',
-          background: 'hsl(0, 0%, 100%)',
-          surface: 'hsl(195, 53%, 97%)',
-          text: 'hsl(200, 24%, 10%)',
-          textMuted: 'hsl(200, 24%, 40%)',
-        };
-
-      const testPreferences = {
-        layout: selectedPreference?.layout || config.layout,
-        designStyle: selectedPreference?.design_style || config.style,
-        contentLength: selectedPreference?.content_length || config.contentLength,
-        colorScheme: normalizeColorScheme(rawColorScheme),
-        highlights: selectedPreference?.custom_highlights || config.highlights || [],
-      };
-
-      console.log('🧪 [TEST] userPreferences (normalized):', testPreferences);
-
-      // ✅ Call generate-landing-ai with userPreferences
+      // ✅ Envoyer uniquement les CLÉS des options, pas les objets complets
+      // La fonction edge ira chercher les valeurs dans la DB avec getOption()
       const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
         body: {
-          product_id: product.id,
           productTitle: product.title,
           description: product.body_html || product.seo_description || "",
           vendor: product.vendor || "Marque",
           imageUrl: product.image_url,
-          userPreferences: testPreferences,
+          options: {
+            layout: selectedPreference?.layout || config.layout,
+            designStyle: selectedPreference?.design_style || config.style,
+            contentLength: selectedPreference?.content_length || config.contentLength,
+            colorScheme: config.colorScheme, // Clé comme "ocean_blue"
+            vendorSource: 'shopify'
+          },
           language: 'fr'
         }
       });
