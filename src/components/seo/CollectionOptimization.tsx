@@ -5,10 +5,12 @@ import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
+import { ProgressBanner } from './ProgressBanner';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -1014,30 +1016,40 @@ export function CollectionOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            <div className="text-center">
-              <div className={`text-3xl md:text-4xl font-bold ${
-                globalSeoScore >= 80 ? 'text-green-600' : 
-                globalSeoScore >= 60 ? 'text-orange-600' : 
-                'text-red-600'
-              }`}>
-                {globalSeoScore}/100
-              </div>
-              <div className="text-sm text-muted-foreground">{t.collections.optimization.globalScore}</div>
-              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {optimizationRate}% {t.collections.optimization.optimized}
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                size="lg"
-                onClick={handleGenerateAll}
-                disabled={optimizing || notOptimizedCount === 0}
-                className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
-              >
-                <Sparkles className="w-5 h-5" />
-                {t.collections.optimization.optimizeAll}
-              </Button>
-            </div>
+            {optimizing ? (
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label="Optimisation"
+              />
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className={`text-3xl md:text-4xl font-bold ${
+                    globalSeoScore >= 80 ? 'text-green-600' : 
+                    globalSeoScore >= 60 ? 'text-orange-600' : 
+                    'text-red-600'
+                  }`}>
+                    {globalSeoScore}/100
+                  </div>
+                  <div className="text-sm text-muted-foreground">{t.collections.optimization.globalScore}</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {optimizationRate}% {t.collections.optimization.optimized}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    onClick={handleGenerateAll}
+                    disabled={optimizing || notOptimizedCount === 0}
+                    className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {t.collections.optimization.optimizeAll}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </Card>

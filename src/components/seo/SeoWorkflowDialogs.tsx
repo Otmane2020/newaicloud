@@ -114,8 +114,8 @@ export function ProgressDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => isProcessing && e.preventDefault()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           <div className="relative">

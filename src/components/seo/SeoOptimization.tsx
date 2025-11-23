@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { ProgressBanner } from "./ProgressBanner";
 import {
   ProgressDialog,
   ResultsDialog,
@@ -939,23 +940,12 @@ export function SeoOptimization() {
           </div>
           <div className="flex flex-col gap-4 items-center">
             {generating ? (
-              // Affichage de la progression en cours
-              <div className="text-center space-y-3 w-full max-w-md">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span className="font-semibold text-lg">Optimisation en cours...</span>
-                </div>
-                <Progress value={progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0} className="h-3" />
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{progress.current} / {progress.total} produits</span>
-                  <span className="font-bold text-primary">{progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 Le traitement continue en arrière-plan
-                </p>
-              </div>
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label="Optimisation"
+              />
             ) : (
-              // Affichage normal (score + bouton)
               <>
                 <div className="text-center">
                   <div
@@ -1770,12 +1760,7 @@ export function SeoOptimization() {
       {/* Dialogs */}
       <ProgressDialog
         open={showProgressDialog}
-        onOpenChange={(open) => {
-          // Empêcher la fermeture pendant le traitement
-          if (!generating && !syncing) {
-            setShowProgressDialog(open);
-          }
-        }}
+        onOpenChange={setShowProgressDialog}
         type="seo"
         operation={syncing ? "syncing" : "optimizing"}
         current={progress.current}
