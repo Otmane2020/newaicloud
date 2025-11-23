@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
+import { ProgressBanner } from './ProgressBanner';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -764,26 +765,36 @@ export function TagOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            <div className="text-center">
-              <div className={`text-3xl md:text-4xl font-bold ${
-                tagSeoScore >= 80 ? 'text-green-600' : 
-                tagSeoScore >= 60 ? 'text-orange-600' : 
-                'text-red-600'
-              }`}>
-                {tagSeoScore}/100
-              </div>
-              <div className="text-sm text-muted-foreground">SEO Score</div>
-            </div>
-            <Button
-              size="lg"
-              onClick={handleGenerateAll}
-              disabled={showProgressDialog || productsNotOptimized === 0}
-              className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
-            >
-              <Sparkles className="w-5 h-5" />
-              Start Optimization
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+            {showProgressDialog ? (
+              <ProgressBanner
+                current={progress.current}
+                total={progress.total}
+                label={currentOperation === 'syncing' ? 'Synchronisation' : 'Optimisation'}
+              />
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className={`text-3xl md:text-4xl font-bold ${
+                    tagSeoScore >= 80 ? 'text-green-600' : 
+                    tagSeoScore >= 60 ? 'text-orange-600' : 
+                    'text-red-600'
+                  }`}>
+                    {tagSeoScore}/100
+                  </div>
+                  <div className="text-sm text-muted-foreground">SEO Score</div>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={handleGenerateAll}
+                  disabled={showProgressDialog || productsNotOptimized === 0}
+                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Start Optimization
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Card>
