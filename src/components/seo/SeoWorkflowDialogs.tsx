@@ -156,6 +156,15 @@ export function ProgressDialog({
               {total > 0 ? Math.round((current / total) * 100) : 0}%
             </p>
           </div>
+
+          {/* Info message about background processing */}
+          {isProcessing && (
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border/50">
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Vous pouvez fermer cette fenêtre, le traitement continue en arrière-plan
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
