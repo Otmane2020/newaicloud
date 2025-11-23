@@ -288,29 +288,51 @@ export default function MediaHistory() {
     if (type === 'product') {
       title = item.shopify_products?.title || 'Produit inconnu';
       
-      onApply = (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="default"
-              size="sm"
-              disabled={applyProductImage.isPending}
-              className="gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Appliquer</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
-            <ProductImageSelector 
-              productId={item.product_id} 
-              historyId={item.id}
-              optimizedUrl={item.optimized_url}
-              onApply={applyProductImage.mutate}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
+      // Si on a une image_id d'origine, on applique directement
+      if (item.image_id) {
+        onApply = (
+          <Button
+            variant="default"
+            size="sm"
+            disabled={applyProductImage.isPending}
+            onClick={() => applyProductImage.mutate({
+              historyId: item.id,
+              targetImageId: item.image_id,
+              optimizedUrl: item.optimized_url,
+              productId: item.product_id
+            })}
+            className="gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Appliquer à l'image d'origine</span>
+          </Button>
+        );
+      } else {
+        // Sinon, on affiche le sélecteur
+        onApply = (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={applyProductImage.isPending}
+                className="gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Choisir cible</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+              <ProductImageSelector 
+                productId={item.product_id} 
+                historyId={item.id}
+                optimizedUrl={item.optimized_url}
+                onApply={applyProductImage.mutate}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      }
     } else if (type === 'collection') {
       title = item.shopify_collections?.title || 'Collection inconnue';
       onApply = (
