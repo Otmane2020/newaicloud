@@ -1320,15 +1320,21 @@ ICONS USAGE (MANDATORY):
 - ❌ NO simple text bullets (-, *, •)
 - ❌ NO emoji icons (✓, ★, ✔)
 - ❌ NO decorative icons elsewhere`
-        : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
-Génère une landing page Tailwind HTML complète et professionnelle.
+: `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
+Génère une landing page Tailwind HTML complète et professionnelle en respectant STRICTEMENT la configuration suivante.
 
-📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE):
-🚨 TOUJOURS inclure ces optimisations:
-1. Images: TOUJOURS ajouter loading="lazy" sur TOUTES les balises <img>
-2. Viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-3. Textes: Adapter les tailles avec classes responsive (text-base md:text-lg)
-4. Espacements: Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
+⚙️ CONFIGURATION UTILISATEUR (OBLIGATOIRE) :
+- Modèle de design sélectionné : ${selectedStyle.name} (config: ${designStyle})
+- Layout choisi : "${layout || "2 colonnes"}"
+- Longueur de contenu demandée : ${length === "long" ? "LONGUE - sections détaillées, storytelling, FAQ développée" : "COURTE - sections synthétiques, focus sur l'essentiel"}
+- Thème de couleurs : palette ${(colorScheme as any)?.paletteId || "personnalisée"}
+
+📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE) :
+🚨 TOUJOURS inclure ces optimisations :
+1. Images : TOUJOURS ajouter loading="lazy" sur TOUTES les balises <img>
+2. Viewport : <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+3. Textes : Adapter les tailles avec classes responsive (text-base md:text-lg)
+4. Espacements : Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
 
 PRODUIT :
 - Titre : ${productTitle}
@@ -1342,22 +1348,91 @@ ${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATION
 
 IMAGES :
 ${imgs}
-VARIANTES :
-${vars}
-${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 
-PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
+🖼️ VARIANTES AVEC IMAGES (CRITIQUE - DOIVENT ÊTRE AFFICHÉES) :
+${vars}
+${variants.length > 0 ? `
+🚨 RÈGLES D'AFFICHAGE DES VARIANTES :
+1. Crée une section dédiée "Variations disponibles" APRÈS la description principale
+2. Pour CHAQUE variante avec image :
+   - Affiche l'image dans une grille : grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+   - Utilise des images carré : class="aspect-square object-cover"
+   - Ajoute le titre de la variante en légende sous l'image
+   - Utilise loading="lazy" pour toutes les images de variantes
+3. Exemple de structure :
+   <section class="py-12">
+     <h2 class="text-3xl font-bold mb-8">Variations disponibles</h2>
+     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+       ... cartes variantes avec image + titre ...
+     </div>
+   </section>
+` : ""}
+
+${customHighlights ? `POINTS FORTS FOURNIS PAR L'UTILISATEUR (OBLIGATOIRE À INTÉGRER) :\n${customHighlights}\n\n🚨 Tu DOIS transformer ces points forts en une section dédiée (ex : \"Pourquoi choisir ce produit ?\") avec une liste à puces.\n` : ""}
+
+🎨 PALETTE DE COULEURS COMPLÈTE (5 COULEURS PAR THÈME) :
+${colorScheme ? `
+ID de palette : ${(colorScheme as any).paletteId || 'custom'}
+${(colorScheme as any).paletteId === 'modern' ? `
+- Couleur 1 (la plus foncée) : #000000 → hsl(0 0% 0%)
+- Couleur 2 : #333333 → hsl(0 0% 20%)
+- Couleur 3 : #666666 → hsl(0 0% 40%)
+- Couleur 4 : #999999 → hsl(0 0% 60%)
+- Couleur 5 (la plus claire) : #CCCCCC → hsl(0 0% 80%)
+` : (colorScheme as any).paletteId === 'blue' ? `
+- Couleur 1 (la plus foncée) : #003366 → hsl(210 100% 20%)
+- Couleur 2 : #0066CC → hsl(210 100% 40%)
+- Couleur 3 : #3399FF → hsl(210 100% 60%)
+- Couleur 4 : #66B3FF → hsl(210 100% 70%)
+- Couleur 5 (la plus claire) : #99CCFF → hsl(210 100% 80%)
+` : (colorScheme as any).paletteId === 'earth' ? `
+- Couleur 1 (la plus foncée) : #5D4037 → hsl(16 31% 30%)
+- Couleur 2 : #795548 → hsl(16 25% 40%)
+- Couleur 3 : #A1887F → hsl(20 15% 56%)
+- Couleur 4 : #D7CCC8 → hsl(14 20% 81%)
+- Couleur 5 (la plus claire) : #EFEBE9 → hsl(30 12% 93%)
+` : (colorScheme as any).paletteId === 'luxury' ? `
+- Couleur 1 (la plus foncée) : #1A1A1A → hsl(0 0% 10%)
+- Couleur 2 : #4A4A4A → hsl(0 0% 29%)
+- Couleur 3 (Or) : #B8860B → hsl(43 90% 38%)
+- Couleur 4 : #DAA520 → hsl(43 87% 49%)
+- Couleur 5 (Or très lumineux) : #FFD700 → hsl(51 100% 50%)
+` : (colorScheme as any).paletteId === 'fresh' ? `
+- Couleur 1 (la plus foncée) : #1B5E20 → hsl(123 56% 24%)
+- Couleur 2 : #388E3C → hsl(123 43% 39%)
+- Couleur 3 : #66BB6A → hsl(122 39% 57%)
+- Couleur 4 : #81C784 → hsl(120 39% 65%)
+- Couleur 5 (la plus claire) : #A5D6A7 → hsl(122 40% 75%)
+` : (colorScheme as any).paletteId === 'vibrant' ? `
+- Couleur 1 (la plus foncée) : #B71C1C → hsl(0 73% 41%)
+- Couleur 2 : #D32F2F → hsl(0 63% 50%)
+- Couleur 3 : #F44336 → hsl(4 90% 58%)
+- Couleur 4 : #EF5350 → hsl(2 85% 63%)
+- Couleur 5 (la plus claire) : #E57373 → hsl(0 71% 68%)
+` : `
+Palette personnalisée - utilise les tokens ci-dessous
+`}
+` : ''}
+
+TOKENS DE DESIGN (FORMAT HSL - À UTILISER PARTOUT) :
 - Primaire : hsl(${designTokens.primary})
 - Secondaire : hsl(${designTokens.secondary})
 - Accent : hsl(${designTokens.accent})
-- Fond : hsl(${designTokens.background})
-- Texte : hsl(${designTokens.text})
+- Fond principal : hsl(${designTokens.background})
+- Surface (cartes/sections) : hsl(${designTokens.surface})
+- Texte principal : hsl(${designTokens.text})
+- Texte atténué : hsl(${designTokens.textMuted})
+- Texte sur CTA : hsl(${designTokens.ctaText})
 
 🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
 1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
-2. TOUJOURS utiliser styles inline HSL pour hero, sections et CTAs
-3. Exemples :
-   - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+2. TOUJOURS utiliser des styles inline HSL pour hero, sections et CTAs
+3. Utilise PROGRESSIVEMENT les 5 couleurs de la palette :
+   - Couleurs les plus foncées (1-2) : titres, CTAs principaux, textes importants
+   - Couleur intermédiaire (3) : fonds de sections et cartes
+   - Couleurs les plus claires (4-5) : fonds subtils, bords, états hover
+4. Exemples :
+   - Hero : <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
    - Section : <section style="background-color: hsl(${designTokens.surface})">
    - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
 
@@ -1373,25 +1448,36 @@ ${selectedStyle.rules}
 ${selectedIcon}
 Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
 
-🖼️ IMAGES ET TITRES (CRITIQUE - LISIBILITÉ MAXIMALE) :
-🚨 CRITICAL: Pour TOUS les titres/textes sur images, tu DOIS :
-1. Ajouter overlay sombre semi-transparent : <div class="absolute inset-0 bg-black/40"></div>
-2. Utiliser text-shadow pour contraste : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
-3. Texte en blanc éclatant : class="text-white"
-4. Taille de police grande : class="text-4xl md:text-6xl font-bold"
-5. Structure exemple OBLIGATOIRE pour hero avec image :
-   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
-     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
-     <div class="absolute inset-0 bg-black/40"></div>
-     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
-       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+🖼️ HERO AVEC BANNIÈRE IMAGE (CRITIQUE - PREMIÈRE SECTION OBLIGATOIRE) :
+1. La page DOIT commencer par une bannière hero plein écran avec l'image produit principale :
+   <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
+     <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}"
+          loading="eager"
+          class="absolute inset-0 w-full h-full object-cover">
+     <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
+     <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
+       <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight"
+           style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9)">
          ${productTitle}
        </h1>
-       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
-         Description courte
+       <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed"
+          style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8)">
+         ${(description || '').substring(0, 150)}...
        </p>
      </div>
    </div>
+
+2. VARIATIONS SELON LE LAYOUT :
+   - "1 colonne" : hero plein écran comme ci-dessus puis sections en 1 colonne centrée
+   - "2 colonnes" : hero plein écran, puis section principale en 2 colonnes (image + texte)
+   - "hero à gauche" : image hero à gauche (50%), contenu à droite (50%)
+   - "hero à droite" : contenu à gauche (50%), image hero à droite (50%)
+
+3. POUR TOUS LES TEXTES SUR IMAGE :
+   - Overlay sombre obligatoire : bg-black/40 à bg-black/60
+   - Text-shadow obligatoire : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+   - Texte en blanc : class="text-white"
+   - Titres grands : class="text-4xl md:text-6xl font-bold"
 
 DESIGN & TON (CRITIQUE) :
 ✅ STYLE PROFESSIONNEL REQUIS :
@@ -1467,7 +1553,13 @@ STRUCTURE :
 - AUCUN bouton call-to-action de quelque nature que ce soit
 
 ✅ SECTIONS REQUISES :
-Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
+- Hero avec bannière image
+- Points Forts (3-4 cartes) incluant les HIGHLIGHTS fournis
+- Caractéristiques Techniques (si données enrichies)
+- Matériaux & Composition (si disponible)
+- Galerie d'Images (y compris variantes si disponibles)
+- Conseils d'Entretien
+- FAQ.
 
 UTILISATION DES ICÔNES :
 - Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
