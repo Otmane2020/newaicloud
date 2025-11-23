@@ -286,9 +286,9 @@ export function SubscriptionPlans() {
     const currentLevel = getPlanLevel(currentPlanId || "");
     const targetLevel = getPlanLevel(planId);
 
-    if (targetLevel > currentLevel) return t.dashboard.plans.upgrade;
-    if (targetLevel < currentLevel) return t.dashboard.plans.downgrade;
-    return t.dashboard.plans.changePlan;
+    if (targetLevel > currentLevel) return "Upgrade";
+    if (targetLevel < currentLevel) return "Downgrade";
+    return "Upgrade";
   };
 
   // Group plans by category

@@ -165,13 +165,11 @@ serve(async (req) => {
     const newPriceAmount = newPriceObj.unit_amount || 0;
     const priceDifference = newPriceAmount - oldPriceAmount;
 
-    // Determine if proration is needed (not in first 3 days)
-    const isRenewalUpgrade = daysIntoCycle <= 3;
-    const prorationNeeded = !isRenewalUpgrade && priceDifference > 0;
+    // Always calculate proration if there's a price difference
+    const prorationNeeded = priceDifference > 0;
 
     let prorationDetails: any = {
       proration_needed: prorationNeeded,
-      is_renewal_upgrade: isRenewalUpgrade,
       old_plan_name: profile.current_plan_id,
       new_plan_name: newPlan.name,
       old_plan_price: oldPriceAmount / 100,
@@ -194,15 +192,6 @@ serve(async (req) => {
         prorated_amount: proratedAmount / 100,
         amount_to_pay_now: proratedAmount / 100,
         explanation: `(${newPriceAmount / 100}${currentCurrency} - ${oldPriceAmount / 100}${currentCurrency}) × ${daysRemaining}j / ${totalCycleDays}j = ${proratedAmount / 100}${currentCurrency}`,
-        next_billing_amount: newPriceAmount / 100,
-        next_billing_date: new Date(periodEnd * 1000).toISOString(),
-      };
-    } else if (isRenewalUpgrade) {
-      prorationDetails = {
-        ...prorationDetails,
-        prorated_amount: 0,
-        amount_to_pay_now: 0,
-        explanation: `Début de cycle (${daysIntoCycle}j), pas de prorata`,
         next_billing_amount: newPriceAmount / 100,
         next_billing_date: new Date(periodEnd * 1000).toISOString(),
       };
