@@ -376,6 +376,7 @@ export default function RegenerateLanding({
           customHighlights: config.customHighlights,
           language: storeLanguage, // ✅ Use store language for entire landing page
           generationMode, // ✅ Pass generation mode (fast/premium)
+          theme: config.theme || 'light', // ✅ Pass theme (light/dark)
         },
       }).catch(err => {
         console.error('[RegenerateLanding] Network error:', err);

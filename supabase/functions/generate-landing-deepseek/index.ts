@@ -542,6 +542,7 @@ serve(async (req) => {
       contentLength = "medium",
       customHighlights = "",
       generationMode = "premium", // "fast" | "premium"
+      theme = "light", // "light" | "dark"
     } = body;
 
     console.log(`🚀 Generating landing page for product ${productId}`);
@@ -869,6 +870,7 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
       images,
       enrichedProduct,
       extractedInfo,
+      theme,
     });
 
     const promptSizeKB = (new Blob([prompt]).size / 1024).toFixed(2);
@@ -1084,7 +1086,8 @@ function buildDeepSeekPrompt(productData: any, config: any): string {
     language, 
     images,
     enrichedProduct,
-    extractedInfo
+    extractedInfo,
+    theme = 'light'
   } = config;
 
   const fontLinks = Object.values(fonts)
@@ -1454,28 +1457,28 @@ ${reliabilityBadge}
          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
        </svg>
      </button>
-     <script>
-       const toggleBtn = document.getElementById('theme-toggle');
-       const body = document.body;
-       const lightIcon = document.querySelector('.theme-icon-light');
-       const darkIcon = document.querySelector('.theme-icon-dark');
-       
-       // Load saved theme
-       const savedTheme = localStorage.getItem('theme') || 'light';
-       if (savedTheme === 'dark') {
-         body.classList.add('dark');
-         lightIcon.classList.add('hidden');
-         darkIcon.classList.remove('hidden');
-       }
-       
-       toggleBtn?.addEventListener('click', () => {
-         body.classList.toggle('dark');
-         const isDark = body.classList.contains('dark');
-         lightIcon.classList.toggle('hidden', isDark);
-         darkIcon.classList.toggle('hidden', !isDark);
-         localStorage.setItem('theme', isDark ? 'dark' : 'light');
-       });
-     </script>
+      <script>
+        const toggleBtn = document.getElementById('theme-toggle');
+        const body = document.body;
+        const lightIcon = document.querySelector('.theme-icon-light');
+        const darkIcon = document.querySelector('.theme-icon-dark');
+        
+        // Load theme: use configured default theme (${theme}) or saved theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || '${theme}';
+        if (savedTheme === 'dark') {
+          body.classList.add('dark');
+          lightIcon.classList.add('hidden');
+          darkIcon.classList.remove('hidden');
+        }
+        
+        toggleBtn?.addEventListener('click', () => {
+          body.classList.toggle('dark');
+          const isDark = body.classList.contains('dark');
+          lightIcon.classList.toggle('hidden', isDark);
+          darkIcon.classList.toggle('hidden', !isDark);
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+      </script>
 
 1️⃣ HERO SECTION (fullscreen, h-screen):
    - Image en background-image (URL complète)

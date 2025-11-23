@@ -65,14 +65,21 @@ export const ImageHistoryPanel = ({ imageId, productId, onRestore }: ImageHistor
       const entry = history?.find(h => h.id === historyId);
       if (!entry) throw new Error('Version not found');
 
+      console.log('Restoring version:', { historyId, imageId, productId, entry });
+
       // Mark all versions as not current
-      await supabase
+      const { error: updateAllError } = await supabase
         .from('product_image_history')
         .update({ is_current: false })
         .eq('image_id', imageId);
 
+      if (updateAllError) {
+        console.error('Error updating all versions:', updateAllError);
+        throw updateAllError;
+      }
+
       // Mark selected version as current
-      await supabase
+      const { error: updateCurrentError } = await supabase
         .from('product_image_history')
         .update({ 
           is_current: true,
@@ -80,24 +87,36 @@ export const ImageHistoryPanel = ({ imageId, productId, onRestore }: ImageHistor
         })
         .eq('id', historyId);
 
+      if (updateCurrentError) {
+        console.error('Error marking version as current:', updateCurrentError);
+        throw updateCurrentError;
+      }
+
       // Update the product image URL
-      await supabase
+      const { error: updateImageError } = await supabase
         .from('product_images')
         .update({ 
           src: entry.optimized_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', imageId);
+
+      if (updateImageError) {
+        console.error('Error updating product image:', updateImageError);
+        throw updateImageError;
+      }
+
+      console.log('Version restored successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['image-history', imageId] });
       queryClient.invalidateQueries({ queryKey: ['product-images', productId] });
-      toast.success('Version restaurée avec succès');
+      toast.success('Image appliquée avec succès');
       onRestore?.();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error restoring version:', error);
-      toast.error('Erreur lors de la restauration');
+      toast.error(`Erreur: ${error.message || 'Impossible d\'appliquer l\'image'}`);
     }
   });
 
