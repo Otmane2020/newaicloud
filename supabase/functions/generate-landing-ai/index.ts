@@ -1114,17 +1114,22 @@ DESIGN TOKENS (HSL FORMAT - FOR THE 7 THEME COLORS):
 
 🚨 CRITICAL COLOR USAGE RULES:
 1. USE ALL 7 THEME COLORS (primary, secondary, accent, background, surface, text, textMuted) across the layout
-2. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) and NEVER define your own :root or prefers-color-scheme based dark mode
-3. ALWAYS assume a LIGHT THEME and ensure high contrast on light backgrounds (WCAG AA 4.5:1 minimum)
-4. ALWAYS use inline HSL styles for hero, sections, cards, tables and CTAs
-5. Apply palette progressively:
+2. ❌ NEVER USE HEX COLORS (#FFFFFF, #000000, etc.)
+3. ❌ NEVER USE CSS VARIABLES (var(--color-primary), var(--color-background-main), etc.)
+4. ❌ NEVER define :root or @media (prefers-color-scheme) 
+5. ✅ ALWAYS use INLINE HSL values directly in style attributes
+6. ✅ ALWAYS assume a LIGHT THEME and ensure high contrast on light backgrounds (WCAG AA 4.5:1 minimum)
+7. Apply palette progressively:
    - Darkest colors (primary/secondary): headers, primary CTAs, bold text, key icons
    - Middle colors (accent/surface): section and card backgrounds
    - Lightest tones (background + textMuted): subtle backgrounds, borders, hover states
-6. Examples:
-   - Hero banner: <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
-   - Section: <section style="background-color: hsl(${designTokens.surface})">
-   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+8. Examples (COPY THESE EXACT PATTERNS):
+   - Hero banner: <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white;">
+   - Section background: <section style="background-color: hsl(${designTokens.surface});">
+   - Card background: <div style="background-color: hsl(${designTokens.background});">
+   - Text color: <h2 style="color: hsl(${designTokens.primary});">
+   - Muted text: <p style="color: hsl(${designTokens.textMuted});">
+   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText});">
 
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1141,30 +1146,30 @@ ${selectedIcon}
 🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
 
 🖼️ HERO BANNER WITH IMAGE (CRITICAL - MANDATORY FIRST SECTION):
-🚨 CRITICAL: The landing page MUST start with a full-width hero banner with image overlay:
+🚨 CRITICAL: The landing page MUST start with a full-width hero banner with the MAIN product image as background and text overlay:
 
-1. MANDATORY HERO STRUCTURE (FIRST SECTION OF PAGE):
+1. ✅ MANDATORY HERO STRUCTURE (FIRST SECTION OF PAGE - ALWAYS USE THIS):
    <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
-     <!-- Main product image as background -->
-     <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}" 
+     <!-- Main product image as background (ALWAYS use images[0].src, NOT imageUrl) -->
+     <img src="${images[0]?.src || imageUrl || ''}" alt="${productTitle}" 
           loading="eager" 
           class="absolute inset-0 w-full h-full object-cover">
      
-     <!-- Dark overlay for text readability -->
+     <!-- Dark overlay for text readability (MANDATORY) -->
      <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
      
-     <!-- Hero content centered -->
+     <!-- Hero content centered (MANDATORY) -->
      <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight" 
-           style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9)">
+           style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9);">
          ${productTitle}
        </h1>
        <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed" 
-          style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8)">
+          style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8);">
          ${description?.substring(0, 150) || 'Description du produit'}...
        </p>
        
-       <!-- Optional CTA button in hero -->
+       <!-- CTA button in hero -->
        <div class="flex gap-4">
          <a href="#details" 
             class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105" 
@@ -1175,15 +1180,13 @@ ${selectedIcon}
      </div>
    </div>
 
-2. HERO VARIATIONS BY LAYOUT:
-   - "1 colonne": Full-width hero as above
-   - "2 colonnes": Keep full-width hero, then 2-column content below
-   - "hero à gauche": Image hero on left 50%, content on right 50%
-   - "hero à droite": Content on left 50%, image hero on right 50%
+2. ❌ DO NOT USE SPLIT LAYOUTS for hero section - always use full-width image with overlay
+3. ❌ NEVER use side-by-side image+text layouts in the hero
+4. ✅ ALWAYS use the structure above exactly as shown
 
-3. FOR ALL TEXT ON IMAGES:
+5. FOR ALL TEXT ON IMAGES (MANDATORY):
    - Dark overlay: bg-black/40 to bg-black/60
-   - Text shadow: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+   - Text shadow: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8);"
    - White text: text-white
    - Large sizes: text-4xl md:text-6xl for titles
 
@@ -1360,22 +1363,26 @@ ${imgs}
 
 🖼️ VARIANTES AVEC IMAGES (CRITIQUE - DOIVENT ÊTRE AFFICHÉES) :
 ${vars}
-${variants.length > 0 ? `
-🚨 RÈGLES D'AFFICHAGE DES VARIANTES :
-1. Crée une section dédiée "Variations disponibles" APRÈS la description principale
-2. Pour CHAQUE variante avec image :
+${variants.length > 1 ? `
+🚨 RÈGLES D'AFFICHAGE DES VARIANTES (UNIQUEMENT SI PLUS D'1 VARIANTE) :
+1. ✅ Crée une section dédiée "Variations disponibles" APRÈS la description principale
+2. ✅ Pour CHAQUE variante avec image :
    - Affiche l'image dans une grille : grid-cols-2 md:grid-cols-3 lg:grid-cols-4
    - Utilise des images carré : class="aspect-square object-cover"
    - Ajoute le titre de la variante en légende sous l'image
    - Utilise loading="lazy" pour toutes les images de variantes
 3. Exemple de structure :
-   <section class="py-12">
-     <h2 class="text-3xl font-bold mb-8">Variations disponibles</h2>
-     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-       ... cartes variantes avec image + titre ...
+   <section class="py-12" style="background-color: hsl(${designTokens.background});">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h2 class="text-3xl font-bold text-center mb-8" style="color: hsl(${designTokens.secondary});">Variations disponibles</h2>
+       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+         ... cartes variantes avec image + titre ...
+       </div>
      </div>
    </section>
-` : ""}
+` : `
+🚨 CRITICAL: NE PAS AFFICHER la section "Variations disponibles" car il n'y a qu'une seule variante ou aucune variante.
+`}
 
 ${customHighlights ? `POINTS FORTS FOURNIS PAR L'UTILISATEUR (OBLIGATOIRE À INTÉGRER) :\n${customHighlights}\n\n🚨 Tu DOIS transformer ces points forts en une section dédiée (ex : \"Pourquoi choisir ce produit ?\") avec une liste à puces.\n` : ""}
 
@@ -1434,17 +1441,24 @@ TOKENS DE DESIGN (FORMAT HSL - 7 COULEURS DU THÈME) :
 - Texte sur CTA : hsl(${designTokens.ctaText})
 
 🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
-1. UTILISE LES 7 COULEURS DU THÈME (primaire, secondaire, accent, fond, surface, texte, texte atténué) dans TOUTE la mise en page
-2. N'UTILISE JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) et NE CRÉE JAMAIS ton propre dark mode (pas de :root, pas de @media (prefers-color-scheme))
-3. SUPPOSE TOUJOURS UN THÈME CLAIR et garantis un contraste fort sur fond clair (WCAG AA 4.5:1 minimum)
-4. Utilise des styles inline HSL pour hero, sections, cartes, tableaux et CTA
-5. Utilise PROGRESSIVEMENT les couleurs de la palette :
+1. ✅ UTILISE LES 7 COULEURS DU THÈME (primaire, secondaire, accent, fond, surface, texte, texte atténué) dans TOUTE la mise en page
+2. ❌ N'UTILISE JAMAIS de couleurs HEX (#FFFFFF, #000000, #333333, etc.)
+3. ❌ N'UTILISE JAMAIS de CSS VARIABLES (var(--color-primary), var(--color-background-main), etc.)
+4. ❌ NE CRÉE JAMAIS de :root ou @media (prefers-color-scheme)
+5. ✅ TOUJOURS utiliser les valeurs HSL DIRECTEMENT dans les attributs style
+6. ✅ TOUJOURS supposer un THÈME CLAIR et garantir un contraste fort sur fond clair (WCAG AA 4.5:1 minimum)
+7. Applique la palette PROGRESSIVEMENT :
    - Couleurs les plus foncées (primaire/secondaire) : titres, CTAs principaux, icônes
    - Couleurs intermédiaires (accent/surface) : fonds de sections et cartes
    - Tons les plus clairs (fond + texte atténué) : fonds subtils, bords, états hover
-6. Exemples :
-   - Hero : <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white">
-   - Section : <section style="background-color: hsl(${designTokens.surface})">
+8. Exemples EXACTS à copier :
+   - Hero : <div style="background: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); color: white;">
+   - Section : <section style="background-color: hsl(${designTokens.surface});">
+   - Carte : <div style="background-color: hsl(${designTokens.background});">
+   - Titre : <h2 style="color: hsl(${designTokens.primary});">
+   - Texte : <p style="color: hsl(${designTokens.text});">
+   - Texte atténué : <span style="color: hsl(${designTokens.textMuted});">
+   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText});">
    - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
 
 🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
@@ -1478,36 +1492,46 @@ Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégr
      </div>
    </div>
 
-2. VARIATIONS SELON LE LAYOUT :
-   - "1 colonne" : hero plein écran comme ci-dessus puis sections en 1 colonne centrée
-   - "2 colonnes" : hero plein écran, puis section principale en 2 colonnes (image + texte)
-   - "hero à gauche" : flex flex-col md:flex-row, image 50% gauche, contenu 50% droite
-   - "hero à droite" : flex flex-col md:flex-row-reverse, image 50% droite, contenu 50% gauche
-   
-   Exemple "hero à droite" mobile-first :
-   <div class="relative min-h-[400px] md:min-h-[70vh] w-full overflow-hidden flex flex-col md:flex-row-reverse">
-     <!-- Contenu à gauche sur desktop -->
-     <div class="relative z-10 w-full md:w-1/2 min-h-[300px] md:h-full flex flex-col justify-center p-6 sm:p-8 md:p-12 lg:p-16"
-          style="background-color: var(--color-surface); color: var(--color-text-main);">
-       <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4 sm:mb-6"
-           style="color: var(--color-primary);">
+🖼️ HERO AVEC BANNIÈRE IMAGE (CRITIQUE - PREMIÈRE SECTION OBLIGATOIRE) :
+🚨 CRITIQUE : La page DOIT commencer par une bannière hero avec la PREMIÈRE image produit en arrière-plan et overlay de texte :
+
+1. ✅ STRUCTURE HERO OBLIGATOIRE (PREMIÈRE SECTION - TOUJOURS UTILISER CECI) :
+   <div class="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
+     <!-- Image produit principale en arrière-plan (TOUJOURS utiliser images[0].src, PAS imageUrl) -->
+     <img src="${images[0]?.src || imageUrl || ''}" alt="${productTitle}" 
+          loading="eager" 
+          class="absolute inset-0 w-full h-full object-cover">
+     
+     <!-- Overlay sombre pour lisibilité (OBLIGATOIRE) -->
+     <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
+     
+     <!-- Contenu hero centré (OBLIGATOIRE) -->
+     <div class="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center">
+       <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight" 
+           style="text-shadow: 2px 2px 8px rgba(0,0,0,0.9);">
          ${productTitle}
        </h1>
-       <p class="text-base md:text-lg leading-relaxed max-w-xl"
-          style="color: var(--color-text-main);">
-         ${(description || '').substring(0, 200)}...
+       <p class="text-lg sm:text-xl md:text-2xl text-white/95 max-w-3xl mb-8 leading-relaxed" 
+          style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8);">
+         ${description?.substring(0, 150) || 'Description du produit'}...
        </p>
-     </div>
-     <!-- Image à droite sur desktop -->
-     <div class="relative w-full md:w-1/2 min-h-[300px] md:h-full overflow-hidden">
-       <img src="${imageUrl || images[0]?.src || ''}" alt="${productTitle}"
-            loading="eager"
-            class="absolute inset-0 w-full h-full object-cover">
-       <div class="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-transparent to-black/20"></div>
+       
+       <!-- Bouton CTA dans hero -->
+       <div class="flex gap-4">
+         <a href="#details" 
+            class="px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105" 
+            style="background-color: hsl(${designTokens.primary}); color: white; text-shadow: none;">
+           En savoir plus
+         </a>
+       </div>
      </div>
    </div>
 
-3. POUR TOUS LES TEXTES SUR IMAGE :
+2. ❌ NE PAS UTILISER de layouts split pour la section hero - toujours utiliser image full-width avec overlay
+3. ❌ JAMAIS de layouts côte-à-côte image+texte dans le hero
+4. ✅ TOUJOURS utiliser la structure ci-dessus exactement comme indiqué
+
+5. POUR TOUS LES TEXTES SUR IMAGE (OBLIGATOIRE) :
    - Overlay sombre obligatoire : bg-black/40 à bg-black/60
    - Text-shadow obligatoire : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
    - Texte en blanc : class="text-white"
@@ -1596,20 +1620,20 @@ CETTE STRUCTURE DOIT TOUJOURS ÊTRE UTILISÉE POUR LES CARACTÉRISTIQUES TECHNIQ
 
 <!-- VERSION MOBILE - Cartes (TOUJOURS CRÉER) -->
 <div class="block md:hidden space-y-4">
-  <div class="bg-white rounded-xl p-6 shadow-md" style="background-color: var(--color-background-main);">
-    <div class="font-semibold mb-2" style="color: var(--color-primary);">Nom du champ</div>
-    <div class="text-base" style="color: var(--color-text-main);">Valeur</div>
+  <div class="rounded-xl p-6 shadow-md" style="background-color: hsl(${designTokens.background});">
+    <div class="font-semibold mb-2" style="color: hsl(${designTokens.primary});">Nom du champ</div>
+    <div class="text-base" style="color: hsl(${designTokens.text});">Valeur</div>
   </div>
   <!-- Répéter pour chaque caractéristique -->
 </div>
 
 <!-- VERSION BUREAU - Table (TOUJOURS CRÉER) -->
-<div class="hidden md:block bg-white rounded-2xl shadow-lg p-8" style="background-color: var(--color-background-main);">
+<div class="hidden md:block rounded-2xl shadow-lg p-8" style="background-color: hsl(${designTokens.surface});">
   <table class="min-w-full divide-y divide-gray-200">
     <tbody class="divide-y divide-gray-200">
       <tr>
-        <td class="px-6 py-4 whitespace-nowrap text-base font-semibold" style="color: var(--color-primary);">Nom du champ</td>
-        <td class="px-6 py-4 whitespace-nowrap text-base" style="color: var(--color-text-main);">Valeur</td>
+        <td class="px-6 py-4 whitespace-nowrap text-base font-semibold" style="color: hsl(${designTokens.primary});">Nom du champ</td>
+        <td class="px-6 py-4 whitespace-nowrap text-base" style="color: hsl(${designTokens.text});">Valeur</td>
       </tr>
       <!-- Répéter pour chaque caractéristique -->
     </tbody>
@@ -1680,8 +1704,8 @@ UTILISATION DES ICÔNES :
               role: "system",
               content:
                 detectedLanguage === "en"
-                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. CRITICAL: When enriched product attributes are provided, you MUST create a comprehensive Technical Specifications section using the mobile-first table structure with TWO versions: 1) Mobile cards with 'block md:hidden space-y-4' class, 2) Desktop table with 'hidden md:block' class. ALWAYS include BOTH versions for proper responsive display."
-                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. CRITIQUE : Quand des attributs produit enrichis sont fournis, tu DOIS créer une section Caractéristiques Techniques complète en utilisant la structure de tableau mobile-first avec DEUX versions : 1) Cartes mobile avec class 'block md:hidden space-y-4', 2) Table bureau avec class 'hidden md:block'. Inclus TOUJOURS les DEUX versions pour un affichage responsive correct.",
+                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. CRITICAL: When enriched product attributes are provided, you MUST create a comprehensive Technical Specifications section using the mobile-first table structure with TWO versions: 1) Mobile cards with 'block md:hidden space-y-4' class, 2) Desktop table with 'hidden md:block' class. ALWAYS include BOTH versions for proper responsive display. CRITICAL COLOR RULES: NEVER use CSS variables like var(--color-primary) or var(--color-background). ALWAYS use inline HSL values directly in style attributes (e.g., style=\"color: hsl(217 91% 60%);\"). NEVER define :root CSS variables. HERO SECTION: The page MUST start with a full-width hero banner with the main product image as background and a dark overlay with centered white text on top. NEVER use split layouts in the hero section."
+                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. CRITIQUE : Quand des attributs produit enrichis sont fournis, tu DOIS créer une section Caractéristiques Techniques complète en utilisant la structure de tableau mobile-first avec DEUX versions : 1) Cartes mobile avec class 'block md:hidden space-y-4', 2) Table bureau avec class 'hidden md:block'. Inclus TOUJOURS les DEUX versions pour un affichage responsive correct. RÈGLES COULEURS CRITIQUES : N'UTILISE JAMAIS de variables CSS comme var(--color-primary) ou var(--color-background). UTILISE TOUJOURS les valeurs HSL inline directement dans les attributs style (ex : style=\"color: hsl(217 91% 60%);\"). NE DÉFINIS JAMAIS de variables CSS :root. SECTION HERO : La page DOIT commencer par une bannière hero plein écran avec l'image produit principale en arrière-plan et un overlay sombre avec du texte blanc centré par-dessus. N'UTILISE JAMAIS de layouts split dans la section hero.",
             },
             { role: "user", content: prompt },
           ],
