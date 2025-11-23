@@ -307,6 +307,14 @@ export const useImageOptimization = () => {
               duration: 10000
             });
             return { success: true, shopifySyncBlocked: true };
+          } else if (syncData?.skipped) {
+            console.log('[ImageOptimization] Shopify sync skipped (no shopify_product_id)', syncData);
+            toast.warning('Image appliquée localement uniquement', {
+              id: syncToastId,
+              description: 'Le produit n\'est pas encore connecté à Shopify. Les images seront envoyées une fois le produit synchronisé.',
+              duration: 8000,
+            });
+            return { success: true, shopifySyncSkipped: true };
           } else if (syncData?.error) {
             console.error('❌ Shopify sync error:', syncData.error);
             toast.warning('Image appliquée mais sync Shopify partielle', {

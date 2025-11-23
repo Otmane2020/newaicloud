@@ -292,6 +292,9 @@ export function SeoAltImageList() {
         });
 
         const result = await Promise.race([invokePromise, timeoutPromise]);
+        
+        console.log('[SeoAltImageList] Shopify sync response', { productId, result });
+        
         return result;
       } catch (error: any) {
         if (attempt < retries && (error.message === 'Timeout' || error.message?.includes('network'))) {
@@ -376,10 +379,19 @@ export function SeoAltImageList() {
             console.error(`❌ [${i + 1}/${productIds.length}] Erreur API:`, errorMsg);
             errorCount++;
             failedProducts.push(productTitle);
-            toast.error(`Échec pour ${productTitle}`, {
-              description: errorMsg,
-              duration: 4000
-            });
+            
+            // Check for skipped sync
+            if (data?.skipped) {
+              toast.warning(`${productTitle}: produit non synchronisé`, {
+                description: 'Le produit n\'a pas d\'ID Shopify',
+                duration: 4000
+              });
+            } else {
+              toast.error(`Échec pour ${productTitle}`, {
+                description: errorMsg,
+                duration: 4000
+              });
+            }
             continue;
           }
 

@@ -187,6 +187,7 @@ export const ProductMediaOptimization = () => {
       let syncErrors = 0;
       let syncBlocked = 0;
       let syncPartial = 0;
+      let syncSkipped = 0;
       let syncOk = 0;
 
       try {
@@ -207,6 +208,9 @@ export const ProductMediaOptimization = () => {
         } else if (syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
           console.log(`🚫 [WhiteBg] Shopify sync blocked - trial user`);
           syncBlocked++;
+        } else if (syncData?.skipped) {
+          console.log(`⏭️ [WhiteBg] Sync skipped for product (no shopify_product_id)`);
+          syncSkipped++;
         } else if (syncData?.error) {
           console.warn(`⚠️ [WhiteBg] Shopify sync partial error:`, syncData.error);
           syncPartial++;
@@ -242,6 +246,11 @@ export const ProductMediaOptimization = () => {
         toast.warning('Synchronisation partielle', {
           description: 'Image appliquée localement. Certaines images n\'ont pas été synchronisées avec Shopify.',
           duration: 6000
+        });
+      } else if (syncSkipped > 0) {
+        toast.warning('Image appliquée localement uniquement', {
+          description: 'Le produit n\'est pas encore synchronisé avec Shopify (aucun ID Shopify).',
+          duration: 8000,
         });
       } else if (syncOk > 0) {
         toast.success('Image appliquée et synchronisée', {
