@@ -144,36 +144,80 @@ function adjustSaturation(hex: string, factor: number): string {
   return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
 }
 
+// ✅ PHASE 1.1: Fonction acceptant HSL et HEX
+function isHslFormat(color: string): boolean {
+  if (!color) return false;
+  // Détecte "hsl(210, 100%, 50%)" ou "210, 100%, 50%" ou "210 100% 50%"
+  return color.startsWith('hsl(') || /^\d+,?\s*\d+%,?\s*\d+%$/.test(color.trim());
+}
+
+function cleanHslValue(color: string): string {
+  if (!color) return '0, 0%, 0%';
+  
+  // Retirer "hsl(" et ")"
+  let cleaned = color.replace(/hsl\(|\)/g, '').trim();
+  
+  // Normaliser: "210 100% 50%" → "210, 100%, 50%"
+  if (!cleaned.includes(',')) {
+    const parts = cleaned.split(/\s+/);
+    if (parts.length === 3) {
+      cleaned = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
+    }
+  }
+  
+  return cleaned;
+}
+
 function generateDesignTokens(colorScheme: any) {
-  const primaryHex = colorScheme.primary || "#000000";
-  const secondaryHex = colorScheme.secondary || "#333333";
-  const backgroundHex = colorScheme.background || "#FFFFFF";
-  const surfaceHex = colorScheme.surface || "#F5F5F5";
-  const textHex = colorScheme.text || "#000000";
-  const textMutedHex = colorScheme.textMuted || "#666666";
-
-  const contrast = calculateContrast(primaryHex, "#FFFFFF");
-  const needsDarkText = contrast < 4.5;
-  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
-
-  const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
-  const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
-
-  // Create a more vibrant accent color by increasing saturation
-  const accentHex = adjustSaturation(primaryHex, 1.3);
-
-  // Convert all colors to HSL format
-  return {
-    primary: hexToHsl(primaryHex),
-    secondary: hexToHsl(secondaryHex),
-    accent: hexToHsl(accentHex),
-    background: hexToHsl(validatedBackgroundHex),
-    surface: hexToHsl(surfaceHex),
-    text: hexToHsl(validatedTextHex),
-    textMuted: hexToHsl(textMutedHex),
-    ctaText: hexToHsl(ctaTextHex),
-    contrastRatio: contrast,
+  console.log('🎨 Generating design tokens from:', colorScheme);
+  
+  const processColor = (color: string, defaultHex: string): string => {
+    if (!color) {
+      console.log(`⚠️ No color provided, using default: ${defaultHex}`);
+      return hexToHsl(defaultHex);
+    }
+    
+    if (isHslFormat(color)) {
+      const cleaned = cleanHslValue(color);
+      console.log(`✅ HSL format detected: ${color} → ${cleaned}`);
+      return cleaned;
+    }
+    
+    // Sinon c'est du HEX
+    const converted = hexToHsl(color);
+    console.log(`🔄 HEX converted: ${color} → hsl(${converted})`);
+    return converted;
   };
+
+  const primaryProcessed = processColor(colorScheme?.primary, '#3B82F6');
+  const secondaryProcessed = processColor(colorScheme?.secondary, '#8B5CF6');
+  const backgroundProcessed = processColor(colorScheme?.background, '#FFFFFF');
+  const surfaceProcessed = processColor(colorScheme?.surface, '#F9FAFB');
+  const textProcessed = processColor(colorScheme?.text, '#111827');
+  const textMutedProcessed = processColor(colorScheme?.text_muted || colorScheme?.textMuted, '#6B7280');
+
+  // Créer un accent vibrant en ajustant la saturation si c'est un HEX
+  let accentProcessed;
+  if (colorScheme?.accent && !isHslFormat(colorScheme.accent)) {
+    const accentHex = adjustSaturation(colorScheme.accent, 1.3);
+    accentProcessed = hexToHsl(accentHex);
+  } else {
+    accentProcessed = processColor(colorScheme?.accent, '#10B981');
+  }
+
+  const tokens = {
+    primary: primaryProcessed,
+    secondary: secondaryProcessed,
+    accent: accentProcessed,
+    background: backgroundProcessed,
+    surface: surfaceProcessed,
+    text: textProcessed,
+    textMuted: textMutedProcessed,
+    ctaText: '0, 0%, 100%', // Blanc pour texte sur boutons colorés
+  };
+
+  console.log('🎨 Design Tokens Generated:', tokens);
+  return tokens;
 }
 
 // Helper to build enriched product summary
