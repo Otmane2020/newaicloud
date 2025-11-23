@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
-import { ProgressBanner } from './ProgressBanner';
+import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -482,12 +482,17 @@ export function CollectionOptimization() {
     await executeOptimization(collectionsToOptimize);
   };
 
+  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+
   const executeOptimization = async (collectionsToOptimize: Collection[]) => {
 
     setOptimizing(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: collectionsToOptimize.length });
+    
+    // Start global optimization tracking
+    startOptimization('collections', collectionsToOptimize.length, 'optimizing');
 
     let successCount = 0;
     for (let i = 0; i < collectionsToOptimize.length; i++) {
@@ -508,10 +513,12 @@ export function CollectionOptimization() {
         // Check if optimization was successful
         if (data?.results?.[0]?.success) {
           successCount++;
+          updateProgress(i + 1, collectionsToOptimize[i].id, 'success');
         } else {
           const errorMsg = data?.results?.[0]?.error || t.collections.optimization.messages.optimizationFailed;
           console.warn(`⚠️ Collection ${collectionsToOptimize[i].id} - ${errorMsg}`);
           toast.warning(tf('collections.optimization.messages.collectionError', { title: collectionsToOptimize[i].title, message: errorMsg }));
+          updateProgress(i + 1, collectionsToOptimize[i].id, 'error');
         }
         
         setProgress({ current: i + 1, total: collectionsToOptimize.length });
@@ -547,6 +554,7 @@ export function CollectionOptimization() {
     setOptimizing(false);
     setIsOptimizationComplete(true);
     setShowProgressDialog(false);
+    completeOptimization();
     
     // Refresh data
     await fetchCollections();
@@ -621,6 +629,9 @@ export function CollectionOptimization() {
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: collectionsToOptimize.length });
+    
+    // Start global optimization tracking
+    startOptimization('collections', collectionsToOptimize.length, 'optimizing');
 
     let successCount = 0;
     const BATCH_SIZE = 3;
@@ -639,8 +650,10 @@ export function CollectionOptimization() {
           if (!error && data?.results?.[0]?.success) {
             successCount++;
           }
+          updateProgress(Math.min(i + BATCH_SIZE, collectionsToOptimize.length), collection.id, 'success');
         } catch (error: any) {
           console.error('❌ Error:', error);
+          updateProgress(Math.min(i + BATCH_SIZE, collectionsToOptimize.length), collection.id, 'error');
           if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
             // Afficher le bon message selon le statut de l'utilisateur
             if (limits?.isTrialing) {
@@ -653,12 +666,14 @@ export function CollectionOptimization() {
             setShowUpgradeDialog(true);
             setShowProgressDialog(false);
             setOptimizing(false);
+            completeOptimization();
             return;
           } else if (error.message?.includes('already_optimized')) {
             toast.error(t.collections.optimization.messages.alreadyOptimizedTrial);
             setShowUpgradeDialog(true);
             setShowProgressDialog(false);
             setOptimizing(false);
+            completeOptimization();
             return;
           }
         }
@@ -670,6 +685,7 @@ export function CollectionOptimization() {
     setOptimizing(false);
     setIsOptimizationComplete(true);
     setShowProgressDialog(false);
+    completeOptimization();
     
     // Refresh data
     await fetchCollections();
@@ -710,6 +726,9 @@ export function CollectionOptimization() {
       
       setShowProgressDialog(true);
       setProgress({ current: 0, total: collectionsToSync.length });
+      
+      // Start global sync tracking
+      startOptimization('collections', collectionsToSync.length, 'syncing');
 
       let successCount = 0;
       let imageSyncCount = 0;
@@ -746,13 +765,16 @@ export function CollectionOptimization() {
           }
           
           successCount++;
+          updateProgress(i + 1, collection.id, 'success');
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
+          updateProgress(i + 1, collection.id, 'error');
         }
         setProgress({ current: i + 1, total: collectionsToSync.length });
       }
 
       setShowProgressDialog(false);
+      completeOptimization();
       
       // Small delay before showing success message
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -786,6 +808,9 @@ export function CollectionOptimization() {
       setSyncing(true);
       setShowProgressDialog(true);
       setProgress({ current: 0, total: allOptimized.length });
+      
+      // Start global sync tracking
+      startOptimization('collections', allOptimized.length, 'syncing');
 
       let successCount = 0;
       let imageSyncCount = 0;
@@ -822,13 +847,16 @@ export function CollectionOptimization() {
           }
           
           successCount++;
+          updateProgress(i + 1, collection.id, 'success');
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
+          updateProgress(i + 1, collection.id, 'error');
         }
         setProgress({ current: i + 1, total: allOptimized.length });
       }
 
       setShowProgressDialog(false);
+      completeOptimization();
       
       await new Promise(resolve => setTimeout(resolve, 200));
       
@@ -1016,13 +1044,7 @@ export function CollectionOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {optimizing ? (
-              <ProgressBanner
-                current={progress.current}
-                total={progress.total}
-                label="Optimisation"
-              />
-            ) : (
+            {!optimizing && (
               <>
                 <div className="text-center">
                   <div className={`text-3xl md:text-4xl font-bold ${
