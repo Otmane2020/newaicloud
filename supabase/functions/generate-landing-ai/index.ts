@@ -593,8 +593,9 @@ serve(async (req) => {
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
-    // Generate design tokens
-    const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
+    // Generate design tokens from selected color scheme or fallback
+    const effectiveColorScheme = selectedColorScheme || colorScheme || { primary: mainColor };
+    const designTokens = generateDesignTokens(effectiveColorScheme);
 
     if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
