@@ -485,10 +485,18 @@ serve(async (req) => {
       if (!hsl) return '#000000'; // Handle undefined/null
       if (hsl.startsWith('#')) return hsl; // Already hex
       
-      const match = hsl.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/);
-      if (!match) return '#000000';
+      // Gérer les deux formats: "221 83% 53%" ET "hsl(221, 83%, 53%)"
+      const cleanHsl = hsl.replace(/hsl\(|\)/g, '').trim();
+      const parts = cleanHsl.split(/[\s,]+/).map(s => s.replace('%', '').trim()).filter(s => s);
       
-      const [, h, s, l] = match.map(Number);
+      if (parts.length !== 3) {
+        console.error('❌ Invalid HSL format:', hsl);
+        return '#000000';
+      }
+      
+      const h = parseInt(parts[0]);
+      const s = parseInt(parts[1]);
+      const l = parseInt(parts[2]);
       const hue = h / 360;
       const sat = s / 100;
       const lum = l / 100;
