@@ -55,7 +55,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  AlertCircle
+  AlertCircle,
+  Pencil
 } from 'lucide-react';
 import {
   Select,
@@ -1495,8 +1496,23 @@ export function CollectionOptimization() {
                       </TableCell>
                       <TableCell>
                         <div className="max-w-[200px]">
-                          {collection.body_html ? (
-                            <p className="text-base line-clamp-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: collection.body_html.substring(0, 150) + '...' }} />
+                          {collection.body_html && collection.body_html.trim() ? (
+                            <div className="flex items-start gap-2">
+                              <p className="text-sm line-clamp-2 text-muted-foreground flex-1">
+                                {collection.body_html.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={() => {
+                                  setSelectedCollectionForDescription(collection);
+                                  setShowGenerateDescriptionDialog(true);
+                                }}
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                            </div>
                           ) : (
                             <Button
                               variant="ghost"
