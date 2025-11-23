@@ -1,19 +1,20 @@
 /**
  * Subscription Upgrade Logic:
  * 
- * MID-CYCLE UPGRADE (> 3 days into cycle):
- * - Applies proration (user pays difference for remaining days)
- * - Resets monthly usage counters (optimizations, articles, chat, shopify_requests)
- * - Preserves total counters (products_count, shopify_stores_count)
- * - Keeps same billing cycle dates
+ * UPGRADE BILLING:
+ * - ALWAYS applies proration (user pays only the difference for remaining days)
+ * - Formula: (new_price - old_price) × days_remaining / total_cycle_days
+ * - Fair billing regardless of upgrade timing in the cycle
  * 
- * RENEWAL UPGRADE (≤ 3 days into cycle):
- * - No proration (user pays full new plan price)
- * - No usage reset (cycle just started, counters already at 0)
- * - Preserves billing cycle anchor
+ * USAGE COUNTER RESETS:
+ * - MID-CYCLE UPGRADE (> 3 days into cycle):
+ *   - Resets monthly usage counters (optimizations, articles, chat, shopify_requests)
+ *   - Preserves total counters (products_count, shopify_stores_count)
+ * - RENEWAL UPGRADE (≤ 3 days into cycle):
+ *   - No usage reset (cycle just started, counters already at 0)
  * 
  * This ensures users get immediate access to new limits when upgrading
- * and proper billing based on upgrade timing.
+ * and always pay a fair prorated amount.
  */
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -303,24 +304,17 @@ serve(async (req) => {
       const priceDifference = newPriceAmount - oldPriceAmount;
 
       if (priceDifference > 0) {
-        let chargeAmount: number;
-        let description: string;
-
-        if (isMidCycleUpgrade) {
-          // Mid-cycle: charge prorated difference
-          const daysRemaining = totalCycleDays - daysIntoCycle;
-          chargeAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
-          description = `Upgrade proraté: ${daysRemaining}j/${totalCycleDays}j (${oldPriceAmount / 100}→${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
-        } else {
-          // Renewal period or trial ending: charge full difference
-          chargeAmount = priceDifference;
-          description = `Upgrade vers ${newPlan.name} - Paiement immédiat (${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
-        }
+        // ALWAYS charge prorated difference based on remaining days
+        const daysRemaining = totalCycleDays - daysIntoCycle;
+        const chargeAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
+        const description = `Upgrade proraté: ${daysRemaining}j/${totalCycleDays}j (${oldPriceAmount / 100}→${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
 
         logStep("Creating immediate charge for upgrade", {
           chargeAmount: chargeAmount / 100,
           currency: newPriceObj.currency,
-          isProrated: isMidCycleUpgrade
+          daysRemaining,
+          totalCycleDays,
+          proratedPercentage: Math.round((daysRemaining / totalCycleDays) * 100)
         });
 
         // Create invoice item
