@@ -48,6 +48,7 @@ import ChatLearning from "./pages/ChatLearning";
 import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
+import LandingPreferences from "./pages/LandingPreferences";
 import ArticleLanding from "./pages/ArticleLanding";
 import SeoSerpAnalysis from "./pages/SeoSerpAnalysis";
 import LandingPage from "./pages/LandingPage";
@@ -202,6 +203,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Collections />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/landing-preferences"
+              element={
+                <ProtectedLayout>
+                  <LandingPreferences />
                 </ProtectedLayout>
               }
             />
