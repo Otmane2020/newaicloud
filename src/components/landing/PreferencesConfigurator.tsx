@@ -158,11 +158,35 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
 
   const notifyConfigChange = (layout: string, design: string, length: string, colors: any, highlights: string[]) => {
     if (onConfigChange) {
+      console.log('🔄 PreferencesConfigurator notifying config change:', {
+        layout,
+        designStyle: design,
+        contentLength: length,
+        colors: {
+          primary: colors.primary,
+          secondary: colors.secondary,
+          accent: colors.accent,
+          background: colors.background,
+          surface: colors.surface,
+          text: colors.text,
+          textMuted: colors.textMuted
+        },
+        highlights
+      });
+      
       onConfigChange({
         layout,
         designStyle: design,
         contentLength: length,
-        colors,
+        colors: {
+          primary: colors.primary || 'hsl(210, 100%, 50%)',
+          secondary: colors.secondary || 'hsl(200, 95%, 45%)',
+          accent: colors.accent || 'hsl(45, 100%, 55%)',
+          background: colors.background || 'hsl(0, 0%, 100%)',
+          surface: colors.surface || 'hsl(0, 0%, 98%)',
+          text: colors.text || 'hsl(0, 0%, 10%)',
+          textMuted: colors.textMuted || 'hsl(0, 0%, 45%)'
+        },
         highlights
       });
     }

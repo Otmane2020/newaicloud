@@ -112,6 +112,7 @@ export default function LandingOk() {
     try {
       // 1. Sauvegarder la préférence en base de données
       addDebugLog('📝 Sauvegarde de la préférence en base de données...');
+      addDebugLog(`🎨 Couleurs à sauvegarder: ${JSON.stringify(previewConfig.colors)}`);
       
       const { data: preference, error: prefError } = await supabase
         .from('landing_page_preferences')
@@ -126,12 +127,12 @@ export default function LandingOk() {
           color_background: previewConfig.colors.background,
           color_surface: previewConfig.colors.surface,
           color_text: previewConfig.colors.text,
-          color_text_muted: previewConfig.colors.textMuted,
+          color_text_muted: previewConfig.colors.textMuted, // Mapping correct vers DB
           custom_highlights: previewConfig.highlights.length > 0 ? previewConfig.highlights : null,
           is_default: false
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (prefError) {
         addDebugLog(`❌ Erreur sauvegarde préférence: ${prefError.message}`);
