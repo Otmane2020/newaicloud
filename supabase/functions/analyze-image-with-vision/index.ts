@@ -58,6 +58,22 @@ async function callLovableVision(prompt: string, imageData: string, apiKey: stri
   if (!res.ok) {
     const errorText = await res.text();
     console.error("Lovable Vision Error:", res.status, errorText);
+
+    let isRegionRestricted = false;
+    try {
+      const parsedError = JSON.parse(errorText);
+      const raw = parsedError?.error?.metadata?.raw;
+      if (typeof raw === "string" && raw.includes("Image generation is not available in your country")) {
+        isRegionRestricted = true;
+      }
+    } catch {
+      // Ignore JSON parsing issues and fall back to generic error handling
+    }
+
+    if (isRegionRestricted) {
+      throw new Error("VISION_REGION_RESTRICTED");
+    }
+
     throw new Error(`VISION_FAILED_${res.status}`);
   }
 
@@ -173,7 +189,24 @@ Retourne uniquement du JSON valide.
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
+    const message = err?.message || "Unknown error";
+
+    // Gracefully handle known region restriction errors without breaking the UI
+    if (message === "VISION_REGION_RESTRICTED") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "VISION_REGION_RESTRICTED",
+          message: "Image analysis is not available in your region.",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
