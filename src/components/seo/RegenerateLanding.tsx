@@ -226,38 +226,49 @@ export default function RegenerateLanding({
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
-      const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
-        body: {
-          imageUrl: imageUrl,
-          productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
-        },
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
+          body: {
+            imageUrl: imageUrl,
+            productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
+          },
+        });
 
-      if (error) {
-        console.error("[Vision] Image analysis failed:", error);
+        if (error) {
+          console.warn("[Vision] Image analysis failed, continuing without visual analysis:", error);
+          toast("Analyse visuelle indisponible", {
+            description: "La génération continue sans l'analyse d'images.",
+          });
+          return "";
+        }
+
+        // 💾 Sauvegarder les résultats dans la DB
+        if (data?.visualAttributes) {
+          const { error: updateError } = await supabase
+            .from("shopify_products")
+            .update({
+              vision_attributes: data.visualAttributes,
+              vision_analyzed: true,
+              vision_confidence: data.confidence || 1
+            })
+            .eq("id", product.id);
+
+          if (updateError) {
+            console.error("[Vision] Failed to cache analysis:", updateError);
+          } else {
+            console.log("[Vision] Analysis cached to DB successfully");
+          }
+        }
+
+        console.log("[Vision] Image analysis completed");
+        return data?.visualAttributes ? JSON.stringify(data.visualAttributes) : "";
+      } catch (visionError: any) {
+        console.warn("[Vision] Vision analysis unavailable in your region:", visionError);
+        toast("Analyse visuelle indisponible", {
+          description: "Cette fonctionnalité n'est pas disponible dans votre région. La génération continue sans elle.",
+        });
         return "";
       }
-
-      // 💾 Sauvegarder les résultats dans la DB
-      if (data?.visualAttributes) {
-        const { error: updateError } = await supabase
-          .from("shopify_products")
-          .update({
-            vision_attributes: data.visualAttributes,
-            vision_analyzed: true,
-            vision_confidence: data.confidence || 1
-          })
-          .eq("id", product.id);
-
-        if (updateError) {
-          console.error("[Vision] Failed to cache analysis:", updateError);
-        } else {
-          console.log("[Vision] Analysis cached to DB successfully");
-        }
-      }
-
-      console.log("[Vision] Image analysis completed");
-      return data?.visualAttributes ? JSON.stringify(data.visualAttributes) : "";
     } catch (err) {
       console.error("[Vision] Image analysis error:", err);
       return "";
