@@ -68,26 +68,29 @@ const SYSTEM_DEFAULTS: LandingConfig = {
 // ------------------------------------------------------
 function detectLanguage(text: string): "fr" | "en" {
   const t = (text || "").toLowerCase();
-  return t.includes(" the ") ? "en" : "fr";
+  const fr = [" le ", " la ", " les ", " une ", " des ", " avec "];
+  const en = [" the ", " and ", " with ", " for ", " from "];
+  return en.some((w) => t.includes(w)) ? "en" : "fr";
 }
 
 function extractFromText(description: string) {
   const lower = description.toLowerCase();
-  const materials = [];
 
+  const materials = [];
   if (lower.includes("bois")) materials.push("bois");
   if (lower.includes("métal") || lower.includes("acier")) materials.push("métal");
   if (lower.includes("verre")) materials.push("verre");
   if (lower.includes("pvc")) materials.push("pvc");
 
   let style = null;
+  if (lower.includes("scandinave")) style = "scandinave";
   if (lower.includes("moderne")) style = "moderne";
   if (lower.includes("minimaliste")) style = "minimaliste";
-  if (lower.includes("scandinave")) style = "scandinave";
 
   let category = null;
   if (lower.includes("table basse")) category = "table basse";
   if (lower.includes("chaise")) category = "chaise";
+  if (lower.includes("canapé")) category = "canapé";
 
   return { materials, style, category };
 }
@@ -95,7 +98,9 @@ function extractFromText(description: string) {
 function extractDimensions(text: string | null) {
   if (!text) return null;
 
-  const m = text.match(/(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(cm|mm)?/i);
+  const regex = /(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(cm|mm)?/i;
+
+  const m = text.match(regex);
   if (!m) return null;
 
   return {
@@ -135,18 +140,21 @@ async function loadUserPreferences(userId: string) {
 }
 
 // ------------------------------------------------------
-// MERGE CONFIG
+// MERGE OPTIONS
 // ------------------------------------------------------
 function mergeOptions({ override, userDefault }: { override: UserOverrideConfig; userDefault: any }): LandingConfig {
   return {
     layout: override.layout || userDefault?.layout || SYSTEM_DEFAULTS.layout,
+
     design_style:
       override.design_style || override.designStyle || userDefault?.design_style || SYSTEM_DEFAULTS.design_style,
+
     content_length:
       override.content_length ||
       override.contentLength ||
       userDefault?.content_length ||
       SYSTEM_DEFAULTS.content_length,
+
     colorScheme: {
       primary: override.colorScheme?.primary || userDefault?.color_primary || SYSTEM_DEFAULTS.colorScheme.primary,
       secondary:
@@ -159,12 +167,16 @@ function mergeOptions({ override, userDefault }: { override: UserOverrideConfig;
       textMuted:
         override.colorScheme?.textMuted || userDefault?.color_text_muted || SYSTEM_DEFAULTS.colorScheme.textMuted,
     },
+
     custom_highlights: override.custom_highlights?.length
       ? override.custom_highlights
       : userDefault?.custom_highlights || SYSTEM_DEFAULTS.custom_highlights,
   };
 }
 
+// ------------------------------------------------------
+// MERGE CONFIG WRAPPER
+// ------------------------------------------------------
 async function getMergedConfig(
   userId: string,
   storeId: string | null,
@@ -196,12 +208,12 @@ async function analyzeSerp(keyword: string, country: string, lang: string) {
 }
 
 // ---------------- VISION AI ----------------
-async function analyzeImageWithVision(imageUrl: string, title: string, category: string | null) {
+async function analyzeImageWithVision(imageUrl: string, productTitle: string, category: string | null) {
   try {
     const { data } = await supabase.functions.invoke("analyze-image-with-vision", {
       body: {
         imageUrl,
-        productContext: { title, category },
+        productContext: { title: productTitle, category },
       },
     });
     return data?.visualAttributes || null;
@@ -210,10 +222,52 @@ async function analyzeImageWithVision(imageUrl: string, title: string, category:
   }
 }
 
+// ------------- FALLBACK GEMINI VISION -------------
+async function geminiFallbackVision(imageUrl: string, productTitle: string) {
+  try {
+    const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+
+    const res = await fetch("https://api.googleai.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `Analyze the product.` }],
+          },
+        ],
+      }),
+    });
+
+    const json = await res.json();
+    return json;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------- PROMPT BUILDER ----------------
-function buildPrompt({ productTitle, vendor, attributes, serp, config, lang }: any) {
+function buildPrompt({
+  productTitle,
+  vendor,
+  attributes,
+  serp,
+  config,
+  lang,
+}: {
+  productTitle: string;
+  vendor: string;
+  attributes: any;
+  serp: any;
+  config: LandingConfig;
+  lang: "fr" | "en";
+}): string {
   return `
-You are a senior landing page designer.
+You are an expert landing page designer.
 
 ⚠ OUTPUT: HTML ONLY  
 ❌ No markdown  
@@ -229,29 +283,34 @@ Vendor: ${vendor}
 Attributes:
 ${JSON.stringify(attributes, null, 2)}
 
-SERP:
+SERP Insights:
 ${JSON.stringify(serp, null, 2)}
 
-USER PREFERENCES:
+====================================
+USER DESIGN PREFERENCES
+====================================
 ${JSON.stringify(config, null, 2)}
 
-REQUIREMENTS:
-- Premium design
-- Modern UX
-- Strong hero
-- Specs
-- Materials / style sections
-- CTA blocks
+====================================
+REQUIREMENTS
+====================================
+- Premium modern design
+- High-end layout
 - Mobile-first
-- Use ${lang === "fr" ? "French" : "English"}
+- Strong hero section
+- Specs section
+- Features based on materials + style
+- Smooth micro-animations
+- CTA sections
+- Language: ${lang === "fr" ? "French" : "English"}
 
-Generate full HTML now.
+Generate the complete HTML now.
 `;
 }
 
-// ---------------- SAFE LOVABLE CALL ----------------
+// ---------------- STABLE LOVABLE AI CALL ----------------
 async function callAI(prompt: string) {
-  const response = await fetch("https://api.lovable.dev/generate", {
+  const res = await fetch("https://api.lovable.dev/generate", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
@@ -259,23 +318,32 @@ async function callAI(prompt: string) {
     },
     body: JSON.stringify({
       model: "gemini-2.5-flash",
-      prompt, // ← FIXED HERE
+      prompt,
     }),
   });
 
-  const raw = await response.text();
+  // Try JSON first
+  let data: any = null;
 
-  let json;
   try {
-    json = JSON.parse(raw);
-  } catch (err) {
-    console.error("❌ Lovable invalid JSON:", raw);
-    throw new Error("AI_INVALID_JSON_RESPONSE");
+    data = await res.json();
+  } catch (e) {
+    const raw = await res.text();
+    console.error("❌ RAW RESPONSE FROM AI:", raw);
+    throw new Error("INVALID_JSON_FROM_LOVABLE");
   }
 
-  if (!json.output) throw new Error("AI_OUTPUT_EMPTY");
+  if (!data || typeof data !== "object") {
+    throw new Error("INVALID_LOVABLE_RESPONSE");
+  }
 
-  return json.output
+  if (!data.output) {
+    throw new Error("AI_OUTPUT_EMPTY");
+  }
+
+  const html = typeof data.output === "string" ? data.output : JSON.stringify(data.output);
+
+  return html
     .replace(/```html/gi, "")
     .replace(/```/g, "")
     .trim();
@@ -311,37 +379,42 @@ serve(async (req) => {
       });
     }
 
-    console.log("🚀 GENERATION START:", productId);
+    console.log("🚀 START GENERATION:", productId);
 
-    // 1) Merge preferences
+    // 1) Load preferences
     const finalConfig = await getMergedConfig(userId, storeId, userOverride);
 
     // 2) Detect language
     const lang = detectLanguage(description || productTitle);
 
-    // 3) Extract text insights
+    // 3) Extract text info
     const txt = extractFromText(description);
 
-    // 4) SERP
+    // 4) SERP analysis
     const serp = await analyzeSerp(productTitle, "fr", lang);
 
-    // 5) Vision (first valid image)
-    let vision = null;
+    // 5) Vision
+    let visionResult: any = null;
+
     for (const img of images.slice(0, 5)) {
       const v = await analyzeImageWithVision(img, productTitle, txt.category);
       if (v) {
-        vision = v;
+        visionResult = v;
         break;
       }
     }
 
+    // fallback
+    if (!visionResult && images[0]) {
+      visionResult = await geminiFallbackVision(images[0], productTitle);
+    }
+
     // 6) Dimensions
-    const dims = extractDimensions(description);
+    const dimsFromText = extractDimensions(description);
+    const dims = dimsFromText || visionResult?.technicalDimensions || null;
 
     // 7) Final attributes
-    const attributes = finalProductAttributes(vision || {}, txt, serp, dims);
-
-    console.log("📦 ATTRIBUTES:", attributes);
+    const attributes = finalProductAttributes(visionResult || {}, txt, serp, dims);
 
     // 8) Build prompt
     const prompt = buildPrompt({
@@ -356,7 +429,7 @@ serve(async (req) => {
     // 9) Generate HTML
     const html = await callAI(prompt);
 
-    // 10) Save to DB
+    // 10) Save
     await supabase.from("shopify_products").update({ landing_page_html: html }).eq("id", productId);
 
     // 11) Return
@@ -372,6 +445,7 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("❌ ERROR:", err);
+
     return new Response(
       JSON.stringify({
         error: err instanceof Error ? err.message : String(err),
