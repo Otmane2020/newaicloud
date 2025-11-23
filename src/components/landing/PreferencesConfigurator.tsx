@@ -17,7 +17,17 @@ interface ConfigOption {
   option_value: any;
 }
 
-export function PreferencesConfigurator() {
+interface PreferencesConfiguratorProps {
+  onConfigChange?: (config: {
+    layout: string;
+    designStyle: string;
+    contentLength: string;
+    colors: any;
+    highlights: string[];
+  }) => void;
+}
+
+export function PreferencesConfigurator({ onConfigChange }: PreferencesConfiguratorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -81,15 +91,29 @@ export function PreferencesConfigurator() {
     const scheme = colorSchemes.find(c => c.option_key === schemeKey);
     if (scheme?.option_value) {
       setCustomColors(scheme.option_value);
+      notifyConfigChange(selectedLayout, selectedDesign, selectedLength, scheme.option_value, selectedHighlights);
+    }
+  };
+
+  const notifyConfigChange = (layout: string, design: string, length: string, colors: any, highlights: string[]) => {
+    if (onConfigChange) {
+      onConfigChange({
+        layout,
+        designStyle: design,
+        contentLength: length,
+        colors,
+        highlights
+      });
     }
   };
 
   const handleHighlightToggle = (highlightKey: string) => {
-    setSelectedHighlights(prev => 
-      prev.includes(highlightKey)
-        ? prev.filter(h => h !== highlightKey)
-        : [...prev, highlightKey]
-    );
+    const newHighlights = selectedHighlights.includes(highlightKey)
+      ? selectedHighlights.filter(h => h !== highlightKey)
+      : [...selectedHighlights, highlightKey];
+    
+    setSelectedHighlights(newHighlights);
+    notifyConfigChange(selectedLayout, selectedDesign, selectedLength, customColors, newHighlights);
   };
 
   const handleSave = async () => {
@@ -182,7 +206,10 @@ export function PreferencesConfigurator() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label>Layout *</Label>
-            <Select value={selectedLayout} onValueChange={setSelectedLayout}>
+            <Select value={selectedLayout} onValueChange={(val) => {
+              setSelectedLayout(val);
+              notifyConfigChange(val, selectedDesign, selectedLength, customColors, selectedHighlights);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir un layout" />
               </SelectTrigger>
@@ -198,7 +225,10 @@ export function PreferencesConfigurator() {
 
           <div className="space-y-2">
             <Label>Style de design *</Label>
-            <Select value={selectedDesign} onValueChange={setSelectedDesign}>
+            <Select value={selectedDesign} onValueChange={(val) => {
+              setSelectedDesign(val);
+              notifyConfigChange(selectedLayout, val, selectedLength, customColors, selectedHighlights);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir un style" />
               </SelectTrigger>
@@ -214,7 +244,10 @@ export function PreferencesConfigurator() {
 
           <div className="space-y-2">
             <Label>Longueur du contenu *</Label>
-            <Select value={selectedLength} onValueChange={setSelectedLength}>
+            <Select value={selectedLength} onValueChange={(val) => {
+              setSelectedLength(val);
+              notifyConfigChange(selectedLayout, selectedDesign, val, customColors, selectedHighlights);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir une longueur" />
               </SelectTrigger>
