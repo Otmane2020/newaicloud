@@ -107,16 +107,37 @@ RULES:
       })
     });
 
-    const ai = await response.json();
+    // ---------- SAFE JSON PARSER ----------
+    const aiRaw = await response.text();
 
-    if (!ai.output) {
-      console.error("❌ AI FAILED:", ai);
-      throw new Error("AI_GENERATION_FAILED");
+    if (!aiRaw) {
+      throw new Error("AI_EMPTY_RESPONSE");
     }
+
+    let ai;
+    try {
+      ai = JSON.parse(aiRaw);
+    } catch (jsonErr) {
+      console.error("❌ JSON parse failed:", aiRaw);
+      throw new Error("AI_INVALID_JSON_RESPONSE");
+    }
+
+    // ---------- Validate AI output ----------
+    if (!ai || typeof ai !== "object") {
+      console.error("❌ AI object invalid:", ai);
+      throw new Error("AI_INVALID_OBJECT");
+    }
+
+    if (!ai.output && !ai.choices) {
+      console.error("❌ AI missing expected fields:", ai);
+      throw new Error("AI_MISSING_FIELDS");
+    }
+
+    const htmlOutput = ai.output || ai.choices?.[0]?.message?.content;
 
     return new Response(
       JSON.stringify({
-        html: ai.output,
+        html: htmlOutput,
         optimizedTitle: body.productTitle
       }),
       { headers: { ...cors, "Content-Type": "application/json" } }
