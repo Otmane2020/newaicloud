@@ -227,15 +227,21 @@ export function removeFooters(html: string): string {
 /**
  * Removes forbidden CSS styles and classes
  */
-export function cleanForbiddenCSS(html: string): string {
+export function cleanForbiddenCSS(
+  html: string,
+  options: { allowRootCss?: boolean } = {}
+): string {
   let cleaned = html;
   let changesCount = 0;
+  const { allowRootCss = false } = options;
 
-  // Remove <style> tags containing :root
-  const rootStylesRemoved = cleaned.match(/<style[^>]*>[\s\S]*?:root[\s\S]*?<\/style>/gi);
-  if (rootStylesRemoved && rootStylesRemoved.length > 0) {
-    changesCount += rootStylesRemoved.length;
-    cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?:root[\s\S]*?<\/style>/gi, "");
+  // Remove <style> tags containing :root unless explicitly allowed
+  if (!allowRootCss) {
+    const rootStylesRemoved = cleaned.match(/<style[^>]*>[\s\S]*?:root[\s\S]*?<\/style>/gi);
+    if (rootStylesRemoved && rootStylesRemoved.length > 0) {
+      changesCount += rootStylesRemoved.length;
+      cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?:root[\s\S]*?<\/style>/gi, "");
+    }
   }
 
   // Remove forbidden custom classes
@@ -328,7 +334,8 @@ export function removeDuplicateResponsiveClasses(html: string): string {
 export function sanitizeGeneratedHTML(
   rawHtml: string,
   productTitle: string,
-  language: string = "en"
+  language: string = "en",
+  options: { allowRootCss?: boolean } = {}
 ): string {
   console.log("[Sanitization] Starting HTML normalization");
 
@@ -353,7 +360,7 @@ export function sanitizeGeneratedHTML(
   html = removeDuplicateResponsiveClasses(html);
 
   // 5. Clean forbidden CSS
-  html = cleanForbiddenCSS(html);
+  html = cleanForbiddenCSS(html, options);
 
   // 6. Remove footers
   html = removeFooters(html);
