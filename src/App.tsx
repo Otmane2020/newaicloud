@@ -50,6 +50,7 @@ import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
 import LandingPreferences from "./pages/LandingPreferences";
 import LandingConfigurator from "./pages/LandingConfigurator";
+import LandingOk from "./pages/LandingOk";
 import ArticleLanding from "./pages/ArticleLanding";
 import SeoSerpAnalysis from "./pages/SeoSerpAnalysis";
 import LandingPage from "./pages/LandingPage";
@@ -220,6 +221,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <LandingConfigurator />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/landingok"
+              element={
+                <ProtectedLayout>
+                  <LandingOk />
                 </ProtectedLayout>
               }
             />
