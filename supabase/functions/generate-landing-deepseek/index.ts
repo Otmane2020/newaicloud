@@ -1302,18 +1302,19 @@ PRODUIT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
 ${extractedInfo ? `
-SPECS TECHNIQUES EXTRAITES:
-- Matériaux: ${extractedInfo.materials || 'N/A'}
-- Coloris: ${extractedInfo.colors || 'N/A'}
-- Dimensions: ${extractedInfo.dimensions || 'N/A'}
-- Poids: ${extractedInfo.weight || 'N/A'}
+SPECS TECHNIQUES EXTRAITES (CONTEXTE, NE PAS AFFICHER TEL QUEL) :
+- Matériaux: ${extractedInfo.materials || 'non précisé'}
+- Coloris: ${extractedInfo.colors || 'non précisé'}
+- Dimensions: ${extractedInfo.dimensions || 'non précisées'}
+- Poids: ${extractedInfo.weight || 'non précisé'}
 - Caractéristiques: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
-- Montage: ${extractedInfo.mounting_options || 'N/A'}
-- Éclairage: ${extractedInfo.lighting || 'N/A'}
+- Montage: ${extractedInfo.mounting_options || 'non précisé'}
+- Éclairage: ${extractedInfo.lighting || 'non précisé'}
 ` : ''}
 
 ${productData.enrichedSummary ? `ATTRIBUTS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
 ${productData.visualAnalysis ? `VISUEL:\n${productData.visualAnalysis.substring(0, 400)}\n` : ""}
+${productData.customHighlights ? `POINTS FORTS PRIORITAIRES (UTILISE ces textes pour la section HIGHLIGHTS et POINTS FORTS) :\n${productData.customHighlights}\n` : ""}
 
 IMAGES (${Math.min(images?.length || 0, 2)} principales):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
@@ -1331,6 +1332,7 @@ RÈGLES CRITIQUES:
 ✅ Icônes Lucide: TOUJOURS text-primary ou text-accent (JAMAIS gris)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
 ✅ Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
+✅ NE JAMAIS afficher "N/A" dans le HTML des spécifications (si info manquante: phrase complète type "Non communiqué" ou masquer la ligne)
 
 ${reliabilityBadge}
 
@@ -1357,18 +1359,19 @@ PRODUCT: ${productData.title} | ${productData.vendor}
 ${productData.description?.substring(0, 300) || ""}
 
 ${extractedInfo ? `
-TECHNICAL SPECS EXTRACTED:
-- Materials: ${extractedInfo.materials || 'N/A'}
-- Colors: ${extractedInfo.colors || 'N/A'}
-- Dimensions: ${extractedInfo.dimensions || 'N/A'}
-- Weight: ${extractedInfo.weight || 'N/A'}
+TECHNICAL SPECS EXTRACTED (CONTEXT, DO NOT RENDER RAW):
+- Materials: ${extractedInfo.materials || 'not specified'}
+- Colors: ${extractedInfo.colors || 'not specified'}
+- Dimensions: ${extractedInfo.dimensions || 'not specified'}
+- Weight: ${extractedInfo.weight || 'not specified'}
 - Features: ${JSON.stringify(extractedInfo.features || []).substring(0, 200)}
-- Mounting: ${extractedInfo.mounting_options || 'N/A'}
-- Lighting: ${extractedInfo.lighting || 'N/A'}
+- Mounting: ${extractedInfo.mounting_options || 'not specified'}
+- Lighting: ${extractedInfo.lighting || 'not specified'}
 ` : ''}
 
 ${productData.enrichedSummary ? `ATTRS:\n${productData.enrichedSummary.substring(0, 500)}\n` : ""}
 ${productData.visualAnalysis ? `VISUAL:\n${productData.visualAnalysis.substring(0, 400)}\n` : ""}
+${productData.customHighlights ? `PRIORITY HIGHLIGHTS (USE these texts for the HIGHLIGHTS & KEY FEATURES sections):\n${productData.customHighlights}\n` : ""}
 
 IMAGES (${Math.min(images?.length || 0, 2)} main):
 ${images?.slice(0, 2).map((img: any, i: number) => `${i + 1}. ${img.src}`).join('\n')}
@@ -1386,6 +1389,7 @@ CRITICAL RULES:
 ✅ Lucide Icons: ALWAYS text-primary or text-accent (NEVER gray)
 ✅ Mobile-first: max-w-7xl mx-auto px-4 sm:px-6
 ✅ Cards: bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all
+✅ NEVER output "N/A" in the specs HTML (if missing: use a full sentence like "Not specified" or hide the row)
 
 ${reliabilityBadge}
 
