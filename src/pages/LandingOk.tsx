@@ -158,7 +158,7 @@ export default function LandingOk() {
           layout: previewConfig.layout,
           designStyle: previewConfig.designStyle,
           contentLength: previewConfig.contentLength,
-          colors: previewConfig.colors,
+          colorScheme: previewConfig.colors, // ✅ IMPORTANT: utiliser colorScheme (format attendu par l'edge function)
           highlights: previewConfig.highlights
         },
         debug: true
