@@ -907,12 +907,16 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
           Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: "deepseek-chat",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: contentLength === "short" ? 6000 : 8192, // DeepSeek max: 8192
-        }),
+        body: (() => {
+          const maxTokens = contentLength === "short" ? 2000 : 4000; // Safe range within [1, 8192]
+          console.log(`[DEEPSEEK] Using max_tokens=${maxTokens} for contentLength=${contentLength}`);
+          return JSON.stringify({
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7,
+            max_tokens: maxTokens,
+          });
+        })(),
         signal: controller.signal,
       });
 
