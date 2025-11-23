@@ -1,3 +1,7 @@
+// =====================================
+// REGENERATE LANDING — BLOC 1 / 3
+// =====================================
+
 import { useState, useEffect, useRef } from "react";
 import {
   Loader2,
@@ -9,25 +13,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
-  Scan,
-  Brain,
-  Wand2,
-  Layout,
-  ExternalLink,
-  Zap,
-  Target,
-  Palette,
-  FileCode,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
 interface RegenerateLandingProps {
@@ -38,7 +31,7 @@ interface RegenerateLandingProps {
     description?: string;
     image_url?: string;
   };
-  config: LandingConfig;
+  config: any;
   autoGenerate?: boolean;
   onGenerated?: (html: string) => void;
   onClose?: () => void;
@@ -53,24 +46,22 @@ export default function RegenerateLanding({
 }: RegenerateLandingProps) {
   const { t, language } = useTranslation();
 
-  // UI States
+  // UI STATES
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
-  const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [loadingExisting, setLoadingExisting] = useState(true);
   const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
   const [optimizedTitle, setOptimizedTitle] = useState<string | null>(null);
   const [titleNeedsSync, setTitleNeedsSync] = useState(false);
 
-  // Internal refs to avoid double-generation
   const hasGeneratedRef = useRef(false);
   const isGeneratingRef = useRef(false);
 
-  // Load existing landing HTML from DB
+  // LOAD EXISTING LANDING
   useEffect(() => {
     let active = true;
 
@@ -85,18 +76,18 @@ export default function RegenerateLanding({
         if (active && data?.landing_page_html) {
           setHtmlContent(data.landing_page_html);
         }
-      } catch (e) {
-        console.error("Load existing landing error:", e);
-      } finally {
-        if (active) setLoadingExisting(false);
+      } catch (err) {
+        console.error("Load existing failed:", err);
       }
     };
 
     loadExisting();
-    return () => { active = false };
+    return () => {
+      active = false;
+    };
   }, [product.id]);
 
-  // Reset on product change
+  // RESET ON PRODUCT CHANGE
   useEffect(() => {
     hasGeneratedRef.current = false;
     isGeneratingRef.current = false;
@@ -104,17 +95,13 @@ export default function RegenerateLanding({
     setError(null);
     setProgress(0);
     setProgressMessage("");
+    setOptimizedTitle(null);
+    setSyncedProductUrl(null);
   }, [product.id]);
 
-  // Auto-generate handler
+  // AUTO GENERATE
   useEffect(() => {
-    if (
-      autoGenerate &&
-      !loading &&
-      !htmlContent &&
-      !hasGeneratedRef.current &&
-      !isGeneratingRef.current
-    ) {
+    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current && !isGeneratingRef.current) {
       hasGeneratedRef.current = true;
       isGeneratingRef.current = true;
 
@@ -124,76 +111,66 @@ export default function RegenerateLanding({
     }
   }, [autoGenerate, loading]);
 
-  /** ------------------------------------------
-   * Load ALL product images via product_images
-   -------------------------------------------*/
+  // LOAD IMAGES
   const loadProductImages = async (): Promise<string[]> => {
-    const { data, error } = await supabase
-      .from("product_images")
-      .select("src")
-      .eq("product_id", product.id)
-      .order("position");
+    try {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("src")
+        .eq("product_id", product.id)
+        .order("position");
 
-    if (error) {
-      console.error("Image load error:", error);
+      if (error) return product.image_url ? [product.image_url] : [];
+
+      const urls = data?.map((i) => i.src) || [];
+      if (urls.length === 0 && product.image_url) urls.push(product.image_url);
+      return urls;
+    } catch {
       return product.image_url ? [product.image_url] : [];
     }
-
-    const urls = (data || []).map((img) => img.src);
-
-    if (urls.length === 0 && product.image_url) {
-      urls.push(product.image_url);
-    }
-
-    return urls;
   };
 
-  /** ------------------------------------------
-   * Resolve vendor
-   -------------------------------------------*/
+  // LOAD VENDOR
   const resolveVendor = async (): Promise<string> => {
-    const { data } = await supabase
-      .from("shopify_products")
-      .select("vendor")
-      .eq("id", product.id)
-      .maybeSingle();
-
-    return data?.vendor || "Unknown Vendor";
+    try {
+      const { data } = await supabase.from("shopify_products").select("vendor").eq("id", product.id).maybeSingle();
+      return data?.vendor || "Unknown Vendor";
+    } catch {
+      return "Unknown Vendor";
+    }
   };
-  /** ------------------------------------------
-   * Generate Landing Page (new backend format)
-   -------------------------------------------*/
+
+  // =====================================
+  // GENERATE LANDING PAGE
+  // =====================================
   const handleGenerate = async () => {
     try {
       setLoading(true);
       setError(null);
-      setProgress(5);
-      setProgressMessage("Préparation...");
-
-      // 🔹 Load images
       setProgress(10);
       setProgressMessage("Chargement des images...");
+      // IMAGES
       const images = await loadProductImages();
 
-      // 🔹 Load vendor
+      // VENDOR
       setProgress(20);
-      setProgressMessage("Analyse du produit...");
+      setProgressMessage("Analyse du produit…");
       const vendor = await resolveVendor();
 
-      // 🔹 Get user ID
+      // USER ID
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id || null;
 
-      // 🔹 Get store ID
-      const { data: productData } = await supabase
+      // STORE ID
+      const { data: storeData } = await supabase
         .from("shopify_products")
         .select("store_id")
         .eq("id", product.id)
         .maybeSingle();
 
-      const storeId = productData?.store_id || null;
+      const storeId = storeData?.store_id || null;
 
-      // 🔹 Try to load user default preferences
+      // USER DEFAULT PREFERENCES
       const { data: pref } = await supabase
         .from("landing_page_preferences")
         .select("*")
@@ -201,9 +178,9 @@ export default function RegenerateLanding({
         .eq("is_default", true)
         .maybeSingle();
 
-      const combinedOptions = pref
+      // FINAL OPTIONS MERGED
+      const finalOptions = pref
         ? {
-            // USER DEFAULT OVERRIDES EVERYTHING
             layout: pref.layout,
             designStyle: pref.design_style,
             contentLength: pref.content_length,
@@ -219,7 +196,6 @@ export default function RegenerateLanding({
             customHighlights: pref.custom_highlights || [],
           }
         : {
-            // FALLBACK: UI SESSION CONFIG
             layout: config.layout,
             designStyle: config.designStyle,
             contentLength: config.contentLength,
@@ -235,140 +211,113 @@ export default function RegenerateLanding({
             customHighlights: config.customHighlights || [],
           };
 
-      console.log("🧩 Final Options Sent to Backend:", combinedOptions);
+      console.log("🔵 FINAL OPTIONS:", finalOptions);
 
-      setProgress(35);
-      setProgressMessage("Préparation du prompt IA...");
+      setProgress(40);
+      setProgressMessage("Appel IA…");
 
-      // 🔥 CALL EDGE FUNCTION generate-landing-ai
-      const { data, error } = await supabase.functions.invoke(
-        "generate-landing-ai",
-        {
-          method: "POST",
-          body: {
-            productId: product.id,
-            productTitle: product.title,
-            description: product.description || "",
-            vendor,
-            images,
-            language,
-            userId,
-            storeId,
-            options: combinedOptions,
-          },
-        }
-      );
+      // CALL EDGE FUNCTION
+      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+        method: "POST",
+        body: {
+          productId: product.id,
+          productTitle: product.title,
+          description: product.description || "",
+          vendor,
+          images,
+          language,
+          userId,
+          storeId,
+          options: finalOptions,
+        },
+      });
 
-      setProgress(55);
-      setProgressMessage("Traitement IA...");
+      if (error) throw new Error(error.message);
+      if (!data?.html) throw new Error("Aucun contenu généré.");
 
-      if (error) {
-        console.error("❌ Backend Error:", error);
-        throw new Error(error.message || "Erreur inconnue backend");
-      }
-
-      if (!data || !data.html) {
-        throw new Error("Aucun contenu généré");
-      }
-
-      // Save optimized title if returned
+      // SAVE OPTIMIZED TITLE
       if (data.optimizedTitle && data.optimizedTitle !== product.title) {
         setOptimizedTitle(data.optimizedTitle);
         setTitleNeedsSync(true);
       }
 
-      setProgress(80);
-      setProgressMessage("Finalisation...");
-
       setHtmlContent(data.html);
       onGenerated?.(data.html);
 
       setProgress(100);
-      setProgressMessage("Terminé ✔️");
-      toast.success("Landing page générée avec succès !");
+      setProgressMessage("Terminé ✔");
+      toast.success("Landing générée !");
     } catch (err: any) {
-      console.error("❌ Generation failed:", err);
-      setError(err.message || "Erreur lors de la génération");
-      toast.error(err.message || "Erreur lors de la génération");
+      console.error("❌ ERROR:", err);
+      setError(err.message || "Erreur inconnue");
+      toast.error(err.message || "Erreur inconnue");
       setProgress(0);
     } finally {
       setLoading(false);
     }
   };
-  /** ------------------------------------------
-   * Download HTML file
-   -------------------------------------------*/
-  const handleDownloadHTML = () => {
-    if (!htmlContent) {
-      return toast.error("Aucun contenu à télécharger.");
-    }
 
+  // =====================================
+  // DOWNLOAD HTML
+  // =====================================
+  const handleDownloadHTML = () => {
+    if (!htmlContent) return toast.error("Aucun contenu.");
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const fileName = `${product.title.replace(/[^a-z0-9]/gi, "_")}_landing.html`;
-
+    const filename = `${product.title.replace(/[^a-z0-9]/gi, "_")}_landing.html`;
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName.toLowerCase();
+    a.download = filename;
     a.click();
-
     URL.revokeObjectURL(url);
-
-    toast.success("Fichier HTML téléchargé.");
   };
 
-  /** ------------------------------------------
-   * Sync Landing Page to Shopify
-   -------------------------------------------*/
+  // =====================================
+  // SYNC TO SHOPIFY
+  // =====================================
   const handleSyncToShopify = async (retry = false) => {
-    if (!htmlContent) {
-      return toast.error("Aucun contenu à synchroniser.");
-    }
+    if (!htmlContent) return toast.error("Aucun contenu à synchroniser.");
 
     try {
       setSyncing(true);
-      toast.info("Synchronisation en cours…");
+      toast.info("Synchronisation…");
 
-      const { data, error } = await supabase.functions.invoke(
-        "sync-landing-to-shopify",
-        {
-          body: {
-            productId: product.id,
-            productTitle: optimizedTitle || product.title,
-            productHandle: product.handle,
-            htmlContent,
-          },
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
+        body: {
+          productId: product.id,
+          productTitle: optimizedTitle || product.title,
+          productHandle: product.handle,
+          htmlContent,
+        },
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      toast.success("Page synchronisée avec Shopify !");
+      toast.success("Synchronisé ✔");
       setTitleNeedsSync(false);
 
       if (data?.productUrl) {
         setSyncedProductUrl(data.productUrl);
       }
     } catch (err: any) {
-      console.error("❌ Sync failed:", err);
+      const net = err.message?.includes("Network") || err.message?.includes("Edge") || err.message?.includes("relay");
 
-      const isNetwork =
-        err?.message?.includes("Network") ||
-        err?.message?.includes("Edge Function") ||
-        err?.message?.includes("relay");
-
-      if (isNetwork && !retry) {
-        toast.info("Problème réseau… nouvelle tentative dans 2 sec.");
+      if (net && !retry) {
         await new Promise((r) => setTimeout(r, 2000));
         return handleSyncToShopify(true);
       }
 
-      toast.error(err.message || "Erreur lors de la synchronisation.");
+      toast.error(err.message);
     } finally {
       setSyncing(false);
     }
   };
+  // =====================================
+  // RETURN (UI)
+  // =====================================
+  return (
+    <div className="space-y-6">
       {/* ------------------------------------------
           Optimized Title Section
       ------------------------------------------- */}
@@ -381,13 +330,9 @@ export default function RegenerateLanding({
             </div>
 
             <div className="flex-1 space-y-2">
-              <p className="text-xs text-accent font-medium">
-                Titre optimisé par l’IA
-              </p>
+              <p className="text-xs text-accent font-medium">Titre optimisé par l’IA</p>
 
-              <p className="text-base font-semibold leading-snug">
-                {optimizedTitle}
-              </p>
+              <p className="text-base font-semibold leading-snug">{optimizedTitle}</p>
 
               {titleNeedsSync && (
                 <div className="flex items-center gap-2 text-xs text-accent/80 font-medium pt-1">
@@ -401,7 +346,7 @@ export default function RegenerateLanding({
       )}
 
       {/* ------------------------------------------
-          Error Section (same UI)
+          Error block
       ------------------------------------------- */}
       {error && !loading && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
@@ -409,15 +354,9 @@ export default function RegenerateLanding({
             <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
 
             <div className="flex-1 space-y-3">
-              <div>
-                <p className="font-semibold text-destructive">
-                  Une erreur est survenue
-                </p>
+              <p className="font-semibold text-destructive">Une erreur est survenue</p>
 
-                <p className="text-sm text-destructive/90 mt-1">
-                  {error}
-                </p>
-              </div>
+              <p className="text-sm text-destructive/90 mt-1">{error}</p>
 
               <Button
                 variant="outline"
@@ -435,31 +374,14 @@ export default function RegenerateLanding({
           </div>
         </div>
       )}
+
       {/* ------------------------------------------
-          Success Section
+          Success content
       ------------------------------------------- */}
       {htmlContent && !loading && !error && (
-        <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-
-              <div className="flex-1">
-                <p className="font-semibold text-green-700 text-sm sm:text-base">
-                  Landing page générée avec succès • Optimisée mobile
-                </p>
-
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Basée sur vos préférences et le design sélectionné
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ------------------------------------------
-              Preview Header (Desktop / Mobile)
-          ------------------------------------------- */}
-          <div className="flex items-center justify-between">
+        <>
+          {/* PREVIEW HEADER */}
+          <div className="flex items-center justify-between mt-6">
             <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
               <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Aperçu de la landing page
@@ -484,10 +406,8 @@ export default function RegenerateLanding({
             </Tabs>
           </div>
 
-          {/* ------------------------------------------
-              Actions: Download + Sync Shopify
-          ------------------------------------------- */}
-          <div className="flex flex-col sm:flex-row gap-2">
+          {/* ACTION BUTTONS */}
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
             <Button
               onClick={handleDownloadHTML}
               variant="outline"
@@ -513,7 +433,7 @@ export default function RegenerateLanding({
                 ) : (
                   <>
                     <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                    Sync avec Shopify
+                    Sync Shopify
                   </>
                 )}
               </Button>
@@ -529,44 +449,30 @@ export default function RegenerateLanding({
             )}
           </div>
 
-          {/* ------------------------------------------
-              Preview iframe (mobile/desktop)
-          ------------------------------------------- */}
-          {htmlContent ? (
-            <div
-              className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
-                previewMode === "mobile"
-                  ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]"
-                  : "h-[500px] sm:h-[650px]"
-              }`}
-            >
-              <iframe
-                srcDoc={htmlContent}
-                className="w-full h-full border-0"
-                sandbox="allow-same-origin allow-scripts"
-                title="Landing Page Preview"
-                onError={() => toast.error("Erreur de chargement de l'aperçu.")}
-              />
-            </div>
-          ) : (
-            <div className="border rounded-xl p-8 bg-muted/30 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Aucun contenu à prévisualiser
-              </p>
-            </div>
-          )}
-        </div>
+          {/* PREVIEW IFRAME */}
+          <div
+            className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
+              previewMode === "mobile" ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]" : "h-[500px] sm:h-[650px]"
+            }`}
+          >
+            <iframe
+              srcDoc={htmlContent}
+              className="w-full h-full border-0"
+              sandbox="allow-same-origin allow-scripts"
+              title="Landing Page Preview"
+              onError={() => toast.error("Erreur de chargement de l'aperçu.")}
+            />
+          </div>
+        </>
       )}
+
       {/* ------------------------------------------
-          Initial Empty State
+          Empty state
       ------------------------------------------- */}
       {!loading && !htmlContent && !error && (
         <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
           <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
-          <p className="text-sm">
-            En attente de génération…
-          </p>
+          <p className="text-sm">En attente de génération…</p>
         </div>
       )}
     </div>
