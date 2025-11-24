@@ -306,11 +306,10 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
     }
 
     try {
-      setOptimizing(true);
-      setShowProgressDialog(true);
-      
       const allArticleIds = articles.map(a => a.id);
-      setProgress({ current: 0, total: allArticleIds.length });
+      
+      // Start optimization with context
+      startOptimization('articles', allArticleIds.length, 'optimizing');
       
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: allArticleIds }
@@ -318,31 +317,26 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
 
       if (error) throw error;
       
-      setProgress({ current: allArticleIds.length, total: allArticleIds.length });
+      // Complete and show success dialog
+      completeOptimization();
       
-      const { data: optimizedData, error: articlesError } = await supabase
-        .from('blog_articles')
-        .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
-        .in('id', allArticleIds);
-
-      if (articlesError) throw articlesError;
-
+      // Reload articles to reflect changes
       await loadArticles();
       await refreshLimits();
       
-      setOptimizedArticles(optimizedData || []);
-      setShowProgressDialog(false);
-      setShowSyncDialog(true);
     } catch (error) {
       console.error('Error optimizing:', error);
       toast.error('❌ Erreur lors de l\'optimisation', {
         description: 'Veuillez réessayer'
       });
-      setShowProgressDialog(false);
-    } finally {
-      setOptimizing(false);
+      completeOptimization();
     }
   };
+  
+  // Expose optimizeAllArticles via ref
+  useImperativeHandle(ref, () => ({
+    optimizeAllArticles
+  }));
 
   const optimizeArticles = async (articleIds: string[]) => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {

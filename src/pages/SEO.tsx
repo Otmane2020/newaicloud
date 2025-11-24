@@ -38,16 +38,26 @@ export default function SEO() {
   const articleManagementRef = useRef<ArticleManagementRef>(null);
   const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
 
-  const handleSyncShopify = () => {
-    // Déclencher la synchronisation selon le type d'optimisation
-    toast.info('Synchronisation avec Shopify...', {
-      description: 'Vos modifications vont être synchronisées avec Shopify.',
-    });
-    
-    // Forcer un rechargement de la page pour voir les changements
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+  const handleSyncShopify = async () => {
+    try {
+      toast.loading('Synchronisation en cours...', { id: 'sync' });
+      
+      // Reload articles and recalculate score
+      if (activeTab === 'articles') {
+        await calculateArticlesSeoScore();
+      } else if (activeTab === 'pages') {
+        await calculatePagesSeoScore();
+      }
+      
+      toast.success('✅ Synchronisé avec succès', { id: 'sync' });
+      
+      // Reload page to see changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      toast.error('❌ Erreur de synchronisation', { id: 'sync' });
+    }
   };
 
   useEffect(() => {
