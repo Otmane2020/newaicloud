@@ -347,7 +347,10 @@ export default function SEO() {
                 </div>
               </div>
             </Card>
-            <ArticleManagement ref={articleManagementRef} />
+            <ArticleManagement 
+              ref={articleManagementRef} 
+              onOptimizationComplete={calculateArticlesSeoScore}
+            />
           </>
         )}
         {activeTab === 'collections' && <CollectionOptimization />}
