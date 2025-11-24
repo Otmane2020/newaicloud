@@ -2346,6 +2346,8 @@ export const translations = {
         synchronized: "Synchronisé",
         syncedToShopify: "Synchronisé avec Shopify",
         clickToView: "Cliquez pour voir",
+        seoScore: "Score SEO Images",
+        imagesOptimized: "Images optimisées",
       },
       info: {
         emptyImages: "{{count}} images sans ALT text",
