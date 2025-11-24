@@ -317,22 +317,21 @@ export default function RegenerateLanding({
       // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
-          product_id: product.id,
+          productId: product.id,
           productTitle: optimizedTitle || product.title,
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
-          designStyle: config.designStyle || "modern",
-          mainColor:
-            typeof config.colorScheme === "string" ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
-          colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
-          layout: config.layout,
-          length: config.contentLength,
-          customHighlights: config.customHighlights,
           imageAnalysis: imageAnalysis,
-          contentLengthParams: contentParams,
           language: language,
-          theme: config.theme || "light",
+          options: {
+            colorScheme: config.colorScheme, // Can be string (key) or object (values)
+            layout: config.layout,
+            designStyle: config.designStyle || "modern",
+            contentLength: config.contentLength,
+            customHighlights: config.customHighlights,
+            theme: config.theme || "light",
+          },
         },
       });
 

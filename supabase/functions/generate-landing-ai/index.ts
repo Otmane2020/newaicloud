@@ -9,6 +9,44 @@ const corsHeaders = {
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
+// Helper to safely stringify JSON (prevents "[object Object]" errors)
+function safeJson(obj: any): string {
+  try {
+    return JSON.stringify(obj ?? {}, null, 2);
+  } catch {
+    return "{}";
+  }
+}
+
+// Helper to fetch configuration options from database
+async function getOption(supabaseClient: any, category: string, key: string) {
+  try {
+    const { data } = await supabaseClient
+      .from('landing_page_config_options')
+      .select('option_value')
+      .eq('category', category)
+      .eq('option_key', key)
+      .eq('is_active', true)
+      .single();
+    
+    return data?.option_value || null;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch option ${category}:${key}`, error);
+    return null;
+  }
+}
+
+// Helper with timeout for promises
+async function withTimeout(promise: Promise<any>, ms: number) {
+  let timer: any;
+  return Promise.race([
+    promise,
+    new Promise((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error("timeout")), ms);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
 // WCAG Color Contrast Utilities
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -583,27 +621,45 @@ serve(async (req) => {
 
     const body = await req.json();
     const {
-      product_id,
+      productId: product_id_from_body,
+      product_id: legacy_product_id,
       productTitle,
       imageUrl,
       description,
       vendor,
       style,
       mainColor = "#3B82F6",
-      colorScheme,
-      layout,
-      length,
-      customHighlights,
+      colorScheme: legacyColorScheme,
+      layout: legacyLayout,
+      length: legacyLength,
+      customHighlights: legacyCustomHighlights,
+      designStyle: legacyDesignStyle,
       language,
-      designStyle = "modern", // Default to modern if not provided
-      imageAnalysis, // 🔥 Vision AI data if available
+      imageAnalysis,
+      options = {},
+      theme = "light",
     } = body ?? {};
+
+    // Resolve product_id from multiple possible sources
+    const product_id = product_id_from_body || legacy_product_id;
+
+    // Merge options with legacy fields for backwards compatibility
+    const userOptions = {
+      colorScheme: options.colorScheme || legacyColorScheme,
+      layout: options.layout || legacyLayout,
+      designStyle: options.designStyle || legacyDesignStyle || "modern",
+      contentLength: options.contentLength || legacyLength,
+      customHighlights: options.customHighlights || legacyCustomHighlights,
+      theme: options.theme || theme || "light",
+    };
 
     console.log("📥 Request parameters:", {
       product_id,
       productTitle: productTitle?.substring(0, 50),
-      designStyle,
-      hasColorScheme: !!colorScheme,
+      designStyle: userOptions.designStyle,
+      hasColorScheme: !!userOptions.colorScheme,
+      colorSchemeType: typeof userOptions.colorScheme,
+      theme: userOptions.theme,
       language,
     });
 
@@ -621,8 +677,42 @@ serve(async (req) => {
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
-    // Generate design tokens
-    const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
+    // 🎨 Resolve color scheme from database if it's a key string
+    let resolvedColorScheme = legacyColorScheme; // Fallback to legacy format
+
+    if (userOptions.colorScheme) {
+      if (typeof userOptions.colorScheme === 'string') {
+        // It's a key, fetch from database
+        console.log(`🎨 Fetching color scheme from DB: ${userOptions.colorScheme}`);
+        resolvedColorScheme = await getOption(supabaseAdmin, 'color_scheme', userOptions.colorScheme);
+        console.log('✅ Color scheme loaded:', resolvedColorScheme);
+      } else if (typeof userOptions.colorScheme === 'object') {
+        // It's already an object
+        resolvedColorScheme = userOptions.colorScheme;
+      }
+    }
+
+    // Apply theme modifications (dark/light)
+    if (resolvedColorScheme && userOptions.theme === 'dark') {
+      console.log('🌙 Applying dark theme transformations');
+      // Swap background and text colors for dark mode
+      const originalBg = resolvedColorScheme.background || '#FFFFFF';
+      const originalText = resolvedColorScheme.text || '#000000';
+      
+      resolvedColorScheme = {
+        ...resolvedColorScheme,
+        background: originalText,
+        text: originalBg,
+        surface: adjustLightness(originalText, 1.2),
+        textMuted: adjustLightness(originalBg, 0.7),
+      };
+    }
+
+    // Generate design tokens with resolved color scheme
+    const designTokens = generateDesignTokens(resolvedColorScheme || { primary: mainColor });
+
+    // Extract options for use in prompt
+    const { designStyle, customHighlights, layout, contentLength } = userOptions;
 
     if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -1764,6 +1854,18 @@ UTILISATION DES ICÔNES :
         html: finalHtml,
         enrichment_status: enrichmentStatus,
         attributes_count: attributesCount,
+        // 🔥 DEBUG INFO
+        debug: {
+          configReceived: {
+            colorScheme: userOptions.colorScheme,
+            layout: userOptions.layout,
+            designStyle: userOptions.designStyle,
+            theme: userOptions.theme,
+          },
+          colorSchemeResolved: resolvedColorScheme,
+          designTokens: designTokens,
+          promptLength: prompt?.length || 0,
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
