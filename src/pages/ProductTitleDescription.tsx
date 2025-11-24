@@ -641,7 +641,7 @@ export default function ProductTitleDescription() {
               );
 
               if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
-                console.log("✅ HTML landing page généré (10 optimisations consommées)");
+                console.log("✅ HTML landing page généré (aucune optimisation supplémentaire consommée)");
 
                 // Save HTML to shopify_products.landing_page
                 const { error: updateError } = await supabase
