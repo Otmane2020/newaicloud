@@ -848,7 +848,7 @@ serve(async (req) => {
     const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
     
     let lengthConfig = { 
-      maxTokens: 9000,  // ✅ Increased buffer for medium content to handle detailed HTML
+      maxTokens: 11000,  // ✅ Increased from 9000 to prevent truncation issues
       labelEn: "medium", 
       labelFr: "moyenne",
       descriptionEn: "Balanced content (300-400 words)",
@@ -857,7 +857,7 @@ serve(async (req) => {
 
     if (lengthMode === "short") {
       lengthConfig = {
-        maxTokens: 4500,  // ✅ Safe margin for short content
+        maxTokens: 6000,  // ✅ Increased from 4500 for better margin
         labelEn: "short",
         labelFr: "courte",
         descriptionEn: "Concise and impactful content (150-250 words)",
@@ -865,7 +865,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 12000,  // ✅ Increased to handle more complex landing pages (was 9000)
+        maxTokens: 15000,  // ✅ Increased from 12000 to handle very complex pages
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
