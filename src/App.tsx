@@ -87,6 +87,7 @@ import TestLectureImage from "./pages/TestLectureImage";
 import TestRedirection from "./pages/TestRedirection";
 import LandingTest from "./pages/LandingTest";
 import SearchImage from "./pages/SearchImage";
+import LandingDebug from "./pages/LandingDebug";
 import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
@@ -153,6 +154,7 @@ const App = () => (
             <Route path="/testlectureimage" element={<TestLectureImage />} />
             <Route path="/landingtest" element={<LandingTest />} />
             <Route path="/searchimage" element={<SearchImage />} />
+            <Route path="/landing-debug" element={<LandingDebug />} />
           <Route path="/shopify/install" element={<ShopifyInstall />} />
           <Route path="/shopify/recover" element={<ShopifyRecover />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
