@@ -142,6 +142,7 @@ export default function TestLectureImage() {
       
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
+          productId: image.product_id,
           product_id: image.product_id,
           productTitle: productData.title,
           imageUrl: image.src,

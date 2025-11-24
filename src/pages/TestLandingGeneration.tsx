@@ -14,6 +14,7 @@ export default function TestLandingGeneration() {
   const { toast } = useToast();
 
   const testProductData = {
+    productId: "test-product-123",
     product_id: "test-product-123",
     productTitle: "Armoire Test Velmio",
     description: "Armoire moderne blanche laquée mate avec structure dorée",

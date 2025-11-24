@@ -197,6 +197,8 @@ export default function LandingTest() {
       // La fonction edge ira chercher les valeurs dans la DB avec getOption()
       const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
         body: {
+          productId: product.id,
+          product_id: product.id,
           productTitle: product.title,
           description: product.body_html || product.seo_description || "",
           vendor: product.vendor || "Marque",

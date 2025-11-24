@@ -596,6 +596,7 @@ export default function ProductTitleDescription() {
                 'generate-landing-ai',
                 {
                   body: {
+                    productId: productId,
                     product_id: productId,
                     productTitle: updatedProduct.seo_title || updatedProduct.title,
                     description: updatedProduct.seo_description,
