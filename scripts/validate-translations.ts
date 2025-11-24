@@ -194,6 +194,103 @@ function getAllTranslationValuesFromContent(content: string, lang: string): Arra
   return results;
 }
 
+// Check for hardcoded toasts and errors
+function checkHardcodedToasts() {
+  const dirsToScan = [
+    path.join(process.cwd(), 'src/components'),
+    path.join(process.cwd(), 'src/pages')
+  ];
+  
+  function scanDirectory(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    
+    const files = fs.readdirSync(dir);
+    
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+      
+      if (stat.isDirectory()) {
+        scanDirectory(filePath);
+      } else if (file.endsWith('.tsx') || file.endsWith('.ts')) {
+        scanFileForToasts(filePath);
+      }
+    });
+  }
+  
+  function scanFileForToasts(filePath: string) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+    const relativePath = path.relative(process.cwd(), filePath);
+    
+    lines.forEach((line, index) => {
+      // Detect hardcoded toast messages: toast.error("text"), toast.success("text"), etc.
+      const toastPattern = /toast\.(success|error|info|warning|loading)\(\s*["']([^"']+)["']/g;
+      let match;
+      while ((match = toastPattern.exec(line)) !== null) {
+        const [, type, message] = match;
+        // Exclude if it references t. or tf(
+        if (!line.includes('t.') && !line.includes('tf(')) {
+          issues.push({
+            type: 'hardcoded_text',
+            severity: 'high',
+            file: relativePath,
+            line: index + 1,
+            message: `Hardcoded toast.${type}: "${message}"`
+          });
+        }
+      }
+      
+      // Detect hardcoded toast objects: toast({ title: "text" })
+      const toastObjectPattern = /toast\(\{\s*title:\s*["']([^"']+)["']/g;
+      while ((match = toastObjectPattern.exec(line)) !== null) {
+        const [, title] = match;
+        if (!line.includes('t.') && !line.includes('tf(')) {
+          issues.push({
+            type: 'hardcoded_text',
+            severity: 'high',
+            file: relativePath,
+            line: index + 1,
+            message: `Hardcoded toast title: "${title}"`
+          });
+        }
+      }
+      
+      // Detect hardcoded throw new Error
+      const throwErrorPattern = /throw new Error\(\s*["']([^"']+)["']\s*\)/g;
+      while ((match = throwErrorPattern.exec(line)) !== null) {
+        const [, errorMsg] = match;
+        if (!line.includes('t.') && !line.includes('tf(')) {
+          issues.push({
+            type: 'hardcoded_text',
+            severity: 'high',
+            file: relativePath,
+            line: index + 1,
+            message: `Hardcoded error message: "${errorMsg}"`
+          });
+        }
+      }
+      
+      // Detect hardcoded Dialog/Alert titles
+      const dialogTitlePattern = /<(Dialog|Alert)(Title|Description)>\s*([A-ZÀ-Ÿ][^<{]+)</g;
+      while ((match = dialogTitlePattern.exec(line)) !== null) {
+        const [, component, type, text] = match;
+        if (!line.includes('{t.') && text.trim().length > 3) {
+          issues.push({
+            type: 'hardcoded_text',
+            severity: 'high',
+            file: relativePath,
+            line: index + 1,
+            message: `Hardcoded <${component}${type}>: "${text.trim()}"`
+          });
+        }
+      }
+    });
+  }
+  
+  dirsToScan.forEach(dir => scanDirectory(dir));
+}
+
 // Scan component files for hardcoded text and missing useTranslation
 function scanComponentFiles() {
   const dirsToScan = [
@@ -301,6 +398,7 @@ console.log('🔍 Validating translations...\n');
 
 checkMissingTranslations();
 checkMixedLanguages();
+checkHardcodedToasts();
 scanComponentFiles();
 
 // Report results

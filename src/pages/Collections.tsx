@@ -117,7 +117,7 @@ export default function Collections() {
 
   const handleSyncProductCollections = async () => {
     if (!selectedStore?.id) {
-      toast.error("Aucune boutique sélectionnée");
+      toast.error(t.toasts.collections.noStore);
       return;
     }
 
@@ -125,11 +125,11 @@ export default function Collections() {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      if (!session) throw new Error(t.sync.notAuthenticated);
 
       // Get total product count for estimated time
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t.sync.notAuthenticated);
 
       const { count: totalProducts } = await supabase
         .from('shopify_products')
@@ -140,7 +140,7 @@ export default function Collections() {
       const estimatedTime = Math.ceil((totalProducts || 0) / 50 * 0.5);
       
       toast.info(
-        `⏱️ Synchronisation de ${totalProducts || 0} produits (environ ${estimatedTime}s)...`,
+        tf('toasts.collections.syncProgress', { count: totalProducts || 0, time: estimatedTime }),
         { duration: 3000 }
       );
 
@@ -172,7 +172,7 @@ export default function Collections() {
       await fetchCollections();
     } catch (error) {
       console.error('Error syncing product collections:', error);
-      toast.error("Erreur lors de la synchronisation");
+      toast.error(t.toasts.collections.syncError);
     } finally {
       setSyncing(false);
     }
@@ -180,7 +180,7 @@ export default function Collections() {
 
   const handleImportCollections = async () => {
     if (!selectedStore?.id) {
-      toast.error("Aucune boutique sélectionnée");
+      toast.error(t.toasts.collections.noStore);
       return;
     }
 
@@ -200,7 +200,7 @@ export default function Collections() {
       const importedCount = collectionsData?.imported || 0;
 
       // Synchronize products with collections
-      toast.loading("Synchronisation des produits avec les collections...", { id: toastId });
+      toast.loading(t.sync.syncingProductCollections, { id: toastId });
       const { error: syncError } = await supabase.functions.invoke('sync-product-collections');
       
       if (syncError) {
@@ -439,7 +439,7 @@ export default function Collections() {
             ) : (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Importer Collections + Images
+                {t.collections.import.button}
               </>
             )}
           </Button>
@@ -451,12 +451,12 @@ export default function Collections() {
             {syncing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Synchronisation...
+                {t.sync.syncing}
               </>
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Synchroniser
+                {t.sync.syncButton}
               </>
             )}
           </Button>
@@ -467,12 +467,12 @@ export default function Collections() {
             {importing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Import complet...
+                {t.sync.fullImportInProgress}
               </>
             ) : (
               <>
                 <FileText className="w-4 h-4 mr-2" />
-                Import Complet
+                {t.sync.fullImportButton}
               </>
             )}
           </Button>

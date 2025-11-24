@@ -19,6 +19,22 @@ export const translations = {
     },
     languageChanged: "Langue changée",
     languageChangedDesc: "L'interface est maintenant en {{language}}",
+    products: {
+      noImage: "Aucune image disponible pour ce produit",
+      whiteBackgroundSuccess: "Fond blanc généré avec succès !",
+      whiteBackgroundError: "Erreur lors de la génération du fond blanc",
+      aiBackgroundSuccess: "{{count}} fond(s) AI généré(s) avec succès !",
+      aiBackgroundError: "Erreur lors de la génération du fond AI",
+      generationError: "Échec de la génération",
+      productActivated: "Produit activé",
+      productDraft: "Produit en brouillon",
+      statusUpdateError: "Erreur lors de la mise à jour du statut",
+    },
+    collections: {
+      noStore: "Aucune boutique sélectionnée",
+      syncProgress: "Synchronisation de {{count}} produits (environ {{time}}s)...",
+      syncError: "Erreur lors de la synchronisation",
+    },
     error: {
       generic: "Une erreur s'est produite",
       saving: "Erreur lors de la sauvegarde",
@@ -4108,6 +4124,20 @@ export const translations = {
     },
   },
 
+  // Dialogs
+  dialogs: {
+    upgrade: {
+      planUpgraded: "Plan mis à niveau avec succès !",
+      planUpgradedWithProration: "Plan mis à niveau ! Vous avez été facturé pour {{days}} jours. Les compteurs mensuels ont été réinitialisés.",
+      planUpgradedNoProration: "Plan mis à niveau ! Aucune proration appliquée (début de cycle).",
+      youReachedLimit: "Vous avez atteint la limite de votre plan",
+      chooseOptimizations: "Choisissez votre plan",
+      selectPlan: "Sélectionner un plan",
+      activateThisPlan: "Activer ce plan",
+      loading: "Chargement...",
+    },
+  },
+
   // Media History
   mediaHistoryPage: {
     title: "Historique Media",
@@ -5687,6 +5717,9 @@ export const translations = {
       youReachedLimit: "Vous avez atteint la limite de votre plan",
       chooseOptimizations: "Choisissez le nombre d'optimisations par mois :",
       activateThisPlan: "Activer ce Plan",
+      planUpgraded: "Plan mis à niveau avec succès !",
+      planUpgradedWithProration: "Plan mis à niveau ! Vous avez été facturé pour {{days}} jours. Les compteurs mensuels ont été réinitialisés.",
+      planUpgradedNoProration: "Plan mis à niveau ! Aucune proration appliquée (début de cycle).",
     },
     limit: {
       upgradeRequired: "🚀 Mise à niveau requise",

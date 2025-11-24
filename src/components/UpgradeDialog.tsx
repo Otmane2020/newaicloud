@@ -177,14 +177,14 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'profiles',
-                filter: `id=eq.${user.id}`
-              }, (payload) => {
-                if (payload.new.subscription_status === 'active') {
-                  toast.success('Plan upgraded successfully!');
-                  onUpgradeComplete();
-                  channel.unsubscribe();
-                }
-              })
+              filter: `id=eq.${user.id}`
+            }, (payload) => {
+              if (payload.new.subscription_status === 'active') {
+                toast.success(t.dialogs.upgrade.planUpgraded);
+                onUpgradeComplete();
+                channel.unsubscribe();
+              }
+            })
               .subscribe();
             
             setSubscriptionChannel(channel);
@@ -232,9 +232,9 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
         const upgradeDetails = data?.upgrade_details;
         if (upgradeDetails?.proration_applied) {
-          toast.success(`✅ Plan upgraded! You were charged for ${upgradeDetails.days_into_cycle} days. Monthly counters have been reset.`, { duration: 6000 });
+          toast.success(tf('dialogs.upgrade.planUpgradedWithProration', { days: upgradeDetails.days_into_cycle }), { duration: 6000 });
         } else {
-          toast.success('✅ Plan upgraded! No proration applied (beginning of cycle).', { duration: 5000 });
+          toast.success(t.dialogs.upgrade.planUpgradedNoProration, { duration: 5000 });
         }
         if (onUpgradeComplete) onUpgradeComplete();
         onOpenChange(false);
@@ -264,7 +264,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
               filter: `id=eq.${user.id}`
             }, (payload) => {
               if (payload.new.subscription_status === 'active') {
-                toast.success('Plan upgraded successfully!');
+                toast.success(t.dialogs.upgrade.planUpgraded);
                 onUpgradeComplete();
                 channel.unsubscribe();
               }
@@ -344,7 +344,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         <div className="space-y-3 sm:space-y-4">
           <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
             <p className="font-medium text-orange-900 dark:text-orange-100 mb-1">
-              {t.dialogs.upgrade.youReachedLimit} <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
+              {t.dialogs.upgrade.youReachedLimit}: <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
             </p>
             <p className="text-sm text-orange-800 dark:text-orange-200">
               {limitTitle}: {currentLimitMessage}

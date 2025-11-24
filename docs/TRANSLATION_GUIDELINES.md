@@ -279,6 +279,104 @@ states: {
 
 ---
 
+---
+
+## 🚫 ANTI-PATTERNS INTERDITS / FORBIDDEN ANTI-PATTERNS
+
+### ❌ JAMAIS FAIRE ÇA / NEVER DO THIS:
+
+```typescript
+// ❌ Toast hardcodé / Hardcoded toast
+toast.error("Message en dur");
+toast.success("Hardcoded message");
+toast({ title: "Titre hardcodé" });
+
+// ❌ Throw hardcodé / Hardcoded error
+throw new Error("Erreur hardcodée");
+throw new Error("Hardcoded error");
+
+// ❌ Dialog/Alert title hardcodé / Hardcoded dialog title
+<DialogTitle>Titre en dur</DialogTitle>
+<AlertDescription>Hardcoded description</AlertDescription>
+
+// ❌ Props hardcodées / Hardcoded props
+<Input placeholder="Texte en dur" />
+<Button>Hardcoded text</Button>
+
+// ❌ Condition de langue / Language condition
+{language === 'fr' ? 'Texte FR' : 'Texte EN'}
+```
+
+### ✅ TOUJOURS FAIRE ÇA / ALWAYS DO THIS:
+
+```typescript
+// ✅ Import du hook
+import { useTranslation } from "@/lib/language";
+
+const MyComponent = () => {
+  const { t, tf } = useTranslation();
+  
+  // ✅ Toast traduit / Translated toast
+  toast.error(t.toasts.error.message);
+  toast.success(t.toasts.success.saved);
+  toast({ 
+    title: t.toasts.warning.title,
+    description: t.toasts.warning.description 
+  });
+  
+  // ✅ Error traduit / Translated error
+  throw new Error(t.errors.auth.notAuthenticated);
+  
+  // ✅ Dialog/Alert traduit / Translated dialog
+  <DialogTitle>{t.dialogs.confirm.title}</DialogTitle>
+  <AlertDescription>{t.alerts.warning.description}</AlertDescription>
+  
+  // ✅ Props traduites / Translated props
+  <Input placeholder={t.forms.placeholders.email} />
+  <Button>{t.common.actions.save}</Button>
+  
+  // ✅ Variables dans traductions / Variables in translations
+  toast.success(tf('toasts.itemsSaved', { count: items.length }));
+};
+```
+
+---
+
+## 🛡️ PRÉVENTION AUTOMATIQUE / AUTOMATED PREVENTION
+
+### Pre-commit Hook
+
+Un hook git vérifie automatiquement les traductions avant chaque commit :
+A git hook automatically checks translations before each commit:
+
+```bash
+# Will run automatically on git commit
+# Bloque si des textes hardcodés sont détectés
+# Blocks if hardcoded text is detected
+```
+
+### Scripts de validation / Validation scripts
+
+```bash
+# Vérifier toutes les traductions
+# Check all translations
+npm run validate:translations
+
+# Audit complet avec rapport JSON
+# Full audit with JSON report
+npm run audit:translations
+```
+
+### ESLint Rules
+
+Des règles ESLint personnalisées détectent :
+Custom ESLint rules detect:
+- Toasts hardcodés / Hardcoded toasts
+- Erreurs hardcodées / Hardcoded errors
+- Dialogues hardcodés / Hardcoded dialogs
+
+---
+
 ## 📞 Questions / Questions
 
 En cas de doute sur l'organisation des traductions, référez-vous aux fichiers existants :

@@ -74,7 +74,7 @@ export default function Products() {
   // Handler pour générer un fond blanc pour un produit
   const handleGenerateWhiteBackground = async (product: Product) => {
     if (!product.image_url) {
-      toast.error("Aucune image disponible pour ce produit");
+      toast.error(t.toasts.products.noImage);
       return;
     }
 
@@ -100,14 +100,14 @@ export default function Products() {
 
         if (updateError) throw updateError;
 
-        toast.success("Fond blanc généré avec succès!");
+        toast.success(t.toasts.products.whiteBackgroundSuccess);
         loadProducts(); // Recharger les produits
       } else {
-        throw new Error(data.error || 'Échec de la génération');
+        throw new Error(data.error || t.toasts.products.generationError);
       }
     } catch (error: any) {
       console.error('Error generating white background:', error);
-      toast.error("Erreur lors de la génération du fond blanc", {
+      toast.error(t.toasts.products.whiteBackgroundError, {
         description: error.message
       });
     } finally {
@@ -119,7 +119,7 @@ export default function Products() {
   // Handler pour générer un fond AI pour un produit
   const handleGenerateAIBackground = async (product: Product) => {
     if (!product.image_url) {
-      toast.error("Aucune image disponible pour ce produit");
+      toast.error(t.toasts.products.noImage);
       return;
     }
 
@@ -140,14 +140,14 @@ export default function Products() {
       if (error) throw error;
 
       if (data.variants && data.variants.length > 0) {
-        toast.success(`${data.variants.length} fond(s) AI généré(s) avec succès!`);
+        toast.success(tf('toasts.products.aiBackgroundSuccess', { count: data.variants.length }));
         navigate(`/product-title-description?productId=${product.id}`);
       } else {
-        throw new Error('Aucune variante générée');
+        throw new Error(t.toasts.products.generationError);
       }
     } catch (error: any) {
       console.error('Error generating AI background:', error);
-      toast.error("Erreur lors de la génération du fond AI", {
+      toast.error(t.toasts.products.aiBackgroundError, {
         description: error.message
       });
     } finally {
@@ -170,11 +170,11 @@ export default function Products() {
 
       if (error) throw error;
 
-      toast.success(newStatus === 'active' ? 'Produit activé' : 'Produit en brouillon');
+      toast.success(newStatus === 'active' ? t.toasts.products.productActivated : t.toasts.products.productDraft);
       loadProducts(); // Recharger les produits
     } catch (error: any) {
       console.error('Error updating product status:', error);
-      toast.error("Erreur lors de la mise à jour du statut");
+      toast.error(t.toasts.products.statusUpdateError);
     }
   };
 
