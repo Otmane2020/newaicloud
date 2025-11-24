@@ -289,53 +289,69 @@ Now generate the FULL HTML landing page.
 }
 
 /**********************************************************************
- * CALL AI — FIX ABSOLU DU BUG "[object Object]"
+ * CALL AI — LOVABLE AI GATEWAY (CORRECTED)
  **********************************************************************/
 async function callAI(prompt: string) {
-  const response = await fetch("https://api.lovable.dev/generate", {
+  console.log("🤖 Calling Lovable AI Gateway...");
+  
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gemini-2.5-flash",
-      prompt,
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert web designer and copywriter. Generate a complete, single-page HTML landing page that is responsive, modern, and conversion-optimized. Use only HSL colors, include a light/dark mode toggle, and ensure all images use placeholder URLs."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 16000,
     }),
   });
 
-  // 1️⃣ Try JSON parsing safely
+  console.log("📡 API Response status:", response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("❌ API Error:", response.status, errorText);
+    throw new Error(`Lovable AI Gateway error: ${response.status} - ${errorText}`);
+  }
+
+  const rawText = await response.text();
+  console.log("📦 Raw API response (first 500 chars):", rawText.substring(0, 500));
+
   let json: any;
   try {
-    json = await response.json();
+    json = JSON.parse(rawText);
   } catch (e) {
-    const raw = await response.text();
-    console.error("❌ RAW NON-JSON:", raw);
-    throw new Error("INVALID_JSON_FROM_AI");
+    console.error("❌ JSON Parse Error:", e);
+    console.error("Raw text:", rawText);
+    throw new Error("Failed to parse AI response as JSON");
   }
 
-  // 2️⃣ Extract output (lovable sometimes nests inside objects)
-  let output = json?.output;
+  // Extract content from OpenAI-compatible format
+  let html = json.choices?.[0]?.message?.content;
 
-  if (!output) {
-    throw new Error("AI_OUTPUT_EMPTY");
+  if (!html || typeof html !== 'string') {
+    console.error("❌ Invalid response structure:", JSON.stringify(json).substring(0, 500));
+    throw new Error("AI response does not contain valid HTML content");
   }
 
-  // 3️⃣ If object → convert to string
-  if (typeof output === "object") {
-    output = JSON.stringify(output, null, 2);
-  }
-
-  // 4️⃣ Ensure final is string
-  if (typeof output !== "string") {
-    output = String(output);
-  }
-
-  // 5️⃣ Clean code fences
-  return output
+  // Clean code fences
+  html = html
     .replace(/```html/gi, "")
     .replace(/```/g, "")
     .trim();
+
+  console.log("✅ HTML generated, length:", html.length);
+  return html;
 }
 /**********************************************************************
  *  BLOC 3 / 3 — HTTP ENDPOINT FINAL (ULTRA SAFE)
