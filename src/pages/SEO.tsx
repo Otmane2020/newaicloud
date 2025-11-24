@@ -36,7 +36,7 @@ export default function SEO() {
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
   const articleManagementRef = useRef<ArticleManagementRef>(null);
-  const { state: optimizationState, setShowCompletedDialog } = useOptimization();
+  const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
 
   const handleSyncShopify = () => {
     // Déclencher la synchronisation selon le type d'optimisation
@@ -238,6 +238,7 @@ export default function SEO() {
                       current={optimizationState.current}
                       total={optimizationState.total}
                       label="Optimisation des pages"
+                      onCancel={cancelOptimization}
                     />
                   ) : (
                     <>
@@ -306,6 +307,7 @@ export default function SEO() {
                       current={optimizationState.current}
                       total={optimizationState.total}
                       label="Optimisation des articles"
+                      onCancel={cancelOptimization}
                     />
                   ) : (
                     <>
