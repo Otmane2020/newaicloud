@@ -32,6 +32,7 @@ export interface LandingConfig {
   vendorSource: "shopify" | "extract" | "generate";
   customHighlights?: string;
   designStyle: "minimalist" | "modern" | "premium";
+  theme: "light" | "dark";
 }
 
 interface LandingConfigDialogProps {
@@ -155,6 +156,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     vendorSource: "shopify",
     customHighlights: "",
     designStyle: "modern",
+    theme: "light",
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -320,6 +322,56 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         </DialogHeader>
 
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
+          {/* Thème */}
+          <div className="space-y-3 animate-fade-in">
+            <Label className="text-base font-semibold">🌓 Thème</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, theme: "light" })}
+                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
+                  config.theme === "light"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white opacity-50 rounded-xl" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">☀️</span>
+                    {config.theme === "light" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-base mb-1">Light</div>
+                    <div className="text-xs text-muted-foreground">Thème clair et lumineux</div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, theme: "dark" })}
+                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
+                  config.theme === "dark"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800 opacity-10 rounded-xl" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">🌙</span>
+                    {config.theme === "dark" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-base mb-1">Dark</div>
+                    <div className="text-xs text-muted-foreground">Thème sombre et élégant</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Modèle de design */}
           <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎯 Modèle de design</Label>
