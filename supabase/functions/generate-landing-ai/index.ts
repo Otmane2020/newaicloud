@@ -1,10 +1,10 @@
 /**********************************************************************
- *  GENERATE-LANDING-AI — VERSION STABLE ET CORRIGÉE
- *  - Erreurs JSON corrigées
+ *  GENERATE-LANDING-AI — VERSION STABLE FINALE (UN SEUL BLOC)
+ *  - Fix total "[object Object] is not valid JSON"
  *  - callAI() 100% safe
- *  - Config utilisateur + override OK
  *  - Vision + SERP + Dimensions OK
- *  - Aucun doublon
+ *  - User Preferences OK
+ *  - Aucune duplication
  **********************************************************************/
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -71,7 +71,6 @@ const SYSTEM_DEFAULTS: LandingConfig = {
 /**********************************************************************
  * UTILITIES
  **********************************************************************/
-
 function detectLanguage(text: string): "fr" | "en" {
   const t = text.toLowerCase();
   return t.includes(" the ") || t.includes(" and ") ? "en" : "fr";
@@ -121,7 +120,7 @@ function finalProductAttributes(vision: any, text: any, serp: any, dims: any) {
 }
 
 /**********************************************************************
- * USER PREFERENCES MERGE
+ * USER PREFERENCES
  **********************************************************************/
 async function loadUserPreferences(userId: string) {
   const { data } = await supabase
@@ -144,7 +143,6 @@ function mergeOptions({ override, userDefault }: { override: UserOverrideConfig;
       override.contentLength ||
       userDefault?.content_length ||
       SYSTEM_DEFAULTS.content_length,
-
     colorScheme: {
       primary: override.colorScheme?.primary || userDefault?.color_primary || SYSTEM_DEFAULTS.colorScheme.primary,
       secondary:
@@ -157,7 +155,6 @@ function mergeOptions({ override, userDefault }: { override: UserOverrideConfig;
       textMuted:
         override.colorScheme?.textMuted || userDefault?.color_text_muted || SYSTEM_DEFAULTS.colorScheme.textMuted,
     },
-
     custom_highlights:
       (override.custom_highlights?.length ? override.custom_highlights : userDefault?.custom_highlights) || [],
   };
@@ -199,12 +196,8 @@ async function analyzeImageWithVision(imageUrl: string, productTitle: string, ca
   }
 }
 
-async function geminiFallbackVision(imageUrl: string, title: string) {
-  return null; // safe silent fallback
-}
-
 /**********************************************************************
- * BUILD PROMPT
+ * PROMPT BUILDER
  **********************************************************************/
 function buildPrompt({ productTitle, vendor, attributes, serp, config, lang }: any) {
   return `
@@ -230,7 +223,7 @@ RULES:
 - mobile first
 - CTA
 - strong hero
-- specs section
+- specs
 - write in ${lang === "fr" ? "French" : "English"}
 
 Generate HTML now.
@@ -238,7 +231,7 @@ Generate HTML now.
 }
 
 /**********************************************************************
- * FINAL — AI CALL (FIX JSON BUG FOREVER)
+ * 🔥 FINAL — AI CALL (BUG FIX TOTAL)
  **********************************************************************/
 async function callAI(prompt: string) {
   const res = await fetch("https://api.lovable.dev/generate", {
@@ -250,7 +243,6 @@ async function callAI(prompt: string) {
     body: JSON.stringify({ model: "gemini-2.5-flash", prompt }),
   });
 
-  // read JSON safely
   let json: any;
 
   try {
@@ -262,16 +254,26 @@ async function callAI(prompt: string) {
   }
 
   if (!json || typeof json !== "object") throw new Error("INVALID_AI_RESPONSE");
-  if (!json.output) throw new Error("AI_OUTPUT_EMPTY");
 
-  // FIX → if output is object → stringify
-  const html = typeof json.output === "string" ? json.output : JSON.stringify(json.output);
+  // -----------------------------------------------------------------
+  // ✨ FIX : handle json.output, json.output.html, object formats
+  // -----------------------------------------------------------------
+  let html = "";
+
+  if (typeof json.output === "string") {
+    html = json.output;
+  } else if (json.output?.html) {
+    html = json.output.html;
+  } else {
+    console.error("❌ Unknown AI output format:", json.output);
+    throw new Error("AI_OUTPUT_INVALID_FORMAT");
+  }
 
   return html.replace(/```html|```/gi, "").trim();
 }
 
 /**********************************************************************
- * FINAL HTTP ENDPOINT
+ * ENDPOINT
  **********************************************************************/
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -287,7 +289,6 @@ serve(async (req) => {
       vendor = "",
       description = "",
       images = [],
-      language = "fr",
       userId,
       storeId,
       options: userOverride = {},
@@ -307,7 +308,7 @@ serve(async (req) => {
     const txt = extractFromText(description);
     const serp = await analyzeSerp(productTitle, "fr", lang);
 
-    let vision: any = null;
+    let vision = null;
     for (const img of images.slice(0, 6)) {
       const v = await analyzeImageWithVision(img, productTitle, txt.category);
       if (v) {
@@ -317,34 +318,20 @@ serve(async (req) => {
     }
 
     const dims = extractDimensions(description) || vision?.technicalDimensions || null;
-
     const attributes = finalProductAttributes(vision || {}, txt, serp, dims);
 
-    const prompt = buildPrompt({
-      productTitle,
-      vendor,
-      attributes,
-      serp,
-      config,
-      lang,
-    });
+    const prompt = buildPrompt({ productTitle, vendor, attributes, serp, config, lang });
 
     const html = await callAI(prompt);
 
     await supabase.from("shopify_products").update({ landing_page_html: html }).eq("id", productId);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        html,
-        attributes,
-        config,
-      }),
-      { status: 200, headers: corsHeaders },
-    );
+    return new Response(JSON.stringify({ success: true, html, attributes, config }), {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (err) {
     console.error("🔥 ERROR:", err);
-
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: corsHeaders,
