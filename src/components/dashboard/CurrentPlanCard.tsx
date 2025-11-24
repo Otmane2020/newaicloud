@@ -159,9 +159,16 @@ export function CurrentPlanCard() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold">
-                {(t.planNames as any)[currentPlan.name] || currentPlan.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold">
+                  {(t.planNames as any)[currentPlan.name] || currentPlan.name}
+                </h3>
+                {currentPlan.id.includes('pro') && (
+                  <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-pink-600">
+                    Pro
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">{t.account.subscription.currentPlan}</p>
                 {billingPeriod === 'yearly' && (
