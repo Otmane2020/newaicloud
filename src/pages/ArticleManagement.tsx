@@ -311,14 +311,44 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
       // Start optimization with context
       startOptimization('articles', allArticleIds.length, 'optimizing');
       
-      const { data, error } = await supabase.functions.invoke('generate-article-seo', {
-        body: { article_ids: allArticleIds }
-      });
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Process articles one by one to update progress
+      for (let i = 0; i < allArticleIds.length; i++) {
+        const articleId = allArticleIds[i];
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-article-seo', {
+            body: { article_ids: [articleId] }
+          });
 
-      if (error) throw error;
+          if (error) {
+            console.error(`Error optimizing article ${articleId}:`, error);
+            errorCount++;
+            updateProgress(i + 1, articleId, 'error');
+          } else {
+            successCount++;
+            updateProgress(i + 1, articleId, 'success');
+          }
+        } catch (err) {
+          console.error(`Error processing article ${articleId}:`, err);
+          errorCount++;
+          updateProgress(i + 1, articleId, 'error');
+        }
+      }
       
       // Complete and show success dialog
       completeOptimization();
+      
+      // Show summary toast
+      if (successCount > 0) {
+        toast.success(`✅ ${successCount} article(s) optimisé(s)`, {
+          description: errorCount > 0 ? `${errorCount} erreur(s)` : undefined
+        });
+      } else {
+        toast.error('Aucun article optimisé');
+      }
       
       // Reload articles to reflect changes
       await loadArticles();
