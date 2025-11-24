@@ -764,23 +764,9 @@ export function SeoAltImage() {
   const imagesOptimizedByAI = images.filter(img => img.optimization_count && img.optimization_count > 0).length;
   const imagesToSync = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_synced_at).length;
   const imagesSynced = images.filter(img => img.alt_text && img.last_synced_at).length;
-  const altCompletionRate = images.length > 0 ? Math.round((imagesOptimizedByAI / images.length) * 100) : 0;
-  
-  // Calculate ALT SEO score normalized to 0-100 scale
+  // Calculate ALT SEO score based on ratio of optimized images to total images
   const altSeoScore = images.length > 0 
-    ? Math.round(
-        images.reduce((sum, img) => {
-          // Check if ALT is AI-optimized based on optimization_count
-          const isAI = img.optimization_count > 0;
-          const altScore = calculateAltTextScore(img.alt_text, isAI);
-          // Normalize score to 100: AI scores (weight 1.0) are already 0-100
-          // Shopify scores (weight 0.5) need to be doubled
-          const normalizedScore = altScore.weight > 0 
-            ? Math.min(100, Math.round(altScore.score / altScore.weight))
-            : 0;
-          return sum + normalizedScore;
-        }, 0) / images.length
-      )
+    ? Math.round((imagesOptimizedByAI / images.length) * 100)
     : 0;
 
   const tabs = [

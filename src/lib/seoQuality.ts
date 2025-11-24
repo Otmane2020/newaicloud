@@ -448,23 +448,14 @@ export function calculateArticlesSeoScore(articles: any[]): number {
  * Used by: Dashboard, Audit, SeoAltImage
  * Authority: SeoAltImage.tsx is the reference implementation
  * 
- * This function uses the same normalization logic as SeoAltImage.tsx:
- * - AI-generated alt text (optimization_count > 0): weight = 1.0 (100% quality)
- * - Shopify alt text: weight = 0.5 (50% quality)
- * - Score is normalized to 0-100 scale: score / weight
+ * Score is based on ratio of optimized images (optimization_count > 0) to total images
+ * - Score = (optimized images / total images) * 100
  */
 export function calculateImagesSeoScore(images: any[]): number {
   if (!images || images.length === 0) return 0;
   
-  const totalScore = images.reduce((sum, img) => {
-    const isAI = img.optimization_count > 0;
-    const altScore = calculateAltTextScore(img.alt_text || '', isAI);
-    // Normalize each score to 0-100 scale
-    const normalizedScore = normalizeAltScore(altScore.score, altScore.weight);
-    return sum + normalizedScore;
-  }, 0);
-  
-  return Math.round(totalScore / images.length);
+  const optimizedImages = images.filter(img => (img.optimization_count || 0) > 0).length;
+  return Math.round((optimizedImages / images.length) * 100);
 }
 
 /**
