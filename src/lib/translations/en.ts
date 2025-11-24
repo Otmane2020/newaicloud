@@ -2081,6 +2081,24 @@ export const translations = {
     usage: {
       title: "Usage Limits",
       description: "Track your monthly usage and plan limits",
+      labels: {
+        products: "Products",
+        shopifyStores: "Shopify Stores",
+        optimizations: "Optimizations",
+        articlesAI: "AI Articles",
+        chatAI: "AI Chat",
+        campaigns: "Campaigns",
+      },
+      messages: {
+        trialLimitReached: "🚨 <strong>Some limits reached.</strong> Activate a paid plan to continue.",
+        monthlyLimitReached: "⚠️ <strong>Monthly limits reached.</strong> They will reset next month.",
+      },
+      buttons: {
+        activatePlan: "Activate a Plan",
+        upgradePlan: "Upgrade my Plan",
+      },
+      usage: "Usage",
+      trialVersion: "Trial Version",
     },
     submenu: {
       profile: "My Profile",

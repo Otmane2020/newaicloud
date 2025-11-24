@@ -25,42 +25,42 @@ export function UsageWidget() {
 
   const usageItems = [
     {
-      label: 'Produits',
+      label: t.account.usage.labels.products,
       current: limits.usage.products_count,
       max: limits.limits.max_products,
       color: 'blue',
       blocked: limits.limitReached.products
     },
     {
-      label: 'Boutiques Shopify',
+      label: t.account.usage.labels.shopifyStores,
       current: limits.usage.shopify_stores_count,
       max: limits.limits.max_shopify_stores,
       color: 'indigo',
       blocked: limits.limitReached.shopifyStores
     },
     {
-      label: 'Optimisations',
+      label: t.account.usage.labels.optimizations,
       current: limits.usage.optimizations_count,
       max: limits.limits.max_optimizations,
       color: 'purple',
       blocked: limits.limitReached.optimizations
     },
     {
-      label: 'Articles AI',
+      label: t.account.usage.labels.articlesAI,
       current: limits.usage.articles_count,
       max: limits.limits.max_articles,
       color: 'green',
       blocked: limits.limitReached.articles
     },
     {
-      label: 'Chat AI',
+      label: t.account.usage.labels.chatAI,
       current: limits.usage.chat_responses_count,
       max: limits.limits.max_chat_responses,
       color: 'orange',
       blocked: limits.limitReached.chat
     },
     {
-      label: 'Campagnes',
+      label: t.account.usage.labels.campaigns,
       current: limits.usage.campaigns_count,
       max: limits.limits.max_campaigns,
       color: 'pink',
@@ -75,9 +75,9 @@ export function UsageWidget() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Utilisation</CardTitle>
+          <CardTitle className="text-lg">{t.account.usage.usage}</CardTitle>
           {limits.isTrialing && (
-            <Badge variant="secondary">Version d'essai</Badge>
+            <Badge variant="secondary">{t.account.usage.trialVersion}</Badge>
           )}
         </div>
       </CardHeader>
@@ -128,17 +128,18 @@ export function UsageWidget() {
               ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' 
               : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
           }`}>
-            <p className={`text-sm mb-3 ${
-              limits.isTrialing 
-                ? 'text-red-900 dark:text-red-100' 
-                : 'text-orange-900 dark:text-orange-100'
-            }`}>
-              {limits.isTrialing ? (
-                <>🚨 <strong>Certaines limites sont atteintes.</strong> Activez un plan payant pour continuer.</>
-              ) : (
-                <>⚠️ <strong>Limites mensuelles atteintes.</strong> Elles seront réinitialisées le mois prochain.</>
-              )}
-            </p>
+            <p 
+              className={`text-sm mb-3 ${
+                limits.isTrialing 
+                  ? 'text-red-900 dark:text-red-100' 
+                  : 'text-orange-900 dark:text-orange-100'
+              }`}
+              dangerouslySetInnerHTML={{ 
+                __html: limits.isTrialing 
+                  ? t.account.usage.messages.trialLimitReached
+                  : t.account.usage.messages.monthlyLimitReached
+              }}
+            />
             {(limits.isTrialing || !limits.planId) ? (
               <Button 
                 size="sm" 
@@ -146,7 +147,7 @@ export function UsageWidget() {
                 className="w-full gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                Activer un plan
+                {t.account.usage.buttons.activatePlan}
               </Button>
             ) : (
               <Button 
@@ -155,7 +156,7 @@ export function UsageWidget() {
                 onClick={() => navigate('/subscription')}
                 className="w-full"
               >
-                Améliorer mon plan
+                {t.account.usage.buttons.upgradePlan}
               </Button>
             )}
           </div>
