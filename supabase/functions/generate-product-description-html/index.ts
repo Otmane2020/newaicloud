@@ -308,6 +308,31 @@ Main Text: ${designTokens.text} (dark with high contrast)
 Secondary Text: ${designTokens.textMuted} (medium gray)
 CTA Text on Primary: ${designTokens.ctaText} (contrast ratio: ${designTokens.contrastRatio.toFixed(1)}:1)
 
+🎨 COLOR USAGE EXAMPLES (Use these patterns extensively):
+
+<!-- Hero with accent color background -->
+<div class="bg-[${designTokens.primary}] text-white py-20">
+  <h1 class="text-5xl font-bold">Premium Product</h1>
+</div>
+
+<!-- Feature cards with color accents -->
+<div class="bg-white p-6 border-l-4 border-[${designTokens.primary}]">
+  <div class="w-12 h-12 rounded-full bg-[${designTokens.primary}]/10 flex items-center justify-center mb-4">
+    <svg class="w-6 h-6 text-[${designTokens.primary}]">...</svg>
+  </div>
+  <h3 class="text-gray-900 font-bold">Feature Title</h3>
+</div>
+
+<!-- Colored badges and tags -->
+<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[${designTokens.secondary}]/10 text-[${designTokens.secondary}]">
+  New Arrival
+</span>
+
+<!-- Gradient backgrounds -->
+<div class="bg-gradient-to-br from-[${designTokens.primary}] to-[${designTokens.secondary}] text-white p-12">
+  <h2 class="text-3xl font-bold">Special Section</h2>
+</div>
+
 MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ ABSOLUTELY FORBIDDEN COLOR COMBINATIONS:
@@ -330,16 +355,71 @@ MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
   □ No text-white exists on any light background
   □ No text-gray-300 or text-gray-400 on white/light backgrounds
 
-📋 CORRECT COLOR EXAMPLES:
-<section class="bg-white py-12">
-  <h2 class="text-3xl font-bold text-gray-900">Perfect Contrast</h2>
-  <p class="text-gray-700">This has excellent readability.</p>
-</section>
+==============================
+LUCIDE ICONS - RICH VISUAL DESIGN
+==============================
+⚠️ MANDATORY: Use Lucide icons extensively throughout the page for visual richness!
 
-<section class="bg-[${designTokens.surface}] py-12">
-  <h2 class="text-3xl font-bold text-[${designTokens.text}]">Using Tokens</h2>
-  <p class="text-[${designTokens.textMuted}]">Also perfect.</p>
-</section>
+Available via CDN (add to <head>):
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+
+📦 RICH ICON CATALOG (use 8-12 icons minimum):
+
+PRODUCT FEATURES:
+- <i data-lucide="sparkles" class="w-8 h-8 text-[${designTokens.primary}]"></i> Premium Quality
+- <i data-lucide="shield-check" class="w-8 h-8 text-[${designTokens.primary}]"></i> Warranty
+- <i data-lucide="truck" class="w-8 h-8 text-[${designTokens.primary}]"></i> Fast Shipping
+- <i data-lucide="leaf" class="w-8 h-8 text-[${designTokens.primary}]"></i> Eco-Friendly
+- <i data-lucide="award" class="w-8 h-8 text-[${designTokens.primary}]"></i> Award Winning
+- <i data-lucide="star" class="w-8 h-8 text-[${designTokens.primary}]"></i> Top Rated
+
+TECHNICAL SPECS:
+- <i data-lucide="ruler" class="w-6 h-6"></i> Dimensions
+- <i data-lucide="package" class="w-6 h-6"></i> Package Contents
+- <i data-lucide="droplet" class="w-6 h-6"></i> Water Resistant
+- <i data-lucide="battery" class="w-6 h-6"></i> Battery Life
+- <i data-lucide="zap" class="w-6 h-6"></i> Performance
+
+BENEFITS:
+- <i data-lucide="heart" class="w-6 h-6"></i> Customer Satisfaction
+- <i data-lucide="clock" class="w-6 h-6"></i> Time Saving
+- <i data-lucide="thumbs-up" class="w-6 h-6"></i> Easy to Use
+- <i data-lucide="lock" class="w-6 h-6"></i> Secure
+- <i data-lucide="refresh-cw" class="w-6 h-6"></i> Recyclable
+
+🎯 ICON USAGE PATTERNS (implement these):
+
+1. Feature Grid with Icons:
+<div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+  <div class="text-center p-6 bg-white rounded-lg shadow-sm">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-[${designTokens.primary}]/10 flex items-center justify-center">
+      <i data-lucide="sparkles" class="w-8 h-8 text-[${designTokens.primary}]"></i>
+    </div>
+    <h3 class="font-bold text-gray-900 mb-2">Premium Quality</h3>
+    <p class="text-sm text-gray-600">Exceptional craftsmanship</p>
+  </div>
+  <!-- Repeat for 5-6 features -->
+</div>
+
+2. Spec List with Icons:
+<div class="space-y-3">
+  <div class="flex items-center gap-3">
+    <i data-lucide="ruler" class="w-5 h-5 text-[${designTokens.secondary}]"></i>
+    <span class="text-gray-700">Dimensions: 10x5x3 inches</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <i data-lucide="package" class="w-5 h-5 text-[${designTokens.secondary}]"></i>
+    <span class="text-gray-700">Weight: 2.5 lbs</span>
+  </div>
+</div>
+
+3. Benefit Cards with Large Icons:
+<div class="bg-gradient-to-br from-[${designTokens.primary}]/5 to-transparent p-8 rounded-xl">
+  <i data-lucide="shield-check" class="w-12 h-12 text-[${designTokens.primary}] mb-4"></i>
+  <h3 class="text-xl font-bold text-gray-900 mb-2">Protected Purchase</h3>
+  <p class="text-gray-600">2-year warranty included with every order</p>
+</div>
 
 ⚠️ CRITICAL: Internal Visual Analysis is for your reference ONLY.
    NEVER display this raw data to the customer in the landing page.
@@ -368,32 +448,41 @@ PAGE STRUCTURE REQUIREMENTS (NO BUTTONS)
 MANDATORY SECTIONS:
   • HERO SECTION:
     - Full-width hero image (first image)
-    - Bold headline (H1): 
-      * Use text-gray-900 ONLY on light backgrounds (bg-white, bg-gray-50, bg-gray-100)
-      * Use text-white ONLY on dark backgrounds (bg-gray-900, bg-slate-900, bg-gray-800)
-      * NEVER mix dark text (text-gray-900, text-black) on dark bg (bg-gray-800/900)
-      * NEVER mix light text (text-white, text-gray-100) on light bg (bg-white, bg-gray-50/100)
+    - Bold headline (H1) with optional icon accent
     - 1–2 sentence benefit statement with proper contrast
+    - Use colored overlay or gradient backgrounds to make text pop
   
-  • FEATURE SECTIONS:
-    - 4–6 cards with icons/images
-    - Each card: bg-white or bg-[${designTokens.surface}] with text-gray-900
-    - Grid layout: grid grid-cols-2 md:grid-cols-3 gap-6
+  • FEATURE SECTIONS (RICH ICONS REQUIRED):
+    - 6-8 feature cards with LARGE colorful icons
+    - Each card MUST have:
+      * Rounded icon container with bg-[${designTokens.primary}]/10
+      * Lucide icon in primary color (w-8 h-8 minimum)
+      * Bold heading + short description
+    - Grid layout: grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6
+    - Example features: Quality, Shipping, Warranty, Eco-friendly, Award, Support
   
   • PRODUCT GALLERY:
     - Responsive grid with all images
     - 2×2 or 3×3 grid layout
     - Descriptive alt texts on every image
+    - Optional: Add colored borders or shadows using primary color
   
-  • SPECIFICATIONS TABLE:
-    - Technical details with clear typography
-    - Include dimensions, materials, features
+  • SPECIFICATIONS SECTION (WITH ICONS):
+    - Icon + label format for each spec
+    - Use icons like: ruler (dimensions), package (weight), droplet (water-resistant)
     - High contrast: text-gray-900 on bg-white
+    - Consider a two-column layout with icons
+  
+  • BENEFITS/HIGHLIGHTS SECTION:
+    - Large icon cards (3-4 cards)
+    - Use gradient backgrounds: from-[${designTokens.primary}]/5 to-transparent
+    - Icons: shield-check, heart, clock, thumbs-up
+    - Each card: icon (w-12 h-12) + headline + description
   
   • STORYTELLING SECTION:
     - Customer experience narrative
-    - Use cases and scenarios
-    - Benefits-focused content
+    - Use cases with small icons inline
+    - Benefits-focused content with visual hierarchy
 
 REQUIRED HTML STRUCTURE:
   • Tailwind classes ONLY (NO custom CSS)
