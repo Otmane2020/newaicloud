@@ -1724,31 +1724,23 @@ ${userOptions.theme === "dark"
   : `☀️ LIGHT MODE (DEFAULT) - FOLLOW THESE RULES EXACTLY:
 
 🚨 BACKGROUNDS (MANDATORY):
-- Body background: MUST use light color from designTokens.background (e.g., hsl(0 0% 100%))
-- ALL section backgrounds: MUST alternate between light background and light surface colors  
-- ❌ FORBIDDEN: Dark backgrounds hsl(222 47% 11%)
-- ✅ CORRECT: style="background: hsl(${designTokens.background})" or style="background: hsl(${designTokens.surface})"
+- Body: NO inline background needed (CSS handles it)
+- Sections: Use ONLY white or very light colors
+- ❌ FORBIDDEN: hsl(222 47% 11%), hsl(210 100% 80%), ANY dark blue/gray backgrounds
+- ✅ ALLOWED: style="background: white" OR style="background: #ffffff" OR style="background: #f9fafb"
+- Alternative sections: Use white and very light gray only
 
 🚨 TEXT COLORS (MANDATORY):
-- ALL text: MUST use dark colors from designTokens
-- Headings: style="color: hsl(${designTokens.text})" (should be dark)
-- Body text: style="color: hsl(${designTokens.text})"
-- Muted text: style="color: hsl(${designTokens.textMuted})"
-- ❌ FORBIDDEN: Light text colors like hsl(210 40% 98%)
-- ❌ FORBIDDEN: White text hsl(0 0% 100%)
+- Headings: style="color: #111827" or style="color: #1f2937"
+- Body: style="color: #374151" or style="color: #4b5563"
+- Muted: style="color: #6b7280"
+- ❌ FORBIDDEN: White, light blue, light gray text
 
-🚨 CARDS & CONTAINERS (MANDATORY):
-- Use designTokens.surface or light accent colors
-- Add subtle shadows: shadow-md, shadow-lg
-- ❌ FORBIDDEN: Dark colored cards
-- ✅ CORRECT: Light surfaces with dark text
-
-🚨 VERIFICATION CHECKLIST - ALL MUST BE TRUE:
-- [ ] Body has LIGHT background
-- [ ] EVERY section has LIGHT background
-- [ ] ALL text is DARK colored
-- [ ] NO dark backgrounds anywhere in light mode
-- [ ] Consistent light theme throughout`
+🚨 VERIFICATION - ALL MUST BE TRUE:
+- [ ] ALL backgrounds are white or very light
+- [ ] ALL text is dark gray or black
+- [ ] NO blue backgrounds (hsl(210 100% 80%))
+- [ ] NO dark backgrounds in light mode`
 }
 
 LAYOUT STRUCTURE (CRITICAL - APPLY THIS LAYOUT):
@@ -1994,10 +1986,9 @@ ${dimensionImages.length > 0
 5. Technical Dimensions (MANDATORY - use dimension schematics with measurements)${variants.length > 1 ? '\n6. Product Variations (MANDATORY - show all variants with cards)' : ''}
 7. Materials & Composition (if available)
 8. Product Image Gallery (regular product photos only, NOT dimension schematics)
-   🚨 CRITICAL: Each image MUST have a descriptive title based on what is visible:
-   - Analyze what each image shows (front view, detail, in context, feature close-up, etc.)
-   - Generate a clear, descriptive title for each image in the gallery section
-   - Place the title BELOW each image
+   - Simple gallery with 2-3 columns
+   - Each image with short caption below (NO "Détail" prefix)
+   - Use simple descriptions: "Vue de face", "Vue d'ensemble", "Finition", etc.
    - Example structure:
      <div class="space-y-2">
        <div class="rounded-xl overflow-hidden shadow-lg">
@@ -2190,31 +2181,24 @@ ${userOptions.theme === "dark"
   : `☀️ MODE CLAIR (PAR DÉFAUT) - SUIVRE CES RÈGLES EXACTEMENT:
 
 🚨 ARRIÈRE-PLANS (OBLIGATOIRE):
-- Arrière-plan du body: DOIT utiliser une couleur claire de designTokens.background (ex: hsl(0 0% 100%))
-- TOUS les arrière-plans de section: DOIVENT alterner entre couleurs claires background et surface
-- ❌ INTERDIT: Arrière-plans sombres hsl(222 47% 11%)
-- ✅ CORRECT: style="background: hsl(${designTokens.background})" ou style="background: hsl(${designTokens.surface})"
+- Body: PAS de background inline (le CSS s'en occupe)
+- Sections: Utiliser SEULEMENT blanc ou couleurs très claires
+- ❌ INTERDIT: hsl(222 47% 11%), hsl(210 100% 80%), TOUT fond bleu/gris foncé
+- ✅ AUTORISÉ: style="background: white" OU style="background: #ffffff" OU style="background: #f9fafb"
+- Alterner: blanc et gris très clair uniquement
 
 🚨 COULEURS DE TEXTE (OBLIGATOIRE):
-- TOUT le texte: DOIT utiliser des couleurs sombres de designTokens
-- Titres: style="color: hsl(${designTokens.text})" (devrait être sombre)
-- Texte corps: style="color: hsl(${designTokens.text})"
-- Texte atténué: style="color: hsl(${designTokens.textMuted})"
-- ❌ INTERDIT: Couleurs de texte claires comme hsl(210 40% 98%)
-- ❌ INTERDIT: Texte blanc hsl(0 0% 100%)
+- Titres: style="color: #111827" ou style="color: #1f2937"
+- Corps: style="color: #374151" ou style="color: #4b5563"
+- Atténué: style="color: #6b7280"
+- ❌ INTERDIT: Texte blanc, bleu clair, gris clair
 
-🚨 CARTES & CONTENEURS (OBLIGATOIRE):
-- Utiliser designTokens.surface ou couleurs d'accent claires
-- Ajouter ombres subtiles: shadow-md, shadow-lg
-- ❌ INTERDIT: Cartes de couleur sombre
-- ✅ CORRECT: Surfaces claires avec texte sombre
-
-🚨 CHECKLIST DE VÉRIFICATION - TOUS DOIVENT ÊTRE VRAIS:
-- [ ] Le body a un arrière-plan CLAIR
-- [ ] CHAQUE section a un arrière-plan CLAIR
-- [ ] TOUT le texte est de couleur SOMBRE
-- [ ] AUCUN arrière-plan sombre nulle part en mode clair
-- [ ] Thème clair cohérent partout`
+🚨 VÉRIFICATION - TOUS DOIVENT ÊTRE VRAIS:
+- [ ] TOUS les fonds sont blancs ou très clairs
+- [ ] TOUT le texte est gris foncé ou noir
+- [ ] AUCUN fond bleu (hsl(210 100% 80%))
+- [ ] AUCUN fond sombre en mode clair`
+}
 }
 
 🏗️ STRUCTURE DE LAYOUT :
