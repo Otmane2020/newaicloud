@@ -4,10 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package, RefreshCw } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, RefreshCw, TrendingUp } from 'lucide-react';
 import { PlanUpgradeDialog } from './PlanUpgradeDialog';
 import { useTranslation } from '@/lib/language';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
 
 interface Plan {
   id: string;
@@ -16,12 +18,14 @@ interface Plan {
   price_yearly: number;
   stripe_price_id_monthly: string;
   stripe_price_id_yearly: string;
+  max_optimizations_monthly?: number;
   isTrial?: boolean;
 }
 
 export function CurrentPlanCard() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { limits: limitsData, loading: limitsLoading } = useUsageLimits();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -29,6 +33,7 @@ export function CurrentPlanCard() {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [nextPlan, setNextPlan] = useState<Plan | null>(null);
 
   useEffect(() => {
     loadSubscriptionData();
@@ -53,11 +58,20 @@ export function CurrentPlanCard() {
 
       const { data: plansData } = await supabase
         .from('subscription_plans')
-        .select('*');
+        .select('*')
+        .order('max_optimizations_monthly', { ascending: true });
 
       // Si l'utilisateur a un plan dans Supabase, l'utiliser directement
       if (profileData?.current_plan_id) {
         const plan = plansData?.find((p: Plan) => p.id === profileData.current_plan_id);
+        
+        // Trouver le plan suivant suggéré
+        if (plan && plansData) {
+          const currentIndex = plansData.findIndex((p: Plan) => p.id === plan.id);
+          if (currentIndex >= 0 && currentIndex < plansData.length - 1) {
+            setNextPlan(plansData[currentIndex + 1]);
+          }
+        }
         
         if (plan) {
           const isTrialing = profileData.subscription_status === 'trialing';
@@ -148,6 +162,18 @@ export function CurrentPlanCard() {
     );
   }
 
+  // Calculer le pourcentage d'utilisation des optimisations
+  const optimizationsUsed = limitsData?.usage.optimizations_count || 0;
+  const optimizationsLimit = limitsData?.limits.max_optimizations || 0;
+  const usagePercentage = optimizationsLimit > 0 ? (optimizationsUsed / optimizationsLimit) * 100 : 0;
+  const shouldShowUpgradeAlert = usagePercentage >= 80 && nextPlan;
+
+  // Formater le nombre d'optimisations pour l'affichage
+  const formatOptimizationsCount = (count: number) => {
+    if (count >= 1000) return `${(count / 1000).toFixed(0)}K`;
+    return count.toString();
+  };
+
   return (
     <Card className="p-6">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -157,15 +183,31 @@ export function CurrentPlanCard() {
       
       {currentPlan ? (
         <div className="space-y-4">
+          {shouldShowUpgradeAlert && (
+            <Alert className="border-orange-500/50 bg-orange-50 dark:bg-orange-950/20">
+              <TrendingUp className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm">
+                <span className="font-semibold">Upgrade recommandé:</span> Vous avez utilisé {usagePercentage.toFixed(0)}% de vos optimisations. 
+                <Button
+                  variant="link"
+                  className="px-1 h-auto font-semibold text-orange-600 hover:text-orange-700"
+                  onClick={() => setUpgradeDialogOpen(true)}
+                >
+                  Passer à {formatOptimizationsCount(nextPlan.max_optimizations_monthly)} optimisations
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-semibold">
                   {(t.planNames as any)[currentPlan.name] || currentPlan.name}
                 </h3>
-                {currentPlan.id.includes('pro') && (
+                {(currentPlan.id.includes('pro') || currentPlan.id.includes('enterprise')) && (
                   <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                    Pro
+                    {formatOptimizationsCount(currentPlan.max_optimizations_monthly)}
                   </Badge>
                 )}
               </div>
