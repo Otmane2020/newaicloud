@@ -70,6 +70,7 @@ interface ProductImage {
   height: number;
   optimization_count: number;
   last_optimization_at: string | null;
+  last_synced_at: string | null;
   image_type: 'product' | 'content';
 }
 
@@ -348,15 +349,15 @@ export function SeoAltImage() {
 
     if (activeTab === 'needs-alt' && (img.optimization_count && img.optimization_count > 0)) return false;
     if (activeTab === 'has-alt' && (!img.optimization_count || img.optimization_count === 0)) return false;
-    if (activeTab === 'to-sync' && (!img.alt_text || !img.optimization_count || img.last_optimization_at)) return false;
+    if (activeTab === 'to-sync' && (!img.alt_text || !img.optimization_count || img.last_synced_at)) return false;
 
     // Status filter
     if (statusFilter === 'optimized' && (!img.optimization_count || img.optimization_count === 0)) return false;
     if (statusFilter === 'not-optimized' && img.optimization_count && img.optimization_count > 0) return false;
 
     // Sync filter - images don't have direct sync tracking, so we check if alt_text exists as proxy
-    if (syncFilter === 'synced' && !img.last_optimization_at) return false;
-    if (syncFilter === 'not-synced' && img.last_optimization_at) return false;
+    if (syncFilter === 'synced' && !img.last_synced_at) return false;
+    if (syncFilter === 'not-synced' && img.last_synced_at) return false;
 
     // Quality filter
     if (qualityFilter !== 'all') {
@@ -589,8 +590,11 @@ export function SeoAltImage() {
   };
 
   const handleOptimizeAllImages = async () => {
-    // Get all images not optimized by AI
-    const imagesToOptimize = images.filter(img => !img.optimization_count || img.optimization_count === 0);
+    // Get all images not optimized by AI AND without alt text
+    const imagesToOptimize = images.filter(img => 
+      (!img.optimization_count || img.optimization_count === 0) &&
+      (!img.alt_text || img.alt_text.trim() === '')
+    );
 
     if (imagesToOptimize.length === 0) {
       toast.info('Toutes les images sont déjà optimisées par IA');
@@ -754,18 +758,23 @@ export function SeoAltImage() {
 
   const imagesNotOptimized = images.filter(img => !img.optimization_count || img.optimization_count === 0).length;
   const imagesOptimizedByAI = images.filter(img => img.optimization_count && img.optimization_count > 0).length;
-  const imagesToSync = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_optimization_at).length;
-  const imagesSynced = images.filter(img => img.alt_text && img.last_optimization_at).length;
+  const imagesToSync = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_synced_at).length;
+  const imagesSynced = images.filter(img => img.alt_text && img.last_synced_at).length;
   const altCompletionRate = images.length > 0 ? Math.round((imagesOptimizedByAI / images.length) * 100) : 0;
   
-  // Calculate ALT SEO score with Shopify vs AI weighting
+  // Calculate ALT SEO score normalized to 0-100 scale
   const altSeoScore = images.length > 0 
     ? Math.round(
         images.reduce((sum, img) => {
           // Check if ALT is AI-optimized based on optimization_count
           const isAI = img.optimization_count > 0;
           const altScore = calculateAltTextScore(img.alt_text, isAI);
-          return sum + altScore.score;
+          // Normalize score to 100: AI scores (weight 1.0) are already 0-100
+          // Shopify scores (weight 0.5) need to be doubled
+          const normalizedScore = altScore.weight > 0 
+            ? Math.min(100, Math.round(altScore.score / altScore.weight))
+            : 0;
+          return sum + normalizedScore;
         }, 0) / images.length
       )
     : 0;
