@@ -16,6 +16,7 @@ import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { QuickPress } from '@/components/blog/QuickPress';
 import { ArticleWizard } from '@/components/blog/ArticleWizard';
+import { ArticlePreviewDialog } from '@/components/blog/ArticlePreviewDialog';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -41,6 +42,8 @@ export default function Blog() {
   const ITEMS_PER_PAGE = 10;
   const { limits } = useUsageLimits();
   const [indexingArticle, setIndexingArticle] = useState<string | null>(null);
+  const [previewArticle, setPreviewArticle] = useState<any | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     const subtab = searchParams.get('subtab');
@@ -647,8 +650,6 @@ export default function Blog() {
               >
                 <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                 {t.blog.aiArticle.startButton}
-                <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                Démarrer l'assistant
               </Button>
             </div>
           </Card>
@@ -666,8 +667,8 @@ export default function Blog() {
                     key={article.id} 
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                     onClick={() => {
-                      setSearchParams({ subtab: 'articles' });
-                      setActiveSubtab('articles');
+                      setPreviewArticle(article);
+                      setPreviewOpen(true);
                     }}
                   >
                     <div className="flex-1 min-w-0">
@@ -904,6 +905,15 @@ export default function Blog() {
         storeId={storeId}
         onArticleCreated={loadData}
       />
+
+      {/* Article Preview Dialog */}
+      {previewArticle && (
+        <ArticlePreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          article={previewArticle}
+        />
+      )}
     </div>
   );
 }
