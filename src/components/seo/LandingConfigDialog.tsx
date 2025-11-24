@@ -533,7 +533,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="courte (400 mots)">{t.landingConfig.contentLength.short}</SelectItem>
-                <SelectItem value="moyenne (800 mots)">{t.landingConfig.contentLength.medium}</SelectItem>
+                <SelectItem value="moyenne (800 mots)">Moyen</SelectItem>
                 <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>
