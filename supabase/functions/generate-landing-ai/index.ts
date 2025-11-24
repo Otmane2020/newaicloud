@@ -846,7 +846,7 @@ serve(async (req) => {
     const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
     
     let lengthConfig = { 
-      maxTokens: 4000,  // ✅ INCREASED for better buffer
+      maxTokens: 5000,  // ✅ INCREASED with generous buffer
       labelEn: "medium", 
       labelFr: "moyenne", 
       descriptionEn: "Balanced content (300-400 words)",
@@ -855,7 +855,7 @@ serve(async (req) => {
 
     if (lengthMode === "short") {
       lengthConfig = {
-        maxTokens: 3000,  // ✅ INCREASED from 2500 (needed 2529 tokens)
+        maxTokens: 3500,  // ✅ INCREASED with buffer (used: 2529)
         labelEn: "short",
         labelFr: "courte",
         descriptionEn: "Concise and impactful content (150-250 words)",
@@ -863,7 +863,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 6000,  // ✅ INCREASED for comprehensive content
+        maxTokens: 7500,  // ✅ INCREASED with buffer (used: 6077)
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
