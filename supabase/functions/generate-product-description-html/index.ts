@@ -158,7 +158,27 @@ serve(async (req) => {
       return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     };
 
-    let selectedLayout, selectedStyle, selectedLength, baseColors, selectedHighlights;
+    // Function to normalize color values from various formats
+    const normalizeColor = (value: string | null | undefined): string => {
+      if (!value) return '#000000';
+      const trimmed = value.toString().trim();
+      
+      // Already hex
+      if (trimmed.startsWith('#')) return trimmed;
+      
+      // HSL with or without "hsl(" - handles formats like:
+      // "221 83% 53%", "221, 83%, 53%", "hsl(221, 83%, 53%)"
+      const hslMatch = trimmed.match(/(\d+)[,\s]+(\d+)%[,\s]+(\d+)%/);
+      if (hslMatch) {
+        const [_, h, s, l] = hslMatch;
+        return hslToHex(`hsl(${h}, ${s}%, ${l}%)`);
+      }
+      
+      // Fallback
+      return trimmed;
+    };
+
+    let selectedLayout, selectedStyle, selectedLength, baseColors, selectedHighlights, selectedPalette;
 
     // Use user preferences if provided
     if (userPreferences) {
@@ -168,19 +188,23 @@ serve(async (req) => {
       selectedStyle = designStyles.find(s => s.option_key === userPreferences.designStyle) || designStyles[0];
       selectedLength = contentLengths.find(c => c.option_key === userPreferences.contentLength) || contentLengths[0];
       
-      // Convert HSL colors to Hex
+      // Find palette by paletteId for context
+      selectedPalette = colorSchemes.find(c => c.option_key === userPreferences.paletteId);
+      
+      // Convert HSL colors to Hex with normalization
       baseColors = {
-        primary: hslToHex(userPreferences.colorScheme.primary),
-        secondary: hslToHex(userPreferences.colorScheme.secondary),
-        accent: hslToHex(userPreferences.colorScheme.accent),
-        background: hslToHex(userPreferences.colorScheme.background),
-        surface: hslToHex(userPreferences.colorScheme.surface),
-        text: hslToHex(userPreferences.colorScheme.text),
-        textMuted: hslToHex(userPreferences.colorScheme.textMuted)
+        primary: normalizeColor(userPreferences.colorScheme.primary),
+        secondary: normalizeColor(userPreferences.colorScheme.secondary),
+        accent: normalizeColor(userPreferences.colorScheme.accent),
+        background: normalizeColor(userPreferences.colorScheme.background),
+        surface: normalizeColor(userPreferences.colorScheme.surface),
+        text: normalizeColor(userPreferences.colorScheme.text),
+        textMuted: normalizeColor(userPreferences.colorScheme.textMuted)
       };
       
-      selectedHighlights = userPreferences.highlights 
-        ? highlightOptions.filter(h => userPreferences.highlights.includes(h.option_key))
+      // FIX: Use customHighlights instead of highlights
+      selectedHighlights = userPreferences.customHighlights && userPreferences.customHighlights.length > 0
+        ? highlightOptions.filter(h => userPreferences.customHighlights!.includes(h.option_key))
         : highlightOptions.slice(0, 3);
     } else {
       console.log("⚠️ Pas de préférences utilisateur, utilisation des défauts");
@@ -190,7 +214,10 @@ serve(async (req) => {
       selectedLength = contentLengths[0];
       
       const selectedColorScheme = colorSchemes.find(c => c.option_key === 'default') || colorSchemes[0];
-      baseColors = selectedColorScheme?.option_value || {
+      selectedPalette = selectedColorScheme;
+      
+      // Normalize colors from config_options
+      const rawColors = selectedColorScheme?.option_value || {
         primary: '#2563eb',
         secondary: '#0891b2',
         accent: '#f59e0b',
@@ -200,8 +227,25 @@ serve(async (req) => {
         textMuted: '#6b7280'
       };
       
+      baseColors = {
+        primary: normalizeColor(rawColors.primary),
+        secondary: normalizeColor(rawColors.secondary),
+        accent: normalizeColor(rawColors.accent),
+        background: normalizeColor(rawColors.background),
+        surface: normalizeColor(rawColors.surface),
+        text: normalizeColor(rawColors.text),
+        textMuted: normalizeColor(rawColors.textMuted)
+      };
+      
       selectedHighlights = highlightOptions.slice(0, 3);
     }
+
+    // Build highlight → icon mapping
+    const highlightIconMap = selectedHighlights.reduce((acc, h) => {
+      const icon = (h.option_value as any)?.icon;
+      if (icon) acc[h.option_key] = icon;
+      return acc;
+    }, {} as Record<string, string>);
 
     // Generate design tokens with WCAG-compliant contrast
     const designTokens = generateDesignTokens(baseColors);
@@ -295,7 +339,20 @@ SELECTED CONFIGURATION (MANDATORY - USE THIS)
 Layout Style: ${styleConfig.layout}
 Design Tone: ${styleConfig.tone}
 Content Strategy: ${styleConfig.contentStrategy}
+Color Palette: ${selectedPalette ? `${selectedPalette.option_label} – ${selectedPalette.description || 'N/A'}` : 'Default'}
 Highlight Features: ${styleConfig.highlights}
+
+${Object.keys(highlightIconMap).length > 0 ? `
+HIGHLIGHT → ICON MAPPING (MANDATORY):
+${Object.entries(highlightIconMap).map(([key, icon]) => {
+  const highlight = selectedHighlights.find(h => h.option_key === key);
+  return `  - ${highlight?.option_label || key} → ${icon}`;
+}).join('\n')}
+
+⚠️ CRITICAL: For each selected highlight above, you MUST render at least one feature card that uses the corresponding Lucide icon:
+  <i data-lucide="${Object.values(highlightIconMap)[0] || 'sparkles'}"></i>
+Use the exact icon name from the mapping above with proper sizing (w-8 h-8 minimum) and color (text-[${designTokens.primary}]).
+` : ''}
 
 ==============================
 DESIGN SYSTEM - COLORS (STRICT RULES)
