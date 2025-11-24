@@ -1473,7 +1473,38 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       ? "- Use 3-column grids on desktop (grid-cols-1 md:grid-cols-3) for benefits/features"
       : "- Flexible layout but maintain consistency"}
 
-COLOR PALETTE (HSL FORMAT ONLY) - COMPLETE SET WITH VARIANTS:
+🎨 DESIGN PHILOSOPHY - ULTRA CLEAN & MINIMALIST (CRITICAL):
+🚨 MANDATORY MINIMALIST DESIGN RULES:
+❌ ABSOLUTELY FORBIDDEN:
+- NO visible borders or outlines on sections/cards
+- NO gradient-border effects
+- NO deep shadows (max: shadow-sm for subtle elevation)
+- NO glow effects (box-shadow with blur)
+- NO colored backgrounds around cards
+- NO thick border-radius (max: rounded-lg)
+- NO decorative frames around content blocks
+- NO "card-like" boxes with heavy styling
+
+✅ REQUIRED MINIMALIST STYLE (Apple / Zara / Made.com / IKEA):
+- Ultra clean, minimal, premium aesthetic
+- Generous whitespace and breathing room
+- Simple flat sections without borders
+- Use only: black (#000 or #1A1A1A), dark gray (#333), light gray (#F5F5F5), white (#FFF)
+- Single subtle accent color for CTAs only: hsl(${designTokens.accent})
+- Clean typography hierarchy (H1, H2, paragraphs well-spaced)
+- Full-width images or subtle rounded corners (max rounded-lg)
+- NO decorative elements, NO fancy cards
+- Fluid, borderless sections
+- Premium e-commerce aesthetic
+
+🎯 LAYOUT APPROACH:
+- Sections directly on background (no border containers)
+- Alternating white/light-gray backgrounds for section separation
+- Content flows naturally without visible boundaries
+- Images: full-width or with minimal rounded-lg corners
+- Text blocks: clean, well-spaced, no containers with borders
+
+COLOR PALETTE (HSL FORMAT ONLY):
 - Primary: hsl(${designTokens.primary})
 - Primary Light: hsl(${designTokens.primaryLight})
 - Primary Dark: hsl(${designTokens.primaryDark})
@@ -1484,24 +1515,15 @@ COLOR PALETTE (HSL FORMAT ONLY) - COMPLETE SET WITH VARIANTS:
 - Accent Light: hsl(${designTokens.accentLight})
 - Accent Dark: hsl(${designTokens.accentDark})
 - Background: hsl(${designTokens.background})
+- Surface: hsl(${designTokens.surface})
 - Text: hsl(${designTokens.text})
+- Text Muted: hsl(${designTokens.textMuted})
 
-🎨 GRADIENTS PRÉDÉFINIS (À UTILISER):
-- Gradient Primary: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent}))
-- Gradient Soft: linear-gradient(135deg, hsl(${designTokens.primaryLight}), hsl(${designTokens.accentLight}))
-- Gradient Bold: linear-gradient(135deg, hsl(${designTokens.primaryDark}), hsl(${designTokens.accentDark}))
-- Gradient Radial: radial-gradient(circle at top, hsl(${designTokens.primaryLight}), hsl(${designTokens.primary}))
-
-🌟 EFFETS DE COULEUR RECOMMANDÉS:
-- Ombres colorées: box-shadow: 0 10px 30px hsl(${designTokens.primary} / 0.2)
-- Lueurs: box-shadow: 0 0 40px hsl(${designTokens.accent} / 0.3)
-- Overlays dégradés: background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.9), hsl(${designTokens.accent} / 0.9))
-- Bordures dégradées: border-image: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})) 1
-
-🚨 COLORS: HSL only (NO HEX). Inline styles:
-- Hero: style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
-- Section: style="background-color: hsl(${designTokens.surface})"
-- CTA: style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
+🚨 COLORS: HSL only (NO HEX). Inline styles for colored sections only:
+- Hero (if colored): style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
+- Alternate section: style="background-color: hsl(${designTokens.surface})"
+- CTA button: style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
+- Most sections: plain white background, no inline styles needed
 
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1511,11 +1533,19 @@ ${selectedStyle.rules}
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
 - Use one breakpoint per property (✅ class="text-lg md:text-2xl")
 
-🎯 ICON TEMPLATE TO USE FOR LIST ITEMS (MANDATORY):
-${selectedIcon}
-🚨 CRITICAL: Use this EXACT structure for ALL list items. 
-🚨 CRITICAL: Adapt gradient IDs to be unique (iconGrad1, iconGrad2, etc.)
-🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
+🎯 MINIMALIST ICON APPROACH (MANDATORY):
+✅ USE SIMPLE, CLEAN SVG ICONS:
+- NO complex gradients or fills
+- Simple outline strokes or minimal solid fills
+- Use theme color: hsl(${designTokens.primary})
+- Keep it subtle and elegant
+
+📋 MINIMALIST ICON TEMPLATE FOR LISTS:
+<svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+</svg>
+
+🚨 NO gradient fills, NO fancy effects - keep icons minimal and clean
 
 🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
 🚨 CRITICAL: For ALL titles/text on images, you MUST:
@@ -1618,36 +1648,21 @@ ${
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎨 PROFESSIONAL SVG ICONS (CRITICAL - MANDATORY):
-- ✅ REQUIRED: Use inline SVG with gradient fills for ALL list items
-- ✅ REQUIRED: Apply theme colors (primary, accent) with HSL values
-- ✅ REQUIRED: Add elegant checkmark icons for bullet points
-- 
-- 📋 MANDATORY SVG ICON TEMPLATE FOR LISTS:
-  ${selectedIcon}
-  
- - 🎯 EXAMPLE FOR EACH LIST ITEM:
-  <div class="flex items-center gap-3 mb-4">
-    <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
-          <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="10" fill="url(#checkGrad)" opacity="0.15"/>
-      <path d="M7 12l3 3 7-7" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <div>
-      <h4 class="font-semibold mb-1">Benefit Title</h4>
-      <p class="text-muted-foreground">Benefit description...</p>
-    </div>
-  </div>
+🎯 MINIMALIST LIST ITEMS (MANDATORY):
+Use simple, clean list structure without fancy icons:
 
-- 🎨 FOR FEATURE CARDS, USE LARGER ICONS:
-  <svg class="w-16 h-16 mx-auto mb-4" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="cardIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+EXAMPLE FOR EACH LIST ITEM:
+<div class="flex items-start gap-3 mb-4">
+  <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+  </svg>
+  <div>
+    <h4 class="font-semibold text-gray-900 mb-1">Benefit Title</h4>
+    <p class="text-gray-600">Benefit description...</p>
+  </div>
+</div>
+
+✅ Keep it minimal: simple checkmarks, no gradients, no backgrounds on icons
         <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
         <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
       </linearGradient>
@@ -1743,20 +1758,51 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       ? "- Utiliser des grilles 3 colonnes sur desktop (grid-cols-1 md:grid-cols-3) pour les bénéfices/fonctionnalités"
       : "- Layout flexible mais maintenir la cohérence"}
 
+🎨 PHILOSOPHIE DE DESIGN - ULTRA CLEAN & MINIMALISTE (CRITIQUE) :
+🚨 RÈGLES DE DESIGN MINIMALISTE OBLIGATOIRES :
+❌ ABSOLUMENT INTERDIT :
+- AUCUNE bordure ou contour visible sur les sections/cartes
+- AUCUN effet gradient-border
+- AUCUNE ombre profonde (max: shadow-sm pour élévation subtile)
+- AUCUN effet de lueur (box-shadow avec blur)
+- AUCUN fond coloré autour des cartes
+- AUCUN border-radius épais (max: rounded-lg)
+- AUCUN cadre décoratif autour des blocs de contenu
+- AUCUNE boîte "card-like" avec style lourd
+
+✅ STYLE MINIMALISTE REQUIS (Apple / Zara / Made.com / IKEA) :
+- Esthétique ultra clean, minimale, premium
+- Espaces blancs généreux et aération
+- Sections plates simples sans bordures
+- Utiliser uniquement : noir (#000 ou #1A1A1A), gris foncé (#333), gris clair (#F5F5F5), blanc (#FFF)
+- Une seule couleur d'accent subtile pour les CTAs : hsl(${designTokens.accent})
+- Hiérarchie typographique propre (H1, H2, paragraphes bien espacés)
+- Images pleine largeur ou coins arrondis subtils (max rounded-lg)
+- AUCUN élément décoratif, AUCUNE carte fantaisiste
+- Sections fluides, sans bordures
+- Esthétique e-commerce premium
+
+🎯 APPROCHE LAYOUT :
+- Sections directement sur le fond (pas de conteneurs avec bordures)
+- Fonds alternés blanc/gris-clair pour séparer les sections
+- Contenu qui coule naturellement sans limites visibles
+- Images : pleine largeur ou coins rounded-lg minimaux
+- Blocs de texte : propres, bien espacés, sans conteneurs avec bordures
+
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
 - Secondaire : hsl(${designTokens.secondary})
 - Accent : hsl(${designTokens.accent})
 - Fond : hsl(${designTokens.background})
+- Surface : hsl(${designTokens.surface})
 - Texte : hsl(${designTokens.text})
+- Texte Atténué : hsl(${designTokens.textMuted})
 
-🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
-1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
-2. TOUJOURS utiliser styles inline HSL pour hero, sections et CTAs
-3. Exemples :
-   - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
-   - Section : <section style="background-color: hsl(${designTokens.surface})">
-   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+🚨 COULEURS : HSL uniquement (PAS DE HEX). Styles inline pour sections colorées seulement :
+- Hero (si coloré) : style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
+- Section alternée : style="background-color: hsl(${designTokens.surface})"
+- Bouton CTA : style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
+- La plupart des sections : fond blanc simple, pas de styles inline nécessaires
 
 🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1837,16 +1883,25 @@ STRUCTURE :
   <!-- Table bureau -->
   <table class="hidden md:table min-w-full">
 
-🎨 ICÔNES SVG PROFESSIONNELLES VARIÉES (CRITIQUE - OBLIGATOIRE) :
-✅ UTILISER DES ICÔNES SVG INLINE AVEC DÉGRADÉS pour un look premium
-✅ VARIÉTÉ D'ICÔNES selon le contexte (PAS SEULEMENT des checkmarks):
+🎯 ICÔNES MINIMALISTES (OBLIGATOIRE) :
+✅ UTILISER DES ICÔNES SVG SIMPLES ET PROPRES
+- PAS de dégradés complexes
+- Traits simples ou remplissages solides minimaux
+- Utiliser la couleur du thème : hsl(${designTokens.primary})
+- Garder subtil et élégant
 
-📦 ICÔNES DE CARACTÉRISTIQUES (pour sections produit):
-- Checkmark (validation): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+📋 EXEMPLE D'ICÔNE MINIMALISTE POUR LISTES :
+<div class="flex items-start gap-3 mb-4">
+  <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+  </svg>
+  <div>
+    <h4 class="font-semibold text-gray-900 mb-1">Titre du bénéfice</h4>
+    <p class="text-gray-600">Description du bénéfice...</p>
+  </div>
+</div>
 
-- Étoile (qualité): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2l3 7h7l-5.5 4.5L19 21l-7-5-7 5 2.5-7.5L2 9h7z" fill="url(#star-grad)"/></svg>
-
-- Shield (garantie): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z" fill="url(#shield-grad)" opacity="0.2"/><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z" stroke="hsl(${designTokens.primary})" stroke-width="2" fill="none"/></svg>
+✅ Garder minimaliste : checkmarks simples, pas de dégradés, pas de fonds sur les icônes
 
 - Truck (livraison): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
 
