@@ -1391,14 +1391,14 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     
     if (resolvedDesignStyle && typeof resolvedDesignStyle === 'object') {
       // Use design style from database
-      console.log(`[Landing AI] Using design style from DB: ${resolvedDesignStyle.name || userOptions.designStyle}`);
+      console.log(`[Landing AI] Using design style from DB: ${resolvedDesignStyle.name || resolvedDesignStyle.style || userOptions.designStyle}`);
       selectedStyle = {
-        name: resolvedDesignStyle.name || 'Custom Style',
+        name: resolvedDesignStyle.name || resolvedDesignStyle.style || 'Custom Style',
         description: resolvedDesignStyle.description || '',
-        rules: resolvedDesignStyle.rules || '',
+        rules: resolvedDesignStyle.rules || resolvedDesignStyle.instructions || '',
       };
       // Use matching icon template if available, otherwise use modern
-      const styleKey = (userOptions.designStyle || 'modern') as 'minimalist' | 'modern' | 'premium';
+      const styleKey = ((resolvedDesignStyle.style || userOptions.designStyle) || 'modern') as 'minimalist' | 'modern' | 'premium';
       selectedIcon = iconTemplates[styleKey] || iconTemplates.modern;
     } else {
       // Fallback to hardcoded templates
@@ -1458,14 +1458,15 @@ ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 CONTENT LENGTH (MANDATORY):
 - Mode: ${lengthConfig.labelEn}
 - Target: ${lengthConfig.descriptionEn}
+- Theme: ${userOptions.theme || "light"}
 ${lengthMode === "short" ? "- Very concise page with only essential sections and brief copy" :
   lengthMode === "medium" ? "- Balanced number of sections with moderate detail" :
   "- Rich, detailed page with comprehensive sections and longer copy"}
 
 LAYOUT STRUCTURE:
-- Layout selected: ${typeof resolvedLayout === "object" ? resolvedLayout.name || layout : layout}
-${typeof resolvedLayout === "object" && resolvedLayout.rules
-  ? resolvedLayout.rules
+- Layout selected: ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type || layout : layout}
+${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.instructions)
+  ? (resolvedLayout.rules || resolvedLayout.instructions)
   : layout === "2_colonnes"
     ? "- Use primarily 2-column grids (grid-cols-1 md:grid-cols-2) for main sections"
     : layout === "3_colonnes"
@@ -1727,14 +1728,15 @@ ${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 LONGUEUR DU CONTENU (OBLIGATOIRE) :
 - Mode : ${lengthConfig.labelFr}
 - Objectif : ${lengthConfig.descriptionFr}
+- Thème : ${userOptions.theme || "light"}
 ${lengthMode === "short" ? "- Page très concise avec uniquement les sections essentielles et du texte bref" :
   lengthMode === "medium" ? "- Nombre équilibré de sections avec détails modérés" :
   "- Page riche et détaillée avec sections complètes et texte plus long"}
 
 🏗️ STRUCTURE DE LAYOUT :
-- Layout sélectionné : ${typeof resolvedLayout === "object" ? resolvedLayout.name || layout : layout}
-${typeof resolvedLayout === "object" && resolvedLayout.rules
-  ? resolvedLayout.rules
+- Layout sélectionné : ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type || layout : layout}
+${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.instructions)
+  ? (resolvedLayout.rules || resolvedLayout.instructions)
   : layout === "2_colonnes"
     ? "- Utiliser principalement des grilles 2 colonnes (grid-cols-1 md:grid-cols-2) pour les sections principales"
     : layout === "3_colonnes"
