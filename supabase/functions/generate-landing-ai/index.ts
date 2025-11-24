@@ -1514,6 +1514,28 @@ COLOR PALETTE (HSL FORMAT ONLY):
 - Text: hsl(${designTokens.text})
 - Text Muted: hsl(${designTokens.textMuted})
 
+🚨 COLOR USAGE - CRITICAL RULES (MANDATORY):
+❌ ABSOLUTELY FORBIDDEN:
+- NEVER use CSS variables: var(--color-primary), var(--color-text), etc.
+- NEVER create :root CSS blocks with custom properties
+- NEVER use --primary-color or any CSS custom properties
+
+✅ MANDATORY - ALWAYS USE INLINE HSL:
+- Text colors: style="color: hsl(${designTokens.text})"
+- Background colors: style="background: hsl(${designTokens.background})"
+- SVG stroke: style="stroke: hsl(${designTokens.primary})"
+- SVG stop colors in gradients: style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"
+
+CORRECT EXAMPLES:
+✅ <h1 style="color: hsl(${designTokens.text})">Title</h1>
+✅ <div style="background: hsl(${designTokens.surface})">Content</div>
+✅ <stop offset="0%" style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"/>
+✅ <path stroke-width="2" style="stroke: hsl(${designTokens.primary})"/>
+
+FORBIDDEN EXAMPLES:
+❌ <h1 style="color: var(--color-text)">
+❌ :root { --color-primary: hsl(...) }
+❌ <div class="text-primary bg-primary">
 
 🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
@@ -1733,13 +1755,41 @@ ${selectedStyle.rules}
 
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
+- Primaire Claire : hsl(${designTokens.primaryLight})
+- Primaire Foncée : hsl(${designTokens.primaryDark})
 - Secondaire : hsl(${designTokens.secondary})
+- Secondaire Claire : hsl(${designTokens.secondaryLight})
+- Secondaire Foncée : hsl(${designTokens.secondaryDark})
 - Accent : hsl(${designTokens.accent})
+- Accent Clair : hsl(${designTokens.accentLight})
+- Accent Foncé : hsl(${designTokens.accentDark})
 - Fond : hsl(${designTokens.background})
 - Surface : hsl(${designTokens.surface})
 - Texte : hsl(${designTokens.text})
 - Texte Atténué : hsl(${designTokens.textMuted})
 
+🚨 UTILISATION DES COULEURS - RÈGLES CRITIQUES (OBLIGATOIRE) :
+❌ ABSOLUMENT INTERDIT :
+- JAMAIS utiliser de variables CSS : var(--color-primary), var(--color-text), etc.
+- JAMAIS créer de blocs CSS :root avec propriétés personnalisées
+- JAMAIS utiliser --primary-color ou toute propriété CSS personnalisée
+
+✅ OBLIGATOIRE - TOUJOURS UTILISER HSL INLINE :
+- Couleurs texte : style="color: hsl(${designTokens.text})"
+- Couleurs fond : style="background: hsl(${designTokens.background})"
+- Stroke SVG : style="stroke: hsl(${designTokens.primary})"
+- Couleurs stop dans dégradés SVG : style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"
+
+EXEMPLES CORRECTS :
+✅ <h1 style="color: hsl(${designTokens.text})">Titre</h1>
+✅ <div style="background: hsl(${designTokens.surface})">Contenu</div>
+✅ <stop offset="0%" style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"/>
+✅ <path stroke-width="2" style="stroke: hsl(${designTokens.primary})"/>
+
+EXEMPLES INTERDITS :
+❌ <h1 style="color: var(--color-text)">
+❌ :root { --color-primary: hsl(...) }
+❌ <div class="text-primary bg-primary">
 
 🚨 RÈGLES RESPONSIVES CRITIQUES (OBLIGATOIRE) :
 - JAMAIS dupliquer les classes responsive (❌ class="md:text-xl md:text-2xl")
@@ -2009,8 +2059,11 @@ UTILISATION DES ICÔNES :
 
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
-    // 🧹 Apply HTML normalization and sanitization
-    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+    // 🧹 Apply HTML normalization and sanitization with designTokens
+    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en", {
+      allowRootCss: false,
+      designTokens: designTokens
+    });
 
     // 📊 Validate final HTML
     const validation = validateHTML(html);

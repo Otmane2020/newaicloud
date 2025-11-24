@@ -342,13 +342,73 @@ export function removeDuplicateResponsiveClasses(html: string): string {
 }
 
 /**
+ * Injects CSS color variables into HTML head as a fallback if AI generated var() references
+ */
+function injectColorVariables(html: string, designTokens: any): string {
+  if (!designTokens) return html;
+  
+  const cssVars = `
+  <style>
+    :root {
+      --color-primary: ${designTokens.primary};
+      --color-primary-light: ${designTokens.primaryLight};
+      --color-primary-dark: ${designTokens.primaryDark};
+      --color-secondary: ${designTokens.secondary};
+      --color-secondary-light: ${designTokens.secondaryLight};
+      --color-secondary-dark: ${designTokens.secondaryDark};
+      --color-accent: ${designTokens.accent};
+      --color-accent-light: ${designTokens.accentLight};
+      --color-accent-dark: ${designTokens.accentDark};
+      --color-background: ${designTokens.background};
+      --color-surface: ${designTokens.surface};
+      --color-text: ${designTokens.text};
+      --color-text-muted: ${designTokens.textMuted};
+    }
+    .bg-surface { background-color: hsl(var(--color-surface)); }
+    .text-muted { color: hsl(var(--color-text-muted)); }
+  </style>`;
+  
+  return html.replace('</head>', cssVars + '\n</head>');
+}
+
+/**
+ * Replaces any remaining var(--color-xxx) with actual HSL values as post-processing
+ */
+function replaceColorVariables(html: string, designTokens: any): string {
+  if (!designTokens) return html;
+  
+  const replacements: Record<string, string> = {
+    'var(--color-primary)': `hsl(${designTokens.primary})`,
+    'var(--color-primary-light)': `hsl(${designTokens.primaryLight})`,
+    'var(--color-primary-dark)': `hsl(${designTokens.primaryDark})`,
+    'var(--color-secondary)': `hsl(${designTokens.secondary})`,
+    'var(--color-secondary-light)': `hsl(${designTokens.secondaryLight})`,
+    'var(--color-secondary-dark)': `hsl(${designTokens.secondaryDark})`,
+    'var(--color-accent)': `hsl(${designTokens.accent})`,
+    'var(--color-accent-light)': `hsl(${designTokens.accentLight})`,
+    'var(--color-accent-dark)': `hsl(${designTokens.accentDark})`,
+    'var(--color-background)': `hsl(${designTokens.background})`,
+    'var(--color-surface)': `hsl(${designTokens.surface})`,
+    'var(--color-text)': `hsl(${designTokens.text})`,
+    'var(--color-text-muted)': `hsl(${designTokens.textMuted})`,
+  };
+  
+  let result = html;
+  for (const [varName, hslValue] of Object.entries(replacements)) {
+    result = result.replace(new RegExp(varName.replace(/[()]/g, '\\$&'), 'g'), hslValue);
+  }
+  
+  return result;
+}
+
+/**
  * Main sanitization function - applies all normalization steps
  */
 export function sanitizeGeneratedHTML(
   rawHtml: string,
   productTitle: string,
   language: string = "en",
-  options: { allowRootCss?: boolean } = {}
+  options: { allowRootCss?: boolean; designTokens?: any } = {}
 ): string {
   console.log("[Sanitization] Starting HTML normalization");
 
@@ -381,7 +441,19 @@ export function sanitizeGeneratedHTML(
   // 7. Normalize HTML structure
   html = normalizeHTML(html, productTitle, language);
 
-  // 8. Verify HTML completeness
+  // 8. Replace any var(--color-xxx) with actual HSL values (post-processing)
+  if (options.designTokens) {
+    console.log("🎨 [sanitizeGeneratedHTML] Replacing CSS variables with HSL values");
+    html = replaceColorVariables(html, options.designTokens);
+  }
+
+  // 9. Inject CSS color variables as fallback (only if var() is still present)
+  if (options.designTokens && html.includes('var(--color-')) {
+    console.log("🎨 [sanitizeGeneratedHTML] Injecting CSS color variables as fallback");
+    html = injectColorVariables(html, options.designTokens);
+  }
+
+  // 10. Verify HTML completeness
   if (!html.endsWith('</html>')) {
     console.warn("[Sanitization] ⚠️ HTML appears truncated - missing closing </html> tag");
     if (!html.includes('</body>')) {
