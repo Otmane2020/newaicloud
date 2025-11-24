@@ -271,14 +271,27 @@ export function cleanForbiddenCSS(
 
 /**
  * Validates HTML structure and returns issues
+ * Phase 3: Enhanced validation to detect truncation
  */
 export function validateHTML(html: string): { valid: boolean; issues: string[] } {
   const issues: string[] = [];
 
   if (!html.includes("<!DOCTYPE html>")) issues.push("Missing <!DOCTYPE html>");
   if (!html.includes("<html")) issues.push("Missing <html> tag");
-  if (!html.includes("</body>")) issues.push("Missing </body> closing tag");
-  if (!html.includes("</html>")) issues.push("Missing </html> closing tag");
+  
+  // ⚠️ CRITICAL: Check for truncation
+  if (!html.includes("</body>")) {
+    issues.push("⚠️ CRITICAL: HTML truncated - missing </body>");
+  }
+  
+  if (!html.includes("</html>")) {
+    issues.push("⚠️ CRITICAL: HTML truncated - missing </html>");
+  }
+  
+  // Verify minimum viable length (complete HTML should be >2000 chars)
+  if (html.length < 2000) {
+    issues.push(`⚠️ HTML too short (${html.length} chars < 2000) - likely truncated`);
+  }
 
   if (html.includes(":root")) issues.push("Forbidden :root CSS found");
   if (html.includes("--primary-color") || html.includes("--secondary-color")) {

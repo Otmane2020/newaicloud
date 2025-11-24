@@ -846,7 +846,7 @@ serve(async (req) => {
     const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
     
     let lengthConfig = { 
-      maxTokens: 1200, 
+      maxTokens: 3500,  // ✅ INCREASED from 1200 to prevent truncation
       labelEn: "medium", 
       labelFr: "moyenne", 
       descriptionEn: "Balanced content (300-400 words)",
@@ -855,7 +855,7 @@ serve(async (req) => {
 
     if (lengthMode === "short") {
       lengthConfig = {
-        maxTokens: 800,
+        maxTokens: 2500,  // ✅ INCREASED from 800 to prevent truncation
         labelEn: "short",
         labelFr: "courte",
         descriptionEn: "Concise and impactful content (150-250 words)",
@@ -863,7 +863,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 2000,
+        maxTokens: 5000,  // ✅ INCREASED from 2000 to prevent truncation
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
@@ -1495,13 +1495,10 @@ COLOR PALETTE (HSL FORMAT ONLY) - COMPLETE SET WITH VARIANTS:
 - Overlays dégradés: background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.9), hsl(${designTokens.accent} / 0.9))
 - Bordures dégradées: border-image: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})) 1
 
-🚨 CRITICAL COLOR RULES (MANDATORY):
-1. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
-2. ALWAYS use inline HSL styles for hero, sections, and CTAs
-3. Examples:
-   - Hero: <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
-   - Section: <section style="background-color: hsl(${designTokens.surface})">
-   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+🚨 COLORS: HSL only (NO HEX). Inline styles:
+- Hero: style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
+- Section: style="background-color: hsl(${designTokens.surface})"
+- CTA: style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
 
 🎨 DESIGN MODEL: ${selectedStyle.name}
 ${selectedStyle.description}
@@ -1977,11 +1974,47 @@ UTILISATION DES ICÔNES :
     const data = await aiResponse.json();
     let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
 
-    if (!rawHtml || rawHtml.length < 400)
+    // 🔍 Phase 4: Detailed diagnostics
+    const tokensUsed = data?.usage?.completion_tokens || 0;
+    const hasClosingBody = rawHtml.includes("</body>");
+    const hasClosingHtml = rawHtml.includes("</html>");
+    const isTruncated = !hasClosingHtml || !hasClosingBody;
+    
+    console.log("📊 AI Response Stats:", {
+      tokensUsed,
+      tokensMax: lengthConfig.maxTokens,
+      htmlLength: rawHtml.length,
+      hasClosingBody,
+      hasClosingHtml,
+      isTruncated,
+      last200Chars: isTruncated ? rawHtml.slice(-200) : "OK"
+    });
+
+    // ⚠️ Critical: Detect truncation and return clear error
+    if (isTruncated) {
+      console.error("❌ TRUNCATION DETECTED - HTML incomplete!");
+      return new Response(
+        JSON.stringify({ 
+          error: detectedLanguage === "en" 
+            ? `HTML generation incomplete (token limit reached: ${tokensUsed}/${lengthConfig.maxTokens}). Try 'short' mode or contact support.`
+            : `Génération HTML incomplète (limite de tokens atteinte: ${tokensUsed}/${lengthConfig.maxTokens}). Essayez le mode 'short' ou contactez le support.`,
+          debugInfo: {
+            tokensUsed,
+            tokensMax: lengthConfig.maxTokens,
+            htmlLength: rawHtml.length,
+            mode: lengthMode
+          }
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!rawHtml || rawHtml.length < 400) {
       return new Response(
         JSON.stringify({ error: detectedLanguage === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
 
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
