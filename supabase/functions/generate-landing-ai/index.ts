@@ -69,6 +69,13 @@ function parseHSL(hslString: string): { h: number; s: number; l: number } | null
 
 function normalizeHSL(hslString: string | null): string | null {
   if (!hslString) return null;
+  
+  // If it's a HEX color, convert to HSL first
+  if (hslString.startsWith('#')) {
+    return hexToHSL(hslString);
+  }
+  
+  // Otherwise, parse as HSL
   const parsed = parseHSL(hslString);
   if (!parsed) return null;
   return `${parsed.h} ${parsed.s}% ${parsed.l}%`;
@@ -100,6 +107,32 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
         b: parseInt(result[3], 16),
       }
     : null;
+}
+
+function hexToHSL(hex: string): string | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
 function hslToHex(hslString: string): string {
@@ -323,7 +356,7 @@ function generateDesignTokens(colorScheme: any) {
   // Generate textMuted from text color if not provided (reduce saturation and increase lightness)
   const textMuted = normalizeHSL(colorScheme.textMuted) || adjustLightnessHSL(adjustSaturationHSL(text, 0.6), 1.4);
   
-  console.log('✅ Normalized HSL colors:', { primary, secondary, accent, text, background });
+  console.log('✅ Normalized HSL colors:', { primary, secondary, accent, text, background, surface, textMuted });
   
   // Calculate contrast for CTA text (using legacy HEX method)
   const primaryHex = hslToHex(primary);
