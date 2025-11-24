@@ -80,8 +80,20 @@ export function SubscriptionPlans() {
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
+      // Get user's product count from usage_tracking
+      const { data: usage } = await supabase
+        .from('usage_tracking')
+        .select('products_count')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const productCount = usage?.products_count || 0;
+      console.log('📊 User has', productCount, 'products');
+
       if (plansData) {
-        // Filter plans - only include plans with valid Stripe price IDs
+        // Filter plans - only include plans with valid Stripe price IDs AND sufficient product limit
         const validPlans = plansData.filter((plan) => {
           const monthlyId = plan.stripe_price_id_monthly || "";
           const yearlyId = plan.stripe_price_id_yearly || "";
@@ -98,12 +110,15 @@ export function SubscriptionPlans() {
             !yearlyId.includes("pro_") &&
             !yearlyId.includes("enterprise_");
 
-          return hasValidMonthly || hasValidYearly;
+          // CRITICAL: Filter out plans that can't accommodate user's product count
+          const canAccommodateProducts = plan.max_products === -1 || plan.max_products >= productCount;
+
+          return (hasValidMonthly || hasValidYearly) && canAccommodateProducts;
         });
 
         setPlans(validPlans);
 
-        // Set default selections
+        // Set default selections - select smallest available plan for each tier
         const proPlans = validPlans.filter((p) => p.id === "professional" || p.id === "pro" || p.id.startsWith("pro-"));
         const enterprisePlans = validPlans.filter((p) => p.id === "enterprise" || p.id.startsWith("enterprise-"));
 

@@ -72,6 +72,18 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           .eq('id', userData.user.id)
           .single();
 
+        // Get user's product count to filter appropriate plans
+        const { data: usage } = await supabase
+          .from('usage_tracking')
+          .select('products_count')
+          .eq('seller_id', userData.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const productCount = usage?.products_count || 0;
+        console.log('📊 UpgradeDialog: User has', productCount, 'products');
+
         // Charger tous les plans actifs triés par prix
         const { data: allPlans } = await supabase
           .from('subscription_plans')
@@ -81,13 +93,18 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
         if (!allPlans || allPlans.length === 0) return;
 
+        // CRITICAL: Filter out plans that can't accommodate user's product count
+        const validPlans = allPlans.filter(plan => 
+          plan.max_products === -1 || plan.max_products >= productCount
+        );
+
         // Trouver le plan actuel
         const currentPlanId = profile?.current_plan_id || 'trial';
-        let current = allPlans.find(p => p.id === currentPlanId);
+        let current = validPlans.find(p => p.id === currentPlanId);
         
-        // Si trial ou pas de plan, utiliser le premier plan
+        // Si trial ou pas de plan, utiliser le premier plan valide
         if (!current || currentPlanId === 'trial') {
-          current = allPlans[0];
+          current = validPlans[0];
           setCurrentPlanData({ 
             id: 'trial',
             name: 'Trial',
@@ -99,15 +116,15 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             max_shopify_stores: 1
           });
           
-          // Tous les plans sont disponibles pour upgrade depuis trial
-          setAvailablePlans(allPlans as Plan[]);
-          setSelectedPlanId(allPlans[0].id);
+          // Tous les plans valides sont disponibles pour upgrade depuis trial
+          setAvailablePlans(validPlans as Plan[]);
+          setSelectedPlanId(validPlans[0].id);
         } else {
           setCurrentPlanData(current as Plan);
           
-          // Trouver les plans supérieurs au plan actuel
-          const currentIndex = allPlans.findIndex(p => p.id === currentPlanId);
-          const upgradePlans = allPlans.slice(currentIndex + 1);
+          // Trouver les plans supérieurs au plan actuel (parmi les plans valides)
+          const currentIndex = validPlans.findIndex(p => p.id === currentPlanId);
+          const upgradePlans = validPlans.slice(currentIndex + 1);
           
           if (upgradePlans.length > 0) {
             setAvailablePlans(upgradePlans as Plan[]);
