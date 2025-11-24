@@ -1,14 +1,6 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Monitor, Smartphone, Eye, CheckCircle2, Sparkles, X } from "lucide-react";
-import { responsiveDialogClasses, responsivePadding } from "@/lib/dialogUtils";
+import { Monitor, Smartphone, Eye, CheckCircle2, Loader2 } from "lucide-react";
+import { MinimizableProgressDialog } from "@/components/seo/MinimizableProgressDialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,7 +73,6 @@ const generateHtmlPreview = (product: Product): string => {
 
   // If we have a rich HTML description in the description field, use it directly
   if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
-    // Wrap in a container for consistent styling
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         ${htmlDescription}
@@ -145,25 +136,14 @@ export function ProductTitleLandingDialog({
 }: ProductTitleLandingDialogProps) {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [showFullPreview, setShowFullPreview] = useState(false);
 
-  // Smooth progress animation based on currentProcessing
+  // Show full preview when generation completes
   useEffect(() => {
-    if (!isGenerating || !currentProcessing) {
-      return;
+    if (!isGenerating && products.length > 0 && !showFullPreview) {
+      setShowFullPreview(true);
     }
-
-    const targetProgress = (currentProcessing.index / currentProcessing.total) * 100;
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        const diff = targetProgress - prev;
-        if (Math.abs(diff) < 0.5) return targetProgress;
-        return prev + diff * 0.1; // Smooth easing
-      });
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [isGenerating, currentProcessing]);
+  }, [isGenerating, products.length, showFullPreview]);
 
   const selectedProduct = products[selectedProductIndex];
   const qualityScore =
@@ -174,254 +154,190 @@ export function ProductTitleLandingDialog({
   const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : "";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={`${responsiveDialogClasses.xlarge} ${responsivePadding.large} max-h-[90vh] overflow-y-auto`}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
-            Aperçu Contenu Produit Optimisé
-          </DialogTitle>
-          <DialogDescription>
-            {isGenerating
-              ? currentProcessing
-                ? `Génération ${currentProcessing.index}/${currentProcessing.total}: ${currentProcessing.title.substring(0, 50)}...`
-                : "Génération du contenu SEO optimisé en cours..."
-              : `${products.length} produit(s) optimisé(s) - Vérifiez le contenu avant synchronisation`}
-          </DialogDescription>
-        </DialogHeader>
-
-        {isGenerating ? (
-          <div className="py-6 space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="relative">
-                <Sparkles className="h-12 w-12 text-primary animate-spin" style={{ animationDuration: "3s" }} />
-                <div className="absolute inset-0 h-12 w-12 bg-primary/20 rounded-full animate-ping" />
-              </div>
-            </div>
-
-            {currentProcessing && (
-              <div className="text-center space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <p className="text-sm font-semibold text-primary truncate px-4">
-                  {currentProcessing.title.substring(0, 50)}...
-                </p>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <span className="animate-pulse">●</span>
-                  <span>Analyse IA</span>
-                  <span className="animate-pulse delay-75">●</span>
-                  <span>Génération SEO</span>
-                  <span className="animate-pulse delay-150">●</span>
-                  <span>Création HTML</span>
-                </div>
-              </div>
-            )}
-
-            <div className="max-w-md mx-auto space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">
-                  {currentProcessing ? `${currentProcessing.index}/${currentProcessing.total}` : "En cours..."}
-                </span>
-                <span className="font-semibold text-primary">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-              {currentProcessing && currentProcessing.total - currentProcessing.index > 0 && (
-                <p className="text-center text-xs text-muted-foreground">
-                  {currentProcessing.total - currentProcessing.index} restant(s)
-                </p>
-              )}
-            </div>
-
-            {onCancel && (
-              <div className="flex justify-center pt-2">
+    <MinimizableProgressDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      isProcessing={isGenerating}
+      currentProcessing={currentProcessing}
+      onCancel={onCancel}
+      onComplete={() => setShowFullPreview(true)}
+      title="Aperçu Contenu Produit Optimisé"
+    >
+      {!isGenerating && showFullPreview && (
+        <div className="space-y-4">
+          {/* Product Selector */}
+          {products.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {products.map((product, index) => (
                 <Button
-                  variant="ghost"
+                  key={product.id}
+                  variant={selectedProductIndex === index ? "default" : "outline"}
                   size="sm"
-                  onClick={onCancel}
-                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setSelectedProductIndex(index)}
+                  className="whitespace-nowrap"
                 >
-                  <X className="h-4 w-4" />
-                  Annuler
+                  {product.title}
                 </Button>
+              ))}
+            </div>
+          )}
+
+          {/* Quality Score */}
+          {qualityScore > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Score Qualité</span>
+                <Badge
+                  variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
+                  className="gap-1"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  {qualityScore}/100
+                </Badge>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Product Selector */}
-            {products.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {products.map((product, index) => (
-                  <Button
-                    key={product.id}
-                    variant={selectedProductIndex === index ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedProductIndex(index)}
-                    className="whitespace-nowrap"
-                  >
-                    {product.title}
-                  </Button>
-                ))}
-              </div>
-            )}
+              <Progress value={qualityScore} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">
+                {qualityScore >= 80 && "Excellent - Contenu riche avec structure optimale et médias"}
+                {qualityScore >= 60 && qualityScore < 80 && "Bon - Contenu structuré avec potentiel d'amélioration"}
+                {qualityScore < 60 && "À améliorer - Enrichir le contenu et la structure"}
+              </p>
+            </div>
+          )}
 
-            {/* Quality Score */}
-            {qualityScore > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Score Qualité</span>
-                  <Badge
-                    variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
-                    className="gap-1"
-                  >
-                    <CheckCircle2 className="h-3 w-3" />
-                    {qualityScore}/100
-                  </Badge>
-                </div>
-                <Progress value={qualityScore} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {qualityScore >= 80 && "Excellent - Contenu riche avec structure optimale et médias"}
-                  {qualityScore >= 60 && qualityScore < 80 && "Bon - Contenu structuré avec potentiel d'amélioration"}
-                  {qualityScore < 60 && "À améliorer - Enrichir le contenu et la structure"}
-                </p>
-              </div>
-            )}
+          {/* Preview Mode Toggle */}
+          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="desktop">
+                <Monitor className="h-4 w-4 mr-2" />
+                Desktop
+              </TabsTrigger>
+              <TabsTrigger value="mobile">
+                <Smartphone className="h-4 w-4 mr-2" />
+                Mobile
+              </TabsTrigger>
+              <TabsTrigger value="360">
+                <Eye className="h-4 w-4 mr-2" />
+                Contenu Détaillé
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Preview Mode Toggle */}
-            <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="desktop">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Desktop
-                </TabsTrigger>
-                <TabsTrigger value="mobile">
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Mobile
-                </TabsTrigger>
-                <TabsTrigger value="360">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Contenu Détaillé
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="desktop" className="space-y-4">
-                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
-                  {selectedProduct && htmlPreview ? (
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-center py-12">
-                      <div className="space-y-3">
-                        <Eye className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
-                        <p className="text-sm text-muted-foreground">
-                          Sélectionnez des produits et cliquez sur "Optimiser" pour générer le contenu
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="mobile" className="space-y-4">
-                <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
-                  {selectedProduct && htmlPreview ? (
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-center py-12">
-                      <div className="space-y-3">
-                        <Smartphone className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
-                        <p className="text-sm text-muted-foreground">
-                          Générez le contenu optimisé pour voir l'aperçu mobile
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="360" className="space-y-4">
-                {selectedProduct ? (
-                  <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre SEO Optimisé</h3>
-                      <p className="text-base font-medium">
-                        {selectedProduct.seo_title || selectedProduct.title || "Aucun titre"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(selectedProduct.seo_title || selectedProduct.title || "").length} caractères
-                        {(selectedProduct.seo_title || selectedProduct.title || "").length >= 50 &&
-                          (selectedProduct.seo_title || selectedProduct.title || "").length <= 60 &&
-                          " ✓ Longueur idéale SEO (50-60 car)"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Meta Description SEO</h3>
-                      <p className="text-sm leading-relaxed">
-                        {selectedProduct.seo_description || "Aucune description"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(selectedProduct.seo_description || "").length} caractères
-                        {(selectedProduct.seo_description || "").length >= 140 &&
-                          (selectedProduct.seo_description || "").length <= 160 &&
-                          " ✓ Longueur optimale SEO (140-160 car)"}
-                      </p>
-                    </div>
-
-                    {selectedProduct.image_url ? (
-                      <div>
-                        <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
-                        <div className="w-32 h-32 rounded-lg overflow-hidden border">
-                          <img
-                            src={selectedProduct.image_url}
-                            alt={selectedProduct.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
-                        <div className="w-32 h-32 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">Aucune image</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            <TabsContent value="desktop" className="space-y-4">
+              <div className="border rounded-lg p-6 bg-white min-h-[400px]">
+                {selectedProduct && htmlPreview ? (
+                  <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
                 ) : (
-                  <div className="border rounded-lg p-6 bg-muted min-h-[400px] flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground font-medium">Aucun contenu disponible</p>
-                      <p className="text-sm text-muted-foreground">Générez le contenu SEO pour voir les détails</p>
+                  <div className="flex items-center justify-center h-full text-center py-12">
+                    <div className="space-y-3">
+                      <Eye className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
+                      <p className="text-sm text-muted-foreground">
+                        Sélectionnez des produits et cliquez sur "Optimiser" pour générer le contenu
+                      </p>
                     </div>
                   </div>
                 )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+              </div>
+            </TabsContent>
 
-        <DialogFooter className="flex-col sm:flex-row gap-3">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isGenerating || syncLoading}
-            className="w-full sm:w-auto"
-          >
-            Annuler
-          </Button>
-          <Button
-            onClick={onSync}
-            disabled={isGenerating || syncLoading || products.length === 0}
-            className="w-full sm:w-auto"
-          >
-            {syncLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Synchroniser avec Shopify ({products.length})
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <TabsContent value="mobile" className="space-y-4">
+              <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
+                {selectedProduct && htmlPreview ? (
+                  <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-center py-12">
+                    <div className="space-y-3">
+                      <Smartphone className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
+                      <p className="text-sm text-muted-foreground">
+                        Générez le contenu optimisé pour voir l'aperçu mobile
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="360" className="space-y-4">
+              {selectedProduct ? (
+                <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre SEO Optimisé</h3>
+                    <p className="text-base font-medium">
+                      {selectedProduct.seo_title || selectedProduct.title || "Aucun titre"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(selectedProduct.seo_title || selectedProduct.title || "").length} caractères
+                      {(selectedProduct.seo_title || selectedProduct.title || "").length >= 50 &&
+                        (selectedProduct.seo_title || selectedProduct.title || "").length <= 60 &&
+                        " ✓ Longueur idéale SEO (50-60 car)"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Meta Description SEO</h3>
+                    <p className="text-sm leading-relaxed">
+                      {selectedProduct.seo_description || "Aucune description"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(selectedProduct.seo_description || "").length} caractères
+                      {(selectedProduct.seo_description || "").length >= 140 &&
+                        (selectedProduct.seo_description || "").length <= 160 &&
+                        " ✓ Longueur optimale SEO (140-160 car)"}
+                    </p>
+                  </div>
+
+                  {selectedProduct.image_url ? (
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
+                      <div className="w-32 h-32 rounded-lg overflow-hidden border">
+                        <img
+                          src={selectedProduct.image_url}
+                          alt={selectedProduct.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
+                      <div className="w-32 h-32 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">Aucune image</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="border rounded-lg p-6 bg-muted min-h-[400px] flex items-center justify-center">
+                  <div className="text-center space-y-3">
+                    <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="text-muted-foreground font-medium">Aucun contenu disponible</p>
+                    <p className="text-sm text-muted-foreground">Générez le contenu SEO pour voir les détails</p>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={syncLoading}
+              className="w-full sm:w-auto"
+            >
+              Fermer
+            </Button>
+            <Button
+              onClick={onSync}
+              disabled={syncLoading || products.length === 0}
+              className="w-full sm:w-auto"
+            >
+              {syncLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Synchroniser avec Shopify ({products.length})
+            </Button>
+          </div>
+        </div>
+      )}
+    </MinimizableProgressDialog>
   );
 }
