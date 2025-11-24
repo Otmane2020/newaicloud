@@ -318,8 +318,10 @@ function generateDesignTokens(colorScheme: any) {
   const background = normalizeHSL(colorScheme.background) || "0 0% 100%";
   const surface = normalizeHSL(colorScheme.surface) || "210 40% 98%";
   const text = normalizeHSL(colorScheme.text) || "222 47% 11%";
-  const textMuted = normalizeHSL(colorScheme.textMuted) || "0 0% 40%";
   const accent = normalizeHSL(colorScheme.accent) || adjustSaturationHSL(primary, 1.3);
+  
+  // Generate textMuted from text color if not provided (reduce saturation and increase lightness)
+  const textMuted = normalizeHSL(colorScheme.textMuted) || adjustLightnessHSL(adjustSaturationHSL(text, 0.6), 1.4);
   
   console.log('✅ Normalized HSL colors:', { primary, secondary, accent, text, background });
   
