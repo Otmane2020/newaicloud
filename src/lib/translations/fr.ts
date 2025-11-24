@@ -3441,6 +3441,7 @@ export const translations = {
     },
     import: {
       importing: "Import des collections...",
+      button: "Importer des collections",
       notAuthenticated: "Non authentifié",
       noActiveConnection: "Aucune connexion Shopify active",
       imagesImported: "✅ {{count}} images de collections importées",
@@ -4477,9 +4478,19 @@ export const translations = {
 
   // Chat Tabs & Settings
   chatTabs: {
+    chat: "Chat IA intelligent",
+    orders: "Commandes",
+    learning: "Apprentissage",
     general: "Général",
     responses: "Réponses",
-    embed: "Intégration"
+    embed: "Intégration",
+    ordersManagement: {
+      title: "Gestion des commandes",
+      description: "Gérez les commandes clients via l'assistant IA",
+      comingSoon: "Bientôt disponible",
+      comingSoonDesc:
+        "Cette fonctionnalité sera bientôt disponible pour vous aider à gérer les commandes clients directement via le chat IA.",
+    },
   },
   chatSettings: {
     settingsSaved: "Paramètres sauvegardés avec succès",

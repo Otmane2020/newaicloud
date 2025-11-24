@@ -3434,6 +3434,7 @@ export const translations = {
     syncing: "Syncing...",
     import: {
       importing: "Importing collections...",
+      button: "Import Collections",
       notAuthenticated: "Not authenticated",
       noActiveConnection: "No active Shopify connection",
       imagesImported: "✅ {{count}} collection images imported",
@@ -4372,11 +4373,6 @@ export const translations = {
   },
 
   // Chat Tabs & Settings
-  chatTabs: {
-    general: "General",
-    responses: "Responses",
-    embed: "Embed"
-  },
   chatSettings: {
     settingsSaved: "Settings saved successfully",
     saveError: "Error saving settings",
