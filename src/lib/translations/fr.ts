@@ -4124,6 +4124,20 @@ export const translations = {
     },
   },
 
+  // Google Search Console (alias pour googleConsole)
+  googleSearchConsole: {
+    dateRange: {
+      last7Days: "7 derniers jours",
+      last30Days: "30 derniers jours",
+      last90Days: "90 derniers jours"
+    },
+    domain: {
+      selectPlaceholder: "Sélectionnez un domaine",
+      verified: "Vérifié",
+      add: "Ajouter un domaine"
+    }
+  },
+
   // Dialogs
   dialogs: {
     upgrade: {
@@ -4135,6 +4149,24 @@ export const translations = {
       selectPlan: "Sélectionner un plan",
       activateThisPlan: "Activer ce plan",
       loading: "Chargement...",
+      activateMyPlan: "Activer Mon Plan",
+      later: "Peut-être Plus Tard",
+      unlockFeatures: "Débloquez toutes les fonctionnalités avec un plan payant",
+      starter: {
+        title: "Plan Starter",
+        price: "9,99€",
+        perMonth: "/mois",
+        features: {
+          products: "1000 produits",
+          optimizations: "100 optimisations SEO/mois",
+          articles: "10 articles IA/mois",
+          searches: "100 recherches IA/mois",
+          chatResponses: "50 réponses chat/mois",
+          stores: "1 boutique Shopify",
+          automation: "Automatisation SEO",
+          support: "Support prioritaire",
+        },
+      },
     },
     autoSync: {
       title: "Synchronisation automatique",
@@ -4424,6 +4456,254 @@ export const translations = {
       later: "Peut-être Plus Tard",
       unlockFeatures: "Débloquez toutes les fonctionnalités avec un plan payant",
     },
+  },
+
+  // Banners
+  banners: {
+    limitWarning: {
+      monthlyLimitReached: "Limite mensuelle atteinte",
+      limitReached: "Limite atteinte : {{limitTypes}}",
+      approaching: "Limite d'utilisation approchée",
+      limitLabels: {
+        optimizations: "Optimisations SEO",
+        chat: "Réponses Chat",
+      },
+      loading: "Chargement...",
+      upgradeNow: "Mettre à niveau",
+      activateNow: "Activer maintenant",
+      viewPlans: "Voir les plans",
+    },
+  },
+
+  // Chat Tabs & Settings
+  chatTabs: {
+    general: "Général",
+    responses: "Réponses",
+    embed: "Intégration"
+  },
+  chatSettings: {
+    settingsSaved: "Paramètres sauvegardés avec succès",
+    saveError: "Erreur lors de la sauvegarde",
+    commercialWelcome: "Activer le widget de chat"
+  },
+
+  // Onboarding Tour
+  onboardingTour: {
+    steps: {
+      connectShopify: {
+        title: "Connectez votre boutique Shopify",
+        description: "Connectez votre boutique pour commencer l'optimisation",
+        action: "Connecter la boutique",
+      },
+      optimizeProduct: {
+        title: "Optimisez votre premier produit",
+        description: "Générez du contenu SEO optimisé pour un produit",
+        action: "Optimiser un produit",
+      },
+      createArticle: {
+        title: "Créez votre premier article",
+        description: "Générez un article de blog avec l'IA",
+        action: "Créer un article",
+      },
+      enableAutoOptimizations: {
+        title: "Activez les optimisations automatiques",
+        description: "Configurez les optimisations SEO automatiques",
+        action: "Activer l'automatisation",
+      },
+      viewStatistics: {
+        title: "Consultez vos statistiques",
+        description: "Vérifiez vos métriques de performance SEO",
+        action: "Voir les stats",
+      },
+    },
+  },
+
+  // Wizards
+  wizards: {
+    blog: {
+      title: "Assistant Article",
+      loadingError: "Erreur de chargement de l'assistant",
+      productsLoadingError: "Erreur de chargement des produits",
+      steps: {
+        topic: "Sujet",
+        products: "Produits",
+        keywords: "Mots-clés",
+        design: "Design",
+        generate: "Générer"
+      },
+      descriptions: {
+        topic: "Choisissez le sujet de votre article",
+        products: "Sélectionnez les produits associés",
+        keywords: "Définissez les mots-clés cibles",
+        design: "Configurez le design visuel",
+        generate: "Générez votre article"
+      },
+      design: {
+        visualStyle: {
+          title: "Style Visuel",
+          minimal: "Minimal",
+          modern: "Moderne",
+          elegant: "Élégant",
+          bold: "Audacieux",
+          artistic: "Artistique",
+          descriptions: {
+            minimal: "Design épuré et simple",
+            modern: "Contemporain et frais",
+            elegant: "Sophistiqué et raffiné",
+            bold: "Fort et impactant",
+            artistic: "Créatif et unique"
+          }
+        },
+        layout: {
+          title: "Mise en page",
+          single_column: "Colonne unique",
+          two_column: "Deux colonnes",
+          magazine: "Magazine",
+          grid: "Grille",
+          descriptions: {
+            single_column: "Mise en page blog traditionnelle",
+            two_column: "Contenu avec barre latérale",
+            magazine: "Style éditorial",
+            grid: "Mise en page par cartes"
+          }
+        },
+        colorPalette: {
+          title: "Palette de couleurs",
+          custom: "Personnalisé",
+          selected: "Sélectionné",
+          palettes: {
+            blue: "Bleu",
+            green: "Vert",
+            purple: "Violet",
+            red: "Rouge",
+            orange: "Orange",
+            pink: "Rose"
+          }
+        },
+        advanced: {
+          title: "Options Avancées"
+        },
+        typography: {
+          title: "Typographie"
+        },
+        productDisplay: {
+          title: "Affichage Produits",
+          grid: "Grille",
+          list: "Liste",
+          carousel: "Carrousel"
+        },
+        imageIntensity: {
+          title: "Intensité des Images",
+          high: "Haute - Nombreuses images",
+          medium: "Moyenne - Équilibré",
+          low: "Basse - Minimal"
+        },
+        toc: {
+          title: "Table des Matières",
+          description: "Ajouter une navigation pour les longs articles",
+          enabled: "Activé",
+          disabled: "Désactivé"
+        }
+      }
+    },
+    shopify: {
+      fillAllFields: "Veuillez remplir tous les champs",
+      mustBeConnected: "Vous devez être connecté",
+      manualConnectionError: "Erreur de connexion",
+      storeLimit: "Limite de boutiques atteinte",
+      storeLimitDescription: "Vous avez atteint la limite de boutiques Shopify de votre plan",
+      storeAlreadyConnected: "Cette boutique est déjà connectée",
+      invalidCredentials: "Identifiants invalides. Vérifiez votre clé API et votre secret."
+    }
+  },
+
+  // Homepage Audit
+  homepageAudit: {
+    title: "Audit SEO Homepage",
+    subtitle: "Analyse SEO complète de votre page d'accueil",
+    generateTitle: "Générer l'analyse SEO",
+    generateDescription: "Analyse de votre page d'accueil...",
+    generating: "Génération de l'analyse...",
+    toasts: {
+      auditLoaded: "Audit chargé",
+      auditLoadedDesc: "Données d'audit précédent chargées avec succès",
+      connectShopify: "Veuillez d'abord connecter votre boutique Shopify",
+      currentSeoImported: "SEO actuel importé",
+      importError: "Erreur d'import des données SEO",
+      syncSuccess: "Synchronisé avec succès sur Shopify",
+      syncError: "Erreur lors de la synchronisation avec Shopify",
+      generatingError: "Erreur lors de la génération de l'analyse",
+      fillAllFields: "Veuillez remplir le titre et la description",
+      syncVerified: "SEO synchronisé et vérifié",
+      syncVerifiedDesc: "Vos modifications sont en ligne sur Shopify",
+      syncWarning: "Synchronisation terminée avec des avertissements",
+      syncWarningDesc: "Certains champs peuvent nécessiter une vérification manuelle",
+      permissionDenied: "Permission refusée",
+      permissionDeniedDesc: "Vous n'avez pas la permission de mettre à jour le SEO de la homepage"
+    },
+    scoreLabels: {
+      excellent: "Excellent",
+      good: "Bien",
+      average: "Moyen",
+      needsImprovement: "À améliorer"
+    },
+    features: {
+      completeAnalysis: "Analyse complète",
+      aiRecommendations: "Recommandations IA",
+      instantSync: "Sync instantané",
+      autoOptimization: "Optimisation auto",
+      scoreBreakdown: "Détail du score",
+      aiOptimization: "Optimisation IA",
+      shopifySync: "Sync Shopify"
+    },
+    buttons: {
+      analyzing: "Analyse en cours...",
+      analyzeHomepage: "Analyser la Homepage",
+      syncing: "Synchronisation..."
+    },
+    sections: {
+      overallScore: "Score SEO Global",
+      structure: "Structure",
+      content: "Contenu",
+      technical: "Technique",
+      bonus: "Bonus",
+      detailedAnalysis: "Analyse Détaillée",
+      aiRecommendations: "Recommandations IA",
+      personalizedSuggestions: "Suggestions personnalisées pour améliorer votre SEO",
+      quickActions: "Actions Rapides",
+      seoOptimization: "Optimisation SEO",
+      importOptimizeSync: "Importer, Optimiser & Synchroniser",
+      importBeforeOptimize: "Importer le SEO actuel avant optimisation"
+    },
+    elements: {
+      titleTag: "Balise Title",
+      metaDescription: "Meta Description",
+      h1Tag: "Balise H1",
+      h2Tags: "Balises H2",
+      imageAltTexts: "Textes ALT des Images",
+      canonicalTag: "Balise Canonical",
+      schemaMarkup: "Schema Markup",
+      openGraphTags: "Balises Open Graph",
+      twitterCard: "Twitter Card",
+      internalLinks: "Liens Internes",
+      contentLength: "Longueur du Contenu",
+      https: "HTTPS",
+      seoTitle: "Titre SEO",
+      seoDescription: "Description SEO",
+      characters: "caractères",
+      missing: "Manquant",
+      present: "Présent",
+      found: "trouvés",
+      imagesWithAlt: "images avec ALT",
+      enabled: "Activé",
+      disabled: "Désactivé",
+      detected: "Détecté",
+      storeMetadata: "Métadonnées Boutique",
+      shopifyEditor: "Éditeur Shopify",
+      configureMetadata: "Configurer les Métadonnées",
+      importOrGenerate: "Importer ou Générer",
+      analyzedOn: "Analysé le"
+    }
   },
 
   // Media History
