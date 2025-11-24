@@ -293,8 +293,13 @@ serve(async (req) => {
     }
 
     // Check 3: Must have at least one paid invoice for proration
+    // Use customer from subscription to ensure they match
+    const subscriptionCustomerId = typeof stripeSubscription.customer === 'string' 
+      ? stripeSubscription.customer 
+      : stripeSubscription.customer.id;
+    
     const invoices = await stripe.invoices.list({
-      customer: profile.stripe_customer_id,
+      customer: subscriptionCustomerId,
       subscription: subscriptionData.stripe_subscription_id,
       limit: 5,
     });
