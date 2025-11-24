@@ -144,6 +144,69 @@ function adjustSaturation(hex: string, factor: number): string {
   return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
 }
 
+function adjustLightness(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  // Adjust lightness
+  l = clamp(l * factor, 0, 1);
+
+  // Convert back to RGB
+  let r2, g2, b2;
+  if (s === 0) {
+    r2 = g2 = b2 = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r2 = hue2rgb(p, q, h + 1 / 3);
+    g2 = hue2rgb(p, q, h);
+    b2 = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toHex = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
+}
+
 function generateDesignTokens(colorScheme: any) {
   const primaryHex = colorScheme.primary || "#000000";
   const secondaryHex = colorScheme.secondary || "#333333";
@@ -161,12 +224,26 @@ function generateDesignTokens(colorScheme: any) {
 
   // Create a more vibrant accent color by increasing saturation
   const accentHex = adjustSaturation(primaryHex, 1.3);
+  
+  // Generate lighter and darker variants for each color
+  const primaryLight = adjustLightness(primaryHex, 1.2);
+  const primaryDark = adjustLightness(primaryHex, 0.8);
+  const secondaryLight = adjustLightness(secondaryHex, 1.2);
+  const secondaryDark = adjustLightness(secondaryHex, 0.8);
+  const accentLight = adjustLightness(accentHex, 1.2);
+  const accentDark = adjustLightness(accentHex, 0.8);
 
   // Convert all colors to HSL format
   return {
     primary: hexToHsl(primaryHex),
+    primaryLight: hexToHsl(primaryLight),
+    primaryDark: hexToHsl(primaryDark),
     secondary: hexToHsl(secondaryHex),
+    secondaryLight: hexToHsl(secondaryLight),
+    secondaryDark: hexToHsl(secondaryDark),
     accent: hexToHsl(accentHex),
+    accentLight: hexToHsl(accentLight),
+    accentDark: hexToHsl(accentDark),
     background: hexToHsl(validatedBackgroundHex),
     surface: hexToHsl(surfaceHex),
     text: hexToHsl(validatedTextHex),
@@ -1109,12 +1186,30 @@ VARIANTS:
 ${vars}
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
-COLOR PALETTE (HSL FORMAT ONLY):
+COLOR PALETTE (HSL FORMAT ONLY) - COMPLETE SET WITH VARIANTS:
 - Primary: hsl(${designTokens.primary})
+- Primary Light: hsl(${designTokens.primaryLight})
+- Primary Dark: hsl(${designTokens.primaryDark})
 - Secondary: hsl(${designTokens.secondary})
+- Secondary Light: hsl(${designTokens.secondaryLight})
+- Secondary Dark: hsl(${designTokens.secondaryDark})
 - Accent: hsl(${designTokens.accent})
+- Accent Light: hsl(${designTokens.accentLight})
+- Accent Dark: hsl(${designTokens.accentDark})
 - Background: hsl(${designTokens.background})
 - Text: hsl(${designTokens.text})
+
+🎨 GRADIENTS PRÉDÉFINIS (À UTILISER):
+- Gradient Primary: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent}))
+- Gradient Soft: linear-gradient(135deg, hsl(${designTokens.primaryLight}), hsl(${designTokens.accentLight}))
+- Gradient Bold: linear-gradient(135deg, hsl(${designTokens.primaryDark}), hsl(${designTokens.accentDark}))
+- Gradient Radial: radial-gradient(circle at top, hsl(${designTokens.primaryLight}), hsl(${designTokens.primary}))
+
+🌟 EFFETS DE COULEUR RECOMMANDÉS:
+- Ombres colorées: box-shadow: 0 10px 30px hsl(${designTokens.primary} / 0.2)
+- Lueurs: box-shadow: 0 0 40px hsl(${designTokens.accent} / 0.3)
+- Overlays dégradés: background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.9), hsl(${designTokens.accent} / 0.9))
+- Bordures dégradées: border-image: linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})) 1
 
 🚨 CRITICAL COLOR RULES (MANDATORY):
 1. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
@@ -1440,23 +1535,35 @@ STRUCTURE :
   <!-- Table bureau -->
   <table class="hidden md:table min-w-full">
 
-🎨 ICÔNES SVG PROFESSIONNELLES (CRITIQUE) :
-- Utiliser des SVG inline avec dégradés pour un look premium
-- Appliquer les couleurs du thème (primary, secondary, accent) en HSL
-- Ajouter ombres et lueurs subtiles pour la profondeur
-- Structure exemple :
-  <svg class="w-16 h-16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
-        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
-      </linearGradient>
-    </defs>
-    <circle cx="32" cy="32" r="28" fill="url(#iconGrad)" opacity="0.2"/>
-    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round"/>
-  </svg>
-- Pour les listes, utiliser des icônes élégantes (checkmark, étoile) avec couleurs du thème
-- Ajouter effets hover : transform hover:scale-110 transition-transform duration-300
+🎨 ICÔNES SVG PROFESSIONNELLES VARIÉES (CRITIQUE - OBLIGATOIRE) :
+✅ UTILISER DES ICÔNES SVG INLINE AVEC DÉGRADÉS pour un look premium
+✅ VARIÉTÉ D'ICÔNES selon le contexte (PAS SEULEMENT des checkmarks):
+
+📦 ICÔNES DE CARACTÉRISTIQUES (pour sections produit):
+- Checkmark (validation): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+
+- Étoile (qualité): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2l3 7h7l-5.5 4.5L19 21l-7-5-7 5 2.5-7.5L2 9h7z" fill="url(#star-grad)"/></svg>
+
+- Shield (garantie): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z" fill="url(#shield-grad)" opacity="0.2"/><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z" stroke="hsl(${designTokens.primary})" stroke-width="2" fill="none"/></svg>
+
+- Truck (livraison): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+
+- Sparkles (nouveauté): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad)"/></svg>
+
+🎯 RÈGLES D'UTILISATION DES ICÔNES:
+✅ TOUJOURS utiliser des gradients (primary → accent)
+✅ Ajouter des cercles/formes en fond avec opacity: 0.1-0.2
+✅ Taille: w-6 h-6 pour listes, w-12 h-12 ou w-16 h-16 pour sections principales
+✅ Ajouter hover effects: class="transition-transform duration-300 hover:scale-110"
+✅ Créer des IDs uniques pour chaque gradient (check-grad-1, check-grad-2, etc.)
+✅ Utiliser stroke="url(#gradient-id)" pour les contours
+✅ Utiliser fill="url(#gradient-id)" pour les remplissages
+
+🌈 EFFETS VISUELS AVANCÉS À APPLIQUER:
+- Cartes avec ombre colorée: class="shadow-lg hover:shadow-2xl" style="box-shadow: 0 10px 30px hsl(${designTokens.primary} / 0.15)"
+- Sections avec fond dégradé subtil: style="background: linear-gradient(135deg, hsl(${designTokens.background}), hsl(${designTokens.primaryLight} / 0.05))"
+- Titres avec effet de lueur: style="text-shadow: 0 0 20px hsl(${designTokens.accent} / 0.3)"
+- Bordures dégradées pour les cartes premium: style="border: 2px solid transparent; background-image: linear-gradient(white, white), linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); background-origin: border-box; background-clip: padding-box, border-box"
 
 🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
 - AUCUN bouton "Ajouter au panier" ou bouton d'achat
