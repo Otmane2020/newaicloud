@@ -1474,35 +1474,72 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       : "- Flexible layout but maintain consistency"}
 
 🎨 DESIGN PHILOSOPHY - ULTRA CLEAN & MINIMALIST (CRITICAL):
-🚨 MANDATORY MINIMALIST DESIGN RULES:
-❌ ABSOLUTELY FORBIDDEN:
-- NO visible borders or outlines on sections/cards
-- NO gradient-border effects
-- NO deep shadows (max: shadow-sm for subtle elevation)
-- NO glow effects (box-shadow with blur)
-- NO colored backgrounds around cards
-- NO thick border-radius (max: rounded-lg)
-- NO decorative frames around content blocks
-- NO "card-like" boxes with heavy styling
+
+🚨🚨🚨 ABSOLUTE PROHIBITIONS - NEVER USE THESE 🚨🚨🚨
+❌ NO "gradient-border" class or technique EVER
+❌ NO "shadow-colored" or colored shadows EVER  
+❌ NO "text-glow" or text-shadow effects EVER
+❌ NO box-shadow except max "shadow-sm" for cards
+❌ NO visible borders (border-0 or no border at all)
+❌ NO border-image or gradient borders
+❌ NO thick rounded corners (max: rounded-lg)
+❌ NO decorative CSS classes with visual effects
+❌ NO card containers with visible frames
+❌ NO background colors on card wrappers (use plain white/gray)
+❌ NO fancy hover effects with borders/shadows
+❌ NO SVG gradients on icons (simple solid colors only)
+❌ NO opacity overlays on images for decoration
 
 ✅ REQUIRED MINIMALIST STYLE (Apple / Zara / Made.com / IKEA):
-- Ultra clean, minimal, premium aesthetic
-- Generous whitespace and breathing room
-- Simple flat sections without borders
-- Use only: black (#000 or #1A1A1A), dark gray (#333), light gray (#F5F5F5), white (#FFF)
-- Single subtle accent color for CTAs only: hsl(${designTokens.accent})
-- Clean typography hierarchy (H1, H2, paragraphs well-spaced)
-- Full-width images or subtle rounded corners (max rounded-lg)
-- NO decorative elements, NO fancy cards
-- Fluid, borderless sections
-- Premium e-commerce aesthetic
+🔹 COLORS: Only neutral tones
+  - Black: #1A1A1A, #111, or #0f0f0f for text
+  - Dark gray: #333 for secondary text
+  - Light gray: #F5F5F5 or #FAFAFA for alternate sections
+  - White: #FFF for main background
+  - Accent: hsl(${designTokens.accent}) ONLY for CTA buttons, nowhere else
 
-🎯 LAYOUT APPROACH:
-- Sections directly on background (no border containers)
-- Alternating white/light-gray backgrounds for section separation
-- Content flows naturally without visible boundaries
-- Images: full-width or with minimal rounded-lg corners
-- Text blocks: clean, well-spaced, no containers with borders
+🔹 TYPOGRAPHY: Clean hierarchy
+  - H1: text-4xl md:text-6xl font-bold mb-6
+  - H2: text-2xl md:text-4xl font-bold mb-4
+  - Paragraphs: text-base md:text-lg leading-relaxed
+  - NO text effects, NO shadows, NO glows
+  - Simple black or dark gray text
+
+🔹 SECTIONS: Airy and borderless
+  - py-16 md:py-24 for generous vertical spacing
+  - Alternate between white and light gray backgrounds
+  - NO containers with borders
+  - NO card wrappers with visible frames
+
+🔹 IMAGES: Clean presentation
+  - Full-width or max rounded-lg (never rounded-xl)
+  - NO overlays except for text readability on hero
+  - NO decorative borders around images
+  - class="w-full h-auto" with natural spacing
+
+🔹 LISTS & BENEFITS: Minimal icons
+  - Simple checkmark SVG with solid primary color
+  - NO gradient fills, NO fancy effects
+  - Plain flex layout with gap-3
+  - NO card containers around list items
+
+🔹 CTAs: Single accent color button
+  - Only the main CTA button uses accent color
+  - Plain text buttons elsewhere (underline on hover)
+  - NO shadows, NO borders, NO gradients on buttons
+
+EXAMPLE CLEAN SECTION STRUCTURE:
+<section class="py-16 md:py-24">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl md:text-5xl font-bold mb-12 text-center text-gray-900">Section Title</h2>
+    <div class="space-y-8">
+      <!-- Content here with no borders, no cards, no frames -->
+      <p class="text-lg text-gray-700 leading-relaxed">Clean paragraph text...</p>
+    </div>
+  </div>
+</section>
+
+🎯 REMEMBER: Premium e-commerce = MINIMAL visual noise, MAXIMUM whitespace, ZERO borders
 
 COLOR PALETTE (HSL FORMAT ONLY):
 - Primary: hsl(${designTokens.primary})
@@ -1534,18 +1571,18 @@ ${selectedStyle.rules}
 - Use one breakpoint per property (✅ class="text-lg md:text-2xl")
 
 🎯 MINIMALIST ICON APPROACH (MANDATORY):
-✅ USE SIMPLE, CLEAN SVG ICONS:
-- NO complex gradients or fills
-- Simple outline strokes or minimal solid fills
-- Use theme color: hsl(${designTokens.primary})
-- Keep it subtle and elegant
+✅ SIMPLE SOLID COLOR ICONS ONLY
+- NO gradients (<linearGradient>), NO <defs> sections
+- Plain solid color with stroke or fill
+- Use primary color: hsl(${designTokens.primary})
+- Keep tiny and subtle (w-5 h-5 max)
 
-📋 MINIMALIST ICON TEMPLATE FOR LISTS:
+📋 CLEAN ICON TEMPLATE:
 <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
 </svg>
 
-🚨 NO gradient fills, NO fancy effects - keep icons minimal and clean
+🚨 NEVER use: gradient fills, defs, complex SVGs, decorative backgrounds on icons
 
 🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
 🚨 CRITICAL: For ALL titles/text on images, you MUST:
@@ -1648,21 +1685,24 @@ ${
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎯 MINIMALIST LIST ITEMS (MANDATORY):
-Use simple, clean list structure without fancy icons:
+🎯 CLEAN BENEFIT LISTS (MANDATORY):
 
-EXAMPLE FOR EACH LIST ITEM:
-<div class="flex items-start gap-3 mb-4">
-  <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-  </svg>
-  <div>
-    <h4 class="font-semibold text-gray-900 mb-1">Benefit Title</h4>
-    <p class="text-gray-600">Benefit description...</p>
+STRUCTURE - NO CARDS, NO BORDERS:
+<div class="space-y-6">
+  <div class="flex items-start gap-4">
+    <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" style="stroke: hsl(${designTokens.primary})"/>
+    </svg>
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-1">Benefit Title</h4>
+      <p class="text-gray-600 leading-relaxed">Benefit description text...</p>
+    </div>
   </div>
 </div>
 
-✅ Keep it minimal: simple checkmarks, no gradients, no backgrounds on icons
+✅ NO wrapping divs with borders/shadows/backgrounds
+✅ Simple vertical spacing with space-y-6
+✅ Plain checkmark icon, solid color only
         <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
         <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
       </linearGradient>
@@ -1759,35 +1799,72 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       : "- Layout flexible mais maintenir la cohérence"}
 
 🎨 PHILOSOPHIE DE DESIGN - ULTRA CLEAN & MINIMALISTE (CRITIQUE) :
-🚨 RÈGLES DE DESIGN MINIMALISTE OBLIGATOIRES :
-❌ ABSOLUMENT INTERDIT :
-- AUCUNE bordure ou contour visible sur les sections/cartes
-- AUCUN effet gradient-border
-- AUCUNE ombre profonde (max: shadow-sm pour élévation subtile)
-- AUCUN effet de lueur (box-shadow avec blur)
-- AUCUN fond coloré autour des cartes
-- AUCUN border-radius épais (max: rounded-lg)
-- AUCUN cadre décoratif autour des blocs de contenu
-- AUCUNE boîte "card-like" avec style lourd
+
+🚨🚨🚨 INTERDICTIONS ABSOLUES - NE JAMAIS UTILISER 🚨🚨🚨
+❌ JAMAIS de classe "gradient-border"
+❌ JAMAIS de classe "shadow-colored" ou ombres colorées
+❌ JAMAIS de classe "text-glow" ou effets text-shadow
+❌ JAMAIS de box-shadow sauf max "shadow-sm"
+❌ JAMAIS de bordures visibles (border-0 ou pas de border)
+❌ JAMAIS de border-image ou bordures dégradées
+❌ JAMAIS de coins arrondis épais (max: rounded-lg)
+❌ JAMAIS de classes CSS décoratives
+❌ JAMAIS de conteneurs "card" avec cadres visibles
+❌ JAMAIS de fonds colorés sur les wrappers de cartes
+❌ JAMAIS d'effets hover avec bordures/ombres
+❌ JAMAIS de dégradés SVG sur les icônes (couleurs solides uniquement)
+❌ JAMAIS d'overlays opacity sur images sauf hero pour lisibilité texte
 
 ✅ STYLE MINIMALISTE REQUIS (Apple / Zara / Made.com / IKEA) :
-- Esthétique ultra clean, minimale, premium
-- Espaces blancs généreux et aération
-- Sections plates simples sans bordures
-- Utiliser uniquement : noir (#000 ou #1A1A1A), gris foncé (#333), gris clair (#F5F5F5), blanc (#FFF)
-- Une seule couleur d'accent subtile pour les CTAs : hsl(${designTokens.accent})
-- Hiérarchie typographique propre (H1, H2, paragraphes bien espacés)
-- Images pleine largeur ou coins arrondis subtils (max rounded-lg)
-- AUCUN élément décoratif, AUCUNE carte fantaisiste
-- Sections fluides, sans bordures
-- Esthétique e-commerce premium
+🔹 COULEURS : Tons neutres uniquement
+  - Noir : #1A1A1A, #111, ou #0f0f0f pour le texte
+  - Gris foncé : #333 pour texte secondaire
+  - Gris clair : #F5F5F5 ou #FAFAFA pour sections alternées
+  - Blanc : #FFF pour fond principal
+  - Accent : hsl(${designTokens.accent}) UNIQUEMENT pour boutons CTA, nulle part ailleurs
 
-🎯 APPROCHE LAYOUT :
-- Sections directement sur le fond (pas de conteneurs avec bordures)
-- Fonds alternés blanc/gris-clair pour séparer les sections
-- Contenu qui coule naturellement sans limites visibles
-- Images : pleine largeur ou coins rounded-lg minimaux
-- Blocs de texte : propres, bien espacés, sans conteneurs avec bordures
+🔹 TYPOGRAPHIE : Hiérarchie propre
+  - H1 : text-4xl md:text-6xl font-bold mb-6
+  - H2 : text-2xl md:text-4xl font-bold mb-4
+  - Paragraphes : text-base md:text-lg leading-relaxed
+  - AUCUN effet texte, AUCUNE ombre, AUCUNE lueur
+  - Texte noir ou gris foncé simple
+
+🔹 SECTIONS : Aérées et sans bordures
+  - py-16 md:py-24 pour espacement vertical généreux
+  - Alterner entre fonds blancs et gris clair
+  - AUCUN conteneur avec bordures
+  - AUCUN wrapper de carte avec cadres visibles
+
+🔹 IMAGES : Présentation propre
+  - Pleine largeur ou max rounded-lg (jamais rounded-xl)
+  - AUCUN overlay sauf pour lisibilité texte sur hero
+  - AUCUNE bordure décorative autour des images
+  - class="w-full h-auto" avec espacement naturel
+
+🔹 LISTES & AVANTAGES : Icônes minimales
+  - SVG checkmark simple avec couleur primaire solide
+  - AUCUN dégradé, AUCUN effet fantaisie
+  - Layout flex simple avec gap-3
+  - AUCUN conteneur carte autour des items de liste
+
+🔹 CTAs : Bouton couleur accent unique
+  - Seul le bouton CTA principal utilise la couleur accent
+  - Boutons texte ailleurs (soulignement au hover)
+  - AUCUNE ombre, AUCUNE bordure, AUCUN dégradé sur boutons
+
+EXEMPLE STRUCTURE SECTION PROPRE :
+<section class="py-16 md:py-24">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl md:text-5xl font-bold mb-12 text-center text-gray-900">Titre Section</h2>
+    <div class="space-y-8">
+      <!-- Contenu ici sans bordures, sans cartes, sans cadres -->
+      <p class="text-lg text-gray-700 leading-relaxed">Texte paragraphe propre...</p>
+    </div>
+  </div>
+</section>
+
+🎯 RAPPEL : E-commerce premium = bruit visuel MINIMAL, espace blanc MAXIMUM, bordures ZÉRO
 
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
@@ -1884,24 +1961,27 @@ STRUCTURE :
   <table class="hidden md:table min-w-full">
 
 🎯 ICÔNES MINIMALISTES (OBLIGATOIRE) :
-✅ UTILISER DES ICÔNES SVG SIMPLES ET PROPRES
-- PAS de dégradés complexes
-- Traits simples ou remplissages solides minimaux
-- Utiliser la couleur du thème : hsl(${designTokens.primary})
-- Garder subtil et élégant
+✅ ICÔNES COULEUR SOLIDE UNIQUEMENT
+- AUCUN dégradé (<linearGradient>), AUCUNE section <defs>
+- Couleur solide simple avec stroke ou fill
+- Utiliser couleur primaire : hsl(${designTokens.primary})
+- Garder petites et subtiles (w-5 h-5 max)
 
-📋 EXEMPLE D'ICÔNE MINIMALISTE POUR LISTES :
-<div class="flex items-start gap-3 mb-4">
-  <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-  </svg>
-  <div>
-    <h4 class="font-semibold text-gray-900 mb-1">Titre du bénéfice</h4>
-    <p class="text-gray-600">Description du bénéfice...</p>
+📋 TEMPLATE ICÔNE PROPRE :
+<div class="space-y-6">
+  <div class="flex items-start gap-4">
+    <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" style="stroke: hsl(${designTokens.primary})"/>
+    </svg>
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-1">Titre bénéfice</h4>
+      <p class="text-gray-600 leading-relaxed">Description...</p>
+    </div>
   </div>
 </div>
 
-✅ Garder minimaliste : checkmarks simples, pas de dégradés, pas de fonds sur les icônes
+🚨 NE JAMAIS utiliser : dégradés, defs, SVG complexes, fonds décoratifs sur icônes
+✅ AUCUN wrapper div avec bordures/ombres/backgrounds autour des items
 
 - Truck (livraison): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
 
