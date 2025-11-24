@@ -2305,6 +2305,7 @@ export type Database = {
           layout: string
           palette_id: string
           store_id: string | null
+          theme: string | null
           updated_at: string
           user_id: string
         }
@@ -2325,6 +2326,7 @@ export type Database = {
           layout?: string
           palette_id?: string
           store_id?: string | null
+          theme?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2345,6 +2347,7 @@ export type Database = {
           layout?: string
           palette_id?: string
           store_id?: string | null
+          theme?: string | null
           updated_at?: string
           user_id?: string
         }

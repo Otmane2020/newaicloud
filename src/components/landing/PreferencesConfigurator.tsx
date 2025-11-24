@@ -39,6 +39,7 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
   const [colorSchemes, setColorSchemes] = useState<ConfigOption[]>([]);
   const [highlights, setHighlights] = useState<ConfigOption[]>([]);
   
+  const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark'>('light');
   const [selectedLayout, setSelectedLayout] = useState('');
   const [selectedDesign, setSelectedDesign] = useState('');
   const [selectedLength, setSelectedLength] = useState('');
@@ -234,6 +235,7 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
         .from('landing_page_preferences')
         .insert({
           user_id: user.id,
+          theme: selectedTheme,
           layout: selectedLayout,
           design_style: selectedDesign,
           content_length: selectedLength,
@@ -256,6 +258,7 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
       });
 
       // Reset form
+      setSelectedTheme('light');
       setSelectedLayout('');
       setSelectedDesign('');
       setSelectedLength('');
@@ -288,6 +291,19 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
       <h2 className="text-2xl font-bold mb-6">Créer une nouvelle préférence</h2>
       
       <div className="space-y-6">
+        <div className="space-y-2">
+          <Label>Thème *</Label>
+          <Select value={selectedTheme} onValueChange={(val: 'light' | 'dark') => setSelectedTheme(val)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choisir un thème" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">Clair (Light)</SelectItem>
+              <SelectItem value="dark">Sombre (Dark)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label>Layout *</Label>
