@@ -810,13 +810,13 @@ export function SeoAltImage() {
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
               <div className={`text-4xl font-bold ${
-                altSeoScore >= 80 ? 'text-green-600' : 
-                altSeoScore >= 60 ? 'text-orange-600' : 
+                altCompletionRate >= 80 ? 'text-green-600' : 
+                altCompletionRate >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
-                {altSeoScore}/100
+                {imagesOptimizedByAI} / {images.length}
               </div>
-              <div className="text-sm text-muted-foreground">SEO Score</div>
+              <div className="text-sm text-muted-foreground">Images optimisées</div>
             </div>
             <Button
               size="lg"
