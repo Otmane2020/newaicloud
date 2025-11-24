@@ -2085,6 +2085,24 @@ export const translations = {
     usage: {
       title: "Limites d'utilisation",
       description: "Suivez votre consommation mensuelle et les limites de votre plan",
+      labels: {
+        products: "Produits",
+        shopifyStores: "Boutiques Shopify",
+        optimizations: "Optimisations",
+        articlesAI: "Articles AI",
+        chatAI: "Chat AI",
+        campaigns: "Campagnes",
+      },
+      messages: {
+        trialLimitReached: "🚨 <strong>Certaines limites sont atteintes.</strong> Activez un plan payant pour continuer.",
+        monthlyLimitReached: "⚠️ <strong>Limites mensuelles atteintes.</strong> Elles seront réinitialisées le mois prochain.",
+      },
+      buttons: {
+        activatePlan: "Activer un plan",
+        upgradePlan: "Améliorer mon plan",
+      },
+      usage: "Utilisation",
+      trialVersion: "Version d'essai",
     },
     submenu: {
       profile: "Mon Profil",
