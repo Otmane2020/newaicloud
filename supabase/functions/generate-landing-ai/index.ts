@@ -1,490 +1,1517 @@
-/**********************************************************************
- *  GENERATE-LANDING-AI — VERSION ULTRA-STABLE COMPLETE (BLOC 1 / 3)
- **********************************************************************/
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
-/**********************************************************************
- * TYPES
- **********************************************************************/
-interface ColorScheme {
-  primary: string;
-  secondary: string;
-  accent: string;
-  background: string;
-  surface: string;
-  text: string;
-  textMuted: string;
+// WCAG Color Contrast Utilities
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
 }
 
-interface LandingConfig {
-  layout: string;
-  design_style: string;
-  content_length: string;
-  colorScheme: ColorScheme;
-  custom_highlights: string[];
-}
+function hexToHsl(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "0 0% 0%";
 
-interface UserOverrideConfig {
-  layout?: string;
-  design_style?: string;
-  designStyle?: string;
-  content_length?: string;
-  contentLength?: string;
-  colorScheme?: Partial<ColorScheme>;
-  custom_highlights?: string[];
-}
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
 
-/**********************************************************************
- * DEFAULT CONFIG
- **********************************************************************/
-const SYSTEM_DEFAULTS: LandingConfig = {
-  layout: "hero",
-  design_style: "modern",
-  content_length: "medium",
-  colorScheme: {
-    primary: "hsl(200, 90%, 50%)",
-    secondary: "hsl(210, 90%, 60%)",
-    accent: "hsl(180, 85%, 55%)",
-    background: "#ffffff",
-    surface: "hsl(200, 30%, 98%)",
-    text: "hsl(200, 20%, 10%)",
-    textMuted: "hsl(200, 20%, 40%)",
-  },
-  custom_highlights: [],
-};
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
 
-/**********************************************************************
- * SAFE JSON UTILITIES
- **********************************************************************/
-function safeJSONStringify(value: any): string {
-  try {
-    return JSON.stringify(value);
-  } catch (e) {
-    return JSON.stringify({
-      error: "UNSERIALIZABLE_OBJECT",
-      details: String(e),
-    });
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
   }
+
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+
+  return `${h} ${s}% ${l}%`;
 }
 
-function safeValue(v: any) {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
-  try {
-    return JSON.stringify(v);
-  } catch {
-    return String(v);
+function getLuminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4),
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function calculateContrast(color1: string, color2: string): number {
+  const lum1 = getLuminance(color1);
+  const lum2 = getLuminance(color2);
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function ensureAccessibleText(bgColor: string): string {
+  const bgLum = getLuminance(bgColor);
+  return bgLum > 0.5 ? "#000000" : "#FFFFFF";
+}
+
+function adjustSaturation(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0,
+    s = 0,
+    l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
   }
+
+  // Adjust saturation
+  s = Math.min(1, s * factor);
+
+  // Convert back to RGB
+  let r2, g2, b2;
+  if (s === 0) {
+    r2 = g2 = b2 = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r2 = hue2rgb(p, q, h + 1 / 3);
+    g2 = hue2rgb(p, q, h);
+    b2 = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toHex = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
 }
 
-/**********************************************************************
- * TEXT EXTRACTION UTILITIES
- **********************************************************************/
-function detectLanguage(text: string): "fr" | "en" {
-  const t = text.toLowerCase();
-  return t.includes(" the ") || t.includes(" with ") ? "en" : "fr";
-}
+function generateDesignTokens(colorScheme: any) {
+  const primaryHex = colorScheme.primary || "#000000";
+  const secondaryHex = colorScheme.secondary || "#333333";
+  const backgroundHex = colorScheme.background || "#FFFFFF";
+  const surfaceHex = colorScheme.surface || "#F5F5F5";
+  const textHex = colorScheme.text || "#000000";
+  const textMutedHex = colorScheme.textMuted || "#666666";
 
-function extractFromText(description: string) {
-  const t = description.toLowerCase();
-  const materials = [];
+  const contrast = calculateContrast(primaryHex, "#FFFFFF");
+  const needsDarkText = contrast < 4.5;
+  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
 
-  if (t.includes("bois")) materials.push("bois");
-  if (t.includes("métal") || t.includes("acier")) materials.push("métal");
-  if (t.includes("verre")) materials.push("verre");
-  if (t.includes("pvc")) materials.push("pvc");
+  const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
+  const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
 
-  let style = null;
-  if (t.includes("scandinave")) style = "scandinave";
-  if (t.includes("moderne")) style = "moderne";
-  if (t.includes("minimaliste")) style = "minimaliste";
+  // Create a more vibrant accent color by increasing saturation
+  const accentHex = adjustSaturation(primaryHex, 1.3);
 
-  let category = null;
-  if (t.includes("table basse")) category = "table basse";
-  if (t.includes("chaise")) category = "chaise";
-  if (t.includes("canapé")) category = "canapé";
-
-  return { materials, style, category };
-}
-
-function extractDimensions(text: string | null) {
-  if (!text) return null;
-
-  const m = text.match(/(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})\s*(x|\*|×)\s*(\d{2,3})(cm|mm)?/i);
-  if (!m) return null;
-
+  // Convert all colors to HSL format
   return {
-    width: parseInt(m[1]),
-    depth: parseInt(m[3]),
-    height: parseInt(m[5]),
-    unit: m[6] || "cm",
+    primary: hexToHsl(primaryHex),
+    secondary: hexToHsl(secondaryHex),
+    accent: hexToHsl(accentHex),
+    background: hexToHsl(validatedBackgroundHex),
+    surface: hexToHsl(surfaceHex),
+    text: hexToHsl(validatedTextHex),
+    textMuted: hexToHsl(textMutedHex),
+    ctaText: hexToHsl(ctaTextHex),
+    contrastRatio: contrast,
   };
 }
 
-function finalProductAttributes(vision: any, text: any, serp: any, dims: any) {
-  return {
-    materials: [...new Set([...(vision?.materials || []), ...(text?.materials || [])])],
-    style: vision?.style || text?.style || serp?.style || null,
-    category: text?.category || serp?.category || vision?.category || null,
-    colors: vision?.colors || null,
-    usage: serp?.usage || null,
-    dimensions: dims,
-  };
-}
+// Helper to build enriched product summary
+// Helper to build Vision AI summary
+function buildVisionSummary(attributes: any, language = "fr") {
+  if (!attributes) return "";
 
-/**********************************************************************
- * USER PREFERENCES
- **********************************************************************/
-async function loadUserPreferences(userId: string) {
-  const { data } = await supabase
-    .from("landing_page_user_preferences")
-    .select("*")
-    .eq("user_id", userId)
-    .order("is_default", { ascending: false })
-    .maybeSingle();
+  const sections = [];
 
-  return data || null;
-}
-
-function mergeOptions({ override, userDefault }: { override: UserOverrideConfig; userDefault: any }): LandingConfig {
-  return {
-    layout: override.layout || userDefault?.layout || SYSTEM_DEFAULTS.layout,
-
-    design_style:
-      override.design_style || override.designStyle || userDefault?.design_style || SYSTEM_DEFAULTS.design_style,
-
-    content_length:
-      override.content_length ||
-      override.contentLength ||
-      userDefault?.content_length ||
-      SYSTEM_DEFAULTS.content_length,
-
-    colorScheme: {
-      primary: override.colorScheme?.primary || userDefault?.color_primary || SYSTEM_DEFAULTS.colorScheme.primary,
-      secondary:
-        override.colorScheme?.secondary || userDefault?.color_secondary || SYSTEM_DEFAULTS.colorScheme.secondary,
-      accent: override.colorScheme?.accent || userDefault?.color_accent || SYSTEM_DEFAULTS.colorScheme.accent,
-      background:
-        override.colorScheme?.background || userDefault?.color_background || SYSTEM_DEFAULTS.colorScheme.background,
-      surface: override.colorScheme?.surface || userDefault?.color_surface || SYSTEM_DEFAULTS.colorScheme.surface,
-      text: override.colorScheme?.text || userDefault?.color_text || SYSTEM_DEFAULTS.colorScheme.text,
-      textMuted:
-        override.colorScheme?.textMuted || userDefault?.color_text_muted || SYSTEM_DEFAULTS.colorScheme.textMuted,
-    },
-
-    custom_highlights:
-      (override.custom_highlights?.length ? override.custom_highlights : userDefault?.custom_highlights) || [],
-  };
-}
-
-async function getMergedConfig(
-  userId: string,
-  storeId: string | null,
-  override: UserOverrideConfig,
-): Promise<LandingConfig> {
-  const userDefault = await loadUserPreferences(userId);
-  return mergeOptions({ override, userDefault });
-}
-/**********************************************************************
- *  BLOC 2 / 3 — SERP + VISION + PROMPT BUILDER + AI CALL (SAFE)
- **********************************************************************/
-
-/**********************************************************************
- * SERP ANALYSIS
- **********************************************************************/
-async function analyzeSerp(keyword: string, country: string, lang: string) {
-  try {
-    const { data } = await supabase.functions.invoke("analyze-serp-competitors", {
-      body: {
-        keyword,
-        analysisType: "landing",
-        location: country,
-        language: lang,
-        maxResults: 10,
-      },
-    });
-
-    return data?.insights || null;
-  } catch (e) {
-    console.error("SERP ERROR:", e);
-    return null;
+  if (attributes.visualDescription) {
+    sections.push(language === "en" ? "VISUAL ANALYSIS:" : "ANALYSE VISUELLE:");
+    sections.push(attributes.visualDescription);
   }
-}
 
-/**********************************************************************
- * VISION AI — LOVABLE
- **********************************************************************/
-async function analyzeImageWithVision(imageUrl: string, productTitle: string, category: string | null) {
-  try {
-    const { data } = await supabase.functions.invoke("analyze-image-with-vision", {
-      body: { imageUrl, productContext: { title: productTitle, category } },
-    });
-
-    return data?.visualAttributes || null;
-  } catch (e) {
-    console.error("VISION ERROR:", e);
-    return null;
+  const details = [];
+  if (attributes.dominantColors?.length) {
+    details.push(`${language === "en" ? "Colors" : "Couleurs"}: ${attributes.dominantColors.join(", ")}`);
   }
+  if (attributes.materials?.length) {
+    details.push(`${language === "en" ? "Materials" : "Matériaux"}: ${attributes.materials.join(", ")}`);
+  }
+  if (attributes.style) {
+    details.push(`${language === "en" ? "Style" : "Style"}: ${attributes.style}`);
+  }
+  if (attributes.condition) {
+    details.push(`${language === "en" ? "Condition" : "État"}: ${attributes.condition}`);
+  }
+
+  if (details.length > 0) {
+    sections.push("\n" + details.map((d: string) => `- ${d}`).join("\n"));
+  }
+
+  return sections.join("\n");
 }
 
-/**********************************************************************
- * FALLBACK GEMINI VISION — SAFE SILENT
- **********************************************************************/
-async function geminiFallbackVision(imageUrl: string, title: string) {
-  return null; // On garde silencieux pour éviter tout bug
+function buildEnrichedProductSummary(enriched: any, language = "fr") {
+  if (!enriched) return "";
+
+  const sections = [];
+
+  // Visual Attributes
+  const visualAttrs = [];
+  if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
+  if (enriched.ai_material) visualAttrs.push(`Matériau: ${enriched.ai_material}`);
+  if (enriched.ai_shape) visualAttrs.push(`Forme: ${enriched.ai_shape}`);
+  if (enriched.ai_texture) visualAttrs.push(`Texture: ${enriched.ai_texture}`);
+  if (enriched.ai_pattern) visualAttrs.push(`Motif: ${enriched.ai_pattern}`);
+  if (enriched.ai_finish) visualAttrs.push(`Finition: ${enriched.ai_finish}`);
+  if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
+  if (visualAttrs.length > 0) {
+    sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
+    sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
+  }
+
+  // PHASE 1: Prioritize technicalDimensions from image if available (HIGHEST PRIORITY)
+  const techDims = enriched.vision_attributes?.technicalDimensions;
+  const dims = [];
+  let weightSource: string | null = null; // Track where weight comes from
+
+  // Detect if we have any smart_* dimensions available
+  const hasSmartDims =
+    enriched.smart_length ||
+    enriched.smart_width ||
+    enriched.smart_height ||
+    enriched.smart_diameter ||
+    enriched.smart_depth ||
+    enriched.smart_seat_height;
+
+  if (techDims && Object.keys(techDims).length > 0) {
+    // Use dimensions extracted from technical schematic or visible on packaging (VISION FIRST)
+    if (techDims.hauteur_totale) dims.push(`H ${techDims.hauteur_totale}`);
+    if (techDims.height) dims.push(`H ${techDims.height}`);
+    if (techDims.largeur) dims.push(`L ${techDims.largeur}`);
+    if (techDims.length) dims.push(`L ${techDims.length}`);
+    if (techDims.profondeur) dims.push(`P ${techDims.profondeur}`);
+    if (techDims.width) dims.push(`l ${techDims.width}`);
+    if (techDims.hauteur_assise) dims.push(`Hauteur d'assise ${techDims.hauteur_assise}`);
+    if (techDims.diametre) dims.push(`Ø ${techDims.diametre}`);
+
+    // Extract weight from vision (HIGHEST PRIORITY)
+    if (techDims.weight) {
+      dims.push(`Poids ${techDims.weight}`);
+      weightSource = "vision"; // Mark that weight comes from vision
+    }
+
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (visible on image):" : "\nDIMENSIONS (visibles sur image):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  } else if (hasSmartDims) {
+    // Fallback to estimated smart dimensions (SECOND PRIORITY, before SERP)
+    if (enriched.smart_length) dims.push(`L ~${enriched.smart_length}${enriched.smart_length_unit || ""}`);
+    if (enriched.smart_width) dims.push(`l ~${enriched.smart_width}${enriched.smart_width_unit || ""}`);
+    if (enriched.smart_height) dims.push(`H ~${enriched.smart_height}${enriched.smart_height_unit || ""}`);
+
+    // Add estimated weight only if not from vision
+    if (!weightSource && enriched.smart_weight) {
+      dims.push(`Poids ~${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+      weightSource = "estimated";
+    }
+
+    if (enriched.smart_diameter) dims.push(`Ø ~${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
+    if (enriched.smart_depth) dims.push(`P ~${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
+    if (enriched.smart_seat_height)
+      dims.push(`Hauteur d'assise ~${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
+
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (estimated):" : "\nDIMENSIONS (estimées):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  } else if (enriched.serp_verified && enriched.serp_data?.averageDimensions) {
+    // Use SERP-verified dimensions ONLY AS LAST RESORT
+    const serpDims = enriched.serp_data.averageDimensions;
+    if (serpDims.length) dims.push(`L ${serpDims.length}`);
+    if (serpDims.width) dims.push(`l ${serpDims.width}`);
+    if (serpDims.height) dims.push(`H ${serpDims.height}`);
+
+    // Add SERP weight only if not already extracted from vision/estimation
+    if (!weightSource && enriched.serp_data.averageWeight) {
+      dims.push(`Poids ${enriched.serp_data.averageWeight}`);
+      weightSource = "serp";
+    }
+
+    if (dims.length > 0) {
+      sections.push(language === "en" ? "\nDIMENSIONS (SERP verified):" : "\nDIMENSIONS (vérifiées SERP):");
+      sections.push(`- ${dims.join(" × ")}`);
+    }
+  }
+
+  // Technical Details from Vision AI
+  if (enriched.vision_attributes?.technicalDetails && Array.isArray(enriched.vision_attributes.technicalDetails)) {
+    const techDetails = enriched.vision_attributes.technicalDetails;
+    if (techDetails.length > 0) {
+      sections.push(
+        language === "en" ? "\nTECHNICAL SPECIFICATIONS (from Vision AI):" : "\nSPÉCIFICATIONS TECHNIQUES (Vision IA):",
+      );
+      sections.push(techDetails.map((detail: string) => `- ${detail}`).join("\n"));
+    }
+  }
+
+  // Categorization
+  const cats = [];
+  if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
+  if (enriched.sub_category) cats.push(`Sous-catégorie: ${enriched.sub_category}`);
+  if (enriched.style) cats.push(`Style: ${enriched.style}`);
+  if (enriched.room) cats.push(`Pièce: ${enriched.room}`);
+  if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
+  if (cats.length > 0) {
+    sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
+    sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
+  }
+
+  // Quality & Analysis
+  const quality = [];
+  if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
+  if (enriched.ai_presentation_quality) quality.push(`Qualité Présentation: ${enriched.ai_presentation_quality}`);
+  if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
+  if (quality.length > 0) {
+    sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
+    sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
+  }
+
+  // Conversational Text
+  if (enriched.chat_text) {
+    sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
+    sections.push(enriched.chat_text);
+  }
+
+  return sections.join("\n");
 }
 
-/**********************************************************************
- * PROMPT BUILDER
- **********************************************************************/
-function buildPrompt({ productTitle, vendor, attributes, serp, config, lang }: any) {
-  return `
-You are a senior expert landing page designer.
-Your job: generate a BEAUTIFUL premium HTML landing page.
-⚠ OUTPUT RULES:
-- RETURN PURE HTML ONLY
-- NO markdown
-- NO <html>, <head>, <body>
-- CLEAN modern structure
+function detectLanguage(text: string): string {
+  if (!text || text.length < 10) return "fr"; // Default to French
 
-========================================
-PRODUCT
-========================================
-Title: ${productTitle}
-Vendor: ${vendor}
+  const cleanText = text.toLowerCase().trim();
 
-ATTRIBUTES:
-${safeJSONStringify(attributes)}
+  // French indicators (articles, common words)
+  const frenchWords = ["le", "la", "les", "un", "une", "des", "de", "du", "et", "avec", "pour", "dans", "sur"];
+  const frenchCount = frenchWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
 
-SERP INSIGHTS:
-${safeJSONStringify(serp)}
+  // English indicators
+  const englishWords = ["the", "and", "for", "with", "this", "that", "from", "our", "your"];
+  const englishCount = englishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
 
-USER CONFIG:
-${safeJSONStringify(config)}
+  // Spanish indicators
+  const spanishWords = ["el", "la", "los", "las", "un", "una", "con", "para", "que", "en"];
+  const spanishCount = spanishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
 
-========================================
-DESIGN RULES
-========================================
-- Ultra premium layout
-- Modern, clean, high-end aesthetic
-- Responsive mobile-first
-- Smooth spacing
-- Strong hero section
-- Product specs table (from attributes)
-- CTA buttons
-- Write in: ${lang === "fr" ? "French" : "English"}
+  // Determine language by highest count
+  const counts = { fr: frenchCount, en: englishCount, es: spanishCount };
+  const maxLang = Object.entries(counts).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
-Now generate the FULL HTML landing page.
-`.trim();
+  console.log(`🌍 Language detection: FR=${frenchCount}, EN=${englishCount}, ES=${spanishCount} → ${maxLang}`);
+
+  return maxLang;
 }
 
-/**********************************************************************
- * CALL AI — LOVABLE AI GATEWAY (CORRECTED)
- **********************************************************************/
-async function callAI(prompt: string) {
-  console.log("🤖 Calling Lovable AI Gateway...");
-  
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert web designer and copywriter. Generate a complete, single-page HTML landing page that is responsive, modern, and conversion-optimized. Use only HSL colors, include a light/dark mode toggle, and ensure all images use placeholder URLs."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 16000,
-    }),
+function sanitizeHtmlUnsafe(html: string): string {
+  if (!html) return "";
+  let out = html
+    .replace(/^\s*```(?:html)?/gi, "")
+    .replace(/```\s*$/g, "")
+    .replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+    .replace(/\shref\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, ' href="#"')
+    .replace(/<\/?(html|head|body)[^>]*>/gi, "");
+  out = out.replace(/\sstyle\s*=\s*(['"])(.*?)\1/gi, (_m, q, css) => {
+    const kept = css
+      .split(";")
+      .map((r: string) => r.trim())
+      .filter((r: string) => /^(color|background-color|border-color)\s*:/i.test(r))
+      .join("; ");
+    return kept ? ` style=${q}${kept}${q}` : "";
   });
-
-  console.log("📡 API Response status:", response.status);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("❌ API Error:", response.status, errorText);
-    throw new Error(`Lovable AI Gateway error: ${response.status} - ${errorText}`);
-  }
-
-  const rawText = await response.text();
-  console.log("📦 Raw API response (first 500 chars):", rawText.substring(0, 500));
-
-  let json: any;
-  try {
-    json = JSON.parse(rawText);
-  } catch (e) {
-    console.error("❌ JSON Parse Error:", e);
-    console.error("Raw text:", rawText);
-    throw new Error("Failed to parse AI response as JSON");
-  }
-
-  // Extract content from OpenAI-compatible format
-  let html = json.choices?.[0]?.message?.content;
-
-  if (!html || typeof html !== 'string') {
-    console.error("❌ Invalid response structure:", JSON.stringify(json).substring(0, 500));
-    throw new Error("AI response does not contain valid HTML content");
-  }
-
-  // Clean code fences
-  html = html
-    .replace(/```html/gi, "")
-    .replace(/```/g, "")
-    .trim();
-
-  console.log("✅ HTML generated, length:", html.length);
-  return html;
+  return out.trim();
 }
-/**********************************************************************
- *  BLOC 3 / 3 — HTTP ENDPOINT FINAL (ULTRA SAFE)
- **********************************************************************/
 
 serve(async (req) => {
-  // CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    /**************************************************************
-     * SAFE BODY PARSING
-     **************************************************************/
-    const body = await req.json().catch(() => null);
+    const authHeader = req.headers.get("Authorization");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
-    if (!body) {
-      return new Response(safeJSONStringify({ error: "INVALID_JSON_BODY" }), { status: 400, headers: corsHeaders });
-    }
-
-    const {
-      productId,
-      productTitle,
-      vendor = "",
-      description = "",
-      images = [],
-      userId,
-      storeId,
-      options: userOverride = {},
-    } = body;
-
-    if (!productId || !productTitle) {
-      return new Response(
-        safeJSONStringify({ error: "MISSING_FIELDS", details: "productId or productTitle missing" }),
-        { status: 400, headers: corsHeaders },
-      );
-    }
-
-    console.log("🚀 GENERATE LANDING PAGE FOR PRODUCT:", productId);
-
-    /**************************************************************
-     * MERGE USER CONFIG
-     **************************************************************/
-    const config = await getMergedConfig(userId, storeId, userOverride);
-
-    /**************************************************************
-     * LANGUAGE
-     **************************************************************/
-    const lang = detectLanguage(description || productTitle);
-
-    /**************************************************************
-     * TEXT EXTRACTION
-     **************************************************************/
-    const txt = extractFromText(description);
-
-    /**************************************************************
-     * SERP ANALYSIS
-     **************************************************************/
-    const serp = await analyzeSerp(productTitle, "fr", lang);
-
-    /**************************************************************
-     * VISION AI (PRIMARY + FALLBACK)
-     **************************************************************/
-    let vision: any = null;
-
-    for (const img of images.slice(0, 6)) {
-      const v = await analyzeImageWithVision(img, productTitle, txt.category);
-      if (v) {
-        vision = v;
-        break;
+    // Get authenticated user
+    let userId = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseAdmin.auth.getUser(token);
+      if (!authError && user) {
+        userId = user.id;
       }
     }
 
-    // fallback
-    if (!vision && images[0]) {
-      vision = await geminiFallbackVision(images[0], productTitle);
-    }
-
-    /**************************************************************
-     * DIMENSIONS (from text OR vision)
-     **************************************************************/
-    const dims = extractDimensions(description) || vision?.technicalDimensions || null;
-
-    /**************************************************************
-     * FINAL ATTRIBUTES (MERGED)
-     **************************************************************/
-    const attributes = finalProductAttributes(vision || {}, txt, serp, dims);
-
-    /**************************************************************
-     * PROMPT
-     **************************************************************/
-    const prompt = buildPrompt({
+    const body = await req.json();
+    const {
+      product_id,
       productTitle,
+      imageUrl,
+      description,
       vendor,
-      attributes,
-      serp,
-      config,
-      lang,
+      style,
+      mainColor = "#3B82F6",
+      colorScheme,
+      layout,
+      length,
+      customHighlights,
+      language,
+      designStyle = "modern", // Default to modern if not provided
+      imageAnalysis, // 🔥 Vision AI data if available
+    } = body ?? {};
+
+    console.log("📥 Request parameters:", {
+      product_id,
+      productTitle: productTitle?.substring(0, 50),
+      designStyle,
+      hasColorScheme: !!colorScheme,
+      language,
     });
 
-    /**************************************************************
-     * AI GENERATION (SAFE)
-     **************************************************************/
-    const html = await callAI(prompt);
+    console.log("🔐 User authentication:", {
+      hasAuthHeader: !!authHeader,
+      userId: userId,
+      productId: product_id,
+      willAttemptSave: !!(userId && product_id),
+    });
 
-    /**************************************************************
-     * SAVE RESULT INTO SUPABASE
-     **************************************************************/
-    await supabase.from("shopify_products").update({ landing_page_html: html }).eq("id", productId);
+    // Initialize version tracking variables
+    let versionSaved = false;
+    let savedVersionNumber = null;
 
-    /**************************************************************
-     * RETURN SUCCESS
-     **************************************************************/
-    return new Response(
-      safeJSONStringify({
-        success: true,
-        html: safeValue(html),
-        attributes,
-        config,
-        lang,
-      }),
-      { status: 200, headers: corsHeaders },
+    // Auto-detect language from product title and description if not provided
+    const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
+
+    // Generate design tokens
+    const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
+
+    if (!productTitle)
+      return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    if (!product_id)
+      return new Response(JSON.stringify({ error: "Missing required field: product_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
+
+    // 🔧 STEP 1: Product Enrichment (with conditional logic and retry)
+    console.log("🔧 Starting product enrichment check...");
+    let enrichmentStatus = "skipped";
+    let attributesCount = 0;
+
+    // First, check if product already has recent enrichment
+    const { data: existingProduct } = await supabaseAdmin
+      .from("shopify_products")
+      .select("enriched_at, ai_color, ai_material, smart_length, smart_width, smart_height")
+      .eq("id", product_id)
+      .maybeSingle();
+
+    const hasRecentEnrichment =
+      existingProduct?.enriched_at && new Date().getTime() - new Date(existingProduct.enriched_at).getTime() < 86400000; // 24 hours
+
+    const hasEnrichedData =
+      existingProduct &&
+      (existingProduct.ai_color ||
+        existingProduct.ai_material ||
+        existingProduct.smart_length ||
+        existingProduct.smart_width ||
+        existingProduct.smart_height);
+
+    if (hasRecentEnrichment && hasEnrichedData) {
+      console.log("✅ Using existing enrichment (less than 24h old)");
+      enrichmentStatus = "cached";
+    } else {
+      console.log("🔧 Starting product enrichment (no recent data)...");
+
+      // Helper function to attempt enrichment
+      const attemptEnrichment = async (attemptNumber: number): Promise<boolean> => {
+        try {
+          console.log(`📡 Enrichment attempt ${attemptNumber}...`);
+
+          const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+            body: { productId: product_id },
+          });
+
+          if (enrichError) {
+            console.error(`❌ Enrichment attempt ${attemptNumber} failed:`, {
+              message: enrichError.message,
+              status: enrichError.status,
+              details: enrichError.details,
+            });
+            return false;
+          }
+
+          console.log(`✅ Enrichment attempt ${attemptNumber} completed successfully`);
+          return true;
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          console.error(`❌ Enrichment attempt ${attemptNumber} exception:`, {
+            message: error.message,
+            name: error.name,
+            stack: error.stack?.substring(0, 200),
+          });
+          return false;
+        }
+      };
+
+      // Try enrichment with retry logic
+      const firstAttempt = await attemptEnrichment(1);
+
+      if (firstAttempt) {
+        enrichmentStatus = "success";
+      } else {
+        console.log("⏳ Waiting 2s before retry...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const secondAttempt = await attemptEnrichment(2);
+
+        if (secondAttempt) {
+          enrichmentStatus = "success";
+        } else {
+          console.warn("⚠️ Enrichment failed after 2 attempts (continuing without it)");
+          enrichmentStatus = "failed";
+        }
+      }
+    }
+
+    // Fetch product data including handle, store domain, AND enriched attributes
+    console.log("📦 Fetching product data with enriched attributes...");
+    const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
+      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
+      supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
+      supabaseAdmin
+        .from("product_variants")
+        .select("title, image_url, shopify_variant_id")
+        .eq("product_id", product_id),
+      userId
+        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    const productHandle = productRes.data?.handle || "";
+    const shopifyProductId = productRes.data?.shopify_product_id || "";
+    const shopDomain = storeRes.data?.shop_domain || "";
+    const images = imagesRes.data ?? [];
+    const variants = variantsRes.data ?? [];
+    const enrichedProduct = productRes.data || {};
+
+    // Count enriched attributes
+    const enrichedFields = [
+      "ai_color",
+      "ai_material",
+      "ai_shape",
+      "ai_texture",
+      "ai_pattern",
+      "ai_finish",
+      "smart_length",
+      "smart_width",
+      "smart_height",
+      "smart_weight",
+      "category",
+      "sub_category",
+      "style",
+      "room",
+      "functionality",
+    ];
+    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
+
+    console.log(
+      `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
     );
-  } catch (err) {
-    console.error("🔥 INTERNAL ERROR:", err);
 
+    // Build enriched summary
+    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, detectedLanguage);
+    if (enrichedSummary) {
+      console.log("📊 Using enriched attributes in landing page generation");
+    }
+
+    // 🌍 Get store localization for SERP analysis
+    let storeCountry = "United States";
+    let storeLanguage = "en";
+
+    if (enrichedProduct.store_id) {
+      console.log("🔍 Fetching store localization info...");
+      try {
+        const { data: storeData } = await supabaseAdmin
+          .from("shopify_connections")
+          .select("primary_locale, country_code")
+          .eq("id", enrichedProduct.store_id)
+          .maybeSingle();
+
+        if (storeData) {
+          storeCountry = storeData.country_code || "United States";
+          storeLanguage = storeData.primary_locale?.split("-")[0] || "en";
+          console.log(`📍 Store location: ${storeCountry}, language: ${storeLanguage}`);
+        }
+      } catch (error) {
+        console.warn("⚠️ Failed to fetch store info, using defaults:", error);
+      }
+    }
+
+    // 🔍 SERP Analysis for landing page structure
+    console.log("🔍 Analyzing SERP competitors for landing page structure...");
+    let serpInsights: any = null;
+
+    try {
+      const { data: serpData, error: serpError } = await supabaseAdmin.functions.invoke("analyze-serp-competitors", {
+        body: {
+          keyword: productTitle,
+          analysisType: "landing",
+          location: storeCountry,
+          language: storeLanguage,
+          maxResults: 10,
+        },
+      });
+
+      if (serpError) {
+        console.warn("⚠️ SERP analysis failed:", serpError);
+      } else if (serpData) {
+        serpInsights = serpData.insights;
+        console.log("✅ SERP analysis completed:", {
+          commonSections: serpInsights?.commonSections?.length || 0,
+          ctaPatterns: serpInsights?.ctaPatterns?.length || 0,
+        });
+      }
+    } catch (serpErr) {
+      console.warn("⚠️ SERP analysis error:", serpErr);
+    }
+
+    // 🖼️ Multi-Image Vision AI Analysis - Analyze ALL product images
+    console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
+    const imageAnalyses: Array<{ imageUrl: string; description: string; index: number }> = [];
+
+    // Analyze main image + all additional images (limit to 6 images max for performance)
+    const imagesToAnalyze = images.slice(0, 6);
+
+    for (let i = 0; i < imagesToAnalyze.length; i++) {
+      const img = imagesToAnalyze[i];
+      try {
+        console.log(`📸 Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${img.src.substring(0, 50)}...`);
+
+        const visionController = new AbortController();
+        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
+
+        const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
+          "analyze-image-with-vision",
+          {
+            body: {
+              imageUrl: img.src,
+              productContext: {
+                title: productTitle,
+                category: enrichedProduct.category,
+                type: enrichedProduct.product_type,
+              },
+            },
+            signal: visionController.signal,
+          },
+        );
+
+        clearTimeout(visionTimeout);
+
+        if (visionError) {
+          console.log(`⚠️ Vision AI failed for image ${i + 1}:`, visionError.message);
+        } else if (visionData?.visualAttributes) {
+          const description = buildVisionSummary(visionData.visualAttributes, detectedLanguage);
+          imageAnalyses.push({
+            imageUrl: img.src,
+            description,
+            index: i + 1,
+          });
+          console.log(`✅ Vision AI analysis completed for image ${i + 1}`);
+        }
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        console.log(`⚠️ Vision AI timeout for image ${i + 1} (continuing):`, error.message);
+      }
+    }
+
+    console.log(`✅ Completed Vision AI analysis: ${imageAnalyses.length}/${imagesToAnalyze.length} images analyzed`);
+
+    // ============ SAVE VISION DATA TO DATABASE ============
+    // Aggregate and save vision attributes from all analyzed images
+    if (imageAnalyses.length > 0) {
+      console.log("💾 Saving Vision AI data to database...");
+
+      // Merge vision attributes from all images
+      const mergedVisionAttributes = imageAnalyses.reduce((acc: any, analysis: any, index: number) => {
+        // First image is primary
+        if (index === 0) {
+          return analysis;
+        }
+
+        // Merge materials from subsequent images
+        if (analysis.visualAttributes?.materials) {
+          acc.visualAttributes.materials = [
+            ...(acc.visualAttributes?.materials || []),
+            ...analysis.visualAttributes.materials,
+          ].filter((m: string, i: number, arr: string[]) => arr.indexOf(m) === i);
+        }
+
+        // Take first technical dimensions found
+        if (!acc.visualAttributes?.technicalDimensions && analysis.visualAttributes?.technicalDimensions) {
+          acc.visualAttributes.technicalDimensions = analysis.visualAttributes.technicalDimensions;
+        }
+
+        return acc;
+      }, imageAnalyses[0]);
+
+      // Update product with vision data
+      const { error: visionUpdateError } = await supabaseAdmin
+        .from("shopify_products")
+        .update({
+          vision_attributes: mergedVisionAttributes.visualAttributes || null,
+          vision_timestamp: new Date().toISOString(),
+          vision_model: "google/gemini-2.5-flash",
+        })
+        .eq("id", product_id);
+
+      if (visionUpdateError) {
+        console.error("❌ Failed to save vision data:", visionUpdateError);
+      } else {
+        console.log("✅ Vision data saved to database");
+      }
+    }
+
+    // Build comprehensive visual analysis summary
+    let visualAnalysis = "";
+    if (imageAnalyses.length > 0) {
+      visualAnalysis =
+        detectedLanguage === "en"
+          ? "\n🖼️ IMAGE ANALYSIS (Gemini Vision AI):\n\n"
+          : "\n🖼️ ANALYSE DES IMAGES (Gemini Vision AI):\n\n";
+
+      imageAnalyses.forEach((analysis) => {
+        const imageLabel =
+          detectedLanguage === "en"
+            ? `Image ${analysis.index}${analysis.index === 1 ? " (main)" : ""}`
+            : `Photo ${analysis.index}${analysis.index === 1 ? " (principale)" : ""}`;
+        visualAnalysis += `${imageLabel}:\n${analysis.description}\n\n`;
+      });
+    } else {
+      console.log("⏭️ No images analyzed by Vision AI");
+    }
+
+    // --- Prompt bilingual ---
+    const imgs = images.length
+      ? images.map((i) => `- ${i.src}`).join("\n")
+      : detectedLanguage === "en"
+        ? "No additional image"
+        : "Aucune image supplémentaire";
+    const vars = variants.length
+      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
+      : detectedLanguage === "en"
+        ? "No variant"
+        : "Aucune variante";
+
+    // Build product URLs
+    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
+
+    // Design style templates - DISTINCT VISUAL IDENTITIES
+    const styleTemplates = {
+      minimalist: {
+        name: "MINIMALISTE - Épuré et Zen",
+        description: "ULTRA-MINIMAL: Espaces blancs massifs, typographie géante, palette monochrome",
+        rules: `
+🎨 STYLE MINIMALISTE (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - MONOCHROME:
+- ❌ PAS de dégradés colorés
+- ✅ Noir + Blanc + 1 seul accent de couleur (primary)
+- Background: Blanc pur ou gris très clair (bg-white, bg-gray-50)
+- Texte: Noir intense (text-gray-900)
+
+TYPOGRAPHIE - GÉANTE ET AÉRÉE:
+- Titres H1: text-5xl md:text-7xl lg:text-8xl (ÉNORME)
+- Titres sections: text-4xl md:text-5xl
+- Line-height: leading-tight, letterspacing: tracking-tight
+- Font-weight: 300 (léger) ou 700 (bold), jamais moyen
+
+ESPACES - MASSIFS:
+- Sections: py-12 md:py-32 lg:py-40 (adapté mobile)
+- Entre éléments: space-y-16 md:space-y-20
+- Containers: max-w-4xl (ÉTROIT pour focus)
+
+ÉLÉMENTS VISUELS - MINIMALISTES:
+- ❌ AUCUNE ombre (pas de shadow)
+- ❌ AUCUN arrondi (angles droits, sharp corners)
+- Bordures: border border-gray-200 (fines et discrètes)
+- Images: Pleine largeur, aucun effet, aspect-video ou aspect-square
+
+ICÔNES - ULTRA-SIMPLES:
+- Taille: w-5 h-5 (PETIT et discret)
+- Style: Traits fins (stroke-width="1.5")
+- Couleur: Monochrome (noir ou primary)
+- ❌ PAS de dégradés, PAS de remplissage
+
+LAYOUT - LINÉAIRE:
+- 1 seule colonne principale
+- Maximum 2 colonnes sur desktop (grid-cols-1 md:grid-cols-2)
+- Alignement: Centré, symétrique
+- ❌ PAS d'asymétrie
+`,
+      },
+
+      modern: {
+        name: "MODERNE - Équilibré et Dynamique",
+        description: "DESIGN 2024: Dégradés subtils, cartes flottantes, animations douces",
+        rules: `
+🎨 STYLE MODERNE (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - VIBRANTE:
+- ✅ Dégradés subtils partout (primary → accent)
+- ✅ 2-3 couleurs vives bien équilibrées
+- Background: Blanc/gris avec touches colorées
+- Sections alternées: bg-white / bg-gray-50
+
+TYPOGRAPHIE - ÉQUILIBRÉE:
+- Titres H1: text-4xl md:text-6xl (GRAND mais pas géant)
+- Mix de font-weights: 300 (light), 500 (medium), 700 (bold)
+- Line-height: leading-snug
+- Contraste weight entre titres et texte
+
+ESPACES - HARMONIEUX:
+- Sections: py-12 md:py-24 (adapté mobile)
+- Entre éléments: space-y-8 md:space-y-12
+- Containers: max-w-7xl (standard large)
+
+ÉLÉMENTS VISUELS - CARTES FLOTTANTES:
+- ✅ Ombres progressives: shadow-md hover:shadow-xl
+- ✅ Bordures arrondies: rounded-xl, rounded-2xl
+- Cartes: bg-white p-6 rounded-2xl shadow-lg
+- Images: rounded-xl avec shadow-md
+
+ICÔNES - DÉGRADÉS ÉLÉGANTS:
+- Taille: w-8 h-8 (taille moyenne, bien visible)
+- Style: Dégradés (primary → accent)
+- Background: Cercle avec opacity 0.15
+- Stroke: stroke-width="2" (épaisseur moyenne)
+- ✅ Effets hover: scale-110 transition
+
+LAYOUT - GRILLES MODERNES:
+- 3 colonnes sur desktop (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+- Asymétrie légère (images alternées)
+- Grid gap: gap-6 md:gap-8
+`,
+      },
+
+      premium: {
+        name: "PREMIUM - Luxueux et Sophistiqué",
+        description: "ULTRA-LUXE: Backgrounds sombres, or/argent, typographie serif, effets riches",
+        rules: `
+🎨 STYLE PREMIUM (STRICTEMENT APPLIQUÉ):
+========================================
+PALETTE COULEURS - SOPHISTIQUÉE SOMBRE:
+- ✅ Background SOMBRE: bg-gray-900, bg-slate-900
+- ✅ Accents métalliques: or (#D4AF37 converti en HSL), argent
+- ✅ Dégradés complexes multi-stops
+- Texte sur fond sombre: text-gray-100, text-white
+
+TYPOGRAPHIE - LUXUEUSE SERIF:
+- ✅ Serif pour les titres: font-serif tracking-wide
+- Titres H1: text-5xl md:text-7xl lg:text-9xl (GIGANTESQUE)
+- Letterspacing: tracking-wide, tracking-wider
+- Font-weight: 300 (ultra-light) ou 800 (extra-bold)
+
+ESPACES - TRÈS GÉNÉREUX:
+- Sections: py-12 md:py-36 lg:py-48 (adapté mobile)
+- Entre éléments: space-y-16 md:space-y-24
+- Containers: max-w-7xl avec beaucoup de breathing room
+
+ÉLÉMENTS VISUELS - PROFONDEUR RICHE:
+- ✅ Ombres profondes multiples: shadow-2xl, drop-shadow-2xl
+- ✅ Bordures très arrondies: rounded-3xl, rounded-full
+- ✅ Overlays subtils: backdrop-blur, gradient overlays
+- Images: Cadres élégants, effets de profondeur
+
+ICÔNES - COMPLEXES ET BRILLANTES:
+- Taille: w-12 h-12 lg:w-16 lg:h-16 (GRANDES et imposantes)
+- Style: Dégradés 3+ couleurs avec effet glow
+- Filters: feGaussianBlur pour effet lumineux
+- Strokes: stroke-width="3" (épais)
+- ✅ Effets brillance: multiple layers, opacity variations
+
+LAYOUT - CRÉATIF ASYMÉTRIQUE:
+- Overlaps créatifs (z-index layers)
+- Asymétrie contrôlée
+- Grid cols variées: grid-cols-2 lg:grid-cols-5
+- Effets parallax hints
+- Sections alternées sombres/claires
+`,
+      },
+    };
+
+    // Icon templates by style - CLEARLY DIFFERENTIATED
+    const iconTemplates = {
+      minimalist: `
+  <!-- MINIMALIST: Simple stroke, no fill, monochrome -->
+  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" style="color: hsl(${designTokens.text})" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path>
+  </svg>`,
+
+      modern: `
+  <!-- MODERN: Gradient circle + check, clean & balanced -->
+  <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="modernCheckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="16" cy="16" r="14" fill="url(#modernCheckGrad)" opacity="0.12"/>
+    <path d="M10 16 L14 20 L22 12" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+      premium: `
+  <!-- PREMIUM: Multi-layer gradient + glow effect, luxurious -->
+  <svg class="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="premiumCheckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="50%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.primary});stop-opacity:0.8" />
+      </linearGradient>
+      <filter id="premiumCheckGlow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <!-- Outer glow circle -->
+    <circle cx="28" cy="28" r="24" fill="url(#premiumCheckGrad)" opacity="0.08" filter="url(#premiumCheckGlow)"/>
+    <!-- Mid circle with gradient -->
+    <circle cx="28" cy="28" r="22" fill="url(#premiumCheckGrad)" opacity="0.15"/>
+    <!-- Inner border circle -->
+    <circle cx="28" cy="28" r="20" stroke="url(#premiumCheckGrad)" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <!-- Check mark with glow -->
+    <path d="M17 28 L24 35 L39 20" stroke="url(#premiumCheckGrad)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#premiumCheckGlow)"/>
+  </svg>`,
+    };
+
+    // Select design style (default to modern if not provided)
+    const validDesignStyles = ["minimalist", "modern", "premium"];
+    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : "modern") as
+      | "minimalist"
+      | "modern"
+      | "premium";
+    const selectedStyle = styleTemplates[selectedDesignStyle];
+    const selectedIcon = iconTemplates[selectedDesignStyle];
+
+    console.log(`[Landing AI] Design style: ${selectedStyle.name} (received: ${designStyle})`);
+
+    const prompt =
+      detectedLanguage === "en"
+        ? `You are a Shopify UX/UI expert specialized in product landing pages.
+Generate a complete, professional Tailwind HTML landing page.
+
+PRODUCT:
+- Title: ${productTitle}
+- Brand: ${vendor}
+- Description: ${description}
+- Style: ${style || enrichedProduct.style || ""}
+- Product URL: ${productUrl}
+
+${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `🔍 VISUAL AI INSIGHTS (TRUST THESE OBSERVATIONS - THEY ARE WHAT IS ACTUALLY VISIBLE IN THE IMAGE):\n${visualAnalysis}\n\n🚨 CRITICAL: You MUST describe only what Vision AI observed. DO NOT mention features, colors, or materials that contradict the visual analysis above. If Vision AI says the product has wooden elements, DO NOT write about metal elements. BE 100% ACCURATE TO THE VISUAL OBSERVATIONS.\n` : ""}
+${
+  serpInsights
+    ? `
+🎯 COMPETITOR LANDING PAGE ANALYSIS (USE THIS TO STRUCTURE YOUR PAGE):
+
+📋 Common Sections Found in Top Results:
+${serpInsights.commonSections?.map((s: string) => `- ${s}`).join("\n") || "- Hero section\n- Product benefits\n- FAQ"}
+
+💬 Effective CTA Patterns:
+${serpInsights.ctaPatterns?.map((p: string) => `- ${p}`).join("\n") || "- Buy now\n- Learn more"}
+
+🏗️ Structural Elements to Include:
+${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "- Clear headline\n- Visual imagery\n- Trust signals"}
+
+📊 Content Density: ${serpInsights.contentDensity || "medium"}
+
+💡 RECOMMENDATION: Structure your landing page using these proven patterns while maintaining uniqueness.
+`
+    : ""
+}
+
+IMAGES:
+${imgs}
+VARIANTS:
+${vars}
+${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
+
+COLOR PALETTE (HSL FORMAT ONLY):
+- Primary: hsl(${designTokens.primary})
+- Secondary: hsl(${designTokens.secondary})
+- Accent: hsl(${designTokens.accent})
+- Background: hsl(${designTokens.background})
+- Text: hsl(${designTokens.text})
+
+🚨 CRITICAL COLOR RULES (MANDATORY):
+1. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
+2. ALWAYS use inline HSL styles for hero, sections, and CTAs
+3. Examples:
+   - Hero: <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+   - Section: <section style="background-color: hsl(${designTokens.surface})">
+   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+🎨 DESIGN MODEL: ${selectedStyle.name}
+${selectedStyle.description}
+${selectedStyle.rules}
+
+🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
+- NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
+- Use one breakpoint per property (✅ class="text-lg md:text-2xl")
+
+🎯 ICON TEMPLATE TO USE FOR LIST ITEMS (MANDATORY):
+${selectedIcon}
+🚨 CRITICAL: Use this EXACT structure for ALL list items. 
+🚨 CRITICAL: Adapt gradient IDs to be unique (iconGrad1, iconGrad2, etc.)
+🚨 CRITICAL: These icons are REQUIRED, not optional - include them in EVERY list
+
+🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
+🚨 CRITICAL: For ALL titles/text on images, you MUST:
+1. Add semi-transparent dark overlay: <div class="absolute inset-0 bg-black/40"></div>
+2. Use text-shadow for contrast: style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+3. Bright white text: class="text-white"
+4. Large font size: class="text-4xl md:text-6xl font-bold"
+5. MANDATORY structure example for hero with image:
+   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
+     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
+     <div class="absolute inset-0 bg-black/40"></div>
+     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
+       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+         ${productTitle}
+       </h1>
+       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+         Short description
+       </p>
+     </div>
+   </div>
+
+DESIGN & TONE (CRITICAL):
+✅ PROFESSIONAL STYLE REQUIRED:
+- Minimal, elegant, clean design
+- Modern e-commerce aesthetic
+- Professional photography style
+- Clear typography hierarchy
+- Generous whitespace
+
+❌ ABSOLUTELY FORBIDDEN:
+- NO decorative icons (sparkles ✨, stars ⭐, hearts ❤️, rocket 🚀, etc.)
+- NO emojis in content (🎉, 💎, 🌟, etc.)
+- NO colorful badges or stickers
+- NO cartoon-style illustrations
+- NO playful/childish visual elements
+- NO decorative graphics
+
+✓ ONLY ALLOWED:
+- Clean product images
+- SVG icons for bullet lists (checkmarks, stars, arrows) using theme colors
+- Example: <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+- Minimal dividers (thin lines)
+- Professional whitespace
+- Clear section headings
+
+STRUCTURE:
+- Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
+- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+- <script src="https://cdn.tailwindcss.com"></script> in <head>
+- 🚨 ALL images MUST have loading="lazy" attribute
+- Mobile-first (sm:, md:, lg:)
+- Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0 (margins on mobile, none on desktop)
+- Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+📱 RESPONSIVE TABLES (CRITICAL):
+- Desktop (md:): Use standard <table> with class "hidden md:table"
+- Mobile: Use cards with class "block md:hidden space-y-4"
+- Example structure:
+
+🔍 PHASE 5: SPECIFICATIONS RELIABILITY BADGE (MANDATORY):
+ALWAYS include a reliability indicator in the technical specifications section:
+
+${
+  enrichedProduct?.serp_verified
+    ? `
+✅ Badge for SERP-verified specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>Spécifications vérifiées</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Dimensions confirmées par ${enrichedProduct?.serp_data?.similarProducts?.length || 0} produits similaires</p>
+`
+    : enrichedProduct?.vision_attributes?.technicalDimensions
+      ? `
+📐 Badge for image-extracted specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+  <span>Mesures extraites du schéma technique</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Dimensions précises lues directement sur l'image produit</p>
+`
+      : `
+⚠️ Badge for estimated specs:
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-sm font-medium text-amber-800 mb-4">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+  <span>Dimensions approximatives</span>
+</div>
+<p class="text-xs text-gray-600 mb-6">Ces mesures sont estimées et peuvent varier légèrement</p>
+`
+}
+
+🚨 CRITICAL: Place this badge IMMEDIATELY BEFORE the technical specifications table/section
+  <!-- Mobile cards -->
+  <div class="block md:hidden space-y-4">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="font-semibold mb-2">Label</div>
+      <div class="text-secondary">Value</div>
+    </div>
+  </div>
+  <!-- Desktop table -->
+  <table class="hidden md:table min-w-full">
+
+🎨 PROFESSIONAL SVG ICONS (CRITICAL - MANDATORY):
+- ✅ REQUIRED: Use inline SVG with gradient fills for ALL list items
+- ✅ REQUIRED: Apply theme colors (primary, accent) with HSL values
+- ✅ REQUIRED: Add elegant checkmark icons for bullet points
+- 
+- 📋 MANDATORY SVG ICON TEMPLATE FOR LISTS:
+  ${selectedIcon}
+  
+ - 🎯 EXAMPLE FOR EACH LIST ITEM:
+  <div class="flex items-center gap-3 mb-4">
+    <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+          <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="url(#checkGrad)" opacity="0.15"/>
+      <path d="M7 12l3 3 7-7" stroke="hsl(${designTokens.primary})" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h4 class="font-semibold mb-1">Benefit Title</h4>
+      <p class="text-muted-foreground">Benefit description...</p>
+    </div>
+  </div>
+
+- 🎨 FOR FEATURE CARDS, USE LARGER ICONS:
+  <svg class="w-16 h-16 mx-auto mb-4" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cardIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28" fill="url(#cardIconGrad)" opacity="0.2"/>
+    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+- 🚨 CRITICAL: Use UNIQUE gradient IDs for each icon (checkGrad1, checkGrad2, cardIcon1, etc.)
+- 🚨 CRITICAL: ALWAYS include the SVG icons - they are NOT optional
+
+🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
+- NO "Add to Cart" buttons or any purchase buttons
+- NO "Buy Now" or "Order Now" buttons
+- NO navigation menus or breadcrumbs
+- NO footer section
+- NO links to external pages (use href="#" only)
+- NO call-to-action buttons of any kind
+
+✅ REQUIRED SECTIONS:
+Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
+
+ICONS USAGE (MANDATORY):
+🚨 CRITICAL: SVG icons are REQUIRED, not optional!
+- ✅ Use SVG checkmark/star icons for EVERY bullet list item
+- ✅ Use gradient fills with theme colors (primary + accent)
+- ✅ Each icon needs unique gradient ID (grad1, grad2, etc.)
+- ✅ Example template is provided above - USE IT
+- ❌ NO simple text bullets (-, *, •)
+- ❌ NO emoji icons (✓, ★, ✔)
+- ❌ NO decorative icons elsewhere`
+        : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
+Génère une landing page Tailwind HTML complète et professionnelle.
+
+📱 OPTIMISATION MOBILE & PERFORMANCE (CRITIQUE):
+🚨 TOUJOURS inclure ces optimisations:
+1. Images: TOUJOURS ajouter loading="lazy" sur TOUTES les balises <img>
+2. Viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+3. Textes: Adapter les tailles avec classes responsive (text-base md:text-lg)
+4. Espacements: Utiliser py-12 md:py-24 pour sections (meilleur sur mobile)
+
+PRODUIT :
+- Titre : ${productTitle}
+- Marque : ${vendor}
+- Description : ${description}
+- Style : ${style || enrichedProduct.style || ""}
+- URL produit : ${productUrl}
+
+${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `🔍 INSIGHTS IA VISUELLE (FAIS CONFIANCE À CES OBSERVATIONS - C'EST CE QUI EST RÉELLEMENT VISIBLE DANS L'IMAGE) :\n${visualAnalysis}\n\n🚨 CRITIQUE : Tu DOIS décrire uniquement ce que l'IA visuelle a observé. NE mentionne PAS de caractéristiques, couleurs ou matériaux qui contredisent l'analyse visuelle ci-dessus. Si l'IA visuelle dit que le produit a des éléments en bois, NE parle PAS d'éléments métalliques. SOIS PRÉCIS À 100% PAR RAPPORT AUX OBSERVATIONS VISUELLES.\n` : ""}
+
+IMAGES :
+${imgs}
+VARIANTES :
+${vars}
+${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
+
+PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
+- Primaire : hsl(${designTokens.primary})
+- Secondaire : hsl(${designTokens.secondary})
+- Accent : hsl(${designTokens.accent})
+- Fond : hsl(${designTokens.background})
+- Texte : hsl(${designTokens.text})
+
+🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
+1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
+2. TOUJOURS utiliser styles inline HSL pour hero, sections et CTAs
+3. Exemples :
+   - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+   - Section : <section style="background-color: hsl(${designTokens.surface})">
+   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
+${selectedStyle.description}
+${selectedStyle.rules}
+
+🚨 RÈGLES RESPONSIVES CRITIQUES (OBLIGATOIRE) :
+- JAMAIS dupliquer les classes responsive (❌ class="md:text-xl md:text-2xl")
+- Utiliser un seul breakpoint par propriété (✅ class="text-lg md:text-2xl")
+
+🎯 TEMPLATE D'ICÔNE À UTILISER POUR LES LISTES :
+${selectedIcon}
+Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
+
+🖼️ IMAGES ET TITRES (CRITIQUE - LISIBILITÉ MAXIMALE) :
+🚨 CRITICAL: Pour TOUS les titres/textes sur images, tu DOIS :
+1. Ajouter overlay sombre semi-transparent : <div class="absolute inset-0 bg-black/40"></div>
+2. Utiliser text-shadow pour contraste : style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)"
+3. Texte en blanc éclatant : class="text-white"
+4. Taille de police grande : class="text-4xl md:text-6xl font-bold"
+5. Structure exemple OBLIGATOIRE pour hero avec image :
+   <div class="relative h-[70vh] min-h-[400px] md:h-[600px]">
+     <img src="..." loading="lazy" class="absolute inset-0 w-full h-full object-cover">
+     <div class="absolute inset-0 bg-black/40"></div>
+     <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
+       <h1 class="text-4xl md:text-6xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8)">
+         ${productTitle}
+       </h1>
+       <p class="text-base md:text-xl text-white/90" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.7)">
+         Description courte
+       </p>
+     </div>
+   </div>
+
+DESIGN & TON (CRITIQUE) :
+✅ STYLE PROFESSIONNEL REQUIS :
+- Design minimal, élégant, épuré
+- Esthétique e-commerce moderne
+- Style photo professionnelle
+- Hiérarchie typographique claire
+- Espaces blancs généreux
+
+❌ ABSOLUMENT INTERDIT :
+- AUCUNE icône décorative (sparkles ✨, étoiles ⭐, cœurs ❤️, fusée 🚀, etc.)
+- AUCUN emoji dans le contenu (🎉, 💎, 🌟, etc.)
+- AUCUN badge coloré ou autocollant
+- AUCUNE illustration style cartoon
+- AUCUN élément visuel ludique/enfantin
+- AUCUN graphique décoratif
+
+✓ UNIQUEMENT AUTORISÉ :
+- Images produit propres
+- Icônes SVG pour listes à puces (checkmarks, étoiles, flèches) utilisant les couleurs du thème
+- Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+- Séparateurs minimaux (lignes fines)
+- Espaces blancs professionnels
+- Titres de section clairs
+
+STRUCTURE :
+- HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
+- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+- <script src="https://cdn.tailwindcss.com"></script> dans <head>
+- 🚨 TOUTES les images DOIVENT avoir l'attribut loading="lazy"
+- Mobile-first (sm:, md:, lg:)
+- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+📱 TABLEAUX RESPONSIFS (CRITIQUE) :
+- Bureau (md:) : Utiliser <table> standard avec class "hidden md:table"
+- Mobile : Utiliser des cartes avec class "block md:hidden space-y-4"
+- Structure exemple :
+  <!-- Cartes mobile -->
+  <div class="block md:hidden space-y-4">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="font-semibold mb-2">Label</div>
+      <div class="text-secondary">Valeur</div>
+    </div>
+  </div>
+  <!-- Table bureau -->
+  <table class="hidden md:table min-w-full">
+
+🎨 ICÔNES SVG PROFESSIONNELLES (CRITIQUE) :
+- Utiliser des SVG inline avec dégradés pour un look premium
+- Appliquer les couleurs du thème (primary, secondary, accent) en HSL
+- Ajouter ombres et lueurs subtiles pour la profondeur
+- Structure exemple :
+  <svg class="w-16 h-16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28" fill="url(#iconGrad)" opacity="0.2"/>
+    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>
+- Pour les listes, utiliser des icônes élégantes (checkmark, étoile) avec couleurs du thème
+- Ajouter effets hover : transform hover:scale-110 transition-transform duration-300
+
+🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
+- AUCUN bouton "Ajouter au panier" ou bouton d'achat
+- AUCUN bouton "Acheter maintenant" ou "Commander"
+- AUCUN menu de navigation ou fil d'Ariane (breadcrumb)
+- AUCUNE section footer
+- AUCUN lien vers des pages externes (utiliser href="#" uniquement)
+- AUCUN bouton call-to-action de quelque nature que ce soit
+
+✅ SECTIONS REQUISES :
+Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
+
+UTILISATION DES ICÔNES :
+- Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
+- UNE SEULE icône par élément de liste
+- Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+- AUCUNE icône décorative ailleurs`;
+
+    // --- AI call with timeout (60s) ---
+    console.log("🤖 Starting AI generation...");
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
+
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                detectedLanguage === "en"
+                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
+                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.",
+            },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: 16000,
+          temperature: 0.7,
+        }),
+        signal: aiController.signal,
+      });
+    } finally {
+      clearTimeout(aiTimeout);
+    }
+
+    console.log("✅ AI generation completed");
+
+    if (!aiResponse.ok) {
+      const text = await aiResponse.text();
+      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
+        status: aiResponse.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await aiResponse.json();
+    let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
+
+    if (!rawHtml || rawHtml.length < 400)
+      return new Response(
+        JSON.stringify({ error: detectedLanguage === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+
+    console.log("[AI] Raw HTML received, length:", rawHtml.length);
+
+    // 🧹 Apply HTML normalization and sanitization
+    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
+
+    // 📊 Validate final HTML
+    const validation = validateHTML(html);
+    if (!validation.valid) {
+      console.warn("[Validation] Issues detected:", validation.issues);
+    }
+
+    // Log structure details
+    console.log("[Validation] HTML structure:", {
+      hasDoctype: html.includes("<!DOCTYPE html>"),
+      hasHtml: html.includes("<html"),
+      hasClosingBody: html.includes("</body>"),
+      hasClosingHtml: html.includes("</html>"),
+      length: html.length,
+    });
+
+    console.log("✅ HTML generated and sanitized successfully");
+
+    // Simple assign HTML without SERP button
+    const finalHtml = html;
+
+    // 🎯 OPTIMIZE PRODUCT TITLE WITH SERP BEFORE SAVING
+    if (userId && product_id) {
+      console.log("🎯 Optimizing product title with SERP...");
+      try {
+        const { data: titleData, error: titleError } = await supabaseAdmin.functions.invoke(
+          "optimize-product-title-serp",
+          {
+            body: {
+              productId: product_id,
+              currentTitle: productTitle,
+              description: description,
+              productType: imageAnalysis?.productType,
+              vendor: vendor,
+              language: language,
+            },
+          },
+        );
+
+        if (titleError) {
+          console.error("⚠️ Title optimization failed:", titleError);
+        } else if (titleData?.success) {
+          console.log(`✅ Title optimized: "${titleData.originalTitle}" → "${titleData.optimizedTitle}"`);
+        }
+      } catch (titleOptError) {
+        console.error("⚠️ Title optimization error:", titleOptError);
+        // Continue even if title optimization fails
+      }
+    }
+
+    // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
+    if (userId && product_id) {
+      console.log("💾 Updating landing_page field in shopify_products...");
+
+      const { error: updateError } = await supabaseAdmin
+        .from("shopify_products")
+        .update({
+          landing_page: finalHtml,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", product_id)
+        .eq("seller_id", userId);
+
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
+      } else {
+        console.log("✅ Landing page updated successfully in shopify_products");
+      }
+    } else {
+      console.log("⚠️ Skipping save: userId or product_id not available");
+    }
+
+    console.log("✅ Landing page generation successful!");
     return new Response(
-      safeJSONStringify({
-        error: "SERVER_ERROR",
-        details: String(err),
+      JSON.stringify({
+        html: finalHtml,
+        enrichment_status: enrichmentStatus,
+        attributes_count: attributesCount,
       }),
-      { status: 500, headers: corsHeaders },
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error("💥 ERROR:", err);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
