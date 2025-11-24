@@ -59,6 +59,7 @@ export function TestProductCard({ product }: TestProductCardProps) {
     try {
       const { error } = await supabase.functions.invoke('generate-landing-ai', {
         body: { 
+          productId: product.id,
           product_id: product.id,
           productTitle: product.title,
           description: product.description || product.body_html || "",
