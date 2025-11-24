@@ -91,6 +91,7 @@ import LandingDebug from "./pages/LandingDebug";
 import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
+import UsageTable from "./pages/UsageTable";
 
 const queryClient = new QueryClient();
 
@@ -527,6 +528,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ApiAnalytics />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/usage-table"
+              element={
+                <ProtectedLayout>
+                  <UsageTable />
                 </ProtectedLayout>
               }
             />
