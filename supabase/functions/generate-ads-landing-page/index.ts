@@ -306,16 +306,7 @@ ${!designInstructions ? '## BASE DESIGN (Amazon-inspired):' : '## APPLY THE DESI
 - Primary CTA button: "${campaign.cta_text || 'Voir les produits'}"
 - Trust badges row: ⭐⭐⭐⭐⭐ 4.8/5 (2,847 avis) | 🚚 Livraison gratuite | 🔄 Retours 30 jours
 
-#### B. HIGHLIGHTS BAR
-${campaign.highlights && Array.isArray(campaign.highlights) && campaign.highlights.length > 0 ? 
-`Display these highlights as icons with text:
-${campaign.highlights.map((h: any) => `- ${h.text || h}`).join('\n')}` : 
-`- ✓ Livraison gratuite dès 50€
-- ✓ Retours gratuits sous 30 jours  
-- ✓ Garantie satisfait ou remboursé
-- ✓ Paiement sécurisé`}
-
-#### C. FEATURED PRODUCTS GRID
+#### B. FEATURED PRODUCTS GRID
 Display ${products.length} products in a responsive grid (2 cols mobile, 3-4 cols desktop).
 
 **For each product, create a card with:**
@@ -351,26 +342,20 @@ Product ${idx + 1}:
 - Specs_confidence: ${p.specs_confidence ?? 'N/A'} (0-100)
 `).join('\n')}
 
-#### D. WHY CHOOSE US SECTION
-3-column grid with icons and benefits:
-- 🏆 Qualité garantie | Produits vérifiés et testés
-- 🚀 Livraison express | Expédition sous 24h
-- 💯 Satisfait ou remboursé | Garantie 30 jours
-
-#### E. SOCIAL PROOF SECTION  
+#### D. SOCIAL PROOF SECTION
 Display 3 customer testimonials with:
 - 5-star rating
 - Customer name with initials in colored circles
 - Review text (authentic French testimonials)
 
-#### F. FAQ SECTION (Accordion-style)
+#### E. FAQ SECTION (Accordion-style)
 4-5 common questions:
 - Quels sont les délais de livraison ?
 - Puis-je retourner un produit ?
 - Les paiements sont-ils sécurisés ?
 - Comment suivre ma commande ?
 
-#### G. FINAL CTA SECTION
+#### F. FINAL CTA SECTION
 - Repeat main headline
 - Strong CTA button "Voir tous les produits"
 - Urgency text: "Offre valable jusqu'à épuisement des stocks"
