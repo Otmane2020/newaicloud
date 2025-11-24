@@ -63,18 +63,32 @@ Deno.serve(async (req) => {
       try {
         console.log(`📝 Processing article: ${article_id}`);
 
-        // Récupérer l'article avec images
+        // Récupérer l'article avec images et validation store
         const { data: article, error: articleError } = await supabase
           .from("blog_articles")
-          .select("*, content_images(src, position)")
+          .select("*, content_images(src, position), store_id")
           .eq("id", article_id)
-          .eq("user_id", user.id)
           .single();
 
         if (articleError || !article) {
-          console.error(`❌ Article not found or unauthorized: ${article_id}`);
+          console.error(`❌ Article not found: ${article_id}`);
           errorCount++;
-          results.push({ article_id, success: false, error: "Article not found or unauthorized" });
+          results.push({ article_id, success: false, error: "Article not found" });
+          continue;
+        }
+
+        // Vérifier que l'utilisateur a accès à ce store
+        const { data: store } = await supabase
+          .from("shopify_connections")
+          .select("id")
+          .eq("id", article.store_id)
+          .eq("user_id", user.id)
+          .single();
+
+        if (!store) {
+          console.error(`❌ User unauthorized for article: ${article_id}`);
+          errorCount++;
+          results.push({ article_id, success: false, error: "Unauthorized access" });
           continue;
         }
 
