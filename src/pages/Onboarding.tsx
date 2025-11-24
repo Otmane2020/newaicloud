@@ -266,6 +266,18 @@ export default function Onboarding() {
         console.log("🎁 User trial status: has_used_trial =", profileData.has_used_trial);
       }
 
+      // Get user's product count to filter appropriate plans
+      const { data: usage } = await supabase
+        .from('usage_tracking')
+        .select('products_count')
+        .eq('seller_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const productCount = usage?.products_count || 0;
+      console.log('📊 Onboarding: User has', productCount, 'products');
+
       const { data, error } = await supabase
         .from("subscription_plans")
         .select("*")
@@ -276,10 +288,15 @@ export default function Onboarding() {
       if (error) throw error;
 
       // Cast features from Json to Record<string, any>
-      const formattedPlans = (data || []).map((plan) => ({
+      let formattedPlans = (data || []).map((plan) => ({
         ...plan,
         features: (plan.features as Record<string, any>) || {},
       })) as Plan[];
+
+      // CRITICAL: Filter out plans that can't accommodate user's product count
+      formattedPlans = formattedPlans.filter(plan => 
+        plan.max_products === -1 || plan.max_products >= productCount
+      );
 
       setPlans(formattedPlans);
 

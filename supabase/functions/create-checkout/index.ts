@@ -101,24 +101,20 @@ serve(async (req) => {
     }
 
     // Check if user's product count exceeds the selected plan's limit
-    // If so, automatically upgrade to the next available plan that can accommodate
+    // CRITICAL FIX: Ne pas auto-upgrade si l'utilisateur choisit explicitement un plan
+    // L'auto-upgrade ne devrait s'appliquer que si l'utilisateur DÉPASSE la limite du plan sélectionné
+    // Si l'utilisateur a 600 produits et sélectionne pro-500, on doit l'informer, PAS le forcer vers pro-1000
     if (productCount > plan.max_products && plan.max_products !== -1) {
       console.log(`⚠️ Product count (${productCount}) exceeds plan limit (${plan.max_products})`);
       
-      // Find the smallest plan that can accommodate the product count
-      const appropriatePlan = allPlans.find(p => 
-        p.max_products === -1 || p.max_products >= productCount
+      // Ne PAS auto-upgrade - retourner une erreur explicite à l'utilisateur
+      return new Response(
+        JSON.stringify({ 
+          error: `Votre boutique contient ${productCount} produits, ce qui dépasse la limite de ${plan.max_products} produits du plan ${plan.name}. Veuillez sélectionner un plan supérieur.`,
+          suggested_plan_id: allPlans.find(p => p.max_products === -1 || p.max_products >= productCount)?.id
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-
-      if (appropriatePlan && appropriatePlan.id !== plan.id) {
-        console.log(`🔄 Auto-upgrading from ${plan.name} to ${appropriatePlan.name} based on product count`);
-        plan = appropriatePlan;
-      } else if (!appropriatePlan) {
-        // If no plan can accommodate, suggest the highest tier
-        const highestPlan = allPlans[allPlans.length - 1];
-        console.log(`⚠️ No plan can accommodate ${productCount} products, suggesting highest tier: ${highestPlan.name}`);
-        plan = highestPlan;
-      }
     }
 
     console.log('📋 Final selected plan:', plan.name);
