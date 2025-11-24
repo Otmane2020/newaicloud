@@ -1023,7 +1023,7 @@ serve(async (req) => {
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
       supabaseAdmin
         .from("product_variants")
-        .select("title, image_url, shopify_variant_id")
+        .select("title, image_url, shopify_variant_id, price, sku, option1, option2, option3, inventory_quantity")
         .eq("product_id", product_id),
       userId
         ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
@@ -1604,9 +1604,74 @@ EXAMPLE STRUCTURE FOR DIMENSIONS SECTION:
 🚨 CRITICAL: Use the EXACT dimensions and measurements extracted from the technical schematics above.
 ` : ''}
 
-VARIANTS:
-${vars}
-${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
+📦 PRODUCT VARIANTS ${variants.length > 1 ? "(CRITICAL - MANDATORY SECTION)" : ""}:
+${variants.length > 1 ? `
+🚨 THIS PRODUCT HAS ${variants.length} VARIANTS - YOU MUST CREATE A DEDICATED "PRODUCT VARIATIONS" SECTION!
+
+**Variants Data:**
+${variants.map((v, i) => `
+### Variant ${i + 1}: ${v.title}
+- **Price**: ${v.price} EUR
+- **SKU**: ${v.sku || 'N/A'}
+- **Options**: ${v.option1 ? `${v.option1}` : ''}${v.option2 ? ` / ${v.option2}` : ''}${v.option3 ? ` / ${v.option3}` : ''}
+- **Available**: ${v.inventory_quantity > 0 ? 'Yes' : 'Out of stock'}
+- **Image**: ${v.image_url || 'Use main product images'}
+`).join('\n')}
+
+🚨 CRITICAL INSTRUCTIONS FOR VARIANTS SECTION:
+1. **Section Title**: "Nos Variations Disponibles" or "Choisissez Votre Modèle"
+2. **Placement**: AFTER Technical Specifications, BEFORE Image Gallery
+3. **Card Structure** for each variant:
+   - Variant title/name (e.g., "Modèle Bleu Foncé", "Version Labrador")
+   - Primary image (variant-specific if available, otherwise main product image)
+   - Key differentiator (color, size, material that makes it unique)
+   - Price (prominent, styled with primary color)
+   - Availability status (badge-style)
+   - Small gallery (2-3 variant-specific images if available from main image list)
+4. **Responsive Grid**: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+5. **Visual Style**: Match overall design, use surface color for cards, add hover effects
+6. **Image Selection**: Try to match images to variants based on title/color keywords
+
+**Example HTML Structure:**
+\`\`\`html
+<section class="py-12 md:py-20" style="background: hsl(${designTokens.background});">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-0">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-10" style="color: hsl(${designTokens.text})">
+      Nos Variations Disponibles
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Variant Card Example -->
+      <div class="rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105" style="background: hsl(${designTokens.surface});">
+        <div class="relative h-64">
+          <img src="[variant-primary-image]" loading="lazy" class="w-full h-full object-cover" alt="[Variant Title]">
+        </div>
+        <div class="p-6">
+          <h3 class="text-2xl font-bold mb-2" style="color: hsl(${designTokens.text})">[Variant Title]</h3>
+          <p class="text-lg font-semibold mb-4" style="color: hsl(${designTokens.primary})">[Price] EUR</p>
+          <div class="space-y-2 mb-4">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" style="color: hsl(${designTokens.accent})" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <span style="color: hsl(${designTokens.textMuted})">[Key differentiator, e.g., "Couleur: Bleu Foncé"]</span>
+            </div>
+          </div>
+          <!-- Mini gallery for this variant (2-3 images) -->
+          <div class="grid grid-cols-3 gap-2">
+            <img src="[detail-image-1]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Detail 1">
+            <img src="[detail-image-2]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Detail 2">
+            <img src="[detail-image-3]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Detail 3">
+          </div>
+        </div>
+      </div>
+      <!-- Repeat for each variant -->
+    </div>
+  </div>
+</section>
+\`\`\`
+` : `
+Single variant product - No separate variations section needed.
+Variant: ${vars}
+`}
+${customHighlights ? `\nHIGHLIGHTS:\n${customHighlights}` : ""}
 
 CONTENT LENGTH (MANDATORY):
 - Mode: ${lengthConfig.labelEn}
@@ -1618,18 +1683,67 @@ ${lengthMode === "short" ? "- Very concise page with only essential sections and
 
 🌓 THEME CONFIGURATION (CRITICAL - MANDATORY):
 ${userOptions.theme === "dark" 
-  ? `🌙 DARK MODE ENABLED:
-- ALL backgrounds must use dark colors: background: hsl(${designTokens.background})
-- ALL text must be light colored: color: hsl(${designTokens.text})
-- Surface colors must be dark: hsl(${designTokens.surface})
-- Ensure good contrast: light text on dark backgrounds
-- Cards/sections: Use dark surface colors with light text
-- NEVER use white backgrounds in dark mode`
-  : `☀️ LIGHT MODE (DEFAULT):
-- Backgrounds: Use light colors hsl(${designTokens.background})
-- Text: Use dark colors hsl(${designTokens.text})
-- Surface: Light surfaces hsl(${designTokens.surface})
-- Standard light mode appearance`
+  ? `🌙 DARK MODE ENABLED - FOLLOW THESE RULES EXACTLY:
+
+🚨 BACKGROUNDS (MANDATORY):
+- Body background: MUST use dark color from designTokens.background (e.g., hsl(222 47% 11%))
+- ALL section backgrounds: MUST alternate between dark background and dark surface colors
+- ❌ FORBIDDEN: White backgrounds hsl(0 0% 100%)
+- ❌ FORBIDDEN: Light blue backgrounds hsl(210 100% 80%)
+- ❌ FORBIDDEN: Any light colored backgrounds
+- ✅ CORRECT: style="background: hsl(${designTokens.background})" or style="background: hsl(${designTokens.surface})"
+
+🚨 TEXT COLORS (MANDATORY):
+- ALL text: MUST use light colors from designTokens
+- Headings: style="color: hsl(${designTokens.text})" (should be light like hsl(210 40% 98%))
+- Body text: style="color: hsl(${designTokens.text})"
+- Muted text: style="color: hsl(${designTokens.textMuted})"
+- ❌ FORBIDDEN: Dark text colors like hsl(210 100% 20%)
+- ❌ FORBIDDEN: Black text hsl(0 0% 0%)
+
+🚨 CARDS & CONTAINERS (MANDATORY):
+- Use designTokens.surface with optional opacity: style="background: hsl(${designTokens.surface}) / 0.5"
+- Add backdrop-filter: backdrop-filter: blur(10px) for glass effect
+- ❌ FORBIDDEN: Light colored cards hsl(210 100% 80%)
+- ✅ CORRECT: Dark surfaces with light text
+
+🚨 VERIFICATION CHECKLIST - ALL MUST BE TRUE:
+- [ ] Body has DARK background
+- [ ] EVERY section has DARK background  
+- [ ] ALL text is LIGHT colored
+- [ ] NO white backgrounds anywhere (no hsl(0 0% 100%))
+- [ ] NO light blue backgrounds (no hsl(210 100% 80%))
+- [ ] NO dark text on dark background
+
+🚨 IF YOU USE hsl(0 0% 100%) OR hsl(210 100% 80%) OR hsl(210 100% 20%) TEXT IN DARK MODE, YOU FAILED!`
+  : `☀️ LIGHT MODE (DEFAULT) - FOLLOW THESE RULES EXACTLY:
+
+🚨 BACKGROUNDS (MANDATORY):
+- Body background: MUST use light color from designTokens.background (e.g., hsl(0 0% 100%))
+- ALL section backgrounds: MUST alternate between light background and light surface colors  
+- ❌ FORBIDDEN: Dark backgrounds hsl(222 47% 11%)
+- ✅ CORRECT: style="background: hsl(${designTokens.background})" or style="background: hsl(${designTokens.surface})"
+
+🚨 TEXT COLORS (MANDATORY):
+- ALL text: MUST use dark colors from designTokens
+- Headings: style="color: hsl(${designTokens.text})" (should be dark)
+- Body text: style="color: hsl(${designTokens.text})"
+- Muted text: style="color: hsl(${designTokens.textMuted})"
+- ❌ FORBIDDEN: Light text colors like hsl(210 40% 98%)
+- ❌ FORBIDDEN: White text hsl(0 0% 100%)
+
+🚨 CARDS & CONTAINERS (MANDATORY):
+- Use designTokens.surface or light accent colors
+- Add subtle shadows: shadow-md, shadow-lg
+- ❌ FORBIDDEN: Dark colored cards
+- ✅ CORRECT: Light surfaces with dark text
+
+🚨 VERIFICATION CHECKLIST - ALL MUST BE TRUE:
+- [ ] Body has LIGHT background
+- [ ] EVERY section has LIGHT background
+- [ ] ALL text is DARK colored
+- [ ] NO dark backgrounds anywhere in light mode
+- [ ] Consistent light theme throughout`
 }
 
 LAYOUT STRUCTURE (CRITICAL - APPLY THIS LAYOUT):
@@ -1825,10 +1939,25 @@ STRUCTURE - NO CARDS, NO BORDERS:
 - NO links to external pages (use href="#" only)
 - NO call-to-action buttons of any kind
 
-✅ REQUIRED SECTIONS:
+✅ REQUIRED SECTIONS (in order):
 ${dimensionImages.length > 0 
-  ? 'Hero with image, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Technical Dimensions (MANDATORY - use dimension schematics), Materials & Composition (if available), Product Image Gallery (regular product photos only), Care Instructions, FAQ.'
-  : 'Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.'
+  ? `1. Hero with image
+2. Product Overview (description)
+3. Key Benefits (3-5 items with icons)
+4. Technical Specifications (if enriched data available)
+5. Technical Dimensions (MANDATORY - use dimension schematics with measurements)${variants.length > 1 ? '\n6. Product Variations (MANDATORY - show all variants with cards)' : ''}
+7. Materials & Composition (if available)
+8. Product Image Gallery (regular product photos only, NOT dimension schematics)
+9. Care Instructions
+10. FAQ`
+  : `1. Hero with image gallery
+2. Product Overview (description)
+3. Key Benefits (3-5 items with icons)
+4. Technical Specifications (if enriched data available)${variants.length > 1 ? '\n5. Product Variations (MANDATORY - show all variants with cards)' : ''}
+6. Materials & Composition (if available)
+7. Image Gallery
+8. Care Instructions
+9. FAQ`
 }
 
 ICONS USAGE (MANDATORY):
@@ -1882,9 +2011,75 @@ ${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "-
 
 IMAGES :
 ${imgs}
-VARIANTES :
-${vars}
-${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
+
+📦 VARIANTES PRODUIT ${variants.length > 1 ? "(CRITIQUE - SECTION OBLIGATOIRE)" : ""}:
+${variants.length > 1 ? `
+🚨 CE PRODUIT A ${variants.length} VARIANTES - TU DOIS CRÉER UNE SECTION DÉDIÉE "VARIATIONS DU PRODUIT" !
+
+**Données des Variantes:**
+${variants.map((v, i) => `
+### Variante ${i + 1}: ${v.title}
+- **Prix**: ${v.price} EUR
+- **SKU**: ${v.sku || 'N/A'}
+- **Options**: ${v.option1 ? `${v.option1}` : ''}${v.option2 ? ` / ${v.option2}` : ''}${v.option3 ? ` / ${v.option3}` : ''}
+- **Disponibilité**: ${v.inventory_quantity > 0 ? 'Oui' : 'Rupture de stock'}
+- **Image**: ${v.image_url || 'Utiliser les images principales du produit'}
+`).join('\n')}
+
+🚨 INSTRUCTIONS CRITIQUES POUR LA SECTION VARIANTES:
+1. **Titre de Section**: "Nos Variations Disponibles" ou "Choisissez Votre Modèle"
+2. **Placement**: APRÈS les Spécifications Techniques, AVANT la Galerie d'Images
+3. **Structure de Carte** pour chaque variante:
+   - Titre/nom de la variante (ex: "Modèle Bleu Foncé", "Version Labrador")
+   - Image principale (spécifique à la variante si disponible, sinon image produit principale)
+   - Différenciateur clé (couleur, taille, matériau qui la rend unique)
+   - Prix (proéminent, stylé avec couleur primaire)
+   - Statut de disponibilité (style badge)
+   - Petite galerie (2-3 images spécifiques à la variante si disponibles dans la liste d'images)
+4. **Grille Responsive**: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+5. **Style Visuel**: Correspondre au design global, utiliser couleur surface pour les cartes, ajouter effets hover
+6. **Sélection d'Images**: Essayer de faire correspondre les images aux variantes selon les mots-clés titre/couleur
+
+**Exemple de Structure HTML:**
+\`\`\`html
+<section class="py-12 md:py-20" style="background: hsl(${designTokens.background});">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-0">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-10" style="color: hsl(${designTokens.text})">
+      Nos Variations Disponibles
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Exemple de Carte Variante -->
+      <div class="rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105" style="background: hsl(${designTokens.surface});">
+        <div class="relative h-64">
+          <img src="[image-principale-variante]" loading="lazy" class="w-full h-full object-cover" alt="[Titre Variante]">
+        </div>
+        <div class="p-6">
+          <h3 class="text-2xl font-bold mb-2" style="color: hsl(${designTokens.text})">[Titre Variante]</h3>
+          <p class="text-lg font-semibold mb-4" style="color: hsl(${designTokens.primary})">[Prix] EUR</p>
+          <div class="space-y-2 mb-4">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" style="color: hsl(${designTokens.accent})" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <span style="color: hsl(${designTokens.textMuted})">[Différenciateur clé, ex: "Couleur: Bleu Foncé"]</span>
+            </div>
+          </div>
+          <!-- Mini galerie pour cette variante (2-3 images) -->
+          <div class="grid grid-cols-3 gap-2">
+            <img src="[image-detail-1]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Détail 1">
+            <img src="[image-detail-2]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Détail 2">
+            <img src="[image-detail-3]" loading="lazy" class="rounded-lg w-full h-20 object-cover" alt="Détail 3">
+          </div>
+        </div>
+      </div>
+      <!-- Répéter pour chaque variante -->
+    </div>
+  </div>
+</section>
+\`\`\`
+` : `
+Produit à variante unique - Pas besoin de section variations séparée.
+Variante: ${vars}
+`}
+${customHighlights ? `\nPOINTS FORTS :\n${customHighlights}` : ""}
 
 LONGUEUR DU CONTENU (OBLIGATOIRE) :
 - Mode : ${lengthConfig.labelFr}
@@ -1893,6 +2088,71 @@ LONGUEUR DU CONTENU (OBLIGATOIRE) :
 ${lengthMode === "short" ? "- Page très concise avec uniquement les sections essentielles et du texte bref" :
   lengthMode === "medium" ? "- Nombre équilibré de sections avec détails modérés" :
   "- Page riche et détaillée avec sections complètes et texte plus long"}
+
+🌓 CONFIGURATION DU THÈME (CRITIQUE - OBLIGATOIRE):
+${userOptions.theme === "dark" 
+  ? `🌙 MODE SOMBRE ACTIVÉ - SUIVRE CES RÈGLES EXACTEMENT:
+
+🚨 ARRIÈRE-PLANS (OBLIGATOIRE):
+- Arrière-plan du body: DOIT utiliser une couleur sombre de designTokens.background (ex: hsl(222 47% 11%))
+- TOUS les arrière-plans de section: DOIVENT alterner entre couleurs sombres background et surface
+- ❌ INTERDIT: Arrière-plans blancs hsl(0 0% 100%)
+- ❌ INTERDIT: Arrière-plans bleu clair hsl(210 100% 80%)
+- ❌ INTERDIT: Tout arrière-plan de couleur claire
+- ✅ CORRECT: style="background: hsl(${designTokens.background})" ou style="background: hsl(${designTokens.surface})"
+
+🚨 COULEURS DE TEXTE (OBLIGATOIRE):
+- TOUT le texte: DOIT utiliser des couleurs claires de designTokens
+- Titres: style="color: hsl(${designTokens.text})" (devrait être clair comme hsl(210 40% 98%))
+- Texte corps: style="color: hsl(${designTokens.text})"
+- Texte atténué: style="color: hsl(${designTokens.textMuted})"
+- ❌ INTERDIT: Couleurs de texte sombres comme hsl(210 100% 20%)
+- ❌ INTERDIT: Texte noir hsl(0 0% 0%)
+
+🚨 CARTES & CONTENEURS (OBLIGATOIRE):
+- Utiliser designTokens.surface avec opacité optionnelle: style="background: hsl(${designTokens.surface}) / 0.5"
+- Ajouter backdrop-filter: backdrop-filter: blur(10px) pour effet verre
+- ❌ INTERDIT: Cartes de couleur claire hsl(210 100% 80%)
+- ✅ CORRECT: Surfaces sombres avec texte clair
+
+🚨 CHECKLIST DE VÉRIFICATION - TOUS DOIVENT ÊTRE VRAIS:
+- [ ] Le body a un arrière-plan SOMBRE
+- [ ] CHAQUE section a un arrière-plan SOMBRE
+- [ ] TOUT le texte est de couleur CLAIRE
+- [ ] AUCUN arrière-plan blanc nulle part (pas de hsl(0 0% 100%))
+- [ ] AUCUN arrière-plan bleu clair (pas de hsl(210 100% 80%))
+- [ ] AUCUN texte sombre sur fond sombre
+
+🚨 SI TU UTILISES hsl(0 0% 100%) OU hsl(210 100% 80%) OU hsl(210 100% 20%) COMME TEXTE EN MODE SOMBRE, TU AS ÉCHOUÉ!`
+  : `☀️ MODE CLAIR (PAR DÉFAUT) - SUIVRE CES RÈGLES EXACTEMENT:
+
+🚨 ARRIÈRE-PLANS (OBLIGATOIRE):
+- Arrière-plan du body: DOIT utiliser une couleur claire de designTokens.background (ex: hsl(0 0% 100%))
+- TOUS les arrière-plans de section: DOIVENT alterner entre couleurs claires background et surface
+- ❌ INTERDIT: Arrière-plans sombres hsl(222 47% 11%)
+- ✅ CORRECT: style="background: hsl(${designTokens.background})" ou style="background: hsl(${designTokens.surface})"
+
+🚨 COULEURS DE TEXTE (OBLIGATOIRE):
+- TOUT le texte: DOIT utiliser des couleurs sombres de designTokens
+- Titres: style="color: hsl(${designTokens.text})" (devrait être sombre)
+- Texte corps: style="color: hsl(${designTokens.text})"
+- Texte atténué: style="color: hsl(${designTokens.textMuted})"
+- ❌ INTERDIT: Couleurs de texte claires comme hsl(210 40% 98%)
+- ❌ INTERDIT: Texte blanc hsl(0 0% 100%)
+
+🚨 CARTES & CONTENEURS (OBLIGATOIRE):
+- Utiliser designTokens.surface ou couleurs d'accent claires
+- Ajouter ombres subtiles: shadow-md, shadow-lg
+- ❌ INTERDIT: Cartes de couleur sombre
+- ✅ CORRECT: Surfaces claires avec texte sombre
+
+🚨 CHECKLIST DE VÉRIFICATION - TOUS DOIVENT ÊTRE VRAIS:
+- [ ] Le body a un arrière-plan CLAIR
+- [ ] CHAQUE section a un arrière-plan CLAIR
+- [ ] TOUT le texte est de couleur SOMBRE
+- [ ] AUCUN arrière-plan sombre nulle part en mode clair
+- [ ] Thème clair cohérent partout`
+}
 
 🏗️ STRUCTURE DE LAYOUT :
 - Layout sélectionné : ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type || layout : layout}
