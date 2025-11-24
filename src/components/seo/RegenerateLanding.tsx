@@ -332,6 +332,7 @@ export default function RegenerateLanding({
           imageAnalysis: imageAnalysis,
           contentLengthParams: contentParams,
           language: language,
+          theme: config.theme || "light",
         },
       });
 
