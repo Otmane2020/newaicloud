@@ -1233,12 +1233,49 @@ serve(async (req) => {
       console.log("⏭️ No images analyzed by Vision AI");
     }
 
+    // 📐 Analyze images for technical dimensions
+    console.log("📐 Analyzing images for technical dimensions...");
+    let dimensionImages: any[] = [];
+    let productImages: any[] = images;
+
+    if (images.length > 0) {
+      try {
+        const { data: dimensionData, error: dimensionError } = await supabaseAdmin.functions.invoke(
+          "analyze-dimension-images",
+          {
+            body: { imageUrls: images.map(img => img.src) }
+          }
+        );
+
+        if (!dimensionError && dimensionData?.success) {
+          dimensionImages = dimensionData.technical || [];
+          const regularUrls = (dimensionData.regular || []).map((r: any) => r.url);
+          productImages = images.filter(img => regularUrls.includes(img.src));
+          
+          console.log(`✅ Dimensions analysis: ${dimensionImages.length} technical, ${productImages.length} product images`);
+        } else {
+          console.warn("⚠️ Dimension analysis failed, using all images as product images");
+        }
+      } catch (error) {
+        console.warn("⚠️ Error during dimension analysis:", error);
+      }
+    }
+
     // --- Prompt bilingual ---
-    const imgs = images.length
-      ? images.map((i) => `- ${i.src}`).join("\n")
+    const imgs = productImages.length
+      ? productImages.map((i) => `- ${i.src}`).join("\n")
       : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
+    
+    const dimensionImgs = dimensionImages.length
+      ? dimensionImages.map((d) => {
+          const dims = d.dimensions?.map((dim: any) => `${dim.measurement}${dim.unit} (${dim.label})`).join(", ") || "";
+          return `- ${d.url}\n  Type: ${d.type}\n  Views: ${d.views?.join(", ") || "unknown"}\n  Dimensions: ${dims}\n  Description: ${d.description || ""}`;
+        }).join("\n")
+      : detectedLanguage === "en"
+        ? "No dimension schematics available"
+        : "Aucun schéma de dimensions disponible";
     const vars = variants.length
       ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
       : detectedLanguage === "en"
@@ -1465,6 +1502,7 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     console.log(`  - Layout: ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type : layout}`);
     console.log(`  - Content Length: ${lengthMode}`);
     console.log(`  - Theme: ${userOptions.theme || "light"}`);
+    console.log(`  - Dimension Images: ${dimensionImages.length} technical schematics found`);
 
     const prompt =
       detectedLanguage === "en"
@@ -1503,6 +1541,69 @@ ${serpInsights.structuralElements?.map((e: string) => `- ${e}`).join("\n") || "-
 
 IMAGES:
 ${imgs}
+
+${dimensionImages.length > 0 ? `
+🔧 TECHNICAL DIMENSION SCHEMATICS (USE FOR DIMENSIONS SECTION):
+${dimensionImgs}
+
+📐 CRITICAL: Create a separate "Dimensions Techniques" / "Technical Dimensions" section BEFORE the image gallery.
+This section must:
+- Display the technical schematic images with detailed captions
+- List all extracted measurements in a clear table (responsive: mobile cards, desktop table)
+- Include views information (front, side, top, etc.)
+- Be separate from the regular product gallery
+- Use a clean, professional layout
+
+EXAMPLE STRUCTURE FOR DIMENSIONS SECTION:
+<!-- Technical Dimensions Section -->
+<section class="mb-16 p-6 md:p-10 rounded-2xl shadow-xl" style="background: hsl(${designTokens.surface});">
+  <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center" style="color: hsl(${designTokens.text});">Dimensions Techniques</h2>
+  
+  <!-- Dimension Schematics Images -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    ${dimensionImages.map(d => `
+    <div class="relative overflow-hidden rounded-xl shadow-lg group">
+      <img src="${d.url}" loading="lazy" alt="Schéma technique - ${d.views?.join(", ") || "vue"}" class="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105">
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+        <p class="text-white text-sm font-medium">${d.description || d.views?.join(", ") || "Vue technique"}</p>
+      </div>
+    </div>
+    `).join("")}
+  </div>
+
+  <!-- Measurements Table (use extracted dimensions) -->
+  <!-- Mobile: cards -->
+  <div class="block md:hidden space-y-4">
+    ${dimensionImages.flatMap(d => d.dimensions || []).map(dim => `
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <div class="font-semibold mb-1" style="color: hsl(${designTokens.text});">${dim.label || "Mesure"}</div>
+      <div style="color: hsl(${designTokens.primary});">${dim.measurement} ${dim.unit}</div>
+    </div>
+    `).join("")}
+  </div>
+  
+  <!-- Desktop: table -->
+  <table class="hidden md:table min-w-full rounded-xl overflow-hidden shadow-lg" style="background: hsl(${designTokens.background});">
+    <thead>
+      <tr style="background: hsl(${designTokens.primary}); color: hsl(${designTokens.background});">
+        <th class="py-3 px-4 text-left font-semibold">Dimension</th>
+        <th class="py-3 px-4 text-left font-semibold">Mesure</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${dimensionImages.flatMap(d => d.dimensions || []).map((dim, idx) => `
+      <tr class="${idx % 2 === 0 ? '' : 'bg-gray-50'}">
+        <td class="py-3 px-4 font-medium" style="color: hsl(${designTokens.text});">${dim.label || "Dimension"}</td>
+        <td class="py-3 px-4" style="color: hsl(${designTokens.textMuted});">${dim.measurement} ${dim.unit}</td>
+      </tr>
+      `).join("")}
+    </tbody>
+  </table>
+</section>
+
+🚨 CRITICAL: Use the EXACT dimensions and measurements extracted from the technical schematics above.
+` : ''}
+
 VARIANTS:
 ${vars}
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
@@ -1515,15 +1616,36 @@ ${lengthMode === "short" ? "- Very concise page with only essential sections and
   lengthMode === "medium" ? "- Balanced number of sections with moderate detail" :
   "- Rich, detailed page with comprehensive sections and longer copy"}
 
-LAYOUT STRUCTURE:
+🌓 THEME CONFIGURATION (CRITICAL - MANDATORY):
+${userOptions.theme === "dark" 
+  ? `🌙 DARK MODE ENABLED:
+- ALL backgrounds must use dark colors: background: hsl(${designTokens.background})
+- ALL text must be light colored: color: hsl(${designTokens.text})
+- Surface colors must be dark: hsl(${designTokens.surface})
+- Ensure good contrast: light text on dark backgrounds
+- Cards/sections: Use dark surface colors with light text
+- NEVER use white backgrounds in dark mode`
+  : `☀️ LIGHT MODE (DEFAULT):
+- Backgrounds: Use light colors hsl(${designTokens.background})
+- Text: Use dark colors hsl(${designTokens.text})
+- Surface: Light surfaces hsl(${designTokens.surface})
+- Standard light mode appearance`
+}
+
+LAYOUT STRUCTURE (CRITICAL - APPLY THIS LAYOUT):
 - Layout selected: ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type || layout : layout}
+- 🚨 MANDATORY: You MUST follow this layout structure throughout the page
 ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.instructions)
-  ? (resolvedLayout.rules || resolvedLayout.instructions)
+  ? `- Layout Instructions:\n${resolvedLayout.rules || resolvedLayout.instructions}`
   : layout === "2_colonnes"
-    ? "- Use primarily 2-column grids (grid-cols-1 md:grid-cols-2) for main sections"
+    ? "- Use primarily 2-column grids (grid-cols-1 md:grid-cols-2) for main sections\n- Benefits, features, and content should be in 2 columns on desktop"
     : layout === "3_colonnes"
-      ? "- Use 3-column grids on desktop (grid-cols-1 md:grid-cols-3) for benefits/features"
-      : "- Flexible layout but maintain consistency"}
+      ? "- Use 3-column grids on desktop (grid-cols-1 md:grid-cols-3) for benefits/features\n- Maximum 3 items per row on desktop"
+      : layout === "hero_left" || layout === "hero à gauche"
+        ? "- Hero section: Image on left, content on right (flex-row on desktop)\n- Use: <div class='flex flex-col md:flex-row'> with image first"
+        : layout === "hero_right" || layout === "hero à droite"
+          ? "- Hero section: Content on left, image on right (flex-row-reverse on desktop)\n- Use: <div class='flex flex-col md:flex-row-reverse'> or put content before image"
+          : "- Flexible layout but maintain consistency"}
 
 🎨 DESIGN MODEL (CRITICAL - APPLY THESE RULES STRICTLY):
 Style: ${selectedStyle.name}
@@ -1704,7 +1826,10 @@ STRUCTURE - NO CARDS, NO BORDERS:
 - NO call-to-action buttons of any kind
 
 ✅ REQUIRED SECTIONS:
-Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.
+${dimensionImages.length > 0 
+  ? 'Hero with image, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Technical Dimensions (MANDATORY - use dimension schematics), Materials & Composition (if available), Product Image Gallery (regular product photos only), Care Instructions, FAQ.'
+  : 'Hero with image gallery, Key Benefits (3-4 cards), Technical Specifications (if enriched data), Materials & Composition (if available), Image Gallery, Care Instructions, FAQ.'
+}
 
 ICONS USAGE (MANDATORY):
 🚨 CRITICAL: SVG icons are REQUIRED, not optional!
