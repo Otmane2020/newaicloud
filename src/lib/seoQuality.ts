@@ -454,7 +454,9 @@ export function calculateImagesSeoScore(images: any[]): number {
   const totalScore = images.reduce((sum, img) => {
     const isAI = img.optimization_count > 0;
     const altScore = calculateAltTextScore(img.alt_text || '', isAI);
-    return sum + altScore.score;
+    // Normalize each score to 0-100 scale
+    const normalizedScore = normalizeAltScore(altScore.score, altScore.weight);
+    return sum + normalizedScore;
   }, 0);
   
   return Math.round(totalScore / images.length);
@@ -551,8 +553,19 @@ export function calculateDetailedSeoScore(
 }
 
 /**
+ * Normalize weighted ALT score to 0-100 scale
+ * AI scores (weight 1.0) are already 0-100
+ * Shopify scores (weight 0.5) need to be doubled to reach 0-100
+ */
+function normalizeAltScore(score: number, weight: number): number {
+  if (weight === 0) return 0;
+  // Normalize to 100: divide by weight to get base score, then ensure it's out of 100
+  return Math.min(100, Math.round(score / weight));
+}
+
+/**
  * Calculate ALT text score with Shopify vs AI weighting
- * Shopify ALT = 0.3 weight (30%), AI Vision ALT = 1.0 weight (100%)
+ * Shopify ALT = 0.5 weight (50%), AI Vision ALT = 1.0 weight (100%)
  */
 export function calculateAltTextScore(
   altText: string | null | undefined,
