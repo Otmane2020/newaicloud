@@ -820,9 +820,9 @@ export function SeoAltImage() {
                 altCompletionRate >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
-                {imagesOptimizedByAI} / {images.length}
+                {altCompletionRate} / 100
               </div>
-              <div className="text-sm text-muted-foreground">Images optimisées</div>
+              <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{images.length})</div>
             </div>
             <Button
               size="lg"
