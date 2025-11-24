@@ -47,7 +47,50 @@ async function withTimeout(promise: Promise<any>, ms: number) {
   ]).finally(() => clearTimeout(timer));
 }
 
-// WCAG Color Contrast Utilities
+// Direct HSL Manipulation Utilities (no HEX conversion)
+function parseHSL(hslString: string): { h: number; s: number; l: number } | null {
+  if (!hslString) return null;
+  
+  // Handle both "hsl(H, S%, L%)" and "H S% L%" formats
+  const match = hslString.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/i) || 
+                hslString.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+  
+  if (!match) {
+    console.error('❌ Failed to parse HSL:', hslString);
+    return null;
+  }
+  
+  return {
+    h: parseInt(match[1]),
+    s: parseInt(match[2]),
+    l: parseInt(match[3])
+  };
+}
+
+function normalizeHSL(hslString: string | null): string | null {
+  if (!hslString) return null;
+  const parsed = parseHSL(hslString);
+  if (!parsed) return null;
+  return `${parsed.h} ${parsed.s}% ${parsed.l}%`;
+}
+
+function adjustSaturationHSL(hslString: string, factor: number): string {
+  const hsl = parseHSL(hslString);
+  if (!hsl) return hslString;
+  
+  const newS = Math.min(100, Math.max(0, Math.round(hsl.s * factor)));
+  return `${hsl.h} ${newS}% ${hsl.l}%`;
+}
+
+function adjustLightnessHSL(hslString: string, factor: number): string {
+  const hsl = parseHSL(hslString);
+  if (!hsl) return hslString;
+  
+  const newL = Math.min(100, Math.max(0, Math.round(hsl.l * factor)));
+  return `${hsl.h} ${hsl.s}% ${newL}%`;
+}
+
+// Legacy functions for contrast calculation (still need HEX temporarily)
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
@@ -59,63 +102,18 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
     : null;
 }
 
-function hexToHsl(hex: string): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return "0 0% 0%";
-
-  const r = rgb.r / 255;
-  const g = rgb.g / 255;
-  const b = rgb.b / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h = 0,
-    s = 0,
-    l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-        break;
-      case g:
-        h = ((b - r) / d + 2) / 6;
-        break;
-      case b:
-        h = ((r - g) / d + 4) / 6;
-        break;
-    }
-  }
-
-  h = Math.round(h * 360);
-  s = Math.round(s * 100);
-  l = Math.round(l * 100);
-
-  return `${h} ${s}% ${l}%`;
-}
-
-// Convert HSL string (e.g., "hsl(222, 47%, 11%)") to HEX
 function hslToHex(hslString: string): string {
-  // Parse HSL string - handle both "hsl(H, S%, L%)" and "H S% L%" formats
-  const match = hslString.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/i) || 
-                hslString.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-  
-  if (!match) {
-    console.warn('Invalid HSL format:', hslString);
-    return "#000000"; // fallback
-  }
+  const hsl = parseHSL(hslString);
+  if (!hsl) return "#000000";
 
-  const h = parseInt(match[1]) / 360;
-  const s = parseInt(match[2]) / 100;
-  const l = parseInt(match[3]) / 100;
+  const h = hsl.h / 360;
+  const s = hsl.s / 100;
+  const l = hsl.l / 100;
 
   let r, g, b;
 
   if (s === 0) {
-    r = g = b = l; // achromatic
+    r = g = b = l;
   } else {
     const hue2rgb = (p: number, q: number, t: number) => {
       if (t < 0) t += 1;
@@ -290,63 +288,69 @@ function adjustLightness(hex: string, factor: number): string {
 }
 
 function generateDesignTokens(colorScheme: any) {
-  // Convert HSL strings to HEX if needed (DB returns "hsl(H, S%, L%)" format)
-  const toHex = (color: string) => {
-    if (!color) return null;
-    if (color.startsWith('#')) return color;
-    if (color.startsWith('hsl')) return hslToHex(color);
-    return color;
-  };
+  // Error handling
+  if (!colorScheme) {
+    console.error('❌ No color scheme provided to generateDesignTokens');
+    return {
+      primary: "221 83% 53%",
+      primaryLight: "221 83% 64%",
+      primaryDark: "221 83% 42%",
+      secondary: "212 95% 51%",
+      secondaryLight: "212 95% 61%",
+      secondaryDark: "212 95% 41%",
+      accent: "270 95% 75%",
+      accentLight: "270 95% 85%",
+      accentDark: "270 95% 65%",
+      background: "0 0% 100%",
+      surface: "210 40% 98%",
+      text: "222 47% 11%",
+      textMuted: "0 0% 40%",
+      ctaText: "0 0% 100%",
+      contrastRatio: 21
+    };
+  }
 
-  const primaryHex = toHex(colorScheme.primary) || "#000000";
-  const secondaryHex = toHex(colorScheme.secondary) || "#333333";
-  const backgroundHex = toHex(colorScheme.background) || "#FFFFFF";
-  const surfaceHex = toHex(colorScheme.surface) || "#F5F5F5";
-  const textHex = toHex(colorScheme.text) || "#000000";
-  const textMutedHex = toHex(colorScheme.textMuted) || "#666666";
-  const accentHex = toHex(colorScheme.accent) || adjustSaturation(primaryHex, 1.3);
+  console.log('📥 Received color scheme:', JSON.stringify(colorScheme, null, 2));
 
-  console.log('🎨 Converted colors to HEX:', {
-    primary: primaryHex,
-    secondary: secondaryHex,
-    background: backgroundHex,
-    text: textHex,
-    accent: accentHex,
-  });
-
+  // Normalize all HSL values to "H S% L%" format
+  const primary = normalizeHSL(colorScheme.primary) || "221 83% 53%";
+  const secondary = normalizeHSL(colorScheme.secondary) || "212 95% 51%";
+  const background = normalizeHSL(colorScheme.background) || "0 0% 100%";
+  const surface = normalizeHSL(colorScheme.surface) || "210 40% 98%";
+  const text = normalizeHSL(colorScheme.text) || "222 47% 11%";
+  const textMuted = normalizeHSL(colorScheme.textMuted) || "0 0% 40%";
+  const accent = normalizeHSL(colorScheme.accent) || adjustSaturationHSL(primary, 1.3);
+  
+  console.log('✅ Normalized HSL colors:', { primary, secondary, accent, text, background });
+  
+  // Calculate contrast for CTA text (using legacy HEX method)
+  const primaryHex = hslToHex(primary);
   const contrast = calculateContrast(primaryHex, "#FFFFFF");
   const needsDarkText = contrast < 4.5;
-  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
+  const ctaText = needsDarkText ? "0 0% 0%" : "0 0% 100%";
 
-  const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
-  const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
-
-  // Generate lighter and darker variants for each color
-  const primaryLight = adjustLightness(primaryHex, 1.2);
-  const primaryDark = adjustLightness(primaryHex, 0.8);
-  const secondaryLight = adjustLightness(secondaryHex, 1.2);
-  const secondaryDark = adjustLightness(secondaryHex, 0.8);
-  const accentLight = adjustLightness(accentHex, 1.2);
-  const accentDark = adjustLightness(accentHex, 0.8);
-
-  // Convert all colors to HSL format for CSS variables
-  return {
-    primary: hexToHsl(primaryHex),
-    primaryLight: hexToHsl(primaryLight),
-    primaryDark: hexToHsl(primaryDark),
-    secondary: hexToHsl(secondaryHex),
-    secondaryLight: hexToHsl(secondaryLight),
-    secondaryDark: hexToHsl(secondaryDark),
-    accent: hexToHsl(accentHex),
-    accentLight: hexToHsl(accentLight),
-    accentDark: hexToHsl(accentDark),
-    background: hexToHsl(validatedBackgroundHex),
-    surface: hexToHsl(surfaceHex),
-    text: hexToHsl(validatedTextHex),
-    textMuted: hexToHsl(textMutedHex),
-    ctaText: hexToHsl(ctaTextHex),
-    contrastRatio: contrast,
+  // Generate lighter and darker variants using direct HSL manipulation
+  const designTokens = {
+    primary,
+    primaryLight: adjustLightnessHSL(primary, 1.2),
+    primaryDark: adjustLightnessHSL(primary, 0.8),
+    secondary,
+    secondaryLight: adjustLightnessHSL(secondary, 1.2),
+    secondaryDark: adjustLightnessHSL(secondary, 0.8),
+    accent,
+    accentLight: adjustLightnessHSL(accent, 1.2),
+    accentDark: adjustLightnessHSL(accent, 0.8),
+    background,
+    surface,
+    text,
+    textMuted,
+    ctaText,
+    contrastRatio: Math.round(contrast * 10) / 10,
   };
+
+  console.log('🎯 Design Tokens générés:', designTokens);
+  
+  return designTokens;
 }
 
 // Helper to build enriched product summary
