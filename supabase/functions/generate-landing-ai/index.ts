@@ -848,9 +848,9 @@ serve(async (req) => {
     const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
     
     let lengthConfig = { 
-      maxTokens: 7000,  // ✅ Increased buffer for medium content
+      maxTokens: 9000,  // ✅ Increased buffer for medium content to handle detailed HTML
       labelEn: "medium", 
-      labelFr: "moyenne", 
+      labelFr: "moyenne",
       descriptionEn: "Balanced content (300-400 words)",
       descriptionFr: "Contenu équilibré (300-400 mots)" 
     };
