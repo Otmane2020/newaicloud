@@ -346,9 +346,9 @@ export function SeoAltImage() {
       if (contentTypeFilter === 'homepage' && (!img.content_type || img.content_type !== 'homepage')) return false;
     }
 
-    if (activeTab === 'needs-alt' && img.alt_text) return false;
-    if (activeTab === 'has-alt' && !img.alt_text) return false;
-    if (activeTab === 'to-sync' && !img.alt_text) return false;
+    if (activeTab === 'needs-alt' && (img.optimization_count && img.optimization_count > 0)) return false;
+    if (activeTab === 'has-alt' && (!img.optimization_count || img.optimization_count === 0)) return false;
+    if (activeTab === 'to-sync' && (!img.alt_text || !img.optimization_count || img.last_optimization_at)) return false;
 
     // Status filter
     if (statusFilter === 'optimized' && (!img.optimization_count || img.optimization_count === 0)) return false;
@@ -752,11 +752,11 @@ export function SeoAltImage() {
     );
   }
 
-  const imagesNeedingAlt = images.filter(img => !img.alt_text).length;
-  const imagesWithExistingAlt = images.filter(img => img.alt_text && (!img.optimization_count || img.optimization_count === 0)).length;
-  const imagesWithAIAlt = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0).length;
-  const imagesWithAlt = imagesWithExistingAlt + imagesWithAIAlt;
-  const altCompletionRate = images.length > 0 ? Math.round((imagesWithAlt / images.length) * 100) : 0;
+  const imagesNotOptimized = images.filter(img => !img.optimization_count || img.optimization_count === 0).length;
+  const imagesOptimizedByAI = images.filter(img => img.optimization_count && img.optimization_count > 0).length;
+  const imagesToSync = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_optimization_at).length;
+  const imagesSynced = images.filter(img => img.alt_text && img.last_optimization_at).length;
+  const altCompletionRate = images.length > 0 ? Math.round((imagesOptimizedByAI / images.length) * 100) : 0;
   
   // Calculate ALT SEO score with Shopify vs AI weighting
   const altSeoScore = images.length > 0 
@@ -772,9 +772,9 @@ export function SeoAltImage() {
 
   const tabs = [
     { id: 'all' as AltImageTab, label: 'Toutes', count: images.length },
-    { id: 'needs-alt' as AltImageTab, label: 'Sans ALT', count: imagesNeedingAlt },
-    { id: 'has-alt' as AltImageTab, label: 'Avec ALT', count: imagesWithAlt },
-    { id: 'to-sync' as AltImageTab, label: 'À synchroniser', count: imagesWithAlt }
+    { id: 'needs-alt' as AltImageTab, label: 'Non optimisé', count: imagesNotOptimized },
+    { id: 'has-alt' as AltImageTab, label: 'Optimisé', count: imagesOptimizedByAI },
+    { id: 'to-sync' as AltImageTab, label: 'À synchroniser', count: imagesToSync }
   ];
 
   return (
@@ -821,7 +821,7 @@ export function SeoAltImage() {
             <Button
               size="lg"
               onClick={handleOptimizeAllImages}
-              disabled={generating || imagesNeedingAlt === 0 || limitsLoading}
+              disabled={generating || imagesNotOptimized === 0 || limitsLoading}
               className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
             >
               {generating ? (
@@ -832,7 +832,7 @@ export function SeoAltImage() {
               ) : (
                 <>
                   <Eye className="w-5 h-5" />
-                  Optimiser Toutes les Images ({imagesNeedingAlt})
+                  Optimiser Toutes les Images ({imagesNotOptimized})
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -844,42 +844,20 @@ export function SeoAltImage() {
       {/* Clickable Filter Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card
-          className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950 dark:to-slate-950 border-gray-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('all');
-            toast.info(`Affichage de toutes les images (${images.length})`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Toutes les images
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{images.length}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Dans votre catalogue
-              </p>
-            </div>
-            <ImageIcon className="w-8 h-8 text-gray-600" />
-          </div>
-          <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">Cliquez pour voir</p>
-        </Card>
-
-        <Card
-          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('needs-alt');
-            toast.info(`Affichage des images sans ALT (${imagesNeedingAlt})`);
+            toast.info(`Affichage des images non optimisées (${imagesNotOptimized})`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                Sans ALT text
+                Non optimisé par IA
               </p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{imagesNeedingAlt}</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{imagesNotOptimized}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                À optimiser
+                0 optimisation
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
@@ -891,44 +869,66 @@ export function SeoAltImage() {
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('has-alt');
-            toast.info(`Affichage des images avec ALT (${imagesWithAlt})`);
+            toast.info(`Affichage des images optimisées par IA (${imagesOptimizedByAI})`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                Avec ALT text
+                Généré par IA
               </p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{imagesWithAlt}</p>
-              <div className="flex gap-2 mt-1 text-xs text-green-600 dark:text-green-400">
-                <span>Shopify: {imagesWithExistingAlt}</span>
-                <span>•</span>
-                <span>AI: {imagesWithAIAlt}</span>
-              </div>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{imagesOptimizedByAI}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Optimisé par IA
+              </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <Sparkles className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquez pour voir</p>
         </Card>
 
         <Card
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('to-sync');
-            toast.info(`Affichage des images à synchroniser (${imagesWithAlt})`);
+            toast.info(`Affichage des images à synchroniser (${imagesToSync})`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 À synchroniser
               </p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{imagesWithAlt}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">AI-optimisées uniquement</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{imagesToSync}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Optimisé par IA uniquement
+              </p>
             </div>
-            <Upload className="w-8 h-8 text-purple-600" />
+            <Upload className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Cliquez pour voir</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Cliquez pour voir</p>
+        </Card>
+
+        <Card
+          className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 border-teal-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('all');
+            toast.info(`Affichage des images synchronisées (${imagesSynced})`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                Synchronisé
+              </p>
+              <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">{imagesSynced}</p>
+              <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
+                Sur Shopify
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-teal-600" />
+          </div>
+          <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">Cliquez pour voir</p>
         </Card>
       </div>
 
