@@ -590,11 +590,8 @@ export function SeoAltImage() {
   };
 
   const handleOptimizeAllImages = async () => {
-    // Get all images not optimized by AI AND without alt text
-    const imagesToOptimize = images.filter(img => 
-      (!img.optimization_count || img.optimization_count === 0) &&
-      (!img.alt_text || img.alt_text.trim() === '')
-    );
+    // Get all images not optimized by AI
+    const imagesToOptimize = images.filter(img => !img.optimization_count || img.optimization_count === 0);
 
     if (imagesToOptimize.length === 0) {
       toast.info('Toutes les images sont déjà optimisées par IA');
