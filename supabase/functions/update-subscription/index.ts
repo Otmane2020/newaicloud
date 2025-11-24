@@ -439,15 +439,20 @@ serve(async (req) => {
 
     if (isMidCycleUpgrade && hasPaidInvoice) {
       try {
+        // Use customer from the subscription to ensure they match
+        const customerId = typeof stripeSubscription.customer === 'string' 
+          ? stripeSubscription.customer 
+          : stripeSubscription.customer.id;
+        
         logStep("Attempting to create proration invoice", {
-          customer: profile.stripe_customer_id,
+          customer: customerId,
           subscription: subscriptionData.stripe_subscription_id,
           hasPaidInvoice,
           subscriptionStatus: stripeSubscription.status
         });
 
         const invoice = await stripe.invoices.create({
-          customer: profile.stripe_customer_id,
+          customer: customerId,
           subscription: subscriptionData.stripe_subscription_id,
           auto_advance: true,
         });
