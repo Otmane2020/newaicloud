@@ -486,9 +486,9 @@ export function SubscriptionPlans() {
               </Badge>
             )}
             {isUpgradePlan(selectedPro.id) && (
-              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success animate-pulse">
                 <TrendingUp className="w-3 h-3 mr-1" />
-                Upgrade recommandé
+                🚀 Meilleur rapport qualité-prix
               </Badge>
             )}
 
