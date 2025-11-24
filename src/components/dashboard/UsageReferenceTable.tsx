@@ -1,46 +1,46 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sparkles, FileText, Image, Package, ShoppingBag } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const iconMap: Record<string, any> = {
+  Sparkles,
+  FileText,
+  Image,
+  Package,
+  ShoppingBag
+};
 
 export function UsageReferenceTable() {
-  const usageData = [
-    {
-      feature: "Landing Page",
-      icon: Sparkles,
-      optimizations: 10,
-      description: "Génération complète d'une landing page produit avec IA"
-    },
-    {
-      feature: "Article de Blog",
-      icon: FileText,
-      optimizations: 10,
-      description: "Rédaction et optimisation SEO d'un article complet"
-    },
-    {
-      feature: "Campagne Ads",
-      icon: ShoppingBag,
-      optimizations: 5,
-      description: "Création d'une campagne publicitaire multi-produits"
-    },
-    {
-      feature: "Optimisation SEO Produit",
-      icon: Package,
-      optimizations: 1,
-      description: "Optimisation du titre et de la description d'un produit"
-    },
-    {
-      feature: "Analyse Image (Vision AI)",
-      icon: Image,
-      optimizations: 1,
-      description: "Analyse et génération d'attributs visuels pour une image"
-    },
-    {
-      feature: "Texte Alternatif (Alt Text)",
-      icon: Image,
-      optimizations: 1,
-      description: "Génération de texte alternatif SEO pour une image"
+  const { data: usageData, isLoading } = useQuery({
+    queryKey: ['usage-reference-costs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('usage_reference_costs')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data;
     }
-  ];
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-full mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -65,24 +65,24 @@ export function UsageReferenceTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {usageData.map((item, index) => {
-                const Icon = item.icon;
+              {usageData?.map((item) => {
+                const Icon = iconMap[item.icon_name || 'Package'];
                 return (
-                  <TableRow key={index} className="hover:bg-muted/30 transition-colors">
+                  <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
                         <Icon className="h-5 w-5 text-primary" />
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {item.feature}
+                      {item.feature_name}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                       {item.description}
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-3 py-1.5 text-sm font-bold text-primary min-w-[60px]">
-                        {item.optimizations}
+                        {item.base_cost}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -99,7 +99,7 @@ export function UsageReferenceTable() {
             </p>
             <p className="text-blue-800">
               Les optimisations sont déduites de votre quota mensuel. Vous pouvez suivre votre consommation
-              en temps réel dans l'onglet "Limites" ci-dessus.
+              en temps réel dans votre tableau de bord.
             </p>
           </div>
           
@@ -108,8 +108,8 @@ export function UsageReferenceTable() {
               ⚡ <span>Optimisez votre utilisation</span>
             </p>
             <p className="text-amber-800">
-              Privilégiez les optimisations produits (1 crédit) pour maximiser votre quota, et réservez
-              les landing pages et articles (10 crédits) pour vos produits les plus importants.
+              <strong>Campagnes :</strong> Le coût varie selon la fréquence (journalière: 1, hebdomadaire: 3, mensuelle: 5).
+              Privilégiez les optimisations produits (1 crédit) pour maximiser votre quota.
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { UsageReferenceTable } from "@/components/dashboard/UsageReferenceTable";
 import {
   BookOpen,
   Rocket,
@@ -70,8 +71,12 @@ const Documentation = () => {
 
       {/* Main Content */}
       <section className="container mx-auto px-4 py-16">
-        <Tabs defaultValue="getting-started" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 gap-2">
+        <Tabs defaultValue="usage" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 gap-2">
+            <TabsTrigger value="usage" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Consommation</span>
+            </TabsTrigger>
             <TabsTrigger value="getting-started" className="gap-2">
               <Rocket className="w-4 h-4" />
               <span className="hidden sm:inline">{t.docPage.tabs.gettingStarted}</span>
@@ -97,6 +102,11 @@ const Documentation = () => {
               <span className="hidden sm:inline">{t.docPage.tabs.faq}</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Usage Reference Table */}
+          <TabsContent value="usage" className="space-y-8">
+            <UsageReferenceTable />
+          </TabsContent>
 
           {/* Demo & Guides */}
           <TabsContent value="demo" className="space-y-8">

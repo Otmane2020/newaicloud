@@ -4695,6 +4695,54 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_reference_costs: {
+        Row: {
+          base_cost: number
+          cost_formula: Json | null
+          created_at: string | null
+          description: string | null
+          description_en: string | null
+          display_order: number | null
+          feature_code: string
+          feature_name: string
+          feature_name_en: string
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_cost?: number
+          cost_formula?: Json | null
+          created_at?: string | null
+          description?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          feature_code: string
+          feature_name: string
+          feature_name_en: string
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_cost?: number
+          cost_formula?: Json | null
+          created_at?: string | null
+          description?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          feature_code?: string
+          feature_name?: string
+          feature_name_en?: string
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       usage_tracking: {
         Row: {
           articles_count: number | null
