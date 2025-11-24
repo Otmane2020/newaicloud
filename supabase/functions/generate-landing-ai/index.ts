@@ -1867,7 +1867,7 @@ STRUCTURE:
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
+  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
 - 🚨 ALL images MUST have loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0
@@ -2328,7 +2328,7 @@ STRUCTURE :
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
+  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
 - 🚨 TOUTES les images DOIVENT avoir loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
