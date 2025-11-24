@@ -10,15 +10,18 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 export function LanguageSwitcher() {
-  const { language, setLanguage } = useTranslation();
+  const { language, setLanguage, t, tf } = useTranslation();
   const { toast } = useToast();
 
   const handleLanguageChange = (lang: 'en' | 'fr') => {
     console.log('🌐 Changing language to:', lang);
     setLanguage(lang);
+    
+    const langName = lang === 'en' ? 'English' : 'Français';
+    
     toast({
-      title: lang === 'en' ? 'Language changed' : 'Langue changée',
-      description: lang === 'en' ? 'Interface is now in English' : 'Interface est maintenant en Français',
+      title: t.toasts.languageChanged,
+      description: tf('toasts.languageChangedDesc', { language: langName }),
     });
   };
 

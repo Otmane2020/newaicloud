@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/lib/language';
 import { Loader2 } from 'lucide-react';
 
 interface ConfigOption {
@@ -30,6 +31,7 @@ interface PreferencesConfiguratorProps {
 export function PreferencesConfigurator({ onConfigChange }: PreferencesConfiguratorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -139,8 +141,8 @@ export function PreferencesConfigurator({ onConfigChange }: PreferencesConfigura
     } catch (error: any) {
       console.error('❌ Error loading config options:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les options de configuration',
+        title: t.toasts.error.generic,
+        description: t.landingDebug.configLoadError,
         variant: 'destructive',
       });
     } finally {
