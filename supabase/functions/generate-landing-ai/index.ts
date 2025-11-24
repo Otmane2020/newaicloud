@@ -97,6 +97,50 @@ function hexToHsl(hex: string): string {
   return `${h} ${s}% ${l}%`;
 }
 
+// Convert HSL string (e.g., "hsl(222, 47%, 11%)") to HEX
+function hslToHex(hslString: string): string {
+  // Parse HSL string - handle both "hsl(H, S%, L%)" and "H S% L%" formats
+  const match = hslString.match(/hsl\((\d+),?\s*(\d+)%?,?\s*(\d+)%?\)/i) || 
+                hslString.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+  
+  if (!match) {
+    console.warn('Invalid HSL format:', hslString);
+    return "#000000"; // fallback
+  }
+
+  const h = parseInt(match[1]) / 360;
+  const s = parseInt(match[2]) / 100;
+  const l = parseInt(match[3]) / 100;
+
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l; // achromatic
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  const toHex = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 function getLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
@@ -246,12 +290,29 @@ function adjustLightness(hex: string, factor: number): string {
 }
 
 function generateDesignTokens(colorScheme: any) {
-  const primaryHex = colorScheme.primary || "#000000";
-  const secondaryHex = colorScheme.secondary || "#333333";
-  const backgroundHex = colorScheme.background || "#FFFFFF";
-  const surfaceHex = colorScheme.surface || "#F5F5F5";
-  const textHex = colorScheme.text || "#000000";
-  const textMutedHex = colorScheme.textMuted || "#666666";
+  // Convert HSL strings to HEX if needed (DB returns "hsl(H, S%, L%)" format)
+  const toHex = (color: string) => {
+    if (!color) return null;
+    if (color.startsWith('#')) return color;
+    if (color.startsWith('hsl')) return hslToHex(color);
+    return color;
+  };
+
+  const primaryHex = toHex(colorScheme.primary) || "#000000";
+  const secondaryHex = toHex(colorScheme.secondary) || "#333333";
+  const backgroundHex = toHex(colorScheme.background) || "#FFFFFF";
+  const surfaceHex = toHex(colorScheme.surface) || "#F5F5F5";
+  const textHex = toHex(colorScheme.text) || "#000000";
+  const textMutedHex = toHex(colorScheme.textMuted) || "#666666";
+  const accentHex = toHex(colorScheme.accent) || adjustSaturation(primaryHex, 1.3);
+
+  console.log('🎨 Converted colors to HEX:', {
+    primary: primaryHex,
+    secondary: secondaryHex,
+    background: backgroundHex,
+    text: textHex,
+    accent: accentHex,
+  });
 
   const contrast = calculateContrast(primaryHex, "#FFFFFF");
   const needsDarkText = contrast < 4.5;
@@ -260,9 +321,6 @@ function generateDesignTokens(colorScheme: any) {
   const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
   const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
 
-  // Create a more vibrant accent color by increasing saturation
-  const accentHex = adjustSaturation(primaryHex, 1.3);
-  
   // Generate lighter and darker variants for each color
   const primaryLight = adjustLightness(primaryHex, 1.2);
   const primaryDark = adjustLightness(primaryHex, 0.8);
@@ -271,7 +329,7 @@ function generateDesignTokens(colorScheme: any) {
   const accentLight = adjustLightness(accentHex, 1.2);
   const accentDark = adjustLightness(accentHex, 0.8);
 
-  // Convert all colors to HSL format
+  // Convert all colors to HSL format for CSS variables
   return {
     primary: hexToHsl(primaryHex),
     primaryLight: hexToHsl(primaryLight),
