@@ -17,12 +17,12 @@ import { useTranslation } from "@/lib/language";
 
 export interface ColorScheme {
   paletteId: string;
-  primary: string;      // Main accent color (CTAs, highlights)
-  secondary: string;    // Secondary accent (headings)
-  background: string;   // Main background (always light)
-  surface: string;      // Card/section backgrounds
-  text: string;         // Main text (guaranteed contrast)
-  textMuted: string;    // Secondary text
+  primary: string; // Main accent color (CTAs, highlights)
+  secondary: string; // Secondary accent (headings)
+  background: string; // Main background (always light)
+  surface: string; // Card/section backgrounds
+  text: string; // Main text (guaranteed contrast)
+  textMuted: string; // Secondary text
 }
 
 export interface LandingConfig {
@@ -31,8 +31,7 @@ export interface LandingConfig {
   contentLength: string;
   vendorSource: "shopify" | "extract" | "generate";
   customHighlights?: string;
-  designStyle: 'minimalist' | 'modern' | 'premium';
-  theme: 'light' | 'dark';
+  designStyle: "minimalist" | "modern" | "premium";
 }
 
 interface LandingConfigDialogProps {
@@ -41,7 +40,6 @@ interface LandingConfigDialogProps {
   onConfirm: (config: LandingConfig) => void;
   productTitle?: string;
 }
-
 
 // Layout previews
 const LAYOUT_PREVIEWS = [
@@ -153,11 +151,10 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
       text: "#000000",
       textMuted: "#666666",
     },
-    contentLength: "short",
+    contentLength: "moyenne (800 mots)",
     vendorSource: "shopify",
     customHighlights: "",
     designStyle: "modern",
-    theme: "light",
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -323,135 +320,75 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         </DialogHeader>
 
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
-          {/* Thème clair/sombre */}
-          <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🌓 {t.landingConfig.theme.title}</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setConfig({ ...config, theme: 'light' })}
-                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                  config.theme === 'light'
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 opacity-30 rounded-xl" />
-                <div className="relative space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl">☀️</span>
-                    {config.theme === 'light' && (
-                      <Check className="w-4 h-4 text-primary animate-scale-in" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.light}</div>
-                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.lightDesc}</div>
-                  </div>
-                </div>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setConfig({ ...config, theme: 'dark' })}
-                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                  config.theme === 'dark'
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 opacity-30 rounded-xl" />
-                <div className="relative space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl">🌙</span>
-                    {config.theme === 'dark' && (
-                      <Check className="w-4 h-4 text-primary animate-scale-in" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.dark}</div>
-                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.darkDesc}</div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
           {/* Modèle de design */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎯 {t.landingConfig.designStyle.title}</Label>
+            <Label className="text-base font-semibold">🎯 Modèle de design</Label>
             <div className="grid grid-cols-3 gap-4">
               <button
                 type="button"
-                onClick={() => setConfig({ ...config, designStyle: 'minimalist' })}
+                onClick={() => setConfig({ ...config, designStyle: "minimalist" })}
                 className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                  config.designStyle === 'minimalist'
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50'
+                  config.designStyle === "minimalist"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/50"
                 }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 opacity-10 rounded-xl" />
                 <div className="relative space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">⚪</span>
-                    {config.designStyle === 'minimalist' && (
-                      <Check className="w-4 h-4 text-primary animate-scale-in" />
-                    )}
+                    {config.designStyle === "minimalist" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.minimalist}</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.minimalistShort}</div>
-                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.minimalistDesc}</div>
+                    <div className="font-semibold text-base mb-1">Minimaliste</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Épuré & élégant</div>
+                    <div className="text-xs text-muted-foreground">Lignes épurées, espaces blancs généreux</div>
                   </div>
                 </div>
               </button>
-              
+
               <button
                 type="button"
-                onClick={() => setConfig({ ...config, designStyle: 'modern' })}
+                onClick={() => setConfig({ ...config, designStyle: "modern" })}
                 className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                  config.designStyle === 'modern'
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50'
+                  config.designStyle === "modern"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/50"
                 }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-10 rounded-xl" />
                 <div className="relative space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">✨</span>
-                    {config.designStyle === 'modern' && (
-                      <Check className="w-4 h-4 text-primary animate-scale-in" />
-                    )}
+                    {config.designStyle === "modern" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.modern}</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.modernShort}</div>
-                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.modernDesc}</div>
+                    <div className="font-semibold text-base mb-1">Moderne</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Dynamique & tendance</div>
+                    <div className="text-xs text-muted-foreground">Dégradés, ombres douces, animations</div>
                   </div>
                 </div>
               </button>
-              
+
               <button
                 type="button"
-                onClick={() => setConfig({ ...config, designStyle: 'premium' })}
+                onClick={() => setConfig({ ...config, designStyle: "premium" })}
                 className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
-                  config.designStyle === 'premium'
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50'
+                  config.designStyle === "premium"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/50"
                 }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 opacity-10 rounded-xl" />
                 <div className="relative space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">👑</span>
-                    {config.designStyle === 'premium' && (
-                      <Check className="w-4 h-4 text-primary animate-scale-in" />
-                    )}
+                    {config.designStyle === "premium" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.premium}</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.premiumShort}</div>
-                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.premiumDesc}</div>
+                    <div className="font-semibold text-base mb-1">Premium</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Luxueux & sophistiqué</div>
+                    <div className="text-xs text-muted-foreground">Effets visuels riches, typographie imposante</div>
                   </div>
                 </div>
               </button>
@@ -505,17 +442,17 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                   onClick={() => {
                     setSelectedPalette(palette.id);
                     setUseCustomColor(false);
-                    setConfig({ 
-                      ...config, 
+                    setConfig({
+                      ...config,
                       colorScheme: {
                         paletteId: palette.id,
-                        primary: palette.colors[0],      // Darkest for CTAs
-                        secondary: palette.colors[1],    // Secondary headings
-                        background: "#FFFFFF",           // Always white
-                        surface: palette.colors[4],      // Lightest for sections
-                        text: palette.colors[0],         // Darkest for text
-                        textMuted: palette.colors[2],    // Mid-tone for secondary text
-                      }
+                        primary: palette.colors[0], // Darkest for CTAs
+                        secondary: palette.colors[1], // Secondary headings
+                        background: "#FFFFFF", // Always white
+                        surface: palette.colors[4], // Lightest for sections
+                        text: palette.colors[0], // Darkest for text
+                        textMuted: palette.colors[2], // Mid-tone for secondary text
+                      },
                     });
                   }}
                 >
@@ -561,18 +498,20 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                 <input
                   type="color"
                   value={config.colorScheme.primary}
-                  onChange={(e) => setConfig({ 
-                    ...config, 
-                    colorScheme: {
-                      paletteId: "custom",
-                      primary: e.target.value,
-                      secondary: e.target.value,
-                      background: "#FFFFFF",
-                      surface: "#F5F5F5",
-                      text: "#000000",
-                      textMuted: "#666666",
-                    }
-                  })}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      colorScheme: {
+                        paletteId: "custom",
+                        primary: e.target.value,
+                        secondary: e.target.value,
+                        background: "#FFFFFF",
+                        surface: "#F5F5F5",
+                        text: "#000000",
+                        textMuted: "#666666",
+                      },
+                    })
+                  }
                   className="w-full h-12 rounded-md border cursor-pointer transition-transform duration-200 hover:scale-105"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -593,12 +532,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                 <SelectValue placeholder={t.landingConfig.contentLength.title} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="short">
-                  {t.landingConfig.contentLength.short} - {t.landingConfig.contentLength.shortDesc}
-                </SelectItem>
-                <SelectItem value="long">
-                  {t.landingConfig.contentLength.long} - {t.landingConfig.contentLength.longDesc}
-                </SelectItem>
+                <SelectItem value="courte (400 mots)">{t.landingConfig.contentLength.short}</SelectItem>
+                <SelectItem value="moyenne (800 mots)">{t.landingConfig.contentLength.medium}</SelectItem>
+                <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>
           </div>
