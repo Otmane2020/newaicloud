@@ -174,10 +174,19 @@ Deno.serve(async (req) => {
       };
     }
 
-    console.log("📤 Publishing article to blog:", blogId);
+    // Check if article already exists in Shopify
+    const isUpdate = !!article.shopify_article_id;
+    const httpMethod = isUpdate ? "PUT" : "POST";
+    const endpoint = isUpdate 
+      ? `${apiBase}/${blogId}/articles/${article.shopify_article_id}.json`
+      : `${apiBase}/${blogId}/articles.json`;
 
-    const createRes = await fetch(`${apiBase}/${blogId}/articles.json`, {
-      method: "POST",
+    console.log(`📤 [${new Date().toISOString()}] ${isUpdate ? 'Updating' : 'Creating'} article in blog ${blogId}...`);
+    console.log(`🔗 Endpoint: ${endpoint}`);
+    console.log(`📸 Has featured image: ${!!featuredImage?.src}`);
+
+    const shopifyRes = await fetch(endpoint, {
+      method: httpMethod,
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Access-Token": store.access_token,
@@ -185,13 +194,19 @@ Deno.serve(async (req) => {
       body: JSON.stringify(articleData),
     });
 
-    if (!createRes.ok) {
-      const errText = await createRes.text();
-      console.error("❌ Article creation error:", errText);
-      throw new Error(`Shopify error: ${createRes.status} - ${errText}`);
+    if (!shopifyRes.ok) {
+      const errText = await shopifyRes.text();
+      console.error(`❌ Article ${isUpdate ? 'update' : 'creation'} error:`, errText);
+      throw new Error(`Shopify error: ${shopifyRes.status} - ${errText}`);
     }
 
-    const created = await createRes.json();
+    const result = await shopifyRes.json();
+    console.log('📥 Shopify response:', {
+      status: shopifyRes.status,
+      article_id: result.article?.id,
+      image_synced: !!result.article?.image,
+      operation: isUpdate ? 'UPDATE' : 'CREATE'
+    });
 
     const syncTimestamp = new Date().toISOString();
 
@@ -200,7 +215,7 @@ Deno.serve(async (req) => {
       .update({
         status: "published",
         published_at: syncTimestamp,
-        shopify_article_id: created.article?.id?.toString(),
+        shopify_article_id: result.article?.id?.toString(),
         last_synced_at: syncTimestamp
       })
       .eq("id", articleId);
@@ -217,9 +232,13 @@ Deno.serve(async (req) => {
       console.log("✅ Featured image sync timestamp updated");
     }
 
-    console.log("✅ Article published successfully");
+    console.log(`✅ Article ${isUpdate ? 'updated' : 'published'} successfully`);
 
-    return new Response(JSON.stringify({ success: true, shopifyArticleId: created.article?.id }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      shopifyArticleId: result.article?.id,
+      operation: isUpdate ? 'update' : 'create'
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

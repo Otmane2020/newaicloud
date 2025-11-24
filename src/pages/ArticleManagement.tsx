@@ -354,9 +354,19 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         toast.error('Aucun article optimisé');
       }
       
-      // Reload articles to reflect changes
+      // Reload articles to reflect changes with forced refresh
+      console.log('🔄 [SEO-SCORE] Refreshing articles after optimization...');
       await loadArticles();
+      
+      // Force a second refresh after a short delay to ensure DB changes are propagated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadArticles();
+      
       await refreshLimits();
+      
+      console.log('📊 [SEO-SCORE] Articles refreshed, new optimization counts:', 
+        articles.map(a => ({ id: a.id, count: a.optimization_count }))
+      );
       
       // Notify parent to recalculate score
       onOptimizationComplete?.();
@@ -409,7 +419,12 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
+      // Force refresh to update SEO scores
+      console.log('🔄 [SEO-SCORE] Refreshing article after individual optimization...');
+      setArticles([]); // Clear cache
       await loadArticles();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadArticles(); // Second refresh
       await refreshLimits();
     } catch (error) {
       console.error('Error optimizing:', error);

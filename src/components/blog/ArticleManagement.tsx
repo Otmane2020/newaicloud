@@ -292,8 +292,17 @@ const handleOptimizeArticle = async (articleId: string) => {
         const article = articles.find(a => a.id === articleId);
         setOptimizedArticles(article ? [article] : []);
         setProgress({ current: 1, total: 1 });
+        
+        // Force refresh to update SEO score immediately
+        console.log('🔄 [SEO-SCORE] Force refreshing after optimization...');
         await fetchArticles();
+        await new Promise(resolve => setTimeout(resolve, 400));
+        await fetchArticles(); // Double refresh for cache clear
         await refreshLimits();
+        
+        console.log('📊 [SEO-SCORE] Article optimized, new count:', 
+          articles.find(a => a.id === articleId)?.optimization_count
+        );
         
         setShowProgressDialog(false);
         setShowResultsDialog(true);

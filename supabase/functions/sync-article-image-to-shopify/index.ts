@@ -45,9 +45,10 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false,
-          message: 'Article not published to Shopify yet. Please sync the article first.' 
+          error: 'NOT_SYNCED',
+          message: 'Article must be synced to Shopify first before updating image. Please use sync-blog-to-shopify first.' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -138,8 +139,9 @@ serve(async (req) => {
 
     console.log(`📚 [SYNC-ARTICLE-IMAGE] Blog ID: ${blogId}`);
 
-    // Update the article with the featured image
-    console.log(`🔄 [SYNC-ARTICLE-IMAGE] Updating article ${article.shopify_article_id}...`);
+    // Update the article with the featured image (always use PUT for updates)
+    console.log(`🔄 [${new Date().toISOString()}] [SYNC-ARTICLE-IMAGE] Updating article ${article.shopify_article_id} image...`);
+    console.log(`📸 [SYNC-ARTICLE-IMAGE] Image URL: ${featuredImage.src.substring(0, 80)}...`);
     
     const shopifyResponse = await fetch(
       `https://${storeData.store_url}/admin/api/2025-01/blogs/${blogId}/articles/${article.shopify_article_id}.json`,
