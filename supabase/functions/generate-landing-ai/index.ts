@@ -1642,39 +1642,30 @@ STRUCTURE:
 - Mobile: Use cards with class "block md:hidden space-y-4"
 - Example structure:
 
-🔍 PHASE 5: SPECIFICATIONS RELIABILITY BADGE (MANDATORY):
-ALWAYS include a reliability indicator in the technical specifications section:
+🔍 PHASE 5: SPECIFICATIONS RELIABILITY BADGE (OPTIONAL):
+If technical specifications are present, you may include a subtle reliability indicator:
 
 ${
   enrichedProduct?.serp_verified
     ? `
 ✅ Badge for SERP-verified specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+<div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50/50 border border-green-100 rounded-lg text-xs font-medium text-green-700 mb-3">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
   <span>Spécifications vérifiées</span>
 </div>
-<p class="text-xs text-gray-600 mb-6">Dimensions confirmées par ${enrichedProduct?.serp_data?.similarProducts?.length || 0} produits similaires</p>
 `
     : enrichedProduct?.vision_attributes?.technicalDimensions
       ? `
 📐 Badge for image-extracted specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-  <span>Mesures extraites du schéma technique</span>
+<div class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-700 mb-3">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+  <span>Mesures du schéma technique</span>
 </div>
-<p class="text-xs text-gray-600 mb-6">Dimensions précises lues directement sur l'image produit</p>
 `
-      : `
-⚠️ Badge for estimated specs:
-<div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-sm font-medium text-amber-800 mb-4">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-  <span>Dimensions approximatives</span>
-</div>
-<p class="text-xs text-gray-600 mb-6">Ces mesures sont estimées et peuvent varier légèrement</p>
-`
+      : ""
 }
 
-🚨 CRITICAL: Place this badge IMMEDIATELY BEFORE the technical specifications table/section
+Note: Only include reliability badge if you have verified or extracted specifications
   <!-- Mobile cards -->
   <div class="block md:hidden space-y-4">
     <div class="bg-white rounded-lg p-4 shadow">
