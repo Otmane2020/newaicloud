@@ -1412,7 +1412,13 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
       console.log(`[Landing AI] Using hardcoded design style: ${selectedStyle.name}`);
     }
 
-    console.log(`[Landing AI] Final design style: ${selectedStyle.name}`);
+    // Log final configuration for debugging
+    console.log(`[Landing AI] 🎨 Final Configuration:`);
+    console.log(`  - Design Style: ${selectedStyle.name}`);
+    console.log(`  - Color Scheme: primary=${designTokens.primary}, accent=${designTokens.accent}, textMuted=${designTokens.textMuted}`);
+    console.log(`  - Layout: ${typeof resolvedLayout === "object" ? resolvedLayout.name || resolvedLayout.type : layout}`);
+    console.log(`  - Content Length: ${lengthMode}`);
+    console.log(`  - Theme: ${userOptions.theme || "light"}`);
 
     const prompt =
       detectedLanguage === "en"
@@ -1473,73 +1479,12 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       ? "- Use 3-column grids on desktop (grid-cols-1 md:grid-cols-3) for benefits/features"
       : "- Flexible layout but maintain consistency"}
 
-🎨 DESIGN PHILOSOPHY - ULTRA CLEAN & MINIMALIST (CRITICAL):
+🎨 DESIGN MODEL (CRITICAL - APPLY THESE RULES STRICTLY):
+Style: ${selectedStyle.name}
+${selectedStyle.description}
 
-🚨🚨🚨 ABSOLUTE PROHIBITIONS - NEVER USE THESE 🚨🚨🚨
-❌ NO "gradient-border" class or technique EVER
-❌ NO "shadow-colored" or colored shadows EVER  
-❌ NO "text-glow" or text-shadow effects EVER
-❌ NO box-shadow except max "shadow-sm" for cards
-❌ NO visible borders (border-0 or no border at all)
-❌ NO border-image or gradient borders
-❌ NO thick rounded corners (max: rounded-lg)
-❌ NO decorative CSS classes with visual effects
-❌ NO card containers with visible frames
-❌ NO background colors on card wrappers (use plain white/gray)
-❌ NO fancy hover effects with borders/shadows
-❌ NO SVG gradients on icons (simple solid colors only)
-❌ NO opacity overlays on images for decoration
-
-✅ REQUIRED MINIMALIST STYLE (Apple / Zara / Made.com / IKEA):
-🔹 COLORS: Only neutral tones
-  - Black: #1A1A1A, #111, or #0f0f0f for text
-  - Dark gray: #333 for secondary text
-  - Light gray: #F5F5F5 or #FAFAFA for alternate sections
-  - White: #FFF for main background
-  - Accent: hsl(${designTokens.accent}) ONLY for CTA buttons, nowhere else
-
-🔹 TYPOGRAPHY: Clean hierarchy
-  - H1: text-4xl md:text-6xl font-bold mb-6
-  - H2: text-2xl md:text-4xl font-bold mb-4
-  - Paragraphs: text-base md:text-lg leading-relaxed
-  - NO text effects, NO shadows, NO glows
-  - Simple black or dark gray text
-
-🔹 SECTIONS: Airy and borderless
-  - py-16 md:py-24 for generous vertical spacing
-  - Alternate between white and light gray backgrounds
-  - NO containers with borders
-  - NO card wrappers with visible frames
-
-🔹 IMAGES: Clean presentation
-  - Full-width or max rounded-lg (never rounded-xl)
-  - NO overlays except for text readability on hero
-  - NO decorative borders around images
-  - class="w-full h-auto" with natural spacing
-
-🔹 LISTS & BENEFITS: Minimal icons
-  - Simple checkmark SVG with solid primary color
-  - NO gradient fills, NO fancy effects
-  - Plain flex layout with gap-3
-  - NO card containers around list items
-
-🔹 CTAs: Single accent color button
-  - Only the main CTA button uses accent color
-  - Plain text buttons elsewhere (underline on hover)
-  - NO shadows, NO borders, NO gradients on buttons
-
-EXAMPLE CLEAN SECTION STRUCTURE:
-<section class="py-16 md:py-24">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl md:text-5xl font-bold mb-12 text-center text-gray-900">Section Title</h2>
-    <div class="space-y-8">
-      <!-- Content here with no borders, no cards, no frames -->
-      <p class="text-lg text-gray-700 leading-relaxed">Clean paragraph text...</p>
-    </div>
-  </div>
-</section>
-
-🎯 REMEMBER: Premium e-commerce = MINIMAL visual noise, MAXIMUM whitespace, ZERO borders
+DESIGN RULES (MANDATORY - FOLLOW EXACTLY):
+${selectedStyle.rules}
 
 COLOR PALETTE (HSL FORMAT ONLY):
 - Primary: hsl(${designTokens.primary})
@@ -1556,33 +1501,10 @@ COLOR PALETTE (HSL FORMAT ONLY):
 - Text: hsl(${designTokens.text})
 - Text Muted: hsl(${designTokens.textMuted})
 
-🚨 COLORS: HSL only (NO HEX). Inline styles for colored sections only:
-- Hero (if colored): style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
-- Alternate section: style="background-color: hsl(${designTokens.surface})"
-- CTA button: style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
-- Most sections: plain white background, no inline styles needed
-
-🎨 DESIGN MODEL: ${selectedStyle.name}
-${selectedStyle.description}
-${selectedStyle.rules}
 
 🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
 - NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
 - Use one breakpoint per property (✅ class="text-lg md:text-2xl")
-
-🎯 MINIMALIST ICON APPROACH (MANDATORY):
-✅ SIMPLE SOLID COLOR ICONS ONLY
-- NO gradients (<linearGradient>), NO <defs> sections
-- Plain solid color with stroke or fill
-- Use primary color: hsl(${designTokens.primary})
-- Keep tiny and subtle (w-5 h-5 max)
-
-📋 CLEAN ICON TEMPLATE:
-<svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: hsl(${designTokens.primary})">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-</svg>
-
-🚨 NEVER use: gradient fills, defs, complex SVGs, decorative backgrounds on icons
 
 🖼️ IMAGES AND TITLES (CRITICAL - MAXIMUM READABILITY):
 🚨 CRITICAL: For ALL titles/text on images, you MUST:
@@ -1789,73 +1711,12 @@ ${typeof resolvedLayout === "object" && (resolvedLayout.rules || resolvedLayout.
       ? "- Utiliser des grilles 3 colonnes sur desktop (grid-cols-1 md:grid-cols-3) pour les bénéfices/fonctionnalités"
       : "- Layout flexible mais maintenir la cohérence"}
 
-🎨 PHILOSOPHIE DE DESIGN - ULTRA CLEAN & MINIMALISTE (CRITIQUE) :
+🎨 MODÈLE DE DESIGN (CRITIQUE - APPLIQUER CES RÈGLES STRICTEMENT) :
+Style : ${selectedStyle.name}
+${selectedStyle.description}
 
-🚨🚨🚨 INTERDICTIONS ABSOLUES - NE JAMAIS UTILISER 🚨🚨🚨
-❌ JAMAIS de classe "gradient-border"
-❌ JAMAIS de classe "shadow-colored" ou ombres colorées
-❌ JAMAIS de classe "text-glow" ou effets text-shadow
-❌ JAMAIS de box-shadow sauf max "shadow-sm"
-❌ JAMAIS de bordures visibles (border-0 ou pas de border)
-❌ JAMAIS de border-image ou bordures dégradées
-❌ JAMAIS de coins arrondis épais (max: rounded-lg)
-❌ JAMAIS de classes CSS décoratives
-❌ JAMAIS de conteneurs "card" avec cadres visibles
-❌ JAMAIS de fonds colorés sur les wrappers de cartes
-❌ JAMAIS d'effets hover avec bordures/ombres
-❌ JAMAIS de dégradés SVG sur les icônes (couleurs solides uniquement)
-❌ JAMAIS d'overlays opacity sur images sauf hero pour lisibilité texte
-
-✅ STYLE MINIMALISTE REQUIS (Apple / Zara / Made.com / IKEA) :
-🔹 COULEURS : Tons neutres uniquement
-  - Noir : #1A1A1A, #111, ou #0f0f0f pour le texte
-  - Gris foncé : #333 pour texte secondaire
-  - Gris clair : #F5F5F5 ou #FAFAFA pour sections alternées
-  - Blanc : #FFF pour fond principal
-  - Accent : hsl(${designTokens.accent}) UNIQUEMENT pour boutons CTA, nulle part ailleurs
-
-🔹 TYPOGRAPHIE : Hiérarchie propre
-  - H1 : text-4xl md:text-6xl font-bold mb-6
-  - H2 : text-2xl md:text-4xl font-bold mb-4
-  - Paragraphes : text-base md:text-lg leading-relaxed
-  - AUCUN effet texte, AUCUNE ombre, AUCUNE lueur
-  - Texte noir ou gris foncé simple
-
-🔹 SECTIONS : Aérées et sans bordures
-  - py-16 md:py-24 pour espacement vertical généreux
-  - Alterner entre fonds blancs et gris clair
-  - AUCUN conteneur avec bordures
-  - AUCUN wrapper de carte avec cadres visibles
-
-🔹 IMAGES : Présentation propre
-  - Pleine largeur ou max rounded-lg (jamais rounded-xl)
-  - AUCUN overlay sauf pour lisibilité texte sur hero
-  - AUCUNE bordure décorative autour des images
-  - class="w-full h-auto" avec espacement naturel
-
-🔹 LISTES & AVANTAGES : Icônes minimales
-  - SVG checkmark simple avec couleur primaire solide
-  - AUCUN dégradé, AUCUN effet fantaisie
-  - Layout flex simple avec gap-3
-  - AUCUN conteneur carte autour des items de liste
-
-🔹 CTAs : Bouton couleur accent unique
-  - Seul le bouton CTA principal utilise la couleur accent
-  - Boutons texte ailleurs (soulignement au hover)
-  - AUCUNE ombre, AUCUNE bordure, AUCUN dégradé sur boutons
-
-EXEMPLE STRUCTURE SECTION PROPRE :
-<section class="py-16 md:py-24">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl md:text-5xl font-bold mb-12 text-center text-gray-900">Titre Section</h2>
-    <div class="space-y-8">
-      <!-- Contenu ici sans bordures, sans cartes, sans cadres -->
-      <p class="text-lg text-gray-700 leading-relaxed">Texte paragraphe propre...</p>
-    </div>
-  </div>
-</section>
-
-🎯 RAPPEL : E-commerce premium = bruit visuel MINIMAL, espace blanc MAXIMUM, bordures ZÉRO
+RÈGLES DE DESIGN (OBLIGATOIRES - SUIVRE EXACTEMENT) :
+${selectedStyle.rules}
 
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
@@ -1866,23 +1727,10 @@ PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Texte : hsl(${designTokens.text})
 - Texte Atténué : hsl(${designTokens.textMuted})
 
-🚨 COULEURS : HSL uniquement (PAS DE HEX). Styles inline pour sections colorées seulement :
-- Hero (si coloré) : style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})"
-- Section alternée : style="background-color: hsl(${designTokens.surface})"
-- Bouton CTA : style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})"
-- La plupart des sections : fond blanc simple, pas de styles inline nécessaires
-
-🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
-${selectedStyle.description}
-${selectedStyle.rules}
 
 🚨 RÈGLES RESPONSIVES CRITIQUES (OBLIGATOIRE) :
 - JAMAIS dupliquer les classes responsive (❌ class="md:text-xl md:text-2xl")
 - Utiliser un seul breakpoint par propriété (✅ class="text-lg md:text-2xl")
-
-🎯 TEMPLATE D'ICÔNE À UTILISER POUR LES LISTES :
-${selectedIcon}
-Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
 
 🖼️ IMAGES ET TITRES (CRITIQUE - LISIBILITÉ MAXIMALE) :
 🚨 CRITICAL: Pour TOUS les titres/textes sur images, tu DOIS :
