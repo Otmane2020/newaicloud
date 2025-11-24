@@ -1,21 +1,104 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function LandingDebug() {
   const [productId, setProductId] = useState("");
-  const [colorSchemeKey, setColorSchemeKey] = useState("ocean_blue");
+  const [colorSchemeKey, setColorSchemeKey] = useState("");
   const [theme, setTheme] = useState("light");
-  const [layout, setLayout] = useState("hero-benefits-specs");
-  const [designStyle, setDesignStyle] = useState("modern");
+  const [layout, setLayout] = useState("");
+  const [designStyle, setDesignStyle] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSource, setShowSource] = useState(false);
+
+  // Fetch products
+  const { data: products } = useQuery({
+    queryKey: ["debug-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shopify_products")
+        .select("id, title, image_url, vendor")
+        .limit(3);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch color schemes
+  const { data: colorSchemes } = useQuery({
+    queryKey: ["config-color-schemes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_page_config_options")
+        .select("option_key, option_label, option_value")
+        .eq("category", "color_scheme")
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch layouts
+  const { data: layouts } = useQuery({
+    queryKey: ["config-layouts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_page_config_options")
+        .select("option_key, option_label")
+        .eq("category", "layout")
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch design styles
+  const { data: designStyles } = useQuery({
+    queryKey: ["config-design-styles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_page_config_options")
+        .select("option_key, option_label")
+        .eq("category", "design_style")
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Set defaults when data loads
+  useEffect(() => {
+    if (products && products.length > 0 && !productId) {
+      setProductId(products[0].id);
+    }
+  }, [products, productId]);
+
+  useEffect(() => {
+    if (colorSchemes && colorSchemes.length > 0 && !colorSchemeKey) {
+      setColorSchemeKey(colorSchemes[0].option_key);
+    }
+  }, [colorSchemes, colorSchemeKey]);
+
+  useEffect(() => {
+    if (layouts && layouts.length > 0 && !layout) {
+      setLayout(layouts[0].option_key);
+    }
+  }, [layouts, layout]);
+
+  useEffect(() => {
+    if (designStyles && designStyles.length > 0 && !designStyle) {
+      setDesignStyle(designStyles[0].option_key);
+    }
+  }, [designStyles, designStyle]);
 
   const [result, setResult] = useState<{
     html: string;
@@ -42,7 +125,7 @@ export default function LandingDebug() {
         .from("shopify_products")
         .select("*")
         .eq("id", productId)
-        .single();
+        .maybeSingle();
 
       if (productError || !product) {
         toast.error("Produit introuvable");
@@ -100,25 +183,33 @@ export default function LandingDebug() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Product ID</Label>
-              <Input
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                placeholder="UUID du produit"
-              />
+              <Label>Produit</Label>
+              <Select value={productId} onValueChange={setProductId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un produit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products?.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.title} {product.vendor ? `(${product.vendor})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Color Scheme Key</Label>
+              <Label>Color Scheme</Label>
               <Select value={colorSchemeKey} onValueChange={setColorSchemeKey}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionner un schéma" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ocean_blue">Ocean Blue</SelectItem>
-                  <SelectItem value="forest_green">Forest Green</SelectItem>
-                  <SelectItem value="sunset_orange">Sunset Orange</SelectItem>
-                  <SelectItem value="royal_purple">Royal Purple</SelectItem>
+                  {colorSchemes?.map((scheme) => (
+                    <SelectItem key={scheme.option_key} value={scheme.option_key}>
+                      {scheme.option_label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -140,12 +231,14 @@ export default function LandingDebug() {
               <Label>Layout</Label>
               <Select value={layout} onValueChange={setLayout}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionner un layout" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hero-benefits-specs">Hero + Benefits + Specs</SelectItem>
-                  <SelectItem value="storytelling">Storytelling</SelectItem>
-                  <SelectItem value="minimal">Minimal</SelectItem>
+                  {layouts?.map((layoutOption) => (
+                    <SelectItem key={layoutOption.option_key} value={layoutOption.option_key}>
+                      {layoutOption.option_label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -154,12 +247,14 @@ export default function LandingDebug() {
               <Label>Design Style</Label>
               <Select value={designStyle} onValueChange={setDesignStyle}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionner un style" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="modern">Modern</SelectItem>
-                  <SelectItem value="minimalist">Minimalist</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
+                  {designStyles?.map((style) => (
+                    <SelectItem key={style.option_key} value={style.option_key}>
+                      {style.option_label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
