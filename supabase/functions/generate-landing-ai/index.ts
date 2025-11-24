@@ -692,6 +692,72 @@ serve(async (req) => {
       }
     }
 
+    // 🎨 Resolve layout from database if it's a key string
+    let resolvedLayout = userOptions.layout;
+    if (userOptions.layout && typeof userOptions.layout === 'string') {
+      console.log(`📐 Fetching layout from DB: ${userOptions.layout}`);
+      const layoutData = await getOption(supabaseAdmin, 'layout', userOptions.layout);
+      if (layoutData) {
+        resolvedLayout = layoutData;
+        console.log('✅ Layout loaded:', resolvedLayout);
+      } else {
+        console.warn('⚠️ Layout not found in DB, using key as fallback');
+      }
+    }
+
+    // 🎨 Resolve design style from database if it's a key string  
+    let resolvedDesignStyle = userOptions.designStyle;
+    if (userOptions.designStyle && typeof userOptions.designStyle === 'string') {
+      console.log(`🎨 Fetching design style from DB: ${userOptions.designStyle}`);
+      const styleData = await getOption(supabaseAdmin, 'design_style', userOptions.designStyle);
+      if (styleData) {
+        resolvedDesignStyle = styleData;
+        console.log('✅ Design style loaded:', resolvedDesignStyle);
+      } else {
+        console.warn('⚠️ Design style not found in DB, using key as fallback');
+      }
+    }
+
+    // Validation: Stop if critical configurations are missing
+    if (!resolvedColorScheme) {
+      console.error('❌ CRITICAL: Color scheme could not be resolved');
+      return new Response(
+        JSON.stringify({ 
+          error: "Configuration incomplète: le schéma de couleurs n'a pas pu être chargé depuis la base de données." 
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!resolvedLayout) {
+      console.error('❌ CRITICAL: Layout could not be resolved');
+      return new Response(
+        JSON.stringify({ 
+          error: "Configuration incomplète: le layout n'a pas pu être chargé depuis la base de données." 
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!resolvedDesignStyle) {
+      console.error('❌ CRITICAL: Design style could not be resolved');
+      return new Response(
+        JSON.stringify({ 
+          error: "Configuration incomplète: le style de design n'a pas pu être chargé depuis la base de données." 
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Apply theme modifications (dark/light)
     if (resolvedColorScheme && userOptions.theme === 'dark') {
       console.log('🌙 Applying dark theme transformations');
@@ -1224,16 +1290,34 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
   </svg>`,
     };
 
-    // Select design style (default to modern if not provided)
-    const validDesignStyles = ["minimalist", "modern", "premium"];
-    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : "modern") as
-      | "minimalist"
-      | "modern"
-      | "premium";
-    const selectedStyle = styleTemplates[selectedDesignStyle];
-    const selectedIcon = iconTemplates[selectedDesignStyle];
+    // Select design style - use resolved config from DB or fallback to hardcoded templates
+    let selectedStyle;
+    let selectedIcon;
+    
+    if (resolvedDesignStyle && typeof resolvedDesignStyle === 'object') {
+      // Use design style from database
+      console.log(`[Landing AI] Using design style from DB: ${resolvedDesignStyle.name || userOptions.designStyle}`);
+      selectedStyle = {
+        name: resolvedDesignStyle.name || 'Custom Style',
+        description: resolvedDesignStyle.description || '',
+        rules: resolvedDesignStyle.rules || '',
+      };
+      // Use matching icon template if available, otherwise use modern
+      const styleKey = (userOptions.designStyle || 'modern') as 'minimalist' | 'modern' | 'premium';
+      selectedIcon = iconTemplates[styleKey] || iconTemplates.modern;
+    } else {
+      // Fallback to hardcoded templates
+      const validDesignStyles = ["minimalist", "modern", "premium"];
+      const selectedDesignStyle = (validDesignStyles.includes(userOptions.designStyle) ? userOptions.designStyle : "modern") as
+        | "minimalist"
+        | "modern"
+        | "premium";
+      selectedStyle = styleTemplates[selectedDesignStyle];
+      selectedIcon = iconTemplates[selectedDesignStyle];
+      console.log(`[Landing AI] Using hardcoded design style: ${selectedStyle.name}`);
+    }
 
-    console.log(`[Landing AI] Design style: ${selectedStyle.name} (received: ${designStyle})`);
+    console.log(`[Landing AI] Final design style: ${selectedStyle.name}`);
 
     const prompt =
       detectedLanguage === "en"
