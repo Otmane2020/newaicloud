@@ -242,6 +242,14 @@ memory_limit_mb = 512
 verify_jwt = true
 memory_limit_mb = 512
 
+[functions.analyze-dimension-images]
+verify_jwt = true
+memory_limit_mb = 512
+
+[functions.analyze-serp-competitors]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.analyze-price-from-image]
 verify_jwt = true
 memory_limit_mb = 512
