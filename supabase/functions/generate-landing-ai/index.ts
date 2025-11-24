@@ -1933,8 +1933,44 @@ STRUCTURE - NO CARDS, NO BORDERS:
     <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
 
-- 🚨 CRITICAL: Use UNIQUE gradient IDs for each icon (checkGrad1, checkGrad2, cardIcon1, etc.)
-- 🚨 CRITICAL: ALWAYS include the SVG icons - they are NOT optional
+🎨 CRITICAL DESIGN & COLOR RULES:
+
+1. **COLOR TOKENS - MANDATORY USE**:
+   🚨 NEVER use hardcoded colors: NO hsl(0 0% 100%), NO hsl(0 0% 0%), NO hsl(0 0% 80%), NO white, NO black, NO gray-X
+   ✅ ALWAYS use design tokens with style attributes:
+   - Main backgrounds: style="background: hsl(${designTokens.background})"
+   - Alternate backgrounds: style="background: hsl(${designTokens.surface})"
+   - Card backgrounds: style="background: hsl(${designTokens.surface})"
+   - ALL text: style="color: hsl(${designTokens.text})"
+   - Muted text: style="color: hsl(${designTokens.textMuted})"
+   - Alternate sections between background and surface for visual hierarchy
+
+2. **ICONS - SIMPLE & ALIGNED**:
+   🚨 Use SIMPLE single-path lucide-react style icons
+   ❌ NO complex gradients, NO multiple circles, NO opacity layers
+   ✅ Example of CORRECT icon with proper alignment:
+   
+   <div class="flex items-start gap-3">
+     <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" style="stroke: hsl(${designTokens.text})"/>
+     </svg>
+     <div>
+       <h3 class="text-xl font-semibold mb-2" style="color: hsl(${designTokens.text})">Title</h3>
+       <p style="color: hsl(${designTokens.text})">Description text</p>
+     </div>
+   </div>
+
+   Icon variations to use:
+   - Check circle: M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z
+   - Star: M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z
+   - Shield: M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z
+   - Sparkles: M5 3l1.5 3L10 5l-2.5 2 1 3.5-3-1.5L3 12l2-2.5L3 6l3 1.5L5 3zm7 7l1 2 2.5-.5-1.5 2 1 2.5-2-1-2.5 2 .5-2.5-2-1.5 2.5-1 1-2z
+   - Package: M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z
+
+3. **TYPOGRAPHY**:
+   - Headings must use style="color: hsl(${designTokens.text})"
+   - Body text must use style="color: hsl(${designTokens.text})"
+   - NO text-white, text-black, text-gray-X classes (except on hero overlays)
 
 🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
 - NO "Add to Cart" buttons or any purchase buttons
@@ -1987,15 +2023,10 @@ ${dimensionImages.length > 0
 9. FAQ`
 }
 
-ICONS USAGE (MANDATORY):
-🚨 CRITICAL: SVG icons are REQUIRED, not optional!
-- ✅ Use SVG checkmark/star icons for EVERY bullet list item
-- ✅ Use gradient fills with theme colors (primary + accent)
-- ✅ Each icon needs unique gradient ID (grad1, grad2, etc.)
-- ✅ Example template is provided above - USE IT
-- ❌ NO simple text bullets (-, *, •)
-- ❌ NO emoji icons (✓, ★, ✔)
-- ❌ NO decorative icons elsewhere`
+TABLE STYLING:
+- Headers: style="background: hsl(${designTokens.surface}); color: hsl(${designTokens.text})"
+- Rows: style="color: hsl(${designTokens.text})"
+- Alternating section backgrounds for visual hierarchy`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle.
 
