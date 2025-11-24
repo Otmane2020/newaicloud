@@ -1477,6 +1477,9 @@ UTILISATION DES ICÔNES :
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
+    console.log("📝 Prompt length:", prompt.length, "characters");
+    console.log("🔑 API Key configured:", !!LOVABLE_API_KEY);
+    
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 60000);
 
@@ -1505,19 +1508,63 @@ UTILISATION DES ICÔNES :
         }),
         signal: aiController.signal,
       });
-    } finally {
+      
+      console.log("🔄 Request sent to Lovable AI Gateway");
+    } catch (fetchError) {
       clearTimeout(aiTimeout);
+      console.error("❌ Fetch error:", fetchError);
+      
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ 
+            error: "La génération a pris trop de temps (timeout 60s). Réessayez.",
+          }), 
+          {
+            status: 504,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      throw fetchError;
     }
+    
+    clearTimeout(aiTimeout);
 
-    console.log("✅ AI generation completed");
+    console.log("📡 API Response status:", aiResponse.status);
 
     if (!aiResponse.ok) {
       const text = await aiResponse.text();
-      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
+      console.error("❌ Lovable API Error:", {
         status: aiResponse.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        statusText: aiResponse.statusText,
+        response: text.substring(0, 500),
       });
+      
+      // Retourner un message d'erreur clair selon le statut
+      let errorMessage = `Erreur API Lovable (${aiResponse.status})`;
+      if (aiResponse.status === 429) {
+        errorMessage = "Limite de taux dépassée. Réessayez dans quelques instants.";
+      } else if (aiResponse.status === 402) {
+        errorMessage = "Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage.";
+      } else if (aiResponse.status === 401 || aiResponse.status === 403) {
+        errorMessage = "Erreur d'authentification API. Contactez le support.";
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          error: errorMessage,
+          details: text,
+          status: aiResponse.status
+        }), 
+        {
+          status: aiResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
+    
+    console.log("✅ AI generation completed successfully");
 
     const data = await aiResponse.json();
     let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
