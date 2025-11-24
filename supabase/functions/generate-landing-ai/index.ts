@@ -1863,10 +1863,43 @@ STRUCTURE:
 - Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
 - <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 - <script src="https://cdn.tailwindcss.com"></script> in <head>
+- 🔤 TYPOGRAPHY - Google Fonts MANDATORY in <head>:
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+- 🔤 TYPOGRAPHY - Style block MANDATORY after Tailwind in <head>:
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; font-size: 2.25rem; }
+    h3 { font-weight: 500; }
+    p, li {
+      line-height: 1.75;
+    }
+  </style>
 - 🚨 ALL images MUST have loading="lazy" attribute
 - Mobile-first (sm:, md:, lg:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0 (margins on mobile, none on desktop)
 - Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+🔤 TYPOGRAPHY (CRITICAL - MANDATORY):
+🚨 PROFESSIONAL TYPOGRAPHIC HIERARCHY:
+- Body text: Uses 'Inter' (already loaded via Google Fonts in <head>)
+- Headings (h1, h2, h3): Use 'Playfair Display' (already loaded via Google Fonts)
+- Line-height: 1.75 for paragraphs, 1.2 for headings
+- Letter-spacing: -0.02em for headings (already in <style>)
+- Font-weights: h1 (700 bold), h2 (600 semibold), h3 (500 medium)
+- Fonts are automatically applied via <style> in <head>
+- DO NOT duplicate font-family rules in individual elements
 
 📱 RESPONSIVE TABLES (CRITICAL):
 - Desktop (md:): Use standard <table> with class "hidden md:table"
@@ -2319,10 +2352,43 @@ STRUCTURE :
 - HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
 - <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 - <script src="https://cdn.tailwindcss.com"></script> dans <head>
+- 🔤 TYPOGRAPHIE - Google Fonts OBLIGATOIRES dans <head> :
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+- 🔤 TYPOGRAPHIE - Style block OBLIGATOIRE après Tailwind dans <head> :
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    h1 { font-weight: 700; }
+    h2 { font-weight: 600; font-size: 2.25rem; }
+    h3 { font-weight: 500; }
+    p, li {
+      line-height: 1.75;
+    }
+  </style>
 - 🚨 TOUTES les images DOIVENT avoir l'attribut loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+🔤 TYPOGRAPHIE (CRITIQUE - OBLIGATOIRE) :
+🚨 HIÉRARCHIE TYPOGRAPHIQUE PROFESSIONNELLE :
+- Corps de texte : Utilise 'Inter' (déjà chargé via Google Fonts dans <head>)
+- Titres (h1, h2, h3) : Utilise 'Playfair Display' (déjà chargé via Google Fonts)
+- Line-height : 1.75 pour paragraphes, 1.2 pour titres
+- Letter-spacing : -0.02em pour titres (déjà dans le <style>)
+- Font-weights : h1 (700 bold), h2 (600 semibold), h3 (500 medium)
+- Les polices sont automatiquement appliquées via le <style> dans <head>
+- NE PAS dupliquer les règles de font-family dans les éléments individuels
 
 📱 TABLEAUX RESPONSIFS (CRITIQUE) :
 - Bureau (md:) : Utiliser <table> standard avec class "hidden md:table"
