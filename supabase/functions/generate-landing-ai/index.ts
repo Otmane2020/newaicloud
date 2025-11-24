@@ -845,7 +845,19 @@ serve(async (req) => {
     const { designStyle, customHighlights, layout, contentLength } = userOptions;
 
     // Normaliser et configurer la longueur du contenu
-    const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
+    // Handle both simple modes ("short", "medium", "long") and French labels with descriptions ("courte (750 mots)", etc.)
+    let lengthMode: "short" | "medium" | "long" = "medium";
+    
+    if (contentLength) {
+      const normalized = contentLength.toLowerCase();
+      if (normalized.includes("short") || normalized.includes("court")) {
+        lengthMode = "short";
+      } else if (normalized.includes("long") || normalized.includes("longue")) {
+        lengthMode = "long";
+      } else if (normalized.includes("medium") || normalized.includes("moyenne") || normalized.includes("moyen")) {
+        lengthMode = "medium";
+      }
+    }
     
     let lengthConfig = { 
       maxTokens: 11000,  // ✅ Increased from 9000 to prevent truncation issues
@@ -874,6 +886,7 @@ serve(async (req) => {
     }
 
     console.log('📏 Content Length Config:', lengthConfig);
+    console.log('📏 Parsed length mode:', lengthMode, 'from input:', contentLength);
 
     if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
