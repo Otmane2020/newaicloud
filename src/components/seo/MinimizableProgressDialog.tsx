@@ -162,21 +162,31 @@ export function MinimizableProgressDialog({
                 {isProcessing && <Sparkles className="h-5 w-5 text-primary animate-spin" style={{ animationDuration: "3s" }} />}
                 {title}
               </h2>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
+            <div className="flex items-center gap-2">
+              {!isProcessing && (
+                <Button variant="outline" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
                   <Minimize2 className="h-4 w-4" />
-                  Minimiser
+                  Réduire
                 </Button>
-                {isProcessing && onCancel && (
-                  <Button variant="ghost" size="sm" onClick={onCancel} className="gap-2">
-                    <X className="h-4 w-4" />
-                    Annuler
+              )}
+              {isProcessing && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
+                    <Minimize2 className="h-4 w-4" />
+                    Réduire
                   </Button>
-                )}
-              </div>
+                  {onCancel && (
+                    <Button variant="ghost" size="sm" onClick={onCancel} className="gap-2">
+                      <X className="h-4 w-4" />
+                      Annuler
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
+          </div>
 
-            {isProcessing && currentProcessing ? (
+          {isProcessing && currentProcessing ? (
               <div className="py-6 space-y-4">
                 <div className="flex items-center justify-center">
                   <div className="relative">
