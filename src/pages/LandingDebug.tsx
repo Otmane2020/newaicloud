@@ -7,8 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "@/lib/language";
 
 export default function LandingDebug() {
+  const { t } = useTranslation();
   const [productId, setProductId] = useState("");
   const [colorSchemeKey, setColorSchemeKey] = useState("");
   const [theme, setTheme] = useState("light");
@@ -138,7 +140,7 @@ export default function LandingDebug() {
 
   const handleGenerate = async () => {
     if (!productId) {
-      toast.error("Veuillez entrer un ID de produit");
+      toast.error(t.landingDebug.enterProductId);
       return;
     }
 

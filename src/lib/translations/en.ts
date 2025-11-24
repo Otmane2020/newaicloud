@@ -17,6 +17,8 @@ export const translations = {
       welcomeBonus: "Welcome bonus!",
       welcomeBonusMessage: "Bonus credits added to your account",
     },
+    languageChanged: "Language changed",
+    languageChangedDesc: "Interface is now in {{language}}",
     error: {
       generic: "An error occurred",
       saving: "Error saving",
@@ -197,6 +199,36 @@ export const translations = {
     syncInProgress: "Syncing with Shopify...",
     autoSyncing: "🔄 Auto-syncing applied images to Shopify...",
     syncingToShopify: "Syncing to Shopify...",
+  },
+
+  // ============= Optimization Completed Dialog =============
+  optimizationCompleted: {
+    title: "Optimization completed!",
+    description: "{{count}} {{type}} have been optimized successfully",
+    syncQuestion: "Do you want to sync these changes with Shopify now?",
+    later: "Later",
+    syncNow: "Sync with Shopify",
+    types: {
+      products: "products",
+      collections: "collections",
+      tags: "tags",
+      alt: "images",
+      pages: "pages",
+      articles: "articles",
+    },
+  },
+
+  // ============= Shopify Pending Alert =============
+  shopifyPending: {
+    title: "Shopify Connection Pending",
+    description: "Your first 10 products will be imported automatically after activation.",
+  },
+
+  // ============= Landing Debug =============
+  landingDebug: {
+    enterProductId: "Please enter a product ID",
+    generationError: "Error during generation",
+    configLoadError: "Unable to load configuration options",
   },
 
   // ============= Landing Page Configuration =============

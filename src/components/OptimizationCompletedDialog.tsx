@@ -25,18 +25,10 @@ export function OptimizationCompletedDialog({
   type,
   totalOptimized,
 }: OptimizationCompletedDialogProps) {
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
 
   const getTypeLabel = () => {
-    const labels: Record<string, string> = {
-      products: 'produits',
-      collections: 'collections',
-      tags: 'tags',
-      alt: 'images',
-      pages: 'pages',
-      articles: 'articles',
-    };
-    return labels[type] || type;
+    return t.optimizationCompleted.types[type as keyof typeof t.optimizationCompleted.types] || type;
   };
 
   return (
@@ -47,16 +39,16 @@ export function OptimizationCompletedDialog({
             <CheckCircle2 className="w-8 h-8 text-success" />
           </div>
           <DialogTitle className="text-center text-2xl">
-            Optimisation terminée !
+            {t.optimizationCompleted.title}
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            {totalOptimized} {getTypeLabel()} ont été optimisés avec succès.
+            {tf('optimizationCompleted.description', { count: totalOptimized, type: getTypeLabel() })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-3 py-4">
           <div className="text-center text-sm text-muted-foreground">
-            Voulez-vous synchroniser ces modifications avec Shopify maintenant ?
+            {t.optimizationCompleted.syncQuestion}
           </div>
         </div>
 
@@ -66,7 +58,7 @@ export function OptimizationCompletedDialog({
             onClick={() => onOpenChange(false)}
             className="w-full sm:w-auto"
           >
-            Plus tard
+            {t.optimizationCompleted.later}
           </Button>
           <Button
             onClick={() => {
@@ -76,7 +68,7 @@ export function OptimizationCompletedDialog({
             className="w-full sm:w-auto gap-2"
           >
             <Upload className="w-4 h-4" />
-            Synchroniser avec Shopify
+            {t.optimizationCompleted.syncNow}
           </Button>
         </DialogFooter>
       </DialogContent>
