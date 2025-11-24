@@ -445,8 +445,13 @@ export function calculateArticlesSeoScore(articles: any[]): number {
 
 /**
  * Calculate Images SEO Score
- * Used by: Dashboard, Audit, SeoAltImageList.tsx
- * Authority: SeoAltImageList.tsx is the reference implementation
+ * Used by: Dashboard, Audit, SeoAltImage
+ * Authority: SeoAltImage.tsx is the reference implementation
+ * 
+ * This function uses the same normalization logic as SeoAltImage.tsx:
+ * - AI-generated alt text (optimization_count > 0): weight = 1.0 (100% quality)
+ * - Shopify alt text: weight = 0.5 (50% quality)
+ * - Score is normalized to 0-100 scale: score / weight
  */
 export function calculateImagesSeoScore(images: any[]): number {
   if (!images || images.length === 0) return 0;
