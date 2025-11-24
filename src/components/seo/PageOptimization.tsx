@@ -1244,20 +1244,20 @@ export function PageOptimization() {
                             }}
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
-                            className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg gap-2"
                           >
-                            <Zap className="w-4 h-4" />
+                            <Sparkles className="w-4 h-4" />
                           </Button>
                           {page.optimized && (
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                               onClick={() => handleSyncPage(page.id)}
                               disabled={syncing}
                               title="Sync to Shopify"
-                              className="hover:bg-green-50"
+                              className="gap-2"
                             >
-                              <Upload className="w-5 h-5 text-green-600" />
+                              <RefreshCw className="w-4 h-4" />
                             </Button>
                           )}
                         </div>

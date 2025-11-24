@@ -65,7 +65,11 @@ export interface ArticleManagementRef {
   optimizeAllArticles: () => Promise<void>;
 }
 
-const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
+interface ArticleManagementProps {
+  onOptimizationComplete?: () => void;
+}
+
+const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProps>(({ onOptimizationComplete }, ref) => {
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const { domain } = useStoreDomain();
@@ -354,6 +358,9 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
       await loadArticles();
       await refreshLimits();
       
+      // Notify parent to recalculate score
+      onOptimizationComplete?.();
+      
     } catch (error) {
       console.error('Error optimizing:', error);
       toast.error('❌ Erreur lors de l\'optimisation', {
@@ -417,27 +424,42 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
   }));
 
   const syncToShopify = async (articleIds: string[]) => {
+    // Filter only AI-optimized articles
+    const articlesToSync = articles.filter(a => 
+      articleIds.includes(a.id) && (a.optimization_count || 0) > 0
+    );
+    
+    if (articlesToSync.length === 0) {
+      toast.error('❌ Aucun article AI-optimisé sélectionné', {
+        description: 'Les articles doivent être optimisés par l\'IA avant synchronisation'
+      });
+      return;
+    }
+    
     const loadingToast = toast.loading('📤 Synchronisation Shopify', {
-      description: `Publication de ${articleIds.length} article(s)...`
+      description: `Publication de ${articlesToSync.length} article(s) AI-optimisé(s)...`
     });
     
     let successCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
     
-    for (const articleId of articleIds) {
+    for (const article of articlesToSync) {
       try {
         const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-          body: { articleId }
+          body: { articleId: article.id }
         });
 
         if (error) {
           errorCount++;
+          errors.push(`${article.title}: ${error.message}`);
         } else {
           successCount++;
         }
       } catch (error) {
         console.error('Error syncing:', error);
         errorCount++;
+        errors.push(`${article.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     
@@ -446,6 +468,13 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
     if (successCount > 0) {
       toast.success(`✅ ${successCount} article(s) publié(s)`, {
         description: errorCount > 0 ? `${errorCount} erreur(s)` : 'Synchronisation réussie'
+      });
+    }
+    
+    if (errorCount > 0 && errors.length > 0) {
+      console.error('Sync errors:', errors);
+      toast.error(`❌ ${errorCount} erreur(s) de synchronisation`, {
+        description: errors[0] // Show first error
       });
     }
     
@@ -511,43 +540,98 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">Total</div>
-          </CardContent>
+      {/* Interactive Dashboard Cards - 4 filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card 
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setQualityFilter('all');
+            setStatusFilter('all');
+            setSyncFilter('all');
+            setSearchQuery('');
+            toast.info(`${stats.total - stats.seoOptimized} articles à optimiser`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">To Optimize</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-100">{stats.total - stats.seoOptimized}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Not AI-optimized yet
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+          <p className="text-xs text-orange-600 dark:text-orange-300 mt-2">Click to filter</p>
         </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.ai}</div>
-            <div className="text-xs text-muted-foreground">AI</div>
-          </CardContent>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setQualityFilter('all');
+            setStatusFilter('all');
+            setSyncFilter('all');
+            setSearchQuery('');
+            toast.info(`${stats.seoOptimized} articles AI-optimisés`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.seoOptimized}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                AI-enhanced SEO
+              </p>
+            </div>
+            <Sparkles className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to filter</p>
         </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.shopify}</div>
-            <div className="text-xs text-muted-foreground">Shopify</div>
-          </CardContent>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setSyncFilter('not-synced');
+            setQualityFilter('all');
+            setStatusFilter('all');
+            toast.info(`${articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length} articles à synchroniser`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                {articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length}
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                AI-optimized only
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to filter</p>
         </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold text-purple-600">{stats.published}</div>
-            <div className="text-xs text-muted-foreground">Published</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold text-cyan-600">{stats.synced}</div>
-            <div className="text-xs text-muted-foreground">Synced</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.seoOptimized}</div>
-            <div className="text-xs text-muted-foreground">SEO Optimized</div>
-          </CardContent>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setSyncFilter('synced');
+            setQualityFilter('all');
+            setStatusFilter('all');
+            toast.info(`${stats.synced} articles synchronisés`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synced}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Synced to Shopify
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to filter</p>
         </Card>
       </div>
 
@@ -575,20 +659,47 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
               onClick={() => optimizeArticles(selectedArticles)}
               disabled={selectedArticles.length === 0}
               size="sm"
-              className="flex-1 sm:flex-none"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg gap-2 flex-1 sm:flex-none"
             >
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Optimiser SEO</span>
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimiser sélectionnés</span>
+            </Button>
+            <Button
+              onClick={optimizeAllArticles}
+              disabled={loading || optimizing || articles.filter(a => (a.optimization_count || 0) === 0).length === 0}
+              size="sm"
+              variant="outline"
+              className="border-2 border-primary text-primary hover:bg-primary/10 gap-2 flex-1 sm:flex-none"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimiser tout</span>
             </Button>
             <Button
               onClick={() => syncToShopify(selectedArticles)}
               disabled={selectedArticles.length === 0}
               variant="outline"
               size="sm"
-              className="flex-1 sm:flex-none"
+              className="gap-2 flex-1 sm:flex-none"
             >
-              <ExternalLink className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser</span>
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Synchroniser sélectionnés</span>
+            </Button>
+            <Button
+              onClick={async () => {
+                const articlesToSync = articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id);
+                if (articlesToSync.length === 0) {
+                  toast.error('Aucun article AI-optimisé à synchroniser');
+                  return;
+                }
+                await syncToShopify(articlesToSync.map(a => a.id));
+              }}
+              disabled={loading || articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length === 0}
+              variant="outline"
+              size="sm"
+              className="gap-2 flex-1 sm:flex-none"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Synchroniser tout</span>
             </Button>
             <Button
               onClick={bulkDelete}
@@ -892,24 +1003,36 @@ const ArticleManagement = forwardRef<ArticleManagementRef>((props, ref) => {
                           >
                             <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
-                          {!article.meta_description && (
+                          {!article.meta_description ? (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => optimizeArticles([article.id])}
+                              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg gap-1 h-8 px-2"
+                            >
+                              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline text-xs">Optimiser</span>
+                            </Button>
+                          ) : (
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => optimizeArticles([article.id])}
                               className="h-8 w-8 p-0"
+                              title="Re-optimiser"
                             >
-                              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                             </Button>
                           )}
-                          {!article.shopify_blog_id && (
+                          {(article.optimization_count || 0) > 0 && !article.shopify_blog_id && (
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                               onClick={() => syncToShopify([article.id])}
-                              className="h-8 w-8 p-0"
+                              className="h-8 gap-1 px-2"
                             >
-                              <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline text-xs">Sync</span>
                             </Button>
                           )}
                           <Button
