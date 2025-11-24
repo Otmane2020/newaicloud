@@ -97,6 +97,7 @@ export function validateCreateCheckout(data: any): ValidationResult<{
   success_url?: string;
   cancel_url?: string;
   force_immediate_payment?: boolean;
+  use_manual_promo?: boolean;
   currency?: string;
 }> {
   const errors: ValidationError[] = [];
@@ -162,6 +163,7 @@ export function validateCreateCheckout(data: any): ValidationResult<{
       success_url: data.success_url,
       cancel_url: data.cancel_url,
       force_immediate_payment: data.force_immediate_payment || false,
+      use_manual_promo: data.use_manual_promo || false,
       currency: data.currency
     }
   };

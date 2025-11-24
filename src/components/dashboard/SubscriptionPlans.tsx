@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   CheckCircle2,
   Sparkles,
@@ -15,6 +17,7 @@ import {
   FileText,
   BarChart3,
   MessageSquare,
+  Tag,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -60,6 +63,7 @@ export function SubscriptionPlans() {
   const [selectedProPlan, setSelectedProPlan] = useState<string>("");
   const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<string>("");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [useManualPromo, setUseManualPromo] = useState(false);
   const [pendingPlanChange, setPendingPlanChange] = useState<{
     planId: string;
     planName: string;
@@ -200,6 +204,7 @@ export function SubscriptionPlans() {
           body: {
             plan_id: planId,
             billing_period: billingPeriod,
+            use_manual_promo: useManualPromo,
           },
         });
 
@@ -364,6 +369,18 @@ export function SubscriptionPlans() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+          <Tag className="w-4 h-4 text-muted-foreground" />
+          <Label htmlFor="manual-promo" className="text-sm cursor-pointer">
+            Utiliser un code promo personnalisé (désactive la réduction automatique)
+          </Label>
+          <Switch
+            id="manual-promo"
+            checked={useManualPromo}
+            onCheckedChange={setUseManualPromo}
+          />
         </div>
       </div>
 

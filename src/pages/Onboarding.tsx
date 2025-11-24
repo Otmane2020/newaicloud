@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import {
@@ -22,6 +24,7 @@ import {
   LogOut,
   Loader2,
   Store,
+  Tag,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -65,6 +68,7 @@ export default function Onboarding() {
   const [claimingShopify, setClaimingShopify] = useState(false);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
+  const [useManualPromo, setUseManualPromo] = useState(false);
   const { syncShopifyStore } = useShopifySync();
 
   // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
@@ -814,6 +818,7 @@ export default function Onboarding() {
           success_url: successUrl,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
           force_immediate_payment: hasActiveTrial,
+          use_manual_promo: useManualPromo,
         },
       });
 
@@ -1007,6 +1012,19 @@ export default function Onboarding() {
               </Badge>
             </Button>
           </div>
+        </div>
+
+        {/* Manual Promo Code Switch */}
+        <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6 p-3 bg-muted/50 rounded-lg max-w-md mx-auto">
+          <Tag className="w-4 h-4 text-muted-foreground" />
+          <Label htmlFor="onboarding-manual-promo" className="text-sm cursor-pointer">
+            Utiliser un code promo personnalisé
+          </Label>
+          <Switch
+            id="onboarding-manual-promo"
+            checked={useManualPromo}
+            onCheckedChange={setUseManualPromo}
+          />
         </div>
 
         {/* Plans */}

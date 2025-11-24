@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Tag } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { getCurrencySymbol } from '@/lib/formatUtils';
 
@@ -40,6 +42,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [subscriptionChannel, setSubscriptionChannel] = useState<any>(null);
   const [planTier, setPlanTier] = useState<'pro' | 'enterprise'>('pro');
+  const [useManualPromo, setUseManualPromo] = useState(false);
   const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
@@ -179,7 +182,8 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           body: {
             plan_id: selectedPlanId,
             billing_period: 'monthly',
-            force_immediate_payment: true
+            force_immediate_payment: true,
+            use_manual_promo: useManualPromo,
           },
         });
 
@@ -441,6 +445,18 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
               )}
             </>
           )}
+          
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+            <Tag className="w-4 h-4 text-muted-foreground" />
+            <Label htmlFor="upgrade-manual-promo" className="text-sm cursor-pointer flex-1">
+              Utiliser un code promo personnalisé
+            </Label>
+            <Switch
+              id="upgrade-manual-promo"
+              checked={useManualPromo}
+              onCheckedChange={setUseManualPromo}
+            />
+          </div>
           
           <Button 
             onClick={handleActivate} 

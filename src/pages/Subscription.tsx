@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Loader2, Rocket, Zap, Building2, Package } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Loader2, Rocket, Zap, Building2, Package, Tag } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +53,7 @@ const Subscription = () => {
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
   const [prorationInfo, setProrationInfo] = useState<any>(null);
   const [loadingProration, setLoadingProration] = useState(false);
+  const [useManualPromo, setUseManualPromo] = useState(false);
 
   const isUpgradeFlow = searchParams.get('upgrade') === 'true';
 
@@ -300,6 +303,7 @@ const Subscription = () => {
           plan_id: planId,
           billing_period: 'monthly',
           force_immediate_payment: isInTrial,
+          use_manual_promo: useManualPromo,
         },
       });
 
