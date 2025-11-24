@@ -19,6 +19,22 @@ export const translations = {
     },
     languageChanged: "Language changed",
     languageChangedDesc: "Interface is now in {{language}}",
+    products: {
+      noImage: "No image available for this product",
+      whiteBackgroundSuccess: "White background generated successfully!",
+      whiteBackgroundError: "Error generating white background",
+      aiBackgroundSuccess: "{{count}} AI background(s) generated successfully!",
+      aiBackgroundError: "Error generating AI background",
+      generationError: "Generation failed",
+      productActivated: "Product activated",
+      productDraft: "Product set to draft",
+      statusUpdateError: "Error updating product status",
+    },
+    collections: {
+      noStore: "No store selected",
+      syncProgress: "Syncing {{count}} products (about {{time}}s)...",
+      syncError: "Error during synchronization",
+    },
     error: {
       generic: "An error occurred",
       saving: "Error saving",
@@ -4004,6 +4020,20 @@ export const translations = {
     },
   },
 
+  // Dialogs
+  dialogs: {
+    upgrade: {
+      planUpgraded: "Plan upgraded successfully!",
+      planUpgradedWithProration: "Plan upgraded! You were charged for {{days}} days. Monthly counters have been reset.",
+      planUpgradedNoProration: "Plan upgraded! No proration applied (beginning of cycle).",
+      youReachedLimit: "You've reached your plan limit",
+      chooseOptimizations: "Choose your plan",
+      selectPlan: "Select a plan",
+      activateThisPlan: "Activate this plan",
+      loading: "Loading...",
+    },
+  },
+
   // Media History
   mediaHistoryPage: {
     title: "Media History",
@@ -4044,6 +4074,11 @@ export const translations = {
   // Sync messages
   sync: {
     shopifyConnected: "Shopify store connected successfully!",
+    notAuthenticated: "Not authenticated",
+    syncing: "Syncing...",
+    syncButton: "Sync",
+    syncingProductCollections: "Syncing products with collections...",
+    fullImportButton: "Full Import",
     autoImport: "Automatic import of your first 10 products in progress...",
     importing: "Importing...",
     importingCollections: "Importing collections...",
@@ -5671,6 +5706,9 @@ export const translations = {
       youReachedLimit: "You've reached the limit of your plan",
       chooseOptimizations: "Choose the number of optimizations per month:",
       activateThisPlan: "Activate This Plan",
+      planUpgraded: "Plan upgraded successfully!",
+      planUpgradedWithProration: "Plan upgraded! You were charged for {{days}} days. Monthly counters have been reset.",
+      planUpgradedNoProration: "Plan upgraded! No proration applied (beginning of cycle).",
     },
     limit: {
       upgradeRequired: "🚀 Upgrade Required",

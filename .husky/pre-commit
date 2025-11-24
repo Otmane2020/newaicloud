@@ -1,0 +1,21 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Checking for translation violations..."
+
+# Run translation validation
+npm run validate:translations
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Translation validation failed!"
+  echo ""
+  echo "Fix these issues before committing:"
+  echo "  1. Use t.* for all user-facing text"
+  echo "  2. Run 'npm run validate:translations' to see all issues"
+  echo "  3. Check docs/TRANSLATION_GUIDELINES.md for help"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Translation validation passed!"
