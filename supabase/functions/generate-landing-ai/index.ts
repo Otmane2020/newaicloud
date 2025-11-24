@@ -1923,7 +1923,20 @@ UTILISATION DES ICÔNES :
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
-    console.log("📝 Prompt length:", prompt.length, "characters");
+    
+    // Check prompt size BEFORE sending
+    const promptSizeKB = Math.round(prompt.length / 1024);
+    const promptSizeMB = (promptSizeKB / 1024).toFixed(2);
+    console.log(`📝 Prompt size: ${promptSizeKB}KB (${promptSizeMB}MB), ${prompt.length} characters`);
+    
+    // Warn if prompt is suspiciously large (>500KB is unusual)
+    if (promptSizeKB > 500) {
+      console.warn(`⚠️ LARGE PROMPT DETECTED: ${promptSizeMB}MB - This may cause API issues`);
+      console.warn(`  - Images count: ${images.length}`);
+      console.warn(`  - Enriched summary length: ${enrichedSummary.length} chars`);
+      console.warn(`  - Visual analysis length: ${visualAnalysis.length} chars`);
+    }
+    
     console.log("🔑 API Key configured:", !!LOVABLE_API_KEY);
     
     const aiController = new AbortController();
@@ -2013,7 +2026,41 @@ UTILISATION DES ICÔNES :
     console.log("✅ AI generation completed successfully");
 
     const data = await aiResponse.json();
+    
+    // 🔍 Debug: Log the complete API response structure
+    console.log("🔍 API Response structure:", {
+      hasChoices: !!data?.choices,
+      choicesLength: data?.choices?.length || 0,
+      hasMessage: !!data?.choices?.[0]?.message,
+      messageKeys: data?.choices?.[0]?.message ? Object.keys(data.choices[0].message) : [],
+      hasContent: !!data?.choices?.[0]?.message?.content,
+      contentLength: data?.choices?.[0]?.message?.content?.length || 0,
+      hasUsage: !!data?.usage,
+      fullResponse: JSON.stringify(data).substring(0, 1000) // First 1000 chars
+    });
+    
     let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
+    
+    // If content is empty, check for errors in response
+    if (!rawHtml) {
+      console.error("❌ EMPTY CONTENT from API:", {
+        hasError: !!data?.error,
+        errorMessage: data?.error?.message || "No error in response",
+        fullData: JSON.stringify(data)
+      });
+      
+      return new Response(
+        JSON.stringify({ 
+          error: "L'API n'a généré aucun contenu. Vérifiez les logs pour plus de détails.",
+          debugInfo: {
+            apiStatus: aiResponse.status,
+            hasChoices: !!data?.choices,
+            responseSize: JSON.stringify(data).length
+          }
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // 🔍 Phase 4: Detailed diagnostics
     const tokensUsed = data?.usage?.completion_tokens || 0;
