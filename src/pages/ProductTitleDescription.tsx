@@ -12,7 +12,6 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useStore } from "@/contexts/StoreContext";
 import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
-import { useImageOptimization } from "@/hooks/useImageOptimization";
 import {
   Sparkles,
   Wand2,
@@ -71,20 +70,14 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Product {
   id: string;
   title: string;
   description: string | null;
-  landing_page_html: string | null;
+  landing_page: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -115,24 +108,27 @@ interface ProductImage {
 
 // Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
-  // Check landing_page_html first (AI-generated content)
-  if (product.landing_page_html) {
-    const hasHtmlTags = product.landing_page_html.includes('<div') || 
-                        product.landing_page_html.includes('<section') || 
-                        product.landing_page_html.includes('<h1') ||
-                        product.landing_page_html.includes('<article') ||
-                        product.landing_page_html.length > 500; // Long content is likely HTML
+  // Check landing_page first (AI-generated content)
+  if (product.landing_page) {
+    const hasHtmlTags =
+      product.landing_page.includes("<div") ||
+      product.landing_page.includes("<section") ||
+      product.landing_page.includes("<h1") ||
+      product.landing_page.includes("<article") ||
+      product.landing_page.length > 500; // Long content is likely HTML
     if (hasHtmlTags) return true;
   }
-  
+
   // Fallback to description
   if (product.description) {
-    return product.description.includes('<div') || 
-           product.description.includes('<section') || 
-           product.description.includes('<h1') ||
-           product.description.includes('<article');
+    return (
+      product.description.includes("<div") ||
+      product.description.includes("<section") ||
+      product.description.includes("<h1") ||
+      product.description.includes("<article")
+    );
   }
-  
+
   return false;
 };
 
@@ -141,7 +137,7 @@ interface PreviewImage {
   productTitle: string;
   originalUrl: string;
   generatedUrl: string | null;
-  status: 'pending' | 'generating' | 'success' | 'error';
+  status: "pending" | "generating" | "success" | "error";
   error?: string;
   variantId?: string;
   variantTitle?: string;
@@ -149,7 +145,6 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
-  const { applyOptimizedImage, isOptimizing: isApplyingOptimization } = useImageOptimization();
   const { t } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
@@ -168,7 +163,7 @@ export default function ProductTitleDescription() {
   const [showAiBgDialog, setShowAiBgDialog] = useState(false);
   const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
   const [aiBgPreviews, setAiBgPreviews] = useState<PreviewImage[]>([]);
-  const [customPrompt, setCustomPrompt] = useState('');
+  const [customPrompt, setCustomPrompt] = useState("");
   const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [showAiConfigDialog, setShowAiConfigDialog] = useState(false);
   const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
@@ -177,7 +172,12 @@ export default function ProductTitleDescription() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedImageType, setSelectedImageType] = useState<"primary" | "secondary">("primary");
   const [showWhiteBgConfigDialog, setShowWhiteBgConfigDialog] = useState(false);
-  const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string; vendor?: string | null } | null>(null);
+  const [currentProcessing, setCurrentProcessing] = useState<{
+    index: number;
+    total: number;
+    title: string;
+    vendor?: string | null;
+  } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showOptimizationConfirm, setShowOptimizationConfirm] = useState(false);
@@ -191,9 +191,9 @@ export default function ProductTitleDescription() {
   const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
-  const [selectedImageFormat, setSelectedImageFormat] = useState<string>('square');
-  const [selectedSimilarity, setSelectedSimilarity] = useState<string>('medium');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'optimized' | 'notOptimized' | 'toSync'>('all');
+  const [selectedImageFormat, setSelectedImageFormat] = useState<string>("square");
+  const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
+  const [statusFilter, setStatusFilter] = useState<"all" | "optimized" | "notOptimized" | "toSync">("all");
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -201,32 +201,31 @@ export default function ProductTitleDescription() {
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
-    console.log('🔄 [STORE_CHANGE] Store changed to:', selectedStore?.id, selectedStore?.store_name);
-    console.log('🔄 [STORE_CHANGE] Previous products count:', products.length);
-    console.log('🔄 [STORE_CHANGE] Resetting state immediately...');
-    
+    console.log("🔄 [STORE_CHANGE] Store changed to:", selectedStore?.id, selectedStore?.store_name);
+    console.log("🔄 [STORE_CHANGE] Previous products count:", products.length);
+    console.log("🔄 [STORE_CHANGE] Resetting state immediately...");
+
     // ✅ RÉINITIALISATION IMMÉDIATE DU STATE pour éviter le mélange visuel
     setProducts([]);
     setSelectedProducts(new Set());
-    
+
     // Reset filters when store changes
-    setSearchTerm('');
-    setStatusFilter('all');
+    setSearchTerm("");
+    setStatusFilter("all");
     setCurrentPage(1);
-    
+
     if (selectedStore?.id) {
-      console.log('🔄 [STORE_CHANGE] Fetching products for new store...');
+      console.log("🔄 [STORE_CHANGE] Fetching products for new store...");
       fetchProducts();
     }
   }, [selectedStore]);
-
 
   // Rafraîchir les limites au montage et toutes les 10 secondes
   useEffect(() => {
@@ -239,10 +238,10 @@ export default function ProductTitleDescription() {
   }, [refreshLimits]);
 
   const fetchProducts = async () => {
-    console.log('🚨🚨🚨 [PRODUCT_TITLE] selectedStore:', selectedStore);
-    
+    console.log("🚨🚨🚨 [PRODUCT_TITLE] selectedStore:", selectedStore);
+
     if (!selectedStore) {
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] No store selected, clearing products');
+      console.log("🚨🚨🚨 [PRODUCT_TITLE] No store selected, clearing products");
       setProducts([]);
       setLoading(false);
       return;
@@ -250,40 +249,49 @@ export default function ProductTitleDescription() {
 
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] About to query with store_id filter:', selectedStore.id);
+      console.log(
+        "🚨🚨🚨 [PRODUCT_TITLE] Loading products for store:",
+        selectedStore.store_name,
+        "ID:",
+        selectedStore.id,
+      );
+      console.log("🚨🚨🚨 [PRODUCT_TITLE] About to query with store_id filter:", selectedStore.id);
 
       // ✅ PAGINATION POUR DÉPASSER LA LIMITE DE 1000 PRODUITS
       let allProducts: any[] = [];
       let hasMore = true;
       let page = 0;
       const PAGE_SIZE = 1000;
-      
-      console.log('🔄 [PRODUCT_TITLE] Starting paginated fetch...');
-      
+
+      console.log("🔄 [PRODUCT_TITLE] Starting paginated fetch...");
+
       while (hasMore) {
         const start = page * PAGE_SIZE;
         const end = start + PAGE_SIZE - 1;
-        
+
         console.log(`📄 [PRODUCT_TITLE] Fetching page ${page + 1} (${start}-${end})...`);
-        
+
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page_html, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id")
+          .select(
+            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id",
+          )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
           .range(start, end)
           .order("imported_at", { ascending: false });
-        
+
         if (pageError) throw pageError;
-        
+
         if (pageData && pageData.length > 0) {
           console.log(`✅ [PRODUCT_TITLE] Page ${page + 1} loaded: ${pageData.length} products`);
           allProducts = [...allProducts, ...pageData];
-          
+
           // Si on a reçu moins de PAGE_SIZE résultats, c'est la dernière page
           if (pageData.length < PAGE_SIZE) {
             hasMore = false;
@@ -294,21 +302,21 @@ export default function ProductTitleDescription() {
           hasMore = false;
         }
       }
-      
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] Total products fetched:', allProducts.length);
-      
+
+      console.log("🚨🚨🚨 [PRODUCT_TITLE] Total products fetched:", allProducts.length);
+
       // ✅ VALIDATION GARDE : Filtrer les données avec la fonction garde
-      const rawProductsData = guardStoreData(allProducts, selectedStore.id, 'product');
-      console.log('🚨🚨🚨 [PRODUCT_TITLE] After guard filter:', rawProductsData.length, 'valid products');
+      const rawProductsData = guardStoreData(allProducts, selectedStore.id, "product");
+      console.log("🚨🚨🚨 [PRODUCT_TITLE] After guard filter:", rawProductsData.length, "valid products");
 
       // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
       if (rawProductsData && rawProductsData.length > 0) {
-        const productIds = rawProductsData.map(p => p.id);
-        console.log('🔍 [PRODUCT_TITLE] Loading variants for products:', productIds.length);
-        
+        const productIds = rawProductsData.map((p) => p.id);
+        console.log("🔍 [PRODUCT_TITLE] Loading variants for products:", productIds.length);
+
         let allVariants: any[] = [];
         const batchSize = 50; // Traiter par batch de 50 produits max
-        
+
         for (let i = 0; i < productIds.length; i += batchSize) {
           const batch = productIds.slice(i, i + batchSize);
           const { data: variantsData, error: variantsError } = await supabase
@@ -317,31 +325,34 @@ export default function ProductTitleDescription() {
             .in("product_id", batch);
 
           if (variantsError) {
-            console.error('❌ [PRODUCT_TITLE] Error loading variants batch:', variantsError);
+            console.error("❌ [PRODUCT_TITLE] Error loading variants batch:", variantsError);
           } else if (variantsData) {
             allVariants = [...allVariants, ...variantsData];
           }
         }
 
-        console.log('✅ [PRODUCT_TITLE] Loaded total variants:', allVariants.length);
-        
+        console.log("✅ [PRODUCT_TITLE] Loaded total variants:", allVariants.length);
+
         // Associer les variantes aux produits
-        const productsWithVariants = rawProductsData.map(product => {
-          const productVariants = allVariants.filter(v => v.product_id === product.id);
+        const productsWithVariants = rawProductsData.map((product) => {
+          const productVariants = allVariants.filter((v) => v.product_id === product.id);
           if (productVariants.length > 0) {
-            console.log(`🔍 [PRODUCT_TITLE] Product "${product.title}" has ${productVariants.length} variants:`, productVariants.map(v => v.title));
+            console.log(
+              `🔍 [PRODUCT_TITLE] Product "${product.title}" has ${productVariants.length} variants:`,
+              productVariants.map((v) => v.title),
+            );
           }
           return {
             ...product,
-            variants: productVariants
+            variants: productVariants,
           };
         });
 
-        console.log('📊 [PRODUCT_TITLE] Fetched products with variants:', productsWithVariants.length);
+        console.log("📊 [PRODUCT_TITLE] Fetched products with variants:", productsWithVariants.length);
         setProducts(productsWithVariants as Product[]);
-        
+
         // ✅ Vérifier la cohérence après setState
-        verifyStateCoherence(productsWithVariants, selectedStore.id, 'ProductTitleDescription', 'product');
+        verifyStateCoherence(productsWithVariants, selectedStore.id, "ProductTitleDescription", "product");
       } else {
         setProducts([]);
       }
@@ -363,61 +374,62 @@ export default function ProductTitleDescription() {
   const filteredProducts = products.filter((product) => {
     // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
     const normalizeText = (text: string | null | undefined): string => {
-      if (!text) return '';
+      if (!text) return "";
       return text
         .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
-        .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
-        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Enlève les accents
+        .replace(/[^\w\s]/g, " ") // Remplace la ponctuation par des espaces
+        .replace(/\s+/g, " ") // Remplace les espaces multiples par un seul
         .trim();
     };
 
     // Normaliser le terme de recherche et le diviser en mots-clés
-    const searchKeywords = normalizeText(searchTerm).split(' ').filter(k => k.length > 0);
-    
+    const searchKeywords = normalizeText(searchTerm)
+      .split(" ")
+      .filter((k) => k.length > 0);
+
     if (searchKeywords.length === 0) {
       // Pas de recherche, appliquer seulement le filtre de statut
-      if (statusFilter === 'optimized') return hasRichHtmlDescription(product);
-      if (statusFilter === 'notOptimized') return !hasRichHtmlDescription(product);
-      if (statusFilter === 'toSync') return hasRichHtmlDescription(product);
+      if (statusFilter === "optimized") return hasRichHtmlDescription(product);
+      if (statusFilter === "notOptimized") return !hasRichHtmlDescription(product);
+      if (statusFilter === "toSync") return hasRichHtmlDescription(product);
       return true;
     }
 
     // Construire une chaîne de recherche avec tous les champs du produit
-    const searchableText = normalizeText([
-      product.title,
-      product.vendor,
-      product.description,
-      product.seo_title,
-      product.seo_description,
-      product.handle,
-      product.status,
-      // Ajouter les variantes si disponibles
-      ...(product.variants?.map(v => [v.title, v.option1, v.option2, v.option3].filter(Boolean).join(' ')) || [])
-    ].filter(Boolean).join(' '));
+    const searchableText = normalizeText(
+      [
+        product.title,
+        product.vendor,
+        product.description,
+        product.seo_title,
+        product.seo_description,
+        product.handle,
+        product.status,
+        // Ajouter les variantes si disponibles
+        ...(product.variants?.map((v) => [v.title, v.option1, v.option2, v.option3].filter(Boolean).join(" ")) || []),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
 
     // Vérifier que tous les mots-clés sont présents dans le texte
-    const matchesSearch = searchKeywords.every(keyword => 
-      searchableText.includes(keyword)
-    );
-    
+    const matchesSearch = searchKeywords.every((keyword) => searchableText.includes(keyword));
+
     if (!matchesSearch) return false;
-    
+
     // Appliquer les filtres de statut
-    if (statusFilter === 'optimized') return hasRichHtmlDescription(product);
-    if (statusFilter === 'notOptimized') return !hasRichHtmlDescription(product);
-    if (statusFilter === 'toSync') return hasRichHtmlDescription(product);
-    
+    if (statusFilter === "optimized") return hasRichHtmlDescription(product);
+    if (statusFilter === "notOptimized") return !hasRichHtmlDescription(product);
+    if (statusFilter === "toSync") return hasRichHtmlDescription(product);
+
     return true;
   });
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   // Reset pagination when filter or search changes
   useEffect(() => {
@@ -426,26 +438,36 @@ export default function ProductTitleDescription() {
 
   // Scroll to top when page changes
   useEffect(() => {
-    const scrollContainer = document.querySelector('[data-radix-scroll-area-viewport]');
+    const scrollContainer = document.querySelector("[data-radix-scroll-area-viewport]");
     if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [currentPage]);
 
   // 🚨 DEBUG LOGS - Ultra visible debugging
   useEffect(() => {
-    console.log('🚨🚨🚨 ============= PRODUCT DEBUG INFO =============');
-    console.log('🚨🚨🚨 [PRODUCTS_RAW] Total products loaded:', products.length);
-    console.log('🚨🚨🚨 [FILTER_ACTIVE]', { statusFilter, searchTerm });
-    console.log('🚨🚨🚨 [PRODUCTS_FILTERED] After filters:', filteredProducts.length);
-    console.log('🚨🚨🚨 [PRODUCTS_PAGINATED] Page', currentPage, '/', totalPages, '- Showing:', paginatedProducts.length);
-    console.log('🚨🚨🚨 [STORE_SELECTED]', selectedStore?.store_name, 'ID:', selectedStore?.id);
+    console.log("🚨🚨🚨 ============= PRODUCT DEBUG INFO =============");
+    console.log("🚨🚨🚨 [PRODUCTS_RAW] Total products loaded:", products.length);
+    console.log("🚨🚨🚨 [FILTER_ACTIVE]", { statusFilter, searchTerm });
+    console.log("🚨🚨🚨 [PRODUCTS_FILTERED] After filters:", filteredProducts.length);
+    console.log(
+      "🚨🚨🚨 [PRODUCTS_PAGINATED] Page",
+      currentPage,
+      "/",
+      totalPages,
+      "- Showing:",
+      paginatedProducts.length,
+    );
+    console.log("🚨🚨🚨 [STORE_SELECTED]", selectedStore?.store_name, "ID:", selectedStore?.id);
     if (paginatedProducts.length > 0) {
-      console.log('🚨🚨🚨 [SAMPLE_PRODUCTS] First 3:', paginatedProducts.slice(0, 3).map(p => ({ id: p.id, title: p.title, store_id: (p as any).store_id })));
+      console.log(
+        "🚨🚨🚨 [SAMPLE_PRODUCTS] First 3:",
+        paginatedProducts.slice(0, 3).map((p) => ({ id: p.id, title: p.title, store_id: (p as any).store_id })),
+      );
     }
-    console.log('🚨🚨🚨 ============================================');
+    console.log("🚨🚨🚨 ============================================");
   }, [products, filteredProducts, paginatedProducts, currentPage, totalPages, statusFilter, searchTerm, selectedStore]);
 
   const handleSelectAll = () => {
@@ -466,7 +488,6 @@ export default function ProductTitleDescription() {
     setSelectedProducts(newSelected);
   };
 
-
   const handleOptimizeSelected = async (config?: OptimizationConfig) => {
     if (selectedProducts.size === 0) {
       toast.error(t.productOptimization.selectOne);
@@ -474,7 +495,7 @@ export default function ProductTitleDescription() {
     }
 
     // Vérifier les limites d'utilisation
-    if (!canDoAction('optimizations')) {
+    if (!canDoAction("optimizations")) {
       setShowUpgradeDialog(true);
       return;
     }
@@ -485,7 +506,7 @@ export default function ProductTitleDescription() {
     setIsOptimizing(true);
     setOptimizedProducts([]);
     setShowLandingPreviewDialog(true);
-    
+
     const productArray = Array.from(selectedProducts);
     const toastId = toast.loading(`Génération 0/${productArray.length} produit(s)...`);
 
@@ -505,14 +526,16 @@ export default function ProductTitleDescription() {
           index: i + 1,
           total: productArray.length,
           title: product.title,
-          vendor: product.vendor
+          vendor: product.vendor,
         });
-        
-        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, { id: toastId });
+
+        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, {
+          id: toastId,
+        });
 
         // Timeout réduit à 45 secondes
         const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT' } }), 45000)
+          setTimeout(() => resolve({ data: null, error: { message: "TIMEOUT" } }), 45000),
         );
 
         const invokePromise = supabase.functions.invoke("generate-title-description", {
@@ -520,8 +543,8 @@ export default function ProductTitleDescription() {
             currentTitle: product.title,
             imageUrl: (config || optimizationConfig)?.selectedImageUrl || product.image_url || null,
             config: config || optimizationConfig,
-            customDescription: (config || optimizationConfig)?.customDescription || '',
-            vendor: '',
+            customDescription: (config || optimizationConfig)?.customDescription || "",
+            vendor: "",
           },
         });
 
@@ -530,126 +553,105 @@ export default function ProductTitleDescription() {
         if (error) {
           // Check for specific error types
           const errorMessage = error.message || String(error);
-          
-          if (errorMessage.includes('LIMIT_REACHED') || errorMessage.includes('Limite d\'optimisations atteinte')) {
-            throw new Error('LIMIT_REACHED: Limite d\'optimisations atteinte. Veuillez passer à un plan supérieur.');
-          }
-          
-          if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
-            throw new Error('CREDITS_DEPLETED: Les crédits IA sont épuisés. Contactez le support pour plus d\'informations.');
-          }
-          
-          if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {
-            throw new Error('RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.');
+
+          if (errorMessage.includes("LIMIT_REACHED") || errorMessage.includes("Limite d'optimisations atteinte")) {
+            throw new Error("LIMIT_REACHED: Limite d'optimisations atteinte. Veuillez passer à un plan supérieur.");
           }
 
-          if (errorMessage.includes('TIMEOUT')) {
-            throw new Error('TIMEOUT: La génération prend trop de temps. Le contenu demandé est peut-être trop complexe.');
+          if (errorMessage.includes("CREDITS_DEPLETED") || errorMessage.includes("402")) {
+            throw new Error(
+              "CREDITS_DEPLETED: Les crédits IA sont épuisés. Contactez le support pour plus d'informations.",
+            );
           }
 
-          if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-            throw new Error('NETWORK: Erreur réseau. Vérifiez votre connexion et réessayez.');
+          if (errorMessage.includes("RATE_LIMIT") || errorMessage.includes("429")) {
+            throw new Error("RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.");
           }
-          
+
+          if (errorMessage.includes("TIMEOUT")) {
+            throw new Error(
+              "TIMEOUT: La génération prend trop de temps. Le contenu demandé est peut-être trop complexe.",
+            );
+          }
+
+          if (errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError")) {
+            throw new Error("NETWORK: Erreur réseau. Vérifiez votre connexion et réessayez.");
+          }
+
           throw error;
         }
 
         // Update local state - Fetch fresh data from DB
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page_html, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
+          .select(
+            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status",
+          )
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
-          // Check if landing_page_html or description already has HTML (skip regeneration if present)
-          const hasExistingHtml = (updatedProduct.landing_page_html && 
-            (updatedProduct.landing_page_html.includes('<div') || updatedProduct.landing_page_html.includes('<section'))) ||
-            (updatedProduct.description && 
-            (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section')));
+          // Check if landing_page or description already has HTML (skip regeneration if present)
+          const hasExistingHtml =
+            (updatedProduct.landing_page &&
+              (updatedProduct.landing_page.includes("<div") || updatedProduct.landing_page.includes("<section"))) ||
+            (updatedProduct.description &&
+              (updatedProduct.description.includes("<div") || updatedProduct.description.includes("<section")));
 
           if (!hasExistingHtml) {
             // Generate HTML landing page
             try {
               console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
-              
+
               // Récupérer vision_attributes depuis le produit
               const { data: productData } = await supabase
-                .from('shopify_products')
-                .select('vision_attributes, vision_confidence')
-                .eq('id', productId)
+                .from("shopify_products")
+                .select("vision_attributes, vision_confidence")
+                .eq("id", productId)
                 .single();
-              
-              // Récupérer la préférence par défaut de l'utilisateur
-              const { data: userData } = await supabase.auth.getUser();
-              const { data: defaultPref } = await supabase
-                .from('landing_page_preferences')
-                .select('*')
-                .eq('user_id', userData?.user?.id)
-                .eq('is_default', true)
-                .maybeSingle();
-              
-              console.log("🎨 Préférence utilisateur:", defaultPref ? 'Trouvée' : 'Aucune (utilisation des défauts)');
-              
-              // ✅ Call generate-landing-ai (the official function) with userPreferences
+
               const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
-                'generate-landing-ai',
+                "generate-product-description-html",
                 {
                   body: {
+                    title: updatedProduct.seo_title || updatedProduct.title,
+                    existingDescription: updatedProduct.seo_description,
+                    images: [updatedProduct.image_url].filter(Boolean),
+                    visionAnalysis: productData?.vision_attributes || null,
+                    template: "ecommerce",
                     productId: productId,
-                    product_id: productId,
-                    productTitle: updatedProduct.seo_title || updatedProduct.title,
-                    description: updatedProduct.seo_description,
-                    imageUrl: updatedProduct.image_url,
-                    vendor: updatedProduct.vendor || '',
-                    userPreferences: defaultPref ? {
-                      layout: defaultPref.layout,
-                      designStyle: defaultPref.design_style,
-                      contentLength: defaultPref.content_length,
-                      colorScheme: {
-                        primary: defaultPref.color_primary,
-                        secondary: defaultPref.color_secondary,
-                        accent: defaultPref.color_accent,
-                        background: defaultPref.color_background,
-                        surface: defaultPref.color_surface,
-                        text: defaultPref.color_text,
-                        textMuted: defaultPref.color_text_muted
-                      },
-                      highlights: defaultPref.custom_highlights
-                    } : null,
-                    language: 'fr'
-                  }
-                }
+                  },
+                },
               );
 
-              if (!htmlError && htmlData?.html) {
-                console.log("✅ HTML landing page généré");
-                
-                // Save HTML to shopify_products.landing_page_html
+              if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
+                console.log("✅ HTML landing page généré (10 optimisations consommées)");
+
+                // Save HTML to shopify_products.landing_page
                 const { error: updateError } = await supabase
                   .from("shopify_products")
-                  .update({ landing_page_html: htmlData.html })
+                  .update({ landing_page: htmlData.htmlLandingPage })
                   .eq("id", productId);
-                
+
                 if (!updateError) {
                   // Save to history
                   const { data: userData } = await supabase.auth.getUser();
                   if (userData.user) {
-                    const { data: versionData } = await supabase.rpc('get_next_version_number', {
-                      p_product_id: productId
+                    const { data: versionData } = await supabase.rpc("get_next_version_number", {
+                      p_product_id: productId,
                     });
-                    
+
                     await supabase.from("landing_page_history").insert({
                       product_id: productId,
                       user_id: userData.user.id,
-                      landing_page_html: htmlData.html,
+                      landing_page_html: htmlData.htmlLandingPage,
                       version_number: versionData || 1,
-                      is_current: true
+                      is_current: true,
                     });
                   }
-                  
-                  // Update local product with HTML in landing_page_html
-                  updatedProduct.landing_page_html = htmlData.html;
+
+                  // Update local product with HTML in landing_page
+                  updatedProduct.landing_page = htmlData.htmlLandingPage;
                 }
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
@@ -663,13 +665,9 @@ export default function ProductTitleDescription() {
 
           // Update optimizedProducts progressively with fresh data
           setOptimizedProducts((prev) => [...prev, updatedProduct]);
-          
+
           // Force update products state with fresh data including landing_page
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === productId ? updatedProduct : p
-            )
-          );
+          setProducts((prev) => prev.map((p) => (p.id === productId ? updatedProduct : p)));
         }
       }
 
@@ -678,44 +676,44 @@ export default function ProductTitleDescription() {
       await refreshLimits(); // Rafraîchir les limites après optimisation
     } catch (error: any) {
       console.error("Error optimizing:", error);
-      
+
       const errorMessage = error?.message || String(error);
-      
-      if (errorMessage.includes('CANCELLED')) {
+
+      if (errorMessage.includes("CANCELLED")) {
         toast.info("Génération annulée", {
           id: toastId,
-          description: `${optimizedProducts.length} produit(s) ont été optimisé(s) avant l'annulation.`
+          description: `${optimizedProducts.length} produit(s) ont été optimisé(s) avant l'annulation.`,
         });
-      } else if (errorMessage.includes('LIMIT_REACHED')) {
+      } else if (errorMessage.includes("LIMIT_REACHED")) {
         toast.error("Limite atteinte", {
           id: toastId,
-          description: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur."
+          description: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur.",
         });
         setShowUpgradeDialog(true);
-      } else if (errorMessage.includes('CREDITS_DEPLETED')) {
+      } else if (errorMessage.includes("CREDITS_DEPLETED")) {
         toast.error("Crédits IA épuisés", {
           id: toastId,
-          description: "Ajoutez des crédits dans Settings → Workspace → Usage."
+          description: "Ajoutez des crédits dans Settings → Workspace → Usage.",
         });
-      } else if (errorMessage.includes('RATE_LIMIT')) {
+      } else if (errorMessage.includes("RATE_LIMIT")) {
         toast.error("Trop de requêtes", {
           id: toastId,
-          description: "Patientez quelques instants avant de réessayer."
+          description: "Patientez quelques instants avant de réessayer.",
         });
-      } else if (errorMessage.includes('TIMEOUT')) {
+      } else if (errorMessage.includes("TIMEOUT")) {
         toast.error("Génération trop longue (>45s)", {
           id: toastId,
-          description: "Le contenu est peut-être trop complexe. Réessayez."
+          description: "Le contenu est peut-être trop complexe. Réessayez.",
         });
-      } else if (errorMessage.includes('NETWORK')) {
+      } else if (errorMessage.includes("NETWORK")) {
         toast.error("Erreur réseau", {
           id: toastId,
-          description: "Vérifiez votre connexion internet."
+          description: "Vérifiez votre connexion internet.",
         });
       } else {
-        toast.error("Erreur lors de l'optimisation", { 
+        toast.error("Erreur lors de l'optimisation", {
           id: toastId,
-          description: errorMessage || "Erreur inconnue"
+          description: errorMessage || "Erreur inconnue",
         });
       }
     } finally {
@@ -725,7 +723,7 @@ export default function ProductTitleDescription() {
       setAbortController(null);
     }
   };
-  
+
   const handleCancelGeneration = () => {
     if (abortController) {
       abortController.abort();
@@ -757,15 +755,15 @@ export default function ProductTitleDescription() {
   const loadGalleryImages = async (productIds: string[]) => {
     setLoadingGallery(true);
     const imagesMap = new Map<string, ProductImage[]>();
-    
+
     try {
       for (const productId of productIds) {
         const { data, error } = await supabase
-          .from('product_images')
-          .select('id, src, alt_text, position')
-          .eq('product_id', productId)
-          .order('position', { ascending: true });
-        
+          .from("product_images")
+          .select("id, src, alt_text, position")
+          .eq("product_id", productId)
+          .order("position", { ascending: true });
+
         if (!error && data) {
           console.log(`📸 [Gallery] Loaded ${data.length} images for product ${productId}`);
           imagesMap.set(productId, data);
@@ -773,7 +771,7 @@ export default function ProductTitleDescription() {
           console.error(`❌ [Gallery] Error loading images for product ${productId}:`, error);
         }
       }
-      
+
       setGalleryImages(imagesMap);
     } finally {
       setLoadingGallery(false);
@@ -787,14 +785,12 @@ export default function ProductTitleDescription() {
     }
 
     // Vérifier les limites d'utilisation
-    if (!canDoAction('optimizations')) {
+    if (!canDoAction("optimizations")) {
       setShowUpgradeDialog(true);
       return;
     }
 
-    const selectedProductsList = products.filter((p) =>
-      selectedProducts.has(p.id) && p.image_url
-    );
+    const selectedProductsList = products.filter((p) => selectedProducts.has(p.id) && p.image_url);
 
     if (selectedProductsList.length === 0) {
       toast.error("Aucun produit sélectionné n'a d'image");
@@ -810,7 +806,7 @@ export default function ProductTitleDescription() {
     // Close config dialog and start generation
     setShowWhiteBgConfigDialog(false);
     setGeneratingWhiteBg(true);
-    
+
     let previews: PreviewImage[] = [];
 
     if (whiteBgApplyTo === "simple") {
@@ -822,7 +818,7 @@ export default function ProductTitleDescription() {
           productTitle: p.title,
           originalUrl: selectedImageUrl,
           generatedUrl: null,
-          status: 'pending' as const,
+          status: "pending" as const,
         };
       });
     } else {
@@ -832,14 +828,12 @@ export default function ProductTitleDescription() {
         if (variantIds.length === 0) continue;
 
         for (const variantId of variantIds) {
-          const variant = product.variants?.find(v => v.id === variantId);
+          const variant = product.variants?.find((v) => v.id === variantId);
           if (!variant) continue;
 
           // Trouver l'image de la variante par image_id
           const images = galleryImages.get(product.id) || [];
-          const variantImage = variant.image_id 
-            ? images.find(img => img.id === variant.image_id)
-            : undefined;
+          const variantImage = variant.image_id ? images.find((img) => img.id === variant.image_id) : undefined;
           const imageUrl = variantImage?.src || product.image_url!;
 
           previews.push({
@@ -847,9 +841,9 @@ export default function ProductTitleDescription() {
             productTitle: product.title,
             originalUrl: imageUrl,
             generatedUrl: null,
-            status: 'pending' as const,
+            status: "pending" as const,
             variantId: variant.id,
-            variantTitle: variant.title
+            variantTitle: variant.title,
           });
         }
       }
@@ -860,24 +854,22 @@ export default function ProductTitleDescription() {
 
     // Générer les images
     for (const preview of previews) {
-      const previewKey = preview.variantId 
-        ? `${preview.productId}-${preview.variantId}` 
-        : preview.productId;
-      
+      const previewKey = preview.variantId ? `${preview.productId}-${preview.variantId}` : preview.productId;
+
       setWhiteBgPreviews((prev) =>
         prev.map((p) => {
           const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
-          return pKey === previewKey ? { ...p, status: 'generating' } : p;
-        })
+          return pKey === previewKey ? { ...p, status: "generating" } : p;
+        }),
       );
 
       try {
-        const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { 
+        const { data, error } = await supabase.functions.invoke("generate-white-background", {
+          body: {
             imageUrl: preview.originalUrl,
             productTitle: preview.productTitle,
-            imageType: selectedImageType
-          }
+            imageType: selectedImageType,
+          },
         });
 
         if (error) throw error;
@@ -886,23 +878,19 @@ export default function ProductTitleDescription() {
           setWhiteBgPreviews((prev) =>
             prev.map((p) => {
               const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
-              return pKey === previewKey
-                ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-                : p;
-            })
+              return pKey === previewKey ? { ...p, status: "success", generatedUrl: data.imageUrl } : p;
+            }),
           );
         } else {
-          throw new Error(data.error || 'Échec de la génération');
+          throw new Error(data.error || "Échec de la génération");
         }
       } catch (error: any) {
-        console.error('Error generating white background:', error);
+        console.error("Error generating white background:", error);
         setWhiteBgPreviews((prev) =>
           prev.map((p) => {
             const pKey = p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
-            return pKey === previewKey
-              ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
-              : p;
-          })
+            return pKey === previewKey ? { ...p, status: "error", error: error.message || "Erreur de génération" } : p;
+          }),
         );
       }
     }
@@ -914,84 +902,80 @@ export default function ProductTitleDescription() {
   // Fonction pour générer les arrière-plans IA avec timeout et meilleure gestion d'erreur
   const generateAiBackgrounds = async (config: AiBackgroundConfig) => {
     const startTime = Date.now();
-    console.log('🎨 [AI BG] Starting generation with config:', {
+    console.log("🎨 [AI BG] Starting generation with config:", {
       prompt: config.prompt,
       format: config.format,
       similarity: config.similarity,
       imageType: config.imageType,
-      productsCount: selectedProducts.size
+      productsCount: selectedProducts.size,
     });
-    
+
     setGeneratingAiBg(true);
-    
+
     try {
       // Conserver la config pour l'utiliser lors de l'application
       setPendingAiConfig(config);
-      
-      const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
-      
+
+      const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+
       const previews: PreviewImage[] = selectedProductsList.flatMap((p) => {
         const selectedImages = config.selectedImages.get(p.id) || [];
         const imagesToProcess = selectedImages.length > 0 ? selectedImages : [p.image_url!];
-        
+
         return imagesToProcess.map((imageUrl) => ({
           productId: p.id,
           productTitle: p.title,
           originalUrl: imageUrl,
           generatedUrl: null,
-          status: 'pending' as const,
+          status: "pending" as const,
         }));
       });
 
       console.log(`🎨 [AI BG] Created ${previews.length} preview items for ${selectedProductsList.length} products`);
-      
+
       setAiBgPreviews(previews);
       setShowAiBgDialog(true);
 
       // Map imageType to targetType (FIXED: singular 'variant')
-      const targetType = config.imageType === 'primary' ? 'main' : 'variant';
-      
+      const targetType = config.imageType === "primary" ? "main" : "variant";
+
       // Map similarity to actual style
       const styleMap: Record<string, "professional" | "lifestyle" | "minimalist" | "creative"> = {
-        'very-close': 'professional',
-        'close': 'professional',
-        'medium': 'lifestyle',
-        'creative': 'creative',
-        'very-creative': 'creative'
+        "very-close": "professional",
+        close: "professional",
+        medium: "lifestyle",
+        creative: "creative",
+        "very-creative": "creative",
       };
-      const actualStyle = styleMap[config.similarity] || 'professional';
+      const actualStyle = styleMap[config.similarity] || "professional";
 
       for (let i = 0; i < previews.length; i++) {
         const preview = previews[i];
-        const product = selectedProductsList.find(p => p.id === preview.productId);
-        
+        const product = selectedProductsList.find((p) => p.id === preview.productId);
+
         if (!product) {
           console.error(`❌ [AI BG] Product not found for preview: ${preview.productId}`);
           // Marquer comme erreur au lieu de continue
           setAiBgPreviews((prev) =>
-            prev.map((p) =>
-              p === preview ? { ...p, status: 'error', error: 'Produit introuvable' } : p
-            )
+            prev.map((p) => (p === preview ? { ...p, status: "error", error: "Produit introuvable" } : p)),
           );
           continue;
         }
-        
+
         const itemStartTime = Date.now();
-        
-        console.log(`🎨 [AI BG] [${i + 1}/${previews.length}] Processing product: ${product.title.substring(0, 50)}...`);
-        
-        setAiBgPreviews((prev) =>
-          prev.map((p) =>
-            p === preview ? { ...p, status: 'generating' } : p
-          )
+
+        console.log(
+          `🎨 [AI BG] [${i + 1}/${previews.length}] Processing product: ${product.title.substring(0, 50)}...`,
         );
+
+        setAiBgPreviews((prev) => prev.map((p) => (p === preview ? { ...p, status: "generating" } : p)));
 
         try {
           // Determine the image ID to use from gallery images
           const images = galleryImages.get(product.id) || [];
-          const matchingImage = images.find(img => img.src === preview.originalUrl);
-          const imageId = matchingImage?.id || '';
-          
+          const matchingImage = images.find((img) => img.src === preview.originalUrl);
+          const imageId = matchingImage?.id || "";
+
           if (!imageId) {
             console.warn(`⚠️ [AI BG] No imageId found for product ${product.id}, URL: ${preview.originalUrl}`);
           } else {
@@ -999,7 +983,7 @@ export default function ProductTitleDescription() {
           }
 
           // Créer une promesse avec timeout de 2 minutes
-          const generatePromise = supabase.functions.invoke('generate-ai-product-background', {
+          const generatePromise = supabase.functions.invoke("generate-ai-product-background", {
             body: {
               imageUrl: preview.originalUrl,
               productTitle: product.title,
@@ -1014,16 +998,17 @@ export default function ProductTitleDescription() {
               style: actualStyle,
               format: config.format,
               targetType: targetType,
-              variantOptions: config.selectedVariants.get(product.id)?.map(vId => {
-                const variant = product.variants?.find(v => v.id === vId);
-                return variant ? [variant.option1, variant.option2, variant.option3].filter(Boolean).join(' - ') : '';
-              }).join(', ')
-            }
+              variantOptions: config.selectedVariants
+                .get(product.id)
+                ?.map((vId) => {
+                  const variant = product.variants?.find((v) => v.id === vId);
+                  return variant ? [variant.option1, variant.option2, variant.option3].filter(Boolean).join(" - ") : "";
+                })
+                .join(", "),
+            },
           });
 
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT')), 120000)
-          );
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 120000));
 
           // ✅ CORRECTION: Envelopper Promise.race dans try-catch pour gérer le timeout
           let result;
@@ -1031,94 +1016,106 @@ export default function ProductTitleDescription() {
             result = await Promise.race([generatePromise, timeoutPromise]);
           } catch (raceError: any) {
             // Si c'est le timeout qui a gagné
-            if (raceError.message === 'TIMEOUT') {
-              throw new Error('TIMEOUT: La génération a pris plus de 2 minutes');
+            if (raceError.message === "TIMEOUT") {
+              throw new Error("TIMEOUT: La génération a pris plus de 2 minutes");
             }
             // Sinon, c'est une autre erreur
             throw raceError;
           }
-          
+
           const { data, error } = result as any;
-          
+
           const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
           console.log(`⏱️ [AI BG] Request completed in ${elapsedTime}s`);
 
           if (error) {
-            console.error('❌ [AI BG] Generation error:', error);
-            let errorMessage = 'Erreur lors de la génération';
-            
-            if (error.message?.includes('TIMEOUT')) {
-              errorMessage = 'Délai d\'attente dépassé (2 min). Veuillez réessayer.';
-            } else if (error.message?.includes('429') || error.message?.includes('RATE_LIMIT') || error.message?.includes('rate limit')) {
-              errorMessage = 'Limite de taux dépassée. Veuillez réessayer dans 60 secondes.';
-            } else if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED') || error.message?.includes('Payment required')) {
-              errorMessage = 'Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage.';
-            } else if (error.message?.includes('LIMIT_REACHED')) {
-              errorMessage = 'Limite d\'optimisations atteinte. Passez à un plan supérieur.';
+            console.error("❌ [AI BG] Generation error:", error);
+            let errorMessage = "Erreur lors de la génération";
+
+            if (error.message?.includes("TIMEOUT")) {
+              errorMessage = "Délai d'attente dépassé (2 min). Veuillez réessayer.";
+            } else if (
+              error.message?.includes("429") ||
+              error.message?.includes("RATE_LIMIT") ||
+              error.message?.includes("rate limit")
+            ) {
+              errorMessage = "Limite de taux dépassée. Veuillez réessayer dans 60 secondes.";
+            } else if (
+              error.message?.includes("402") ||
+              error.message?.includes("PAYMENT_REQUIRED") ||
+              error.message?.includes("Payment required")
+            ) {
+              errorMessage = "Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage.";
+            } else if (error.message?.includes("LIMIT_REACHED")) {
+              errorMessage = "Limite d'optimisations atteinte. Passez à un plan supérieur.";
             } else {
-              errorMessage = error.message || 'Erreur lors de la génération';
+              errorMessage = error.message || "Erreur lors de la génération";
             }
-            
+
             throw new Error(errorMessage);
           }
-          
+
           if (!data?.success) {
-            console.error('❌ [AI BG] Generation failed:', data);
-            throw new Error(data?.error || data?.message || 'Erreur lors de la génération');
+            console.error("❌ [AI BG] Generation failed:", data);
+            throw new Error(data?.error || data?.message || "Erreur lors de la génération");
           }
 
           if (data.imageUrl) {
             console.log(`✅ [AI BG] Successfully generated image for ${product.title.substring(0, 50)}...`);
             console.log(`✅ [AI BG] Image URL:`, data.imageUrl.substring(0, 100));
-            
+
             // 🔥 Save to history immediately after generation
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
             if (user && imageId) {
-              const { data: versionData } = await supabase.rpc('get_next_image_version', {
-                p_image_id: imageId
+              const { data: versionData } = await supabase.rpc("get_next_image_version", {
+                p_image_id: imageId,
               });
-              
-              await supabase.from('product_image_history').insert({
+
+              await supabase.from("product_image_history").insert({
                 product_id: product.id,
                 image_id: imageId,
                 user_id: user.id,
                 version_number: versionData || 1,
-                optimization_type: 'ai_background',
+                optimization_type: "ai_background",
                 original_url: preview.originalUrl,
                 optimized_url: data.imageUrl,
                 ai_prompt: config.enrichedPrompt || config.prompt,
-                ai_model: 'Lovable AI',
-                is_current: false // Not applied yet
+                ai_model: "Lovable AI",
+                is_current: false, // Not applied yet
               });
             }
-            
+
             // 🔥 FIX: Use productId instead of object comparison
             setAiBgPreviews((prev) => {
               const updated = prev.map((p) =>
-                p.productId === product.id
-                  ? { ...p, status: 'success' as const, generatedUrl: data.imageUrl }
-                  : p
+                p.productId === product.id ? { ...p, status: "success" as const, generatedUrl: data.imageUrl } : p,
               );
               console.log(`✅ [AI BG] Preview updated for ${product.id}`);
               return updated;
             });
           } else {
-            console.error('❌ [AI BG] No image URL in response:', data);
-            throw new Error('Aucune image générée');
+            console.error("❌ [AI BG] No image URL in response:", data);
+            throw new Error("Aucune image générée");
           }
         } catch (error: any) {
           const elapsedTime = ((Date.now() - itemStartTime) / 1000).toFixed(1);
           console.error(`❌ [AI BG] Error after ${elapsedTime}s:`, error.message);
-          
+
           // 🔥 FIX: Use productId instead of object comparison
           setAiBgPreviews((prev) =>
             prev.map((p) =>
-              p.productId === preview.productId ? { ...p, status: 'error' as const, error: error.message } : p
-            )
+              p.productId === preview.productId ? { ...p, status: "error" as const, error: error.message } : p,
+            ),
           );
-          
+
           // Toast seulement pour les erreurs critiques
-          if (error.message?.includes('Limite') || error.message?.includes('Crédits') || error.message?.includes('Délai')) {
+          if (
+            error.message?.includes("Limite") ||
+            error.message?.includes("Crédits") ||
+            error.message?.includes("Délai")
+          ) {
             toast.error(error.message, {
               duration: 5000,
             });
@@ -1128,139 +1125,66 @@ export default function ProductTitleDescription() {
 
       const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       console.log(`🎉 [AI BG] All generations completed in ${totalElapsed}s`);
-      
     } catch (error: any) {
-      console.error('❌ [AI BG] Fatal error in generateAiBackgrounds:', error);
-      toast.error('Erreur lors de la génération des arrière-plans', {
+      console.error("❌ [AI BG] Fatal error in generateAiBackgrounds:", error);
+      toast.error("Erreur lors de la génération des arrière-plans", {
         description: error.message,
       });
     } finally {
-      console.log('🔄 [AI BG] Stopping spinner...');
+      console.log("🔄 [AI BG] Stopping spinner...");
       // CRITICAL: Toujours réinitialiser le spinner
       setGeneratingAiBg(false);
       await refreshLimits();
-      console.log('✅ [AI BG] Generation process completed, spinner stopped');
+      console.log("✅ [AI BG] Generation process completed, spinner stopped");
     }
   };
 
   // Removed obsolete functions - now integrated in unified AiBackgroundDialog
 
-  const handleApplyWhiteBackground = async (productIds: string[], format: string, imageType: 'primary' | 'secondary') => {
+  const handleApplyWhiteBackground = async (
+    productIds: string[],
+    format: string,
+    imageType: "primary" | "secondary",
+  ) => {
     const toastId = toast.loading("Application des images...");
-    console.log('🔄 [WHITE BG] Applying with format:', format, 'imageType:', imageType, 'applyTo:', whiteBgApplyTo);
+    console.log("Applying white background with format:", format, "imageType:", imageType, "applyTo:", whiteBgApplyTo);
 
     try {
-      let syncOk = 0;
-      let syncSkipped = 0;
-      let syncErrors = 0;
-      
       if (whiteBgApplyTo === "simple") {
-        // Mode simple
-        for (const pid of productIds) {
-          const preview = whiteBgPreviews.find((p) => p.productId === pid && !p.variantId);
+        // Mode simple: appliquer à l'image principale ou secondaire
+        for (const productId of productIds) {
+          const preview = whiteBgPreviews.find((p) => p.productId === productId && !p.variantId);
           if (!preview?.generatedUrl) continue;
 
-          if (imageType === 'primary') {
-            // Mettre à jour l'image principale du produit
-            await supabase
-              .from("shopify_products")
-              .update({ image_url: preview.generatedUrl })
-              .eq("id", pid);
-
-            // Trouver l'ID de l'image pour l'historique
-            const { data: imageData } = await supabase
-              .from('product_images')
-              .select('id')
-              .eq('product_id', pid)
-              .eq('src', preview.originalUrl)
-              .maybeSingle();
-
-            const imgId = imageData?.id || 'main';
-
-            // Sauvegarder dans l'historique
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && imgId !== 'main') {
-              const { data: versionData } = await supabase.rpc('get_next_image_version', {
-                p_image_id: imgId
-              });
-              
-              await supabase.from('product_image_history').insert({
-                product_id: pid,
-                image_id: imgId,
-                user_id: user.id,
-                version_number: versionData || 1,
-                optimization_type: 'white_background',
-                original_url: preview.originalUrl,
-                optimized_url: preview.generatedUrl,
-                ai_model: 'gemini-2.5-flash-image-preview',
-                resolution: '2000x2000',
-                quality_score: 95,
-                is_current: true
-              });
-            }
-
-            // Synchroniser avec Shopify
-            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId: pid }
-            });
-            
-            console.log('[WHITE BG] Shopify sync response (primary)', { pid, syncData, syncError });
-            
-            if (syncError) {
-              syncErrors++;
-            } else if (syncData?.skipped) {
-              syncSkipped++;
-            } else if (syncData?.error) {
-              syncErrors++;
-            } else {
-              syncOk++;
-            }
+          if (imageType === "primary") {
+            await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
           } else {
-            // Pour les images secondaires, ajouter manuellement
             const maxPosition = await supabase
               .from("product_images")
               .select("position")
-              .eq("product_id", pid)
+              .eq("product_id", productId)
               .order("position", { ascending: false })
               .limit(1)
               .single();
 
             const nextPosition = (maxPosition?.data?.position || 0) + 1;
 
-            await supabase
-              .from("product_images")
-              .insert({
-                product_id: pid,
-                src: preview.generatedUrl,
-                alt_text: `${preview.productTitle} - Fond blanc IA`,
-                position: nextPosition
-              });
-            
-            // Sync manuel pour images secondaires
-            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId: pid }
+            await supabase.from("product_images").insert({
+              product_id: productId,
+              src: preview.generatedUrl,
+              alt_text: `${preview.productTitle} - Fond blanc IA`,
+              position: nextPosition,
             });
-            
-            console.log('[WHITE BG] Shopify sync response (secondary)', { pid, syncData, syncError });
-            
-            if (syncError) {
-              syncErrors++;
-            } else if (syncData?.skipped) {
-              syncSkipped++;
-            } else if (syncData?.error) {
-              syncErrors++;
-            } else {
-              syncOk++;
-            }
           }
         }
       } else {
         // Mode variantes: créer de nouvelles images pour chaque variante
-        const variantPreviews = whiteBgPreviews.filter(p => p.variantId);
-        
+        const variantPreviews = whiteBgPreviews.filter((p) => p.variantId);
+
         for (const preview of variantPreviews) {
           if (!preview.generatedUrl || !preview.variantId) continue;
 
+          // Obtenir la position maximale pour ce produit
           const { data: maxPosData } = await supabase
             .from("product_images")
             .select("position")
@@ -1271,74 +1195,106 @@ export default function ProductTitleDescription() {
 
           const nextPosition = (maxPosData?.position || 0) + 1;
 
-          await supabase
-            .from("product_images")
-            .insert({
-              product_id: preview.productId,
-              variant_id: preview.variantId,
-              src: preview.generatedUrl,
-              alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
-              position: nextPosition
-            });
-          
-          // Sync pour chaque variante
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId: preview.productId }
+          // Créer une nouvelle image pour cette variante
+          await supabase.from("product_images").insert({
+            product_id: preview.productId,
+            variant_id: preview.variantId,
+            src: preview.generatedUrl,
+            alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
+            position: nextPosition,
           });
-          
-          console.log('[WHITE BG] Shopify sync response (variant)', { pid: preview.productId, syncData, syncError });
-          
-          if (syncError) {
-            syncErrors++;
-          } else if (syncData?.skipped) {
-            syncSkipped++;
-          } else if (syncData?.error) {
-            syncErrors++;
-          } else {
-            syncOk++;
-          }
         }
       }
 
-      // Display conditional toast based on sync results
-      if (syncErrors > 0) {
-        toast.error("Images appliquées mais erreurs de synchronisation Shopify", {
-          id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncErrors} en erreur.`,
-        });
-      } else if (syncSkipped > 0 && syncOk === 0) {
-        toast.warning("Images appliquées localement uniquement", {
-          id: toastId,
-          description: "Les produits ne sont pas encore synchronisés avec Shopify (aucun ID Shopify).",
-        });
-      } else if (syncSkipped > 0 && syncOk > 0) {
-        toast.warning("Images partiellement synchronisées avec Shopify", {
-          id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncSkipped} sans ID Shopify.`,
-        });
-      } else {
-        const message = whiteBgApplyTo === "simple" && imageType === 'primary' 
-          ? "✅ Images appliquées et synchronisées avec Shopify" 
-          : "✅ Images ajoutées et synchronisées avec Shopify";
-        toast.success(message, { id: toastId });
+      const message =
+        whiteBgApplyTo === "simple" && imageType === "primary"
+          ? "Images principales mises à jour avec succès"
+          : "Images ajoutées avec succès";
+      toast.success(message, { id: toastId });
+
+      // Synchronisation automatique avec Shopify après l'application réussie
+      toast.loading("Synchronisation avec Shopify...", { id: toastId });
+      try {
+        let syncSuccessCount = 0;
+        let syncErrorCount = 0;
+        let notSyncedToShopify: string[] = [];
+
+        // Récupérer les IDs de produits uniques à synchroniser
+        const uniqueProductIds = [
+          ...new Set(
+            whiteBgApplyTo === "simple"
+              ? productIds
+              : whiteBgPreviews.filter((p) => p.variantId).map((p) => p.productId),
+          ),
+        ];
+
+        for (const productId of uniqueProductIds) {
+          try {
+            const { data: syncData, error: syncError } = await supabase.functions.invoke(
+              "sync-product-images-to-shopify",
+              {
+                body: { productId },
+              },
+            );
+
+            if (syncError) {
+              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
+              syncErrorCount++;
+            } else if (syncData?.skipped) {
+              // Produit pas encore synchronisé avec Shopify
+              notSyncedToShopify.push(productId);
+              console.log(`Produit ${productId} pas encore sur Shopify - sync passée`);
+            } else {
+              syncSuccessCount++;
+            }
+          } catch (syncErr) {
+            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
+            syncErrorCount++;
+          }
+        }
+
+        // Messages de résultat détaillés
+        if (syncSuccessCount > 0 && syncErrorCount === 0 && notSyncedToShopify.length === 0) {
+          toast.success(
+            `✅ ${syncSuccessCount} produit${syncSuccessCount > 1 ? "s" : ""} synchronisé${syncSuccessCount > 1 ? "s" : ""} avec Shopify`,
+            { id: toastId, duration: 4000 },
+          );
+        } else if (syncSuccessCount > 0) {
+          let msg = `✅ ${syncSuccessCount} synchronisé${syncSuccessCount > 1 ? "s" : ""}`;
+          if (notSyncedToShopify.length > 0) {
+            msg += ` • ℹ️ ${notSyncedToShopify.length} pas encore sur Shopify`;
+          }
+          if (syncErrorCount > 0) {
+            msg += ` • ❌ ${syncErrorCount} erreur${syncErrorCount > 1 ? "s" : ""}`;
+          }
+          toast.success(msg, { id: toastId, duration: 5000 });
+        } else if (notSyncedToShopify.length > 0) {
+          toast.info(
+            `ℹ️ Images sauvegardées ! ${notSyncedToShopify.length} produit${notSyncedToShopify.length > 1 ? "s" : ""} pas encore sur Shopify. Synchronisez-les d'abord pour voir les images.`,
+            { id: toastId, duration: 6000 },
+          );
+        } else {
+          toast.error(`❌ Erreur lors de la synchronisation avec Shopify`, { id: toastId });
+        }
+      } catch (syncError) {
+        console.error("Erreur globale sync Shopify:", syncError);
+        toast.warning("Images appliquées localement mais erreur de synchronisation Shopify", { id: toastId });
       }
 
       await fetchProducts();
       setWhiteBgPreviews([]);
       setWhiteBgApplyTo("simple");
       setWhiteBgSelectedVariants(new Map());
-    } catch (error: any) {
-      console.error("❌ [WHITE BG] Error applying images:", error);
-      toast.error(error.message || "Erreur lors de l'application", { id: toastId });
+    } catch (error) {
+      console.error("Error applying images:", error);
+      toast.error("Erreur lors de l'application", { id: toastId });
     }
   };
 
   const handleApplyAiBackground = async (productIds: string[]) => {
     // Vérifier si des produits avec variantes sont concernés
-    const productsWithVariants = products.filter(p => 
-      productIds.includes(p.id) && 
-      p.variants && 
-      p.variants.length > 0
+    const productsWithVariants = products.filter(
+      (p) => productIds.includes(p.id) && p.variants && p.variants.length > 0,
     );
 
     // Si on a un config avec des variantes sélectionnées, afficher la popup de confirmation
@@ -1361,110 +1317,105 @@ export default function ProductTitleDescription() {
     const toastId = toast.loading("Application des images...");
 
     try {
-      console.log('🎨 [AI BG] Applying backgrounds for products:', productIds);
-      
-      let syncOk = 0;
-      let syncSkipped = 0;
-      let syncErrors = 0;
-      
-      for (const pid of productIds) {
-        const preview = aiBgPreviews.find((p) => p.productId === pid);
-        if (!preview?.generatedUrl) {
-          console.warn(`⚠️ [AI BG] No generated URL for product ${pid}`);
-          continue;
-        }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        console.log(`🔄 [AI BG] Updating product ${pid} with new image`);
+      for (const productId of productIds) {
+        const preview = aiBgPreviews.find((p) => p.productId === productId);
+        if (!preview?.generatedUrl) continue;
 
-        // Mettre à jour l'image principale du produit
-        await supabase
-          .from("shopify_products")
-          .update({ image_url: preview.generatedUrl })
-          .eq("id", pid);
+        // Update product image
+        await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
 
-        // Sauvegarder dans l'historique
-        const { data: { user } } = await supabase.auth.getUser();
+        // Save to history if user is authenticated
         if (user) {
-          const { data: imageData } = await supabase
-            .from('product_images')
-            .select('id')
-            .eq('product_id', pid)
-            .eq('src', preview.originalUrl)
-            .maybeSingle();
+          // Find or create the product image entry
+          const { data: existingImages } = await supabase
+            .from("product_images")
+            .select("id")
+            .eq("product_id", productId)
+            .eq("src", preview.originalUrl)
+            .single();
 
-          const imgId = imageData?.id;
+          let imageId = existingImages?.id;
 
-          if (imgId) {
-            const { data: versionData } = await supabase.rpc('get_next_image_version', {
-              p_image_id: imgId
-            });
-            
-            await supabase.from('product_image_history').insert({
-              product_id: pid,
-              image_id: imgId,
-              user_id: user.id,
-              version_number: versionData || 1,
-              optimization_type: 'ai_background',
-              original_url: preview.originalUrl,
-              optimized_url: preview.generatedUrl,
-              ai_model: 'Lovable AI',
-              ai_prompt: pendingAiConfig?.enrichedPrompt || pendingAiConfig?.prompt,
-              resolution: '2000x2000',
-              quality_score: 90,
-              is_current: true
-            });
+          // If no image exists, create one (this is the main product image)
+          if (!imageId) {
+            const { data: newImage } = await supabase
+              .from("product_images")
+              .insert({
+                product_id: productId,
+                src: preview.originalUrl,
+                position: 1,
+                seller_id: user.id,
+              })
+              .select("id")
+              .single();
+
+            imageId = newImage?.id;
+          }
+
+          if (imageId) {
+            // Mark all versions as not current first
+            await supabase.from("product_image_history").update({ is_current: false }).eq("image_id", imageId);
+
+            // Mark the generated image as current
+            await supabase
+              .from("product_image_history")
+              .update({ is_current: true })
+              .eq("image_id", imageId)
+              .eq("optimized_url", preview.generatedUrl);
           }
         }
-
-        console.log(`🔄 [AI BG] Syncing with Shopify for product ${pid}`);
-        
-        // Synchroniser avec Shopify
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-          body: { productId: pid }
-        });
-
-        console.log('[AI BG] Shopify sync response', { pid, syncData, syncError });
-
-        if (syncError) {
-          syncErrors++;
-          console.error(`❌ [AI BG] Sync error for ${pid}:`, syncError);
-        } else if (syncData?.skipped) {
-          syncSkipped++;
-          console.log(`⏭️ [AI BG] Sync skipped for ${pid} (no shopify_product_id)`);
-        } else if (syncData?.error) {
-          syncErrors++;
-          console.error(`❌ [AI BG] Sync logical error for ${pid}:`, syncData.error);
-        } else {
-          syncOk++;
-          console.log(`✅ [AI BG] Successfully synced product ${pid}`);
-        }
       }
 
-      if (syncErrors > 0) {
-        toast.error("Images appliquées mais erreurs de synchronisation Shopify", {
-          id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncErrors} en erreur.`,
-        });
-      } else if (syncSkipped > 0 && syncOk === 0) {
-        toast.warning("Images appliquées localement uniquement", {
-          id: toastId,
-          description: "Les produits ne sont pas encore synchronisés avec Shopify (aucun ID Shopify).",
-        });
-      } else if (syncSkipped > 0 && syncOk > 0) {
-        toast.warning("Images partiellement synchronisées avec Shopify", {
-          id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncSkipped} sans ID Shopify.`,
-        });
-      } else {
-        toast.success("✅ Images appliquées et synchronisées avec Shopify", { id: toastId });
-      }
+      toast.success("Images appliquées avec succès", { id: toastId });
       await fetchProducts();
       setAiBgPreviews([]);
       setPendingAiConfig(null);
       setPendingApplyProductIds([]);
-    } catch (error: any) {
-      console.error("❌ [AI BG] Error applying images:", error);
-      toast.error(error.message || "Erreur lors de l'application", { id: toastId });
+
+      // Synchronisation automatique avec Shopify après l'application réussie
+      toast.loading("Synchronisation avec Shopify...", { id: toastId });
+      try {
+        let syncSuccessCount = 0;
+        let syncErrorCount = 0;
+
+        for (const productId of productIds) {
+          try {
+            const { error: syncError } = await supabase.functions.invoke("sync-product-images-to-shopify", {
+              body: { productId },
+            });
+
+            if (syncError) {
+              console.error(`Erreur sync Shopify pour ${productId}:`, syncError);
+              syncErrorCount++;
+            } else {
+              syncSuccessCount++;
+            }
+          } catch (syncErr) {
+            console.error(`Erreur sync Shopify pour ${productId}:`, syncErr);
+            syncErrorCount++;
+          }
+        }
+
+        if (syncSuccessCount > 0) {
+          toast.success(`Images synchronisées avec Shopify (${syncSuccessCount}/${productIds.length})`, {
+            id: toastId,
+          });
+        } else if (syncErrorCount > 0) {
+          toast.warning(`Images appliquées mais synchronisation Shopify échouée pour ${syncErrorCount} produit(s)`, {
+            id: toastId,
+          });
+        }
+      } catch (syncError) {
+        console.error("Error syncing to Shopify:", syncError);
+        toast.warning("Images appliquées mais erreur lors de la synchronisation Shopify", { id: toastId });
+      }
+    } catch (error) {
+      console.error("Error applying images:", error);
+      toast.error("Erreur lors de l'application", { id: toastId });
     }
   };
 
@@ -1473,41 +1424,33 @@ export default function ProductTitleDescription() {
     if (!product?.image_url) return;
 
     setWhiteBgPreviews((prev) =>
-      prev.map((p) =>
-        p.productId === productId ? { ...p, status: 'generating', error: undefined } : p
-      )
+      prev.map((p) => (p.productId === productId ? { ...p, status: "generating", error: undefined } : p)),
     );
 
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { 
-            imageUrl: product.image_url,
-            productTitle: product.title,
-            imageType: selectedImageType
-          }
-        });
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-white-background", {
+        body: {
+          imageUrl: product.image_url,
+          productTitle: product.title,
+          imageType: selectedImageType,
+        },
+      });
 
       if (error) throw error;
 
       if (data.success && data.imageUrl) {
         setWhiteBgPreviews((prev) =>
-          prev.map((p) =>
-            p.productId === productId
-              ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-              : p
-          )
+          prev.map((p) => (p.productId === productId ? { ...p, status: "success", generatedUrl: data.imageUrl } : p)),
         );
       } else {
-        throw new Error(data.error || 'Échec de la régénération');
+        throw new Error(data.error || "Échec de la régénération");
       }
     } catch (error: any) {
-      console.error('Error regenerating:', error);
+      console.error("Error regenerating:", error);
       setWhiteBgPreviews((prev) =>
         prev.map((p) =>
-          p.productId === productId
-            ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
-            : p
-        )
+          p.productId === productId ? { ...p, status: "error", error: error.message || "Erreur de génération" } : p,
+        ),
       );
     }
   };
@@ -1517,10 +1460,10 @@ export default function ProductTitleDescription() {
     if (!product?.image_url) return;
 
     const promptToUse = prompt || customPrompt;
-    
+
     // Validation: ensure prompt is not empty
     if (!promptToUse || !promptToUse.trim()) {
-      toast.error('Veuillez entrer un prompt avant de régénérer');
+      toast.error("Veuillez entrer un prompt avant de régénérer");
       return;
     }
 
@@ -1528,47 +1471,39 @@ export default function ProductTitleDescription() {
     const selectedImageUrl = selectedGalleryImages.get(productId) || product.image_url;
 
     setAiBgPreviews((prev) =>
-      prev.map((p) =>
-        p.productId === productId ? { ...p, status: 'generating', error: undefined } : p
-      )
+      prev.map((p) => (p.productId === productId ? { ...p, status: "generating", error: undefined } : p)),
     );
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-image-background', {
+      const { data, error } = await supabase.functions.invoke("generate-image-background", {
         body: {
           imageUrl: selectedImageUrl,
           prompt: promptToUse.trim(),
           productTitle: product.title,
           imageType: selectedImageType,
           format: selectedImageFormat,
-          similarity: selectedSimilarity
-        }
+          similarity: selectedSimilarity,
+        },
       });
 
       if (error) throw error;
 
       if (data.success && data.imageUrl) {
         setAiBgPreviews((prev) =>
-          prev.map((p) =>
-            p.productId === productId
-              ? { ...p, status: 'success', generatedUrl: data.imageUrl }
-              : p
-          )
+          prev.map((p) => (p.productId === productId ? { ...p, status: "success", generatedUrl: data.imageUrl } : p)),
         );
-        toast.success('Arrière-plan régénéré avec succès');
+        toast.success("Arrière-plan régénéré avec succès");
       } else {
-        throw new Error('No image generated');
+        throw new Error("No image generated");
       }
     } catch (error: any) {
-      console.error('Error regenerating:', error);
+      console.error("Error regenerating:", error);
       setAiBgPreviews((prev) =>
         prev.map((p) =>
-          p.productId === productId
-            ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
-            : p
-        )
+          p.productId === productId ? { ...p, status: "error", error: error.message || "Erreur de génération" } : p,
+        ),
       );
-      toast.error('Erreur lors de la régénération');
+      toast.error("Erreur lors de la régénération");
     }
   };
 
@@ -1589,9 +1524,9 @@ export default function ProductTitleDescription() {
 
         // Get product handle from database
         const { data: productData } = await supabase
-          .from('shopify_products')
-          .select('handle')
-          .eq('id', product.id)
+          .from("shopify_products")
+          .select("handle")
+          .eq("id", product.id)
           .single();
 
         if (!productData?.handle) {
@@ -1602,13 +1537,13 @@ export default function ProductTitleDescription() {
 
         try {
           // Use sync-landing-to-shopify to sync both product description and landing page
-          const { data, error } = await supabase.functions.invoke('sync-landing-to-shopify', {
+          const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
             body: {
               productId: product.id,
               productTitle: product.title,
               productHandle: productData.handle,
-              htmlContent: product.landing_page_html || product.description || '', // Use landing_page_html first
-            }
+              htmlContent: product.landing_page || product.description || "", // Use landing_page first
+            },
           });
 
           if (error) {
@@ -1630,7 +1565,7 @@ export default function ProductTitleDescription() {
       if (successCount > 0) {
         toast.success(`${successCount} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
       }
-      
+
       if (errorCount > 0) {
         toast.error(`${errorCount} produit(s) n'ont pas pu être synchronisés`, { duration: 5000 });
       }
@@ -1666,14 +1601,12 @@ export default function ProductTitleDescription() {
                 <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
                 {t.contentOptimization.hero.title}
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                {t.contentOptimization.hero.description}
-              </p>
+              <p className="text-muted-foreground text-sm sm:text-base">{t.contentOptimization.hero.description}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => {
-                  if (!canDoAction('optimizations')) {
+                  if (!canDoAction("optimizations")) {
                     toast.error("Limite d'optimisations atteinte");
                     setShowUpgradeDialog(true);
                     return;
@@ -1699,29 +1632,33 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 onClick={async () => {
-                  const productsToSync = filteredProducts.filter(p => 
-                    p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)
+                  const productsToSync = filteredProducts.filter(
+                    (p) => p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title),
                   );
-                  
+
                   if (productsToSync.length === 0) {
                     toast.error(t.contentOptimization.toasts.noProductToSync);
                     return;
                   }
-                  
-                  const toastId = toast.loading(`${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`);
-                  
+
+                  const toastId = toast.loading(
+                    `${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`,
+                  );
+
                   try {
                     for (const product of productsToSync) {
-                      await supabase.functions.invoke('sync-seo-to-shopify', {
+                      await supabase.functions.invoke("sync-seo-to-shopify", {
                         body: {
                           productId: product.id,
                           shopifyId: product.shopify_id,
                           seoTitle: product.seo_title,
                           seoDescription: product.seo_description,
-                        }
+                        },
                       });
                     }
-                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, { id: toastId });
+                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, {
+                      id: toastId,
+                    });
                   } catch (error) {
                     console.error("Sync error:", error);
                     toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
@@ -1731,39 +1668,39 @@ export default function ProductTitleDescription() {
                 size="lg"
                 className="gap-2"
               >
-                {syncingToShopify ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
+                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {t.contentOptimization.buttons.syncAll}
               </Button>
               <Button
                 variant="outline"
                 onClick={async () => {
                   const productsToSync = Array.from(selectedProducts)
-                    .map(id => products.find(p => p.id === id))
-                    .filter(p => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
-                  
+                    .map((id) => products.find((p) => p.id === id))
+                    .filter((p) => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
+
                   if (productsToSync.length === 0) {
                     toast.error(t.contentOptimization.toasts.noSelectedProduct);
                     return;
                   }
-                  
-                  const toastId = toast.loading(`${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`);
-                  
+
+                  const toastId = toast.loading(
+                    `${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`,
+                  );
+
                   try {
                     for (const product of productsToSync) {
-                      await supabase.functions.invoke('sync-seo-to-shopify', {
+                      await supabase.functions.invoke("sync-seo-to-shopify", {
                         body: {
                           productId: product.id,
                           shopifyId: product.shopify_id,
                           seoTitle: product.seo_title,
                           seoDescription: product.seo_description,
-                        }
+                        },
                       });
                     }
-                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, { id: toastId });
+                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, {
+                      id: toastId,
+                    });
                     setSelectedProducts(new Set());
                   } catch (error) {
                     console.error("Sync error:", error);
@@ -1774,11 +1711,7 @@ export default function ProductTitleDescription() {
                 size="lg"
                 className="gap-2"
               >
-                {syncingToShopify ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
+                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
               </Button>
             </div>
@@ -1796,13 +1729,13 @@ export default function ProductTitleDescription() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card 
+          <Card
             className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
-              statusFilter === 'optimized' 
-                ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
-                : 'hover:border-primary/30'
+              statusFilter === "optimized"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "hover:border-primary/30"
             }`}
-            onClick={() => setStatusFilter(statusFilter === 'optimized' ? 'all' : 'optimized')}
+            onClick={() => setStatusFilter(statusFilter === "optimized" ? "all" : "optimized")}
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -1810,23 +1743,23 @@ export default function ProductTitleDescription() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.optimized}</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => hasRichHtmlDescription(p)).length}
-                </p>
+                <p className="text-2xl font-bold">{products.filter((p) => hasRichHtmlDescription(p)).length}</p>
               </div>
             </div>
-            {statusFilter === 'optimized' && (
-              <Badge variant="default" className="mt-2">Filtre actif</Badge>
+            {statusFilter === "optimized" && (
+              <Badge variant="default" className="mt-2">
+                Filtre actif
+              </Badge>
             )}
           </Card>
 
-          <Card 
+          <Card
             className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
-              statusFilter === 'notOptimized' 
-                ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
-                : 'hover:border-primary/30'
+              statusFilter === "notOptimized"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "hover:border-primary/30"
             }`}
-            onClick={() => setStatusFilter(statusFilter === 'notOptimized' ? 'all' : 'notOptimized')}
+            onClick={() => setStatusFilter(statusFilter === "notOptimized" ? "all" : "notOptimized")}
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-500/10 rounded-lg">
@@ -1834,16 +1767,14 @@ export default function ProductTitleDescription() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.notOptimized}</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => !hasRichHtmlDescription(p)).length}
-                </p>
+                <p className="text-2xl font-bold">{products.filter((p) => !hasRichHtmlDescription(p)).length}</p>
               </div>
             </div>
           </Card>
 
-          <Card 
-            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'toSync' ? 'border-primary bg-primary/5' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'toSync' ? 'all' : 'toSync')}
+          <Card
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === "toSync" ? "border-primary bg-primary/5" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "toSync" ? "all" : "toSync")}
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -1851,9 +1782,7 @@ export default function ProductTitleDescription() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.toSync}</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => hasRichHtmlDescription(p)).length}
-                </p>
+                <p className="text-2xl font-bold">{products.filter((p) => hasRichHtmlDescription(p)).length}</p>
               </div>
             </div>
           </Card>
@@ -1875,20 +1804,16 @@ export default function ProductTitleDescription() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}
-              >
+              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}>
                 {viewMode === "grid" ? <List className="h-4 w-4 mr-2" /> : <Grid3x3 className="h-4 w-4 mr-2" />}
                 {viewMode === "grid" ? "Liste" : "Grille"}
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (!canDoAction('optimizations')) {
+                  if (!canDoAction("optimizations")) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
@@ -1905,7 +1830,7 @@ export default function ProductTitleDescription() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (!canDoAction('optimizations')) {
+                  if (!canDoAction("optimizations")) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
@@ -1927,7 +1852,7 @@ export default function ProductTitleDescription() {
                 variant="default"
                 size="sm"
                 onClick={async () => {
-                  if (!canDoAction('optimizations')) {
+                  if (!canDoAction("optimizations")) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
@@ -1954,344 +1879,347 @@ export default function ProductTitleDescription() {
         <Alert className="bg-gradient-to-r from-primary/5 to-background border-primary/20">
           <ImageIcon className="h-4 w-4" />
           <AlertDescription>
-            <strong>White background :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.
-            {" "}<strong>AI Background :</strong> Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle.
+            <strong>White background :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc
+            professionnel. <strong>AI Background :</strong> Génère un nouvel arrière-plan personnalisé avec
+            l'intelligence artificielle.
           </AlertDescription>
         </Alert>
 
         {/* Products Table/Grid */}
         <Card className="overflow-hidden">
-          {viewMode === 'table' ? (
+          {viewMode === "table" ? (
             <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
               <TooltipProvider>
                 <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead className="w-20">{t.contentOptimization.table.headers.image}</TableHead>
-                  <TableHead className="w-32">Marque</TableHead>
-                  <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
-                  <TableHead className="hidden lg:table-cell">{t.contentOptimization.table.headers.description}</TableHead>
-                  <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
-                  <TableHead className="w-24">État</TableHead>
-                  <TableHead className="w-48">{t.contentOptimization.table.headers.actions}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedProducts.map((product) => (
-                  <TableRow 
-                    key={product.id} 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => {
-                      setPreviewProduct(product);
-                      setShowPreviewDialog(true);
-                    }}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={() => handleSelectProduct(product.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-12 h-12 object-cover rounded"
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                          onCheckedChange={handleSelectAll}
                         />
-                      ) : (
-                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {product.vendor ? (
-                          <Badge variant="outline" className="font-normal">
-                            {product.vendor}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground italic text-xs">Non définie</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{product.seo_title || product.title}</p>
-                          {hasRichHtmlDescription(product) && (
-                            <Badge variant="default" className="gap-1 text-xs">
-                              <FileText className="h-3 w-3" />
-                              Landing
-                            </Badge>
-                          )}
-                        </div>
-                         {product.seo_title && product.title !== product.seo_title && (
-                           <p className="text-xs text-muted-foreground line-clamp-1">
-                             {t.contentOptimization.table.original}: {product.title}
-                           </p>
-                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {product.seo_description ? (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {product.seo_description}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">{t.contentOptimization.table.noOptimizedDesc}</p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {hasRichHtmlDescription(product) ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          ✨ {t.contentOptimization.table.status.premiumContent}
-                        </Badge>
-                      ) : product.seo_title || product.seo_description ? (
-                        <Badge variant="secondary">
-                          {t.contentOptimization.table.status.basicContent} ✓
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">{t.contentOptimization.table.status.toOptimize}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!product.shopify_id) {
-                            toast.error("Ce produit n'est pas synchronisé avec Shopify");
-                            return;
-                          }
-                          
-                          if (!selectedStore) {
-                            toast.error("Aucun store sélectionné");
-                            return;
-                          }
-                          
-                          const newStatus = product.status === 'active' ? 'draft' : 'active';
-                          const toastId = toast.loading("Mise à jour du statut...");
-                          
-                          try {
-                            // Get current session to pass auth token
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session) {
-                              throw new Error("Session non trouvée");
-                            }
-
-                            const { data, error } = await supabase.functions.invoke('update-product-status', {
-                              headers: {
-                                Authorization: `Bearer ${session.access_token}`
-                              },
-                              body: {
-                                productId: product.id,
-                                shopifyId: product.shopify_id,
-                                storeId: selectedStore.id,
-                                newStatus
-                              }
-                            });
-
-                            if (error) throw error;
-                            if (!data?.success) throw new Error("Échec de la mise à jour");
-
-                            setProducts(prev => prev.map(p => 
-                              p.id === product.id ? { ...p, status: newStatus } : p
-                            ));
-
-                            toast.success(`Produit ${newStatus === 'active' ? 'publié' : 'en brouillon'}`, { id: toastId });
-                          } catch (error) {
-                            console.error("Error updating status:", error);
-                            toast.error("Erreur lors de la mise à jour", { id: toastId });
-                          }
+                      </TableHead>
+                      <TableHead className="w-20">{t.contentOptimization.table.headers.image}</TableHead>
+                      <TableHead className="w-32">Marque</TableHead>
+                      <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        {t.contentOptimization.table.headers.description}
+                      </TableHead>
+                      <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
+                      <TableHead className="w-24">État</TableHead>
+                      <TableHead className="w-48">{t.contentOptimization.table.headers.actions}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedProducts.map((product) => (
+                      <TableRow
+                        key={product.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setPreviewProduct(product);
+                          setShowPreviewDialog(true);
                         }}
-                        className={`gap-2 ${product.status === 'active' ? 'text-green-600' : 'text-muted-foreground'}`}
                       >
-                        {product.status === 'active' ? (
-                          <>
-                            <Power className="h-4 w-4" />
-                            <span className="hidden xl:inline">Actif</span>
-                          </>
-                        ) : (
-                          <>
-                            <PowerOff className="h-4 w-4" />
-                            <span className="hidden xl:inline">Brouillon</span>
-                          </>
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Vérifier les limites AVANT d'ouvrir le dialog
-                                if (!canDoAction('optimizations')) {
-                                  toast.error(t.contentOptimization.toasts.limitReached);
-                                  setShowUpgradeDialog(true);
-                                  return;
-                                }
-                                setSelectedProducts(new Set([product.id]));
-                                setShowWhiteBgConfigDialog(true);
-                                loadGalleryImages([product.id]); // Chargement en arrière-plan
-                              }}
-                              disabled={generatingWhiteBg}
-                            >
-                              {generatingWhiteBg && selectedProducts.has(product.id) ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Square className="h-4 w-4" />
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedProducts.has(product.id)}
+                            onCheckedChange={() => handleSelectProduct(product.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.title}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {product.vendor ? (
+                              <Badge variant="outline" className="font-normal">
+                                {product.vendor}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground italic text-xs">Non définie</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{product.seo_title || product.title}</p>
+                              {hasRichHtmlDescription(product) && (
+                                <Badge variant="default" className="gap-1 text-xs">
+                                  <FileText className="h-3 w-3" />
+                                  Landing
+                                </Badge>
                               )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t.contentOptimization.tooltips.whiteBg}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                            </div>
+                            {product.seo_title && product.title !== product.seo_title && (
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {t.contentOptimization.table.original}: {product.title}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {product.seo_description ? (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{product.seo_description}</p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">
+                              {t.contentOptimization.table.noOptimizedDesc}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {hasRichHtmlDescription(product) ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              ✨ {t.contentOptimization.table.status.premiumContent}
+                            </Badge>
+                          ) : product.seo_title || product.seo_description ? (
+                            <Badge variant="secondary">{t.contentOptimization.table.status.basicContent} ✓</Badge>
+                          ) : (
+                            <Badge variant="outline">{t.contentOptimization.table.status.toOptimize}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!product.shopify_id) {
+                                toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                                return;
+                              }
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                // Vérifier les limites AVANT d'ouvrir le dialog
-                                if (!canDoAction('optimizations')) {
-                                  toast.error(t.contentOptimization.toasts.limitReached);
-                                  setShowUpgradeDialog(true);
-                                  return;
-                                }
-                                setSelectedProducts(new Set([product.id]));
-                                // Charger les images AVANT d'ouvrir le dialogue
-                                await loadGalleryImages([product.id]);
-                                setShowAiConfigDialog(true);
-                              }}
-                              disabled={generatingAiBg}
-                              className="hover:bg-purple-50 dark:hover:bg-purple-950"
-                            >
-                              {generatingAiBg && selectedProducts.has(product.id) ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Palette className="h-4 w-4 text-purple-600" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t.contentOptimization.tooltips.aiBg}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                              if (!selectedStore) {
+                                toast.error("Aucun store sélectionné");
+                                return;
+                              }
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Vérifier les limites AVANT d'ouvrir le dialog
-                                if (!canDoAction('optimizations')) {
-                                  toast.error(t.contentOptimization.toasts.limitReached);
-                                  setShowUpgradeDialog(true);
-                                  return;
+                              const newStatus = product.status === "active" ? "draft" : "active";
+                              const toastId = toast.loading("Mise à jour du statut...");
+
+                              try {
+                                // Get current session to pass auth token
+                                const {
+                                  data: { session },
+                                } = await supabase.auth.getSession();
+                                if (!session) {
+                                  throw new Error("Session non trouvée");
                                 }
-                                setSelectedLandingProduct(product);
-                                setShowLandingConfigDialog(true);
-                              }}
-                              className="hover:bg-primary/10"
-                            >
-                              <Sparkles className="h-4 w-4 text-primary" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t.contentOptimization.tooltips.generateLanding}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        
-                        {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
-                                  try {
-                                    const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-                                      body: {
-                                        productId: product.id,
-                                        shopifyId: product.shopify_id,
-                                        seoTitle: product.seo_title,
-                                        seoDescription: product.seo_description,
+
+                                const { data, error } = await supabase.functions.invoke("update-product-status", {
+                                  headers: {
+                                    Authorization: `Bearer ${session.access_token}`,
+                                  },
+                                  body: {
+                                    productId: product.id,
+                                    shopifyId: product.shopify_id,
+                                    storeId: selectedStore.id,
+                                    newStatus,
+                                  },
+                                });
+
+                                if (error) throw error;
+                                if (!data?.success) throw new Error("Échec de la mise à jour");
+
+                                setProducts((prev) =>
+                                  prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p)),
+                                );
+
+                                toast.success(`Produit ${newStatus === "active" ? "publié" : "en brouillon"}`, {
+                                  id: toastId,
+                                });
+                              } catch (error) {
+                                console.error("Error updating status:", error);
+                                toast.error("Erreur lors de la mise à jour", { id: toastId });
+                              }
+                            }}
+                            className={`gap-2 ${product.status === "active" ? "text-green-600" : "text-muted-foreground"}`}
+                          >
+                            {product.status === "active" ? (
+                              <>
+                                <Power className="h-4 w-4" />
+                                <span className="hidden xl:inline">Actif</span>
+                              </>
+                            ) : (
+                              <>
+                                <PowerOff className="h-4 w-4" />
+                                <span className="hidden xl:inline">Brouillon</span>
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Vérifier les limites AVANT d'ouvrir le dialog
+                                    if (!canDoAction("optimizations")) {
+                                      toast.error(t.contentOptimization.toasts.limitReached);
+                                      setShowUpgradeDialog(true);
+                                      return;
+                                    }
+                                    setSelectedProducts(new Set([product.id]));
+                                    setShowWhiteBgConfigDialog(true);
+                                    loadGalleryImages([product.id]); // Chargement en arrière-plan
+                                  }}
+                                  disabled={generatingWhiteBg}
+                                >
+                                  {generatingWhiteBg && selectedProducts.has(product.id) ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Square className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t.contentOptimization.tooltips.whiteBg}</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    // Vérifier les limites AVANT d'ouvrir le dialog
+                                    if (!canDoAction("optimizations")) {
+                                      toast.error(t.contentOptimization.toasts.limitReached);
+                                      setShowUpgradeDialog(true);
+                                      return;
+                                    }
+                                    setSelectedProducts(new Set([product.id]));
+                                    // Charger les images AVANT d'ouvrir le dialogue
+                                    await loadGalleryImages([product.id]);
+                                    setShowAiConfigDialog(true);
+                                  }}
+                                  disabled={generatingAiBg}
+                                  className="hover:bg-purple-50 dark:hover:bg-purple-950"
+                                >
+                                  {generatingAiBg && selectedProducts.has(product.id) ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Palette className="h-4 w-4 text-purple-600" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t.contentOptimization.tooltips.aiBg}</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Vérifier les limites AVANT d'ouvrir le dialog
+                                    if (!canDoAction("optimizations")) {
+                                      toast.error(t.contentOptimization.toasts.limitReached);
+                                      setShowUpgradeDialog(true);
+                                      return;
+                                    }
+                                    setSelectedLandingProduct(product);
+                                    setShowLandingConfigDialog(true);
+                                  }}
+                                  className="hover:bg-primary/10"
+                                >
+                                  <Sparkles className="h-4 w-4 text-primary" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t.contentOptimization.tooltips.generateLanding}</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
+                                      try {
+                                        const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+                                          body: {
+                                            productId: product.id,
+                                            shopifyId: product.shopify_id,
+                                            seoTitle: product.seo_title,
+                                            seoDescription: product.seo_description,
+                                          },
+                                        });
+
+                                        if (error) throw error;
+                                        toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
+                                      } catch (error) {
+                                        console.error("Sync error:", error);
+                                        toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
                                       }
-                                    });
-                                    
-                                    if (error) throw error;
-                                    toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
-                                  } catch (error) {
-                                    console.error("Sync error:", error);
-                                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
-                                  }
-                                }}
-                              >
-                                <RefreshCw className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t.contentOptimization.tooltips.sync}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
+                                    }}
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t.contentOptimization.tooltips.sync}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProductToDelete(product);
-                                setShowDeleteDialog(true);
-                              }}
-                              disabled={deletingProductId === product.id}
-                              className="hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              {deletingProductId === product.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Supprimer le produit</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              </Table>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProductToDelete(product);
+                                    setShowDeleteDialog(true);
+                                  }}
+                                  disabled={deletingProductId === product.id}
+                                  className="hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  {deletingProductId === product.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Supprimer le produit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </TooltipProvider>
 
               {filteredProducts.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                  {t.contentOptimization.empty.title}
-                </div>
+                <div className="p-8 text-center text-muted-foreground">{t.contentOptimization.empty.title}</div>
               )}
             </div>
           ) : (
@@ -2300,7 +2228,7 @@ export default function ProductTitleDescription() {
               <TooltipProvider>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {paginatedProducts.map((product) => (
-                    <Card 
+                    <Card
                       key={product.id}
                       className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden"
                       onClick={() => {
@@ -2317,10 +2245,10 @@ export default function ProductTitleDescription() {
                             <Package className="w-12 h-12 text-muted-foreground" />
                           </div>
                         )}
-                        
+
                         {/* Status badge - top left */}
                         <div className="absolute top-2 left-2">
-                          {product.status === 'active' ? (
+                          {product.status === "active" ? (
                             <Badge className="bg-green-600 text-white shadow-sm">
                               <Power className="h-3 w-3 mr-1" />
                               Actif
@@ -2332,7 +2260,7 @@ export default function ProductTitleDescription() {
                             </Badge>
                           )}
                         </div>
-                        
+
                         {/* Action buttons - always visible */}
                         <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100">
                           <Tooltip>
@@ -2343,7 +2271,7 @@ export default function ProductTitleDescription() {
                                 className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (!canDoAction('optimizations')) {
+                                  if (!canDoAction("optimizations")) {
                                     toast.error(t.contentOptimization.toasts.limitReached);
                                     setShowUpgradeDialog(true);
                                     return;
@@ -2370,7 +2298,7 @@ export default function ProductTitleDescription() {
                                 className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  if (!canDoAction('optimizations')) {
+                                  if (!canDoAction("optimizations")) {
                                     toast.error(t.contentOptimization.toasts.limitReached);
                                     setShowUpgradeDialog(true);
                                     return;
@@ -2397,7 +2325,7 @@ export default function ProductTitleDescription() {
                                 className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (!canDoAction('optimizations')) {
+                                  if (!canDoAction("optimizations")) {
                                     toast.error(t.contentOptimization.toasts.limitReached);
                                     setShowUpgradeDialog(true);
                                     return;
@@ -2425,20 +2353,20 @@ export default function ProductTitleDescription() {
                                     e.stopPropagation();
                                     const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
                                     try {
-                                      const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                      const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
                                         body: {
                                           productId: product.id,
                                           shopifyId: product.shopify_id,
                                           seoTitle: product.seo_title,
                                           seoDescription: product.seo_description,
-                                        }
+                                        },
                                       });
-                                      
+
                                       if (error) throw error;
                                       toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
                                     } catch (error) {
-                                      console.error('Error syncing:', error);
-                                      toast.error('Erreur lors de la synchronisation', { id: toastId });
+                                      console.error("Error syncing:", error);
+                                      toast.error("Erreur lors de la synchronisation", { id: toastId });
                                     }
                                   }}
                                 >
@@ -2487,7 +2415,9 @@ export default function ProductTitleDescription() {
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-sm line-clamp-2 mb-1">{product.seo_title || product.title}</h3>
+                            <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                              {product.seo_title || product.title}
+                            </h3>
                             {product.vendor && (
                               <Badge variant="outline" className="text-xs">
                                 {product.vendor}
@@ -2497,9 +2427,7 @@ export default function ProductTitleDescription() {
                         </div>
 
                         {product.seo_description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {product.seo_description}
-                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{product.seo_description}</p>
                         )}
 
                         {/* Status badge */}
@@ -2514,7 +2442,9 @@ export default function ProductTitleDescription() {
                               {t.contentOptimization.table.status.basicContent} ✓
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs">{t.contentOptimization.table.status.toOptimize}</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {t.contentOptimization.table.status.toOptimize}
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -2524,40 +2454,34 @@ export default function ProductTitleDescription() {
               </TooltipProvider>
 
               {filteredProducts.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                  {t.contentOptimization.empty.title}
-                </div>
+                <div className="p-8 text-center text-muted-foreground">{t.contentOptimization.empty.title}</div>
               )}
             </div>
           )}
-          
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center py-4 border-t overflow-x-auto">
               <Pagination>
                 <PaginationContent className="flex-wrap gap-1">
                   <PaginationItem>
-                    <PaginationPrevious 
+                    <PaginationPrevious
                       onClick={() => {
-                        setCurrentPage(p => Math.max(1, p - 1));
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setCurrentPage((p) => Math.max(1, p - 1));
+                        window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
+                    if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
                       return (
                         <PaginationItem key={page}>
                           <PaginationLink
                             onClick={() => {
                               setCurrentPage(page);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
                             isActive={currentPage === page}
                             className="cursor-pointer"
@@ -2575,12 +2499,12 @@ export default function ProductTitleDescription() {
                     }
                     return null;
                   })}
-                  
+
                   <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
                       onClick={() => {
-                        setCurrentPage(p => Math.min(totalPages, p + 1));
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setCurrentPage((p) => Math.min(totalPages, p + 1));
+                        window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                       className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
@@ -2601,22 +2525,22 @@ export default function ProductTitleDescription() {
               <Square className="h-5 w-5 text-primary" />
               {t.contentOptimization.dialogs.whiteBg.title}
             </DialogTitle>
-            <DialogDescription>
-              {t.contentOptimization.dialogs.whiteBg.description}
-            </DialogDescription>
+            <DialogDescription>{t.contentOptimization.dialogs.whiteBg.description}</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Gallery Image Selection */}
             {Array.from(selectedProducts).length > 0 && (
               <div className="space-y-3">
-                <Label className="text-base font-semibold">{t.contentOptimization.dialogs.whiteBg.imageSelection}</Label>
+                <Label className="text-base font-semibold">
+                  {t.contentOptimization.dialogs.whiteBg.imageSelection}
+                </Label>
                 {Array.from(selectedProducts).map((productId) => {
-                  const product = products.find(p => p.id === productId);
+                  const product = products.find((p) => p.id === productId);
                   const images = galleryImages.get(productId) || [];
                   const hasGallery = images.length > 0;
-                  
+
                   if (!product) return null;
-                  
+
                   return (
                     <Card key={productId} className="p-4">
                       <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
@@ -2624,9 +2548,10 @@ export default function ProductTitleDescription() {
                         {/* Image principale */}
                         <div
                           className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                            (!selectedGalleryImages.get(productId) || selectedGalleryImages.get(productId) === product.image_url)
-                              ? 'border-primary ring-2 ring-primary'
-                              : 'border-muted hover:border-primary/50'
+                            !selectedGalleryImages.get(productId) ||
+                            selectedGalleryImages.get(productId) === product.image_url
+                              ? "border-primary ring-2 ring-primary"
+                              : "border-muted hover:border-primary/50"
                           }`}
                           onClick={() => {
                             const newMap = new Map(selectedGalleryImages);
@@ -2635,7 +2560,7 @@ export default function ProductTitleDescription() {
                           }}
                         >
                           <img
-                            src={product.image_url || ''}
+                            src={product.image_url || ""}
                             alt="Image principale"
                             className="w-full h-24 object-cover rounded"
                           />
@@ -2643,15 +2568,15 @@ export default function ProductTitleDescription() {
                             Principal
                           </div>
                         </div>
-                        
+
                         {/* Images de galerie */}
                         {images.map((img, idx) => (
                           <div
                             key={img.id}
                             className={`relative cursor-pointer rounded-lg border-2 transition-all ${
                               selectedGalleryImages.get(productId) === img.src
-                                ? 'border-primary ring-2 ring-primary'
-                                : 'border-muted hover:border-primary/50'
+                                ? "border-primary ring-2 ring-primary"
+                                : "border-muted hover:border-primary/50"
                             }`}
                             onClick={() => {
                               const newMap = new Map(selectedGalleryImages);
@@ -2671,9 +2596,7 @@ export default function ProductTitleDescription() {
                         ))}
                       </div>
                       {!hasGallery && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Aucune image de galerie disponible
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">Aucune image de galerie disponible</p>
                       )}
                     </Card>
                   );
@@ -2684,35 +2607,41 @@ export default function ProductTitleDescription() {
             {/* Détection automatique: Variantes ou Simple */}
             {(() => {
               const selectedProductsList = Array.from(selectedProducts)
-                .map(id => products.find(p => p.id === id))
+                .map((id) => products.find((p) => p.id === id))
                 .filter(Boolean);
-              
-              console.log('🔍 [WHITE_BG] Checking products for variants:', selectedProductsList.map(p => ({
-                id: p?.id,
-                title: p?.title,
-                hasVariants: p?.variants && p.variants.length > 0,
-                variantsCount: p?.variants?.length || 0
-              })));
 
-              const hasVariants = selectedProductsList.some(product => 
-                product?.variants && product.variants.length > 0
+              console.log(
+                "🔍 [WHITE_BG] Checking products for variants:",
+                selectedProductsList.map((p) => ({
+                  id: p?.id,
+                  title: p?.title,
+                  hasVariants: p?.variants && p.variants.length > 0,
+                  variantsCount: p?.variants?.length || 0,
+                })),
               );
 
-              console.log('🔍 [WHITE_BG] Has variants:', hasVariants);
+              const hasVariants = selectedProductsList.some(
+                (product) => product?.variants && product.variants.length > 0,
+              );
+
+              console.log("🔍 [WHITE_BG] Has variants:", hasVariants);
 
               // Pour produits simples: afficher la galerie, pour produits à variantes: afficher les variantes
               return (
                 <div className="space-y-4">
                   {selectedProductsList.map((product) => {
                     if (!product) return null;
-                    
+
                     // Pour produits simples (sans variantes), afficher directement la galerie
                     if (!product.variants || product.variants.length === 0) {
                       const images = galleryImages.get(product.id) || [];
                       if (images.length === 0) return null;
-                      
+
                       return (
-                        <Card key={product.id} className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                        <Card
+                          key={product.id}
+                          className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20"
+                        >
                           <div className="flex items-start gap-4 mb-4 pb-4 border-b">
                             {product.image_url && (
                               <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
@@ -2729,11 +2658,11 @@ export default function ProductTitleDescription() {
                                 <h3 className="font-semibold text-base line-clamp-2">{product.title}</h3>
                               </div>
                               <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                {images.length} image{images.length > 1 ? 's' : ''} galerie
+                                {images.length} image{images.length > 1 ? "s" : ""} galerie
                               </Badge>
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-3">
                             {images.map((image) => (
                               <div
@@ -2756,20 +2685,19 @@ export default function ProductTitleDescription() {
                         </Card>
                       );
                     }
-                    
+
                     // Pour produits avec variantes, afficher les variantes
-                    
+
                     return (
-                      <Card key={product.id} className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                      <Card
+                        key={product.id}
+                        className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20"
+                      >
                         {/* Product Header avec Image */}
                         <div className="flex items-start gap-4 mb-4 pb-4 border-b">
                           {product.image_url && (
                             <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
-                              <img
-                                src={product.image_url}
-                                alt={product.title}
-                                className="w-full h-full object-cover"
-                              />
+                              <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2779,10 +2707,11 @@ export default function ProductTitleDescription() {
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                {product.variants.length} variante{product.variants.length > 1 ? 's' : ''}
+                                {product.variants.length} variante{product.variants.length > 1 ? "s" : ""}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
-                                {whiteBgSelectedVariants.get(product.id)?.length || 0} sélectionnée{(whiteBgSelectedVariants.get(product.id)?.length || 0) > 1 ? 's' : ''}
+                                {whiteBgSelectedVariants.get(product.id)?.length || 0} sélectionnée
+                                {(whiteBgSelectedVariants.get(product.id)?.length || 0) > 1 ? "s" : ""}
                               </Badge>
                             </div>
                           </div>
@@ -2795,7 +2724,7 @@ export default function ProductTitleDescription() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const allVariantIds = product.variants?.map(v => v.id) || [];
+                              const allVariantIds = product.variants?.map((v) => v.id) || [];
                               const newMap = new Map(whiteBgSelectedVariants);
                               newMap.set(product.id, allVariantIds);
                               setWhiteBgSelectedVariants(newMap);
@@ -2825,19 +2754,19 @@ export default function ProductTitleDescription() {
                           <div className="grid gap-2 pr-3">
                             {product.variants.map((variant) => {
                               const isSelected = whiteBgSelectedVariants.get(product.id)?.includes(variant.id) || false;
-                              
+
                               return (
                                 <Card
                                   key={variant.id}
                                   className={`p-3 cursor-pointer transition-all ${
-                                    isSelected 
-                                      ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary/30' 
-                                      : 'hover:bg-accent/50 hover:border-primary/40'
+                                    isSelected
+                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/30"
+                                      : "hover:bg-accent/50 hover:border-primary/40"
                                   }`}
                                   onClick={() => {
                                     const currentVariants = whiteBgSelectedVariants.get(product.id) || [];
                                     const newVariants = isSelected
-                                      ? currentVariants.filter(id => id !== variant.id)
+                                      ? currentVariants.filter((id) => id !== variant.id)
                                       : [...currentVariants, variant.id];
                                     const newMap = new Map(whiteBgSelectedVariants);
                                     newMap.set(product.id, newVariants);
@@ -2845,23 +2774,23 @@ export default function ProductTitleDescription() {
                                   }}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                      isSelected 
-                                        ? 'bg-primary border-primary' 
-                                        : 'border-muted-foreground/30'
-                                    }`}>
+                                    <div
+                                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                        isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                      }`}
+                                    >
                                       {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                                     </div>
-                                    
+
                                     {/* Image de la variante */}
                                     {(() => {
                                       const productImages = galleryImages.get(product.id) || [];
                                       // Chercher l'image par image_id de la variante
                                       const variantImage = variant.image_id
-                                        ? productImages.find(img => img.id === variant.image_id)
+                                        ? productImages.find((img) => img.id === variant.image_id)
                                         : undefined;
                                       const imageUrl = variantImage?.src || product.image_url;
-                                      
+
                                       return imageUrl ? (
                                         <div className="relative w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0 border">
                                           <img
@@ -2872,8 +2801,8 @@ export default function ProductTitleDescription() {
                                         </div>
                                       ) : null;
                                     })()}
-                                    
-                                    <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>
+
+                                    <span className={`flex-1 text-sm font-medium ${isSelected ? "text-primary" : ""}`}>
                                       {variant.title}
                                     </span>
                                   </div>
@@ -2890,10 +2819,7 @@ export default function ProductTitleDescription() {
             })()}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowWhiteBgConfigDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowWhiteBgConfigDialog(false)}>
               Annuler
             </Button>
             <Button
@@ -2920,7 +2846,7 @@ export default function ProductTitleDescription() {
       <AiBackgroundDialog
         open={showAiConfigDialog}
         onOpenChange={setShowAiConfigDialog}
-        selectedProducts={products.filter(p => selectedProducts.has(p.id))}
+        selectedProducts={products.filter((p) => selectedProducts.has(p.id))}
         productImages={galleryImages}
         onConfirm={async (config: AiBackgroundConfig) => {
           // Si des variantes sont sélectionnées, afficher la confirmation
@@ -2941,7 +2867,7 @@ export default function ProductTitleDescription() {
       <VariantSelectionConfirmDialog
         open={showVariantConfirmDialog}
         onOpenChange={setShowVariantConfirmDialog}
-        selectedProducts={products.filter(p => selectedProducts.has(p.id))}
+        selectedProducts={products.filter((p) => selectedProducts.has(p.id))}
         selectedVariants={pendingAiConfig?.selectedVariants || new Map()}
         applyTo={pendingAiConfig?.applyTo || "simple"}
         onConfirm={async () => {
@@ -2993,33 +2919,31 @@ export default function ProductTitleDescription() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
-              {t.landingGeneration.dialog.title}
+              Générateur de Landing Page IA
             </DialogTitle>
-            <DialogDescription>
-              {t.landingGeneration.dialog.description}
-            </DialogDescription>
+            <DialogDescription>Créez une landing page personnalisée et optimisée pour votre produit</DialogDescription>
           </DialogHeader>
           {selectedLandingProduct && landingConfig && showLandingDialog && (
-            <RegenerateLanding 
+            <RegenerateLanding
               product={selectedLandingProduct}
               config={landingConfig}
               autoGenerate={true}
               onGenerated={async (html) => {
-                console.log('🎉 [Landing] Generated HTML:', html.substring(0, 100));
-                
+                console.log("🎉 [Landing] Generated HTML:", html.substring(0, 100));
+
                 // Mettre à jour directement le produit avec le HTML généré (évite double aperçu)
                 const updatedProduct = {
                   ...selectedLandingProduct,
-                  landing_page_html: html
+                  landing_page: html,
                 };
-                
+
                 // Fermer le dialog de génération et ouvrir le preview immédiatement
                 setShowLandingDialog(false);
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
-                
+
                 // PAS de rafraîchissement automatique - cause des boucles infinies
-                console.log('✅ [Landing] Preview displayed, no refresh needed');
+                console.log("✅ [Landing] Preview displayed, no refresh needed");
               }}
               onClose={() => setShowLandingDialog(false)}
             />
@@ -3033,11 +2957,11 @@ export default function ProductTitleDescription() {
         onConfirm={handleConfigConfirm}
         productCount={filteredProducts.length}
         productImages={
-          filteredProducts[0]?.id 
-            ? (galleryImages.get(filteredProducts[0].id) || []).map(img => ({
+          filteredProducts[0]?.id
+            ? (galleryImages.get(filteredProducts[0].id) || []).map((img) => ({
                 id: img.id,
                 image_url: img.src,
-                alt_text: img.alt_text || undefined
+                alt_text: img.alt_text || undefined,
               }))
             : []
         }
@@ -3074,7 +2998,7 @@ export default function ProductTitleDescription() {
         productId={previewProduct?.id || ""}
         productTitle={previewProduct?.title || ""}
         productHandle={previewProduct?.handle || ""}
-        currentLandingPage={previewProduct?.landing_page_html}
+        currentLandingPage={previewProduct?.landing_page}
         onGenerateClick={() => {
           if (previewProduct) {
             setSelectedLandingProduct(previewProduct);
@@ -3091,9 +3015,7 @@ export default function ProductTitleDescription() {
               <AlertCircle className="h-5 w-5" />
               Supprimer le produit
             </DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce produit ?
-            </DialogDescription>
+            <DialogDescription>Êtes-vous sûr de vouloir supprimer ce produit ?</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-muted p-4 rounded-lg">
@@ -3105,7 +3027,8 @@ export default function ProductTitleDescription() {
             <Alert className="border-destructive/50 bg-destructive/10">
               <AlertCircle className="h-4 w-4 text-destructive" />
               <AlertDescription className="text-destructive">
-                <strong>Attention :</strong> Cette action supprimera immédiatement le produit de Shopify et ne peut pas être annulée.
+                <strong>Attention :</strong> Cette action supprimera immédiatement le produit de Shopify et ne peut pas
+                être annulée.
               </AlertDescription>
             </Alert>
           </div>
@@ -3123,15 +3046,17 @@ export default function ProductTitleDescription() {
               variant="destructive"
               onClick={async () => {
                 if (!productToDelete) return;
-                
+
                 setDeletingProductId(productToDelete.id);
                 const toastId = toast.loading("Suppression du produit...");
-                
+
                 try {
-                  const { data: { session } } = await supabase.auth.getSession();
+                  const {
+                    data: { session },
+                  } = await supabase.auth.getSession();
                   if (!session) throw new Error("Non authentifié");
 
-                  const { data, error } = await supabase.functions.invoke('delete-shopify-product', {
+                  const { data, error } = await supabase.functions.invoke("delete-shopify-product", {
                     body: { productId: productToDelete.id },
                     headers: {
                       Authorization: `Bearer ${session.access_token}`,
@@ -3141,7 +3066,7 @@ export default function ProductTitleDescription() {
                   if (error) throw error;
                   if (!data.success) throw new Error(data.error || "Erreur inconnue");
 
-                  setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+                  setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
                   toast.success("Produit supprimé avec succès", { id: toastId });
                   setShowDeleteDialog(false);
                   setProductToDelete(null);
@@ -3170,7 +3095,6 @@ export default function ProductTitleDescription() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
-};
+}
