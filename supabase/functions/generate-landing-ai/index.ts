@@ -863,7 +863,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 9000,  // ✅ Increased to handle 7630+ tokens
+        maxTokens: 12000,  // ✅ Increased to handle more complex landing pages (was 9000)
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
