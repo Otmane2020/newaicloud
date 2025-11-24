@@ -910,7 +910,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 15000,  // ✅ Increased from 12000 to handle very complex pages
+        maxTokens: 20000,  // ✅ Increased from 15000 to handle complex pages with variants and dimensions
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
