@@ -69,6 +69,8 @@ interface Stats {
   connectedStores: number;
   productsWithImages: number;
   productsWithoutAlt: number;
+  totalImages: number;
+  optimizedImages: number;
   currency: string;
   // Trends (comparison with previous period)
   trends: {
@@ -109,6 +111,8 @@ export default function Dashboard() {
     connectedStores: 0,
     productsWithImages: 0,
     productsWithoutAlt: 0,
+    totalImages: 0,
+    optimizedImages: 0,
     currency: 'EUR',
     trends: {
       products: 0,
@@ -307,6 +311,8 @@ export default function Dashboard() {
 
       // 5. IMAGES SCORE
       let imagesScore = 0;
+      let totalImages = 0;
+      let optimizedImages = 0;
       
       // Only calculate if a store is selected (same behavior as SeoAltImage)
       if (selectedStore?.id) {
@@ -333,6 +339,8 @@ export default function Dashboard() {
 
         // Combine both types of images for score calculation (same as SeoAltImage.tsx)
         const allImages = [...(productImages || []), ...(contentImages || [])];
+        totalImages = allImages.length;
+        optimizedImages = allImages.filter((img) => (img.optimization_count || 0) > 0).length;
         imagesScore = calculateImagesSeoScore(allImages);
       }
 
@@ -477,6 +485,8 @@ export default function Dashboard() {
         connectedStores: connectedStores || 0,
         productsWithImages,
         productsWithoutAlt: imagesWithoutAlt || 0,
+        totalImages,
+        optimizedImages,
         currency: storeCurrency,
         trends: {
           products: totalProducts - oldTotalProducts,
@@ -597,6 +607,12 @@ export default function Dashboard() {
         <SeoScoreGauge 
           score={stats.seoScore}
           categories={stats.seoCategories}
+          counts={{
+            totalImages: stats.totalImages,
+            optimizedImages: stats.optimizedImages,
+            totalProducts: stats.totalProducts,
+            optimizedProducts: stats.optimizedProducts,
+          }}
         />
         
         {/* Quick Actions sous le score */}

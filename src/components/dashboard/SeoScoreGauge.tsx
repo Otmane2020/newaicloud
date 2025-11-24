@@ -14,9 +14,21 @@ interface SeoScoreGaugeProps {
     images: number;
     tags: number;
   };
+  counts?: {
+    totalImages?: number;
+    optimizedImages?: number;
+    totalProducts?: number;
+    optimizedProducts?: number;
+    totalCollections?: number;
+    optimizedCollections?: number;
+    totalPages?: number;
+    optimizedPages?: number;
+    totalArticles?: number;
+    optimizedArticles?: number;
+  };
 }
 
-export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
+export function SeoScoreGauge({ score, categories: categoryScores, counts }: SeoScoreGaugeProps) {
   const { t, tf } = useTranslation();
   
   // Nouvelle palette de couleurs rouge-orange
@@ -284,6 +296,31 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                         {cat.name}
                       </div>
                       <div className={`w-2 h-2 rounded-full ${categoryColor.dot} animate-pulse flex-shrink-0`} />
+                      {counts && cat.key === 'images' && counts.totalImages !== undefined && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {counts.optimizedImages || 0}/{counts.totalImages}
+                        </Badge>
+                      )}
+                      {counts && cat.key === 'products' && counts.totalProducts !== undefined && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {counts.optimizedProducts || 0}/{counts.totalProducts}
+                        </Badge>
+                      )}
+                      {counts && cat.key === 'collections' && counts.totalCollections !== undefined && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {counts.optimizedCollections || 0}/{counts.totalCollections}
+                        </Badge>
+                      )}
+                      {counts && cat.key === 'pages' && counts.totalPages !== undefined && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {counts.optimizedPages || 0}/{counts.totalPages}
+                        </Badge>
+                      )}
+                      {counts && cat.key === 'articles' && counts.totalArticles !== undefined && (
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {counts.optimizedArticles || 0}/{counts.totalArticles}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground font-medium break-words">{cat.description}</div>
                   </div>
