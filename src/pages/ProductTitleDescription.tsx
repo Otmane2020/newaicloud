@@ -603,6 +603,21 @@ export default function ProductTitleDescription() {
             try {
               console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
 
+              // Load user's default preferences
+              const { data: userData } = await supabase.auth.getUser();
+              let userPreferences = null;
+              
+              if (userData.user) {
+                const { getUserDefaultPreferences } = await import("@/lib/landingPreferences");
+                userPreferences = await getUserDefaultPreferences(userData.user.id);
+                
+                if (userPreferences) {
+                  console.log("✅ Préférences utilisateur chargées et appliquées:", userPreferences);
+                } else {
+                  console.log("ℹ️ Aucune préférence par défaut, utilisation des options par défaut");
+                }
+              }
+
               // Récupérer vision_attributes depuis le produit
               const { data: productData } = await supabase
                 .from("shopify_products")
@@ -620,6 +635,7 @@ export default function ProductTitleDescription() {
                     visionAnalysis: productData?.vision_attributes || null,
                     template: "ecommerce",
                     productId: productId,
+                    userPreferences: userPreferences,
                   },
                 },
               );
