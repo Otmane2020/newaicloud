@@ -842,6 +842,37 @@ serve(async (req) => {
     // Extract options for use in prompt
     const { designStyle, customHighlights, layout, contentLength } = userOptions;
 
+    // Normaliser et configurer la longueur du contenu
+    const lengthMode = (contentLength || "medium") as "short" | "medium" | "long";
+    
+    let lengthConfig = { 
+      maxTokens: 1200, 
+      labelEn: "medium", 
+      labelFr: "moyenne", 
+      descriptionEn: "Balanced content (300-400 words)",
+      descriptionFr: "Contenu équilibré (300-400 mots)" 
+    };
+
+    if (lengthMode === "short") {
+      lengthConfig = {
+        maxTokens: 800,
+        labelEn: "short",
+        labelFr: "courte",
+        descriptionEn: "Concise and impactful content (150-250 words)",
+        descriptionFr: "Contenu concis et impactant (150-250 mots)"
+      };
+    } else if (lengthMode === "long") {
+      lengthConfig = {
+        maxTokens: 2000,
+        labelEn: "long",
+        labelFr: "longue",
+        descriptionEn: "Detailed and comprehensive content (500-700 words)",
+        descriptionFr: "Contenu détaillé et complet (500-700 mots)"
+      };
+    }
+
+    console.log('📏 Content Length Config:', lengthConfig);
+
     if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
         status: 400,
@@ -1422,6 +1453,23 @@ VARIANTS:
 ${vars}
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
+CONTENT LENGTH (MANDATORY):
+- Mode: ${lengthConfig.labelEn}
+- Target: ${lengthConfig.descriptionEn}
+${lengthMode === "short" ? "- Very concise page with only essential sections and brief copy" :
+  lengthMode === "medium" ? "- Balanced number of sections with moderate detail" :
+  "- Rich, detailed page with comprehensive sections and longer copy"}
+
+LAYOUT STRUCTURE:
+- Layout selected: ${typeof resolvedLayout === "object" ? resolvedLayout.name || layout : layout}
+${typeof resolvedLayout === "object" && resolvedLayout.rules
+  ? resolvedLayout.rules
+  : layout === "2_colonnes"
+    ? "- Use primarily 2-column grids (grid-cols-1 md:grid-cols-2) for main sections"
+    : layout === "3_colonnes"
+      ? "- Use 3-column grids on desktop (grid-cols-1 md:grid-cols-3) for benefits/features"
+      : "- Flexible layout but maintain consistency"}
+
 COLOR PALETTE (HSL FORMAT ONLY) - COMPLETE SET WITH VARIANTS:
 - Primary: hsl(${designTokens.primary})
 - Primary Light: hsl(${designTokens.primaryLight})
@@ -1677,6 +1725,23 @@ VARIANTES :
 ${vars}
 ${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 
+LONGUEUR DU CONTENU (OBLIGATOIRE) :
+- Mode : ${lengthConfig.labelFr}
+- Objectif : ${lengthConfig.descriptionFr}
+${lengthMode === "short" ? "- Page très concise avec uniquement les sections essentielles et du texte bref" :
+  lengthMode === "medium" ? "- Nombre équilibré de sections avec détails modérés" :
+  "- Page riche et détaillée avec sections complètes et texte plus long"}
+
+🏗️ STRUCTURE DE LAYOUT :
+- Layout sélectionné : ${typeof resolvedLayout === "object" ? resolvedLayout.name || layout : layout}
+${typeof resolvedLayout === "object" && resolvedLayout.rules
+  ? resolvedLayout.rules
+  : layout === "2_colonnes"
+    ? "- Utiliser principalement des grilles 2 colonnes (grid-cols-1 md:grid-cols-2) pour les sections principales"
+    : layout === "3_colonnes"
+      ? "- Utiliser des grilles 3 colonnes sur desktop (grid-cols-1 md:grid-cols-3) pour les bénéfices/fonctionnalités"
+      : "- Layout flexible mais maintenir la cohérence"}
+
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
 - Secondaire : hsl(${designTokens.secondary})
@@ -1846,7 +1911,7 @@ UTILISATION DES ICÔNES :
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 16000,
+          max_tokens: lengthConfig.maxTokens,
           temperature: 0.7,
         }),
         signal: aiController.signal,
@@ -2006,9 +2071,13 @@ UTILISATION DES ICÔNES :
             colorScheme: userOptions.colorScheme,
             layout: userOptions.layout,
             designStyle: userOptions.designStyle,
+            contentLength: userOptions.contentLength,
             theme: userOptions.theme,
           },
           colorSchemeResolved: resolvedColorScheme,
+          layoutResolved: resolvedLayout,
+          designStyleResolved: resolvedDesignStyle,
+          contentLengthConfig: lengthConfig,
           designTokens: designTokens,
           promptLength: prompt?.length || 0,
         },

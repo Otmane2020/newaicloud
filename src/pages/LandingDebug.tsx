@@ -14,6 +14,7 @@ export default function LandingDebug() {
   const [theme, setTheme] = useState("light");
   const [layout, setLayout] = useState("");
   const [designStyle, setDesignStyle] = useState("");
+  const [contentLength, setContentLength] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSource, setShowSource] = useState(false);
 
@@ -78,6 +79,22 @@ export default function LandingDebug() {
     },
   });
 
+  // Fetch content lengths
+  const { data: contentLengths } = useQuery({
+    queryKey: ["config-content-lengths"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_page_config_options")
+        .select("option_key, option_label")
+        .eq("category", "content_length")
+        .eq("is_active", true)
+        .order("display_order")
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Set defaults when data loads
   useEffect(() => {
     if (products && products.length > 0 && !productId) {
@@ -102,6 +119,12 @@ export default function LandingDebug() {
       setDesignStyle(designStyles[0].option_key);
     }
   }, [designStyles, designStyle]);
+
+  useEffect(() => {
+    if (contentLengths && contentLengths.length > 0 && !contentLength) {
+      setContentLength(contentLengths[0].option_key);
+    }
+  }, [contentLengths, contentLength]);
 
   const [result, setResult] = useState<{
     html: string;
@@ -153,7 +176,7 @@ export default function LandingDebug() {
             colorScheme: colorSchemeObj?.option_value || colorSchemeKey,
             layout: layoutObj?.option_value || layout,
             designStyle: designStyleObj?.option_value || designStyle,
-            contentLength: "medium",
+            contentLength: contentLength || "medium",
             theme: theme,
           },
           language: "fr",
@@ -163,6 +186,12 @@ export default function LandingDebug() {
       if (error) {
         console.error("Error:", error);
         toast.error("Erreur lors de la génération: " + error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
         setLoading(false);
         return;
       }
@@ -261,6 +290,22 @@ export default function LandingDebug() {
                   {designStyles?.map((style) => (
                     <SelectItem key={style.option_key} value={style.option_key}>
                       {style.option_label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Taille du contenu</Label>
+              <Select value={contentLength} onValueChange={setContentLength}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une taille" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contentLengths?.map((len) => (
+                    <SelectItem key={len.option_key} value={len.option_key}>
+                      {len.option_label}
                     </SelectItem>
                   ))}
                 </SelectContent>
