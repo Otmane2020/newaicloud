@@ -240,33 +240,69 @@ async function callAI(prompt: string) {
       Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: "gemini-2.5-flash", prompt }),
+    body: JSON.stringify({ model: "google/gemini-2.5-flash", prompt }),
   });
 
-  let json: any;
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("❌ AI API ERROR:", res.status, errText);
+    throw new Error(`AI_API_ERROR: ${res.status}`);
+  }
 
+  const responseText = await res.text();
+  console.log("✅ AI Response (raw):", responseText.substring(0, 200));
+
+  let json: any;
   try {
-    json = await res.json();
-  } catch {
-    const raw = await res.text();
-    console.error("❌ RAW INVALID JSON:", raw);
+    json = JSON.parse(responseText);
+  } catch (e) {
+    console.error("❌ JSON PARSE ERROR:", e, "RAW:", responseText.substring(0, 500));
     throw new Error("INVALID_JSON_FROM_AI");
   }
 
-  if (!json || typeof json !== "object") throw new Error("INVALID_AI_RESPONSE");
+  if (!json || typeof json !== "object") {
+    console.error("❌ Invalid response type:", typeof json);
+    throw new Error("INVALID_AI_RESPONSE");
+  }
 
-  // -----------------------------------------------------------------
-  // ✨ FIX : handle json.output, json.output.html, object formats
-  // -----------------------------------------------------------------
+  console.log("✅ Parsed JSON keys:", Object.keys(json));
+
   let html = "";
-
-  if (typeof json.output === "string") {
-    html = json.output;
-  } else if (json.output?.html) {
-    html = json.output.html;
-  } else {
-    console.error("❌ Unknown AI output format:", json.output);
-    throw new Error("AI_OUTPUT_INVALID_FORMAT");
+  
+  // Handle direct text response
+  if (typeof json === "string") {
+    html = json;
+  }
+  // Handle response with text field (common format)
+  else if (json.text && typeof json.text === "string") {
+    html = json.text;
+  }
+  // Handle response with output field
+  else if (json.output) {
+    if (typeof json.output === "string") {
+      html = json.output;
+    } else if (json.output.html && typeof json.output.html === "string") {
+      html = json.output.html;
+    } else if (json.output.text && typeof json.output.text === "string") {
+      html = json.output.text;
+    } else {
+      console.error("❌ Unknown output format:", json.output);
+      throw new Error("AI_OUTPUT_INVALID_FORMAT");
+    }
+  }
+  // Handle choices array format (OpenAI-like)
+  else if (json.choices && Array.isArray(json.choices) && json.choices[0]) {
+    const choice = json.choices[0];
+    if (choice.message?.content) {
+      html = choice.message.content;
+    } else if (choice.text) {
+      html = choice.text;
+    }
+  }
+  
+  if (!html) {
+    console.error("❌ No HTML extracted. Full response:", JSON.stringify(json, null, 2));
+    throw new Error("NO_HTML_IN_RESPONSE");
   }
 
   return html.replace(/```html|```/gi, "").trim();
