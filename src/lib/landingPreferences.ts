@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LandingPreferences {
+  theme: 'light' | 'dark';
   layout: string;
   designStyle: string;
   contentLength: string;
@@ -36,12 +37,14 @@ export async function getUserDefaultPreferences(
     }
 
     console.log("✅ Préférences chargées:", {
+      theme: data.theme,
       layout: data.layout,
       designStyle: data.design_style,
       paletteId: data.palette_id,
     });
 
     return {
+      theme: (data.theme || 'light') as 'light' | 'dark',
       layout: data.layout,
       designStyle: data.design_style,
       contentLength: data.content_length,
