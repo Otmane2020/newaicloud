@@ -1832,7 +1832,6 @@ export default function ProductTitleDescription() {
                         />
                       </TableHead>
                       <TableHead className="w-20">{t.contentOptimization.table.headers.image}</TableHead>
-                      <TableHead className="w-32">Marque</TableHead>
                       <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
                       <TableHead className="hidden lg:table-cell">
                         {t.contentOptimization.table.headers.description}
@@ -1872,27 +1871,13 @@ export default function ProductTitleDescription() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">
-                            {product.vendor ? (
-                              <Badge variant="outline" className="font-normal">
+                          <div className="space-y-1">
+                            <p className="font-medium">{product.seo_title || product.title}</p>
+                            {product.vendor && (
+                              <Badge variant="outline" className="font-normal text-xs">
                                 {product.vendor}
                               </Badge>
-                            ) : (
-                              <span className="text-muted-foreground italic text-xs">Non définie</span>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{product.seo_title || product.title}</p>
-                              {hasRichHtmlDescription(product) && (
-                                <Badge variant="default" className="gap-1 text-xs">
-                                  <FileText className="h-3 w-3" />
-                                  Landing
-                                </Badge>
-                              )}
-                            </div>
                             {product.seo_title && product.title !== product.seo_title && (
                               <p className="text-xs text-muted-foreground line-clamp-1">
                                 {t.contentOptimization.table.original}: {product.title}
@@ -1901,13 +1886,21 @@ export default function ProductTitleDescription() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          {product.seo_description ? (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{product.seo_description}</p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground italic">
-                              {t.contentOptimization.table.noOptimizedDesc}
-                            </p>
-                          )}
+                          <div className="space-y-2">
+                            {product.seo_description ? (
+                              <p className="text-sm text-muted-foreground line-clamp-2">{product.seo_description}</p>
+                            ) : (
+                              <p className="text-sm text-muted-foreground italic">
+                                {t.contentOptimization.table.noOptimizedDesc}
+                              </p>
+                            )}
+                            {hasRichHtmlDescription(product) && (
+                              <Badge variant="default" className="gap-1 text-xs">
+                                <FileText className="h-3 w-3" />
+                                Landing
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {hasRichHtmlDescription(product) ? (
