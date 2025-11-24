@@ -39,7 +39,8 @@ export default function LandingDebug() {
         .select("option_key, option_label, option_value")
         .eq("category", "color_scheme")
         .eq("is_active", true)
-        .order("display_order");
+        .order("display_order")
+        .limit(100);
       if (error) throw error;
       return data;
     },
@@ -51,10 +52,11 @@ export default function LandingDebug() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("landing_page_config_options")
-        .select("option_key, option_label")
+        .select("option_key, option_label, option_value")
         .eq("category", "layout")
         .eq("is_active", true)
-        .order("display_order");
+        .order("display_order")
+        .limit(50);
       if (error) throw error;
       return data;
     },
@@ -66,10 +68,11 @@ export default function LandingDebug() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("landing_page_config_options")
-        .select("option_key, option_label")
+        .select("option_key, option_label, option_value")
         .eq("category", "design_style")
         .eq("is_active", true)
-        .order("display_order");
+        .order("display_order")
+        .limit(50);
       if (error) throw error;
       return data;
     },
@@ -133,6 +136,11 @@ export default function LandingDebug() {
         return;
       }
 
+      // Find the full option values
+      const colorSchemeObj = colorSchemes?.find(cs => cs.option_key === colorSchemeKey);
+      const layoutObj = layouts?.find(l => l.option_key === layout);
+      const designStyleObj = designStyles?.find(ds => ds.option_key === designStyle);
+
       // Call generate-landing-ai with options
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
@@ -142,9 +150,9 @@ export default function LandingDebug() {
           description: product.body_html,
           vendor: product.vendor,
           options: {
-            colorScheme: colorSchemeKey,
-            layout: layout,
-            designStyle: designStyle,
+            colorScheme: colorSchemeObj?.option_value || colorSchemeKey,
+            layout: layoutObj?.option_value || layout,
+            designStyle: designStyleObj?.option_value || designStyle,
             contentLength: "medium",
             theme: theme,
           },
