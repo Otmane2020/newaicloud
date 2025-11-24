@@ -214,6 +214,58 @@ serve(async (req) => {
       highlights: selectedHighlights.map(h => h.option_label).join(", ") || "Quality, shipping, warranty"
     };
 
+    // Build comprehensive design options catalog
+    const buildDesignCatalog = () => {
+      let catalog = '';
+      
+      // Layouts
+      if (layouts.length > 0) {
+        catalog += `\nLAYOUTS (${layouts.length} available):\n`;
+        layouts.forEach((l, i) => {
+          catalog += `  ${i + 1}. ${l.option_label} (${l.option_key}): ${l.description || 'N/A'}\n`;
+        });
+      }
+      
+      // Design Styles
+      if (designStyles.length > 0) {
+        catalog += `\nDESIGN STYLES (${designStyles.length} available):\n`;
+        designStyles.forEach((s, i) => {
+          catalog += `  ${i + 1}. ${s.option_label} (${s.option_key}): ${s.description || 'N/A'}\n`;
+        });
+      }
+      
+      // Color Palettes
+      if (colorSchemes.length > 0) {
+        catalog += `\nCOLOR PALETTES (${colorSchemes.length} available):\n`;
+        const palettesByTheme = colorSchemes.reduce((acc: any, scheme) => {
+          const key = scheme.option_key;
+          const theme = key.includes('blue') ? 'Blues' :
+                       key.includes('green') ? 'Greens' :
+                       key.includes('red') || key.includes('crimson') ? 'Reds' :
+                       key.includes('purple') || key.includes('violet') ? 'Purples' :
+                       key.includes('orange') || key.includes('coral') ? 'Warm' :
+                       key.includes('gray') || key.includes('slate') ? 'Neutrals' : 'Other';
+          if (!acc[theme]) acc[theme] = [];
+          acc[theme].push(scheme);
+          return acc;
+        }, {});
+        
+        Object.entries(palettesByTheme).forEach(([theme, palettes]: [string, any]) => {
+          catalog += `  ${theme}: ${palettes.map((p: any) => p.option_label).join(', ')}\n`;
+        });
+      }
+      
+      // Highlights
+      if (highlightOptions.length > 0) {
+        catalog += `\nAVAILABLE HIGHLIGHTS (${highlightOptions.length} options):\n`;
+        highlightOptions.forEach((h, i) => {
+          catalog += `  ${i + 1}. ${h.option_label} (${h.option_key}): ${h.description || 'N/A'}\n`;
+        });
+      }
+      
+      return catalog;
+    };
+
     // 🔹 Prompt with strict WCAG contrast rules and dynamic configuration
     const prompt = `
 You are an expert e-commerce UX copywriter and web designer.
@@ -229,8 +281,17 @@ ${dimensions ? `Dimensions: ${JSON.stringify(dimensions)}` : ""}
 ${images?.length ? `Product Images:\n${images.map((img: any, i: number) => `  ${i + 1}. ${img.src || img}`).join("\n")}` : "No images"}
 
 ==============================
-SELECTED CONFIGURATION
+AVAILABLE DESIGN OPTIONS (for context & creative inspiration)
 ==============================
+Below is the complete design system available in our platform.
+You can draw inspiration from these options to enrich your design,
+but you MUST use the SELECTED CONFIGURATION specified below.
+${buildDesignCatalog()}
+
+==============================
+SELECTED CONFIGURATION (MANDATORY - USE THIS)
+==============================
+⚠️ You MUST implement the following configuration exactly as specified:
 Layout Style: ${styleConfig.layout}
 Design Tone: ${styleConfig.tone}
 Content Strategy: ${styleConfig.contentStrategy}
