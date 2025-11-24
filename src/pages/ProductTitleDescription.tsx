@@ -529,7 +529,7 @@ export default function ProductTitleDescription() {
           vendor: product.vendor,
         });
 
-        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, {
+        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO uniquement)`, {
           id: toastId,
         });
 
@@ -591,98 +591,14 @@ export default function ProductTitleDescription() {
           .single();
 
         if (updatedProduct) {
-          // Check if landing_page or description already has HTML (skip regeneration if present)
-          const hasExistingHtml =
-            (updatedProduct.landing_page &&
-              (updatedProduct.landing_page.includes("<div") || updatedProduct.landing_page.includes("<section"))) ||
-            (updatedProduct.description &&
-              (updatedProduct.description.includes("<div") || updatedProduct.description.includes("<section")));
-
-          if (!hasExistingHtml) {
-            // Generate HTML landing page
-            try {
-              console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
-
-              // Load user's default preferences
-              const { data: userData } = await supabase.auth.getUser();
-              let userPreferences = null;
-              
-              if (userData.user) {
-                const { getUserDefaultPreferences } = await import("@/lib/landingPreferences");
-                userPreferences = await getUserDefaultPreferences(userData.user.id);
-                
-                if (userPreferences) {
-                  console.log("✅ Préférences utilisateur chargées et appliquées:", userPreferences);
-                } else {
-                  console.log("ℹ️ Aucune préférence par défaut, utilisation des options par défaut");
-                }
-              }
-
-              // Récupérer vision_attributes depuis le produit
-              const { data: productData } = await supabase
-                .from("shopify_products")
-                .select("vision_attributes, vision_confidence")
-                .eq("id", productId)
-                .single();
-
-              const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
-                "generate-product-description-html",
-                {
-                  body: {
-                    title: updatedProduct.seo_title || updatedProduct.title,
-                    existingDescription: updatedProduct.seo_description,
-                    images: [updatedProduct.image_url].filter(Boolean),
-                    visionAnalysis: productData?.vision_attributes || null,
-                    template: "ecommerce",
-                    productId: productId,
-                    userPreferences: userPreferences,
-                  },
-                },
-              );
-
-              if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
-                console.log("✅ HTML landing page généré (aucune optimisation supplémentaire consommée)");
-
-                // Save HTML to shopify_products.landing_page
-                const { error: updateError } = await supabase
-                  .from("shopify_products")
-                  .update({ landing_page: htmlData.htmlLandingPage })
-                  .eq("id", productId);
-
-                if (!updateError) {
-                  // Save to history
-                  const { data: userData } = await supabase.auth.getUser();
-                  if (userData.user) {
-                    const { data: versionData } = await supabase.rpc("get_next_version_number", {
-                      p_product_id: productId,
-                    });
-
-                    await supabase.from("landing_page_history").insert({
-                      product_id: productId,
-                      user_id: userData.user.id,
-                      landing_page_html: htmlData.htmlLandingPage,
-                      version_number: versionData || 1,
-                      is_current: true,
-                    });
-                  }
-
-                  // Update local product with HTML in landing_page
-                  updatedProduct.landing_page = htmlData.htmlLandingPage;
-                }
-              } else {
-                console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
-              }
-            } catch (htmlErr) {
-              console.error("❌ Erreur génération HTML:", htmlErr);
-            }
-          } else {
-            console.log("✅ HTML déjà présent, pas de régénération");
-          }
-
+          // NOTE: Landing page generation has been separated from SEO optimization
+          // Landing page generation now consumes 10 optimizations independently
+          // and should be triggered separately by the user
+          
           // Update optimizedProducts progressively with fresh data
           setOptimizedProducts((prev) => [...prev, updatedProduct]);
 
-          // Force update products state with fresh data including landing_page
+          // Force update products state with fresh data
           setProducts((prev) => prev.map((p) => (p.id === productId ? updatedProduct : p)));
         }
       }

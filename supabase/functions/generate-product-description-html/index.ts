@@ -109,6 +109,24 @@ serve(async (req) => {
   try {
   const body = await req.json();
   
+  // Extract user ID from authorization header
+  const authHeader = req.headers.get('authorization');
+  let userId: string | null = null;
+  
+  if (authHeader) {
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { authorization: authHeader } }
+      });
+      const { data: { user } } = await authClient.auth.getUser();
+      userId = user?.id || null;
+    } catch (e) {
+      console.error('Error extracting user ID:', e);
+    }
+  }
+  
   // ✅ CORRECTION 2: Accepter productId et product_id
   const { 
     title, 
@@ -751,11 +769,30 @@ Do NOT wrap output in code blocks or markdown.
     console.log("✅ Color validation passed");
     console.log("✅ Landing page generated successfully");
 
+    // Track usage: 1 landing page generation = 10 optimizations
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.rpc("increment_usage", {
+          p_seller_id: userId,
+          p_field: "optimizations_count",
+          p_increment: 10
+        });
+        console.log("✅ Usage tracked: 10 optimizations for landing page generation");
+      } catch (trackError) {
+        console.error("⚠️ Failed to track landing page usage:", trackError);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         optimizedTitle,
-        html: htmlLandingPage, // Changed from htmlLandingPage to html for consistency
+        htmlLandingPage: htmlLandingPage, // Keep original key name for compatibility
+        html: htmlLandingPage,
         mediaCount,
         mobileOptimized: true,
         wordCount,
