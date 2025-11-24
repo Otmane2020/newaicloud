@@ -97,7 +97,7 @@ export function SubscriptionPlans() {
       console.log('📊 User has', productCount, 'products');
 
       if (plansData) {
-        // Filter plans - only include plans with valid Stripe price IDs AND sufficient product limit
+        // Filter plans - only include plans with valid Stripe price IDs
         const validPlans = plansData.filter((plan) => {
           const monthlyId = plan.stripe_price_id_monthly || "";
           const yearlyId = plan.stripe_price_id_yearly || "";
@@ -114,10 +114,8 @@ export function SubscriptionPlans() {
             !yearlyId.includes("pro_") &&
             !yearlyId.includes("enterprise_");
 
-          // CRITICAL: Filter out plans that can't accommodate user's product count
-          const canAccommodateProducts = plan.max_products === -1 || plan.max_products >= productCount;
-
-          return (hasValidMonthly || hasValidYearly) && canAccommodateProducts;
+          // Show all plans - don't filter by product count to allow downgrades
+          return (hasValidMonthly || hasValidYearly);
         });
 
         setPlans(validPlans);
