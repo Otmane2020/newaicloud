@@ -716,9 +716,9 @@ export function SeoAltImage() {
       }
 
       if (errorCount > 0) {
-        toast.warning(`${successCount} images synchronisées, ${errorCount} erreurs`);
+        toast.warning(tf('seo.altImage.toasts.syncWithErrors', { success: successCount, errors: errorCount }));
       } else {
-        toast.success(`${successCount} images synchronisées avec succès`);
+        toast.success(tf('seo.altImage.toasts.syncSuccess', { success: successCount }));
       }
 
       setSyncing(false);
@@ -727,7 +727,7 @@ export function SeoAltImage() {
       await fetchImages();
     } catch (error) {
       console.error('Error in sync process:', error);
-      toast.error('Erreur lors de la synchronisation');
+      toast.error(t.seo.altImage.toasts.syncError);
       setSyncing(false);
       setShowProgressDialog(false);
     }
@@ -777,10 +777,10 @@ export function SeoAltImage() {
     : 0;
 
   const tabs = [
-    { id: 'all' as AltImageTab, label: 'Toutes', count: images.length },
-    { id: 'needs-alt' as AltImageTab, label: 'Non optimisé', count: imagesNotOptimized },
-    { id: 'has-alt' as AltImageTab, label: 'Optimisé', count: imagesOptimizedByAI },
-    { id: 'to-sync' as AltImageTab, label: 'À synchroniser', count: imagesToSync }
+    { id: 'all' as AltImageTab, label: t.seo.altImage.tabs.all, count: images.length },
+    { id: 'needs-alt' as AltImageTab, label: t.seo.altImage.tabs.notOptimized, count: imagesNotOptimized },
+    { id: 'has-alt' as AltImageTab, label: t.seo.altImage.tabs.optimized, count: imagesOptimizedByAI },
+    { id: 'to-sync' as AltImageTab, label: t.seo.altImage.tabs.toSync, count: imagesToSync }
   ];
 
   return (
@@ -792,24 +792,24 @@ export function SeoAltImage() {
             <div className="flex items-center gap-2">
               <ImageIcon className="w-6 h-6 text-green-600" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                Optimisation ALT Images
+                {t.seo.altImage.banner.title}
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Générez automatiquement des descriptions ALT optimisées pour vos images. Améliorez l'accessibilité et le référencement de 35%.
+              {t.seo.altImage.banner.description}
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Eye className="w-4 h-4 text-green-600" />
-                <span className="font-medium">Accessibilité maximale</span>
+                <span className="font-medium">{t.seo.altImage.banner.maxAccessibility}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span className="font-medium">+35% SEO images</span>
+                <span className="font-medium">{t.seo.altImage.banner.seoBoost}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Sparkles className="w-4 h-4 text-teal-600" />
-                <span className="font-medium">IA Vision avancée</span>
+                <span className="font-medium">{t.seo.altImage.banner.advancedVision}</span>
               </div>
             </div>
           </div>
@@ -833,12 +833,12 @@ export function SeoAltImage() {
               {generating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Optimisation en cours...
+                  {t.seo.altImage.banner.optimizing}
                 </>
               ) : (
                 <>
                   <Eye className="w-5 h-5" />
-                  Optimiser Toutes les Images ({imagesNotOptimized})
+                  {t.seo.altImage.banner.optimizeAll} ({imagesNotOptimized})
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -853,88 +853,88 @@ export function SeoAltImage() {
           className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('needs-alt');
-            toast.info(`Affichage des images non optimisées (${imagesNotOptimized})`);
+            toast.info(tf('seo.altImage.toasts.displayNotOptimized', { count: imagesNotOptimized }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                Non optimisé par IA
+                {t.seo.altImage.cards.notOptimized}
               </p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{imagesNotOptimized}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                0 optimisation
+                {t.seo.altImage.cards.noOptimization}
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Cliquez pour voir</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
         </Card>
 
         <Card
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('has-alt');
-            toast.info(`Affichage des images optimisées par IA (${imagesOptimizedByAI})`);
+            toast.info(tf('seo.altImage.toasts.displayOptimized', { count: imagesOptimizedByAI }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                Généré par IA
+                {t.seo.altImage.cards.aiGenerated}
               </p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{imagesOptimizedByAI}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Optimisé par IA
+                {t.seo.altImage.cards.aiOptimized}
               </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquez pour voir</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
         </Card>
 
         <Card
           className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('to-sync');
-            toast.info(`Affichage des images à synchroniser (${imagesToSync})`);
+            toast.info(tf('seo.altImage.toasts.displayToSync', { count: imagesToSync }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                À synchroniser
+                {t.seo.altImage.cards.toSync}
               </p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{imagesToSync}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Optimisé par IA uniquement
+                {t.seo.altImage.cards.aiOnly}
               </p>
             </div>
             <Upload className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Cliquez pour voir</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
         </Card>
 
         <Card
           className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 border-teal-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setActiveTab('all');
-            toast.info(`Affichage des images synchronisées (${imagesSynced})`);
+            toast.info(tf('seo.altImage.toasts.displaySynced', { count: imagesSynced }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                Synchronisé
+                {t.seo.altImage.cards.synced}
               </p>
               <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">{imagesSynced}</p>
               <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
-                Sur Shopify
+                {t.seo.altImage.cards.onShopify}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-teal-600" />
           </div>
-          <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">Cliquez pour voir</p>
+          <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
         </Card>
       </div>
 
@@ -971,9 +971,9 @@ export function SeoAltImage() {
             />
             <span className="text-sm font-medium">
               {selectedImages.size > 0 ? (
-                <span className="text-primary">{selectedImages.size} image(s) sélectionnée(s)</span>
+                <span className="text-primary">{tf('seo.altImage.actions.imagesSelected', { count: selectedImages.size })}</span>
               ) : (
-                <span className="text-muted-foreground">Sélectionner tout</span>
+                <span className="text-muted-foreground">{t.seo.altImage.actions.selectAll}</span>
               )}
             </span>
           </div>
@@ -985,7 +985,7 @@ export function SeoAltImage() {
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Générer ALT</span>
+              <span className="hidden sm:inline">{t.seo.altImage.actions.generateAlt}</span>
             </Button>
             <Button
               onClick={() => handleGenerateForSelected(true)}
@@ -994,7 +994,7 @@ export function SeoAltImage() {
               size="sm"
             >
               <Eye className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Vision AI</span>
+              <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
             </Button>
             <Button
               onClick={handleSyncSelected}
@@ -1003,7 +1003,7 @@ export function SeoAltImage() {
               size="sm"
             >
               <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser</span>
+              <span className="hidden sm:inline">{t.seo.altImage.actions.synchronize}</span>
             </Button>
             <Button
               onClick={handleImportContentImages}
@@ -1012,7 +1012,7 @@ export function SeoAltImage() {
               size="sm"
             >
               {importing ? <Loader2 className="w-4 h-4 animate-spin sm:mr-2" /> : <ImageIcon className="w-4 h-4 sm:mr-2" />}
-              <span className="hidden sm:inline">Importer</span>
+              <span className="hidden sm:inline">{t.seo.altImage.actions.import}</span>
             </Button>
             <Button
               onClick={fetchImages}
@@ -1029,12 +1029,12 @@ export function SeoAltImage() {
       {/* Content Type Filters */}
       <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
         {[
-          { id: 'all' as const, label: 'Tous', icon: Search },
-          { id: 'products' as const, label: 'Produits', icon: ShoppingBag },
-          { id: 'collections' as const, label: 'Collections', icon: Package },
-          { id: 'pages' as const, label: 'Pages', icon: FileText },
-          { id: 'articles' as const, label: 'Articles', icon: PenSquare },
-          { id: 'homepage' as const, label: 'Page d\'accueil', icon: ImageIcon },
+          { id: 'all' as const, label: t.seo.altImage.filters.all, icon: Search },
+          { id: 'products' as const, label: t.seo.altImage.filters.products, icon: ShoppingBag },
+          { id: 'collections' as const, label: t.seo.altImage.filters.collections, icon: Package },
+          { id: 'pages' as const, label: t.seo.altImage.filters.pages, icon: FileText },
+          { id: 'articles' as const, label: t.seo.altImage.filters.articles, icon: PenSquare },
+          { id: 'homepage' as const, label: t.seo.altImage.filters.homepage, icon: ImageIcon },
         ].map((filter) => {
           const Icon = filter.icon;
           return (
@@ -1064,7 +1064,7 @@ export function SeoAltImage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Rechercher des images..."
+              placeholder={t.seo.altImage.table.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -1073,12 +1073,12 @@ export function SeoAltImage() {
 
           <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
             <SelectTrigger className="min-w-[150px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t.seo.altImage.table.status} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="optimized">Optimized</SelectItem>
-              <SelectItem value="not-optimized">Not Optimized</SelectItem>
+              <SelectItem value="all">{t.seo.altImage.table.allStatus}</SelectItem>
+              <SelectItem value="optimized">{t.seo.altImage.table.optimized}</SelectItem>
+              <SelectItem value="not-optimized">{t.seo.altImage.table.notOptimized}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1087,9 +1087,9 @@ export function SeoAltImage() {
               <SelectValue placeholder="Sync" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Sync</SelectItem>
-              <SelectItem value="synced">Synced</SelectItem>
-              <SelectItem value="not-synced">Not Synced</SelectItem>
+              <SelectItem value="all">{t.seo.altImage.table.allSync}</SelectItem>
+              <SelectItem value="synced">{t.seo.altImage.table.synced}</SelectItem>
+              <SelectItem value="not-synced">{t.seo.altImage.table.notSynced}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1098,11 +1098,11 @@ export function SeoAltImage() {
               <SelectValue placeholder="SEO Quality" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Qualities</SelectItem>
-              <SelectItem value="excellent">Excellent (≥80)</SelectItem>
-              <SelectItem value="good">Good (60-79)</SelectItem>
-              <SelectItem value="medium">Medium (40-59)</SelectItem>
-              <SelectItem value="poor">Poor (&lt;40)</SelectItem>
+              <SelectItem value="all">{t.seo.altImage.table.allQualities}</SelectItem>
+              <SelectItem value="excellent">{t.seo.altImage.table.excellent}</SelectItem>
+              <SelectItem value="good">{t.seo.altImage.table.good}</SelectItem>
+              <SelectItem value="medium">{t.seo.altImage.table.medium}</SelectItem>
+              <SelectItem value="poor">{t.seo.altImage.table.poor}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1125,7 +1125,7 @@ export function SeoAltImage() {
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
-              {generating ? 'Génération des textes ALT...' : 'Synchronisation...'}
+              {generating ? t.seo.altImage.progress.generating : t.seo.altImage.progress.syncing}
             </span>
             <span className="text-sm text-muted-foreground">
               {progress.current} / {progress.total}
@@ -1184,13 +1184,13 @@ export function SeoAltImage() {
                             <div className="text-xs text-muted-foreground line-clamp-2">{img.alt_text}</div>
                             <Badge variant="secondary" className="gap-1 text-xs">
                               <CheckCircle className="w-3 h-3" />
-                              ALT OK
+                              {t.seo.altImage.table.altOk}
                             </Badge>
                           </>
                         ) : (
                           <Badge variant="outline" className="gap-1 text-xs">
                             <Clock className="w-3 h-3" />
-                            Sans ALT
+                            {t.seo.altImage.table.noAlt}
                           </Badge>
                         )}
                         <Button
@@ -1228,21 +1228,21 @@ export function SeoAltImage() {
                     className="rounded"
                   />
                 </th>
-                <th className="px-4 py-3 text-left font-semibold">Image</th>
-                <th className="px-4 py-3 text-left font-semibold">Produit</th>
-                <th className="px-4 py-3 text-left font-semibold">Texte ALT</th>
+                <th className="px-4 py-3 text-left font-semibold">{t.seo.altImage.table.image}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t.seo.altImage.table.product}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t.seo.altImage.table.altText}</th>
                 <th className="px-4 py-3 text-left font-semibold">
                   <button
                     onClick={handleSeoScoreSortToggle}
                     className="flex items-center gap-1 hover:text-primary transition-colors"
                   >
-                    Statut
+                    {t.seo.altImage.table.status}
                     {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
                     {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
                     {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.seo.altImage.table.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -1261,7 +1261,7 @@ export function SeoAltImage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium">{img.product.title}</div>
-                    <div className="text-xs text-muted-foreground">Position: {img.position}</div>
+                    <div className="text-xs text-muted-foreground">{t.seo.altImage.table.position}: {img.position}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="max-w-md line-clamp-2">{img.alt_text || '-'}</div>
@@ -1270,12 +1270,12 @@ export function SeoAltImage() {
                     {img.alt_text ? (
                       <Badge variant="secondary" className="gap-1">
                         <CheckCircle className="w-3 h-3" />
-                        ALT OK
+                        {t.seo.altImage.table.altOk}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1">
                         <Clock className="w-3 h-3" />
-                        Sans ALT
+                        {t.seo.altImage.table.noAlt}
                       </Badge>
                     )}
                   </td>
@@ -1306,7 +1306,7 @@ export function SeoAltImage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            Page {currentPage} sur {totalPages} ({sortedImages.length} images au total)
+            {t.seo.altImage.pagination.page} {currentPage} {t.seo.altImage.pagination.of} {totalPages} ({sortedImages.length} {t.seo.altImage.pagination.imagesTotal})
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -1315,10 +1315,10 @@ export function SeoAltImage() {
               onClick={previousPage}
               disabled={!hasPreviousPage}
             >
-              Précédent
+              {t.seo.altImage.pagination.previous}
             </Button>
             <span className="text-sm">
-              Page {currentPage} sur {totalPages}
+              {t.seo.altImage.pagination.page} {currentPage} {t.seo.altImage.pagination.of} {totalPages}
             </span>
             <Button
               variant="outline"
@@ -1326,7 +1326,7 @@ export function SeoAltImage() {
               onClick={nextPage}
               disabled={!hasNextPage}
             >
-              Suivant
+              {t.seo.altImage.pagination.next}
             </Button>
           </div>
         </div>
@@ -1338,10 +1338,10 @@ export function SeoAltImage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              Optimiser l'image avec Vision AI
+              {t.seo.altImage.dialog.title}
             </DialogTitle>
             <DialogDescription>
-              Générer un texte ALT optimisé pour le SEO avec l'analyse d'image par IA
+              {t.seo.altImage.dialog.description}
             </DialogDescription>
           </DialogHeader>
           
@@ -1368,7 +1368,7 @@ export function SeoAltImage() {
                     <div className="mt-3">
                       <Badge variant="secondary" className="gap-1 mb-2">
                         <CheckCircle className="w-3 h-3" />
-                        ALT actuel
+                        {t.seo.altImage.dialog.currentAlt}
                       </Badge>
                       <p className="text-sm bg-muted/50 p-3 rounded-lg">
                         {selectedImageForOptimize.alt_text}
@@ -1384,12 +1384,12 @@ export function SeoAltImage() {
                   onClick={() => setShowOptimizeDialog(false)}
                   disabled={generating}
                 >
-                  Annuler
+                  {t.seo.altImage.dialog.cancel}
                 </Button>
                 <Button
                   onClick={async () => {
                     if (!canDoAction('optimizations')) {
-                      toast.error("Limite d'optimisations atteinte");
+                      toast.error(t.seo.altImage.dialog.limitReached);
                       setShowUpgradeDialog(true);
                       setShowOptimizeDialog(false);
                       return;
@@ -1403,12 +1403,12 @@ export function SeoAltImage() {
                   {generating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Optimisation...
+                      {t.seo.altImage.dialog.optimizing}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Optimiser avec Vision AI
+                      {t.seo.altImage.dialog.optimize}
                     </>
                   )}
                 </Button>
