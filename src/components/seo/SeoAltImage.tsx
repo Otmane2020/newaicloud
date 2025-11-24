@@ -359,10 +359,12 @@ export function SeoAltImage() {
     if (syncFilter === 'synced' && !img.last_synced_at) return false;
     if (syncFilter === 'not-synced' && img.last_synced_at) return false;
 
-    // Quality filter
+    // Quality filter - Use same logic as calculateImagesSeoScore (reference)
     if (qualityFilter !== 'all') {
-      const altScore = calculateAltTextScore(img.alt_text || '', false);
-      const score = altScore.score;
+      const isAI = (img.optimization_count || 0) > 0;
+      const altScore = calculateAltTextScore(img.alt_text || '', isAI);
+      // Normalize to 0-100 scale: divide by weight like calculateImagesSeoScore does
+      const score = altScore.weight === 0 ? 0 : Math.min(100, Math.round(altScore.score / altScore.weight));
 
       if (qualityFilter === 'excellent' && score < 80) return false;
       if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
@@ -382,12 +384,17 @@ export function SeoAltImage() {
     return true;
   });
 
-  // Apply SEO score sorting
+  // Apply SEO score sorting - Use same logic as calculateImagesSeoScore (reference)
   const sortedImages = [...filteredImages];
   if (seoScoreSort !== 'none') {
     sortedImages.sort((a, b) => {
-      const scoreA = calculateAltTextScore(a.alt_text || '').score;
-      const scoreB = calculateAltTextScore(b.alt_text || '').score;
+      const isAIA = (a.optimization_count || 0) > 0;
+      const isAIB = (b.optimization_count || 0) > 0;
+      const altScoreA = calculateAltTextScore(a.alt_text || '', isAIA);
+      const altScoreB = calculateAltTextScore(b.alt_text || '', isAIB);
+      // Normalize to 0-100 scale: divide by weight like calculateImagesSeoScore does
+      const scoreA = altScoreA.weight === 0 ? 0 : Math.min(100, Math.round(altScoreA.score / altScoreA.weight));
+      const scoreB = altScoreB.weight === 0 ? 0 : Math.min(100, Math.round(altScoreB.score / altScoreB.weight));
       
       return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
     });
@@ -816,11 +823,11 @@ export function SeoAltImage() {
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
               <div className={`text-4xl font-bold ${
-                altCompletionRate >= 80 ? 'text-green-600' : 
-                altCompletionRate >= 60 ? 'text-orange-600' : 
+                altSeoScore >= 80 ? 'text-green-600' : 
+                altSeoScore >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
-                {altCompletionRate} / 100
+                {altSeoScore} / 100
               </div>
               <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{images.length})</div>
             </div>
