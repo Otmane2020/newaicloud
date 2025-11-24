@@ -148,19 +148,19 @@ export default function LandingOk() {
       addDebugLog(`✨ Highlights: ${previewConfig.highlights.length} items`);
       
       const payload = {
+        productId: selectedProduct.id,
         product_id: selectedProduct.id,
         productTitle: selectedProduct.title,
         description: selectedProduct.body_html || '',
         vendor: selectedProduct.vendor || 'Marque',
         imageUrl: selectedProduct.image_url || '',
         price: selectedProduct.price,
-        userPreferences: {
-          layout: previewConfig.layout,
-          designStyle: previewConfig.designStyle,
-          contentLength: previewConfig.contentLength,
-          colorScheme: previewConfig.colors, // ✅ IMPORTANT: utiliser colorScheme (format attendu par l'edge function)
-          highlights: previewConfig.highlights
-        },
+        colorScheme: previewConfig.colors,
+        layout: previewConfig.layout,
+        designStyle: previewConfig.designStyle,
+        length: previewConfig.contentLength,
+        customHighlights: previewConfig.highlights.length > 0 ? previewConfig.highlights : undefined,
+        userId: user.id,
         debug: true
       };
       
