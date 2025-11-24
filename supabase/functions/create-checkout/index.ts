@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment } = validation.data;
+    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment, use_manual_promo } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -302,7 +302,22 @@ serve(async (req) => {
 
     const origin = req.headers.get('origin') || 'http://localhost:8080';
     
-    console.log('🎫 Manual promotion codes will be enabled in checkout');
+    // Determine if we should auto-apply a coupon or allow manual promo codes
+    let discountCoupon = null;
+    const useManualPromo = use_manual_promo === true;
+    
+    if (!useManualPromo) {
+      // Auto-apply coupon based on plan
+      if (plan_id.startsWith('pro-') || plan_id === 'professional') {
+        discountCoupon = 'AiM3d23W'; // 20% off for Pro
+        console.log('🎁 Auto-applying 20% coupon for Pro plan');
+      } else if (plan_id.startsWith('enterprise-')) {
+        discountCoupon = '2hHOrJhU'; // 30% off for Enterprise
+        console.log('🎁 Auto-applying 30% coupon for Enterprise plan');
+      }
+    } else {
+      console.log('🎫 Manual promotion code requested - auto-discount disabled');
+    }
     
     // SECURITY: Configuration de base avec carte OBLIGATOIRE
     // Même pour les trials, Stripe capture les infos de carte sans charger
@@ -326,10 +341,21 @@ serve(async (req) => {
       cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
       billing_address_collection: 'required',
       // CRITICAL: Toujours collecter le moyen de paiement
-      payment_method_collection: 'always',
-      // Permettre les codes promo manuels
-      allow_promotion_codes: true
+      payment_method_collection: 'always'
     };
+    
+    // Apply discount coupon if applicable
+    // NOTE: Cannot use both allow_promotion_codes AND discounts - must choose one
+    if (discountCoupon) {
+      sessionConfig.discounts = [{
+        coupon: discountCoupon
+      }];
+      console.log('🎫 Auto-applying discount, promotion codes disabled');
+    } else {
+      // Allow manual promotion codes if no auto-discount or if explicitly requested
+      sessionConfig.allow_promotion_codes = true;
+      console.log('🎫 Manual promotion codes enabled');
+    }
 
     // Les prix annuels dans la base de données sont déjà réduits de 20%
     if (billing_period === 'yearly') {
