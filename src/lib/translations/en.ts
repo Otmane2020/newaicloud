@@ -3963,7 +3963,7 @@ export const translations = {
     sitemaps: "Sitemaps",
     articles: "Articles",
     title: "Google Search Console",
-    description: "Connect your account and analyze your site's performance",
+    description: "Connect your account and analyze your site performance",
     selectDomain: "Select a domain in the Integration tab",
     insightsData: {
       loading: "Loading data...",
@@ -3976,7 +3976,7 @@ export const translations = {
       days90: "Last 90 days",
       analyzeAnomalies: "Analyze anomalies",
       settings: "Settings",
-      alerts: "Alerts detected",
+      alerts: "Detected alerts",
       severity: {
         critical: "Critical",
         high: "High",
@@ -3989,8 +3989,8 @@ export const translations = {
       metrics: {
         totalClicks: "Total clicks",
         totalImpressions: "Impressions",
-        avgCtr: "Avg CTR",
-        avgPosition: "Avg position",
+        avgCtr: "Average CTR",
+        avgPosition: "Average position",
       },
       syncSettings: {
         title: "Automatic sync settings",
@@ -4020,6 +4020,20 @@ export const translations = {
     },
   },
 
+  // Google Search Console (alias for googleConsole)
+  googleSearchConsole: {
+    dateRange: {
+      last7Days: "Last 7 days",
+      last30Days: "Last 30 days",
+      last90Days: "Last 90 days"
+    },
+    domain: {
+      selectPlaceholder: "Select a domain",
+      verified: "Verified",
+      add: "Add domain"
+    }
+  },
+
   // Dialogs
   dialogs: {
     upgrade: {
@@ -4031,6 +4045,24 @@ export const translations = {
       selectPlan: "Select a plan",
       activateThisPlan: "Activate this plan",
       loading: "Loading...",
+      activateMyPlan: "Activate My Plan",
+      later: "Maybe Later",
+      unlockFeatures: "Unlock all features with a paid plan",
+      starter: {
+        title: "Starter Plan",
+        price: "$9.99",
+        perMonth: "/month",
+        features: {
+          products: "1000 products",
+          optimizations: "100 SEO optimizations/month",
+          articles: "10 AI articles/month",
+          searches: "100 AI searches/month",
+          chatResponses: "50 chat responses/month",
+          stores: "1 Shopify store",
+          automation: "SEO automation",
+          support: "Priority support",
+        },
+      },
     },
     autoSync: {
       title: "Automatic Sync",
@@ -4320,6 +4352,254 @@ export const translations = {
       later: "Maybe Later",
       unlockFeatures: "Unlock all features with a paid plan",
     },
+  },
+
+  // Banners
+  banners: {
+    limitWarning: {
+      monthlyLimitReached: "Monthly limit reached",
+      limitReached: "Limit reached: {{limitTypes}}",
+      approaching: "Approaching usage limit",
+      limitLabels: {
+        optimizations: "SEO Optimizations",
+        chat: "Chat Responses",
+      },
+      loading: "Loading...",
+      upgradeNow: "Upgrade Now",
+      activateNow: "Activate Now",
+      viewPlans: "View Plans",
+    },
+  },
+
+  // Chat Tabs & Settings
+  chatTabs: {
+    general: "General",
+    responses: "Responses",
+    embed: "Embed"
+  },
+  chatSettings: {
+    settingsSaved: "Settings saved successfully",
+    saveError: "Error saving settings",
+    commercialWelcome: "Enable chat widget"
+  },
+
+  // Onboarding Tour
+  onboardingTour: {
+    steps: {
+      connectShopify: {
+        title: "Connect your Shopify store",
+        description: "Connect your store to start optimizing",
+        action: "Connect Store",
+      },
+      optimizeProduct: {
+        title: "Optimize your first product",
+        description: "Generate SEO-optimized content for a product",
+        action: "Optimize Product",
+      },
+      createArticle: {
+        title: "Create your first article",
+        description: "Generate an AI-powered blog article",
+        action: "Create Article",
+      },
+      enableAutoOptimizations: {
+        title: "Enable auto-optimizations",
+        description: "Set up automatic SEO optimizations",
+        action: "Enable Automation",
+      },
+      viewStatistics: {
+        title: "View your statistics",
+        description: "Check your SEO performance metrics",
+        action: "View Stats",
+      },
+    },
+  },
+
+  // Wizards
+  wizards: {
+    blog: {
+      title: "Article Wizard",
+      loadingError: "Error loading wizard",
+      productsLoadingError: "Error loading products",
+      steps: {
+        topic: "Topic",
+        products: "Products",
+        keywords: "Keywords",
+        design: "Design",
+        generate: "Generate"
+      },
+      descriptions: {
+        topic: "Choose your article topic",
+        products: "Select related products",
+        keywords: "Define target keywords",
+        design: "Configure visual design",
+        generate: "Generate your article"
+      },
+      design: {
+        visualStyle: {
+          title: "Visual Style",
+          minimal: "Minimal",
+          modern: "Modern",
+          elegant: "Elegant",
+          bold: "Bold",
+          artistic: "Artistic",
+          descriptions: {
+            minimal: "Clean and simple design",
+            modern: "Contemporary and fresh",
+            elegant: "Sophisticated and refined",
+            bold: "Strong and impactful",
+            artistic: "Creative and unique"
+          }
+        },
+        layout: {
+          title: "Layout",
+          single_column: "Single Column",
+          two_column: "Two Columns",
+          magazine: "Magazine",
+          grid: "Grid",
+          descriptions: {
+            single_column: "Traditional blog layout",
+            two_column: "Content with sidebar",
+            magazine: "Editorial style",
+            grid: "Card-based layout"
+          }
+        },
+        colorPalette: {
+          title: "Color Palette",
+          custom: "Custom",
+          selected: "Selected",
+          palettes: {
+            blue: "Blue",
+            green: "Green",
+            purple: "Purple",
+            red: "Red",
+            orange: "Orange",
+            pink: "Pink"
+          }
+        },
+        advanced: {
+          title: "Advanced Options"
+        },
+        typography: {
+          title: "Typography"
+        },
+        productDisplay: {
+          title: "Product Display",
+          grid: "Grid",
+          list: "List",
+          carousel: "Carousel"
+        },
+        imageIntensity: {
+          title: "Image Intensity",
+          high: "High - Many images",
+          medium: "Medium - Balanced",
+          low: "Low - Minimal"
+        },
+        toc: {
+          title: "Table of Contents",
+          description: "Add navigation for long articles",
+          enabled: "Enabled",
+          disabled: "Disabled"
+        }
+      }
+    },
+    shopify: {
+      fillAllFields: "Please fill all fields",
+      mustBeConnected: "You must be logged in",
+      manualConnectionError: "Connection error",
+      storeLimit: "Store limit reached",
+      storeLimitDescription: "You've reached your plan limit for Shopify stores",
+      storeAlreadyConnected: "This store is already connected",
+      invalidCredentials: "Invalid credentials. Please check your API key and secret."
+    }
+  },
+
+  // Homepage Audit
+  homepageAudit: {
+    title: "Homepage SEO Audit",
+    subtitle: "Comprehensive SEO analysis of your homepage",
+    generateTitle: "Generate SEO Analysis",
+    generateDescription: "Analyzing your homepage...",
+    generating: "Generating analysis...",
+    toasts: {
+      auditLoaded: "Audit loaded",
+      auditLoadedDesc: "Previous audit data loaded successfully",
+      connectShopify: "Please connect your Shopify store first",
+      currentSeoImported: "Current SEO imported",
+      importError: "Error importing SEO data",
+      syncSuccess: "Successfully synced with Shopify",
+      syncError: "Error syncing with Shopify",
+      generatingError: "Error generating analysis",
+      fillAllFields: "Please fill in both title and description",
+      syncVerified: "SEO synced and verified",
+      syncVerifiedDesc: "Your changes are live on Shopify",
+      syncWarning: "Sync completed with warnings",
+      syncWarningDesc: "Some fields may need manual verification",
+      permissionDenied: "Permission denied",
+      permissionDeniedDesc: "You don't have permission to update the homepage SEO"
+    },
+    scoreLabels: {
+      excellent: "Excellent",
+      good: "Good",
+      average: "Average",
+      needsImprovement: "Needs Improvement"
+    },
+    features: {
+      completeAnalysis: "Complete analysis",
+      aiRecommendations: "AI recommendations",
+      instantSync: "Instant sync",
+      autoOptimization: "Auto-optimization",
+      scoreBreakdown: "Score breakdown",
+      aiOptimization: "AI optimization",
+      shopifySync: "Shopify sync"
+    },
+    buttons: {
+      analyzing: "Analyzing...",
+      analyzeHomepage: "Analyze Homepage",
+      syncing: "Syncing..."
+    },
+    sections: {
+      overallScore: "Overall SEO Score",
+      structure: "Structure",
+      content: "Content",
+      technical: "Technical",
+      bonus: "Bonus",
+      detailedAnalysis: "Detailed Analysis",
+      aiRecommendations: "AI Recommendations",
+      personalizedSuggestions: "Personalized suggestions to improve your SEO",
+      quickActions: "Quick Actions",
+      seoOptimization: "SEO Optimization",
+      importOptimizeSync: "Import, Optimize & Sync",
+      importBeforeOptimize: "Import current SEO before optimizing"
+    },
+    elements: {
+      titleTag: "Title Tag",
+      metaDescription: "Meta Description",
+      h1Tag: "H1 Tag",
+      h2Tags: "H2 Tags",
+      imageAltTexts: "Image ALT Texts",
+      canonicalTag: "Canonical Tag",
+      schemaMarkup: "Schema Markup",
+      openGraphTags: "Open Graph Tags",
+      twitterCard: "Twitter Card",
+      internalLinks: "Internal Links",
+      contentLength: "Content Length",
+      https: "HTTPS",
+      seoTitle: "SEO Title",
+      seoDescription: "SEO Description",
+      characters: "characters",
+      missing: "Missing",
+      present: "Present",
+      found: "found",
+      imagesWithAlt: "images with ALT",
+      enabled: "Enabled",
+      disabled: "Disabled",
+      detected: "Detected",
+      storeMetadata: "Store Metadata",
+      shopifyEditor: "Shopify Editor",
+      configureMetadata: "Configure Metadata",
+      importOrGenerate: "Import or Generate",
+      analyzedOn: "Analyzed on"
+    }
   },
 
   // Media History
@@ -4787,16 +5067,20 @@ export const translations = {
     },
   },
 
+  // Chat Tabs & Settings
   chatTabs: {
     chat: "Smart AI Chat",
     orders: "Orders",
     learning: "Learning",
+    general: "General",
+    responses: "Responses",
+    embed: "Embed",
     ordersManagement: {
       title: "Orders Management",
       description: "Manage customer orders via AI assistant",
       comingSoon: "Coming Soon",
       comingSoonDesc: "This feature will be available soon to help you manage customer orders directly via AI chat.",
-    },
+    }
   },
 
   subscription: {
