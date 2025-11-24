@@ -156,7 +156,7 @@ export function SeoAuditDashboard() {
         },
         images: {
           total: images.length,
-          optimized: images.filter((img) => img.alt_text && img.alt_text.length > 0).length,
+          optimized: images.filter((img) => (img.optimization_count || 0) > 0).length,
           score: calculateImagesSeoScore(images)
         },
         tags: {
