@@ -7,6 +7,7 @@ import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrat
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 import { UsageWidget } from '@/components/dashboard/UsageWidget';
+import { UsageReferenceTable } from '@/components/dashboard/UsageReferenceTable';
 
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -102,6 +103,7 @@ export default function Account() {
             <div className="bg-white rounded-lg border p-4 md:p-6">
               <UsageLimits />
             </div>
+            <UsageReferenceTable />
           </div>
         </TabsContent>
 
