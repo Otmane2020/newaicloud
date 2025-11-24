@@ -1263,7 +1263,12 @@ serve(async (req) => {
 
     // --- Prompt bilingual ---
     const imgs = productImages.length
-      ? productImages.map((i) => `- ${i.src}`).join("\n")
+      ? productImages.map((i, idx) => {
+          // Find matching vision analysis for this image
+          const visionAnalysis = imageAnalyses.find(a => a.imageUrl === i.src);
+          const description = visionAnalysis?.description || (detectedLanguage === "en" ? "Product detail" : "Détail produit");
+          return `- Image ${idx + 1}: ${i.src}\n  Description: ${description}`;
+        }).join("\n")
       : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
@@ -1948,6 +1953,17 @@ ${dimensionImages.length > 0
 5. Technical Dimensions (MANDATORY - use dimension schematics with measurements)${variants.length > 1 ? '\n6. Product Variations (MANDATORY - show all variants with cards)' : ''}
 7. Materials & Composition (if available)
 8. Product Image Gallery (regular product photos only, NOT dimension schematics)
+   🚨 CRITICAL: Each image MUST have a descriptive title based on what is visible:
+   - Analyze what each image shows (front view, detail, in context, feature close-up, etc.)
+   - Generate a clear, descriptive title for each image in the gallery section
+   - Place the title BELOW each image
+   - Example structure:
+     <div class="space-y-2">
+       <div class="rounded-xl overflow-hidden shadow-lg">
+         <img src="..." loading="lazy" class="w-full h-full object-cover" alt="...">
+       </div>
+       <p class="text-sm font-medium text-center" style="color: hsl(${designTokens.text})">[Descriptive title based on image content]</p>
+     </div>
 9. Care Instructions
 10. FAQ`
   : `1. Hero with image gallery
@@ -1956,6 +1972,17 @@ ${dimensionImages.length > 0
 4. Technical Specifications (if enriched data available)${variants.length > 1 ? '\n5. Product Variations (MANDATORY - show all variants with cards)' : ''}
 6. Materials & Composition (if available)
 7. Image Gallery
+   🚨 CRITICAL: Each image MUST have a descriptive title based on what is visible:
+   - Analyze what each image shows (front view, detail, in context, feature close-up, etc.)
+   - Generate a clear, descriptive title for each image in the gallery section
+   - Place the title BELOW each image
+   - Example structure:
+     <div class="space-y-2">
+       <div class="rounded-xl overflow-hidden shadow-lg">
+         <img src="..." loading="lazy" class="w-full h-full object-cover" alt="...">
+       </div>
+       <p class="text-sm font-medium text-center" style="color: hsl(${designTokens.text})">[Descriptive title based on image content]</p>
+     </div>
 8. Care Instructions
 9. FAQ`
 }
@@ -2596,6 +2623,20 @@ UTILISATION DES ICÔNES :
         console.error("❌ Update error:", updateError);
       } else {
         console.log("✅ Landing page updated successfully in shopify_products");
+        
+        // 📊 Track usage - 1 landing page generation = 1 optimization
+        try {
+          console.log("📊 Tracking usage for landing page generation...");
+          await supabaseAdmin.rpc('increment_usage', {
+            p_seller_id: userId,
+            p_field: 'optimizations_count',
+            p_increment: 1
+          });
+          console.log("✅ Usage tracked successfully");
+        } catch (usageError) {
+          console.error("⚠️ Failed to track usage (non-blocking):", usageError);
+          // Non-blocking - don't fail the request
+        }
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
