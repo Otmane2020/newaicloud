@@ -137,6 +137,15 @@ async function deepseekText(prompt: string, apiKey: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -145,8 +154,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const body = await req.json();
-    const { productId, language = "fr" } = body;
+    const { productId, language = "fr" } = bodyCheck;
 
     if (!productId) throw new Error("Product ID required");
 

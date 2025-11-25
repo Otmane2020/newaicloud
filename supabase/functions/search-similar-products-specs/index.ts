@@ -43,8 +43,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
-    const { productTitle, imageUrl, productType }: SearchRequest = await req.json();
+    const { productTitle, imageUrl, productType }: SearchRequest = body;
 
     if (!productTitle) {
       throw new Error("productTitle is required");

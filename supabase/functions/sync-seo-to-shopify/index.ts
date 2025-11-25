@@ -67,6 +67,15 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
@@ -102,7 +111,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force }: SyncRequest = await req.json();
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {

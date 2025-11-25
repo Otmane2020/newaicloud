@@ -11,6 +11,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
+
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
   
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -40,10 +49,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.json();
-    console.log("📥 Received request body:", JSON.stringify(body));
-    
-    const { article_ids } = body;
+    const { article_ids } = bodyCheck;
 
     if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
       return new Response(JSON.stringify({ error: "article_ids array is required" }), {

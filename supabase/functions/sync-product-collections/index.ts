@@ -10,6 +10,15 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -31,9 +40,8 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 [SYNC-COLLECTIONS] Function invoked for user ${user.id}`);
 
-    // Récupérer le storeId depuis le body de la requête
-    const requestBody = await req.json().catch(() => ({}));
-    let storeId = requestBody.storeId;
+    // Use bodyCheck from earlier
+    let storeId = bodyCheck.storeId;
 
     if (!storeId) {
       // Fallback: chercher la connexion active si storeId non fourni (backward compatibility)

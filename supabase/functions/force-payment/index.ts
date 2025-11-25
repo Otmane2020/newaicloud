@@ -12,6 +12,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
@@ -31,10 +40,9 @@ serve(async (req) => {
 
     console.log('✅ User authenticated:', user.id);
 
-    // Parse request body to get optional plan_id and billing_period
-    const body = await req.json().catch(() => ({}));
-    const requestedPlanId = body.plan_id;
-    const requestedBillingPeriod = body.billing_period || 'monthly';
+    // Use bodyCheck from earlier
+    const requestedPlanId = bodyCheck.plan_id;
+    const requestedBillingPeriod = bodyCheck.billing_period || 'monthly';
 
     console.log('📋 Request params:', { requestedPlanId, requestedBillingPeriod });
 
