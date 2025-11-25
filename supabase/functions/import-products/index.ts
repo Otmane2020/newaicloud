@@ -77,6 +77,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   let importJob: any = null;
 
   try {

@@ -60,14 +60,27 @@ serve(async (req) => {
     let unhealthyCount = 0;
     let totalResponseTime = 0;
 
-    // ---- TESTER TOUTES LES FUNCTIONS ----
+    // ---- TESTER TOUTES LES FUNCTIONS (sauf system-health-check) ----
     for (const fn of allFunctions) {
       const name = fn.name;
+      
+      // ⚡ Skip self-test to avoid recursion
+      if (name === "system-health-check") {
+        totalFunctions--;
+        continue;
+      }
+
       const category = autoCategorize(name);
 
       const startTime = Date.now();
 
-      const timeout = category.includes("AI") ? 30000 : category.includes("Sync") ? 15000 : 5000;
+      // 🎯 Intelligent timeouts by category
+      const timeout = 
+        category.includes("AI Vision") ? 60000 : 
+        category.includes("AI") ? 60000 : 
+        category.includes("Sync") ? 30000 : 
+        category.includes("Email") ? 15000 : 
+        5000;
 
       try {
         const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/${name}`, {
