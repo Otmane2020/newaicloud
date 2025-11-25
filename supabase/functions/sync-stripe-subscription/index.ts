@@ -1,15 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@14.21.0';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import Stripe from 'https://esm.sh/stripe@18.5.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const log = (step: string, details?: any) => console.log(`[SYNC-STRIPE] ${step}`, details ?? "");
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
   try {
@@ -17,9 +24,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-08-27.basil',
     });
 
     const authHeader = req.headers.get('Authorization')!;
@@ -30,13 +37,13 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    const { customerId } = await req.json();
+    const { customerId } = body;
 
     if (!customerId) {
       throw new Error('Customer ID is required');
     }
 
-    console.log('[sync-stripe-subscription] Checking Stripe for customer:', customerId);
+    log('Checking Stripe customer', { customerId, userId: user.id });
 
     // Récupérer les souscriptions actives de Stripe
     const subscriptions = await stripe.subscriptions.list({
@@ -45,9 +52,10 @@ serve(async (req) => {
       limit: 1,
     });
 
-    console.log('[sync-stripe-subscription] Found', subscriptions.data.length, 'active subscriptions');
+    log('Found subscriptions', { count: subscriptions.data.length });
 
     if (subscriptions.data.length === 0) {
+      log('No active subscriptions');
       return new Response(
         JSON.stringify({ hasActiveSubscription: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,18 +73,18 @@ serve(async (req) => {
       .single();
 
     if (!plan) {
-      console.warn('[sync-stripe-subscription] No matching plan found for price ID:', priceId);
+      log('No matching plan', { priceId });
       return new Response(
         JSON.stringify({ hasActiveSubscription: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Synchroniser la souscription dans notre DB
+    // Synchroniser la souscription dans notre DB (CRITICAL: use seller_id)
     const { error: upsertError } = await supabase
       .from('subscriptions')
       .upsert({
-        user_id: user.id,
+        seller_id: user.id,
         stripe_subscription_id: activeSubscription.id,
         stripe_customer_id: customerId,
         status: activeSubscription.status,
@@ -84,15 +92,15 @@ serve(async (req) => {
         current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
         plan_id: plan.id,
       }, {
-        onConflict: 'user_id'
+        onConflict: 'seller_id'
       });
 
     if (upsertError) {
-      console.error('[sync-stripe-subscription] Error upserting subscription:', upsertError);
+      log('ERROR upserting', upsertError);
       throw upsertError;
     }
 
-    console.log('[sync-stripe-subscription] ✅ Subscription synced successfully');
+    log('✅ Synced successfully', { subscriptionId: activeSubscription.id, planId: plan.id });
 
     return new Response(
       JSON.stringify({ 
@@ -104,9 +112,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[sync-stripe-subscription] Error:', error);
+    log('ERROR', error.message ?? String(error));
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message ?? String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

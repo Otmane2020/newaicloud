@@ -14,6 +14,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
   try {
     log("START");
 
@@ -37,7 +42,7 @@ serve(async (req) => {
     const userId = userData.user.id;
 
     // Body
-    const { new_price_id } = await req.json();
+    const { new_price_id } = body;
     if (!new_price_id) throw new Error("new_price_id is required");
 
     // Get subscription
@@ -94,11 +99,16 @@ serve(async (req) => {
 
     const updatedSub = await stripe.subscriptions.update(sub.stripe_subscription_id, updatePayload);
 
-    // Retrieve invoice
-    const invoiceId =
+    // Retrieve invoice (with fallback)
+    let invoiceId =
       typeof updatedSub.latest_invoice === "string" ? updatedSub.latest_invoice : updatedSub.latest_invoice?.id;
 
-    if (!invoiceId) throw new Error("Invoice not created");
+    if (!invoiceId) {
+      log("No latest_invoice, using fallback");
+      const invoices = await stripe.invoices.list({ subscription: sub.stripe_subscription_id, limit: 1 });
+      if (!invoices.data?.[0]) throw new Error("Invoice not created by Stripe");
+      invoiceId = invoices.data[0].id;
+    }
 
     const invoice = await stripe.invoices.retrieve(invoiceId);
 
@@ -119,9 +129,15 @@ serve(async (req) => {
       );
     }
 
-    // Payment URL
+    // Payment URL (handle null hosted_invoice_url)
     const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`;
-    const paymentUrl = invoice.hosted_invoice_url + `?return_url=${encodeURIComponent(origin + "/upgrade-success")}`;
+    const paymentUrl = invoice.hosted_invoice_url 
+      ? invoice.hosted_invoice_url + `?return_url=${encodeURIComponent(origin + "/upgrade-success")}`
+      : null;
+
+    if (!paymentUrl) {
+      log("WARN: No hosted_invoice_url", { invoiceId: invoice.id });
+    }
 
     return new Response(
       JSON.stringify({
@@ -130,6 +146,7 @@ serve(async (req) => {
         payment_url: paymentUrl,
         amount_due: invoice.amount_due / 100,
         currency: invoice.currency,
+        invoice_id: invoice.id,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
