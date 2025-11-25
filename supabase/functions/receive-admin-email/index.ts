@@ -185,6 +185,82 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("  - Body length:", cleanBody.length);
     console.log("  - Attachments:", attachments.length);
 
+    // Envoyer automatiquement une copie à oben.rockman@gmail.com
+    console.log("📧 Envoi d'une copie à oben.rockman@gmail.com...");
+    try {
+      const forwardResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "NewAI Support <support@newai.sale>",
+          to: ["oben.rockman@gmail.com"],
+          subject: `[Copie] ${subject || 'Sans objet'}`,
+          html: `
+            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 14px; color: #64748b;">
+                  <strong>Copie automatique d'un email reçu sur support@newai.sale</strong>
+                </p>
+              </div>
+              
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <table style="width: 100%; font-size: 14px;">
+                  <tr>
+                    <td style="color: #64748b; padding: 4px 0; width: 80px;"><strong>De:</strong></td>
+                    <td style="color: #1e293b; padding: 4px 0;">${from}</td>
+                  </tr>
+                  <tr>
+                    <td style="color: #64748b; padding: 4px 0;"><strong>À:</strong></td>
+                    <td style="color: #1e293b; padding: 4px 0;">${Array.isArray(to) ? to[0] : to}</td>
+                  </tr>
+                  <tr>
+                    <td style="color: #64748b; padding: 4px 0;"><strong>Sujet:</strong></td>
+                    <td style="color: #1e293b; padding: 4px 0;">${subject || 'Sans objet'}</td>
+                  </tr>
+                  ${attachments.length > 0 ? `
+                  <tr>
+                    <td style="color: #64748b; padding: 4px 0;"><strong>PJ:</strong></td>
+                    <td style="color: #1e293b; padding: 4px 0;">${attachments.length} pièce(s) jointe(s)</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+              
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white;">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #1e293b;">Message:</h3>
+                ${emailHtml || `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${cleanBody || emailText}</pre>`}
+              </div>
+              
+              ${attachments.length > 0 ? `
+              <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;">
+                <p style="margin: 0; font-size: 14px; color: #92400e;">
+                  ⚠️ Cet email contient ${attachments.length} pièce(s) jointe(s). Consultez la plateforme NewAI pour y accéder.
+                </p>
+              </div>
+              ` : ''}
+              
+              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+                Email reçu le ${new Date().toLocaleString('fr-FR')} • ID: ${email_id}
+              </div>
+            </div>
+          `,
+        }),
+      });
+
+      if (forwardResponse.ok) {
+        console.log("✅ Copie envoyée à oben.rockman@gmail.com");
+      } else {
+        const errorText = await forwardResponse.text();
+        console.error("❌ Erreur lors de l'envoi de la copie:", errorText);
+      }
+    } catch (forwardError: any) {
+      console.error("❌ Erreur lors de l'envoi de la copie:", forwardError.message);
+      // Continue même si l'envoi de la copie échoue
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       message: 'Email reçu et enregistré',
