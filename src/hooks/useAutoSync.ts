@@ -18,6 +18,7 @@ export const useAutoSync = (userId: string | undefined) => {
 
   useEffect(() => {
     if (!userId) return;
+    let isMounted = true;
 
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
 
@@ -44,12 +45,14 @@ export const useAutoSync = (userId: string | undefined) => {
             clearInterval(syncCheckIntervalRef.current);
             syncCheckIntervalRef.current = null;
           }
-          endSync();
-          
-          if (latestSync.status === 'success') {
-            toast.success('Synchronisation terminée', {
-              description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-            });
+          if (isMounted) {
+            endSync();
+            
+            if (latestSync.status === 'success') {
+              toast.success('Synchronisation terminée', {
+                description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+              });
+            }
           }
         }
       };
@@ -64,7 +67,9 @@ export const useAutoSync = (userId: string | undefined) => {
           clearInterval(syncCheckIntervalRef.current);
           syncCheckIntervalRef.current = null;
         }
-        endSync();
+        if (isMounted) {
+          endSync();
+        }
       }, FAILSAFE_MS);
     }
 
@@ -80,6 +85,8 @@ export const useAutoSync = (userId: string | undefined) => {
           filter: `user_id=eq.${userId}`,
         },
         async (payload) => {
+          if (!isMounted) return;
+          
           console.log('🆕 [AutoSync] Shopify connection event:', payload.eventType, payload.new);
           
           const connection = payload.new as any;
@@ -129,12 +136,14 @@ export const useAutoSync = (userId: string | undefined) => {
                 clearInterval(syncCheckIntervalRef.current);
                 syncCheckIntervalRef.current = null;
               }
-              endSync();
-              
-              if (latestSync.status === 'success') {
-                toast.success('Synchronisation terminée', {
-                  description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-                });
+              if (isMounted) {
+                endSync();
+                
+                if (latestSync.status === 'success') {
+                  toast.success('Synchronisation terminée', {
+                    description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+                  });
+                }
               }
             }
           };
@@ -149,17 +158,27 @@ export const useAutoSync = (userId: string | undefined) => {
               clearInterval(syncCheckIntervalRef.current);
               syncCheckIntervalRef.current = null;
             }
-            endSync();
+            if (isMounted) {
+              endSync();
+            }
           }, FAILSAFE_MS);
         }
       )
       .subscribe((status) => {
-        console.log('🔴 [AutoSync] Subscription status:', status);
+        if (isMounted) {
+          console.log('🔴 [AutoSync] Subscription status:', status);
+        }
       });
 
     return () => {
+      isMounted = false;
       console.log('⏹️ [AutoSync] Unsubscribing from connection changes');
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        // Ignore cleanup errors during rapid navigation
+        console.warn('[AutoSync] Cleanup warning:', e);
+      }
       if (syncCheckIntervalRef.current) {
         clearInterval(syncCheckIntervalRef.current);
         syncCheckIntervalRef.current = null;

@@ -72,6 +72,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('❌ [STORE_CONTEXT] Error loading stores:', error);
+      // Only update state if component is still mounted
       setStores([]);
       setSelectedStore(null);
     } finally {
@@ -80,6 +81,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   useEffect(() => {
+    let isMounted = true;
     loadStores();
 
     if (!user?.id) return;
@@ -97,17 +99,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('🔄 [STORE_CONTEXT] Shopify connection changed:', payload);
-          loadStores();
+          if (isMounted) {
+            console.log('🔄 [STORE_CONTEXT] Shopify connection changed:', payload);
+            loadStores();
+          }
         }
       )
       .subscribe((status) => {
-        console.log('🔴 [STORE_CONTEXT] Realtime subscription status:', status);
+        if (isMounted) {
+          console.log('🔴 [STORE_CONTEXT] Realtime subscription status:', status);
+        }
       });
 
     return () => {
+      isMounted = false;
       console.log('⏹️ [STORE_CONTEXT] Unsubscribing from shopify connections');
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        // Ignore cleanup errors during rapid navigation
+        console.warn('[STORE_CONTEXT] Cleanup warning:', e);
+      }
     };
   }, [user?.id, loadStores]);
 
