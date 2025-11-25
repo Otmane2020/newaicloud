@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, AlertTriangle } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
+import { ShopifyThemeGuide } from "@/components/shopify/ShopifyThemeGuide";
 
 interface LandingPagePreviewDialogProps {
   open: boolean;
@@ -36,10 +38,77 @@ export function LandingPagePreviewDialog({
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [showThemeGuide, setShowThemeGuide] = useState(false);
+  const [themeCssAdded, setThemeCssAdded] = useState(false);
+  const [viewShopifyMode, setViewShopifyMode] = useState(false);
+
+  // Check if user has added Shopify theme CSS
+  useEffect(() => {
+    checkThemeCssStatus();
+  }, []);
+
+  const checkThemeCssStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('shopify_theme_css_added')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data?.shopify_theme_css_added) {
+          setThemeCssAdded(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking theme CSS status:", error);
+    }
+  };
+
+  // Add Shopify CSS to preview
+  const SHOPIFY_FULLWIDTH_CSS = `
+    .product__info-wrapper,
+    .product__description,
+    .product__description * {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .product__info-container {
+        display: block !important;
+    }
+    .product__media-wrapper,
+    .product__media {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    @media(min-width: 768px) {
+      .product--large .product__outer {
+          grid-template-columns: 1fr !important;
+      }
+    }
+  `;
+
+  const getPreviewHtml = () => {
+    if (!currentLandingPage) return "";
+    
+    // If Shopify mode is enabled, wrap with the CSS
+    if (viewShopifyMode) {
+      return `<style>${SHOPIFY_FULLWIDTH_CSS}</style><div class="landing-full-width">${currentLandingPage}</div>`;
+    }
+    
+    return currentLandingPage;
+  };
 
   // Sync to Shopify mutation
   const syncMutation = useMutation({
     mutationFn: async (htmlContent: string) => {
+      // Check if theme CSS has been added before syncing
+      if (!themeCssAdded) {
+        setShowThemeGuide(true);
+        throw new Error("Theme CSS not configured");
+      }
+      
       setIsSyncing(true);
       const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
@@ -60,9 +129,11 @@ export function LandingPagePreviewDialog({
       }
       setIsSyncing(false);
     },
-    onError: (error) => {
-      console.error("Sync error:", error);
-      toast.error("Erreur lors de la synchronisation");
+    onError: (error: any) => {
+      if (error.message !== "Theme CSS not configured") {
+        console.error("Sync error:", error);
+        toast.error("Erreur lors de la synchronisation");
+      }
       setIsSyncing(false);
     },
   });
@@ -104,6 +175,20 @@ export function LandingPagePreviewDialog({
                     </TooltipTrigger>
                     <TooltipContent>{viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}</TooltipContent>
                   </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={viewShopifyMode ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setViewShopifyMode(!viewShopifyMode)}
+                      >
+                        {viewShopifyMode ? "Vue Shopify" : "Vue brute"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {viewShopifyMode ? "Voir sans CSS Shopify" : "Simuler rendu Shopify"}
+                    </TooltipContent>
+                  </Tooltip>
                 </TooltipProvider>
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
                   Télécharger HTML
@@ -138,11 +223,27 @@ export function LandingPagePreviewDialog({
           )}
         </DialogHeader>
 
+        {!themeCssAdded && currentLandingPage && (
+          <Alert className="mx-6 border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800 text-sm">
+              <strong>Configuration requise:</strong> Pour que vos landing pages s'affichent correctement sur Shopify, 
+              vous devez ajouter un CSS personnalisé à votre thème.{" "}
+              <button 
+                onClick={() => setShowThemeGuide(true)}
+                className="underline font-semibold hover:text-orange-900"
+              >
+                Voir le guide
+              </button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
           {currentLandingPage ? (
             <div className="relative w-full h-full flex items-center justify-center">
               <iframe
-                srcDoc={currentLandingPage}
+                srcDoc={getPreviewHtml()}
                 className={`h-full border-0 transition-all duration-300 ${
                   viewMode === "mobile" ? "w-[375px] border-2 border-border rounded-lg shadow-xl" : "w-full"
                 }`}
@@ -190,6 +291,15 @@ export function LandingPagePreviewDialog({
             </div>
           )}
         </div>
+
+        <ShopifyThemeGuide
+          open={showThemeGuide}
+          onOpenChange={setShowThemeGuide}
+          onConfirm={() => {
+            setThemeCssAdded(true);
+            setShowThemeGuide(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
