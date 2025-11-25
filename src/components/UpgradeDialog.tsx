@@ -254,16 +254,14 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
           if (error) throw error;
 
-          const upgradeDetails = data?.upgrade_details;
-          if (upgradeDetails?.proration) {
-            const prorata = upgradeDetails.proration;
-            toast.success(
-              `✅ ${t.dialogs.upgrade.planUpgraded}\n` +
-              `💰 Montant prélevé: ${prorata.prorated_amount} ${prorata.currency}\n` +
-              `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+          // Handle new response format with payment info
+          if (data?.payment?.required && data?.payment?.invoiceUrl) {
+            window.open(data.payment.invoiceUrl, '_blank');
+            toast.info(
+              "Veuillez finaliser le paiement pour activer votre nouveau plan.",
               { duration: 6000 }
             );
-          } else {
+          } else if (data?.success) {
             toast.success(`✅ ${t.dialogs.upgrade.planUpgraded}`, { duration: 5000 });
           }
 
@@ -293,11 +291,23 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
         if (error) throw error;
 
-        const upgradeDetails = data?.upgrade_details;
-        if (upgradeDetails?.proration_applied) {
-          toast.success(tf('dialogs.upgrade.planUpgradedWithProration', { days: upgradeDetails.days_into_cycle }), { duration: 6000 });
-        } else {
-          toast.success(t.dialogs.upgrade.planUpgradedNoProration, { duration: 5000 });
+        // Handle new response format with payment info
+        if (data?.payment?.required && data?.payment?.invoiceUrl) {
+          window.open(data.payment.invoiceUrl, '_blank');
+          toast.info(
+            "Veuillez finaliser le paiement pour activer votre nouveau plan.",
+            { duration: 6000 }
+          );
+        } else if (data?.success) {
+          const upgradeInfo = data?.upgrade;
+          if (upgradeInfo?.daysIntoCycle > 3) {
+            toast.success(
+              `✅ Plan upgradé ! Nouveau cycle commence maintenant.`,
+              { duration: 6000 }
+            );
+          } else {
+            toast.success(t.dialogs.upgrade.planUpgraded, { duration: 5000 });
+          }
         }
         if (onUpgradeComplete) onUpgradeComplete();
         onOpenChange(false);

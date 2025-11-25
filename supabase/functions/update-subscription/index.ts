@@ -357,28 +357,30 @@ serve(async (req) => {
     const subscriptionItemId = stripeSubscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
-    // Update subscription WITH automatic proration
+    // Update subscription WITH automatic proration and immediate billing cycle reset
     const updatedSubscription = await stripe.subscriptions.update(
       subscriptionData.stripe_subscription_id,
       {
+        billing_cycle_anchor: 'now',           // ✅ Repart sur un cycle propre
+        proration_behavior: 'always_invoice',   // ✅ Calcule le prorata complet
+        payment_behavior: 'default_incomplete', // ✅ Génère facture payable immédiatement
         items: [
           {
             id: subscriptionItemId,
             price: new_price_id,
+            quantity: 1,                        // ✅ Explicite pour remplacement correct
           },
         ],
-        // Stripe automatically creates, finalizes, and charges the proration invoice
-        proration_behavior: 'always_invoice',
-        billing_cycle_anchor: 'unchanged',
       }
     );
 
-    logStep("✅ Subscription updated in Stripe with automatic proration", {
+    logStep("✅ Subscription updated with billing_cycle_anchor: now", {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status,
+      newBillingCycleAnchor: updatedSubscription.billing_cycle_anchor,
       prorationBehavior: 'always_invoice',
+      paymentBehavior: 'default_incomplete',
       latestInvoice: updatedSubscription.latest_invoice,
-      periodPreserved: true
     });
 
     // Update profile with new plan
@@ -445,59 +447,53 @@ serve(async (req) => {
     // Retrieve the automatically generated proration invoice from Stripe
     let prorationDetails: any = null;
 
-    if (isMidCycleUpgrade) {
-      const latestInvoiceId = updatedSubscription.latest_invoice;
-      
-      if (latestInvoiceId && typeof latestInvoiceId === 'string') {
-        try {
-          const invoice = await stripe.invoices.retrieve(latestInvoiceId);
-          const daysRemaining = totalCycleDays - daysIntoCycle;
-          
-          prorationDetails = {
-            amount_due: (invoice.amount_due || 0) / 100,
-            currency: invoice.currency?.toUpperCase(),
-            invoice_id: invoice.id,
-            invoice_url: invoice.hosted_invoice_url,
-            invoice_pdf: invoice.invoice_pdf,
-            status: invoice.status,
-            paid: invoice.paid,
-            days_remaining: daysRemaining,
-            total_cycle_days: totalCycleDays,
-            logic: "stripe_automatic_proration",
-            explanation: invoice.paid 
-              ? `Prorata de ${(invoice.amount_due || 0) / 100}${invoice.currency?.toUpperCase()} payé avec succès pour ${daysRemaining} jours restants`
-              : `Facture de prorata créée (${invoice.status}). Paiement en attente.`,
-            payment_intent: invoice.payment_intent,
-          };
-          
-          logStep("✅ Proration invoice retrieved from Stripe", prorationDetails);
-        } catch (error: any) {
-          logStep("⚠️ Could not retrieve proration invoice", { 
-            error: error.message,
-            latestInvoiceId 
-          });
-          
-          prorationDetails = {
-            info: "Proration applied but invoice details unavailable",
-            explanation: "L'upgrade a été appliqué avec prorata automatique par Stripe."
-          };
-        }
-      } else {
-        logStep("⚠️ No latest_invoice in updatedSubscription", {
-          latestInvoice: latestInvoiceId,
-          subscriptionStatus: updatedSubscription.status
+    // Always retrieve invoice for the new billing cycle
+    const latestInvoiceId = updatedSubscription.latest_invoice;
+    
+    if (latestInvoiceId) {
+      try {
+        const invoiceId = typeof latestInvoiceId === 'string' 
+          ? latestInvoiceId 
+          : latestInvoiceId.id;
+        
+        const invoice = await stripe.invoices.retrieve(invoiceId);
+        const daysRemaining = totalCycleDays - daysIntoCycle;
+        
+        prorationDetails = {
+          invoiceId: invoice.id,
+          amountDue: invoice.amount_due,
+          amountPaid: invoice.amount_paid,
+          status: invoice.status,
+          hostedInvoiceUrl: invoice.hosted_invoice_url,
+          currency: invoice.currency?.toUpperCase() || 'USD',
+          newCycleStart: new Date(updatedSubscription.current_period_start * 1000).toISOString(),
+          newCycleEnd: new Date(updatedSubscription.current_period_end * 1000).toISOString(),
+          daysRemaining,
+          totalCycleDays,
+          daysIntoCycle,
+        };
+        
+        logStep("Proration invoice details", prorationDetails);
+      } catch (error: any) {
+        logStep("⚠️ Could not retrieve proration invoice", { 
+          error: error.message,
+          latestInvoiceId 
         });
         
         prorationDetails = {
-          info: "Mid-cycle upgrade applied",
-          explanation: "L'upgrade a été appliqué. Le prorata sera calculé par Stripe au prochain cycle."
+          info: "Proration applied but invoice details unavailable",
+          explanation: "L'upgrade a été appliqué avec prorata automatique par Stripe."
         };
       }
     } else {
-      logStep("No proration needed (renewal upgrade)");
-      prorationDetails = { 
-        info: "No mid-cycle proration for renewal upgrade",
-        explanation: "L'upgrade a été effectué en début de cycle, aucun prorata n'est nécessaire."
+      logStep("⚠️ No latest_invoice in updatedSubscription", {
+        latestInvoice: latestInvoiceId,
+        subscriptionStatus: updatedSubscription.status
+      });
+      
+      prorationDetails = {
+        info: "Mid-cycle upgrade applied",
+        explanation: "L'upgrade a été appliqué. Le prorata sera calculé par Stripe au prochain cycle."
       };
     }
 
@@ -507,31 +503,23 @@ serve(async (req) => {
         subscription: {
           id: updatedSubscription.id,
           status: updatedSubscription.status,
-          current_period_end: updatedSubscription.current_period_end,
+          planId: new_plan_id,
         },
-        upgrade_details: {
-          timing: isMidCycleUpgrade ? 'mid_cycle' : 'renewal',
-          proration_applied: isMidCycleUpgrade,
-          proration: prorationDetails,
-          usage_reset: isMidCycleUpgrade,
-          days_into_cycle: daysIntoCycle,
-          days_remaining: totalCycleDays - daysIntoCycle,
-          renewal_date: new Date(periodEnd * 1000).toISOString(),
+        upgrade: {
+          type: 'immediate',
+          newCycleStart: prorationDetails?.newCycleStart,
+          newCycleEnd: prorationDetails?.newCycleEnd,
+          daysIntoCycle,
+          totalCycleDays,
         },
-        // Payment information for better UX
-        payment: prorationDetails?.paid ? {
-          status: 'paid',
-          amount: prorationDetails.amount_due,
-          currency: prorationDetails.currency,
-          invoice_url: prorationDetails.invoice_url,
-          invoice_pdf: prorationDetails.invoice_pdf,
-        } : prorationDetails?.status === 'open' ? {
-          status: 'pending',
-          message: 'Invoice created, payment pending',
-          invoice_url: prorationDetails.invoice_url,
-          amount: prorationDetails.amount_due,
-          currency: prorationDetails.currency,
-        } : null
+        payment: {
+          required: prorationDetails ? prorationDetails.amountDue > 0 : false,
+          amount: prorationDetails?.amountDue,
+          currency: prorationDetails?.currency,
+          status: prorationDetails?.status,
+          invoiceUrl: prorationDetails?.hostedInvoiceUrl,
+          invoiceId: prorationDetails?.invoiceId,
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
