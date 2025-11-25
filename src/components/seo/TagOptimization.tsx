@@ -1573,7 +1573,7 @@ export function TagOptimization() {
         }}
       />
 
-      {limits?.isTrialing ? (
+      {(limits?.shouldForcePayment || limits?.limitReached?.optimizations) ? (
         <TrialLimitDialog
           open={showUpgradeDialog}
           onOpenChange={setShowUpgradeDialog}
