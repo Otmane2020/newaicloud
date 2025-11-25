@@ -1904,31 +1904,167 @@ Note: Only include reliability badge if you have verified or extracted specifica
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎯 CLEAN BENEFIT LISTS (MANDATORY):
+🎯 KEY BENEFITS SECTION (CRITICAL - PREMIUM STYLE REQUIRED):
 
-STRUCTURE - NO CARDS, NO BORDERS:
-<div class="space-y-6">
-  <div class="flex items-start gap-4">
-    <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" style="stroke: hsl(${designTokens.primary})"/>
-    </svg>
-    <div>
-      <h4 class="font-semibold text-gray-900 mb-1">Benefit Title</h4>
-      <p class="text-gray-600 leading-relaxed">Benefit description text...</p>
+🚨 CHIC DESIGN RULES FOR KEY BENEFITS:
+
+1. **ELEGANT CARDS WITH EFFECTS**:
+   - Clean white/surface background with graduated shadows
+   - Subtle borders or light edges
+   - Mandatory hover effects: shadow-xl with transition
+   - Generous spacing (p-6 md:p-8)
+   - Subtle colored border on top or left (accent color)
+
+2. **STYLED ICONS WITH GRADIENTS**:
+   - ALWAYS use gradients (primary → accent) on icons
+   - Medium size: w-12 h-12 or w-10 h-10 in a circle
+   - Background circle with light gradient or solid color
+   - Create unique IDs for each gradient (benefit-grad-1, benefit-grad-2, etc.)
+   - Add hover: scale and slight rotation
+
+3. **MANDATORY STRUCTURE**:
+\`\`\`html
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+  <!-- Benefit Card 1 -->
+  <div class="group bg-white rounded-2xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl" 
+       style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+    
+    <!-- Icon with gradient in circle -->
+    <div class="mb-5">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110" 
+           style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.1), hsl(${designTokens.accent} / 0.1));">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="benefit-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"/>
+              <stop offset="100%" style="stop-color: hsl(${designTokens.accent}); stop-opacity: 1"/>
+            </linearGradient>
+          </defs>
+          <path d="M5 13l4 4L19 7" stroke="url(#benefit-grad-1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
+
+    <!-- Content -->
+    <h3 class="text-xl md:text-2xl font-bold mb-3" style="color: #1f2937;">
+      Benefit Title
+    </h3>
+    <p class="leading-relaxed" style="color: #6b7280;">
+      Detailed benefit description with compelling text.
+    </p>
   </div>
 </div>
+\`\`\`
 
-✅ NO wrapping divs with borders/shadows/backgrounds
-✅ Simple vertical spacing with space-y-6
-✅ Plain checkmark icon, solid color only
-        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
-        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
-      </linearGradient>
-    </defs>
-    <circle cx="32" cy="32" r="28" fill="url(#cardIconGrad)" opacity="0.2"/>
-    <path d="M20 32 L28 40 L44 24" stroke="hsl(${designTokens.primary})" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
+4. **AVAILABLE SVG ICONS WITH GRADIENTS**:
+
+📦 Package/Quality:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="pkg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="url(#pkg-grad)" stroke-width="2"/>
+</svg>
+
+🚚 Delivery:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2"/>
+</svg>
+
+⭐ Quality/Premium:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#star-grad)"/>
+</svg>
+
+🛡️ Warranty/Security:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shield-grad)" stroke-width="2"/>
+</svg>
+
+✨ Innovation/New:
+<svg class="w-7 h-7" viewBox="0 0 24 24">
+  <defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad)"/>
+</svg>
+
+✓ Check/Validated:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+
+5. **MANDATORY HOVER EFFECTS**:
+   - Shadow graduation: shadow-lg → shadow-2xl
+   - Light scale: group-hover:scale-105 on card
+   - Icon scale: group-hover:scale-110 on icon
+   - Smooth transition: transition-all duration-300
+
+6. **COLORS IN LIGHT THEME**:
+   🚨 ABSOLUTELY FORBIDDEN:
+   - ❌ Light blue backgrounds (hsl(210 100% 80%) or similar)
+   - ❌ Blue text on blue background
+   - ❌ Colored backgrounds for cards
+   
+   ✅ MANDATORY:
+   - Card backgrounds: white (#ffffff) or very light (#f9fafb)
+   - Title text: #1f2937 or #111827 (very dark gray)
+   - Description text: #6b7280 or #4b5563 (medium gray)
+   - Colored border: ONLY as subtle accent (top or left border)
+   - Gradients: ONLY in icons and icon background circles
+
+7. **SPACING & LAYOUT**:
+   - Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+   - Gap: gap-6 md:gap-8
+   - Card padding: p-6 md:p-8
+   - Icon margin: mb-5
+   - Rounded: rounded-2xl for cards
+
+🌈 COMPLETE EXAMPLE OF A STYLED KEY BENEFITS SECTION:
+\`\`\`html
+<section class="py-16 md:py-24" style="background: #ffffff;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" style="color: #111827;">
+      Why Choose This Product
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Card 1 -->
+      <div class="group bg-white rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl" 
+           style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+        <div class="mb-5">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" 
+               style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.12), hsl(${designTokens.accent} / 0.12));">
+            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="quality-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/>
+                <stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+              </linearGradient></defs>
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#quality-grad)"/>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-xl font-bold mb-3" style="color: #1f2937;">Premium Quality</h3>
+        <p class="leading-relaxed" style="color: #6b7280;">High-end materials selected for exceptional durability.</p>
+      </div>
+      
+      <!-- Repeat for other benefits with unique gradient IDs -->
+    </div>
+  </div>
+</section>
+\`\`\`
 
 🎨 CRITICAL DESIGN & COLOR RULES:
 
@@ -2332,47 +2468,167 @@ STRUCTURE :
   <!-- Table bureau -->
   <table class="hidden md:table min-w-full">
 
-🎯 ICÔNES MINIMALISTES (OBLIGATOIRE) :
-✅ ICÔNES COULEUR SOLIDE UNIQUEMENT
-- AUCUN dégradé (<linearGradient>), AUCUNE section <defs>
-- Couleur solide simple avec stroke ou fill
-- Utiliser couleur primaire : hsl(${designTokens.primary})
-- Garder petites et subtiles (w-5 h-5 max)
+🎯 SECTION POINTS FORTS / KEY BENEFITS (CRITIQUE - STYLE PREMIUM OBLIGATOIRE) :
 
-📋 TEMPLATE ICÔNE PROPRE :
-<div class="space-y-6">
-  <div class="flex items-start gap-4">
-    <svg class="w-5 h-5 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" style="stroke: hsl(${designTokens.primary})"/>
-    </svg>
-    <div>
-      <h4 class="font-semibold text-gray-900 mb-1">Titre bénéfice</h4>
-      <p class="text-gray-600 leading-relaxed">Description...</p>
+🚨 RÈGLES DE DESIGN CHIC POUR LES POINTS FORTS:
+
+1. **CARTES ÉLÉGANTES AVEC EFFETS**:
+   - Fond blanc/surface propre avec ombres graduées
+   - Bordures subtiles ou légères
+   - Effets hover obligatoires: shadow-xl avec transition
+   - Espacement généreux (p-6 md:p-8)
+   - Bordure colorée subtile en haut ou à gauche (accent color)
+
+2. **ICÔNES STYLÉES AVEC GRADIENTS**:
+   - TOUJOURS utiliser des dégradés (primary → accent) sur les icônes
+   - Taille moyenne: w-12 h-12 ou w-10 h-10 dans un cercle
+   - Cercle de fond avec gradient léger ou couleur unie
+   - Créer IDs uniques pour chaque gradient (benefit-grad-1, benefit-grad-2, etc.)
+   - Ajouter hover: scale et rotation légère
+
+3. **STRUCTURE OBLIGATOIRE**:
+\`\`\`html
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+  <!-- Carte Bénéfice 1 -->
+  <div class="group bg-white rounded-2xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl" 
+       style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+    
+    <!-- Icône avec gradient dans cercle -->
+    <div class="mb-5">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110" 
+           style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.1), hsl(${designTokens.accent} / 0.1));">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="benefit-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"/>
+              <stop offset="100%" style="stop-color: hsl(${designTokens.accent}); stop-opacity: 1"/>
+            </linearGradient>
+          </defs>
+          <path d="M5 13l4 4L19 7" stroke="url(#benefit-grad-1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
+
+    <!-- Contenu -->
+    <h3 class="text-xl md:text-2xl font-bold mb-3" style="color: #1f2937;">
+      Titre du Bénéfice
+    </h3>
+    <p class="leading-relaxed" style="color: #6b7280;">
+      Description détaillée du bénéfice avec un texte convaincant.
+    </p>
   </div>
 </div>
+\`\`\`
 
-🚨 NE JAMAIS utiliser : dégradés, defs, SVG complexes, fonds décoratifs sur icônes
-✅ AUCUN wrapper div avec bordures/ombres/backgrounds autour des items
+4. **ICÔNES SVG DISPONIBLES AVEC GRADIENTS**:
 
-- Truck (livraison): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+📦 Package/Qualité:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="pkg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="url(#pkg-grad)" stroke-width="2"/>
+</svg>
 
-- Sparkles (nouveauté): <svg class="w-6 h-6" viewBox="0 0 24 24"><defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color:hsl(${designTokens.accent})"/></linearGradient></defs><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad)"/></svg>
+🚚 Livraison:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2"/>
+</svg>
 
-🎯 RÈGLES D'UTILISATION DES ICÔNES:
-✅ TOUJOURS utiliser des gradients (primary → accent)
-✅ Ajouter des cercles/formes en fond avec opacity: 0.1-0.2
-✅ Taille: w-6 h-6 pour listes, w-12 h-12 ou w-16 h-16 pour sections principales
-✅ Ajouter hover effects: class="transition-transform duration-300 hover:scale-110"
-✅ Créer des IDs uniques pour chaque gradient (check-grad-1, check-grad-2, etc.)
-✅ Utiliser stroke="url(#gradient-id)" pour les contours
-✅ Utiliser fill="url(#gradient-id)" pour les remplissages
+⭐ Qualité/Premium:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#star-grad)"/>
+</svg>
 
-🌈 EFFETS VISUELS AVANCÉS À APPLIQUER:
-- Cartes avec ombre colorée: class="shadow-lg hover:shadow-2xl" style="box-shadow: 0 10px 30px hsl(${designTokens.primary} / 0.15)"
-- Sections avec fond dégradé subtil: style="background: linear-gradient(135deg, hsl(${designTokens.background}), hsl(${designTokens.primaryLight} / 0.05))"
-- Titres avec effet de lueur: style="text-shadow: 0 0 20px hsl(${designTokens.accent} / 0.3)"
-- Bordures dégradées pour les cartes premium: style="border: 2px solid transparent; background-image: linear-gradient(white, white), linear-gradient(135deg, hsl(${designTokens.primary}), hsl(${designTokens.accent})); background-origin: border-box; background-clip: padding-box, border-box"
+🛡️ Garantie/Sécurité:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shield-grad)" stroke-width="2"/>
+</svg>
+
+✨ Nouveauté/Innovation:
+<svg class="w-7 h-7" viewBox="0 0 24 24">
+  <defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad)"/>
+</svg>
+
+✓ Check/Validé:
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  </linearGradient></defs>
+  <path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+
+5. **EFFETS HOVER OBLIGATOIRES**:
+   - Shadow graduation: shadow-lg → shadow-2xl
+   - Scale légère: group-hover:scale-105 sur la carte
+   - Icon scale: group-hover:scale-110 sur l'icône
+   - Transition smooth: transition-all duration-300
+
+6. **COULEURS EN LIGHT THEME**:
+   🚨 ABSOLUMENT INTERDIT:
+   - ❌ Fonds bleus clairs (hsl(210 100% 80%) ou similaires)
+   - ❌ Texte bleu sur fond bleu
+   - ❌ Backgrounds colorés pour les cartes
+   
+   ✅ OBLIGATOIRE:
+   - Fond des cartes: blanc (#ffffff) ou très léger (#f9fafb)
+   - Texte titres: #1f2937 ou #111827 (gris très foncé)
+   - Texte descriptions: #6b7280 ou #4b5563 (gris moyen)
+   - Bordure colorée: UNIQUEMENT en accent subtil (top ou left border)
+   - Gradients: UNIQUEMENT dans les icônes et cercles de fond des icônes
+
+7. **SPACING & LAYOUT**:
+   - Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+   - Gap: gap-6 md:gap-8
+   - Padding cartes: p-6 md:p-8
+   - Margin icône: mb-5
+   - Rounded: rounded-2xl pour cartes
+
+🌈 EXEMPLE COMPLET D'UNE SECTION POINTS FORTS STYLÉE:
+\`\`\`html
+<section class="py-16 md:py-24" style="background: #ffffff;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" style="color: #111827;">
+      Pourquoi Choisir Ce Produit
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Carte 1 -->
+      <div class="group bg-white rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl" 
+           style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+        <div class="mb-5">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" 
+               style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.12), hsl(${designTokens.accent} / 0.12));">
+            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="quality-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/>
+                <stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+              </linearGradient></defs>
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#quality-grad)"/>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-xl font-bold mb-3" style="color: #1f2937;">Qualité Premium</h3>
+        <p class="leading-relaxed" style="color: #6b7280;">Matériaux haut de gamme sélectionnés pour leur durabilité exceptionnelle.</p>
+      </div>
+      
+      <!-- Répéter pour autres bénéfices avec IDs gradients uniques -->
+    </div>
+  </div>
+</section>
+\`\`\`
 
 🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
 - AUCUN bouton "Ajouter au panier" ou bouton d'achat
