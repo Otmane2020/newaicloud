@@ -1080,6 +1080,14 @@ IMPÉRATIF: Respecte EXACTEMENT la longueur demandée (${articleLength} mots), l
 
     console.log("✅ Article saved:", article.id);
 
+    // Track usage - 10 optimizations for article generation
+    await supabase.rpc('increment_usage', {
+      p_seller_id: user_id,
+      p_field: 'optimizations_count',
+      p_increment: 10
+    });
+    console.log("✅ Usage tracked successfully");
+
     return {
       success: true,
       article: {

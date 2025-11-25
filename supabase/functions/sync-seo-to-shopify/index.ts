@@ -325,13 +325,6 @@ Deno.serve(async (req: Request) => {
         })
         .eq("id", productId);
 
-      // Track Shopify API usage
-      await supabaseAdmin.rpc('increment_usage', {
-        p_seller_id: user.id,
-        p_field: 'shopify_requests_count',
-        p_increment: 1
-      });
-
       console.log(`Product ${product.shopify_id} synced successfully`);
       
       // Extract store name from store_url
@@ -745,13 +738,6 @@ Deno.serve(async (req: Request) => {
           console.log(`[SYNC-COLLECTION] ✅ Metafield ${metafield.key} synced successfully`);
         }
       }
-
-      // Track Shopify API usage
-      await supabaseAdmin.rpc('increment_usage', {
-        p_seller_id: user.id,
-        p_field: 'shopify_requests_count',
-        p_increment: 1
-      });
 
       // Update last_synced_at timestamp
       await supabaseClient
