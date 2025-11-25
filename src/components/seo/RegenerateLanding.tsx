@@ -29,6 +29,58 @@ import { Progress } from "@/components/ui/progress";
 import { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
+// 🛡️ Template de fallback pour mode dégradé
+const generateFallbackLandingPage = (
+  title: string,
+  description: string | undefined,
+  imageUrl: string | undefined
+): string => {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .container { max-width: 800px; width: 100%; background: white; border-radius: 20px; 
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+    .hero { padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+      color: white; }
+    h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 700; }
+    .description { font-size: 1.125rem; opacity: 0.95; margin-bottom: 2rem; }
+    .image { width: 100%; height: 400px; object-fit: cover; }
+    .content { padding: 2rem; }
+    .cta { display: inline-block; margin-top: 1.5rem; padding: 1rem 2.5rem; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; 
+      text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 1.125rem;
+      transition: transform 0.2s; }
+    .cta:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>${title}</h1>
+      ${description ? `<p class="description">${description.slice(0, 200)}...</p>` : ''}
+      <a href="#" class="cta">Découvrir →</a>
+    </div>
+    ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="image" />` : ''}
+    <div class="content">
+      <p style="color: #666; text-align: center;">
+        ⚡ Landing page générée en mode simplifié
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
 interface RegenerateLandingProps {
   product: {
     id: string;
@@ -117,7 +169,7 @@ export default function RegenerateLanding({
       console.log("🚀 [Landing] Starting generation...");
       hasGeneratedRef.current = true;
       isGeneratingRef.current = true;
-      handleGenerate().finally(() => {
+      handleGenerate(false).finally(() => {
         console.log("✅ [Landing] Generation completed, releasing lock");
         isGeneratingRef.current = false;
       });
@@ -246,7 +298,7 @@ export default function RegenerateLanding({
   /** ----------------------------
    * ✨ Generate Landing via AI with Progress
    -----------------------------*/
-  const handleGenerate = async () => {
+  const handleGenerate = async (forceFastMode = false) => {
     // ⏱️ Client-side timeout (90 seconds max)
     const timeoutId = setTimeout(() => {
       setError("La génération a pris trop de temps. Réessayez avec un contenu plus court ou en mode rapide.");
@@ -335,7 +387,7 @@ export default function RegenerateLanding({
           vendor: resolvedVendor,
           imageAnalysis: imageAnalysis,
           language: language,
-          fastMode: config.contentLength === "short", // ⚡ Enable fast mode for short content
+          fastMode: forceFastMode || config.contentLength === "short", // ⚡ Enable fast mode for short content or if forced
           options: {
             colorScheme: config.colorScheme, // Can be string (key) or object (values)
             layout: config.layout,
@@ -367,8 +419,28 @@ export default function RegenerateLanding({
       console.error("Error generating landing:", err);
       const errorMsg = err?.message || t.landingGeneration.errors.generation;
       setError(errorMsg);
-      toast.error(errorMsg);
-      setProgress(0);
+      
+      // 🛡️ Mode dégradé : générer un template basique de fallback
+      const fallbackHtml = generateFallbackLandingPage(product.title, product.description, product.image_url);
+      setHtmlContent(fallbackHtml);
+      setProgress(100);
+      
+      toast.error("Génération partielle", {
+        description: (
+          <>
+            La génération complète a échoué. Un template basique a été créé.{" "}
+            <button
+              onClick={() => handleGenerate(true)}
+              className="underline font-semibold hover:text-primary"
+            >
+              Réessayer en mode rapide
+            </button>
+          </>
+        ),
+        duration: 10000,
+      });
+      
+      onGenerated?.(fallbackHtml);
     } finally {
       clearTimeout(timeoutId); // ⏱️ Clear timeout
       setLoading(false);
@@ -656,7 +728,7 @@ export default function RegenerateLanding({
               <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
               <p className="text-sm text-destructive/90 mt-1">{error}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleGenerate}>
+            <Button variant="outline" size="sm" onClick={() => handleGenerate(false)}>
               {t.landingConfig.buttons.confirm}
             </Button>
           </div>
