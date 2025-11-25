@@ -1535,7 +1535,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
 
       {/* Upgrade Dialogs */}
       <TrialLimitDialog
-        open={showUpgradeDialog && limits?.shouldForcePayment === true}
+        open={showUpgradeDialog && (limits?.shouldForcePayment || limits?.limitReached?.optimizations)}
         onOpenChange={setShowUpgradeDialog}
         limitType="optimizations"
         currentUsage={limits?.usage.optimizations_count || 0}

@@ -131,6 +131,23 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
+      // 🔍 Fetch real commercial name from Shopify API
+      let realCommercialName = shop;
+      try {
+        const shopInfoResponse = await fetch(`https://${shop}/admin/api/2024-01/shop.json`, {
+          headers: { 'X-Shopify-Access-Token': accessToken }
+        });
+        if (shopInfoResponse.ok) {
+          const shopInfo = await shopInfoResponse.json();
+          realCommercialName = shopInfo?.shop?.name || shop;
+          console.log('[SHOPIFY-OAUTH] ✅ Real commercial name fetched:', realCommercialName);
+        } else {
+          console.warn('[SHOPIFY-OAUTH] ⚠️ Could not fetch shop info, using shop URL as fallback');
+        }
+      } catch (err) {
+        console.warn('[SHOPIFY-OAUTH] ⚠️ Error fetching shop info:', err);
+      }
+
       // 🆕 NOUVEAU FLOW PRE-AUTH : stocker dans pending_connections
       if (oauthState.is_pre_auth) {
         console.log("[SHOPIFY-OAUTH] Flow pre-auth détecté, création pending connection");
@@ -154,7 +171,7 @@ serve(async (req) => {
           shop_url: shop,
           access_token: accessToken,
           scope: tokenData.scope,
-          commercial_name: oauthState.shop_name || shop,
+          commercial_name: realCommercialName,
           pending_token: pendingToken,
           expires_at: expiresAt.toISOString(),
           is_claimed: false,
@@ -187,7 +204,7 @@ serve(async (req) => {
         await supabase.from("shopify_connections").upsert({
           user_id: oauthState.user_id,
           store_url: shop,
-          store_name: oauthState.shop_name || shop,
+          store_name: realCommercialName,
           access_token: accessToken,
           connected_at: new Date().toISOString(),
           is_active: true,
