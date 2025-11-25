@@ -50,6 +50,12 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe healthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   try {
     console.log('[SCHEDULED-SYNC] ========================================');
     console.log('[SCHEDULED-SYNC] Execution started at:', new Date().toISOString());
@@ -65,7 +71,7 @@ Deno.serve(async (req) => {
     // Get all users with non-manual sync settings
     const { data: settings, error: settingsError } = await supabase
       .from('shopify_sync_settings')
-      .select('*, profiles!inner(id, email)')
+      .select('*')
       .neq('import_frequency', 'manual');
 
     if (settingsError) {
