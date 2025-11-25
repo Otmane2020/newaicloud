@@ -1935,6 +1935,7 @@ export const translations = {
       templates: "Templates",
       emailStats: "Email Stats",
       analytics: "Analytics",
+      systemStatus: "System Status",
       logout: "Logout",
     },
     toasts: {
@@ -6193,6 +6194,39 @@ export const translations = {
     empty: {
       title: "No API keys yet",
       description: "Create your first API key to start integrating"
+    }
+  },
+
+  systemStatus: {
+    title: "System Status",
+    healthCheckComplete: "Health Check Complete",
+    functionsOperational: "functions operational",
+    fullyOperational: "We're fully operational",
+    someServicesDegraded: "Some services are degraded",
+    majorOutage: "Major outage detected",
+    noIssues: "We're not aware of any issues affecting our systems.",
+    functionIssues: "function(s) experiencing issues",
+    runHealthCheck: "Run Health Check",
+    noDataYet: "No status data available",
+    runFirstCheck: "Run a health check to see system status",
+    healthy: "Healthy",
+    unhealthy: "Unhealthy",
+    avgResponseTime: "Avg Response",
+    totalFunctions: "Total Functions",
+    lastChecked: "Last checked",
+    detailedStatus: "Detailed Status",
+    noResultsYet: "No health check results yet. Click 'Run Health Check' to test all functions.",
+    components: "components",
+    issues: "issues",
+    category: {
+      core: "Core Functions",
+      aigeneration: "AI Generation",
+      seo: "SEO Functions",
+      email: "Email Services",
+      stripe: "Payment (Stripe)",
+      shopify: "Shopify Integration",
+      backgroundprocessing: "Background Processing",
+      system: "System Functions"
     }
   }
 };

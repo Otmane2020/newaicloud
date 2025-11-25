@@ -17,6 +17,7 @@ import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { EmailTemplates } from '@/components/admin/EmailTemplates';
 import { EmailStatsDashboard } from '@/components/admin/EmailStatsDashboard';
+import { SystemStatusDashboard } from '@/components/admin/SystemStatusDashboard';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -636,6 +637,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'analytics' && (
         <AdvancedAnalytics />
+      )}
+
+      {activeTab === 'system-status' && (
+        <SystemStatusDashboard />
       )}
     </div>
   );
