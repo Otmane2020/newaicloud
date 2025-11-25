@@ -22,6 +22,14 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         return;
       }
 
+      // Autoriser l'accès direct pour l'email spécifique
+      const allowedEmails = ['sweet.deco.meubles@gmail.com'];
+      if (allowedEmails.includes(user.email || '')) {
+        setIsAdmin(true);
+        setChecking(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase.rpc('has_role', {
           _user_id: user.id,
