@@ -19,53 +19,63 @@ export const isUnlimited = (limit: number | null | undefined): boolean => {
 };
 
 /**
- * Get currency symbol
- * All prices are in EUR now
+ * Get currency symbol based on language
  * @param language - The language code ('fr' or 'en')
- * @returns Currency symbol (always '€')
+ * @returns Currency symbol ('€' for French, '$' for English)
  */
 export const getCurrencySymbol = (language: 'fr' | 'en'): string => {
-  return '€';
+  return language === 'fr' ? '€' : '$';
 }
 
 /**
- * Get the appropriate Stripe price ID based on billing period
- * All prices are in EUR
+ * Get the appropriate Stripe price ID based on language and billing period
  * @param plan - The subscription plan object
+ * @param language - The language code ('fr' or 'en')
  * @param billingPeriod - The billing period ('monthly' or 'yearly')
- * @returns The appropriate Stripe price ID
+ * @returns The appropriate Stripe price ID (EUR for French, USD for English)
  */
 export const getPriceIdByLanguage = (
   plan: any,
   language: 'fr' | 'en',
   billingPeriod: 'monthly' | 'yearly'
 ): string => {
-  return billingPeriod === 'monthly' 
-    ? plan.stripe_price_id_monthly
-    : plan.stripe_price_id_yearly;
+  if (language === 'fr') {
+    return billingPeriod === 'monthly' 
+      ? plan.stripe_price_id_monthly_eur
+      : plan.stripe_price_id_yearly_eur;
+  } else {
+    return billingPeriod === 'monthly' 
+      ? plan.stripe_price_id_monthly
+      : plan.stripe_price_id_yearly;
+  }
 };
 
 /**
- * Get the appropriate price amount based on billing period
- * All prices are in EUR
+ * Get the appropriate price amount based on language and billing period
  * @param plan - The subscription plan object
  * @param language - The language code ('fr' or 'en')
  * @param billingPeriod - The billing period ('monthly' or 'yearly')
- * @returns The price amount in EUR
+ * @returns The price amount (USD for English, EUR for French)
  */
 export const getPriceByLanguage = (
   plan: any,
   language: 'fr' | 'en',
   billingPeriod: 'monthly' | 'yearly'
 ): number => {
-  return billingPeriod === 'monthly' 
-    ? plan.price_monthly_eur
-    : plan.price_yearly_eur;
+  if (language === 'fr') {
+    return billingPeriod === 'monthly' 
+      ? plan.price_monthly_eur
+      : plan.price_yearly_eur;
+  } else {
+    return billingPeriod === 'monthly' 
+      ? plan.price_monthly
+      : plan.price_yearly;
+  }
 };
 
 /**
  * Format a price with the appropriate currency symbol
- * Always shows whole numbers without decimals
+ * French: "9,99 €" (symbol after), English: "$9.99" (symbol before)
  * @param amount - The price amount
  * @param language - The language code ('fr' or 'en')
  * @returns Formatted price string
@@ -86,15 +96,19 @@ export const formatPrice = (
   );
   
   if (shouldKeepDecimals) {
-    const formattedAmount = roundedAmount.toFixed(2).replace('.', ',');
-    return language === 'fr' 
-      ? `${formattedAmount} ${symbol}`
-      : `${symbol}${formattedAmount}`;
+    if (language === 'fr') {
+      const formattedAmount = roundedAmount.toFixed(2).replace('.', ',');
+      return `${formattedAmount} ${symbol}`;
+    } else {
+      return `${symbol}${roundedAmount.toFixed(2)}`;
+    }
   }
   
   // Round to whole numbers for other amounts
   const wholeAmount = Math.round(amount);
   
-  // Always format as "amount €" for consistency, regardless of language
-  return `${wholeAmount} ${symbol}`;
+  // French: "100 €", English: "$100"
+  return language === 'fr' 
+    ? `${wholeAmount} ${symbol}`
+    : `${symbol}${wholeAmount}`;
 };

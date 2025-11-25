@@ -13,6 +13,7 @@ interface PricingCardProps {
   price: number;
   currency: string;
   period: string;
+  priceSuffix?: string;
   originalPrice?: number;
   description: string;
   secondaryDescription?: string;
@@ -23,6 +24,7 @@ interface PricingCardProps {
   buttonVariant?: "default" | "secondary";
   features: string[];
   className?: string;
+  language?: 'fr' | 'en';
 }
 
 export function PricingCard({
@@ -34,6 +36,7 @@ export function PricingCard({
   price,
   currency,
   period,
+  priceSuffix,
   originalPrice,
   description,
   secondaryDescription,
@@ -44,6 +47,7 @@ export function PricingCard({
   buttonVariant = "default",
   features,
   className = "",
+  language = 'fr',
 }: PricingCardProps) {
   return (
     <Card 
@@ -95,14 +99,14 @@ export function PricingCard({
         <div className="text-center mb-6">
           {originalPrice && originalPrice > price && (
             <div className="text-2xl text-muted-foreground line-through mb-1">
-              {originalPrice} {currency}
+              {language === 'fr' ? `${originalPrice} ${currency}` : `${currency}${originalPrice}`}
             </div>
           )}
           <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            {price} {currency}
+            {language === 'fr' ? `${price} ${currency}` : `${currency}${price}`}
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            {period}
+            {priceSuffix || period}
           </p>
         </div>
 
