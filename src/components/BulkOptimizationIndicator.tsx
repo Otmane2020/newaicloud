@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Maximize2, X, Package, Tag, Image, FileText, Layers, ShoppingBag } from 'lucide-react';
+import { Sparkles, Maximize2, X, Package, Tag, Image, FileText, Layers, ShoppingBag } from 'lucide-react';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { useTranslation } from '@/lib/language';
 
@@ -31,7 +31,7 @@ export function BulkOptimizationIndicator() {
       case 'articles':
         return <ShoppingBag className="w-4 h-4" />;
       default:
-        return <Loader2 className="w-4 h-4 animate-spin" />;
+        return <Sparkles className="w-4 h-4 animate-sparkle" />;
     }
   };
 
@@ -61,7 +61,7 @@ export function BulkOptimizationIndicator() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {state.isRunning && !isComplete ? (
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <Sparkles className="w-5 h-5 animate-sparkle text-primary" />
               ) : (
                 getIcon()
               )}

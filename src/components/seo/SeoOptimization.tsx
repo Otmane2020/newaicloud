@@ -646,7 +646,7 @@ export function SeoOptimization() {
 
         if (error.message?.includes("trial_product_already_optimized")) {
           toast.warning(t.seo.optimization.someAlreadyOptimized);
-        } else if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
+        } else if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached") || error.message?.includes("limite_optimisations_atteinte") || error.message?.includes("403")) {
           // Afficher le bon message selon le statut de l'utilisateur
           if (limits?.isTrialing) {
             toast.error(t.seo.optimization.trialLimitReached);
@@ -729,7 +729,7 @@ export function SeoOptimization() {
             });
           } catch (error: any) {
             console.error("Error generating SEO:", error);
-            if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
+            if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached") || error.message?.includes("limite_optimisations_atteinte") || error.message?.includes("403")) {
               // Afficher le bon message selon le statut de l'utilisateur
               if (limits?.isTrialing) {
                 toast.error(t.seo.optimization.trialLimitReached);
