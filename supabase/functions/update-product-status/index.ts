@@ -41,26 +41,13 @@ Deno.serve(async (req) => {
 
     // 🆕 Vérifier les limites trial
     const trialCheck = await checkTrialLimits(supabaseAdmin, user.id);
+    const isTrialUser = !trialCheck.canUpdateShopify;
 
-    if (!trialCheck.canUpdateShopify) {
-      console.log('[UPDATE-STATUS] 🚫 Trial user attempting Shopify update - blocked');
-      return new Response(
-        JSON.stringify({
-          error: 'upgrade_required',
-          message: 'Les mises à jour Shopify ne sont pas disponibles sur le plan trial. Veuillez upgrader pour synchroniser vos modifications.',
-          isTrialActive: trialCheck.isTrialActive,
-          trialEndsAt: trialCheck.trialEndsAt,
-          requiresUpgrade: true,
-          upgradeUrl: '/subscription',
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (isTrialUser) {
+      console.log('[UPDATE-STATUS] ⚠️ Trial user - local update only, no Shopify sync');
+    } else {
+      console.log('[UPDATE-STATUS] ✅ User authorized for Shopify updates');
     }
-
-    console.log('[UPDATE-STATUS] ✅ User authorized for Shopify updates');
 
     const { productId, shopifyId, storeId, newStatus } = await req.json();
 
@@ -91,29 +78,33 @@ Deno.serve(async (req) => {
     console.log('[UPDATE-STATUS] Store connection found:', connection.store_url);
     console.log('[UPDATE-STATUS] Using direct access token, length:', connection.access_token?.length);
 
-    // Update product status in Shopify using GraphQL
-    console.log(`🔄 Updating product ${shopifyId} status to "${newStatus}" using GraphQL`);
-    
-    const productGid = restIdToGid(shopifyId, 'Product');
-    
-    try {
-      const result = await shopifyGraphQL(
-        connection.store_url,
-        connection.access_token,
-        PRODUCT_UPDATE_MUTATION,
-        {
-          input: {
-            id: productGid,
-            status: newStatus.toUpperCase(), // GraphQL expects ACTIVE, DRAFT, ARCHIVED
-          },
-        }
-      );
+    // Update product status in Shopify using GraphQL (only for paid users)
+    if (!isTrialUser) {
+      console.log(`🔄 Updating product ${shopifyId} status to "${newStatus}" using GraphQL`);
+      
+      const productGid = restIdToGid(shopifyId, 'Product');
+      
+      try {
+        const result = await shopifyGraphQL(
+          connection.store_url,
+          connection.access_token,
+          PRODUCT_UPDATE_MUTATION,
+          {
+            input: {
+              id: productGid,
+              status: newStatus.toUpperCase(), // GraphQL expects ACTIVE, DRAFT, ARCHIVED
+            },
+          }
+        );
 
-      handleUserErrors(result.productUpdate?.userErrors, 'productUpdate');
-      console.log(`✅ Product status updated via GraphQL: ${result.productUpdate?.product?.status}`);
-    } catch (error: any) {
-      console.error('❌ Shopify GraphQL error:', error);
-      throw new Error(`Failed to update Shopify product: ${error?.message || String(error)}`);
+        handleUserErrors(result.productUpdate?.userErrors, 'productUpdate');
+        console.log(`✅ Product status updated via GraphQL: ${result.productUpdate?.product?.status}`);
+      } catch (error: any) {
+        console.error('❌ Shopify GraphQL error:', error);
+        throw new Error(`Failed to update Shopify product: ${error?.message || String(error)}`);
+      }
+    } else {
+      console.log('⚠️ Skipping Shopify sync for trial user - local update only');
     }
 
     // Update local database
@@ -129,7 +120,14 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, status: newStatus }),
+      JSON.stringify({ 
+        success: true, 
+        status: newStatus,
+        localOnly: isTrialUser,
+        message: isTrialUser 
+          ? 'Statut mis à jour localement. Passez à un plan payant pour synchroniser avec Shopify.' 
+          : 'Statut mis à jour sur Shopify.'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
