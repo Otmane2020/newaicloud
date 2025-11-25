@@ -11,8 +11,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
+
   try {
-    const { imageUrl, productTitle, style = "contextual", imageType = "primary" } = await req.json();
+    const { imageUrl, productTitle, style = "contextual", imageType = "primary" } = body;
 
     if (!imageUrl || !productTitle) {
       return new Response(JSON.stringify({ error: "imageUrl and productTitle are required" }), {
