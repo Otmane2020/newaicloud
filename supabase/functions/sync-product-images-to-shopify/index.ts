@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
     }
 
     // If product not synced to Shopify, just return success without syncing
-    if (!product.shopify_product_id) {
+    if (!product.shopify_id) {
       console.log(`⏭️ Product ${productId} not synced to Shopify yet - skipping image sync`);
       return new Response(
         JSON.stringify({
@@ -282,8 +282,8 @@ Deno.serve(async (req) => {
     console.log('Using direct access token, length:', connection.access_token?.length);
 
     // Get existing images from Shopify using GraphQL
-    console.log(`🔍 Fetching existing media from Shopify product ${product.shopify_product_id} using GraphQL`);
-    const productGid = restIdToGid(product.shopify_product_id, 'Product');
+    console.log(`🔍 Fetching existing media from Shopify product ${product.shopify_id} using GraphQL`);
+    const productGid = restIdToGid(product.shopify_id, 'Product');
     
     let existingMedia: any[] = [];
     try {
@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
         }
 
         const updateResponse = await fetch(
-          `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images/${imgToUpdate.shopify_image_id}.json`,
+          `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_id}/images/${imgToUpdate.shopify_image_id}.json`,
           {
             method: "PUT",
             headers: {
@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
     const addedImages = [];
     for (const newImage of newImages) {
       const addResponse = await fetch(
-        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}/images.json`,
+        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_id}/images.json`,
         {
           method: "POST",
           headers: {
