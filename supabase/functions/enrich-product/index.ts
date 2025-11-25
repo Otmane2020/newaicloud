@@ -114,6 +114,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   try {
     console.log("🎯 Edge Function: enrich-product called");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");

@@ -20,10 +20,14 @@ serve(async (req) => {
     hasSecret: !!webhookSecret,
   });
 
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 200 });
+  }
+
+  const body = await req.text();
+  // Don't add healthCheck handler to webhook - signature validation required
+
   try {
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { status: 200 });
-    }
 
     const signature = req.headers.get('stripe-signature');
     if (!signature) {

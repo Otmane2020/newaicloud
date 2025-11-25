@@ -49,6 +49,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -71,7 +76,7 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: userData.user.id });
 
-    const { new_plan_id, billing_period } = await req.json();
+    const { new_plan_id, billing_period } = body;
     if (!new_plan_id) throw new Error("new_plan_id is required");
 
     logStep("Request body parsed", { new_plan_id, billing_period });
