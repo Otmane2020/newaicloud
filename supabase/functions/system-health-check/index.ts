@@ -6,58 +6,111 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Catégories de fonctions pour organisation
+// Catégories de fonctions pour organisation complète (~170 fonctions)
 const FUNCTION_CATEGORIES = {
-  'Core': [
-    'import-products',
-    'import-shopify-collections',
-    'sync-shopify-to-feed',
-    'cleanup-orphaned-data',
+  'Core Import': [
+    'import-products', 'import-shopify-collections', 'import-shopify-pages',
+    'import-shopify-articles', 'import-content-images', 'import-costs-from-shopify',
+    'import-shipping-costs', 'import-google-taxonomy'
   ],
-  'AI Generation': [
-    'generate-alt-texts-vision',
-    'generate-landing-ai',
-    'generate-blog-article',
-    'analyze-image-with-vision',
-    'enrich-product',
-  ],
-  'SEO': [
-    'generate-comprehensive-seo-audit',
-    'analyze-seo-with-ai',
-    'generate-page-seo',
-    'generate-collection-seo',
-    'generate-product-seo',
-    'optimize-product-title-serp',
-  ],
-  'Email': [
-    'send-admin-email',
-    'send-notification-email',
+  'Auth & Subscription': [
+    'activate-free-trial', 'activate-full-plan', 'check-subscription',
+    'check-usage-limits', 'diagnose-subscription', 'fix-invalid-trial-subscriptions',
+    'fix-stuck-subscriptions', 'fix-subscription-sync', 'consume-optimization-credits'
   ],
   'Stripe': [
-    'create-checkout',
-    'update-subscription',
-    'stripe-webhook',
-    'admin-get-user-subscriptions',
+    'create-checkout', 'update-subscription', 'stripe-webhook',
+    'admin-get-user-subscriptions', 'customer-portal', 'calculate-proration',
+    'create-upgrade-invoice', 'force-payment', 'report-usage-to-stripe',
+    'sync-stripe-subscription'
   ],
-  'Shopify': [
-    'shopify-oauth',
-    'sync-landing-to-shopify',
-    'sync-seo-to-shopify',
-    'sync-product-images-to-shopify',
-    'sync-homepage-seo',
-    'update-product-status',
-    'test-shopify-credentials',
+  'Shopify OAuth': [
+    'shopify-oauth', 'shopify-install', 'shopify-webhook',
+    'claim-shopify-connection', 'delete-shopify-connection',
+    'encrypt-shopify-token', 'test-shopify-credentials', 'test-shopify-token',
+    'validate-shopify-credentials', 'fetch-shopify-domain'
   ],
-  'Background Processing': [
-    'robot-tts',
-    'robot-stt',
-    'performance-logger',
+  'Shopify Sync': [
+    'sync-landing-to-shopify', 'sync-seo-to-shopify', 'sync-homepage-seo',
+    'sync-product-images-to-shopify', 'sync-blog-to-shopify', 'sync-page-to-shopify',
+    'sync-article-image-to-shopify', 'sync-collection-image-to-shopify',
+    'sync-pricing-to-shopify', 'sync-product-collections', 'sync-deleted-resources',
+    'sync-shopify-orders', 'sync-shopify-to-feed', 'update-product-status',
+    'delete-shopify-product', 'get-shopify-product-count', 'create-shopify-landing-page'
   ],
-  'System': [
-    'check-google-apis-health',
-    'cleanup-invalid-trials',
-    'cleanup-expired-shopify-tokens',
+  'AI Generation': [
+    'generate-landing-ai', 'generate-landing-deepseek', 'generate-blog-article',
+    'generate-title-description', 'generate-tags', 'generate-vendor-name',
+    'generate-google-category', 'generate-gtin', 'enrich-product',
+    'generate-product-description-html', 'generate-promotional-articles',
+    'generate-store-summary', 'generate-ads-landing-page'
   ],
+  'AI Vision': [
+    'generate-alt-texts', 'generate-alt-texts-vision', 'analyze-image-with-vision',
+    'analyze-dimension-images', 'analyze-price-from-image', 'smart-alt-text'
+  ],
+  'AI Background': [
+    'generate-white-background', 'generate-product-background',
+    'generate-image-background', 'generate-ai-product-background',
+    'generate-ai-background-variants', 'generate-image'
+  ],
+  'SEO': [
+    'generate-comprehensive-seo-audit', 'generate-seo-audit', 'analyze-seo-with-ai',
+    'generate-page-seo', 'generate-collection-seo', 'generate-article-seo',
+    'generate-homepage-seo-element', 'audit-homepage-seo',
+    'optimize-product-title-serp', 'generate-seo-with-deepseek', 'smart-title',
+    'export-seo-audit-pdf'
+  ],
+  'SEO Tools': [
+    'analyze-serp-competitors', 'check-broken-links', 'search-similar-products-specs',
+    'extract-netlinking-from-articles', 'generate-article-keywords',
+    'classify-product-category', 'analyze-competitor-pricing'
+  ],
+  'Google APIs': [
+    'google-oauth-token', 'google-oauth-url', 'check-google-apis-health',
+    'get-search-console-data', 'sync-search-console-data', 'daily-gsc-sync',
+    'list-search-console-sites', 'request-gsc-indexing', 'submit-gsc-sitemap',
+    'list-gsc-sitemaps', 'analyze-gsc-anomalies', 'get-gsc-product-performance'
+  ],
+  'Google Merchant': [
+    'create-google-merchant-feed', 'google-merchant-oauth-token',
+    'refresh-google-merchant-token', 'list-merchant-accounts',
+    'scheduled-merchant-sync', 'optimize-shopping-feed', 'shopping-feed'
+  ],
+  'Google Ads': [
+    'google-ads-oauth-token', 'list-google-ads-campaigns'
+  ],
+  'Blog & Content': [
+    'generate-blog-opportunities', 'generate-daily-opportunities',
+    'process-blog-campaigns', 'update-article-link'
+  ],
+  'Email Notifications': [
+    'send-admin-email', 'send-notification-email', 'send-notification',
+    'send-welcome-email', 'send-trial-expiring', 'send-payment-failed',
+    'send-subscription-confirmed', 'send-upgrade-limit-email',
+    'send-reset-password-email', 'send-contact-email', 'send-demo-booking',
+    'send-order-confirmation', 'send-shipping-notification',
+    'send-abandoned-cart', 'send-weekly-seo-digest', 'send-monthly-report',
+    'receive-admin-email', 'download-email-attachment', 'test-webhook-email'
+  ],
+  'Scheduling & Cleanup': [
+    'scheduled-sync', 'trigger-auto-sync', 'trigger-hourly-sync',
+    'trigger-cleanup-sync', 'cleanup-orphaned-data', 'cleanup-invalid-trials',
+    'cleanup-stuck-syncs', 'notify-expiring-shopify-tokens'
+  ],
+  'Challenges & Notifications': [
+    'generate-daily-seo-challenges', 'generate-daily-notifications', 'track-activity'
+  ],
+  'Chat & Assistant': [
+    'chat-smart', 'assistant-ai', 'robot-tts', 'robot-stt'
+  ],
+  'API & Utils': [
+    'api-v1', 'generate-api-key', 'batch-translate', 'convert-landing-to-mobile',
+    'performance-logger', 'track-referral-reward'
+  ],
+  'Admin': [
+    'create-super-admin', 'setup-subscription-plans', 'system-health-check'
+  ]
 };
 
 serve(async (req) => {
@@ -84,6 +137,10 @@ serve(async (req) => {
         totalFunctions++;
         const startTime = Date.now();
         
+        // Timeout adaptatif : 30s pour IA/Vision, 5s pour le reste
+        const isAICategory = ['AI Generation', 'AI Vision', 'AI Background'].includes(category);
+        const timeout = isAICategory ? 30000 : 5000;
+        
         try {
           const response = await fetch(
             `${Deno.env.get("SUPABASE_URL")}/functions/v1/${functionName}`,
@@ -94,14 +151,18 @@ serve(async (req) => {
                 "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
               },
               body: JSON.stringify({ healthCheck: true }),
-              signal: AbortSignal.timeout(5000), // 5s timeout
+              signal: AbortSignal.timeout(timeout),
             }
           );
 
           const responseTime = Date.now() - startTime;
           totalResponseTime += responseTime;
 
-          const isHealthy = response.ok || response.status === 400; // 400 OK si healthCheck non supporté
+          // Codes "healthy" : la fonction répond correctement
+          // 200/201 = Succès, 400/401/403/422 = Validation/Auth (fonction répond)
+          // Seuls 404 (fonction n'existe pas) et 500+ (erreur serveur) sont "unhealthy"
+          const healthyStatusCodes = [200, 201, 400, 401, 403, 422];
+          const isHealthy = healthyStatusCodes.includes(response.status);
           
           if (!results[category]) results[category] = [];
           
