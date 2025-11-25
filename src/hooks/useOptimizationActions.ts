@@ -178,17 +178,18 @@ export const useOptimizationActions = () => {
           success: false,
           action: 'alt_texts',
           processedCount: 0,
-          errorMessage: 'Limite d\'optimisation atteinte'
+          errorMessage: "Limite d'optimisation atteinte",
         };
       }
 
       let query = supabase
         .from('product_images')
-        .select('id, src, product_id, shopify_products!inner(title)');
+        .select('id, src, product_id, image_type, shopify_products!inner(title)');
 
       if (imageIds && imageIds.length > 0) {
         query = query.in('id', imageIds);
       } else {
+        // Images sans alt_text (null ou vide)
         query = query.or('alt_text.is.null,alt_text.eq.');
       }
 
@@ -200,30 +201,62 @@ export const useOptimizationActions = () => {
 
       setProgress({ current: 0, total: images.length, action: 'alt_texts' });
 
-      const { error: generateError } = await supabase.functions.invoke('generate-alt-texts-vision', {
-        body: { 
-          imageIds: imageIds || images.map((img: any) => img.id),
-          useVision: true 
-        }
-      });
+      let processedCount = 0;
+      let errorCount = 0;
+      const batchSize = 5;
 
-      if (generateError) throw generateError;
+      for (let i = 0; i < images.length; i += batchSize) {
+        const batch = images.slice(i, i + batchSize);
+
+        await Promise.all(
+          batch.map(async (img: any) => {
+            try {
+              const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
+                body: {
+                  imageId: img.id,
+                  imageType: img.image_type || 'product',
+                },
+              });
+
+              if (error) {
+                console.error('Error generating ALT text (auto-optimization):', img.id, error);
+                errorCount++;
+              } else {
+                processedCount++;
+              }
+
+              setProgress({
+                current: processedCount + errorCount,
+                total: images.length,
+                action: 'alt_texts',
+              });
+            } catch (err) {
+              console.error('Error generating ALT text (auto-optimization):', img.id, err);
+              errorCount++;
+              setProgress({
+                current: processedCount + errorCount,
+                total: images.length,
+                action: 'alt_texts',
+              });
+            }
+          })
+        );
+      }
 
       await refreshLimits();
-      
-      // Send notification for completed optimizations
-      if (images.length > 0) {
-        await sendOptimizationNotification(images.length);
+
+      if (processedCount > 0) {
+        await sendOptimizationNotification(processedCount);
       }
-      
-      return { success: true, action: 'alt_texts', processedCount: images.length };
+
+      return { success: errorCount === 0, action: 'alt_texts', processedCount };
     } catch (error) {
       console.error('Error generating alt texts:', error);
       return {
         success: false,
         action: 'alt_texts',
         processedCount: 0,
-        errorMessage: error instanceof Error ? error.message : 'Erreur inconnue'
+        errorMessage: error instanceof Error ? error.message : 'Erreur inconnue',
       };
     }
   };
