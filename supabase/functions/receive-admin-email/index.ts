@@ -41,6 +41,19 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Données email invalides - from, to ou email_id manquant");
     }
 
+    // Éviter la boucle : ne pas traiter les emails envoyés par nous-mêmes (copies automatiques)
+    if (from.includes('support@newai.sale') || subject?.includes('[Copie]')) {
+      console.log("⚠️ Email auto-généré détecté, ignoré pour éviter la boucle");
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'Email auto-généré ignoré',
+        skipped: true
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     // Use Resend Receiving API to fetch the full email content
     console.log(`🔍 Récupération du contenu complet via Resend Receiving API (email_id: ${email_id})`);
     
@@ -187,6 +200,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer automatiquement une copie à oben.rockman@gmail.com
     console.log("📧 Envoi d'une copie à oben.rockman@gmail.com...");
+    
+    // Construire le contenu de l'email avec le body disponible
+    const emailBodyForCopy = emailHtml || 
+      (cleanBody ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${cleanBody}</pre>` : '') ||
+      (emailText ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${emailText}</pre>` : '') ||
+      (data.text ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${data.text}</pre>` : '') ||
+      (data.html ? data.html : '') ||
+      '<p style="color: #64748b; font-style: italic;">Contenu de l\'email non disponible</p>';
+    
+    console.log("📝 Body pour copie - longueur:", emailBodyForCopy.length);
+    
     try {
       const forwardResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -195,14 +219,14 @@ const handler = async (req: Request): Promise<Response> => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "NewAI Support <support@newai.sale>",
+          from: "NewAI Notification <notifications@newai.sale>",
           to: ["oben.rockman@gmail.com"],
-          subject: `[Copie] ${subject || 'Sans objet'}`,
+          subject: `[NewAI Copie] ${subject || 'Sans objet'}`,
           html: `
             <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
                 <p style="margin: 0; font-size: 14px; color: #64748b;">
-                  <strong>Copie automatique d'un email reçu sur support@newai.sale</strong>
+                  <strong>📧 Copie automatique d'un email reçu sur support@newai.sale</strong>
                 </p>
               </div>
               
@@ -231,7 +255,7 @@ const handler = async (req: Request): Promise<Response> => {
               
               <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white;">
                 <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #1e293b;">Message:</h3>
-                ${emailHtml || `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${cleanBody || emailText}</pre>`}
+                ${emailBodyForCopy}
               </div>
               
               ${attachments.length > 0 ? `
