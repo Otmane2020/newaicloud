@@ -735,6 +735,7 @@ serve(async (req) => {
       imageAnalysis,
       options = {},
       theme = "light",
+      fastMode = false, // ⚡ NEW: Enable fast mode to skip heavy operations
     } = body ?? {};
 
     // Resolve product_id from multiple possible sources
@@ -1091,47 +1092,54 @@ serve(async (req) => {
     }
 
     // 🔍 SERP Analysis for landing page structure
-    console.log("🔍 Analyzing SERP competitors for landing page structure...");
+    console.log(`🔍 SERP Analysis: ${fastMode ? '⚡ SKIPPED (fast mode)' : 'RUNNING...'}`);
     let serpInsights: any = null;
 
-    try {
-      const { data: serpData, error: serpError } = await supabaseAdmin.functions.invoke("analyze-serp-competitors", {
-        body: {
-          keyword: productTitle,
-          analysisType: "landing",
-          location: storeCountry,
-          language: storeLanguage,
-          maxResults: 10,
-        },
-      });
-
-      if (serpError) {
-        console.warn("⚠️ SERP analysis failed:", serpError);
-      } else if (serpData) {
-        serpInsights = serpData.insights;
-        console.log("✅ SERP analysis completed:", {
-          commonSections: serpInsights?.commonSections?.length || 0,
-          ctaPatterns: serpInsights?.ctaPatterns?.length || 0,
+    if (!fastMode) {
+      try {
+        // ⏱️ SERP timeout: 5 seconds max
+        const serpPromise = supabaseAdmin.functions.invoke("analyze-serp-competitors", {
+          body: {
+            keyword: productTitle,
+            analysisType: "landing",
+            location: storeCountry,
+            language: storeLanguage,
+            maxResults: 10,
+          },
         });
+
+        const { data: serpData, error: serpError } = await withTimeout(serpPromise, 5000);
+
+        if (serpError) {
+          console.warn("⚠️ SERP analysis failed:", serpError);
+        } else if (serpData) {
+          serpInsights = serpData.insights;
+          console.log("✅ SERP analysis completed:", {
+            commonSections: serpInsights?.commonSections?.length || 0,
+            ctaPatterns: serpInsights?.ctaPatterns?.length || 0,
+          });
+        }
+      } catch (serpErr) {
+        console.warn("⚠️ SERP analysis error (continuing without it):", serpErr);
       }
-    } catch (serpErr) {
-      console.warn("⚠️ SERP analysis error:", serpErr);
     }
 
     // 🖼️ Multi-Image Vision AI Analysis - Analyze ALL product images
-    console.log(`🔍 Starting Vision AI analysis for ${images.length} images...`);
+    console.log(`🖼️ Vision AI: ${fastMode ? '⚡ LIMITED (fast mode - 2 images max)' : `FULL (${images.length} images)`}`);
     const imageAnalyses: Array<{ imageUrl: string; description: string; index: number }> = [];
 
-    // Analyze main image + all additional images (limit to 6 images max for performance)
-    const imagesToAnalyze = images.slice(0, 6);
+    // Analyze main image + all additional images (limit based on fastMode)
+    const maxImagesToAnalyze = fastMode ? 2 : 6;
+    const imagesToAnalyze = images.slice(0, maxImagesToAnalyze);
 
     for (let i = 0; i < imagesToAnalyze.length; i++) {
       const img = imagesToAnalyze[i];
       try {
         console.log(`📸 Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${img.src.substring(0, 50)}...`);
 
+        // ⏱️ Vision AI timeout: 10 seconds (reduced from 15s)
         const visionController = new AbortController();
-        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
+        const visionTimeout = setTimeout(() => visionController.abort(), 10000);
 
         const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
           "analyze-image-with-vision",
@@ -2962,71 +2970,22 @@ ${selectedIcon}
       last200Chars: isTruncated ? rawHtml.slice(-200) : "OK"
     });
 
-    // ⚠️ Critical: Detect truncation and auto-retry with shorter mode
+    // ⚠️ Detect truncation - Warning only, no auto-retry
     if (isTruncated) {
-      console.error("❌ TRUNCATION DETECTED - HTML incomplete!");
+      console.warn("⚠️ HTML truncation detected - content may be incomplete");
+      console.warn(`  - Tokens used: ${tokensUsed}/${lengthConfig.maxTokens}`);
+      console.warn(`  - HTML length: ${rawHtml.length}`);
+      console.warn(`  - Mode: ${lengthMode}`);
       
-      // Auto-retry with shorter mode if not already in short mode
-      if (lengthMode !== "short") {
-        console.warn(`⚠️ Retrying with 'short' mode to prevent truncation...`);
-        
-        // Recursively retry with short mode
-        const retryBody = {
-          ...body,
-          userOptions: {
-            ...body.userOptions,
-            contentLength: "short"
-          }
-        };
-        
-        console.log("🔄 Recursively calling generate-landing-ai with short mode...");
-        const retryResponse = await supabaseAdmin.functions.invoke("generate-landing-ai", {
-          body: retryBody
-        });
-        
-        if (retryResponse.error) {
-          console.error("❌ Retry failed:", retryResponse.error);
-          return new Response(
-            JSON.stringify({ 
-              error: detectedLanguage === "en" 
-                ? `HTML generation incomplete even after retry. Please contact support.`
-                : `Génération HTML incomplète même après nouvel essai. Contactez le support.`,
-              debugInfo: {
-                tokensUsed,
-                tokensMax: lengthConfig.maxTokens,
-                htmlLength: rawHtml.length,
-                mode: lengthMode,
-                retryAttempted: true
-              }
-            }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        
-        // Return the retry result
-        return new Response(
-          JSON.stringify(retryResponse.data),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+      // Add a simple closing if missing
+      if (!hasClosingBody) {
+        rawHtml += "\n</body>";
+      }
+      if (!hasClosingHtml) {
+        rawHtml += "\n</html>";
       }
       
-      // If already in short mode and still truncated, return error
-      return new Response(
-        JSON.stringify({ 
-          error: detectedLanguage === "en" 
-            ? `HTML generation incomplete (token limit reached: ${tokensUsed}/${lengthConfig.maxTokens}). Please contact support.`
-            : `Génération HTML incomplète (limite de tokens atteinte: ${tokensUsed}/${lengthConfig.maxTokens}). Contactez le support.`,
-          debugInfo: {
-            tokensUsed,
-            tokensMax: lengthConfig.maxTokens,
-            htmlLength: rawHtml.length,
-            mode: lengthMode
-          }
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.log("✅ Added missing closing tags");
     }
 
     if (!rawHtml || rawHtml.length < 400) {

@@ -1,3 +1,4 @@
+// Les utilisateurs OAuth ont accès complet, pas de limitation trial pour Shopify sync
 export async function checkTrialLimits(supabase: any, userId: string) {
   console.log(`[TRIAL-CHECK] 🔍 Checking trial limits for user: ${userId}`);
   
@@ -29,12 +30,12 @@ export async function checkTrialLimits(supabase: any, userId: string) {
     
     const trialEnded = profile.trial_ends_at && new Date(profile.trial_ends_at) < new Date();
     
-    // Les utilisateurs en trial ne peuvent PAS mettre à jour Shopify
-    const canUpdateShopify = !isTrialActive || trialEnded;
+    // ✅ MODIFICATION: Tous les utilisateurs peuvent sync avec Shopify (flux OAuth unifié)
+    const canUpdateShopify = true;
     
     console.log(`[TRIAL-CHECK] 📊 Results:`, {
       isTrialActive,
-      canUpdateShopify,
+      canUpdateShopify: true, // Always true now
       subscriptionStatus: profile.subscription_status,
       planId: profile.current_plan_id,
       trialEndsAt: profile.trial_ends_at,
@@ -42,7 +43,7 @@ export async function checkTrialLimits(supabase: any, userId: string) {
     
     return {
       isTrialActive,
-      canUpdateShopify,
+      canUpdateShopify: true, // Always allow Shopify sync
       trialEndsAt: profile.trial_ends_at,
       planId: profile.current_plan_id,
       subscriptionStatus: profile.subscription_status,

@@ -1960,17 +1960,10 @@ export default function ProductTitleDescription() {
                                   prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p)),
                                 );
 
-                                // Show different message based on whether it was synced to Shopify
-                                if (data.localOnly) {
-                                  toast.warning(`Statut ${newStatus === "active" ? "publié" : "brouillon"} localement`, {
-                                    id: toastId,
-                                    description: "Passez à un plan payant pour synchroniser avec Shopify"
-                                  });
-                                } else {
-                                  toast.success(`Produit ${newStatus === "active" ? "publié" : "en brouillon"} sur Shopify`, {
-                                    id: toastId,
-                                  });
-                                }
+                                // Show success message for Shopify sync
+                                toast.success(`Produit ${newStatus === "active" ? "publié" : "en brouillon"} sur Shopify`, {
+                                  id: toastId,
+                                });
                               } catch (error) {
                                 console.error("Error updating status:", error);
                                 toast.error("Erreur lors de la mise à jour", { id: toastId });
