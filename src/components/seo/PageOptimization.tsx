@@ -422,12 +422,33 @@ export function PageOptimization() {
     
     const pagesToOptimize = pages.filter(p => !p.optimized);
     if (pagesToOptimize.length === 0) {
-      toast.info('All pages are already optimized');
+      toast.info('All pages are already optimized', {
+        action: {
+          label: "Ré-optimiser tout",
+          onClick: () => handleReoptimizeAllPages()
+        }
+      });
       return;
     }
     
     // Show confirmation dialog
     setShowOptimizeAllConfirmDialog(true);
+  };
+
+  const handleReoptimizeAllPages = async () => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    const allPageIds = pages.map(p => p.id);
+    await handleOptimizeSelected(allPageIds);
   };
 
   const handleConfirmOptimizeAll = async () => {

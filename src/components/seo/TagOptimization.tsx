@@ -341,13 +341,23 @@ export function TagOptimization() {
 
   const handleGenerateAll = () => {
     if (productsNotOptimized === 0) {
-      toast.info(t.seo.tags.allOptimized);
+      toast.info(t.seo.tags.allOptimized, {
+        action: {
+          label: "Ré-optimiser tout",
+          onClick: () => handleReoptimizeAll()
+        }
+      });
       return;
     }
     setFilter('to_optimize');
     setTimeout(() => {
       handleGenerateAllTags();
     }, 100);
+  };
+
+  const handleReoptimizeAll = async () => {
+    const allProductIds = products.map(p => p.id);
+    await handleBulkGenerate(allProductIds, true);
   };
 
   const handleGenerateAllTags = async () => {
@@ -407,7 +417,7 @@ export function TagOptimization() {
     setEditTags('');
   };
 
-  const handleOptimizeProduct = async (productId: string) => {
+  const handleOptimizeProduct = async (productId: string, force = false) => {
     // Check limits before optimizing
     if (!canDoAction('optimizations')) {
       toast.error('Limite d\'optimisations atteinte');
@@ -427,7 +437,7 @@ export function TagOptimization() {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ productId, force: false }),
+        body: JSON.stringify({ productId, force }),
       });
 
       const result = await response.json();

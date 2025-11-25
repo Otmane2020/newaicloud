@@ -405,13 +405,23 @@ export function CollectionOptimization() {
 
   const handleGenerateAll = () => {
     if (notOptimizedCount === 0) {
-      toast.info(t.collections.optimization.messages.allOptimized);
+      toast.info(t.collections.optimization.messages.allOptimized, {
+        action: {
+          label: "Ré-optimiser tout",
+          onClick: () => handleReoptimizeAllCollections()
+        }
+      });
       return;
     }
     setActiveTab('not-optimized');
     setTimeout(() => {
       handleOptimizeAllCollections();
     }, 100);
+  };
+
+  const handleReoptimizeAllCollections = async () => {
+    const allCollectionIds = collections.map(c => c.id);
+    await handleOptimizeSelected(allCollectionIds);
   };
 
   const handleSelectAll = () => {
