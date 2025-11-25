@@ -24,10 +24,20 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadInsights();
+    if (userId) {
+      loadInsights();
+    } else {
+      setLoading(false);
+      setInsight(null);
+    }
   }, [userId]);
 
   const loadInsights = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-user-insights", {
@@ -47,6 +57,14 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
     return (
       <div className="p-4 text-center text-muted-foreground">
         {t.common.loading}
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Please select a user to view insights
       </div>
     );
   }
