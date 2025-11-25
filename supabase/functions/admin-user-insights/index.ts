@@ -33,7 +33,9 @@ serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { userId } = body;
+    // Accept multiple possible field names from the client
+    const userId =
+      (body && (body.userId || body.user_id || body.userID || body.uid)) || null;
 
     if (!userId) {
       return new Response(
