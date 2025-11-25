@@ -15,6 +15,10 @@ export const useAutoSync = (userId: string | undefined) => {
   const { startSync, endSync } = useAutoSyncProgress();
   const location = useLocation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Track the specific sync ID we're monitoring
+  const currentSyncIdRef = useRef<string | null>(null);
+  // Debounce sync triggers to prevent double-triggering
+  const lastConnectionEventRef = useRef<number>(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -31,27 +35,45 @@ export const useAutoSync = (userId: string | undefined) => {
       
       // Poll sync_history to check when import is complete
       const checkSyncStatus = async () => {
-        const { data: latestSync } = await supabase
+        // Build query - if we have a specific sync ID, check only that one
+        let query = supabase
           .from('sync_history')
-          .select('status, items_synced')
-          .eq('user_id', userId)
+          .select('id, status, items_synced, started_at')
+          .eq('user_id', userId);
+        
+        // If we're tracking a specific sync, only check that one
+        if (currentSyncIdRef.current) {
+          query = query.eq('id', currentSyncIdRef.current);
+        } else {
+          // Otherwise, only check recent syncs (last 60 seconds) to avoid detecting old ones
+          const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
+          query = query.gte('started_at', sixtySecondsAgo);
+        }
+        
+        const { data: latestSync } = await query
           .order('started_at', { ascending: false })
           .limit(1)
           .single();
         
         if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
           console.log('✅ [AutoSync] Import completed:', latestSync);
-          if (syncCheckIntervalRef.current) {
-            clearInterval(syncCheckIntervalRef.current);
-            syncCheckIntervalRef.current = null;
-          }
-          if (isMounted) {
-            endSync();
+          
+          // If this is the sync we were tracking, or if we're not tracking a specific one
+          if (!currentSyncIdRef.current || currentSyncIdRef.current === latestSync.id) {
+            currentSyncIdRef.current = null; // Reset tracking
             
-            if (latestSync.status === 'success') {
-              toast.success('Synchronisation terminée', {
-                description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-              });
+            if (syncCheckIntervalRef.current) {
+              clearInterval(syncCheckIntervalRef.current);
+              syncCheckIntervalRef.current = null;
+            }
+            if (isMounted) {
+              endSync();
+              
+              if (latestSync.status === 'success') {
+                toast.success('Synchronisation terminée', {
+                  description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+                });
+              }
             }
           }
         }
@@ -91,6 +113,13 @@ export const useAutoSync = (userId: string | undefined) => {
           
           const connection = payload.new as any;
           
+          // Debounce: prevent multiple triggers within 8 seconds
+          const now = Date.now();
+          if (now - lastConnectionEventRef.current < 8000) {
+            console.log('⏸️ [AutoSync] Debouncing connection event - too soon after last event');
+            return;
+          }
+          
           // Ne déclencher que si c'est une vraie nouvelle connexion (INSERT) 
           // ou un UPDATE qui vient juste d'être connecté
           const isNewConnection = payload.eventType === 'INSERT';
@@ -102,6 +131,9 @@ export const useAutoSync = (userId: string | undefined) => {
             console.log('⏭️ [AutoSync] Skipping - not a new connection');
             return;
           }
+
+          // Mark this event as processed
+          lastConnectionEventRef.current = now;
 
           // ✅ Pour TOUTES les connexions (OAuth ET Admin API), 
           // montrer le dialog et surveiller sync_history
@@ -122,27 +154,45 @@ export const useAutoSync = (userId: string | undefined) => {
           
           // Poll sync_history to check when import is complete
           const checkSyncStatus = async () => {
-            const { data: latestSync } = await supabase
+            // Build query - if we have a specific sync ID, check only that one
+            let query = supabase
               .from('sync_history')
-              .select('status, items_synced')
-              .eq('user_id', userId)
+              .select('id, status, items_synced, started_at')
+              .eq('user_id', userId);
+            
+            // If we're tracking a specific sync, only check that one
+            if (currentSyncIdRef.current) {
+              query = query.eq('id', currentSyncIdRef.current);
+            } else {
+              // Otherwise, only check recent syncs (last 60 seconds) to avoid detecting old ones
+              const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
+              query = query.gte('started_at', sixtySecondsAgo);
+            }
+            
+            const { data: latestSync } = await query
               .order('started_at', { ascending: false })
               .limit(1)
               .single();
             
             if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
               console.log('✅ [AutoSync] Import completed:', latestSync);
-              if (syncCheckIntervalRef.current) {
-                clearInterval(syncCheckIntervalRef.current);
-                syncCheckIntervalRef.current = null;
-              }
-              if (isMounted) {
-                endSync();
+              
+              // If this is the sync we were tracking, or if we're not tracking a specific one
+              if (!currentSyncIdRef.current || currentSyncIdRef.current === latestSync.id) {
+                currentSyncIdRef.current = null; // Reset tracking
                 
-                if (latestSync.status === 'success') {
-                  toast.success('Synchronisation terminée', {
-                    description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-                  });
+                if (syncCheckIntervalRef.current) {
+                  clearInterval(syncCheckIntervalRef.current);
+                  syncCheckIntervalRef.current = null;
+                }
+                if (isMounted) {
+                  endSync();
+                  
+                  if (latestSync.status === 'success') {
+                    toast.success('Synchronisation terminée', {
+                      description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+                    });
+                  }
                 }
               }
             }
