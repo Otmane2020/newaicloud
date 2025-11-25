@@ -95,11 +95,11 @@ export function PricingCard({
         <div className="text-center mb-6">
           {originalPrice && originalPrice > price && (
             <div className="text-2xl text-muted-foreground line-through mb-1">
-              {originalPrice}{currency}
+              {originalPrice} {currency}
             </div>
           )}
           <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            {price}{currency}
+            {price} {currency}
           </div>
           <p className="text-muted-foreground text-sm mt-1">
             {period}

@@ -340,14 +340,14 @@ const Index = () => {
                       <div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-semibold text-muted-foreground line-through">
-                            {getCurrencySymbol(language)}{originalPrice.toFixed(2)}
+                            {originalPrice.toFixed(2)} {getCurrencySymbol(language)}
                           </span>
                           <Badge variant="destructive" className="ml-2">
                             -{planConfig.discount}%
                           </Badge>
                         </div>
                       <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-5xl font-bold text-primary">{getCurrencySymbol(language)}{price}</span>
+                        <span className="text-5xl font-bold text-primary">{price} {getCurrencySymbol(language)}</span>
                         <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
                       </div>
                       </div>
@@ -355,12 +355,12 @@ const Index = () => {
                       <div className="flex items-baseline gap-2">
                         {planConfig.isTrial ? (
                           <>
-                            <span className="text-5xl font-bold">{getCurrencySymbol(language)}0</span>
+                            <span className="text-5xl font-bold">0 {getCurrencySymbol(language)}</span>
                             <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
                         ) : (
                           <>
-                            <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
+                            <span className="text-5xl font-bold">{price} {getCurrencySymbol(language)}</span>
                             <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
                         )}
@@ -368,7 +368,7 @@ const Index = () => {
                     )}
                     {!planConfig.isTrial && billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
+                        {t.landing.pricing.billedAnnually.replace('{{currency}}', '').replace('{{total}}', `${planConfig.yearlyTotal} ${getCurrencySymbol(language)}`)}
                       </p>
                     )}
                     {planConfig.isTrial && (
