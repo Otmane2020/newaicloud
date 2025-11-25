@@ -893,7 +893,7 @@ serve(async (req) => {
     }
     
     let lengthConfig = { 
-      maxTokens: 11000,  // ✅ Increased from 9000 to prevent truncation issues
+      maxTokens: 16000,  // ✅ Increased from 11000 to prevent truncation
       labelEn: "medium", 
       labelFr: "moyenne",
       descriptionEn: "Balanced content (300-400 words)",
@@ -902,7 +902,7 @@ serve(async (req) => {
 
     if (lengthMode === "short") {
       lengthConfig = {
-        maxTokens: 6000,  // ✅ Increased from 4500 for better margin
+        maxTokens: 8000,  // ✅ Increased from 6000 for better margin
         labelEn: "short",
         labelFr: "courte",
         descriptionEn: "Concise and impactful content (150-250 words)",
@@ -910,7 +910,7 @@ serve(async (req) => {
       };
     } else if (lengthMode === "long") {
       lengthConfig = {
-        maxTokens: 25000,  // ✅ Increased from 20000 to handle complex pages with typography
+        maxTokens: 32000,  // ✅ Increased from 25000 to handle complex pages
         labelEn: "long",
         labelFr: "longue",
         descriptionEn: "Detailed and comprehensive content (500-700 words)",
@@ -1898,8 +1898,8 @@ STRUCTURE:
 - 🔤 FONTS: Add in <head> after Tailwind:
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Roboto',sans-serif;line-height:1.6}h1,h2,h3,h4,h5,h6{font-family:'Roboto',sans-serif;font-weight:700;letter-spacing:-0.02em;line-height:1.2}h2{font-size:2.25rem}p,li{line-height:1.75}</style>
 - 🚨 ALL images MUST have loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 md:px-0
@@ -2598,8 +2598,8 @@ STRUCTURE :
 - 🔤 POLICES : Ajouter dans <head> après Tailwind :
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Inter',-apple-system,sans-serif;line-height:1.6}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-0.02em;line-height:1.2}h1{font-weight:700}h2{font-weight:600;font-size:2.25rem}h3{font-weight:500}p,li{line-height:1.75}</style>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>html,body{background:#f3f4f6!important;background-color:#f3f4f6!important}body{font-family:'Roboto',sans-serif;line-height:1.6}h1,h2,h3,h4,h5,h6{font-family:'Roboto',sans-serif;font-weight:700;letter-spacing:-0.02em;line-height:1.2}h2{font-size:2.25rem}p,li{line-line:1.75}</style>
 - 🚨 TOUTES les images DOIVENT avoir loading="lazy"
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
@@ -2962,14 +2962,62 @@ ${selectedIcon}
       last200Chars: isTruncated ? rawHtml.slice(-200) : "OK"
     });
 
-    // ⚠️ Critical: Detect truncation and return clear error
+    // ⚠️ Critical: Detect truncation and auto-retry with shorter mode
     if (isTruncated) {
       console.error("❌ TRUNCATION DETECTED - HTML incomplete!");
+      
+      // Auto-retry with shorter mode if not already in short mode
+      if (lengthMode !== "short") {
+        console.warn(`⚠️ Retrying with 'short' mode to prevent truncation...`);
+        
+        // Recursively retry with short mode
+        const retryBody = {
+          ...body,
+          userOptions: {
+            ...body.userOptions,
+            contentLength: "short"
+          }
+        };
+        
+        console.log("🔄 Recursively calling generate-landing-ai with short mode...");
+        const retryResponse = await supabaseAdmin.functions.invoke("generate-landing-ai", {
+          body: retryBody
+        });
+        
+        if (retryResponse.error) {
+          console.error("❌ Retry failed:", retryResponse.error);
+          return new Response(
+            JSON.stringify({ 
+              error: detectedLanguage === "en" 
+                ? `HTML generation incomplete even after retry. Please contact support.`
+                : `Génération HTML incomplète même après nouvel essai. Contactez le support.`,
+              debugInfo: {
+                tokensUsed,
+                tokensMax: lengthConfig.maxTokens,
+                htmlLength: rawHtml.length,
+                mode: lengthMode,
+                retryAttempted: true
+              }
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        // Return the retry result
+        return new Response(
+          JSON.stringify(retryResponse.data),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      // If already in short mode and still truncated, return error
       return new Response(
         JSON.stringify({ 
           error: detectedLanguage === "en" 
-            ? `HTML generation incomplete (token limit reached: ${tokensUsed}/${lengthConfig.maxTokens}). Try 'short' mode or contact support.`
-            : `Génération HTML incomplète (limite de tokens atteinte: ${tokensUsed}/${lengthConfig.maxTokens}). Essayez le mode 'short' ou contactez le support.`,
+            ? `HTML generation incomplete (token limit reached: ${tokensUsed}/${lengthConfig.maxTokens}). Please contact support.`
+            : `Génération HTML incomplète (limite de tokens atteinte: ${tokensUsed}/${lengthConfig.maxTokens}). Contactez le support.`,
           debugInfo: {
             tokensUsed,
             tokensMax: lengthConfig.maxTokens,
