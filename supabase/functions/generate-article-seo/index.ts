@@ -316,7 +316,7 @@ ${labels.instruction}`;
         await supabase.rpc('increment_usage', {
           p_seller_id: user.id,
           p_field: 'optimizations_count',
-          p_increment: 1
+          p_increment: 2
         });
 
         console.log(`✅ Successfully optimized article: ${article_id}`);

@@ -445,7 +445,7 @@ ${baseContent}`;
       const { error: usageError } = await supabaseClient.rpc('increment_usage', {
         p_seller_id: user.id,
         p_field: 'optimizations_count',
-        p_increment: 1
+        p_increment: 2
       });
 
       if (usageError) {

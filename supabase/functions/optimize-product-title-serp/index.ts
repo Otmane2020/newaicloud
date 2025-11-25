@@ -173,6 +173,22 @@ RÈGLES STRICTES :
 
     console.log("✅ [TITLE_SERP] Product title updated in database");
 
+    // Get the user_id (seller_id) from the product to track usage
+    const { data: productForUsage, error: usageProductError } = await supabase
+      .from("shopify_products")
+      .select("seller_id")
+      .eq("id", productId)
+      .single();
+
+    if (!usageProductError && productForUsage) {
+      await supabase.rpc('increment_usage', {
+        p_seller_id: productForUsage.seller_id,
+        p_field: 'optimizations_count',
+        p_increment: 1
+      });
+      console.log("✅ [TITLE_SERP] Usage tracked successfully");
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

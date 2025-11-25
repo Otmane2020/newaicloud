@@ -3069,7 +3069,7 @@ ${selectedIcon}
           await supabaseAdmin.rpc('increment_usage', {
             p_seller_id: userId,
             p_field: 'optimizations_count',
-            p_increment: 1
+            p_increment: 10
           });
           console.log("✅ Usage tracked successfully");
         } catch (usageError) {

@@ -183,7 +183,7 @@ RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL CONCENTRÉ SUR LE PRODUIT.`
     await supabase.rpc("increment_usage", {
       p_seller_id: product.seller_id,
       p_field: "optimizations_count",
-      p_increment: 1,
+      p_increment: 3,
     });
 
     return new Response(JSON.stringify({ success: true, alt: geminiText }), {
