@@ -614,7 +614,12 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     const imagesToOptimize = images.filter(img => !img.optimization_count || img.optimization_count === 0);
 
     if (imagesToOptimize.length === 0) {
-      toast.info('Toutes les images sont déjà optimisées par IA');
+      toast.info('Toutes les images sont déjà optimisées par IA', {
+        action: {
+          label: "Ré-optimiser tout",
+          onClick: () => handleReoptimizeAllImages()
+        }
+      });
       return;
     }
 
@@ -629,6 +634,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
+    const toastId = toast.loading(`Optimisation de ${imagesToOptimize.length} images...`);
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
@@ -663,6 +669,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       }
     }
 
+    toast.dismiss(toastId);
     if (errorCount > 0) {
       toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
     } else {
@@ -672,6 +679,72 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     setGenerating(false);
     setIsOptimizationComplete(true);
     await fetchImages();
+    await refreshLimits();
+    setShowProgressDialog(false);
+  };
+
+  const handleReoptimizeAllImages = async () => {
+    // Re-optimize ALL images
+    const allImageIds = images.map(img => img.id);
+    
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    const toastId = toast.loading(`Ré-optimisation de ${images.length} images...`);
+    setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+    setProgress({ current: 0, total: images.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < images.length; i++) {
+      try {
+        const img = images[i];
+        const imageType = img.image_type || 'product';
+        
+        const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
+          body: { 
+            imageId: img.id,
+            imageType: imageType,
+            force: true
+          }
+        });
+        
+        if (error) {
+          console.error('Error generating ALT text:', error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+        
+        setProgress({ current: i + 1, total: images.length });
+      } catch (error) {
+        console.error('Error generating ALT text:', error);
+        errorCount++;
+      }
+    }
+
+    toast.dismiss(toastId);
+    if (errorCount > 0) {
+      toast.warning(`${successCount}/${images.length} images ré-optimisées avec succès`);
+    } else {
+      toast.success(`${successCount} images ré-optimisées avec succès!`);
+    }
+
+    setGenerating(false);
+    setIsOptimizationComplete(true);
+    await fetchImages();
+    await refreshLimits();
     setShowProgressDialog(false);
   };
 
