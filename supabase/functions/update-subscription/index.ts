@@ -2,20 +2,22 @@
  * Subscription Upgrade Logic:
  * 
  * UPGRADE BILLING:
- * - Uses Stripe proration with explicit invoice creation
- * - Creates proration adjustments via 'create_prorations' behavior
- * - Generates and finalizes invoice immediately for mid-cycle upgrades
+ * - Uses Stripe automatic proration with 'always_invoice' behavior
+ * - Stripe automatically creates, finalizes, and attempts payment of proration invoice
  * - Fair billing regardless of upgrade timing in the cycle
+ * - Immediate payment confirmation for better UX
  * 
- * STRIPE PRORATION REQUIREMENTS (CRITICAL):
- * For proration to work, Stripe requires ALL of these conditions:
+ * STRIPE PRORATION BEHAVIOR (always_invoice):
+ * - Stripe calculates the prorated amount automatically
+ * - Creates and finalizes the invoice immediately
+ * - Attempts to charge the customer's default payment method
+ * - Works for both trial and paid subscriptions
+ * - Handles edge cases (currency mismatch, interval changes) with clear errors
+ * 
+ * PRORATION VALIDATION:
+ * For proration to work correctly, these conditions must match:
  * 1. Currency Match: Current and new price must use same currency (EUR->EUR or USD->USD)
  * 2. Interval Match: Current and new price must use same interval (monthly->monthly or yearly->yearly)
- * 3. Paid Invoice History: At least one paid invoice must exist in subscription history
- * 4. Active Subscription: Subscription must have valid period dates (not in setup phase)
- * 
- * If any condition fails, the upgrade will be blocked with a clear error message.
- * For trial subscriptions without paid invoices, upgrade is allowed but proration is skipped.
  * 
  * USAGE COUNTER RESETS:
  * - MID-CYCLE UPGRADE (> 3 days into cycle):
@@ -25,7 +27,7 @@
  *   - No usage reset (cycle just started, counters already at 0)
  * 
  * This ensures users get immediate access to new limits when upgrading
- * and Stripe handles billing correctly with proper validations.
+ * and Stripe handles billing automatically with proper validations.
  */
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -313,11 +315,11 @@ serve(async (req) => {
     });
 
     if (!hasPaidInvoice && stripeSubscription.status === 'trialing') {
-      logStep("⚠️ PRORATION WARNING: No paid invoices (trial)", {
+      logStep("ℹ️ INFO: First paid invoice (trial)", {
         status: stripeSubscription.status,
-        trialEnd: stripeSubscription.trial_end
+        trialEnd: stripeSubscription.trial_end,
+        note: "Stripe will create invoice with always_invoice, but payment may be deferred until trial ends"
       });
-      // For trial subscriptions, we'll still allow the upgrade but warn that no proration will occur
     }
 
     // Calculate days into billing cycle
@@ -365,16 +367,17 @@ serve(async (req) => {
             price: new_price_id,
           },
         ],
-        // Create proration adjustments now, we'll invoice them explicitly just after
-        proration_behavior: 'create_prorations',
+        // Stripe automatically creates, finalizes, and charges the proration invoice
+        proration_behavior: 'always_invoice',
         billing_cycle_anchor: 'unchanged',
       }
     );
 
-    logStep("Subscription updated in Stripe with automatic proration", {
+    logStep("✅ Subscription updated in Stripe with automatic proration", {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status,
       prorationBehavior: 'always_invoice',
+      latestInvoice: updatedSubscription.latest_invoice,
       periodPreserved: true
     });
 
@@ -439,75 +442,57 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Generate and finalize a proration invoice for mid-cycle upgrades
+    // Retrieve the automatically generated proration invoice from Stripe
     let prorationDetails: any = null;
 
-    if (isMidCycleUpgrade && hasPaidInvoice) {
-      try {
-        // Use customer from the subscription to ensure they match
-        const customerId = typeof stripeSubscription.customer === 'string' 
-          ? stripeSubscription.customer 
-          : stripeSubscription.customer.id;
+    if (isMidCycleUpgrade) {
+      const latestInvoiceId = updatedSubscription.latest_invoice;
+      
+      if (latestInvoiceId && typeof latestInvoiceId === 'string') {
+        try {
+          const invoice = await stripe.invoices.retrieve(latestInvoiceId);
+          const daysRemaining = totalCycleDays - daysIntoCycle;
+          
+          prorationDetails = {
+            amount_due: (invoice.amount_due || 0) / 100,
+            currency: invoice.currency?.toUpperCase(),
+            invoice_id: invoice.id,
+            invoice_url: invoice.hosted_invoice_url,
+            invoice_pdf: invoice.invoice_pdf,
+            status: invoice.status,
+            paid: invoice.paid,
+            days_remaining: daysRemaining,
+            total_cycle_days: totalCycleDays,
+            logic: "stripe_automatic_proration",
+            explanation: invoice.paid 
+              ? `Prorata de ${(invoice.amount_due || 0) / 100}${invoice.currency?.toUpperCase()} payé avec succès pour ${daysRemaining} jours restants`
+              : `Facture de prorata créée (${invoice.status}). Paiement en attente.`,
+            payment_intent: invoice.payment_intent,
+          };
+          
+          logStep("✅ Proration invoice retrieved from Stripe", prorationDetails);
+        } catch (error: any) {
+          logStep("⚠️ Could not retrieve proration invoice", { 
+            error: error.message,
+            latestInvoiceId 
+          });
+          
+          prorationDetails = {
+            info: "Proration applied but invoice details unavailable",
+            explanation: "L'upgrade a été appliqué avec prorata automatique par Stripe."
+          };
+        }
+      } else {
+        logStep("⚠️ No latest_invoice in updatedSubscription", {
+          latestInvoice: latestInvoiceId,
+          subscriptionStatus: updatedSubscription.status
+        });
         
-        logStep("Attempting to create proration invoice", {
-          customer: customerId,
-          subscription: subscriptionData.stripe_subscription_id,
-          hasPaidInvoice,
-          subscriptionStatus: stripeSubscription.status
-        });
-
-        const invoice = await stripe.invoices.create({
-          customer: customerId,
-          subscription: subscriptionData.stripe_subscription_id,
-          auto_advance: true,
-        });
-
-        logStep("Proration invoice created (draft)", {
-          invoiceId: invoice.id,
-          status: invoice.status,
-          amountDue: invoice.amount_due / 100,
-          lineItemsCount: invoice.lines.data.length
-        });
-
-        const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
-        const daysRemaining = totalCycleDays - daysIntoCycle;
-
         prorationDetails = {
-          amount_due: (finalized.amount_due || 0) / 100,
-          currency: finalized.currency?.toUpperCase(),
-          invoice_id: finalized.id,
-          invoice_url: finalized.hosted_invoice_url,
-          days_remaining: daysRemaining,
-          total_cycle_days: totalCycleDays,
-          logic: "stripe_proration_invoice",
-          explanation: `Prorata calculé pour ${daysRemaining} jours restants sur ${totalCycleDays} jours`,
-        };
-
-        logStep("✅ Proration invoice finalized successfully", prorationDetails);
-      } catch (error: any) {
-        logStep("❌ Proration invoice generation failed", { 
-          error: error.message,
-          errorType: error.type,
-          errorCode: error.code
-        });
-        
-        prorationDetails = { 
-          error: "Proration invoice failed",
-          reason: error.message,
-          note: "L'upgrade a été appliqué mais la facture de prorata n'a pas pu être générée. Vous serez facturé au prochain cycle."
+          info: "Mid-cycle upgrade applied",
+          explanation: "L'upgrade a été appliqué. Le prorata sera calculé par Stripe au prochain cycle."
         };
       }
-    } else if (isMidCycleUpgrade && !hasPaidInvoice) {
-      logStep("⚠️ Proration skipped - no paid invoice history", {
-        subscriptionStatus: stripeSubscription.status,
-        reason: "Stripe requires at least one paid invoice for proration"
-      });
-      prorationDetails = { 
-        info: "No proration - subscription has no paid invoices yet",
-        explanation: stripeSubscription.status === 'trialing' 
-          ? "Votre abonnement est en période d'essai. Le prorata sera calculé après la première facturation."
-          : "Aucune facture payée trouvée. Le prorata sera calculé au prochain cycle."
-      };
     } else {
       logStep("No proration needed (renewal upgrade)");
       prorationDetails = { 
@@ -532,7 +517,21 @@ serve(async (req) => {
           days_into_cycle: daysIntoCycle,
           days_remaining: totalCycleDays - daysIntoCycle,
           renewal_date: new Date(periodEnd * 1000).toISOString(),
-        }
+        },
+        // Payment information for better UX
+        payment: prorationDetails?.paid ? {
+          status: 'paid',
+          amount: prorationDetails.amount_due,
+          currency: prorationDetails.currency,
+          invoice_url: prorationDetails.invoice_url,
+          invoice_pdf: prorationDetails.invoice_pdf,
+        } : prorationDetails?.status === 'open' ? {
+          status: 'pending',
+          message: 'Invoice created, payment pending',
+          invoice_url: prorationDetails.invoice_url,
+          amount: prorationDetails.amount_due,
+          currency: prorationDetails.currency,
+        } : null
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
