@@ -56,7 +56,7 @@ export function SystemStatusDashboard() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        setResults(data.results || {});
+        setResults((data.results as unknown as HealthCheckResults) || {});
         setSummary({
           totalFunctions: data.total_functions,
           healthyCount: data.healthy_count,
