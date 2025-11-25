@@ -1509,6 +1509,46 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
     console.log(`  - Theme: ${userOptions.theme || "light"}`);
     console.log(`  - Dimension Images: ${dimensionImages.length} technical schematics found`);
 
+    // Build style-specific HTML examples
+    const styleExamples = userOptions.designStyle === 'minimalist' 
+      ? `EXEMPLE MINIMALISTE (STRICT):
+'''html
+<!-- Section avec bordures fines, pas de shadow, pas de rounded -->
+<section class="py-32 border-t border-gray-200">
+  <div class="max-w-4xl mx-auto px-4">
+    <h2 class="text-5xl font-light mb-16" style="color: hsl(${designTokens.text})">Section Title</h2>
+    <div class="border border-gray-200 p-8">
+      <p style="color: hsl(${designTokens.textMuted})">Clean, sharp corners, no shadows</p>
+    </div>
+  </div>
+</section>
+'''`
+      : userOptions.designStyle === 'premium'
+        ? `EXEMPLE PREMIUM (LUXUEUX):
+'''html
+<!-- Section sombre avec effets riches -->
+<section class="py-36 relative" style="background: hsl(${designTokens.background})">
+  <div class="max-w-7xl mx-auto px-4">
+    <h2 class="text-7xl font-serif font-light tracking-wide mb-20 text-white">Luxury Section</h2>
+    <div class="bg-white/5 backdrop-blur-lg rounded-3xl p-8 shadow-2xl" style="box-shadow: 0 0 60px rgba(255,255,255,0.1)">
+      <p class="text-gray-100" style="color: hsl(${designTokens.text})">Rich depth and elegance</p>
+    </div>
+  </div>
+</section>
+'''`
+        : `EXEMPLE MODERNE (ÉQUILIBRÉ):
+'''html
+<!-- Section avec cartes flottantes -->
+<section class="py-24 bg-white">
+  <div class="max-w-7xl mx-auto px-4">
+    <h2 class="text-5xl font-bold mb-12" style="color: hsl(${designTokens.text})">Modern Section</h2>
+    <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow p-6">
+      <p style="color: hsl(${designTokens.textMuted})">Balanced design with gradients</p>
+    </div>
+  </div>
+</section>
+'''`;
+
     const prompt =
       detectedLanguage === "en"
         ? `You are a Shopify UX/UI expert specialized in product landing pages.
@@ -1829,11 +1869,11 @@ FORBIDDEN EXAMPLES:
 
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:
-- Minimal, elegant, clean design
-- Modern e-commerce aesthetic
+- Follow the selected design style rules (minimalist/modern/premium) strictly
+- Modern e-commerce aesthetic adapted to chosen style
 - Professional photography style
-- Clear typography hierarchy
-- Generous whitespace
+- Clear typography hierarchy matching style guidelines
+- Whitespace according to style (massive for minimalist, balanced for modern, generous for premium)
 
 ❌ ABSOLUTELY FORBIDDEN:
 - NO decorative icons (sparkles ✨, stars ⭐, hearts ❤️, rocket 🚀, etc.)
@@ -2442,6 +2482,29 @@ ${selectedStyle.description}
 RÈGLES DE DESIGN (OBLIGATOIRES - SUIVRE EXACTEMENT) :
 ${selectedStyle.rules}
 
+🚨🚨🚨 CRITICAL OVERRIDE - LES RÈGLES DE STYLE CI-DESSUS SONT PRIORITAIRES SUR TOUTES LES AUTRES INSTRUCTIONS! 🚨🚨🚨
+
+Si le style est MINIMALISTE:
+- ❌ AUCUNE ombre (shadow) n'est permise
+- ❌ AUCUN arrondi (rounded) n'est permis - angles droits uniquement
+- ✅ Palette monochrome stricte (noir + blanc + 1 accent)
+- ✅ Espaces massifs entre sections
+
+Si le style est MODERN:
+- ✅ Ombres progressives (shadow-md hover:shadow-xl) OBLIGATOIRES
+- ✅ Arrondis (rounded-xl, rounded-2xl) OBLIGATOIRES
+- ✅ Dégradés colorés OBLIGATOIRES
+- ✅ Cartes flottantes avec effets hover
+
+Si le style est PREMIUM:
+- ✅ Backgrounds SOMBRES (bg-gray-900, bg-slate-900) OBLIGATOIRES
+- ✅ Typographie Serif pour titres OBLIGATOIRE
+- ✅ Ombres profondes multiples (shadow-2xl) OBLIGATOIRES
+- ✅ Effets glow et brillance OBLIGATOIRES
+
+EXEMPLES HTML PAR STYLE:
+${styleExamples}
+
 PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
 - Primaire : hsl(${designTokens.primary})
 - Primaire Claire : hsl(${designTokens.primaryLight})
@@ -2730,9 +2793,16 @@ STRUCTURE :
 Hero avec galerie d'images, Points Forts (3-4 cartes), Caractéristiques Techniques (si données enrichies), Matériaux & Composition (si disponible), Galerie d'Images, Conseils d'Entretien, FAQ.
 
 UTILISATION DES ICÔNES :
-- Utiliser UNIQUEMENT des icônes SVG checkmark simples pour les listes à puces
-- UNE SEULE icône par élément de liste
-- Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+Pour les LISTES À PUCES : Utiliser l'icône fournie ci-dessous selon le style sélectionné
+Pour la section MATÉRIAUX & COMPOSITION : Utiliser des icônes variées selon le type de matériau :
+- Panneau/Corps/Caisson : <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+- Protection/Résistance : <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+- Mécanisme/Charnières/Fermeture : <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+- Finition/Surface/Stratifié : <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+- Éclairage/LED : <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+
+ICÔNE POUR LISTES À PUCES SELON LE STYLE :
+${selectedIcon}
 - AUCUNE icône décorative ailleurs`;
 
     // --- AI call with timeout (60s) ---
