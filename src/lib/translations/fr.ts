@@ -154,6 +154,22 @@ export const translations = {
     emptyTitle: "Aucune notification",
     emptyDescription: "Vous êtes à jour ! 🎉",
   },
+    priority: {
+      high: "Haute",
+      medium: "Moyenne",
+      low: "Basse",
+    },
+    view: "Voir",
+    viewAll: "Tout Voir",
+    close: "Fermer",
+    archive: "Archiver",
+    actionCompleted: "Action terminée",
+    markCompleted: "Marquer comme Terminé",
+    completed: "Terminé",
+    dueBefore: "À faire avant le",
+    emptyTitle: "Aucune notification",
+    emptyDescription: "Vous êtes à jour ! 🎉",
+  },
 
   // ============= Offre promotionnelle =============
   announcement: {

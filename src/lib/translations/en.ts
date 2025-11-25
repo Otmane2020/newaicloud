@@ -104,6 +104,90 @@ export const translations = {
       productOptimized: "{{count}} product(s) optimized successfully",
       blogArticlePublished: "New blog article published: {{title}}",
       campaignLaunched: 'Campaign "{{name}}" launched successfully',
+      limitReached: "You have reached {{percent}}% of your {{limitType}} limit",
+      trialEnding: "Your trial ends in {{days}} days",
+      subscriptionExpired: "Your subscription has expired",
+      syncComplete: "Shopify synchronization completed successfully",
+      syncError: "Shopify synchronization failed - check your connection",
+    },
+    actions: {
+      markAsRead: "Mark as Read",
+      markAllAsRead: "Mark All as Read",
+      viewDetails: "View Details",
+      dismiss: "Dismiss",
+      settings: "Notification Settings",
+    },
+    empty: {
+      title: "No notifications",
+      description: "You're all caught up!",
+    },
+    samples: {
+      optimizeProducts: {
+        title: "Optimize your products",
+        message: "You have products that need SEO optimization",
+        actionLabel: "Go to Products",
+      },
+      missingAlts: {
+        title: "Missing ALT tags",
+        message: "Some images don't have alternative text",
+        actionLabel: "Fix ALTs",
+      },
+      seoAudit: {
+        title: "SEO Audit",
+        message: "Schedule a complete SEO audit of your store",
+        actionLabel: "Start Audit",
+      },
+    },
+    priority: {
+      high: "High",
+      medium: "Medium",
+      low: "Low",
+    },
+    view: "View",
+    viewAll: "View All",
+    close: "Close",
+    archive: "Archive",
+    actionCompleted: "Action completed",
+    markCompleted: "Mark as Completed",
+    completed: "Completed",
+    dueBefore: "Due before",
+    emptyTitle: "No notifications",
+    emptyDescription: "You're all caught up! 🎉",
+  },
+      upgradeNoProration: {
+        currentDay: "You are on day {{day}} of your cycle",
+        noProration: "No proration (start of cycle)",
+        fullPrice: "You will pay the full price of the new plan",
+        renewalDate: "Renewal date: {{date}}"
+      },
+      defaultUpgrade: {
+        prorationApplied: "You will be billed prorated based on your position in the cycle",
+        countersReset: "Your monthly counters will be reset if applicable",
+        renewalUnchanged: "Your renewal date remains unchanged"
+      },
+      defaultDowngrade: {
+        immediateEffect: "The change will be effective immediately",
+        creditApplied: "You will be credited for the rest of the cycle",
+        countersAdjusted: "Your monthly counters will be adjusted"
+      }
+    },
+    toasts: {
+      upgradeSuccessProration: "✅ Plan upgraded! Prorated ${{amount}} charged. Your counters have been reset.",
+      upgradeSuccessNoProration: "✅ Plan upgraded! New cycle started without proration.",
+      upgradeError: "Error during update"
+    },
+    buttons: {
+      cancel: "Cancel",
+      confirm: "Confirm change",
+      updating: "Updating..."
+    }
+  },
+      systemAlert: "System Alert",
+    },
+    messages: {
+      productOptimized: "{{count}} product(s) optimized successfully",
+      blogArticlePublished: "New blog article published: {{title}}",
+      campaignLaunched: 'Campaign "{{name}}" launched successfully',
       limitReached: "You've reached {{percent}}% of your {{limitType}} limit",
       trialEnding: "Your trial ends in {{days}} days",
       subscriptionExpired: "Your subscription has expired",
