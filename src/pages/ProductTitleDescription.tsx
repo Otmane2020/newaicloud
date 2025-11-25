@@ -2851,7 +2851,11 @@ export default function ProductTitleDescription() {
           </DialogHeader>
           {selectedLandingProduct && landingConfig && showLandingDialog && (
             <RegenerateLanding
-              product={selectedLandingProduct}
+              product={{
+                ...selectedLandingProduct,
+                // Utiliser seo_title si disponible pour synchronisation
+                title: selectedLandingProduct.seo_title || selectedLandingProduct.title
+              }}
               config={landingConfig}
               autoGenerate={true}
               onGenerated={async (html) => {

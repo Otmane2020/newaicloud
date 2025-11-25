@@ -367,16 +367,33 @@ Be concise and precise.`
 
     userPrompt += `\n\n✨ À GÉNÉRER:
 
-1️⃣ TITRE SEO (50-60 caractères):
+1️⃣ TITRE PRODUIT SHOPIFY (60-70 caractères - OPTIMISÉ SEO):
+   🎯 OBJECTIF: Titre commercial pour la page produit Shopify (PAS le meta title)
    ${extractedVendor ? `IMPÉRATIF: Inclure "${extractedVendor}"` : ''}
    ${extractedDimensions ? `IMPÉRATIF: Inclure "${extractedDimensions}"` : ''}
-   Format: [Vendor] [Produit] ${extractedDimensions ? '[Dimensions]' : ''} - [Bénéfice]
-   Exemple: "IKEA Bureau 120x80cm - Design Scandinave Premium"
+   
+   📐 FORMAT OBLIGATOIRE: [Type Produit] [Marque/Modèle] [Matériau Principal] [Caractéristique Unique] [Dimensions]
+   
+   ✅ EXEMPLES CORRECTS (60-70 car):
+   - "Table Kovia Céramique Travertin Mat Pieds Métal 180cm"
+   - "Canapé Convertible Velours Bleu Nuit Méridienne Réversible 250cm"
+   - "Buffet Industriel Bois Massif Métal Noir 3 Portes 160cm"
+   
+   ❌ EXEMPLES INCORRECTS (trop courts):
+   - "Table Kovia Céramique 180cm" (perd matériau secondaire, finition)
+   - "Canapé Velours Bleu 250cm" (perd type, caractéristique)
+   
+   🚨 RÈGLES CRITIQUES:
+   - CONSERVER toutes les infos importantes du titre original
+   - Inclure TOUS les matériaux mentionnés (ex: "Céramique + Pieds Métal")
+   - Inclure la finition si présente (Mat, Brillant, Verni, etc.)
+   - Capitaliser chaque mot important
+   - 60-70 caractères MAXIMUM (pas 50-60)
 
 2️⃣ META DESCRIPTION (150-160 car):
    INCLURE: Vendor, dimensions (si disponibles), bénéfices Vision AI, infos utilisateur
    Structure: [Accroche] + [2-3 bénéfices clés] + [CTA] + [Réassurance]
-   Exemple: "Bureau IKEA 120x80cm en bois massif. Design épuré, rangement intégré. Livraison 48h ✓"
+   Exemple: "Table à manger 180cm plateau céramique effet travertin mat, pieds métal design. Élégante et résistante. ✓"
 
 3️⃣ HTML BODY STRUCTURÉ:
    PRIORITÉS ABSOLUES:

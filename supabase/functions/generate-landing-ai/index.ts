@@ -721,6 +721,7 @@ serve(async (req) => {
       productId: product_id_from_body,
       product_id: legacy_product_id,
       productTitle,
+      seo_title,
       imageUrl,
       description,
       vendor,
@@ -740,6 +741,9 @@ serve(async (req) => {
 
     // Resolve product_id from multiple possible sources
     const product_id = product_id_from_body || legacy_product_id;
+    
+    // Use SEO title if available, fallback to original title
+    const displayTitle = seo_title || productTitle;
 
     // Merge options with legacy fields for backwards compatibility
     const userOptions = {
@@ -1100,7 +1104,7 @@ serve(async (req) => {
         // ⏱️ SERP timeout: 5 seconds max
         const serpPromise = supabaseAdmin.functions.invoke("analyze-serp-competitors", {
           body: {
-            keyword: productTitle,
+            keyword: displayTitle,
             analysisType: "landing",
             location: storeCountry,
             language: storeLanguage,
@@ -1144,14 +1148,14 @@ serve(async (req) => {
         const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
           "analyze-image-with-vision",
           {
-            body: {
-              imageUrl: img.src,
-              productContext: {
-                title: productTitle,
-                category: enrichedProduct.category,
-                type: enrichedProduct.product_type,
+              body: {
+                imageUrl: img.src,
+                productContext: {
+                  title: displayTitle,
+                  category: enrichedProduct.category,
+                  type: enrichedProduct.product_type,
+                },
               },
-            },
             signal: visionController.signal,
           },
         );
@@ -1563,7 +1567,7 @@ LAYOUT - CRÉATIF ASYMÉTRIQUE:
 Generate a complete, professional Tailwind HTML landing page.
 
 PRODUCT:
-- Title: ${productTitle}
+- Title: ${displayTitle}
 - Brand: ${vendor}
 - Description: ${description}
 - Style: ${style || enrichedProduct.style || ""}

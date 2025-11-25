@@ -85,6 +85,7 @@ interface RegenerateLandingProps {
   product: {
     id: string;
     title: string;
+    seo_title?: string;
     handle?: string;
     description?: string;
     image_url?: string;
@@ -382,6 +383,7 @@ export default function RegenerateLanding({
         body: {
           productId: product.id,
           productTitle: optimizedTitle || product.title,
+          seo_title: product.seo_title, // ✅ Pass SEO title for landing page sync
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
