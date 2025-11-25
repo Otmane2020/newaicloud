@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shopifyGraphQL, restIdToGid, handleUserErrors, PRODUCT_DELETE_MUTATION } from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,23 +66,25 @@ serve(async (req) => {
       throw new Error("Shopify connection not found");
     }
 
-    // Delete from Shopify if it has a shopify_id
+    // Delete from Shopify if it has a shopify_id (using GraphQL)
     if (product.shopify_id) {
-      const shopifyResponse = await fetch(
-        `https://${connection.store_url}/admin/api/2024-01/products/${product.shopify_id}.json`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-Shopify-Access-Token": connection.access_token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.log(`🗑️ Deleting product ${product.shopify_id} from Shopify using GraphQL`);
+      
+      const productGid = restIdToGid(product.shopify_id, 'Product');
+      
+      try {
+        const result = await shopifyGraphQL(
+          connection.store_url,
+          connection.access_token,
+          PRODUCT_DELETE_MUTATION,
+          { input: { id: productGid } }
+        );
 
-      if (!shopifyResponse.ok) {
-        const error = await shopifyResponse.text();
-        console.error("Shopify deletion failed:", error);
-        throw new Error(`Shopify deletion failed: ${error}`);
+        handleUserErrors(result.productDelete?.userErrors, 'productDelete');
+        console.log(`✅ Product deleted from Shopify: ${result.productDelete?.deletedProductId}`);
+      } catch (error: any) {
+        console.error("❌ Shopify GraphQL deletion failed:", error);
+        throw new Error(`Shopify deletion failed: ${error?.message || String(error)}`);
       }
     }
 

@@ -1,10 +1,89 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { checkTrialLimits } from "../_shared/trial-limits.ts";
+import { shopifyGraphQL, restIdToGid, handleUserErrors, extractNodes } from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// GraphQL mutation to create product media
+const PRODUCT_CREATE_MEDIA_MUTATION = `
+  mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+    productCreateMedia(productId: $productId, media: $media) {
+      media {
+        ... on MediaImage {
+          id
+          alt
+          image {
+            url
+          }
+        }
+      }
+      mediaUserErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+// GraphQL mutation to update product media
+const PRODUCT_UPDATE_MEDIA_MUTATION = `
+  mutation productUpdateMedia($productId: ID!, $media: [UpdateMediaInput!]!) {
+    productUpdateMedia(productId: $productId, media: $media) {
+      media {
+        ... on MediaImage {
+          id
+          alt
+          image {
+            url
+          }
+        }
+      }
+      mediaUserErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+// GraphQL mutation to delete product media
+const PRODUCT_DELETE_MEDIA_MUTATION = `
+  mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+    productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+      deletedMediaIds
+      deletedProductImageIds
+      mediaUserErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+// GraphQL query to get product media
+const PRODUCT_MEDIA_QUERY = `
+  query getProductMedia($id: ID!) {
+    product(id: $id) {
+      id
+      media(first: 250) {
+        edges {
+          node {
+            ... on MediaImage {
+              id
+              alt
+              image {
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -202,34 +281,26 @@ Deno.serve(async (req) => {
 
     console.log('Using direct access token, length:', connection.access_token?.length);
 
-    // Get existing images from Shopify first
-    console.log(`🔍 Fetching existing images from Shopify product ${product.shopify_product_id}`);
-    const getResponse = await fetch(
-      `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_product_id}.json`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": connection.access_token,
-        },
-      }
-    );
-
-    if (!getResponse.ok) {
-      const errorText = await getResponse.text();
-      console.error("Shopify GET error:", getResponse.status, errorText);
+    // Get existing images from Shopify using GraphQL
+    console.log(`🔍 Fetching existing media from Shopify product ${product.shopify_product_id} using GraphQL`);
+    const productGid = restIdToGid(product.shopify_product_id, 'Product');
+    
+    let existingMedia: any[] = [];
+    try {
+      const mediaResult = await shopifyGraphQL(
+        connection.shop_domain,
+        connection.access_token,
+        PRODUCT_MEDIA_QUERY,
+        { id: productGid }
+      );
       
-      if (getResponse.status === 401) {
-        throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
-      }
-      
-      throw new Error(`Failed to fetch Shopify product: ${getResponse.status}`);
+      existingMedia = extractNodes(mediaResult.product?.media || { edges: [] });
+      console.log(`📸 Found ${existingMedia.length} existing media items in Shopify`);
+    } catch (error: any) {
+      console.error("❌ Failed to fetch existing media:", error);
+      throw new Error(`Failed to fetch Shopify product media: ${error?.message || String(error)}`);
     }
 
-    const existingProduct = await getResponse.json();
-    const existingImages = existingProduct.product?.images || [];
-    
-    console.log(`📸 Found ${existingImages.length} existing images in Shopify`);
 
     // Prepare new images to add (only those without shopify_image_id)
     const newImages = (product.images || [])
@@ -249,11 +320,14 @@ Deno.serve(async (req) => {
       });
 
     // Prepare images to update (those with shopify_image_id but src/alt changed)
+    // Note: GraphQL Media IDs are GIDs, REST image IDs are numeric - need conversion
     const imagesToUpdate = (product.images || [])
       .filter((img: any) => {
         if (!img.shopify_image_id) return false;
-        const existingImg = existingImages.find((ei: any) => ei.id === img.shopify_image_id);
-        return existingImg && existingImg.src !== img.src;
+        // Convert numeric shopify_image_id to GID for comparison
+        const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
+        const existingImg = existingMedia.find((m: any) => m.id === imgGid);
+        return existingImg && existingImg.image?.url !== img.src;
       });
 
     console.log(`➕ Adding ${newImages.length} new images to Shopify`);

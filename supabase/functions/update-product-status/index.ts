@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkTrialLimits } from '../_shared/trial-limits.ts';
+import { shopifyGraphQL, restIdToGid, handleUserErrors, PRODUCT_UPDATE_MUTATION } from '../_shared/shopify-graphql.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,25 +91,29 @@ Deno.serve(async (req) => {
     console.log('[UPDATE-STATUS] Store connection found:', connection.store_url);
     console.log('[UPDATE-STATUS] Using direct access token, length:', connection.access_token?.length);
 
-    // Update product status in Shopify
-    const shopifyResponse = await fetch(
-      `https://${connection.store_url}/admin/api/2024-01/products/${shopifyId}.json`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': connection.access_token,
-        },
-        body: JSON.stringify({
-          product: { status: newStatus },
-        }),
-      }
-    );
+    // Update product status in Shopify using GraphQL
+    console.log(`🔄 Updating product ${shopifyId} status to "${newStatus}" using GraphQL`);
+    
+    const productGid = restIdToGid(shopifyId, 'Product');
+    
+    try {
+      const result = await shopifyGraphQL(
+        connection.store_url,
+        connection.access_token,
+        PRODUCT_UPDATE_MUTATION,
+        {
+          input: {
+            id: productGid,
+            status: newStatus.toUpperCase(), // GraphQL expects ACTIVE, DRAFT, ARCHIVED
+          },
+        }
+      );
 
-    if (!shopifyResponse.ok) {
-      const errorText = await shopifyResponse.text();
-      console.error('Shopify API error:', errorText);
-      throw new Error(`Failed to update Shopify product: ${shopifyResponse.status}`);
+      handleUserErrors(result.productUpdate?.userErrors, 'productUpdate');
+      console.log(`✅ Product status updated via GraphQL: ${result.productUpdate?.product?.status}`);
+    } catch (error: any) {
+      console.error('❌ Shopify GraphQL error:', error);
+      throw new Error(`Failed to update Shopify product: ${error?.message || String(error)}`);
     }
 
     // Update local database
