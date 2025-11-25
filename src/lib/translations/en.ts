@@ -34,6 +34,30 @@ export const translations = {
       noStore: "No store selected",
       syncProgress: "Syncing {{count}} products (about {{time}}s)...",
       syncError: "Error during synchronization",
+      import: {
+        title: "Import Collections from Shopify",
+        description: "Select the collections you want to import into your account. Imported collections can be used to create targeted blog articles.",
+        button: "Import Collections",
+        noCollections: {
+          title: "No collections found",
+          description: "No collections were found in your Shopify store.",
+          retry: "Retry"
+        },
+        selectAll: "Select all ({{count}} available)",
+        selected: "{{count}} selected",
+        alreadyImported: "Already imported",
+        products: "{{count}} product(s)",
+        cancel: "Cancel",
+        importing: "Importing...",
+        import: "Import ({{count}})",
+        noActiveConnection: "No active Shopify connection",
+        selectAtLeast: "Please select at least one collection",
+        limitReached: "Optimization limit reached",
+        limitReachedDesc: "You've reached your optimization limit. Upgrade to a higher plan to continue.",
+        loadingError: "Error loading collections",
+        importError: "Error during import: {{message}}",
+        importSuccess: "{{count}} collection(s) imported successfully"
+      }
     },
     error: {
       generic: "An error occurred",
@@ -3811,6 +3835,11 @@ export const translations = {
     signInWithGoogle: "Sign in with Google",
     signUpWithGoogle: "Sign up with Google",
     continueWithGoogle: "Continue with Google",
+    sessionExpired: "Your session has expired. Please log in again.",
+    registrationSuccess: "Registration successful! Choose your plan...",
+    loginSuccess: "Login successful!",
+    logoutSuccess: "Logout successful",
+    notAuthenticated: "Not authenticated",
   },
 
   onboarding: {

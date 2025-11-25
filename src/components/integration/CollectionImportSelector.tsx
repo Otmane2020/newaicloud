@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, Download, FolderOpen, RefreshCw } from 'lucide-react';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useTranslation } from '@/lib/language';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ interface ShopifyCollection {
 }
 
 export function CollectionImportSelector() {
+  const { t, tf } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -53,7 +55,7 @@ export function CollectionImportSelector() {
         .single();
 
       if (!connection) {
-        toast.error('Aucune connexion Shopify active');
+        toast.error(t.toasts.collections.import.noActiveConnection);
         return;
       }
 
@@ -101,7 +103,7 @@ export function CollectionImportSelector() {
       }
     } catch (error) {
       console.error('Error fetching collections:', error);
-      toast.error('Erreur lors du chargement des collections');
+      toast.error(t.toasts.collections.import.loadingError);
     } finally {
       setLoading(false);
     }
@@ -109,16 +111,16 @@ export function CollectionImportSelector() {
 
   const handleImport = async () => {
     if (selectedCollections.size === 0) {
-      toast.error('Veuillez sélectionner au moins une collection');
+      toast.error(t.toasts.collections.import.selectAtLeast);
       return;
     }
 
     // Vérifier les limites avant d'importer
     if (!canDoAction('optimizations')) {
-      toast.error('Limite d\'optimisations atteinte', {
+      toast.error(t.toasts.warning.limitReached, {
         description: limits?.isTrialing 
-          ? 'Passez à un plan payant pour importer plus de collections.'
-          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+          ? t.toasts.collections.import.limitReachedDesc
+          : t.toasts.collections.import.limitReachedDesc
       });
       setShowUpgradeDialog(true);
       return;
@@ -137,7 +139,7 @@ export function CollectionImportSelector() {
         .single();
 
       if (!connection) {
-        toast.error('Aucune connexion Shopify active');
+        toast.error(t.toasts.collections.import.noActiveConnection);
         return;
       }
 
@@ -160,7 +162,7 @@ export function CollectionImportSelector() {
       }
 
       if (data?.success) {
-        toast.success(`${data.imported || 0} collection(s) importée(s) avec succès`);
+        toast.success(tf('toasts.collections.import.importSuccess', { count: data.imported || 0 }));
         setSelectedCollections(new Set());
         setOpen(false);
         await refreshLimits();
@@ -168,11 +170,11 @@ export function CollectionImportSelector() {
         // Refresh the list
         await fetchShopifyCollections();
       } else {
-        throw new Error(data?.error || 'Erreur inconnue');
+        throw new Error(data?.error || t.toasts.error.generic);
       }
     } catch (error) {
       console.error('Error importing collections:', error);
-      toast.error(`Erreur lors de l'importation: ${error.message}`);
+      toast.error(tf('toasts.collections.import.importError', { message: error.message }));
     } finally {
       setImporting(false);
     }
@@ -211,14 +213,14 @@ export function CollectionImportSelector() {
         <DialogTrigger asChild>
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" />
-            Importer des Collections
+            {t.toasts.collections.import.button}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Importer des Collections depuis Shopify</DialogTitle>
+            <DialogTitle>{t.toasts.collections.import.title}</DialogTitle>
             <DialogDescription>
-              Sélectionnez les collections que vous souhaitez importer
+              {t.toasts.collections.import.description}
             </DialogDescription>
           </DialogHeader>
 
@@ -229,13 +231,13 @@ export function CollectionImportSelector() {
           ) : collections.length === 0 ? (
             <div className="text-center py-12">
               <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
+              <h3 className="text-lg font-semibold mb-2">{t.toasts.collections.import.noCollections.title}</h3>
               <p className="text-muted-foreground mb-4">
-                Aucune collection n'a été trouvée dans votre boutique Shopify.
+                {t.toasts.collections.import.noCollections.description}
               </p>
               <Button onClick={fetchShopifyCollections} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Réessayer
+                {t.toasts.collections.import.noCollections.retry}
               </Button>
             </div>
           ) : (
@@ -247,11 +249,11 @@ export function CollectionImportSelector() {
                     onCheckedChange={handleSelectAll}
                   />
                   <span className="text-sm text-muted-foreground">
-                    Tout sélectionner ({collections.filter(c => !existingCollections.has(c.id)).length} disponible(s))
+                    {tf('toasts.collections.import.selectAll', { count: collections.filter(c => !existingCollections.has(c.id)).length })}
                   </span>
                 </div>
                 <Badge variant="secondary">
-                  {selectedCollections.size} sélectionnée(s)
+                  {tf('toasts.collections.import.selected', { count: selectedCollections.size })}
                 </Badge>
               </div>
 
@@ -293,12 +295,12 @@ export function CollectionImportSelector() {
                                 {collection.title}
                                 {isExisting && (
                                   <Badge variant="outline" className="text-xs">
-                                    Déjà importée
+                                    {t.toasts.collections.import.alreadyImported}
                                   </Badge>
                                 )}
                               </h4>
                               <p className="text-sm text-muted-foreground">
-                                {collection.products_count || 0} produit(s)
+                                {tf('toasts.collections.import.products', { count: collection.products_count || 0 })}
                               </p>
                             </div>
                           </div>
@@ -311,18 +313,18 @@ export function CollectionImportSelector() {
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <Button variant="outline" onClick={() => setOpen(false)}>
-                  Annuler
+                  {t.toasts.collections.import.cancel}
                 </Button>
                 <Button onClick={handleImport} disabled={importing || selectedCollections.size === 0}>
                   {importing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Import en cours...
+                      {t.toasts.collections.import.importing}
                     </>
                   ) : (
                     <>
                       <Download className="w-4 h-4 mr-2" />
-                      Importer ({selectedCollections.size})
+                      {tf('toasts.collections.import.import', { count: selectedCollections.size })}
                     </>
                   )}
                 </Button>

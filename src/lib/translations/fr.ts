@@ -34,6 +34,30 @@ export const translations = {
       noStore: "Aucune boutique sélectionnée",
       syncProgress: "Synchronisation de {{count}} produits (environ {{time}}s)...",
       syncError: "Erreur lors de la synchronisation",
+      import: {
+        title: "Importer des Collections depuis Shopify",
+        description: "Sélectionnez les collections que vous souhaitez importer dans votre compte. Les collections importées pourront être utilisées pour créer des articles de blog ciblés.",
+        button: "Importer des Collections",
+        noCollections: {
+          title: "Aucune collection trouvée",
+          description: "Aucune collection n'a été trouvée dans votre boutique Shopify.",
+          retry: "Réessayer"
+        },
+        selectAll: "Tout sélectionner ({{count}} disponible(s))",
+        selected: "{{count}} sélectionnée(s)",
+        alreadyImported: "Déjà importée",
+        products: "{{count}} produit(s)",
+        cancel: "Annuler",
+        importing: "Importation...",
+        import: "Importer ({{count}})",
+        noActiveConnection: "Aucune connexion Shopify active",
+        selectAtLeast: "Veuillez sélectionner au moins une collection",
+        limitReached: "Limite d'optimisations atteinte",
+        limitReachedDesc: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur pour continuer.",
+        loadingError: "Erreur lors du chargement des collections",
+        importError: "Erreur lors de l'importation : {{message}}",
+        importSuccess: "{{count}} collection(s) importée(s) avec succès"
+      }
     },
     error: {
       generic: "Une erreur s'est produite",
@@ -3835,6 +3859,11 @@ export const translations = {
     signInWithGoogle: "Se connecter avec Google",
     signUpWithGoogle: "S'inscrire avec Google",
     continueWithGoogle: "Continuer avec Google",
+    sessionExpired: "Votre session a expiré. Veuillez vous reconnecter.",
+    registrationSuccess: "Inscription réussie ! Choisissez votre plan...",
+    loginSuccess: "Connexion réussie !",
+    logoutSuccess: "Déconnexion réussie",
+    notAuthenticated: "Non authentifié",
   },
 
   onboarding: {

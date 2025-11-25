@@ -3,6 +3,14 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { translations as fr } from '@/lib/translations/fr';
+import { translations as en } from '@/lib/translations/en';
+
+// Helper function to get translated message based on stored language
+const getTranslatedMessage = (frMessage: string, enMessage: string): string => {
+  const lang = localStorage.getItem('app-language') || 'en';
+  return lang === 'fr' ? frMessage : enMessage;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -51,7 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.clear();
           
           if (event === 'SIGNED_OUT' || !session) {
-            toast.error('Votre session a expiré. Veuillez vous reconnecter.');
+            const lang = localStorage.getItem('app-language') || 'en';
+            const message = lang === 'fr' ? fr.auth.sessionExpired : en.auth.sessionExpired;
+            toast.error(message);
             navigate('/auth');
           }
         } else if (session) {
@@ -135,7 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to send welcome email:', emailError);
       }
       
-      toast.success("Registration successful! Choose your plan...");
+      const lang = localStorage.getItem('app-language') || 'en';
+      const message = lang === 'fr' ? fr.auth.registrationSuccess : en.auth.registrationSuccess;
+      toast.success(message);
       // Ne pas rediriger, l'utilisateur restera sur la page onboarding après connexion
     }
 
@@ -151,7 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Login successful!");
+      const lang = localStorage.getItem('app-language') || 'en';
+      const message = lang === 'fr' ? fr.auth.loginSuccess : en.auth.loginSuccess;
+      toast.success(message);
       // Ne pas rediriger automatiquement - SubscriptionGuard gèrera la redirection
     }
 
@@ -182,13 +196,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     
+    // Get lang before clearing localStorage
+    const lang = localStorage.getItem('app-language') || 'en';
+    const message = lang === 'fr' ? fr.auth.logoutSuccess : en.auth.logoutSuccess;
+    
     // Clear all local storage to remove stale tokens
     localStorage.clear();
     
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Logout successful");
+      toast.success(message);
     }
     
     // Force a complete page reload to clear all state
