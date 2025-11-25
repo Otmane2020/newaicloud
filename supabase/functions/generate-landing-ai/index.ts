@@ -2085,55 +2085,89 @@ Note: Only include reliability badge if you have verified or extracted specifica
 - **Indigo-Blue**: #6366f1 → #3b82f6 (tech, modern)
 - **Emerald-Green**: #059669 → #10b981 (nature, sustainable)
 
-4. **AVAILABLE SVG ICONS WITH GRADIENTS**:
+4. **AVAILABLE SVG ICONS WITH GRADIENTS** (ROTATION OBLIGATOIRE):
 
-📦 Package/Quality:
+🚨 CRITICAL: Tu DOIS utiliser des icônes et gradients DIFFÉRENTS pour chaque carte de bénéfice!
+- Rotate les icônes dans l'ordre: Package → Delivery → Star → Shield → Sparkle → Check → Heart → Leaf
+- Rotate les gradients dans l'ordre: Blue-Purple → Green-Teal → Orange-Amber → Pink-Rose → Indigo-Blue → Emerald-Green
+- INTERDICTION de répéter la même icône ou le même gradient d'une carte à l'autre
+
+**GRADIENTS À UTILISER EN ROTATION (TOUJOURS UNIQUE PAR CARTE)**:
+1. Blue-Purple: #3b82f6 → #8b5cf6 (première carte)
+2. Green-Teal: #10b981 → #14b8a6 (deuxième carte)
+3. Orange-Amber: #f97316 → #f59e0b (troisième carte)
+4. Pink-Rose: #ec4899 → #f43f5e (quatrième carte si existe)
+5. Indigo-Blue: #6366f1 → #3b82f6 (cinquième carte si existe)
+6. Emerald-Green: #059669 → #10b981 (sixième carte si existe)
+
+📦 Package/Quality (ID unique: pkg-grad-1, pkg-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="pkg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="pkg-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="url(#pkg-grad)" stroke-width="2"/>
+  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="url(#pkg-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
 </svg>
 
-🚚 Delivery:
+🚚 Delivery (ID unique: truck-grad-1, truck-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="truck-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="truck-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad)" stroke-width="2"/>
+  <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
 </svg>
 
-⭐ Quality/Premium:
+⭐ Quality/Premium (ID unique: star-grad-1, star-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="star-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#star-grad)"/>
+  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#star-grad-[NUMERO_UNIQUE])"/>
 </svg>
 
-🛡️ Warranty/Security:
+🛡️ Warranty/Security (ID unique: shield-grad-1, shield-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="shield-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shield-grad)" stroke-width="2"/>
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shield-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
 </svg>
 
-✨ Innovation/New:
+✨ Innovation/New (ID unique: sparkle-grad-1, sparkle-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24">
-  <defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="sparkle-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad)"/>
+  <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad-[NUMERO_UNIQUE])"/>
 </svg>
 
-✓ Check/Validated:
+✓ Check/Validated (ID unique: check-grad-1, check-grad-2, etc.):
 <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/><stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
+  <defs><linearGradient id="check-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
   </linearGradient></defs>
-  <path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5 13l4 4L19 7" stroke="url(#check-grad-[NUMERO_UNIQUE])" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
+
+❤️ Satisfaction/Love (ID unique: heart-grad-1, heart-grad-2, etc.):
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="heart-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
+  </linearGradient></defs>
+  <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="url(#heart-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
+</svg>
+
+🌿 Eco/Sustainable (ID unique: leaf-grad-1, leaf-grad-2, etc.):
+<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+  <defs><linearGradient id="leaf-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
+  </linearGradient></defs>
+  <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.67.67-2.22c.52-1.75 2.06-3.16 3.86-3.53 1.95-.4 3.7.62 4.77 2.03l.87 1.16 3.83-5.88c.79-1.22.62-2.79-.36-3.89-1.08-1.22-3.02-1.44-4.42-.68" stroke="url(#leaf-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
+</svg>
+
+🚨 EXEMPLE CORRECT - 3 CARTES AVEC DIVERSITÉ:
+Carte 1: Package + Blue-Purple (#3b82f6 → #8b5cf6)
+Carte 2: Delivery + Green-Teal (#10b981 → #14b8a6)
+Carte 3: Star + Orange-Amber (#f97316 → #f59e0b)
 
 5. **MANDATORY HOVER EFFECTS** (Spectacular & Eye-Catching):
    - **Card elevation**: hover:-translate-y-2 (lifts card up)

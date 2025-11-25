@@ -2861,6 +2861,7 @@ export default function ProductTitleDescription() {
                 const updatedProduct = {
                   ...selectedLandingProduct,
                   landing_page: html,
+                  has_landing_page: true,
                 };
 
                 // Fermer le dialog de génération et ouvrir le preview immédiatement
@@ -2868,8 +2869,10 @@ export default function ProductTitleDescription() {
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
 
-                // PAS de rafraîchissement automatique - cause des boucles infinies
-                console.log("✅ [Landing] Preview displayed, no refresh needed");
+                // Rafraîchir le tableau pour afficher le label "landing"
+                console.log("🔄 [Landing] Refreshing products table...");
+                await fetchProducts();
+                console.log("✅ [Landing] Table refreshed with landing badge");
               }}
               onClose={() => setShowLandingDialog(false)}
             />
