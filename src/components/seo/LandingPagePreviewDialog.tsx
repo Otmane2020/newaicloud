@@ -41,6 +41,8 @@ export function LandingPagePreviewDialog({
   const [showThemeGuide, setShowThemeGuide] = useState(false);
   const [themeCssAdded, setThemeCssAdded] = useState(false);
   const [viewShopifyMode, setViewShopifyMode] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
 
   // Check if user has added Shopify theme CSS
   useEffect(() => {
@@ -90,14 +92,41 @@ export function LandingPagePreviewDialog({
   `;
 
   const getPreviewHtml = () => {
-    if (!currentLandingPage) return "";
-    
-    // If Shopify mode is enabled, wrap with the CSS
-    if (viewShopifyMode) {
-      return `<style>${SHOPIFY_FULLWIDTH_CSS}</style><div class="landing-full-width">${currentLandingPage}</div>`;
+    if (!currentLandingPage) {
+      console.log("No landing page content available");
+      return "";
     }
     
-    return currentLandingPage;
+    console.log("Landing page content length:", currentLandingPage.length);
+    console.log("First 200 chars:", currentLandingPage.substring(0, 200));
+    
+    let htmlContent = currentLandingPage;
+    
+    // Ensure proper HTML structure
+    if (!htmlContent.includes("<!DOCTYPE") && !htmlContent.includes("<html")) {
+      console.log("Adding HTML structure wrapper");
+      htmlContent = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+</head>
+<body style="margin: 0; padding: 0; background: white;">
+${htmlContent}
+</body>
+</html>`;
+    }
+    
+    // If Shopify mode is enabled, inject the CSS
+    if (viewShopifyMode) {
+      htmlContent = htmlContent.replace(
+        "</head>",
+        `<style>${SHOPIFY_FULLWIDTH_CSS}</style></head>`
+      );
+    }
+    
+    return htmlContent;
   };
 
   // Sync to Shopify mutation
@@ -242,6 +271,36 @@ export function LandingPagePreviewDialog({
         <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
           {currentLandingPage ? (
             <div className="relative w-full h-full flex items-center justify-center">
+              {isIframeLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                    <p className="text-sm text-muted-foreground">Chargement de la preview...</p>
+                  </div>
+                </div>
+              )}
+              {iframeError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+                  <Alert className="max-w-md border-destructive">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <AlertDescription>
+                      <p className="font-semibold mb-2">Erreur de chargement</p>
+                      <p className="text-sm">Le contenu HTML ne peut pas être affiché. Vérifiez les logs de la console.</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => {
+                          setIframeError(false);
+                          setIsIframeLoading(true);
+                        }}
+                      >
+                        Réessayer
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               <iframe
                 srcDoc={getPreviewHtml()}
                 className={`h-full border-0 transition-all duration-300 ${
@@ -250,15 +309,31 @@ export function LandingPagePreviewDialog({
                 sandbox="allow-same-origin allow-scripts"
                 title="Landing Page Preview"
                 onLoad={(e) => {
+                  console.log("Iframe loaded");
+                  setIsIframeLoading(false);
+                  setIframeError(false);
+                  
                   const iframeDoc = (e.target as HTMLIFrameElement).contentDocument;
                   if (iframeDoc) {
+                    console.log("Iframe document accessible");
+                    console.log("Body content:", iframeDoc.body?.innerHTML?.substring(0, 200));
+                    
                     const checkTailwind = setInterval(() => {
                       if (iframeDoc.body?.classList.contains("tailwind-loaded")) {
                         clearInterval(checkTailwind);
                       }
                     }, 50);
                     setTimeout(() => clearInterval(checkTailwind), 3000);
+                  } else {
+                    console.error("Cannot access iframe document");
+                    setIframeError(true);
                   }
+                }}
+                onError={(e) => {
+                  console.error("Iframe error:", e);
+                  setIsIframeLoading(false);
+                  setIframeError(true);
+                  toast.error("Erreur lors du chargement de la preview");
                 }}
               />
             </div>
