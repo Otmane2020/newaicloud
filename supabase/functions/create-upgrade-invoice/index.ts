@@ -85,7 +85,8 @@ serve(async (req) => {
     };
 
     if (isUpgrade) {
-      // ⬆️ UPGRADE → PRORATA
+      // ⬆️ UPGRADE → PRORATA + restart billing cycle
+      updatePayload.billing_cycle_anchor = "now";
       updatePayload.proration_behavior = "always_invoice";
       updatePayload.payment_behavior = "default_incomplete";
     } else {
