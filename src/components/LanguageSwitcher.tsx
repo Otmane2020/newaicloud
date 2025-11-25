@@ -8,12 +8,27 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useOptimization } from '@/contexts/OptimizationContext';
 
 export function LanguageSwitcher() {
   const { language, setLanguage, t, tf } = useTranslation();
   const { toast } = useToast();
+  const { state: optimizationState } = useOptimization();
 
   const handleLanguageChange = (lang: 'en' | 'fr') => {
+    if (optimizationState.isRunning) {
+      console.warn('🌐 Language change blocked during optimization');
+      toast({
+        title: language === 'fr' ? 'Optimisation en cours' : 'Optimization in progress',
+        description:
+          language === 'fr'
+            ? 'Veuillez attendre la fin du traitement avant de changer de langue.'
+            : 'Please wait for the optimization to finish before changing language.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     console.log('🌐 Changing language to:', lang);
     setLanguage(lang);
     
