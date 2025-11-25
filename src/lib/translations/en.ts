@@ -1936,6 +1936,10 @@ export const translations = {
       emailStats: "Email Stats",
       analytics: "Analytics",
       systemStatus: "System Status",
+      insights: "User Intelligence",
+      logs: "System Logs",
+      toolbox: "Toolbox",
+      search: "Smart Search",
       logout: "Logout",
     },
     toasts: {

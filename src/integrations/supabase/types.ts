@@ -1597,6 +1597,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_usage: {
+        Row: {
+          feature_name: string
+          first_used_at: string | null
+          id: string
+          last_used_at: string | null
+          metadata: Json | null
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          feature_name: string
+          first_used_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          feature_name?: string
+          first_used_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json | null
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_ads_campaigns: {
         Row: {
           advertising_channel_type: string | null
@@ -4677,6 +4707,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          created_at: string | null
+          function_name: string
+          id: string
+          message: string
+          metadata: Json | null
+          stack_trace: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          function_name: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          stack_trace?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          stack_trace?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       translations: {
         Row: {
           ai_generated: boolean | null
@@ -5113,6 +5176,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_smart_search: {
+        Args: { term: string }
+        Returns: {
+          id: string
+          label: string
+          metadata: Json
+          type: string
+        }[]
+      }
       calculate_next_execution: {
         Args: { p_frequency: string; p_last_execution: string }
         Returns: string

@@ -18,6 +18,10 @@ import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { EmailTemplates } from '@/components/admin/EmailTemplates';
 import { EmailStatsDashboard } from '@/components/admin/EmailStatsDashboard';
 import { SystemStatusDashboard } from '@/components/admin/SystemStatusDashboard';
+import { UserInsightPanel } from '@/components/admin/UserInsightPanel';
+import { SystemEventLogs } from '@/components/admin/SystemEventLogs';
+import { AdminToolbox } from '@/components/admin/AdminToolbox';
+import { AdminSmartSearch } from '@/components/admin/AdminSmartSearch';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -641,6 +645,22 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'system-status' && (
         <SystemStatusDashboard />
+      )}
+
+      {activeTab === 'insights' && (
+        <UserInsightPanel />
+      )}
+
+      {activeTab === 'logs' && (
+        <SystemEventLogs />
+      )}
+
+      {activeTab === 'toolbox' && (
+        <AdminToolbox />
+      )}
+
+      {activeTab === 'search' && (
+        <AdminSmartSearch />
       )}
     </div>
   );
