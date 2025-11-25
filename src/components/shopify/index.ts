@@ -1,0 +1,1 @@
+export { ShopifyThemeGuide } from "./ShopifyThemeGuide";
