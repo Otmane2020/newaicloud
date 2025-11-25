@@ -24,6 +24,7 @@ export interface WorkflowItem {
   image_url?: string;
   seo_title?: string;
   seo_description?: string;
+  meta_description?: string; // For blog articles
   body_html?: string;
   alt_text?: string;
   tags?: string;
@@ -261,7 +262,7 @@ export function ResultsDialog({
                                 <Badge variant="outline" className="text-xs font-semibold">{t.dialogs.seoWorkflow.results.preview}</Badge>
                                 <GoogleSearchPreview
                                   title={item.seo_title}
-                                  description={item.seo_description}
+                                  description={item.meta_description || item.seo_description}
                                   url={buildPublicUrl(
                                     item.handle 
                                       ? `/collections/${item.handle}` 
