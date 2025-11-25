@@ -11,7 +11,6 @@ import { HomePageSeoAudit } from '@/components/seo/HomePageSeoAudit';
 import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
 import { CollectionOptimization } from '@/components/seo/CollectionOptimization';
 import ArticleManagement, { ArticleManagementRef } from '@/pages/ArticleManagement';
-import { AdsCampaign } from '@/components/seo/AdsCampaign';
 import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
 import { GoogleSearchConsole } from '@/components/seo/GoogleSearchConsole';
 import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package, RefreshCw } from 'lucide-react';
@@ -62,7 +61,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'smart-title', 'automation', 'ads-campaign', 'google-console'];
+    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'smart-title', 'automation', 'google-console'];
     
     if (tab && validTabs.includes(tab)) {
       if (tab === 'optimization') {
@@ -361,7 +360,6 @@ export default function SEO() {
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'smart-title' && <SmartTitle />}
         {activeTab === 'automation' && <SeoAutomation />}
-        {activeTab === 'ads-campaign' && <AdsCampaign />}
         {activeTab === 'google-console' && (
           <GoogleSearchConsole />
         )}
