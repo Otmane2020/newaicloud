@@ -99,14 +99,14 @@ const PricingComparison = () => {
     const currency = getCurrencySymbol(language);
     const planPrices = billingPeriod === 'monthly' 
       ? { 
-          starter: `${currency}9.99${t.landing.pricing.perMonth}`, 
-          pro: `${currency}49 - ${currency}4,900${t.landing.pricing.perMonth}`, 
-          enterprise: `${currency}199 - ${currency}19,900${t.landing.pricing.perMonth}` 
+          starter: `9.99 ${currency}${t.landing.pricing.perMonth}`, 
+          pro: `49 ${currency} - 4,900 ${currency}${t.landing.pricing.perMonth}`, 
+          enterprise: `199 ${currency} - 19,900 ${currency}${t.landing.pricing.perMonth}` 
         }
       : {
-          starter: `${currency}7.99${t.landing.pricing.perMonthShort}`,
-          pro: `${currency}39 - ${currency}3,920${t.landing.pricing.perMonthShort}`,
-          enterprise: `${currency}159 - ${currency}15,920${t.landing.pricing.perMonthShort}`
+          starter: `7.99 ${currency}${t.landing.pricing.perMonthShort}`,
+          pro: `39 ${currency} - 3,920 ${currency}${t.landing.pricing.perMonthShort}`,
+          enterprise: `159 ${currency} - 15,920 ${currency}${t.landing.pricing.perMonthShort}`
         };
 
     return (
@@ -141,7 +141,7 @@ const PricingComparison = () => {
                 <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
               </div>
               <Badge variant="outline" className="border-success text-success w-fit">{t.trial.noCreditCard}</Badge>
-              <div className="text-3xl font-bold mt-4">0{currency}</div>
+              <div className="text-3xl font-bold mt-4">0 {currency}</div>
               <p className="text-sm text-muted-foreground">{t.trial.duration}</p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -213,15 +213,15 @@ const PricingComparison = () => {
   const getPriceDisplay = () => {
     if (billingPeriod === 'monthly') {
       return {
-        starter: { price: `${currency}9.99`, suffix: t.landing.pricing.perMonth },
-        pro: { price: `${currency}49 - ${currency}4,900`, suffix: t.landing.pricing.perMonth },
-        enterprise: { price: `${currency}199 - ${currency}19,900`, suffix: t.landing.pricing.perMonth }
+        starter: { price: `9.99 ${currency}`, suffix: t.landing.pricing.perMonth },
+        pro: { price: `49 ${currency} - 4,900 ${currency}`, suffix: t.landing.pricing.perMonth },
+        enterprise: { price: `199 ${currency} - 19,900 ${currency}`, suffix: t.landing.pricing.perMonth }
       };
     } else {
       return {
-        starter: { price: `${currency}7.99`, suffix: t.landing.pricing.perMonthShort, annual: `${currency}95.90${t.landing.pricing.perYear}` },
-        pro: { price: `${currency}39 - ${currency}3,920`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually },
-        enterprise: { price: `${currency}159 - ${currency}15,920`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually }
+        starter: { price: `7.99 ${currency}`, suffix: t.landing.pricing.perMonthShort, annual: `95.90 ${currency}${t.landing.pricing.perYear}` },
+        pro: { price: `39 ${currency} - 3,920 ${currency}`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually },
+        enterprise: { price: `159 ${currency} - 15,920 ${currency}`, suffix: t.landing.pricing.perMonthShort, annual: t.landing.pricing.comparison.billedAnnually }
       };
     }
   };
@@ -258,11 +258,11 @@ const PricingComparison = () => {
               <tr className="border-b bg-muted/50">
                 <th className="p-4 text-left font-semibold">{t.landing.pricing.comparison.featuresLabel}</th>
                 <th className="p-4 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <Badge className="bg-success">{t.trial.title}</Badge>
-                    <span className="text-2xl font-bold">0{currency}</span>
-                    <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
-                  </div>
+              <div className="flex flex-col items-center gap-2">
+                <Badge className="bg-success">{t.trial.title}</Badge>
+                <span className="text-2xl font-bold">0 {currency}</span>
+                <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
+              </div>
                 </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">

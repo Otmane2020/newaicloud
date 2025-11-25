@@ -95,7 +95,6 @@ export const formatPrice = (
   // Round to whole numbers for other amounts
   const wholeAmount = Math.round(amount);
   
-  return language === 'fr' 
-    ? `${wholeAmount} ${symbol}`
-    : `${symbol}${wholeAmount}`;
+  // Always format as "amount €" for consistency, regardless of language
+  return `${wholeAmount} ${symbol}`;
 };
