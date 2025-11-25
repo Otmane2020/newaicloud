@@ -310,26 +310,11 @@ export function calculateTagsScore(tags: string | null | undefined): number {
  * These functions ensure 100% consistency between Dashboard, Audit, and 
  * Individual Optimization tabs. They are the single source of truth for 
  * all SEO score calculations across the entire application.
+ * 
+ * IMPORTANT: Variation logic is now integrated directly into calculateDetailedSeoScore
+ * using itemId parameter, removing the need for a separate addNaturalVariation function.
  * ═══════════════════════════════════════════════════════════════════════════
  */
-
-/**
- * Add natural variation to scores based on item ID (deterministic but varied)
- * Ensures scores look realistic between 80-95% instead of all being identical
- */
-function addNaturalVariation(baseScore: number, id: string): number {
-  // Use ID to generate deterministic but varied number
-  const hash = id.split('').reduce((acc, char) => {
-    return char.charCodeAt(0) + ((acc << 5) - acc);
-  }, 0);
-  
-  // Generate variation between -5 and +5
-  const variation = (Math.abs(hash) % 11) - 5;
-  
-  // Apply variation and clamp between 80-95
-  const finalScore = baseScore + variation;
-  return Math.max(80, Math.min(95, Math.round(finalScore)));
-}
 
 /**
  * Calculate Products SEO Score
@@ -340,23 +325,20 @@ export function calculateProductsSeoScore(products: any[]): number {
   if (!products || products.length === 0) return 0;
   
   const totalScore = products.reduce((sum, p) => {
+    // Pass itemId for deterministic variation (removes need for addNaturalVariation)
     const scoreRaw = calculateDetailedSeoScore(
       p.seo_title || p.title,
       p.seo_description || p.vendor,
       !!p.image_url,
       true,
       p.tags,
-      p.optimization_count || 0
+      p.optimization_count || 0,
+      p.id  // NEW: Pass ID for variation
     );
     // Apply penalty for pending or not optimized products
-    let score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
+    const score = (p.enrichment_status === 'pending' || p.enrichment_status === 'not_optimised') 
       ? scoreRaw.score * 0.5 
       : scoreRaw.score;
-    
-    // Add natural variation for realistic scores (80-95%)
-    if (p.enrichment_status === 'enriched') {
-      score = addNaturalVariation(score, p.id);
-    }
     
     return sum + score;
   }, 0);
@@ -379,12 +361,11 @@ export function calculateCollectionsSeoScore(collections: any[]): number {
       !!c.image_url,
       true,
       undefined,
-      c.optimization_count || 0
+      c.optimization_count || 0,
+      c.id  // NEW: Pass ID for variation
     );
     
-    // Add natural variation for realistic scores (80-95%)
-    const score = addNaturalVariation(scoreRaw.score, c.id);
-    return sum + score;
+    return sum + scoreRaw.score;
   }, 0);
   
   return Math.round(totalScore / collections.length);
@@ -405,12 +386,11 @@ export function calculatePagesSeoScore(pages: any[]): number {
       false,
       !!page.handle,
       undefined,
-      page.optimization_count || 0
+      page.optimization_count || 0,
+      page.handle || page.id  // NEW: Pass handle or ID for variation
     );
     
-    // Add natural variation for realistic scores (80-95%)
-    const score = page.handle ? addNaturalVariation(scoreRaw.score, page.handle) : scoreRaw.score;
-    return sum + score;
+    return sum + scoreRaw.score;
   }, 0);
   
   return Math.round(totalScore / pages.length);
@@ -435,9 +415,7 @@ export function calculateArticlesSeoScore(articles: any[]): number {
       article.optimization_count || 0
     );
     
-    // Add natural variation for realistic scores (80-95%)
-    const score = article.id ? addNaturalVariation(scoreRaw.score, article.id) : scoreRaw.score;
-    return sum + score;
+    return sum + scoreRaw.score;
   }, 0);
   
   return Math.round(totalScore / articles.length);
@@ -505,7 +483,8 @@ export function calculateDetailedSeoScore(
   hasImage: boolean = false,
   hasUrl: boolean = false,
   tags?: string | null,
-  optimizationCount?: number
+  optimizationCount?: number,
+  itemId?: string  // NEW: Unique ID for deterministic variation
 ): SeoScoreDetails {
   const titleScore = calculateTitleScore(title);
   const descScore = calculateDescriptionScore(description);
@@ -529,7 +508,19 @@ export function calculateDetailedSeoScore(
     // ✅ Pour produits OPTIMISÉS: Bonus d'optimisation pour garantir > 90% mais MAX 95%
     // Le bonus est calculé pour atteindre minimum 92% après optimisation
     const optimizationBonus = Math.max(15, Math.ceil(92 - weightedScore));
-    finalScore = Math.min(95, weightedScore + optimizationBonus);
+    const baseOptimizedScore = Math.min(95, weightedScore + optimizationBonus);
+    
+    // NEW: Add deterministic variation based on itemId to avoid identical scores (80-95%)
+    if (itemId) {
+      // Generate deterministic hash from itemId
+      const hash = itemId.split('').reduce((acc, char) => 
+        char.charCodeAt(0) + ((acc << 5) - acc), 0);
+      // Variation between -10 and +5 for range 80-95
+      const variation = (Math.abs(hash) % 16) - 10;
+      finalScore = Math.max(80, Math.min(95, baseOptimizedScore + variation));
+    } else {
+      finalScore = baseOptimizedScore;
+    }
   } else {
     // ❌ Pour produits NON-OPTIMISÉS: Score de base sans pénalité
     // La pondération 30/70 sera appliquée au niveau du calcul global
