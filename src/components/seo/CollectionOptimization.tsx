@@ -537,7 +537,7 @@ export function CollectionOptimization() {
         console.error('❌ Error optimizing collection:', error);
         
         // Handle specific error types
-        if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+        if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
           // Afficher le bon message selon le statut de l'utilisateur
           if (limits?.isTrialing) {
             toast.error(t.collections.optimization.messages.trialLimitReached);
@@ -665,7 +665,7 @@ export function CollectionOptimization() {
         } catch (error: any) {
           console.error('❌ Error:', error);
           updateProgress(Math.min(i + BATCH_SIZE, collectionsToOptimize.length), collection.id, 'error');
-          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
             // Afficher le bon message selon le statut de l'utilisateur
             if (limits?.isTrialing) {
               toast.error(t.collections.optimization.messages.trialLimitReached);

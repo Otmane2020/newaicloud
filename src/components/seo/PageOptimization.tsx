@@ -390,8 +390,16 @@ export function PageOptimization() {
         
         successCount++;
         toast.success(`Page ${i + 1}/${idsToUse.length} optimized`);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error optimizing page:', error);
+        
+        if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
+          toast.error('Limite d\'optimisations atteinte');
+          setShowUpgradeDialog(true);
+          setOptimizing(false);
+          break;
+        }
+        
         toast.error(`Error for page ${i + 1}`);
       }
     }
