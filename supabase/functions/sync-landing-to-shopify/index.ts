@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { wrapForShopify } from "../_shared/shopify-html-wrapper.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -204,7 +205,7 @@ serve(async (req) => {
         product: {
           id: shopifyProductId,
           title: titleToSync, // 🔥 Use optimized title from landing generation if provided
-          body_html: contentToSync, // Use landing_page > description > htmlContent parameter
+          body_html: wrapForShopify(contentToSync), // Wrapped for Shopify full-width compatibility
         },
       }),
     });
