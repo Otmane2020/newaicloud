@@ -12,6 +12,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!user) {
+        setIsAdmin(false);
         setChecking(false);
         return;
       }
@@ -22,8 +23,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           _role: 'admin'
         });
 
-        if (error) throw error;
-        setIsAdmin(data);
+        if (error) {
+          console.error('Error checking admin role:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data === true);
+        }
       } catch (error) {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
@@ -32,7 +37,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       }
     };
 
+    const timeout = setTimeout(() => {
+      if (checking) {
+        console.error('Admin check timeout');
+        setIsAdmin(false);
+        setChecking(false);
+      }
+    }, 10000);
+
     checkAdminRole();
+    
+    return () => clearTimeout(timeout);
   }, [user]);
 
   if (loading || checking) {
@@ -49,14 +64,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   if (isAdmin === false) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  if (isAdmin === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
   }
 
   return (
