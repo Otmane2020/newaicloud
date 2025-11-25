@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
+import { wrapForShopify } from "../_shared/shopify-html-wrapper.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,16 +69,8 @@ serve(async (req) => {
     const pageTitle = `${campaign.name} - Landing Page`;
     const pageHandle = `landing-${campaign.id.substring(0, 8)}`;
     
-    // Wrap the React component HTML in a simple container
-    const bodyHtml = `
-      <div id="landing-page-root">
-        ${campaign.landing_page_html}
-      </div>
-      <script>
-        // Add any necessary JavaScript for interactivity
-        console.log('Landing page loaded');
-      </script>
-    `;
+    // Wrap the landing page HTML with Shopify full-width compatibility
+    const bodyHtml = wrapForShopify(campaign.landing_page_html);
 
     const shopifyPageData = {
       page: {
