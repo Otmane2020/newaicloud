@@ -1945,6 +1945,10 @@ export const translations = {
       emailStats: "Stats Emails",
       analytics: "Analytics",
       systemStatus: "État du Système",
+      insights: "Intelligence Utilisateur",
+      logs: "Logs Système",
+      toolbox: "Boîte à Outils",
+      search: "Recherche Intelligente",
       logout: "Déconnexion",
     },
     toasts: {
