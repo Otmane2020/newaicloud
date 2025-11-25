@@ -15,26 +15,39 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAdminRole = async () => {
       if (!user) {
+        if (!isMounted) return;
         setIsAdmin(false);
         setChecking(false);
         return;
       }
 
-      // Autoriser l'accès direct pour l'email spécifique
+      // Autoriser l'accès direct pour certains emails spécifiques
       const allowedEmails = ['sweet.deco.meubles@gmail.com'];
       if (allowedEmails.includes(user.email || '')) {
+        if (!isMounted) return;
         setIsAdmin(true);
         setChecking(false);
         return;
       }
 
+      const timeout = setTimeout(() => {
+        if (!isMounted) return;
+        console.error('Admin check timeout');
+        setIsAdmin(false);
+        setChecking(false);
+      }, 10000);
+
       try {
         const { data, error } = await supabase.rpc('has_role', {
           _user_id: user.id,
-          _role: 'admin'
+          _role: 'admin',
         });
+
+        if (!isMounted) return;
 
         if (error) {
           console.error('Error checking admin role:', error);
@@ -43,25 +56,21 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
           setIsAdmin(data === true);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
       } finally {
+        if (!isMounted) return;
         setChecking(false);
       }
     };
 
-    const timeout = setTimeout(() => {
-      if (checking) {
-        console.error('Admin check timeout');
-        setIsAdmin(false);
-        setChecking(false);
-      }
-    }, 10000);
-
     checkAdminRole();
-    
-    return () => clearTimeout(timeout);
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   if (loading || checking) {
     return (
