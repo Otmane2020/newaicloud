@@ -16,6 +16,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -26,7 +35,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
-    const { productTitle, productDescription, productType, imageUrl } = await req.json();
+    const { productTitle, productDescription, productType, imageUrl } = body;
 
     if (!productTitle) {
       throw new Error("Product title is required");

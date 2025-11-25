@@ -17,6 +17,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const bodyCheck = await req.json().catch(() => ({}));
+  if (bodyCheck?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -39,7 +48,7 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: userData.user.id });
 
-    const { new_plan_id, billing_period } = await req.json();
+    const { new_plan_id, billing_period } = bodyCheck;
     if (!new_plan_id) throw new Error("new_plan_id is required");
 
     logStep("Request body parsed", { new_plan_id, billing_period });

@@ -41,6 +41,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -60,7 +69,7 @@ Deno.serve(async (req) => {
       throw new Error('Not authenticated');
     }
 
-    const { link_ids } = await req.json();
+    const { link_ids } = body;
 
     console.log(`Checking links for user ${user.id}`);
 

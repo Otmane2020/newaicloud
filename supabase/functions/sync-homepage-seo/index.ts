@@ -10,8 +10,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
-    const { seoTitle, seoDescription, storeId } = await req.json();
+    const { seoTitle, seoDescription, storeId } = body;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -143,11 +152,12 @@ Deno.serve(async (req) => {
       .from('homepage_seo')
       .upsert({
         user_id: user.id,
+        store_id: storeId,
         seo_title: seoTitle,
         seo_description: seoDescription,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id'
+        onConflict: 'user_id,store_id'
       });
 
     console.log('[SYNC-HOMEPAGE] Homepage SEO successfully synced to Shopify');

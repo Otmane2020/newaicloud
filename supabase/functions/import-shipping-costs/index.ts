@@ -145,6 +145,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     console.log('🚚 [IMPORT-SHIPPING] Starting real Shopify shipping costs import...');
     
@@ -161,7 +170,7 @@ serve(async (req) => {
 
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { storeId } = await req.json();
+    const { storeId } = body;
     console.log('📋 Received storeId:', storeId);
     console.log('👤 User ID:', user.id);
 
