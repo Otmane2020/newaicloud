@@ -15,7 +15,7 @@ interface ArticlePreviewDialogProps {
     content: string;
     featured_image?: string;
     seo_title?: string;
-    seo_description?: string;
+    meta_description?: string;
     handle?: string;
     published_at?: string;
   } | null;
@@ -75,7 +75,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
                   <h3 className="text-xs font-semibold mb-2 text-muted-foreground">Aperçu Google</h3>
                   <GoogleSearchPreview
                     title={article.seo_title || article.title}
-                    description={article.seo_description || "Description manquante"}
+                    description={article.meta_description || "Description manquante"}
                     url={`https://yourstore.com/blogs/news/${article.handle || 'article'}`}
                     compact={viewMode === 'mobile'}
                   />

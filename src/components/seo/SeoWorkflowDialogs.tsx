@@ -356,7 +356,7 @@ export function ResultsDialog({
               content: selectedArticle.content || '',
               featured_image: selectedArticle.featured_image,
               seo_title: selectedArticle.seo_title,
-              seo_description: selectedArticle.seo_description,
+              meta_description: selectedArticle.seo_description,
               handle: selectedArticle.handle
             }}
           />

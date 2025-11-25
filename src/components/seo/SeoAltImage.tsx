@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useStore } from '@/contexts/StoreContext';
@@ -96,7 +96,11 @@ type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
-export function SeoAltImage() {
+export interface SeoAltImageRef {
+  getProgress: () => { current: number; total: number; isRunning: boolean };
+}
+
+export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => {
   const [searchParams] = useSearchParams();
   const { selectedStore } = useStore();
   const [images, setImages] = useState<ImageWithProduct[]>([]);
@@ -125,6 +129,15 @@ export function SeoAltImage() {
   const [selectedImageForOptimize, setSelectedImageForOptimize] = useState<ImageWithProduct | null>(null);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
+
+  // Expose progress state via ref
+  React.useImperativeHandle(ref, () => ({
+    getProgress: () => ({ 
+      current: progress.current, 
+      total: progress.total, 
+      isRunning: generating 
+    })
+  }));
 
   const fetchImages = async () => {
     if (!selectedStore?.id) {
@@ -1456,4 +1469,6 @@ export function SeoAltImage() {
       />
     </div>
   );
-}
+});
+
+SeoAltImage.displayName = 'SeoAltImage';
