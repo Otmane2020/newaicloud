@@ -1922,39 +1922,120 @@ Note: Only include reliability badge if you have verified or extracted specifica
    - Create unique IDs for each gradient (benefit-grad-1, benefit-grad-2, etc.)
    - Add hover: scale and slight rotation
 
-3. **MANDATORY STRUCTURE**:
+3. **MANDATORY STRUCTURE** - Ultra Attractive Design:
 \`\`\`html
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-  <!-- Benefit Card 1 -->
-  <div class="group bg-white rounded-2xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl" 
-       style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+  <!-- Benefit Card 1 - Blue/Purple Gradient -->
+  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
+       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
     
-    <!-- Icon with gradient in circle -->
-    <div class="mb-5">
-      <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110" 
-           style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.1), hsl(${designTokens.accent} / 0.1));">
-        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-          <defs>
-            <linearGradient id="benefit-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color: hsl(${designTokens.primary}); stop-opacity: 1"/>
-              <stop offset="100%" style="stop-color: hsl(${designTokens.accent}); stop-opacity: 1"/>
-            </linearGradient>
-          </defs>
-          <path d="M5 13l4 4L19 7" stroke="url(#benefit-grad-1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Animated gradient glow on hover (top right) -->
+    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="background: radial-gradient(circle, rgba(59,130,246,0.15), transparent);"></div>
+    
+    <!-- Enhanced shadow on hover -->
+    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="box-shadow: 0 20px 60px rgba(59,130,246,0.25);"></div>
+    
+    <!-- Icon with vibrant gradient -->
+    <div class="relative mb-5">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 relative" 
+           style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); box-shadow: 0 8px 25px rgba(59,130,246,0.4);">
+        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
+          <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
+        <!-- Reverse gradient on hover for dynamic effect -->
+        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+             style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);"></div>
       </div>
     </div>
-
+    
     <!-- Content -->
-    <h3 class="text-xl md:text-2xl font-bold mb-3" style="color: #1f2937;">
+    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
       Benefit Title
     </h3>
-    <p class="leading-relaxed" style="color: #6b7280;">
-      Detailed benefit description with compelling text.
+    <p class="relative leading-relaxed" style="color: #6b7280;">
+      Detailed benefit description with compelling text that explains the value.
     </p>
+    
+    <!-- Bottom accent bar that grows on hover -->
+    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
+         style="background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);"></div>
+  </div>
+
+  <!-- Benefit Card 2 - Green/Teal Gradient -->
+  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
+       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
+    
+    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="background: radial-gradient(circle, rgba(16,185,129,0.15), transparent);"></div>
+    
+    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="box-shadow: 0 20px 60px rgba(16,185,129,0.25);"></div>
+    
+    <div class="relative mb-5">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 relative" 
+           style="background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); box-shadow: 0 8px 25px rgba(16,185,129,0.4);">
+        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" stroke-width="2.5" fill="none"/>
+        </svg>
+        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+             style="background: linear-gradient(135deg, #14b8a6 0%, #10b981 100%);"></div>
+      </div>
+    </div>
+    
+    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
+      Second Benefit
+    </h3>
+    <p class="relative leading-relaxed" style="color: #6b7280;">
+      Another compelling reason to choose this product with clear value proposition.
+    </p>
+    
+    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
+         style="background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);"></div>
+  </div>
+
+  <!-- Benefit Card 3 - Orange/Amber Gradient -->
+  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
+       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
+    
+    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="background: radial-gradient(circle, rgba(249,115,22,0.15), transparent);"></div>
+    
+    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+         style="box-shadow: 0 20px 60px rgba(249,115,22,0.25);"></div>
+    
+    <div class="relative mb-5">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 relative" 
+           style="background: linear-gradient(135deg, #f97316 0%, #f59e0b 100%); box-shadow: 0 8px 25px rgba(249,115,22,0.4);">
+        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
+          <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="white" stroke-width="2" fill="none"/>
+        </svg>
+        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+             style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);"></div>
+      </div>
+    </div>
+    
+    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
+      Third Benefit
+    </h3>
+    <p class="relative leading-relaxed" style="color: #6b7280;">
+      Final key advantage that seals the deal and convinces customers.
+    </p>
+    
+    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
+         style="background: linear-gradient(90deg, #f97316 0%, #f59e0b 100%);"></div>
   </div>
 </div>
 \`\`\`
+
+🎨 **GRADIENT COLOR VARIATIONS** (rotate through these for multiple benefits):
+- **Blue-Purple**: #3b82f6 → #8b5cf6 (innovation, trust)
+- **Green-Teal**: #10b981 → #14b8a6 (eco-friendly, quality)
+- **Orange-Amber**: #f97316 → #f59e0b (energy, fast delivery)
+- **Pink-Rose**: #ec4899 → #f43f5e (premium, elegant)
+- **Indigo-Blue**: #6366f1 → #3b82f6 (tech, modern)
+- **Emerald-Green**: #059669 → #10b981 (nature, sustainable)
 
 4. **AVAILABLE SVG ICONS WITH GRADIENTS**:
 
@@ -2006,24 +2087,31 @@ Note: Only include reliability badge if you have verified or extracted specifica
   <path d="M5 13l4 4L19 7" stroke="url(#check-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 
-5. **MANDATORY HOVER EFFECTS**:
-   - Shadow graduation: shadow-lg → shadow-2xl
-   - Light scale: group-hover:scale-105 on card
-   - Icon scale: group-hover:scale-110 on icon
-   - Smooth transition: transition-all duration-300
+5. **MANDATORY HOVER EFFECTS** (Spectacular & Eye-Catching):
+   - **Card elevation**: hover:-translate-y-2 (lifts card up)
+   - **Shadow evolution**: From subtle to dramatic (0 4px 20px → 0 20px 60px with color tint)
+   - **Icon animation**: scale-110 + rotation (rotate-6 or -rotate-6)
+   - **Glow effect**: Radial gradient appears on hover (top-right corner)
+   - **Bottom bar**: w-0 → w-full animated accent line
+   - **Smooth transitions**: duration-500 for fluid animations
+   - **Icon gradient flip**: Reverse gradient on hover for dynamic effect
 
-6. **COLORS IN LIGHT THEME**:
-   🚨 ABSOLUTELY FORBIDDEN:
-   - ❌ Light blue backgrounds (hsl(210 100% 80%) or similar)
-   - ❌ Blue text on blue background
-   - ❌ Colored backgrounds for cards
+6. **COLORS IN LIGHT THEME** (Vibrant & Professional):
+   ✅ MANDATORY - Ultra Attractive Design:
+   - **Card base**: White (#ffffff) with subtle gray gradient (to-gray-50)
+   - **Icon backgrounds**: VIVID gradients with proper color pairs:
+     * Blue→Purple: #3b82f6 → #8b5cf6
+     * Green→Teal: #10b981 → #14b8a6
+     * Orange→Amber: #f97316 → #f59e0b
+   - **Icon glow**: Box-shadow with matching gradient color (rgba with 0.4 opacity)
+   - **Hover glow**: Radial gradient with 0.15 opacity
+   - **Text hierarchy**: #111827 (titles), #6b7280 (descriptions)
+   - **Accent bar**: Gradient line that grows on hover
+   - **Border**: Subtle 1px rgba(0,0,0,0.06) for definition
    
-   ✅ MANDATORY:
-   - Card backgrounds: white (#ffffff) or very light (#f9fafb)
-   - Title text: #1f2937 or #111827 (very dark gray)
-   - Description text: #6b7280 or #4b5563 (medium gray)
-   - Colored border: ONLY as subtle accent (top or left border)
-   - Gradients: ONLY in icons and icon background circles
+   🚨 STILL FORBIDDEN:
+   - ❌ Light pastel backgrounds on cards
+   - ❌ Washed-out or dull gradients
 
 7. **SPACING & LAYOUT**:
    - Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
