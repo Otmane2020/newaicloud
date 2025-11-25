@@ -75,6 +75,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
+    // Handle healthCheck to prevent self-testing
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
+    }
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -82,15 +88,173 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // --------------------------------------
-    // 🔥 1. LISTER TOUTES LES FUNCTIONS RÉELLEMENT DÉPLOYÉES
+    // 🔥 1. LISTE HARDCODÉE DES FONCTIONS ACTIVES
     // --------------------------------------
-    const listRes = await fetch(`${SUPABASE_URL}/functions/v1/`, {
-      headers: { Authorization: `Bearer ${SERVICE_ROLE}` },
-    });
-
-    const deployed: Array<{ id: string }> = await listRes.json();
-
-    const allFunctions = deployed.filter((f) => f.id !== "system-health-check").map((f) => f.id);
+    const allFunctions = [
+      "activate-free-trial",
+      "activate-full-plan",
+      "admin-get-user-subscriptions",
+      "admin-repair-profiles",
+      "admin-sync-stripe",
+      "admin-user-insights",
+      "analyze-competitor-pricing",
+      "analyze-dimension-images",
+      "analyze-gsc-anomalies",
+      "analyze-image-with-vision",
+      "analyze-price-from-image",
+      "analyze-seo-with-ai",
+      "analyze-serp-competitors",
+      "api-v1",
+      "assistant-ai",
+      "audit-homepage-seo",
+      "batch-translate",
+      "calculate-proration",
+      "chat-smart",
+      "check-broken-links",
+      "check-google-apis-health",
+      "check-subscription",
+      "check-usage-limits",
+      "claim-shopify-connection",
+      "classify-product-category",
+      "cleanup-invalid-trials",
+      "cleanup-orphaned-data",
+      "cleanup-stuck-syncs",
+      "consume-optimization-credits",
+      "convert-landing-to-mobile",
+      "create-checkout",
+      "create-google-merchant-feed",
+      "create-shopify-landing-page",
+      "create-super-admin",
+      "create-upgrade-invoice",
+      "customer-portal",
+      "daily-gsc-sync",
+      "delete-shopify-connection",
+      "delete-shopify-product",
+      "diagnose-subscription",
+      "download-email-attachment",
+      "encrypt-shopify-token",
+      "enrich-product",
+      "export-seo-audit-pdf",
+      "extract-netlinking-from-articles",
+      "fetch-shopify-domain",
+      "fix-invalid-trial-subscriptions",
+      "fix-stuck-subscriptions",
+      "fix-subscription-sync",
+      "force-payment",
+      "generate-ads-landing-page",
+      "generate-ai-background-variants",
+      "generate-ai-product-background",
+      "generate-alt-texts-vision",
+      "generate-api-key",
+      "generate-article-keywords",
+      "generate-article-seo",
+      "generate-blog-article",
+      "generate-blog-opportunities",
+      "generate-collection-seo",
+      "generate-comprehensive-seo-audit",
+      "generate-daily-notifications",
+      "generate-daily-opportunities",
+      "generate-daily-seo-challenges",
+      "generate-google-category",
+      "generate-gtin",
+      "generate-homepage-seo-element",
+      "generate-image",
+      "generate-image-background",
+      "generate-landing-ai",
+      "generate-page-seo",
+      "generate-product-background",
+      "generate-product-description-html",
+      "generate-promotional-articles",
+      "generate-store-summary",
+      "generate-tags",
+      "generate-title-description",
+      "generate-vendor-name",
+      "generate-white-background",
+      "get-gsc-product-performance",
+      "get-search-console-data",
+      "get-shopify-product-count",
+      "google-ads-oauth-token",
+      "google-merchant-oauth-token",
+      "google-oauth-token",
+      "google-oauth-url",
+      "import-content-images",
+      "import-costs-from-shopify",
+      "import-google-taxonomy",
+      "import-products",
+      "import-shipping-costs",
+      "import-shopify-articles",
+      "import-shopify-collections",
+      "import-shopify-pages",
+      "list-google-ads-campaigns",
+      "list-gsc-sitemaps",
+      "list-merchant-accounts",
+      "list-search-console-sites",
+      "notify-expiring-shopify-tokens",
+      "optimize-shopping-feed",
+      "performance-logger",
+      "process-blog-campaigns",
+      "receive-admin-email",
+      "refresh-google-merchant-token",
+      "report-usage-to-stripe",
+      "request-gsc-indexing",
+      "robot-stt",
+      "robot-tts",
+      "scheduled-merchant-sync",
+      "scheduled-sync",
+      "search-similar-products-specs",
+      "send-abandoned-cart",
+      "send-admin-email",
+      "send-contact-email",
+      "send-demo-booking",
+      "send-monthly-report",
+      "send-notification",
+      "send-notification-email",
+      "send-order-confirmation",
+      "send-payment-failed",
+      "send-reset-password-email",
+      "send-shipping-notification",
+      "send-subscription-confirmed",
+      "send-trial-expiring",
+      "send-upgrade-limit-email",
+      "send-weekly-seo-digest",
+      "send-welcome-email",
+      "setup-subscription-plans",
+      "shopify-install",
+      "shopify-oauth",
+      "shopify-webhook",
+      "shopping-feed",
+      "smart-alt-text",
+      "smart-title",
+      "stripe-webhook",
+      "submit-gsc-sitemap",
+      "sync-article-image-to-shopify",
+      "sync-blog-to-shopify",
+      "sync-collection-image-to-shopify",
+      "sync-deleted-resources",
+      "sync-homepage-seo",
+      "sync-landing-to-shopify",
+      "sync-page-to-shopify",
+      "sync-pricing-to-shopify",
+      "sync-product-collections",
+      "sync-product-images-to-shopify",
+      "sync-search-console-data",
+      "sync-seo-to-shopify",
+      "sync-shopify-orders",
+      "sync-shopify-to-feed",
+      "sync-stripe-subscription",
+      "test-shopify-credentials",
+      "test-shopify-token",
+      "test-webhook-email",
+      "track-activity",
+      "track-referral-reward",
+      "trigger-auto-sync",
+      "trigger-cleanup-sync",
+      "trigger-hourly-sync",
+      "update-article-link",
+      "update-product-status",
+      "update-subscription",
+      "validate-shopify-credentials",
+    ];
 
     const results: Record<string, any[]> = {};
     const failed = [];
@@ -145,7 +309,7 @@ serve(async (req) => {
           unhealthy++;
           failed.push({ name: fn, category, code: res.status, responseTime: ms });
         }
-      } catch (err) {
+      } catch (err: unknown) {
         const ms = Date.now() - start;
         unhealthy++;
 
@@ -154,11 +318,11 @@ serve(async (req) => {
         results[category].push({
           name: fn,
           status: "unhealthy",
-          error: err?.message ?? "Unknown",
+          error: err instanceof Error ? err.message : "Unknown error",
           responseTime: ms,
         });
 
-        failed.push({ name: fn, category, error: err?.message, responseTime: ms });
+        failed.push({ name: fn, category, error: err instanceof Error ? err.message : "Unknown error", responseTime: ms });
       }
     }
 
@@ -224,8 +388,8 @@ serve(async (req) => {
       }),
       { headers: { ...cors, "Content-Type": "application/json" } },
     );
-  } catch (e) {
-    return new Response(JSON.stringify({ success: false, error: e.message }), {
+  } catch (e: unknown) {
+    return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...cors, "Content-Type": "application/json" },
     });

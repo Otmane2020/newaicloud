@@ -327,31 +327,28 @@ export default function RegenerateLanding({
       setProgress(20);
       setProgressMessage("Optimisation du titre SERP...");
 
-      // ✅ ÉTAPE 1.5 : Optimiser le titre avec SERP
+      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI)
       try {
-        const { data: serpData, error: serpError } = await supabase.functions.invoke("optimize-product-title-serp", {
+        const { data: smartTitleData, error: smartTitleError } = await supabase.functions.invoke("smart-title", {
           body: {
             productId: product.id,
-            currentTitle: product.title,
-            description: product.description,
-            vendor: resolvedVendor,
             language: language,
           },
         });
 
-        if (serpError) {
-          console.warn("[Landing] SERP title optimization failed:", serpError);
-        } else if (serpData?.success && serpData?.optimizedTitle) {
-          console.log("[Landing] Title optimized:", serpData.optimizedTitle);
-          setOptimizedTitle(serpData.optimizedTitle);
+        if (smartTitleError) {
+          console.warn("[Landing] Smart title optimization failed:", smartTitleError);
+        } else if (smartTitleData?.success && smartTitleData?.optimizedTitle) {
+          console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
+          setOptimizedTitle(smartTitleData.optimizedTitle);
           setTitleNeedsSync(true);
-          toast.success(`Titre optimisé: ${serpData.optimizedTitle}`, {
-            description: "N'oubliez pas de synchroniser avec Shopify pour appliquer le nouveau titre",
+          toast.success(`Titre optimisé: ${smartTitleData.optimizedTitle}`, {
+            description: "Titre basé sur l'analyse visuelle du produit",
           });
         }
       } catch (err) {
-        console.warn("[Landing] SERP optimization error:", err);
-        // Continue even if SERP optimization fails
+        console.warn("[Landing] Smart title error:", err);
+        // Continue even if smart title fails
       }
 
       setProgress(35);
