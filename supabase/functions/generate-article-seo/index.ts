@@ -285,7 +285,7 @@ ${labels.instruction}`;
 
         // Update article with SEO data and Vision AI info
         const updateData: any = {
-          title: seoData.seo_title,
+          seo_title: seoData.seo_title,
           meta_description: seoData.meta_description,
           keywords: seoData.keywords,
           optimization_count: (article.optimization_count || 0) + 1,
