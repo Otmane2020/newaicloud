@@ -247,7 +247,7 @@ const Subscription = () => {
       // Check user status
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_status, trial_ends_at')
+        .select('subscription_status, trial_ends_at, stripe_customer_id')
         .eq('id', authUser.id)
         .single();
 
@@ -261,6 +261,47 @@ const Subscription = () => {
         .eq('seller_id', authUser.id)
         .in('status', ['active', 'past_due'])
         .maybeSingle();
+
+      // 🔧 CRITICAL FIX: If no subscription but user has stripe_customer_id, sync from Stripe
+      if (!subscription?.stripe_subscription_id && profile?.stripe_customer_id) {
+        console.log('🔄 No local subscription found but user has Stripe customer ID - attempting sync');
+        
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-stripe-subscription', {
+          body: { customerId: profile.stripe_customer_id }
+        });
+
+        if (!syncError && syncResult?.hasActiveSubscription) {
+          console.log('✅ Successfully synced subscription from Stripe, retrying upgrade flow');
+          
+          // Retry the upgrade with the now-synced subscription
+          const { data, error } = await supabase.functions.invoke('update-subscription', {
+            body: {
+              new_plan_id: planId,
+              billing_period: 'monthly',
+            },
+          });
+
+          if (error) throw error;
+
+          const upgradeDetails = data?.upgrade_details;
+          if (upgradeDetails?.proration) {
+            const prorata = upgradeDetails.proration;
+            toast.success(
+              `✅ Plan mis à niveau !\n` +
+              `💰 Montant prélevé: ${prorata.prorated_amount}${prorata.currency}\n` +
+              `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+              { duration: 6000 }
+            );
+          } else {
+            toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
+          }
+
+          await loadPlansAndCurrentPlan();
+          setCheckoutLoading(null);
+          setProrationInfo(null);
+          return;
+        }
+      }
 
       const hasActivePaidSubscription = !!subscription?.stripe_subscription_id && !isInTrial;
 

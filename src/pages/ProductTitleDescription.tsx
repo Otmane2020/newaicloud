@@ -2861,7 +2861,14 @@ export default function ProductTitleDescription() {
               onGenerated={async (html) => {
                 console.log("🎉 [Landing] Generated HTML:", html.substring(0, 100));
 
-                // Mettre à jour directement le produit avec le HTML généré (évite double aperçu)
+                // Mettre à jour le state products immédiatement pour afficher le badge
+                setProducts(prev => prev.map(p => 
+                  p.id === selectedLandingProduct.id 
+                    ? { ...p, landing_page: html, has_landing_page: true }
+                    : p
+                ));
+
+                // Mettre à jour directement le produit avec le HTML généré
                 const updatedProduct = {
                   ...selectedLandingProduct,
                   landing_page: html,
@@ -2873,10 +2880,9 @@ export default function ProductTitleDescription() {
                 setPreviewProduct(updatedProduct);
                 setShowPreviewDialog(true);
 
-                // Rafraîchir le tableau pour afficher le label "landing"
+                // Rafraîchir le tableau en arrière-plan
                 console.log("🔄 [Landing] Refreshing products table...");
-                await fetchProducts();
-                console.log("✅ [Landing] Table refreshed with landing badge");
+                fetchProducts();
               }}
               onClose={() => setShowLandingDialog(false)}
             />

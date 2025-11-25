@@ -143,69 +143,81 @@ export function BackgroundDialog({
     if (selectedIds.size === 0) return;
     
     setApplying(true);
+    const toastId = toast.loading('Application et synchronisation...');
+    
     try {
       await onApply(Array.from(selectedIds));
       
-      // 🔥 AUTO-SYNC to Shopify after applying
-      console.log('🔄 Auto-syncing applied images to Shopify...');
-      const toastId = toast.loading('Synchronisation avec Shopify...');
+      // 🔥 AUTO-SYNC to Shopify after applying - FORCED SYNC
+      console.log('🔄 Force-syncing applied background images to Shopify...');
       
-      try {
-        let syncSkipped = 0;
-        let syncOk = 0;
-        let syncErrors = 0;
-        
-        for (const productId of Array.from(selectedIds)) {
-          try {
-            const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-              body: { productId }
-            });
-            
-            console.log('[BackgroundDialog] Shopify sync response', { productId, syncData, syncError });
-            
-            if (syncError) {
-              syncErrors++;
-              console.error(`Erreur sync produit ${productId}:`, syncError);
-            } else if (syncData?.skipped) {
-              syncSkipped++;
-              console.log(`⏭️ Sync skipped for ${productId} (no shopify_product_id)`);
-            } else if (syncData?.error) {
-              syncErrors++;
-              console.error(`Erreur logique sync ${productId}:`, syncData.error);
-            } else {
-              syncOk++;
-              console.log(`✅ Successfully synced product ${productId}`);
-            }
-          } catch (error: any) {
-            console.error(`Erreur sync produit ${productId}:`, error);
-            syncErrors++;
+      let syncSkipped = 0;
+      let syncOk = 0;
+      let syncErrors = 0;
+      
+      for (const productId of Array.from(selectedIds)) {
+        try {
+          // Vérifier si le produit a un shopify_product_id
+          const { data: product } = await supabase
+            .from('shopify_products')
+            .select('shopify_id')
+            .eq('id', productId)
+            .single();
+
+          if (!product?.shopify_id) {
+            console.warn(`⏭️ Product ${productId} has no shopify_id, sync skipped`);
+            syncSkipped++;
+            continue;
           }
+
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+            body: { productId, force: true }
+          });
+          
+          console.log('[BackgroundDialog] Shopify sync response', { productId, syncData, syncError });
+          
+          if (syncError) {
+            syncErrors++;
+            console.error(`❌ Sync error for product ${productId}:`, syncError);
+          } else if (syncData?.error) {
+            syncErrors++;
+            console.error(`❌ Sync logic error for ${productId}:`, syncData.error);
+          } else {
+            syncOk++;
+            console.log(`✅ Successfully synced product ${productId}`);
+          }
+        } catch (error: any) {
+          console.error(`❌ Exception syncing product ${productId}:`, error);
+          syncErrors++;
         }
-        
-        if (syncErrors > 0) {
-          toast.error('Images appliquées mais erreurs de synchronisation Shopify', {
-            id: toastId,
-            description: `${syncOk} produit(s) synchronisé(s), ${syncErrors} en erreur.`,
-          });
-        } else if (syncSkipped > 0 && syncOk === 0) {
-          toast.warning('Images appliquées localement uniquement', {
-            id: toastId,
-            description: 'Les produits ne sont pas encore synchronisés avec Shopify (aucun ID Shopify).',
-          });
-        } else if (syncSkipped > 0 && syncOk > 0) {
-          toast.warning('Images partiellement synchronisées avec Shopify', {
-            id: toastId,
-            description: `${syncOk} produit(s) synchronisé(s), ${syncSkipped} sans ID Shopify.`,
-          });
-        } else {
-          toast.success(`✅ Images appliquées et synchronisées avec Shopify`, { id: toastId });
-        }
-      } catch (error: any) {
-        console.error('Erreur synchronisation:', error);
-        toast.warning('Images appliquées mais sync Shopify partiel', { id: toastId });
+      }
+      
+      if (syncErrors > 0) {
+        toast.error('Images appliquées mais erreurs de synchronisation Shopify', {
+          id: toastId,
+          description: `${syncOk} produit(s) synchronisé(s), ${syncErrors} en erreur.`,
+          duration: 8000,
+        });
+      } else if (syncSkipped > 0 && syncOk === 0) {
+        toast.warning('Images appliquées localement uniquement', {
+          id: toastId,
+          description: 'Les produits ne sont pas encore synchronisés avec Shopify. Exportez-les d\'abord vers Shopify.',
+          duration: 8000,
+        });
+      } else if (syncSkipped > 0 && syncOk > 0) {
+        toast.warning('Images partiellement synchronisées', {
+          id: toastId,
+          description: `${syncOk} produit(s) synchronisé(s), ${syncSkipped} produit(s) non exporté(s) vers Shopify.`,
+          duration: 8000,
+        });
+      } else {
+        toast.success(`✅ ${syncOk} image(s) appliquée(s) et synchronisée(s) avec Shopify`, { id: toastId });
       }
       
       onOpenChange(false);
+    } catch (error: any) {
+      console.error('Erreur application:', error);
+      toast.error('Erreur lors de l\'application', { id: toastId });
     } finally {
       setApplying(false);
     }

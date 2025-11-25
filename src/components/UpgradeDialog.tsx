@@ -162,7 +162,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       // CRITICAL: Check if user is in trial FIRST
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_status, trial_ends_at')
+        .select('subscription_status, trial_ends_at, stripe_customer_id, current_plan_id')
         .eq('id', user.id)
         .single();
 
@@ -230,8 +230,50 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         .from('subscriptions')
         .select('stripe_subscription_id, status')
         .eq('seller_id', user.id)
-        .eq('status', 'active') // Only 'active', NOT 'trialing'
-        .single();
+        .eq('status', 'active')
+        .maybeSingle();
+
+      // 🔧 CRITICAL FIX: If no subscription but user has stripe_customer_id, sync from Stripe
+      if (!subscription?.stripe_subscription_id && profile?.stripe_customer_id) {
+        console.log('🔄 [UpgradeDialog] No local subscription found but user has Stripe customer ID - attempting sync');
+        
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-stripe-subscription', {
+          body: { customerId: profile.stripe_customer_id }
+        });
+
+        if (!syncError && syncResult?.hasActiveSubscription) {
+          console.log('✅ [UpgradeDialog] Successfully synced subscription from Stripe, proceeding with upgrade');
+          
+          // Use update-subscription with proration
+          const { data, error } = await supabase.functions.invoke('update-subscription', {
+            body: {
+              new_plan_id: selectedPlanId,
+              billing_period: 'monthly',
+            },
+          });
+
+          if (error) throw error;
+
+          const upgradeDetails = data?.upgrade_details;
+          if (upgradeDetails?.proration) {
+            const prorata = upgradeDetails.proration;
+            toast.success(
+              `✅ ${t.dialogs.upgrade.planUpgraded}\n` +
+              `💰 Montant prélevé: ${prorata.prorated_amount} ${prorata.currency}\n` +
+              `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+              { duration: 6000 }
+            );
+          } else {
+            toast.success(`✅ ${t.dialogs.upgrade.planUpgraded}`, { duration: 5000 });
+          }
+
+          if (onUpgradeComplete) {
+            onUpgradeComplete();
+          }
+          onOpenChange(false);
+          return;
+        }
+      }
 
       const hasActivePaidSubscription = !!subscription?.stripe_subscription_id;
 

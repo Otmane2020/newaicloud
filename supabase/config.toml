@@ -353,6 +353,9 @@ memory_limit_mb = 512
 [functions.create-upgrade-invoice]
 verify_jwt = true
 
+[functions.sync-stripe-subscription]
+verify_jwt = true
+
 [functions.cleanup-stuck-syncs]
 verify_jwt = false
 

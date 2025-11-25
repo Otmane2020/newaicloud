@@ -162,11 +162,11 @@ export default function MediaHistory() {
       
       if (syncData?.skipped) {
         toast.warning('Image appliquée localement uniquement', {
-          description: 'Le produit n\'est pas encore relié à Shopify.',
+          description: 'Le produit n\'est pas encore exporté vers Shopify. Exportez-le d\'abord pour synchroniser les images.',
           duration: 8000,
         });
       } else {
-        toast.success('Image appliquée et synchronisée avec Shopify ✅');
+        toast.success('✅ Image appliquée et synchronisée avec Shopify');
       }
       
       queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
