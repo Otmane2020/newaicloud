@@ -17,6 +17,14 @@ interface BackgroundVariant {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
+
   try {
     const {
       basePrompt = "",
@@ -28,7 +36,7 @@ serve(async (req) => {
       serpData,
       style = "professional",
       format = "square",
-    } = await req.json();
+    } = body;
 
     if (!productTitle) {
       return new Response(JSON.stringify({ success: false, error: "Missing productTitle" }), {

@@ -11,6 +11,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
+
   try {
     // VÉRIFIER LES LIMITES AVANT DE GÉNÉRER
     const authHeader = req.headers.get("Authorization");
@@ -91,7 +99,7 @@ serve(async (req) => {
       imageType = "secondary",
       format = "square",
       similarity = "medium",
-    } = await req.json();
+    } = body;
 
     if (!imageUrl || !prompt) {
       return new Response(JSON.stringify({ error: "imageUrl and prompt are required" }), {

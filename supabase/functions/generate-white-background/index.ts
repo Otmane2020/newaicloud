@@ -11,6 +11,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
+
   try {
     // VÉRIFIER LES LIMITES AVANT DE GÉNÉRER
     const authHeader = req.headers.get("Authorization");
@@ -78,7 +86,7 @@ serve(async (req) => {
       }
     }
     
-    const { imageUrl, productTitle, imageType = "secondary" } = await req.json();
+    const { imageUrl, productTitle, imageType = "secondary" } = body;
 
     if (!imageUrl) {
       return new Response(

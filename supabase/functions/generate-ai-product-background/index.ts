@@ -26,6 +26,14 @@ interface GenerationRequest {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
+
   try {
     // Check usage limits first
     const authHeader = req.headers.get("Authorization");
@@ -109,7 +117,7 @@ serve(async (req) => {
       format,
       targetType,
       variantOptions,
-    } = (await req.json()) as GenerationRequest;
+    } = body as GenerationRequest;
 
     if (!imageUrl || !productTitle || !prompt || !productId || !imageId) {
       return new Response(JSON.stringify({ success: false, error: "Missing required parameters" }), {
