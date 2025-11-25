@@ -433,14 +433,17 @@ Deno.serve(async (req: Request) => {
 
     let allProducts: ShopifyProduct[] = [];
     
-    // 🆕 Déterminer le mode et la limite
-    const isAutoImport = requestBody.autoImport === true;
-    const requestedMaxProducts = requestBody.maxProducts || 50;
-    const productLimitForUrl = isAutoImport ? Math.min(10, requestedMaxProducts) : 50;
-
-    console.log(`📦 [IMPORT] Mode: ${isAutoImport ? '⚡ AUTO-IMPORT' : '📥 MANUAL'}, limit: ${isAutoImport ? productLimitForUrl : 'all available'} products`);
+    // Use available slots as the limit for this import batch
+    // This respects the user's plan limit (10 for trial, 100 for starter, 2000 for pro, etc.)
+    const batchSize = 50; // Shopify API batch size
+    const effectiveLimit = Math.min(availableSlots, batchSize);
     
-    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=${productLimitForUrl}&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
+    console.log(`📦 [IMPORT] Importing up to ${availableSlots} products (plan limit: ${maxProducts})`);
+    console.log(`   - Current products: ${currentProductsCount}`);
+    console.log(`   - Available slots: ${availableSlots}`);
+    console.log(`   - Batch size: ${batchSize}`);
+    
+    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=${batchSize}&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
     let quotaReached = false;
 
@@ -514,29 +517,17 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', importJob.id);
 
-      if (parsedNextUrl) {
-        // 🆕 Pour auto-import, ne pas paginer - prendre seulement la première page
-        if (isAutoImport) {
-          console.log('[IMPORT] ⚡ Auto-import mode: stopping after first page (10 products max)');
-          nextPageUrl = null;
-        } else {
-          nextPageUrl = parsedNextUrl;
-          console.log(`Next page URL found, continuing...`);
-          // Réduire le délai pour accélérer l'import
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+      if (parsedNextUrl && !quotaReached) {
+        nextPageUrl = parsedNextUrl;
+        console.log(`Next page URL found, continuing...`);
+        // Réduire le délai pour accélérer l'import
+        await new Promise(resolve => setTimeout(resolve, 200));
       } else {
         nextPageUrl = null;
       }
     }
 
     let products = allProducts;
-    
-    // If autoImportLimit is set (OAuth flow), limit products
-    if (autoImportLimit && typeof autoImportLimit === 'number' && autoImportLimit > 0) {
-      console.log(`📦 Auto-import mode: limiting to ${autoImportLimit} products (from ${products.length} fetched)`);
-      products = products.slice(0, autoImportLimit);
-    }
     
     console.log(`Total products to import: ${products.length} (fetched across ${pageCount} pages)`);
 
