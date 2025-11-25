@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shopifyGraphQL, extractNodes, PRODUCTS_QUERY } from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,41 +41,67 @@ async function syncProductsFromShopify(userId: string, supabase: any) {
   const cleanStoreUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   console.log(`Using cleaned store URL: ${cleanStoreUrl}`);
 
-  // Fetch products from Shopify API
-  const shopifyApiUrl = `https://${cleanStoreUrl}/admin/api/2024-01/products.json`;
-  const response = await fetch(shopifyApiUrl, {
-    headers: {
-      "X-Shopify-Access-Token": accessToken,
-      "Content-Type": "application/json",
-    },
-  });
+  // Fetch products from Shopify using GraphQL
+  console.log("📦 Fetching products from Shopify using GraphQL...");
+  let allProducts: any[] = [];
+  let hasNextPage = true;
+  let cursor: string | undefined;
+  let pageCount = 0;
 
-  if (!response.ok) {
-    throw new Error(`Shopify API error: ${response.status}`);
+  while (hasNextPage && pageCount < 50) { // Safety limit
+    try {
+      const result = await shopifyGraphQL(
+        cleanStoreUrl,
+        accessToken,
+        PRODUCTS_QUERY,
+        { first: 50, after: cursor }
+      );
+
+      const products = extractNodes(result.products);
+      allProducts.push(...products);
+      
+      hasNextPage = result.products?.pageInfo?.hasNextPage || false;
+      cursor = result.products?.pageInfo?.endCursor;
+      pageCount++;
+      
+      console.log(`📄 Page ${pageCount}: Fetched ${products.length} products (total: ${allProducts.length})`);
+      
+      if (hasNextPage) {
+        await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
+      }
+    } catch (error: any) {
+      console.error(`❌ GraphQL fetch error on page ${pageCount}:`, error);
+      throw new Error(`Shopify GraphQL error: ${error?.message || String(error)}`);
+    }
   }
-
-  const { products } = await response.json();
   
   let updatedCount = 0;
 
   // Update each product in our database
-  for (const shopifyProduct of products) {
+  for (const shopifyProduct of allProducts) {
     try {
+      // Extract numeric ID from GID
+      const numericId = shopifyProduct.id.split('/').pop();
+      const variants = extractNodes(shopifyProduct.variants || { edges: [] });
+      const firstVariant: any = variants[0];
+      const images = extractNodes(shopifyProduct.images || { edges: [] });
+      const firstImage: any = images[0];
+      
       const { error: updateError } = await supabase
         .from("shopify_products")
         .update({
           title: shopifyProduct.title,
-          description: shopifyProduct.body_html,
-          price: shopifyProduct.variants[0]?.price || "0",
-          compare_at_price: shopifyProduct.variants[0]?.compare_at_price,
-          status: shopifyProduct.status,
-          vendor: shopifyProduct.vendor,
-          product_type: shopifyProduct.product_type,
-          tags: shopifyProduct.tags ? shopifyProduct.tags.split(", ") : [],
-          image_url: shopifyProduct.image?.src || null,
+          description: shopifyProduct.descriptionHtml || "",
+          price: firstVariant?.price || "0",
+          compare_at_price: firstVariant?.compareAtPrice || null,
+          status: shopifyProduct.status?.toLowerCase() || "draft",
+          vendor: shopifyProduct.vendor || "",
+          product_type: shopifyProduct.productType || "",
+          tags: shopifyProduct.tags?.join(", ") || "",
+          image_url: firstImage?.url || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("shopify_id", shopifyProduct.id.toString())
+        .eq("shopify_id", numericId)
         .eq("seller_id", userId);
 
       if (!updateError) {
@@ -93,7 +120,7 @@ async function syncProductsFromShopify(userId: string, supabase: any) {
     })
     .eq("user_id", userId);
 
-  return { productsUpdated: updatedCount, totalProducts: products.length };
+  return { productsUpdated: updatedCount, totalProducts: allProducts.length };
 }
 
 Deno.serve(async (req: Request) => {
