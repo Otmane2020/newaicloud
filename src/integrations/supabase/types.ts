@@ -1168,6 +1168,24 @@ export type Database = {
           },
         ]
       }
+      cost_reference: {
+        Row: {
+          cost: number
+          id: string
+          name: string
+        }
+        Insert: {
+          cost?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          cost?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       decora_home_backup_metadata: {
         Row: {
           completed_at: string | null
