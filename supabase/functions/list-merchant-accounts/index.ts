@@ -12,6 +12,14 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     console.log("Fetching merchant accounts...");
 
     const authHeader = req.headers.get("authorization");
