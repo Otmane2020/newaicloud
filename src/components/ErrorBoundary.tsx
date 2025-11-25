@@ -20,12 +20,29 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
+    // Ignore benign DOM cleanup errors that happen during rapid navigation
+    const isBenignError = 
+      error.name === 'NotFoundError' && 
+      error.message.includes('removeChild');
+    
+    if (isBenignError) {
+      console.warn('[ErrorBoundary] Ignoring benign DOM cleanup error:', error.message);
+      return { hasError: false, error: null };
+    }
+    
     return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[ErrorBoundary] Uncaught error:', error);
-    console.error('[ErrorBoundary] Error info:', errorInfo);
+    // Only log non-benign errors
+    const isBenignError = 
+      error.name === 'NotFoundError' && 
+      error.message.includes('removeChild');
+    
+    if (!isBenignError) {
+      console.error('[ErrorBoundary] Uncaught error:', error);
+      console.error('[ErrorBoundary] Error info:', errorInfo);
+    }
   }
 
   private handleReset = () => {
