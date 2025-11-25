@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ProductOptimizationTabs } from '@/components/seo/ProductOptimizationTabs';
 import { TagOptimization } from '@/components/seo/TagOptimization';
-import { SeoAltImage, SeoAltImageRef } from '@/components/seo/SeoAltImage';
+import { SeoAltImage } from '@/components/seo/SeoAltImage';
 import { SmartTitle } from '@/components/seo/SmartTitle';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
 import { PageOptimization } from '@/components/seo/PageOptimization';
@@ -36,9 +36,7 @@ export default function SEO() {
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
   const articleManagementRef = useRef<ArticleManagementRef>(null);
-  const seoAltImageRef = useRef<SeoAltImageRef>(null);
   const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
-  const [altImageProgress, setAltImageProgress] = useState({ current: 0, total: 0, isRunning: false });
 
   const handleSyncShopify = async () => {
     try {
@@ -85,19 +83,6 @@ export default function SEO() {
     }
   }, [activeTab, selectedStore]);
 
-  // Poll ALT image optimization progress
-  useEffect(() => {
-    if (activeTab !== 'alt') return;
-    
-    const interval = setInterval(() => {
-      if (seoAltImageRef.current) {
-        const progress = seoAltImageRef.current.getProgress();
-        setAltImageProgress(progress);
-      }
-    }, 500); // Poll every 500ms
-    
-    return () => clearInterval(interval);
-  }, [activeTab]);
 
   const calculateArticlesSeoScore = async () => {
     if (!selectedStore) {
@@ -109,7 +94,7 @@ export default function SEO() {
       setLoadingScores(true);
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('title, meta_description, keywords, featured_image, status, optimization_count')
+        .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('store_id', selectedStore.id);
 
       if (error) throw error;
@@ -118,7 +103,7 @@ export default function SEO() {
         const scores = data.map((article: any) => {
           const score = calculateArticleSeoScore(
             article.title,
-            article.title,
+            article.seo_title || article.title,
             article.meta_description || '',
             article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
             !!article.featured_image,
@@ -373,37 +358,7 @@ export default function SEO() {
         {activeTab === 'homepage' && <HomePageSeoAudit />}
         {activeTab === 'audit' && <SeoAuditReports />}
         {activeTab === 'audit-dashboard' && <SeoAuditDashboard />}
-        {activeTab === 'alt' && (
-          <>
-            {/* Banner for ALT Images */}
-            <Card className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950 border-2 border-emerald-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
-                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Image className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 flex-shrink-0" />
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent break-words">
-                      Optimisation des Images ALT
-                    </h2>
-                  </div>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg break-words">
-                    Améliorez le SEO et l'accessibilité de vos images
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
-                  {altImageProgress.isRunning ? (
-                    <ProgressBanner
-                      current={altImageProgress.current}
-                      total={altImageProgress.total}
-                      label="Optimisation des images"
-                      onCancel={() => {}}
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </Card>
-            <SeoAltImage ref={seoAltImageRef} />
-          </>
-        )}
+        {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'smart-title' && <SmartTitle />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'ads-campaign' && <AdsCampaign />}

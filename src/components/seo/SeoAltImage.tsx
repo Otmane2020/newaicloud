@@ -820,35 +820,43 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </div>
           </div>
           <div className="flex flex-col gap-3 items-center">
-            <div className="text-center">
-              <div className={`text-4xl font-bold ${
-                altSeoScore >= 80 ? 'text-green-600' : 
-                altSeoScore >= 60 ? 'text-orange-600' : 
-                'text-red-600'
-              }`}>
-                {altSeoScore} / 100
+            {generating ? (
+              <div className="text-center space-y-3 w-full max-w-md">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="font-semibold text-lg">Optimisation en cours...</span>
+                </div>
+                <Progress value={(progress.current / progress.total) * 100} className="h-3" />
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{progress.current} / {progress.total}</span>
+                  <span className="font-bold text-primary">{Math.round((progress.current / progress.total) * 100)}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Le traitement continue en arrière-plan</p>
               </div>
-              <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{images.length})</div>
-            </div>
-            <Button
-              size="lg"
-              onClick={handleOptimizeAllImages}
-              disabled={generating || imagesNotOptimized === 0 || limitsLoading}
-              className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {t.seo.altImage.banner.optimizing}
-                </>
-              ) : (
-                <>
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className={`text-4xl font-bold ${
+                    altSeoScore >= 80 ? 'text-green-600' : 
+                    altSeoScore >= 60 ? 'text-orange-600' : 
+                    'text-red-600'
+                  }`}>
+                    {altSeoScore} / 100
+                  </div>
+                  <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{images.length})</div>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={handleOptimizeAllImages}
+                  disabled={generating || imagesNotOptimized === 0 || limitsLoading}
+                  className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
+                >
                   <Eye className="w-5 h-5" />
                   {t.seo.altImage.banner.optimizeAll} ({imagesNotOptimized})
                   <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </Button>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Card>
