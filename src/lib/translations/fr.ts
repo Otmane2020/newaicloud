@@ -1944,6 +1944,7 @@ export const translations = {
       templates: "Templates",
       emailStats: "Stats Emails",
       analytics: "Analytics",
+      systemStatus: "État du Système",
       logout: "Déconnexion",
     },
     toasts: {
@@ -6225,6 +6226,39 @@ export const translations = {
     empty: {
       title: "Aucune clé API",
       description: "Créez votre première clé API pour commencer l'intégration"
+    }
+  },
+
+  systemStatus: {
+    title: "État du Système",
+    healthCheckComplete: "Vérification Terminée",
+    functionsOperational: "fonctions opérationnelles",
+    fullyOperational: "Tous les systèmes sont opérationnels",
+    someServicesDegraded: "Certains services sont dégradés",
+    majorOutage: "Panne majeure détectée",
+    noIssues: "Aucun problème détecté affectant nos systèmes.",
+    functionIssues: "fonction(s) avec des problèmes",
+    runHealthCheck: "Lancer la Vérification",
+    noDataYet: "Aucune donnée de statut disponible",
+    runFirstCheck: "Lancez une vérification pour voir l'état du système",
+    healthy: "Sain",
+    unhealthy: "En Erreur",
+    avgResponseTime: "Temps Moy.",
+    totalFunctions: "Total Fonctions",
+    lastChecked: "Dernière vérification",
+    detailedStatus: "État Détaillé",
+    noResultsYet: "Aucun résultat de vérification. Cliquez sur 'Lancer la Vérification' pour tester toutes les fonctions.",
+    components: "composants",
+    issues: "problèmes",
+    category: {
+      core: "Fonctions Principales",
+      aigeneration: "Génération IA",
+      seo: "Fonctions SEO",
+      email: "Services Email",
+      stripe: "Paiement (Stripe)",
+      shopify: "Intégration Shopify",
+      backgroundprocessing: "Traitement en Arrière-plan",
+      system: "Fonctions Système"
     }
   }
 };

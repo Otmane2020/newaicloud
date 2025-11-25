@@ -4641,6 +4641,42 @@ export type Database = {
           },
         ]
       }
+      system_health_checks: {
+        Row: {
+          alert_sent: boolean | null
+          avg_response_time_ms: number | null
+          checked_at: string | null
+          created_at: string | null
+          healthy_count: number
+          id: string
+          results: Json
+          total_functions: number
+          unhealthy_count: number
+        }
+        Insert: {
+          alert_sent?: boolean | null
+          avg_response_time_ms?: number | null
+          checked_at?: string | null
+          created_at?: string | null
+          healthy_count: number
+          id?: string
+          results: Json
+          total_functions: number
+          unhealthy_count: number
+        }
+        Update: {
+          alert_sent?: boolean | null
+          avg_response_time_ms?: number | null
+          checked_at?: string | null
+          created_at?: string | null
+          healthy_count?: number
+          id?: string
+          results?: Json
+          total_functions?: number
+          unhealthy_count?: number
+        }
+        Relationships: []
+      }
       translations: {
         Row: {
           ai_generated: boolean | null
