@@ -71,6 +71,15 @@ function timeoutSignal(ms: number) {
 // -------------------------------
 // 3️⃣ VERSION ULTIME - HEALTH CHECK
 // -------------------------------
+
+interface FailedFunction {
+  name: string;
+  category: string;
+  statusCode?: number;
+  error?: string;
+  responseTime: number;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -257,73 +266,93 @@ serve(async (req) => {
     ];
 
     const results: Record<string, any[]> = {};
-    const failed = [];
+    const failed: FailedFunction[] = [];
 
     let totalResponse = 0;
     let healthy = 0;
     let unhealthy = 0;
 
+    // Global timeout to ensure we return before Supabase 60s timeout
+    const globalStartTime = Date.now();
+    const GLOBAL_TIMEOUT = 55000; // 55 seconds
+
     // --------------------------------------
-    // 🔥 2. TEST CHAQUE FUNCTION
+    // 🔥 2. TEST FUNCTIONS IN PARALLEL BATCHES
     // --------------------------------------
-    for (const fn of allFunctions) {
-      const category = categorize(fn);
-      const mock = getMockPayload(fn);
-
-      const start = Date.now();
-
-      const timeout = category.includes("AI")
-        ? 30000
-        : category.includes("Sync")
-          ? 15000
-          : category.includes("Emails")
-            ? 15000
-            : 5000;
-
-      try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${ANON}`,
-          },
-          body: JSON.stringify(mock),
-          signal: timeoutSignal(timeout),
-        });
-
-        const ms = Date.now() - start;
-        totalResponse += ms;
-
-        const ok = [200, 201, 400, 401, 403, 422].includes(res.status);
-
-        if (!results[category]) results[category] = [];
-        results[category].push({
-          name: fn,
-          status: ok ? "healthy" : "unhealthy",
-          code: res.status,
-          responseTime: ms,
-        });
-
-        if (ok) healthy++;
-        else {
-          unhealthy++;
-          failed.push({ name: fn, category, code: res.status, responseTime: ms });
-        }
-      } catch (err: unknown) {
-        const ms = Date.now() - start;
-        unhealthy++;
-
-        if (!results[category]) results[category] = [];
-
-        results[category].push({
-          name: fn,
-          status: "unhealthy",
-          error: err instanceof Error ? err.message : "Unknown error",
-          responseTime: ms,
-        });
-
-        failed.push({ name: fn, category, error: err instanceof Error ? err.message : "Unknown error", responseTime: ms });
+    const batchSize = 10;
+    
+    for (let i = 0; i < allFunctions.length; i += batchSize) {
+      // Check global timeout
+      if (Date.now() - globalStartTime > GLOBAL_TIMEOUT) {
+        console.log(`Global timeout reached, stopping at function ${i}/${allFunctions.length}`);
+        break;
       }
+
+      const batch = allFunctions.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (fn) => {
+          const category = categorize(fn);
+          const mock = getMockPayload(fn);
+
+          const start = Date.now();
+
+          const timeout = category.includes("AI")
+            ? 30000
+            : category.includes("Sync")
+              ? 15000
+              : category.includes("Emails")
+                ? 15000
+                : 5000;
+
+          try {
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${ANON}`,
+              },
+              body: JSON.stringify(mock),
+              signal: timeoutSignal(timeout),
+            });
+
+            const ms = Date.now() - start;
+            totalResponse += ms;
+
+            const ok = [200, 201, 400, 401, 403, 422].includes(res.status);
+
+            if (!results[category]) results[category] = [];
+            results[category].push({
+              name: fn,
+              status: ok ? "healthy" : "unhealthy",
+              statusCode: res.status,
+              responseTime: ms,
+              timestamp: new Date().toISOString(),
+            });
+
+            if (ok) healthy++;
+            else {
+              unhealthy++;
+              failed.push({ name: fn, category, statusCode: res.status, responseTime: ms });
+            }
+          } catch (err: unknown) {
+            const ms = Date.now() - start;
+            unhealthy++;
+
+            if (!results[category]) results[category] = [];
+
+            results[category].push({
+              name: fn,
+              status: "unhealthy",
+              error: err instanceof Error ? err.message : "Unknown error",
+              responseTime: ms,
+              timestamp: new Date().toISOString(),
+            });
+
+            failed.push({ name: fn, category, error: err instanceof Error ? err.message : "Unknown error", responseTime: ms });
+          }
+        })
+      );
     }
 
     const avg = Math.round(totalResponse / allFunctions.length);
@@ -357,7 +386,7 @@ serve(async (req) => {
             <tr>
               <td>${f.category}</td>
               <td>${f.name}</td>
-              <td>${f.code || f.error}</td>
+              <td>${f.statusCode || f.error}</td>
               <td>${f.responseTime}</td>
             </tr>`,
             )
@@ -377,11 +406,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        timestamp: new Date().toISOString(),
         summary: {
-          total: allFunctions.length,
-          healthy,
-          unhealthy,
-          avg_response_time: avg,
+          totalFunctions: allFunctions.length,
+          healthyCount: healthy,
+          unhealthyCount: unhealthy,
+          avgResponseTimeMs: avg,
         },
         results,
         failed,
