@@ -122,7 +122,7 @@ export function BlogOpportunities() {
       console.log('🔄 Loading opportunities...');
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(t.auth.notAuthenticated);
 
       // Check cache first (24h expiration)
       let cachedOpportunities: any = null;
@@ -223,18 +223,18 @@ export function BlogOpportunities() {
 
   const handleCreateArticle = async (opp: Opportunity) => {
     if (!selectedStore?.id) {
-      toast.error("Aucune boutique sélectionnée");
+      toast.error(t.toasts.collections.noStore);
       return;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast.error("Utilisateur non authentifié");
+      toast.error(t.auth.notAuthenticated);
       return;
     }
 
     if (!canDoAction('optimizations')) {
-      toast.error('Limite d\'optimisations atteinte');
+      toast.error(t.toasts.warning.limitReached);
       setShowUpgradeDialog(true);
       return;
     }
@@ -243,8 +243,8 @@ export function BlogOpportunities() {
     setShowGenerationProgress(true);
     
     try {
-      toast.info("🚀 Génération automatique de l'article...", {
-        description: `Cela peut prendre 1-2 minutes. ${opp.estimatedWordCount} mots.`,
+      toast.info(t.toasts.info.generating, {
+        description: tf('blog.generation.estimatedTime', { wordCount: opp.estimatedWordCount }),
         duration: 5000
       });
 
@@ -312,8 +312,8 @@ export function BlogOpportunities() {
       if (error) throw error;
 
       if (data?.success && data?.article?.id) {
-        toast.success("✅ Article créé avec succès !", {
-          description: `"${opp.title}" est maintenant disponible`,
+        toast.success(t.toasts.success.created, {
+          description: tf('blog.generation.articleAvailable', { title: opp.title }),
           duration: 6000
         });
 
@@ -324,13 +324,13 @@ export function BlogOpportunities() {
           window.location.href = `/blog?subtab=articles&articleId=${data.article.id}`;
         }, 1000);
       } else {
-        throw new Error("Article ID manquant dans la réponse");
+        throw new Error(t.toasts.error.generic);
       }
       
     } catch (error) {
       console.error('Error generating article:', error);
-      toast.error("Erreur lors de la génération", {
-        description: error.message || "Réessayez plus tard"
+      toast.error(t.toasts.error.generic, {
+        description: error.message || t.toasts.error.generic
       });
     } finally {
       setGenerating(null);
@@ -369,10 +369,10 @@ export function BlogOpportunities() {
   const handleRegenerate = async () => {
     // Check usage limits first
     if (!canDoAction('optimizations')) {
-      toast.error('Limite d\'optimisations atteinte', {
+      toast.error(t.toasts.warning.limitReached, {
         description: limits.isTrialing 
-          ? 'Passez à un plan payant pour générer plus d\'opportunités.'
-          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+          ? tf('trial.limitReachedDesc', { type: 'optimizations' })
+          : tf('limits.monthlyReachedDesc', { type: 'optimizations' })
       });
       setShowUpgradeDialog(true);
       return;
@@ -381,7 +381,7 @@ export function BlogOpportunities() {
     setRegenerating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(t.auth.notAuthenticated);
 
       // Clear cache to force regeneration - delete instead of update
       if (selectedStore?.id) {
@@ -408,7 +408,7 @@ export function BlogOpportunities() {
       await refreshLimits(); // Refresh usage limits
     } catch (error) {
       console.error('Error regenerating:', error);
-      toast.error('Erreur lors de la régénération');
+      toast.error(t.toasts.error.generic);
     } finally {
       setRegenerating(false);
     }
