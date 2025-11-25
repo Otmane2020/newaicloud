@@ -10,8 +10,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   try {
-    const { imageUrls } = await req.json();
+    const { imageUrls } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -142,3 +148,4 @@ Format your response as JSON:
     );
   }
 });
+
