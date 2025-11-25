@@ -38,18 +38,112 @@ serve(async (req) => {
     // ---- Client admin supabase ----
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // ---- 🔥 Récupération AUTO de toutes les Edge Functions ----
-    const listRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/`, {
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-      },
-    });
-
-    if (!listRes.ok) {
-      throw new Error("Impossible de lister les Edge Functions");
-    }
-
-    const allFunctions = await listRes.json();
+    // ---- 🔥 Liste complète des Edge Functions ----
+    const allFunctions = [
+      // Core Import
+      { name: "import-products" }, { name: "import-shopify-collections" }, { name: "import-shopify-pages" },
+      { name: "import-shopify-articles" }, { name: "import-content-images" }, { name: "import-costs-from-shopify" },
+      { name: "import-shipping-costs" }, { name: "import-google-taxonomy" },
+      
+      // Auth & Subscription
+      { name: "activate-free-trial" }, { name: "activate-full-plan" }, { name: "check-subscription" },
+      { name: "check-usage-limits" }, { name: "diagnose-subscription" }, { name: "fix-invalid-trial-subscriptions" },
+      { name: "fix-stuck-subscriptions" }, { name: "fix-subscription-sync" }, { name: "consume-optimization-credits" },
+      
+      // Stripe
+      { name: "create-checkout" }, { name: "update-subscription" }, { name: "stripe-webhook" },
+      { name: "admin-get-user-subscriptions" }, { name: "customer-portal" }, { name: "calculate-proration" },
+      { name: "create-upgrade-invoice" }, { name: "force-payment" }, { name: "report-usage-to-stripe" },
+      { name: "sync-stripe-subscription" },
+      
+      // Shopify OAuth
+      { name: "shopify-oauth" }, { name: "shopify-install" }, { name: "shopify-webhook" },
+      { name: "claim-shopify-connection" }, { name: "delete-shopify-connection" }, { name: "encrypt-shopify-token" },
+      { name: "test-shopify-credentials" }, { name: "test-shopify-token" }, { name: "validate-shopify-credentials" },
+      { name: "fetch-shopify-domain" },
+      
+      // Shopify Sync
+      { name: "sync-landing-to-shopify" }, { name: "sync-seo-to-shopify" }, { name: "sync-homepage-seo" },
+      { name: "sync-product-images-to-shopify" }, { name: "sync-blog-to-shopify" }, { name: "sync-page-to-shopify" },
+      { name: "sync-article-image-to-shopify" }, { name: "sync-collection-image-to-shopify" },
+      { name: "sync-pricing-to-shopify" }, { name: "sync-product-collections" }, { name: "sync-deleted-resources" },
+      { name: "sync-shopify-orders" }, { name: "sync-shopify-to-feed" }, { name: "update-product-status" },
+      { name: "delete-shopify-product" }, { name: "get-shopify-product-count" }, { name: "create-shopify-landing-page" },
+      
+      // AI Generation
+      { name: "generate-landing-ai" }, { name: "generate-landing-deepseek" }, { name: "generate-blog-article" },
+      { name: "generate-title-description" }, { name: "generate-tags" }, { name: "generate-vendor-name" },
+      { name: "generate-google-category" }, { name: "generate-gtin" }, { name: "enrich-product" },
+      { name: "generate-product-description-html" }, { name: "generate-promotional-articles" },
+      { name: "generate-store-summary" }, { name: "generate-ads-landing-page" },
+      
+      // AI Vision
+      { name: "generate-alt-texts" }, { name: "generate-alt-texts-vision" }, { name: "analyze-image-with-vision" },
+      { name: "analyze-dimension-images" }, { name: "analyze-price-from-image" }, { name: "smart-alt-text" },
+      
+      // AI Background
+      { name: "generate-white-background" }, { name: "generate-product-background" },
+      { name: "generate-image-background" }, { name: "generate-ai-product-background" },
+      { name: "generate-ai-background-variants" }, { name: "generate-image" },
+      
+      // SEO
+      { name: "generate-comprehensive-seo-audit" }, { name: "generate-seo-audit" }, { name: "analyze-seo-with-ai" },
+      { name: "generate-page-seo" }, { name: "generate-collection-seo" }, { name: "generate-article-seo" },
+      { name: "generate-homepage-seo-element" }, { name: "audit-homepage-seo" }, { name: "optimize-product-title-serp" },
+      { name: "generate-seo-with-deepseek" }, { name: "smart-title" }, { name: "export-seo-audit-pdf" },
+      
+      // SEO Tools
+      { name: "analyze-serp-competitors" }, { name: "check-broken-links" }, { name: "search-similar-products-specs" },
+      { name: "extract-netlinking-from-articles" }, { name: "generate-article-keywords" },
+      { name: "classify-product-category" }, { name: "analyze-competitor-pricing" },
+      
+      // Google APIs
+      { name: "google-oauth-token" }, { name: "google-oauth-url" }, { name: "check-google-apis-health" },
+      { name: "get-search-console-data" }, { name: "sync-search-console-data" }, { name: "daily-gsc-sync" },
+      { name: "list-search-console-sites" }, { name: "request-gsc-indexing" }, { name: "submit-gsc-sitemap" },
+      { name: "list-gsc-sitemaps" }, { name: "analyze-gsc-anomalies" }, { name: "get-gsc-product-performance" },
+      
+      // Google Merchant
+      { name: "create-google-merchant-feed" }, { name: "google-merchant-oauth-token" },
+      { name: "refresh-google-merchant-token" }, { name: "list-merchant-accounts" },
+      { name: "scheduled-merchant-sync" }, { name: "optimize-shopping-feed" }, { name: "shopping-feed" },
+      
+      // Google Ads
+      { name: "google-ads-oauth-token" }, { name: "list-google-ads-campaigns" },
+      
+      // Blog & Content
+      { name: "generate-blog-opportunities" }, { name: "generate-daily-opportunities" },
+      { name: "process-blog-campaigns" }, { name: "update-article-link" },
+      
+      // Email Notifications
+      { name: "send-admin-email" }, { name: "send-notification-email" }, { name: "send-notification" },
+      { name: "send-welcome-email" }, { name: "send-trial-expiring" }, { name: "send-payment-failed" },
+      { name: "send-subscription-confirmed" }, { name: "send-upgrade-limit-email" }, { name: "send-reset-password-email" },
+      { name: "send-contact-email" }, { name: "send-demo-booking" }, { name: "send-order-confirmation" },
+      { name: "send-shipping-notification" }, { name: "send-abandoned-cart" }, { name: "send-weekly-seo-digest" },
+      { name: "send-monthly-report" }, { name: "receive-admin-email" }, { name: "download-email-attachment" },
+      { name: "test-webhook-email" },
+      
+      // Scheduling & Cleanup
+      { name: "scheduled-sync" }, { name: "trigger-auto-sync" }, { name: "trigger-hourly-sync" },
+      { name: "trigger-cleanup-sync" }, { name: "cleanup-orphaned-data" }, { name: "cleanup-invalid-trials" },
+      { name: "cleanup-stuck-syncs" }, { name: "notify-expiring-shopify-tokens" },
+      
+      // Challenges & Notifications
+      { name: "generate-daily-seo-challenges" }, { name: "generate-daily-notifications" },
+      { name: "track-activity" },
+      
+      // Chat & Assistant
+      { name: "chat-smart" }, { name: "assistant-ai" }, { name: "robot-tts" }, { name: "robot-stt" },
+      
+      // API & Utils
+      { name: "api-v1" }, { name: "generate-api-key" }, { name: "batch-translate" },
+      { name: "convert-landing-to-mobile" }, { name: "performance-logger" }, { name: "track-referral-reward" },
+      
+      // Admin
+      { name: "create-super-admin" }, { name: "setup-subscription-plans" }, { name: "admin-user-insights" },
+      { name: "admin-repair-profiles" }, { name: "admin-sync-stripe" }
+    ];
 
     // Structure des résultats
     const results: Record<string, any[]> = {};
