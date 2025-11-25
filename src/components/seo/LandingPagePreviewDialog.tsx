@@ -42,7 +42,7 @@ export function LandingPagePreviewDialog({
   const [themeCssAdded, setThemeCssAdded] = useState(false);
   const [viewShopifyMode, setViewShopifyMode] = useState(false);
   const [iframeError, setIframeError] = useState(false);
-  const [isIframeLoading, setIsIframeLoading] = useState(true);
+  const [isIframeLoading, setIsIframeLoading] = useState(false);
 
   // Check if user has added Shopify theme CSS
   useEffect(() => {
