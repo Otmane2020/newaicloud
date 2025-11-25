@@ -37,7 +37,7 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
       const timeout = setTimeout(() => {
         if (!isMounted) return;
         console.error('Admin check timeout');
-        setIsAdmin(false);
+        // Ne pas forcer isAdmin à false en cas de timeout pour éviter la redirection
         setChecking(false);
       }, 10000);
 
@@ -51,16 +51,17 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
         if (error) {
           console.error('Error checking admin role:', error);
-          setIsAdmin(false);
+          // On garde isAdmin tel quel en cas d'erreur pour ne pas éjecter l'utilisateur
         } else {
           setIsAdmin(data === true);
         }
       } catch (error) {
         if (!isMounted) return;
         console.error('Error checking admin role:', error);
-        setIsAdmin(false);
+        // Même logique ici : ne pas mettre isAdmin à false automatiquement
       } finally {
         if (!isMounted) return;
+        clearTimeout(timeout);
         setChecking(false);
       }
     };
