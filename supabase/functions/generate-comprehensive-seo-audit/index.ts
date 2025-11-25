@@ -350,7 +350,8 @@ function calculateDetailedSeoScore(
   hasImage: boolean,
   hasUrl: boolean,
   tags?: string | null,
-  optimizationCount?: number
+  optimizationCount?: number,
+  itemId?: string  // NEW: Unique ID for deterministic variation
 ): SeoScoreDetails {
   const titleResult = calculateTitleScore(title);
   const descResult = calculateDescriptionScore(description);
@@ -360,7 +361,7 @@ function calculateDetailedSeoScore(
   const urlScore = hasUrl ? 5 : 0;
   const optimizationBonus = (optimizationCount && optimizationCount > 0) ? 5 : 0;
   
-  const totalScore = Math.min(100, 
+  let totalScore = Math.min(100, 
     (titleResult.score * 0.35) + 
     (descResult.score * 0.35) + 
     (tagsScore) + 
@@ -368,6 +369,17 @@ function calculateDetailedSeoScore(
     urlScore + 
     optimizationBonus
   );
+  
+  // NEW: Add deterministic variation for optimized items to avoid identical scores (80-95%)
+  const isOptimized = optimizationCount && optimizationCount > 0;
+  if (isOptimized && itemId) {
+    // Generate deterministic hash from itemId
+    const hash = itemId.split('').reduce((acc, char) => 
+      char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    // Variation between -10 and +5 for range 80-95
+    const variation = (Math.abs(hash) % 16) - 10;
+    totalScore = Math.max(80, Math.min(95, totalScore + variation));
+  }
   
   return {
     score: Math.round(totalScore),
@@ -524,7 +536,8 @@ function auditProducts(products: any[]): { score: number; issues: any[] } {
       !!product.image_url,
       true,
       product.tags,
-      product.optimization_count || 0
+      product.optimization_count || 0,
+      product.id  // NEW: Pass ID for variation
     );
     // Apply penalty for pending or not optimized products (same as Dashboard)
     const score = (product.enrichment_status === 'pending' || product.enrichment_status === 'not_optimised') 
@@ -599,7 +612,8 @@ function auditCollections(collections: any[]): { score: number; issues: any[] } 
       !!collection.image_url,
       true,
       undefined,
-      collection.optimization_count || 0
+      collection.optimization_count || 0,
+      collection.id  // NEW: Pass ID for variation
     );
     totalScore += scoreResult.score;
   });
