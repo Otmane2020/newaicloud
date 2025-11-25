@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Key, Copy, Eye, EyeOff, Trash2, Plus, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTranslation } from "@/lib/language";
 
 export default function ApiKeys() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function ApiKeys() {
       setIsEnterprise(hasEnterprise);
 
       if (!hasEnterprise) {
-        toast.error("L'accès API nécessite un abonnement Enterprise");
+        toast.error(t.apiKeys.toasts.enterpriseRequired);
         navigate("/pricing");
         return;
       }
@@ -55,7 +57,7 @@ export default function ApiKeys() {
       await loadApiKeys();
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Erreur de chargement");
+      toast.error(t.apiKeys.toasts.loadError);
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ export default function ApiKeys() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error("Erreur de chargement des clés");
+      toast.error(t.apiKeys.toasts.loadKeysError);
       return;
     }
 
@@ -77,7 +79,7 @@ export default function ApiKeys() {
 
   async function generateApiKey() {
     if (!newKeyName.trim()) {
-      toast.error("Veuillez entrer un nom pour la clé");
+      toast.error(t.apiKeys.toasts.noKeyName);
       return;
     }
 
@@ -89,17 +91,17 @@ export default function ApiKeys() {
       if (error) throw error;
 
       setGeneratedSecret(data.apiSecret);
-      toast.success("Clé API créée avec succès");
+      toast.success(t.apiKeys.toasts.keyCreated);
       await loadApiKeys();
       setNewKeyName("");
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error(error.message || "Erreur de création");
+      toast.error(error.message || t.apiKeys.toasts.keyCreationError);
     }
   }
 
   async function deleteApiKey(id: string) {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette clé ?")) return;
+    if (!confirm(t.apiKeys.deleteConfirm)) return;
 
     const { error } = await supabase
       .from("user_api_keys")
@@ -107,11 +109,11 @@ export default function ApiKeys() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Erreur de suppression");
+      toast.error(t.apiKeys.toasts.keyDeletionError);
       return;
     }
 
-    toast.success("Clé supprimée");
+    toast.success(t.apiKeys.toasts.keyDeleted);
     await loadApiKeys();
   }
 
@@ -122,21 +124,21 @@ export default function ApiKeys() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Erreur de mise à jour");
+      toast.error(t.apiKeys.toasts.keyStatusError);
       return;
     }
 
-    toast.success(currentStatus ? "Clé désactivée" : "Clé activée");
+    toast.success(currentStatus ? t.apiKeys.toasts.keyDeactivated : t.apiKeys.toasts.keyActivated);
     await loadApiKeys();
   }
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
-    toast.success("Copié dans le presse-papiers");
+    toast.success(t.apiKeys.toasts.copied);
   }
 
   if (loading) {
-    return <div className="container mx-auto py-6">Chargement...</div>;
+    return <div className="container mx-auto py-6">{t.toasts.info.processing}</div>;
   }
 
   if (!isEnterprise) {
@@ -147,21 +149,21 @@ export default function ApiKeys() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Accès API</h1>
-          <p className="text-muted-foreground">Gérez vos clés API pour l'automatisation</p>
+          <h1 className="text-3xl font-bold">{t.apiKeys.title}</h1>
+          <p className="text-muted-foreground">{t.apiKeys.description}</p>
         </div>
         <Dialog open={newKeyDialog} onOpenChange={setNewKeyDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Nouvelle clé API
+              {t.apiKeys.newKey}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Créer une clé API</DialogTitle>
+              <DialogTitle>{t.apiKeys.dialogs.createKey.title}</DialogTitle>
               <DialogDescription>
-                Générez une nouvelle clé pour accéder à l'API programmatiquement
+                {t.apiKeys.dialogs.createKey.description}
               </DialogDescription>
             </DialogHeader>
             {generatedSecret ? (
@@ -169,11 +171,11 @@ export default function ApiKeys() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Important :</strong> Copiez ce secret maintenant. Il ne sera plus affiché.
+                    <strong>Important :</strong> {t.apiKeys.dialogs.createKey.secretWarning}
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-2">
-                  <Label>Secret API</Label>
+                  <Label>{t.apiKeys.dialogs.createKey.secretLabel}</Label>
                   <div className="flex gap-2">
                     <Input value={generatedSecret} readOnly className="font-mono text-sm" />
                     <Button size="icon" variant="outline" onClick={() => copyToClipboard(generatedSecret)}>
@@ -185,33 +187,33 @@ export default function ApiKeys() {
                   setGeneratedSecret(null);
                   setNewKeyDialog(false);
                 }} className="w-full">
-                  Fermer
+                  {t.apiKeys.dialogs.createKey.close}
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nom de la clé</Label>
+                  <Label>{t.apiKeys.dialogs.createKey.keyName}</Label>
                   <Input
-                    placeholder="Production, Dev, Webhook..."
+                    placeholder={t.apiKeys.dialogs.createKey.keyNamePlaceholder}
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Environnement</Label>
+                  <Label>{t.apiKeys.dialogs.createKey.environment}</Label>
                   <Select value={newEnvironment} onValueChange={(v: any) => setNewEnvironment(v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="production">Production</SelectItem>
-                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="production">{t.apiKeys.dialogs.createKey.environmentProduction}</SelectItem>
+                      <SelectItem value="test">{t.apiKeys.dialogs.createKey.environmentTest}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={generateApiKey} className="w-full">
-                  Générer la clé
+                  {t.apiKeys.dialogs.createKey.generate}
                 </Button>
               </div>
             )}
@@ -224,9 +226,9 @@ export default function ApiKeys() {
           <Card>
             <CardContent className="py-8 text-center">
               <Key className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Aucune clé API créée</p>
+              <p className="text-muted-foreground">{t.apiKeys.empty.title}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Créez votre première clé pour commencer à utiliser l'API
+                {t.apiKeys.empty.description}
               </p>
             </CardContent>
           </Card>
