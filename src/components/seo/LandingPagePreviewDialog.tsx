@@ -92,9 +92,30 @@ export function LandingPagePreviewDialog({
   `;
 
   const getPreviewHtml = () => {
-    if (!currentLandingPage) {
-      console.log("No landing page content available");
-      return "";
+    // ⚡ Fallback minimal si pas de contenu
+    if (!currentLandingPage || currentLandingPage.trim() === "") {
+      console.log("No landing page content, using fallback");
+      return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${productTitle}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; text-align: center; background: #f9fafb; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h1 { font-size: 2rem; margin-bottom: 1rem; color: #111827; }
+    p { color: #6b7280; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${productTitle}</h1>
+    <p>Génération de la landing page en cours...</p>
+    <p style="margin-top: 1rem; font-size: 0.875rem;">Veuillez patienter quelques instants.</p>
+  </div>
+</body>
+</html>`;
     }
     
     console.log("Landing page content length:", currentLandingPage.length);
@@ -194,13 +215,15 @@ ${htmlContent}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setViewMode(viewMode === "desktop" ? "mobile" : "desktop")}
-                      >
-                        {viewMode === "desktop" ? <Smartphone className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
-                      </Button>
+                <Button
+                  variant="outline"
+                  size={viewMode === "mobile" ? "default" : "sm"}
+                  onClick={() => setViewMode(viewMode === "desktop" ? "mobile" : "desktop")}
+                  className={viewMode === "mobile" ? "w-full sm:w-auto" : ""}
+                >
+                  {viewMode === "desktop" ? <Smartphone className="h-4 w-4 mr-2" /> : <Monitor className="h-4 w-4 mr-2" />}
+                  {viewMode === "desktop" ? "Vue mobile" : "Vue desktop"}
+                </Button>
                     </TooltipTrigger>
                     <TooltipContent>{viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}</TooltipContent>
                   </Tooltip>
@@ -268,9 +291,9 @@ ${htmlContent}
           </Alert>
         )}
 
-        <div className="h-[calc(90vh-200px)] overflow-auto bg-background px-6">
+        <div className="h-[calc(90vh-200px)] md:h-[calc(90vh-180px)] overflow-auto bg-background px-4 md:px-6">
           {currentLandingPage ? (
-            <div className="relative w-full h-full flex items-center justify-center">
+            <div className="relative w-full h-full flex items-center justify-center py-4">
               {isIframeLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                   <div className="text-center">
@@ -304,8 +327,11 @@ ${htmlContent}
               <iframe
                 srcDoc={getPreviewHtml()}
                 className={`h-full border-0 transition-all duration-300 ${
-                  viewMode === "mobile" ? "w-[375px] border-2 border-border rounded-lg shadow-xl" : "w-full"
+                  viewMode === "mobile" 
+                    ? "w-full max-w-[375px] border-2 border-border rounded-lg shadow-xl" 
+                    : "w-full"
                 }`}
+                style={{ minHeight: viewMode === "mobile" ? "667px" : "600px" }}
                 sandbox="allow-same-origin allow-scripts"
                 title="Landing Page Preview"
                 onLoad={(e) => {

@@ -247,6 +247,16 @@ export default function RegenerateLanding({
    * ✨ Generate Landing via AI with Progress
    -----------------------------*/
   const handleGenerate = async () => {
+    // ⏱️ Client-side timeout (90 seconds max)
+    const timeoutId = setTimeout(() => {
+      setError("La génération a pris trop de temps. Réessayez avec un contenu plus court ou en mode rapide.");
+      setLoading(false);
+      setProgress(0);
+      toast.error("Timeout : génération trop longue", {
+        description: "Réessayez en sélectionnant 'Contenu court' ou désactivez les analyses secondaires"
+      });
+    }, 90000);
+
     try {
       setLoading(true);
       setError(null);
@@ -255,16 +265,16 @@ export default function RegenerateLanding({
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
+      setProgressMessage("Résolution du vendeur...");
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
-      setProgressMessage(t.landingGeneration.resolving);
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
-      setProgress(15);
+      setProgress(20);
+      setProgressMessage("Optimisation du titre SERP...");
 
       // ✅ ÉTAPE 1.5 : Optimiser le titre avec SERP
-      setProgressMessage("Optimisation du titre avec SERP...");
       try {
         const { data: serpData, error: serpError } = await supabase.functions.invoke("optimize-product-title-serp", {
           body: {
@@ -291,18 +301,19 @@ export default function RegenerateLanding({
         // Continue even if SERP optimization fails
       }
 
-      setProgress(20);
+      setProgress(35);
+      setProgressMessage("Analyse des images avec Vision AI...");
 
       // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
       let imageAnalysis = "";
       if (product.image_url) {
         imageAnalysis = await analyzeImageWithAI(product.image_url);
       } else {
-        setProgress(25); // Skip to same progress if no image
+        setProgress(40); // Skip to same progress if no image
       }
 
-      setProgress(30);
-      setProgressMessage(t.landingGeneration.generating);
+      setProgress(50);
+      setProgressMessage("Génération du contenu HTML...");
 
       // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
       const contentParams = getContentLengthParams();
@@ -324,6 +335,7 @@ export default function RegenerateLanding({
           vendor: resolvedVendor,
           imageAnalysis: imageAnalysis,
           language: language,
+          fastMode: config.contentLength === "short", // ⚡ Enable fast mode for short content
           options: {
             colorScheme: config.colorScheme, // Can be string (key) or object (values)
             layout: config.layout,
@@ -335,26 +347,8 @@ export default function RegenerateLanding({
         },
       });
 
-      setProgress(60);
-      setProgressMessage(t.landingGeneration.processing);
-
-      if (error) throw error;
-      if (data?.error) {
-        const message = data.error.includes("Rate limits")
-          ? t.landingGeneration.errors.rateLimit
-          : data.error.includes("Payment required")
-            ? t.landingGeneration.errors.paymentRequired
-            : data.error.includes("LIMIT_REACHED")
-              ? t.landingGeneration.errors.limitReached
-              : data.error;
-        setError(message);
-        toast.error(message);
-        return;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setProgress(90);
-      setProgressMessage(t.landingGeneration.finalizing);
+      setProgress(80);
+      setProgressMessage("Finalisation du HTML...");
 
       if (data?.html?.trim()) {
         const wordCount = data.html.split(/\s+/).length;
@@ -376,6 +370,7 @@ export default function RegenerateLanding({
       toast.error(errorMsg);
       setProgress(0);
     } finally {
+      clearTimeout(timeoutId); // ⏱️ Clear timeout
       setLoading(false);
     }
   };
