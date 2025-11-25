@@ -89,11 +89,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safe HealthCheck handler
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+  }
+
   try {
     const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const body: VisionRequest = await req.json();
     const { imageUrl, productContext } = body;
     if (!imageUrl) throw new Error("imageUrl is required");
 
