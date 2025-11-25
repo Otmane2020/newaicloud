@@ -6152,6 +6152,49 @@ export const translations = {
     upgrade: "Upgrade my plan",
     processing: "Processing...",
   },
+  announcement: {
+    limitedSale: "Limited-time Sale up to 30% OFF",
+    checkOut: "Check Out"
+  },
+  apiKeys: {
+    title: "API Keys",
+    description: "Manage your API keys for external integrations",
+    newKey: "New API Key",
+    deleteConfirm: "Are you sure you want to delete this API key?",
+    toasts: {
+      enterpriseRequired: "API Keys require an Enterprise plan",
+      loadError: "Error loading your profile",
+      loadKeysError: "Error loading API keys",
+      noKeyName: "Please enter a key name",
+      keyCreated: "API key created successfully",
+      keyCreationError: "Error creating API key",
+      keyDeleted: "API key deleted successfully",
+      keyDeletionError: "Error deleting API key",
+      keyStatusError: "Error updating key status",
+      keyActivated: "API key activated",
+      keyDeactivated: "API key deactivated",
+      copied: "Copied to clipboard"
+    },
+    dialogs: {
+      createKey: {
+        title: "Create New API Key",
+        description: "Generate a new API key to access the platform's features programmatically",
+        secretWarning: "Save this secret in a secure place. You won't be able to see it again.",
+        secretLabel: "API Secret",
+        keyName: "Key Name",
+        keyNamePlaceholder: "Production API Key",
+        environment: "Environment",
+        environmentProduction: "Production",
+        environmentTest: "Test",
+        generate: "Generate Key",
+        close: "Close"
+      }
+    },
+    empty: {
+      title: "No API keys yet",
+      description: "Create your first API key to start integrating"
+    }
+  }
 };
 
 export type Translations = typeof translations;

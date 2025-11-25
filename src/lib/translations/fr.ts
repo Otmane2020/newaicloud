@@ -6187,6 +6187,44 @@ export const translations = {
     upgrade: "Upgrader mon plan",
     processing: "En cours...",
   },
-};
 
-export type Translations = typeof translations;
+  apiKeys: {
+    title: "Clés API",
+    description: "Gérez vos clés API pour les intégrations externes",
+    newKey: "Nouvelle clé API",
+    deleteConfirm: "Êtes-vous sûr de vouloir supprimer cette clé API ?",
+    toasts: {
+      enterpriseRequired: "Les clés API nécessitent un plan Enterprise",
+      loadError: "Erreur lors du chargement de votre profil",
+      loadKeysError: "Erreur lors du chargement des clés API",
+      noKeyName: "Veuillez entrer un nom de clé",
+      keyCreated: "Clé API créée avec succès",
+      keyCreationError: "Erreur lors de la création de la clé API",
+      keyDeleted: "Clé API supprimée avec succès",
+      keyDeletionError: "Erreur lors de la suppression de la clé API",
+      keyStatusError: "Erreur lors de la mise à jour du statut",
+      keyActivated: "Clé API activée",
+      keyDeactivated: "Clé API désactivée",
+      copied: "Copié dans le presse-papiers"
+    },
+    dialogs: {
+      createKey: {
+        title: "Créer une nouvelle clé API",
+        description: "Générez une nouvelle clé API pour accéder aux fonctionnalités de la plateforme de manière programmatique",
+        secretWarning: "Sauvegardez ce secret dans un endroit sûr. Vous ne pourrez plus le revoir.",
+        secretLabel: "Secret API",
+        keyName: "Nom de la clé",
+        keyNamePlaceholder: "Clé API de production",
+        environment: "Environnement",
+        environmentProduction: "Production",
+        environmentTest: "Test",
+        generate: "Générer la clé",
+        close: "Fermer"
+      }
+    },
+    empty: {
+      title: "Aucune clé API",
+      description: "Créez votre première clé API pour commencer l'intégration"
+    }
+  }
+};
