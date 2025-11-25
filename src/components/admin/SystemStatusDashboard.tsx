@@ -12,10 +12,10 @@ import { useTranslation } from "@/lib/language";
 interface FunctionStatus {
   name: string;
   status: "healthy" | "unhealthy";
-  ms: number; // Backend field
-  code?: number; // Backend field
+  responseTime: number;
+  statusCode?: number;
   error?: string;
-  ts: string; // Backend timestamp field
+  timestamp: string;
 }
 
 interface HealthCheckResults {
@@ -163,27 +163,38 @@ export function SystemStatusDashboard() {
         </div>
 
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div className="bg-background/50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-green-500">{summary.healthyCount}</div>
-              <div className="text-xs text-muted-foreground">{t.systemStatus.healthy}</div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div className="bg-background/50 rounded-lg p-3">
+                <div className="text-2xl font-bold text-green-500">{summary.healthyCount}</div>
+                <div className="text-xs text-muted-foreground">{t.systemStatus.healthy}</div>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-3">
+                <div className="text-2xl font-bold text-red-500">{summary.unhealthyCount}</div>
+                <div className="text-xs text-muted-foreground">{t.systemStatus.unhealthy}</div>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-3">
+                <div className="text-2xl font-bold">{summary.avgResponseTimeMs}ms</div>
+                <div className="text-xs text-muted-foreground">{t.systemStatus.avgResponseTime}</div>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-3">
+                <div className="text-2xl font-bold">{summary.totalFunctions}</div>
+                <div className="text-xs text-muted-foreground">{t.systemStatus.totalFunctions}</div>
+              </div>
             </div>
 
-            <div className="bg-background/50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-red-500">{summary.unhealthyCount}</div>
-              <div className="text-xs text-muted-foreground">{t.systemStatus.unhealthy}</div>
+            {/* Legend */}
+            <div className="flex flex-wrap gap-2 mt-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">🟢 200-201: Success</span>
+              <span className="flex items-center gap-1">🟡 401-403: Auth</span>
+              <span className="flex items-center gap-1">🟠 400/422: Validation</span>
+              <span className="flex items-center gap-1">🔴 500+: Server Error</span>
+              <span className="flex items-center gap-1">⚫ 404: Missing</span>
             </div>
-
-            <div className="bg-background/50 rounded-lg p-3">
-              <div className="text-2xl font-bold">{summary.avgResponseTimeMs}ms</div>
-              <div className="text-xs text-muted-foreground">{t.systemStatus.avgResponseTime}</div>
-            </div>
-
-            <div className="bg-background/50 rounded-lg p-3">
-              <div className="text-2xl font-bold">{summary.totalFunctions}</div>
-              <div className="text-xs text-muted-foreground">{t.systemStatus.totalFunctions}</div>
-            </div>
-          </div>
+          </>
         )}
 
         {lastChecked && (
@@ -235,38 +246,64 @@ export function SystemStatusDashboard() {
                     </div>
                   </CollapsibleTrigger>
 
-                  <CollapsibleContent className="px-4 pb-2">
+                   <CollapsibleContent className="px-4 pb-2">
                     <div className="space-y-2 mt-2">
-                      {functions.map((func) => (
-                        <div
-                          key={func.name}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg border",
-                            func.status === "healthy"
-                              ? "bg-green-950/20 border-green-500/30"
-                              : "bg-red-950/20 border-red-500/30",
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            {func.status === "healthy" ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
+                      {functions.map((func) => {
+                        // Badge color basé sur le status code
+                        const getStatusBadgeVariant = (code?: number) => {
+                          if (!code) return "secondary";
+                          if (code === 200 || code === 201) return "default"; // Success
+                          if (code === 400 || code === 422) return "outline"; // Validation
+                          if (code === 401 || code === 403) return "secondary"; // Auth
+                          if (code === 404) return "destructive"; // Not found
+                          if (code >= 500) return "destructive"; // Server error
+                          return "secondary";
+                        };
+
+                        const getStatusIcon = (code?: number) => {
+                          if (!code) return null;
+                          if (code === 200 || code === 201) return "🟢";
+                          if (code === 400 || code === 422) return "🟠";
+                          if (code === 401 || code === 403) return "🟡";
+                          if (code === 404) return "⚫";
+                          if (code >= 500) return "🔴";
+                          return null;
+                        };
+
+                        return (
+                          <div
+                            key={func.name}
+                            className={cn(
+                              "flex items-center justify-between p-3 rounded-lg border",
+                              func.status === "healthy"
+                                ? "bg-green-950/20 border-green-500/30"
+                                : "bg-red-950/20 border-red-500/30",
                             )}
-                            <code className="text-sm">{func.name}</code>
+                          >
+                            <div className="flex items-center gap-3">
+                              {func.status === "healthy" ? (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-red-500" />
+                              )}
+                              <code className="text-sm">{func.name}</code>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="text-muted-foreground">{func.responseTime}ms</span>
+
+                              {func.statusCode && (
+                                <Badge variant={getStatusBadgeVariant(func.statusCode)} className="gap-1">
+                                  {getStatusIcon(func.statusCode)}
+                                  {func.statusCode}
+                                </Badge>
+                              )}
+
+                              {func.error && <span className="text-red-500 text-xs max-w-xs truncate">{func.error}</span>}
+                            </div>
                           </div>
-
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="text-muted-foreground">{func.ms}ms</span>
-
-                            {func.code && (
-                              <Badge variant={func.status === "healthy" ? "default" : "destructive"}>{func.code}</Badge>
-                            )}
-
-                            {func.error && <span className="text-red-500 text-xs max-w-xs truncate">{func.error}</span>}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
