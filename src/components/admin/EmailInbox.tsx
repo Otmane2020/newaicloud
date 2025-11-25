@@ -15,6 +15,7 @@ import { fr } from 'date-fns/locale';
 import { EmailSidebar } from './EmailSidebar';
 import { Dialog as TemplateDialog, DialogContent as TemplateDialogContent, DialogHeader as TemplateDialogHeader, DialogTitle as TemplateDialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EmailTemplate {
   id: string;
@@ -75,7 +76,9 @@ export function EmailInbox() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Form state
   const [to, setTo] = useState('');
@@ -90,14 +93,22 @@ export function EmailInbox() {
     // Setup realtime subscription
     const channel = supabase
       .channel('admin-emails')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'admin_emails'
-      }, () => {
-        loadEmails();
-        loadEmailStats();
-      })
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'admin_emails' },
+        (payload) => {
+          setEmails(prev => [payload.new as AdminEmail, ...prev]);
+          loadEmailStats();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'admin_emails' },
+        (payload) => {
+          setEmails(prev => prev.map(e => e.id === (payload.new as AdminEmail).id ? payload.new as AdminEmail : e));
+          loadEmailStats();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -305,14 +316,36 @@ export function EmailInbox() {
         description: 'Email envoyé avec succès'
       });
 
+      // Optimistic UI update - no reload needed
+      const newEmail: AdminEmail = {
+        id: crypto.randomUUID(),
+        from_email: "support@newai.sale",
+        to_email: to,
+        subject,
+        body,
+        html_body: `<p>${body.replace(/\n/g, '<br>')}</p>`,
+        status: 'sent',
+        direction: 'outgoing',
+        folder: 'sent',
+        is_read: true,
+        created_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+        error_message: null,
+        metadata: null
+      };
+      
+      setEmails(prev => [newEmail, ...prev]);
+      setEmailStats(stats => ({
+        ...stats,
+        sent: stats.sent + 1,
+      }));
+
       // Reset form
       setTo('');
       setSubject('');
       setBody('');
       setReplyTo(null);
       setComposeOpen(false);
-      loadEmails();
-      loadEmailStats();
     } catch (error: any) {
       console.error('Error sending email:', error);
       toast({
@@ -385,7 +418,12 @@ export function EmailInbox() {
           direction: 'incoming',
           status: 'received',
           folder: 'inbox',
-          is_read: false
+          is_read: false,
+          metadata: {
+            email_id: "simulated_" + Math.random().toString(36).substring(2),
+            content_available: true,
+            content_source: "simulation"
+          }
         });
 
       if (error) {
@@ -414,23 +452,52 @@ export function EmailInbox() {
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      sent: 'bg-green-500',
-      pending: 'bg-yellow-500',
-      failed: 'bg-red-500',
-      received: 'bg-blue-500'
+      sent: 'bg-green-600 text-white',
+      pending: 'bg-yellow-600 text-white',
+      failed: 'bg-red-600 text-white',
+      received: 'bg-blue-600 text-white'
     };
-    return <Badge className={colors[status] || 'bg-gray-500'}>{status}</Badge>;
+    return <Badge className={colors[status] || 'bg-gray-600 text-white'}>{status}</Badge>;
   };
 
   const filteredEmails = emails.filter(e => {
-    if (activeFolder === 'inbox') {
-      return e.direction === 'incoming';
-    }
-    if (activeFolder === 'sent') {
-      return e.direction === 'outgoing';
-    }
-    return e.folder === activeFolder;
+    // Folder filter
+    let inFolder = false;
+    if (activeFolder === 'inbox') inFolder = e.direction === 'incoming';
+    else if (activeFolder === 'sent') inFolder = e.direction === 'outgoing';
+    else if (activeFolder === 'trash') inFolder = e.folder === 'trash';
+    else if (activeFolder === 'spam') inFolder = e.folder === 'spam';
+    else if (activeFolder === 'drafts') inFolder = e.folder === 'drafts';
+    else inFolder = e.folder === activeFolder;
+
+    if (!inFolder) return false;
+
+    // Search filter
+    if (!search.trim()) return true;
+
+    const keyword = search.toLowerCase();
+    return (
+      e.subject?.toLowerCase().includes(keyword) ||
+      e.body?.toLowerCase().includes(keyword) ||
+      e.from_email?.toLowerCase().includes(keyword) ||
+      e.to_email?.toLowerCase().includes(keyword)
+    );
   });
+
+  // Mark as read when opening dialog
+  useEffect(() => {
+    if (selectedEmail && !selectedEmail.is_read) {
+      markAsRead(selectedEmail.id);
+    }
+  }, [selectedEmail]);
+
+  // Clean state on folder change
+  useEffect(() => {
+    setSelectedEmail(null);
+    setSearch('');
+  }, [activeFolder]);
+
+  const isSuperAdmin = user?.email === "oben.rockman@gmail.com";
 
   if (loading) {
     return (
@@ -471,7 +538,13 @@ export function EmailInbox() {
                 </Badge>
               )}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search emails..."
+                className="w-64"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -481,6 +554,18 @@ export function EmailInbox() {
                 <TestTube className="w-4 h-4" />
                 Email Test
               </Button>
+              {isSuperAdmin && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    console.log("🔍 DEBUG PAYLOAD:", { emails, emailStats, filteredEmails });
+                    toast({ title: "Debug OK", description: "Check console for data" });
+                  }}
+                >
+                  Debug
+                </Button>
+              )}
               <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
@@ -578,9 +663,6 @@ export function EmailInbox() {
                     }`}
                     onClick={() => {
                       setSelectedEmail(email);
-                      if (!email.is_read) {
-                        markAsRead(email.id);
-                      }
                     }}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -712,7 +794,7 @@ export function EmailInbox() {
 
                   <div className="border-t pt-4">
                     <div className="bg-muted/30 rounded-lg p-4">
-                      {selectedEmail.html_body && selectedEmail.html_body.trim() ? (
+                      {selectedEmail.html_body && selectedEmail.html_body.trim() && selectedEmail.html_body !== '<html></html>' ? (
                         <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
                       ) : selectedEmail.body && selectedEmail.body.trim() ? (
                         <p className="whitespace-pre-wrap text-sm">{selectedEmail.body}</p>
