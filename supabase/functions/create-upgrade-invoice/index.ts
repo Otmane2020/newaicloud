@@ -7,127 +7,121 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-UPGRADE-INVOICE] ${step}${detailsStr}`);
-};
+const log = (step: string, details?: any) => console.log(`[UPGRADE] ${step}`, details ?? "");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
-
   try {
-    logStep("Function started");
+    log("START");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    // Env
+    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false },
+    });
+
+    // Auth
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) throw new Error("Missing Authorization header");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw userError;
-    if (!userData.user) throw new Error("User not found");
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr) throw userErr;
+    if (!userData?.user) throw new Error("User not found");
 
-    logStep("User authenticated", { userId: userData.user.id });
+    const userId = userData.user.id;
 
+    // Body
     const { new_price_id } = await req.json();
     if (!new_price_id) throw new Error("new_price_id is required");
 
-    // Get active subscription
-    const { data: subscription, error: subscriptionError } = await supabaseClient
+    // Get subscription
+    const { data: sub, error: subErr } = await supabase
       .from("subscriptions")
-      .select("stripe_subscription_id, status")
-      .eq("seller_id", userData.user.id)
+      .select("stripe_subscription_id")
+      .eq("seller_id", userId)
       .in("status", ["active", "trialing"])
       .single();
 
-    if (subscriptionError) throw subscriptionError;
-    if (!subscription?.stripe_subscription_id) {
+    if (subErr || !sub?.stripe_subscription_id) {
       throw new Error("No active subscription found");
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    logStep("Updating subscription", { 
-      subscriptionId: subscription.stripe_subscription_id,
-      newPriceId: new_price_id 
+    const stripe = new Stripe(stripeSecret, {
+      apiVersion: "2025-08-27.basil",
     });
 
-    // Get current subscription from Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
-    const currentItemId = stripeSubscription.items.data[0].id;
+    const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
 
-    // Update subscription with proration
-    const updatedSubscription = await stripe.subscriptions.update(
-      subscription.stripe_subscription_id,
-      {
-        items: [
-          {
-            id: currentItemId,
-            price: new_price_id,
-          },
-        ],
-        proration_behavior: "always_invoice",
-        payment_behavior: "pending_if_incomplete",
-      }
-    );
+    const currentItem = stripeSub.items.data[0];
+    const currentPrice = currentItem.price.unit_amount ?? 0;
 
-    logStep("Subscription updated", { 
-      subscriptionId: updatedSubscription.id,
-      status: updatedSubscription.status 
-    });
+    // Fetch new price
+    const newPrice = await stripe.prices.retrieve(new_price_id);
+    const newAmount = newPrice.unit_amount ?? 0;
 
-    // Get the latest invoice
-    const latestInvoiceId = typeof updatedSubscription.latest_invoice === 'string' 
-      ? updatedSubscription.latest_invoice 
-      : updatedSubscription.latest_invoice?.id;
+    const isUpgrade = newAmount > currentPrice;
 
-    if (!latestInvoiceId) {
-      throw new Error("No invoice created");
+    log("Detected", { isUpgrade, currentPrice, newAmount });
+
+    // Build update payload
+    const updatePayload: any = {
+      items: [
+        {
+          id: currentItem.id,
+          price: new_price_id,
+        },
+      ],
+    };
+
+    if (isUpgrade) {
+      // ⬆️ UPGRADE → PRORATA
+      updatePayload.proration_behavior = "always_invoice";
+      updatePayload.payment_behavior = "default_incomplete";
+    } else {
+      // ⬇️ DOWNGRADE → PAS DE PRORATA
+      updatePayload.proration_behavior = "none";
+      updatePayload.billing_cycle_anchor = "unchanged";
+      updatePayload.payment_behavior = "default_incomplete";
     }
 
-    const invoice = await stripe.invoices.retrieve(latestInvoiceId);
-    
-    logStep("Invoice retrieved", { 
+    log("Updating subscription", updatePayload);
+
+    const updatedSub = await stripe.subscriptions.update(sub.stripe_subscription_id, updatePayload);
+
+    // Retrieve invoice
+    const invoiceId =
+      typeof updatedSub.latest_invoice === "string" ? updatedSub.latest_invoice : updatedSub.latest_invoice?.id;
+
+    if (!invoiceId) throw new Error("Invoice not created");
+
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+
+    log("Invoice", {
       invoiceId: invoice.id,
-      amount: invoice.amount_due,
-      status: invoice.status 
+      amount_due: invoice.amount_due,
     });
 
-    // If invoice is already paid or amount is 0, no payment needed
-    if (invoice.status === "paid" || invoice.amount_due === 0) {
-      logStep("No payment required");
+    // If nothing to pay
+    if (invoice.amount_due === 0 || invoice.status === "paid") {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           payment_required: false,
-          message: "Subscription upgraded successfully"
+          message: "Plan updated successfully",
         }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get origin for redirect
+    // Payment URL
     const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`;
-    
-    // Create a payment URL that redirects back to our success page
-    const paymentUrl = invoice.hosted_invoice_url 
-      ? `${invoice.hosted_invoice_url}?return_url=${encodeURIComponent(origin + '/upgrade-success')}`
-      : null;
-    
-    logStep("Payment URL generated", { url: paymentUrl });
+    const paymentUrl = invoice.hosted_invoice_url + `?return_url=${encodeURIComponent(origin + "/upgrade-success")}`;
 
     return new Response(
       JSON.stringify({
@@ -137,19 +131,13 @@ serve(async (req) => {
         amount_due: invoice.amount_due / 100,
         currency: invoice.currency,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error: any) {
-    logStep("ERROR", { message: error.message });
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
+  } catch (err: any) {
+    log("ERROR", err.message);
+    return new Response(JSON.stringify({ error: err.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
 });
