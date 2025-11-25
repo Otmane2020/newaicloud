@@ -91,6 +91,31 @@ serve(async (req) => {
 
     console.log("🚀 Starting auto-sync for user:", user_id);
 
+    // Check if there's already a running sync for this user
+    const { data: runningSyncs, error: runningCheckError } = await supabase
+      .from("sync_history")
+      .select("id, started_at")
+      .eq("user_id", user_id)
+      .eq("status", "running")
+      .gte("started_at", new Date(Date.now() - 120000).toISOString()); // Last 2 minutes
+
+    if (runningCheckError) {
+      console.error("❌ Error checking for running syncs:", runningCheckError);
+    } else if (runningSyncs && runningSyncs.length > 0) {
+      console.log("⚠️ Sync already running for user:", user_id, "- Skipping duplicate");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Sync already in progress",
+          sync_id: runningSyncs[0].id
+        }), 
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409, // Conflict
+        }
+      );
+    }
+
     // Get active Shopify connection
     const { data: connection, error: connectionError } = (await supabase
       .from("shopify_connections")
@@ -273,6 +298,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        sync_id: historyEntry.id,
         items_synced: totalImported,
         duration_ms: duration,
         has_errors: hasErrors,

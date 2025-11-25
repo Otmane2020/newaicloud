@@ -1,3 +1,4 @@
+import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
@@ -8,12 +9,32 @@ export function AutoSyncProgressDialog() {
   const { isSyncing, currentType, storeName } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
+  const [progress, setProgress] = React.useState(20);
   
   // Afficher le dialog partout sauf sur onboarding SANS shopify_pending
   // Si on est sur onboarding AVEC shopify_pending, on affiche le dialog pour montrer le claim en cours
   const isOnboardingWithoutShopify = location.pathname.startsWith('/onboarding') && 
                                       !location.search.includes('shopify_pending');
   const shouldShow = isSyncing && !isOnboardingWithoutShopify;
+
+  // Simulate progress based on currentType
+  React.useEffect(() => {
+    if (!isSyncing) {
+      setProgress(20);
+      return;
+    }
+
+    const progressMap: Record<string, number> = {
+      products: 40,
+      collections: 60,
+      pages: 70,
+      articles: 80,
+      images: 90,
+    };
+
+    const targetProgress = progressMap[currentType] || 20;
+    setProgress(targetProgress);
+  }, [currentType, isSyncing]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -72,12 +93,14 @@ export function AutoSyncProgressDialog() {
           </div>
 
           <div className="w-full max-w-xs space-y-2">
-            <div className="h-1 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-primary to-primary-dark animate-pulse" 
-                   style={{ width: '60%' }} />
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary to-primary-dark transition-all duration-500 ease-out" 
+                style={{ width: `${progress}%` }} 
+              />
             </div>
             <p className="text-xs text-center text-muted-foreground">
-              {tf('dialogs.autoSync.currentStep', { type: getTypeLabel(currentType) })}
+              {tf('dialogs.autoSync.currentStep', { type: getTypeLabel(currentType) })} • {progress}%
             </p>
           </div>
 
