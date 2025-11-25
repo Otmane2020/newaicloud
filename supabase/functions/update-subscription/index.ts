@@ -388,21 +388,21 @@ serve(async (req) => {
       latestInvoice: updatedSubscription.latest_invoice,
     });
 
-    // Update profile with new plan
-    if (new_plan_id) {
-      const { error: updateError } = await supabaseClient
-        .from("profiles")
-        .update({ 
-          current_plan_id: new_plan_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userData.user.id);
+    // Update profile with new plan AND subscription status
+    const { error: updateError } = await supabaseClient
+      .from("profiles")
+      .update({ 
+        current_plan_id: new_plan_id,
+        subscription_status: 'active',
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userData.user.id);
 
-      if (updateError) {
-        logStep("Warning: Failed to update profile", { error: updateError });
-      } else {
-        logStep("Profile updated with new plan", { planId: new_plan_id });
-      }
+    if (updateError) {
+      logStep("❌ CRITICAL: Failed to update profile", { error: updateError });
+      throw new Error(`Failed to update profile: ${updateError.message}`);
+    } else {
+      logStep("✅ Profile updated with new plan", { planId: new_plan_id, status: 'active' });
     }
 
     // Reset monthly usage counters for mid-cycle upgrades
