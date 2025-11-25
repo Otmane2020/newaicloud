@@ -66,7 +66,6 @@ interface AdminEmail {
   error_message: string | null;
   is_read: boolean;
   folder: string;
-  is_starred?: boolean;
   metadata?: {
     email_id?: string;
     content_available?: boolean;
@@ -171,7 +170,7 @@ export function EmailInbox() {
     try {
       const { data, error } = await supabase
         .from("admin_emails")
-        .select("direction, status, is_read, folder, is_starred");
+        .select("direction, status, is_read, folder");
 
       if (error) throw error;
 
@@ -182,7 +181,7 @@ export function EmailInbox() {
         drafts: data?.filter((e) => e.folder === "drafts").length || 0,
         trash: data?.filter((e) => e.folder === "trash").length || 0,
         spam: data?.filter((e) => e.folder === "spam").length || 0,
-        starred: data?.filter((e) => e.is_starred).length || 0,
+        starred: 0,
       };
 
       setEmailStats(stats);
@@ -205,7 +204,9 @@ export function EmailInbox() {
       setTemplates(
         data?.map((t) => ({
           ...t,
-          variables: Array.isArray(t.variables) ? t.variables : [],
+          variables: Array.isArray(t.variables) 
+            ? t.variables.map(v => typeof v === 'string' ? v : String(v))
+            : [],
         })) || [],
       );
     } catch (error) {
@@ -241,8 +242,6 @@ export function EmailInbox() {
           inFolder = e.direction === "incoming" && e.folder !== "trash" && e.folder !== "spam";
         } else if (folder === "sent") {
           inFolder = e.direction === "outgoing";
-        } else if (folder === "starred") {
-          inFolder = e.is_starred === true;
         } else {
           inFolder = e.folder === folder;
         }
@@ -278,25 +277,14 @@ export function EmailInbox() {
     [loadEmailStats],
   );
 
-  // Toggle star status
+  // Toggle star status (disabled - column doesn't exist in DB)
   const toggleStar = useCallback(
     async (emailId: string, currentlyStarred: boolean) => {
-      try {
-        const { error } = await supabase
-          .from("admin_emails")
-          .update({ is_starred: !currentlyStarred })
-          .eq("id", emailId);
-
-        if (error) throw error;
-
-        setEmails((prev) =>
-          prev.map((email) => (email.id === emailId ? { ...email, is_starred: !currentlyStarred } : email)),
-        );
-
-        loadEmailStats();
-      } catch (error) {
-        console.error("Error toggling star:", error);
-      }
+      toast({
+        title: "Feature unavailable",
+        description: "Star feature is not available in the current database schema.",
+        variant: "destructive",
+      });
     },
     [loadEmailStats],
   );
@@ -550,7 +538,7 @@ export function EmailInbox() {
       } else if (activeFolder === "sent") {
         inFolder = e.direction === "outgoing";
       } else if (activeFolder === "starred") {
-        inFolder = e.is_starred === true;
+        inFolder = false; // starred feature not available
       } else {
         inFolder = e.folder === activeFolder;
       }
@@ -570,7 +558,7 @@ export function EmailInbox() {
 
       // Additional filters
       if (filters.unreadOnly && e.is_read) return false;
-      if (filters.starredOnly && !e.is_starred) return false;
+      if (filters.starredOnly) return false; // starred feature not available
       if (filters.hasAttachments && !e.metadata?.attachments_count) return false;
 
       return true;
@@ -613,10 +601,6 @@ export function EmailInbox() {
         stats={emailStats}
         onRefresh={handleRefresh}
         loading={refreshing}
-        unreadCounts={{
-          inbox: getUnreadCount("inbox"),
-          starred: getUnreadCount("starred"),
-        }}
       />
 
       {/* Desktop Sidebar */}
@@ -627,10 +611,6 @@ export function EmailInbox() {
           stats={emailStats}
           onRefresh={handleRefresh}
           loading={refreshing}
-          unreadCounts={{
-            inbox: getUnreadCount("inbox"),
-            starred: getUnreadCount("starred"),
-          }}
         />
       </div>
 
@@ -779,7 +759,7 @@ export function EmailInbox() {
                   activeFolder={activeFolder}
                   isSelected={selectedEmail?.id === email.id}
                   onSelect={() => setSelectedEmail(email)}
-                  onToggleStar={() => toggleStar(email.id, !!email.is_starred)}
+                  onToggleStar={() => toggleStar(email.id, false)}
                   getStatusBadge={getStatusBadge}
                 />
               ))
@@ -849,11 +829,7 @@ function EmailListItem({
             onToggleStar();
           }}
         >
-          {email.is_starred ? (
-            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-          ) : (
-            <StarOff className="h-4 w-4 text-muted-foreground" />
-          )}
+          <StarOff className="h-4 w-4 text-muted-foreground" />
         </Button>
 
         <div className="flex-1 min-w-0">
