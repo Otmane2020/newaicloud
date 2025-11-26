@@ -50,6 +50,9 @@ export default function ShopifyApp() {
           description: "Your 14-day trial is now active.",
         });
 
+        // Store pending sync to trigger auto-import dialog on dashboard
+        sessionStorage.setItem('pending_sync', shop);
+
         navigate("/dashboard", { replace: true });
       } catch (err) {
         setStatus("error");
