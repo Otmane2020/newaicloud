@@ -191,9 +191,8 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // ✅ SHOPIFY COMPLIANCE: Rediriger vers Shopify Admin embedded app
-        const shopHandle = shop.replace('.myshopify.com', '');
-        const redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai-optimize?pending_token=${pendingToken}`;
+        // ✅ NON-EMBEDDED APP: Rediriger vers l'app externe
+        const redirectUrl = `${APP_URL}/app?shop=${shop}&pending_token=${pendingToken}`;
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
@@ -239,9 +238,8 @@ serve(async (req) => {
         });
       }
 
-      // ✅ SHOPIFY COMPLIANCE: Rediriger vers Shopify Admin embedded app
-      const shopHandle = shop.replace('.myshopify.com', '');
-      const redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai-optimize`;
+      // ✅ NON-EMBEDDED APP: Rediriger vers l'app externe
+      const redirectUrl = `${APP_URL}/dashboard?shop=${shop}`;
       return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
     }
 
