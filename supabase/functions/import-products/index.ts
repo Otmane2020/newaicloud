@@ -87,9 +87,8 @@ Deno.serve(async (req: Request) => {
   try {
     console.log('🚀 Starting import-products function');
     
-    // Parse request body first to check for serviceMode
-    const requestBody = await req.json();
-    const { serviceMode, userId: serviceModeUserId } = requestBody;
+    // Use the already-parsed body
+    const { serviceMode, userId: serviceModeUserId } = body;
     
     const authHeader = req.headers.get('Authorization');
     
@@ -143,30 +142,30 @@ Deno.serve(async (req: Request) => {
     }
     
     // Get auto-import config
-    const autoImportLimit = requestBody.autoImportLimit;
-    const skipNotification = requestBody.skipNotification;
+    const autoImportLimit = body.autoImportLimit;
+    const skipNotification = body.skipNotification;
     
     console.log('📦 Import config:', { autoImportLimit, skipNotification });
 
     // 📥 Log detailed request information
     console.log('📥 Request body received:', {
-      shopName: requestBody.shopName ? `✅ Present (${requestBody.shopName})` : '❌ Missing',
-      apiKey: requestBody.apiKey ? `✅ Present (length: ${requestBody.apiKey.length})` : '⚠️  Not provided (OAuth)',
-      apiSecret: requestBody.apiSecret ? `✅ Present (length: ${requestBody.apiSecret.length}, starts with: ${requestBody.apiSecret.substring(0, 10)}...)` : '❌ Missing or empty',
-      storeId: requestBody.storeId ? `✅ Present (${requestBody.storeId})` : '⚠️  Not provided',
-      allKeys: Object.keys(requestBody)
+      shopName: body.shopName ? `✅ Present (${body.shopName})` : '❌ Missing',
+      apiKey: body.apiKey ? `✅ Present (length: ${body.apiKey.length})` : '⚠️  Not provided (OAuth)',
+      apiSecret: body.apiSecret ? `✅ Present (length: ${body.apiSecret.length}, starts with: ${body.apiSecret.substring(0, 10)}...)` : '❌ Missing or empty',
+      storeId: body.storeId ? `✅ Present (${body.storeId})` : '⚠️  Not provided',
+      allKeys: Object.keys(body)
     });
 
     // Validate input
-    const validation = validateImportProducts(requestBody);
+    const validation = validateImportProducts(body);
     if (!validation.success || !validation.data) {
       console.error('❌ Validation errors:', validation.errors);
       console.error('📋 Failed validation for:', {
-        shopName: requestBody.shopName,
-        apiKeyPresent: !!requestBody.apiKey,
-        apiSecretPresent: !!requestBody.apiSecret,
-        apiSecretType: typeof requestBody.apiSecret,
-        storeId: requestBody.storeId
+        shopName: body.shopName,
+        apiKeyPresent: !!body.apiKey,
+        apiSecretPresent: !!body.apiSecret,
+        apiSecretType: typeof body.apiSecret,
+        storeId: body.storeId
       });
       return new Response(
         JSON.stringify({ 
@@ -185,7 +184,7 @@ Deno.serve(async (req: Request) => {
     // Retry configuration
     const MAX_RETRIES = 3;
     const RETRY_DELAY_MS = 2000;
-    const syncMode = requestBody.syncMode || 'smart'; // Default to smart mode
+    const syncMode = body.syncMode || 'smart'; // Default to smart mode
     
     console.log('🔄 Sync mode:', syncMode);
     
