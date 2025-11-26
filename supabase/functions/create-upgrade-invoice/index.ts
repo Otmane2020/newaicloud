@@ -173,12 +173,12 @@ serve(async (req) => {
     };
 
     if (isUpgrade) {
-      // ⬆️ UPGRADE → PRORATA + restart billing cycle
-      updatePayload.billing_cycle_anchor = "now";
-      updatePayload.proration_behavior = "always_invoice";
+      // ⬆️ UPGRADE → PRORATA immédiat sur la période actuelle
+      updatePayload.proration_behavior = "create_prorations";
+      updatePayload.billing_cycle_anchor = "unchanged";
       updatePayload.payment_behavior = "default_incomplete";
     } else {
-      // ⬇️ DOWNGRADE → PAS DE PRORATA
+      // ⬇️ DOWNGRADE → pas de proration, changement au prochain cycle
       updatePayload.proration_behavior = "none";
       updatePayload.billing_cycle_anchor = "unchanged";
       updatePayload.payment_behavior = "default_incomplete";
