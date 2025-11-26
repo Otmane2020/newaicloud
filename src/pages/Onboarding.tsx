@@ -59,6 +59,7 @@ export default function Onboarding() {
   const [searchParams] = useSearchParams();
   const { refreshStores } = useStore();
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [trialPlan, setTrialPlan] = useState<Plan | null>(null);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -281,6 +282,20 @@ export default function Onboarding() {
 
       const productCount = usage?.products_count || 0;
       console.log('📊 Onboarding: User has', productCount, 'products');
+
+      // Récupérer le plan Trial séparément pour afficher les vraies limites
+      const { data: trialData } = await supabase
+        .from("subscription_plans")
+        .select("*")
+        .eq("id", "trial")
+        .single();
+
+      if (trialData) {
+        setTrialPlan({
+          ...trialData,
+          features: (trialData.features as Record<string, any>) || {},
+        });
+      }
 
       const { data, error } = await supabase
         .from("subscription_plans")
@@ -1032,10 +1047,9 @@ export default function Onboarding() {
           className={`grid grid-cols-1 ${!hasUsedTrial ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-[1600px] mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
         >
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
-          {!hasUsedTrial &&
-            (() => {
-              const starterPlan = plans.find((p) => p.id === "starter");
-              if (!starterPlan) return null;
+          {!hasUsedTrial && (() => {
+            // Utiliser le vrai plan Trial depuis le state
+            if (!trialPlan) return null;
 
               return (
                 <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col">
@@ -1075,39 +1089,39 @@ export default function Onboarding() {
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(starterPlan.max_products)} {language === "fr" ? "produits" : "products"}
+                        {formatLimit(trialPlan?.max_products || 50)} {language === "fr" ? "produits" : "products"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
-                      <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores)}</span>
+                      <span className="text-sm">{formatStoreLimit(trialPlan?.max_shopify_stores || 1)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(starterPlan.max_optimizations_monthly)}{" "}
+                        {formatLimit(trialPlan?.max_optimizations_monthly || 50)}{" "}
                         {language === "fr" ? "optimisations/mois" : "optimizations/month"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(starterPlan.max_articles_monthly)}{" "}
+                        {formatLimit(trialPlan?.max_articles_monthly || 5)}{" "}
                         {language === "fr" ? "articles/mois" : "articles/month"}
                       </span>
                     </div>
-                    {starterPlan.max_campaigns > 0 && (
+                    {(trialPlan?.max_campaigns || 0) > 0 && (
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-success flex-shrink-0" />
                         <span className="text-sm">
-                          {formatLimit(starterPlan.max_campaigns)} {language === "fr" ? "campagnes" : "campaigns"}
+                          {formatLimit(trialPlan?.max_campaigns || 0)} {language === "fr" ? "campagnes" : "campaigns"}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(starterPlan.max_chat_responses_monthly)}{" "}
+                        {formatLimit(trialPlan?.max_chat_responses_monthly || 50)}{" "}
                         {language === "fr" ? "réponses chat/mois" : "chat responses/month"}
                       </span>
                     </div>

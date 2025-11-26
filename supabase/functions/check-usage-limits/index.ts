@@ -190,10 +190,10 @@ serve(async (req) => {
           },
           limits: {
             max_optimizations: 50,
-            max_articles: 1,
+            max_articles: 5,
             max_chat_responses: 50,
-            max_shopify_requests: 20,
-            max_products: 10,
+            max_shopify_requests: 50,
+            max_products: 50,
             max_shopify_stores: 1,
             max_campaigns: 0,
           },
@@ -252,10 +252,10 @@ serve(async (req) => {
       // Use conservative trial limits as fallback
       const defaultLimits = {
         max_optimizations: 50,
-        max_articles: 1,
+        max_articles: 5,
         max_chat_responses: 50,
-        max_shopify_requests: 20,
-        max_products: 10,
+        max_shopify_requests: 50,
+        max_products: 50,
         max_shopify_stores: 1,
         max_campaigns: 0,
       };
