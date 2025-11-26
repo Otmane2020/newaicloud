@@ -161,7 +161,14 @@ export function SubscriptionPlans() {
       const selectedPlan = plans.find((p) => p.id === planId);
       if (!selectedPlan) throw new Error("Plan not found");
 
-      // Check if user has an active subscription
+      // Get user profile to check for Stripe customer ID
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("stripe_customer_id, subscription_status")
+        .eq("id", user.id)
+        .single();
+
+      // Check if user has an active subscription in local DB
       const { data: subscription } = await supabase
         .from("subscriptions")
         .select("stripe_subscription_id, status")
@@ -169,7 +176,34 @@ export function SubscriptionPlans() {
         .in("status", ["active", "trialing"])
         .maybeSingle();
 
-      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
+      let hasActiveSubscription = !!subscription?.stripe_subscription_id;
+
+      // 🔧 SYNC FIX: If no local subscription but Stripe customer exists, sync from Stripe
+      if (!hasActiveSubscription && profile?.stripe_customer_id) {
+        console.log('🔄 [SubscriptionPlans] No local subscription but Stripe customer exists - syncing...');
+        
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-stripe-subscription', {
+          body: { customerId: profile.stripe_customer_id }
+        });
+
+        if (syncError) {
+          console.error('❌ [SubscriptionPlans] Sync error:', syncError);
+          // Continue to checkout as fallback
+        } else if (syncResult?.hasActiveSubscription) {
+          console.log('✅ [SubscriptionPlans] Successfully synced subscription from Stripe');
+          
+          // Reload subscription from DB after sync
+          const { data: reloadedSub } = await supabase
+            .from('subscriptions')
+            .select('stripe_subscription_id, status')
+            .eq('seller_id', user.id)
+            .in('status', ['active', 'trialing'])
+            .maybeSingle();
+
+          hasActiveSubscription = !!reloadedSub?.stripe_subscription_id;
+          console.log('✅ [SubscriptionPlans] Subscription now in local DB, proceeding with proration');
+        }
+      }
 
       // If user has active subscription, calculate proration
       if (hasActiveSubscription) {
