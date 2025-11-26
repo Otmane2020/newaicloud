@@ -241,35 +241,50 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           body: { customerId: profile.stripe_customer_id }
         });
 
-        if (!syncError && syncResult?.hasActiveSubscription) {
-          console.log('✅ [UpgradeDialog] Successfully synced subscription from Stripe, proceeding with upgrade');
+        if (syncError) {
+          console.error('❌ [UpgradeDialog] Sync error:', syncError);
+          // Continue to create-checkout as fallback
+        } else if (syncResult?.hasActiveSubscription) {
+          console.log('✅ [UpgradeDialog] Successfully synced subscription from Stripe');
           
-          // Use update-subscription with proration
-          const { data, error } = await supabase.functions.invoke('update-subscription', {
-            body: {
-              new_plan_id: selectedPlanId,
-              billing_period: 'monthly',
-            },
-          });
+          // CRITICAL: Reload subscription from DB after sync
+          const { data: reloadedSub } = await supabase
+            .from('subscriptions')
+            .select('stripe_subscription_id, status')
+            .eq('seller_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle();
 
-          if (error) throw error;
+          if (reloadedSub?.stripe_subscription_id) {
+            console.log('✅ [UpgradeDialog] Subscription now in local DB, proceeding with proration upgrade');
+            
+            // Use update-subscription with proration
+            const { data, error } = await supabase.functions.invoke('update-subscription', {
+              body: {
+                new_plan_id: selectedPlanId,
+                billing_period: 'monthly',
+              },
+            });
 
-          // Handle new response format with payment info
-          if (data?.payment?.required && data?.payment?.invoiceUrl) {
-            window.open(data.payment.invoiceUrl, '_blank');
-            toast.info(
-              "Veuillez finaliser le paiement pour activer votre nouveau plan.",
-              { duration: 6000 }
-            );
-          } else if (data?.success) {
-            toast.success(`✅ ${t.dialogs.upgrade.planUpgraded}`, { duration: 5000 });
+            if (error) throw error;
+
+            // Handle response format with payment info
+            if (data?.payment?.required && data?.payment?.invoiceUrl) {
+              window.open(data.payment.invoiceUrl, '_blank');
+              toast.info(
+                "Veuillez finaliser le paiement pour activer votre nouveau plan.",
+                { duration: 6000 }
+              );
+            } else if (data?.success) {
+              toast.success(`✅ ${t.dialogs.upgrade.planUpgraded}`, { duration: 5000 });
+            }
+
+            if (onUpgradeComplete) {
+              onUpgradeComplete();
+            }
+            onOpenChange(false);
+            return;
           }
-
-          if (onUpgradeComplete) {
-            onUpgradeComplete();
-          }
-          onOpenChange(false);
-          return;
         }
       }
 
