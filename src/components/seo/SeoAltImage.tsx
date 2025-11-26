@@ -644,6 +644,13 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     let errorCount = 0;
 
     for (let i = 0; i < imagesToOptimize.length; i++) {
+      // Check limits DURING optimization to stop if quota runs out
+      await refreshLimits();
+      if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+        console.log(`⛔ Arrêt de l'optimisation: quota épuisé après ${successCount} images`);
+        break;
+      }
+
       try {
         const img = imagesToOptimize[i];
         const imageType = img.image_type || 'product';
@@ -708,6 +715,13 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     let errorCount = 0;
 
     for (let i = 0; i < images.length; i++) {
+      // Check limits DURING re-optimization to stop if quota runs out
+      await refreshLimits();
+      if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+        console.log(`⛔ Arrêt de la ré-optimisation: quota épuisé après ${successCount} images`);
+        break;
+      }
+
       try {
         const img = images[i];
         const imageType = img.image_type || 'product';

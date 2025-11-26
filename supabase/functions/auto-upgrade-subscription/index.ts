@@ -213,15 +213,34 @@ serve(async (req) => {
 
     if (canProrate && updatedSub.latest_invoice) {
       const invoice = typeof updatedSub.latest_invoice === "string"
-        ? await stripe.invoices.retrieve(updatedSub.latest_invoice)
+        ? await stripe.invoices.retrieve(updatedSub.latest_invoice, {
+            expand: ["payment_intent"]
+          })
         : updatedSub.latest_invoice;
 
       amountDue = invoice.amount_due || 0;
 
+      logStep("Invoice details", { 
+        invoiceId: invoice.id,
+        amountDue,
+        status: invoice.status,
+        paid: invoice.paid 
+      });
+
       if (amountDue > 0 && invoice.hosted_invoice_url) {
         paymentUrl = invoice.hosted_invoice_url;
         logStep("Payment required", { amountDue, paymentUrl });
+      } else {
+        logStep("No payment required", { 
+          reason: amountDue === 0 ? "zero_amount" : "no_url",
+          invoiceStatus: invoice.status 
+        });
       }
+    } else {
+      logStep("No proration invoice", { 
+        canProrate,
+        hasInvoice: !!updatedSub.latest_invoice 
+      });
     }
 
     const responseData = {

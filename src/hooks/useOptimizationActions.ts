@@ -206,6 +206,15 @@ export const useOptimizationActions = () => {
       const batchSize = 5;
 
       for (let i = 0; i < images.length; i += batchSize) {
+        // Check limits DURING batch processing to stop if quota runs out
+        if (i > 0) { // Skip first check since we already checked before starting
+          await refreshLimits();
+          if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+            console.log(`⛔ Arrêt de l'auto-optimisation: quota épuisé après ${processedCount} images`);
+            break;
+          }
+        }
+
         const batch = images.slice(i, i + batchSize);
 
         await Promise.all(
