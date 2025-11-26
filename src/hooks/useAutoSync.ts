@@ -29,18 +29,6 @@ export const useAutoSync = (userId: string | undefined) => {
 
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
     
-    // Global stuck timeout: force close after 2 minutes if dialog is stuck
-    stuckTimeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
-        endSync();
-        if (syncCheckIntervalRef.current) {
-          clearInterval(syncCheckIntervalRef.current);
-          syncCheckIntervalRef.current = null;
-        }
-      }
-    }, STUCK_TIMEOUT_MS);
-
     // Check if there's a pending sync from onboarding page
     const pendingSync = sessionStorage.getItem('pending_sync');
     if (pendingSync && location.pathname === '/dashboard') {
@@ -60,9 +48,9 @@ export const useAutoSync = (userId: string | undefined) => {
         if (currentSyncIdRef.current) {
           query = query.eq('id', currentSyncIdRef.current);
         } else {
-          // Otherwise, only check recent syncs (last 60 seconds) to avoid detecting old ones
-          const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
-          query = query.gte('started_at', sixtySecondsAgo);
+          // Otherwise, only check recent syncs (last 2 minutes) to avoid detecting old ones
+          const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
+          query = query.gte('started_at', twoMinutesAgo);
         }
         
         const { data: latestSync } = await query
@@ -97,6 +85,18 @@ export const useAutoSync = (userId: string | undefined) => {
       // Check immediately then every 3 seconds
       checkSyncStatus();
       syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+      
+      // Global stuck timeout: force close after 2 minutes if dialog is stuck
+      stuckTimeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
+          endSync();
+          if (syncCheckIntervalRef.current) {
+            clearInterval(syncCheckIntervalRef.current);
+            syncCheckIntervalRef.current = null;
+          }
+        }
+      }, STUCK_TIMEOUT_MS);
       
       // Failsafe: close dialog after 10 minutes for large imports
       setTimeout(() => {
@@ -156,9 +156,14 @@ export const useAutoSync = (userId: string | undefined) => {
           
           const storeName = connection.store_name || connection.store_url;
           
-          // Si on est sur /onboarding, stocker pour afficher après redirection
-          if (location.pathname.startsWith('/onboarding')) {
-            console.log('⏭️ [AutoSync] On onboarding page, storing sync for dashboard display');
+          const isExcludedPage =
+            location.pathname.startsWith('/onboarding') ||
+            location.pathname === '/auth' ||
+            location.pathname === '/reset-password' ||
+            location.pathname.startsWith('/shopify/');
+
+          if (isExcludedPage) {
+            console.log('⏭️ [AutoSync] On excluded page, storing sync for dashboard display');
             sessionStorage.setItem('pending_sync', storeName);
             return;
           }
@@ -179,9 +184,9 @@ export const useAutoSync = (userId: string | undefined) => {
             if (currentSyncIdRef.current) {
               query = query.eq('id', currentSyncIdRef.current);
             } else {
-              // Otherwise, only check recent syncs (last 60 seconds) to avoid detecting old ones
-              const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
-              query = query.gte('started_at', sixtySecondsAgo);
+              // Otherwise, only check recent syncs (last 2 minutes) to avoid detecting old ones
+              const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
+              query = query.gte('started_at', twoMinutesAgo);
             }
             
             const { data: latestSync } = await query
@@ -216,6 +221,18 @@ export const useAutoSync = (userId: string | undefined) => {
           // Check immediately then every 3 seconds
           checkSyncStatus();
           syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+          
+          // Global stuck timeout: force close after 2 minutes if dialog is stuck
+          stuckTimeoutId = setTimeout(() => {
+            if (isMounted) {
+              console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
+              endSync();
+              if (syncCheckIntervalRef.current) {
+                clearInterval(syncCheckIntervalRef.current);
+                syncCheckIntervalRef.current = null;
+              }
+            }
+          }, STUCK_TIMEOUT_MS);
           
           // Failsafe: close dialog after 10 minutes for large imports
           setTimeout(() => {
@@ -253,4 +270,16 @@ export const useAutoSync = (userId: string | undefined) => {
       }
     };
   }, [userId, startSync, endSync, location.pathname]);
+
+  // Reset sync state when navigating to auth / Shopify related pages
+  useEffect(() => {
+    const isExcludedPage =
+      location.pathname === '/auth' ||
+      location.pathname === '/reset-password' ||
+      location.pathname.startsWith('/shopify/');
+
+    if (isExcludedPage) {
+      endSync();
+    }
+  }, [location.pathname, endSync]);
 };
