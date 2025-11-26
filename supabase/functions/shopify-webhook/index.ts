@@ -1,6 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { createHmac } from 'node:crypto';
 
+// ✅ Type declaration for Supabase EdgeRuntime
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<any>): void;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-shopify-hmac-sha256, x-shopify-shop-domain, x-shopify-topic',
@@ -34,72 +39,103 @@ Deno.serve(async (req) => {
 
     // Get webhook payload
     const rawBody = await req.text();
-    const payload = JSON.parse(rawBody);
-
-    // Find the Shopify connection for this domain
-    const { data: connection, error: connError } = await supabase
-      .from('shopify_connections')
-      .select('id, user_id, api_secret')
-      .eq('shop_domain', shopDomain)
-      .single();
-
-    if (connError || !connection) {
-      console.error('❌ Store not found:', shopDomain);
-      return new Response(JSON.stringify({ error: 'Store not found' }), {
-        status: 404,
+    
+    // ✅ SHOPIFY COMPLIANCE: Verify HMAC BEFORE database lookup using app secret
+    const apiSecret = Deno.env.get('SHOPIFY_API_SECRET');
+    if (!apiSecret) {
+      console.error('❌ SHOPIFY_API_SECRET not configured');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Verify webhook HMAC
-    const calculatedHmac = createHmac('sha256', connection.api_secret)
+    const calculatedHmac = createHmac('sha256', apiSecret)
       .update(rawBody, 'utf8')
       .digest('base64');
 
     if (calculatedHmac !== hmac) {
-      console.error('❌ HMAC validation failed');
+      console.error(JSON.stringify({
+        event: 'webhook_hmac_failure',
+        shop: shopDomain,
+        topic: topic,
+        expected_hmac_length: calculatedHmac.length,
+        received_hmac_length: hmac.length,
+        timestamp: new Date().toISOString()
+      }));
       return new Response(JSON.stringify({ error: 'Invalid HMAC' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ HMAC validated');
+    console.log(JSON.stringify({
+      event: 'webhook_verification_success',
+      shop: shopDomain,
+      topic: topic,
+      timestamp: new Date().toISOString()
+    }));
 
-    // Process webhook based on topic
-    switch (topic) {
-      case 'products/create':
-      case 'products/update':
-        await handleProductWebhook(supabase, connection, payload, topic);
-        break;
-      
-      case 'products/delete':
-        await handleProductDelete(supabase, connection, payload);
-        break;
-      
-      case 'collections/create':
-      case 'collections/update':
-        await handleCollectionWebhook(supabase, connection, payload);
-        break;
-      
-      case 'collections/delete':
-        await handleCollectionDelete(supabase, connection, payload);
-        break;
-      
-      case 'orders/create':
-        await handleOrderWebhook(supabase, connection, payload);
-        break;
-      
-      default:
-        console.log('⚠️ Unhandled webhook topic:', topic);
-    }
-
-    console.log('✅ Webhook processed successfully');
-
-    return new Response(JSON.stringify({ success: true }), {
+    // ✅ SHOPIFY COMPLIANCE: Return 200 OK immediately
+    const quickResponse = new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
+    // Parse payload for async processing
+    const payload = JSON.parse(rawBody);
+
+    // Find the Shopify connection for this domain
+    const { data: connection, error: connError } = await supabase
+      .from('shopify_connections')
+      .select('id, user_id')
+      .eq('shop_domain', shopDomain)
+      .single();
+
+    if (connError || !connection) {
+      console.error('❌ Store not found:', shopDomain);
+      // Already sent 200 OK, just log the error
+      return quickResponse;
+    }
+
+    // ✅ SHOPIFY COMPLIANCE: Process webhook asynchronously in background
+    EdgeRuntime.waitUntil((async () => {
+      try {
+        switch (topic) {
+          case 'products/create':
+          case 'products/update':
+            await handleProductWebhook(supabase, connection, payload, topic);
+            break;
+          
+          case 'products/delete':
+            await handleProductDelete(supabase, connection, payload);
+            break;
+          
+          case 'collections/create':
+          case 'collections/update':
+            await handleCollectionWebhook(supabase, connection, payload);
+            break;
+          
+          case 'collections/delete':
+            await handleCollectionDelete(supabase, connection, payload);
+            break;
+          
+          case 'orders/create':
+            await handleOrderWebhook(supabase, connection, payload);
+            break;
+          
+          default:
+            console.log('⚠️ Unhandled webhook topic:', topic);
+        }
+
+        console.log('✅ Webhook processed successfully');
+      } catch (bgError: unknown) {
+        const err = bgError instanceof Error ? bgError : new Error(String(bgError));
+        console.error('❌ Background webhook processing error:', err);
+      }
+    })());
+
+    return quickResponse;
 
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
