@@ -31,25 +31,41 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    
+    // Parse request body first to check for serviceMode
+    const body = await req.json();
+    const { serviceMode, userId: serviceModeUserId, storeId, types = ['collections', 'pages', 'articles', 'homepage'] } = body;
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
+    
+    // Service mode: use provided userId without JWT validation
+    let user: any;
+    let supabaseClient: any;
+    
+    if (serviceMode === true && serviceModeUserId) {
+      console.log('[IMPORT-CONTENT-IMAGES] 🔧 SERVICE MODE: Using provided userId:', serviceModeUserId);
+      supabaseClient = createClient(supabaseUrl, supabaseKey);
+      user = { id: serviceModeUserId };
+    } else {
+      // Normal mode: require JWT authentication
+      if (!authHeader) {
+        throw new Error("Missing authorization header");
+      }
+
+      supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+      const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
+
+      if (userError || !authUser) {
+        throw new Error("Unauthorized");
+      }
+      
+      user = authUser;
     }
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (userError || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    const { storeId, types = ['collections', 'pages', 'articles', 'homepage'] }: ImportRequest = await req.json();
 
     console.log(`[IMPORT-CONTENT-IMAGES] Starting import for user ${user.id}, store ${storeId}`);
     console.log(`[IMPORT-CONTENT-IMAGES] Types: ${types.join(', ')}`);
@@ -422,7 +438,7 @@ Deno.serve(async (req: Request) => {
       .select('id')
       .eq('seller_id', user.id);
     
-    const productIds = userProducts?.map(p => p.id) || [];
+    const productIds = userProducts?.map((p: any) => p.id) || [];
     
     let productImagesCount = 0;
     if (productIds.length > 0) {

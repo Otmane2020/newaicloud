@@ -172,29 +172,54 @@ Deno.serve(async (req) => {
             let result;
             switch (type) {
               case 'products':
-                result = await userClient.functions.invoke('import-products', {
-                  body: { shopName, authToken, storeId, syncMode }
+                result = await supabase.functions.invoke('import-products', {
+                  body: { 
+                    serviceMode: true,
+                    userId: setting.user_id,
+                    shopName,
+                    authToken,
+                    storeId
+                  }
                 });
                 break;
               case 'collections':
-                // CRITICAL: Pass apiSecret instead of authToken for collections
-                result = await userClient.functions.invoke('import-shopify-collections', {
-                  body: { shopName, apiSecret: authToken, storeId }
+                result = await supabase.functions.invoke('import-shopify-collections', {
+                  body: { 
+                    serviceMode: true,
+                    userId: setting.user_id,
+                    shopName,
+                    storeId
+                  }
                 });
                 break;
               case 'pages':
-                result = await userClient.functions.invoke('import-shopify-pages', {
-                  body: { shopName, authToken, storeId }
+                result = await supabase.functions.invoke('import-shopify-pages', {
+                  body: { 
+                    serviceMode: true,
+                    userId: setting.user_id,
+                    store_id: storeId
+                  }
                 });
                 break;
               case 'articles':
-                result = await userClient.functions.invoke('import-shopify-articles', {
-                  body: { shopName, authToken, storeId }
+                result = await supabase.functions.invoke('import-shopify-articles', {
+                  body: { 
+                    serviceMode: true,
+                    userId: setting.user_id,
+                    shopName,
+                    authToken,
+                    storeId
+                  }
                 });
                 break;
               case 'images':
-                result = await userClient.functions.invoke('import-content-images', {
-                  body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+                result = await supabase.functions.invoke('import-content-images', {
+                  body: { 
+                    serviceMode: true,
+                    userId: setting.user_id,
+                    storeId,
+                    types: ['collections', 'pages', 'articles', 'homepage']
+                  }
                 });
                 break;
             }

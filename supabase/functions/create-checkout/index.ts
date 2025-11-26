@@ -275,33 +275,43 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
-    // Annuler les anciens abonnements avant de créer un nouveau
-    console.log('🔍 Checking for existing subscriptions to cancel...');
+    // ✅ CORRECTION PRORATION : Bloquer si abonnement actif existe
+    console.log('🔍 Checking for existing subscriptions...');
     const existingSubscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'all',
       limit: 100,
     });
     
-    // Annuler tous les abonnements actifs, trialing, past_due ou unpaid
-    const cancelableStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
-    let canceledTrialSub = false;
-    for (const sub of existingSubscriptions.data) {
-      if (cancelableStatuses.includes(sub.status)) {
-        console.log(`🗑️ Cancelling existing subscription: ${sub.id} (status: ${sub.status})`);
-        if (sub.status === 'trialing') {
-          canceledTrialSub = true;
-          console.log('⚠️ TRIAL SUBSCRIPTION CANCELLED - User upgrading from trial to paid');
+    // Vérifier s'il y a un abonnement actif ou trialing
+    const activeStatuses = ['active', 'trialing', 'past_due'];
+    const hasActiveSubscription = existingSubscriptions.data.some((sub: any) => 
+      activeStatuses.includes(sub.status)
+    );
+    
+    if (hasActiveSubscription) {
+      console.log('❌ BLOCKED: User has active subscription - must use upgrade flow');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Vous avez déjà un abonnement actif. Utilisez la fonction "Changer de plan" pour modifier votre abonnement.',
+          redirect_to_upgrade: true,
+          existing_subscriptions: existingSubscriptions.data.map((s: any) => ({
+            id: s.id,
+            status: s.status,
+            plan: s.items.data[0]?.price?.id
+          }))
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-        await stripe.subscriptions.cancel(sub.id, {
-          prorate: true,
-        });
-      }
+      );
     }
     
-    if (force_immediate_payment && canceledTrialSub) {
-      console.log('✅ Trial cancelled and immediate payment will be required');
-    }
+    console.log('✅ No active subscription found, proceeding with checkout creation');
+    
+    // Variable pour tracker si on a annulé un trial (réintroduite pour compatibilité)
+    let canceledTrialSub = false;
     
     console.log('🎫 Creating Stripe checkout session...');
 
