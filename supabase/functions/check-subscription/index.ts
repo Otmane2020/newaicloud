@@ -261,9 +261,61 @@ serve(async (req) => {
           })
           .eq('id', user.id);
       } else {
-        logStep('WARNING: No matching plan found for Stripe price', { stripePriceId });
-        // Fallback: use Stripe product ID as-is
-        planId = subscription.items.data[0].price.product as string;
+        logStep('WARNING: No matching plan found for Stripe price - fetching from Stripe', { stripePriceId });
+        
+        // ✅ ENHANCED: Fetch price details from Stripe to determine plan
+        try {
+          const priceDetails = await stripe.prices.retrieve(stripePriceId);
+          const amountInCents = priceDetails.unit_amount || 0;
+          const amountInDollars = amountInCents / 100;
+          
+          logStep('Retrieved price details from Stripe', { 
+            priceId: stripePriceId,
+            amount: amountInDollars,
+            currency: priceDetails.currency 
+          });
+          
+          // Map amount to plan (based on setup-subscription-plans config)
+          if (amountInDollars === 9.99) {
+            planId = 'starter';
+          } else if (amountInDollars === 49) {
+            planId = 'pro-500';
+          } else if (amountInDollars === 98) {
+            planId = 'pro-1000';
+          } else if (amountInDollars === 196) {
+            planId = 'pro-2000';
+          } else if (amountInDollars === 392) {
+            planId = 'pro-4000';
+          } else if (amountInDollars === 199) {
+            planId = 'enterprise-2000';
+          } else {
+            // Fallback: use Stripe product ID
+            planId = priceDetails.product as string;
+            logStep('No exact match for amount, using product ID', { amount: amountInDollars, productId: planId });
+          }
+          
+          logStep('Auto-determined plan from Stripe amount', { 
+            amount: amountInDollars, 
+            determinedPlan: planId 
+          });
+          
+          // Update profile with determined plan
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              subscription_status: status,
+              current_plan_id: planId,
+              stripe_customer_id: customerId,
+              onboarding_completed: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+            
+        } catch (stripeError) {
+          logStep('ERROR fetching price from Stripe', { error: stripeError });
+          // Final fallback: use product ID
+          planId = subscription.items.data[0].price.product as string;
+        }
       }
       
       logStep('Profile updated with subscription status');

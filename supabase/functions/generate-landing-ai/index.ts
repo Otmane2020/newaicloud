@@ -721,7 +721,7 @@ serve(async (req) => {
       }
     }
 
-    const body = await req.json();
+    // ✅ Body already read above (line 705), reuse it
     const {
       productId: product_id_from_body,
       product_id: legacy_product_id,
