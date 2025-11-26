@@ -169,6 +169,9 @@ serve(async (req) => {
         .single();
 
       if (storeData?.id) {
+        // Extraire le shop handle (sans .myshopify.com)
+        const shopHandle = shop.replace(".myshopify.com", "");
+        
         // Appeler import-products en mode service (sans JWT)
         const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/import-products`, {
           method: "POST",
@@ -177,6 +180,7 @@ serve(async (req) => {
             "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           },
           body: JSON.stringify({
+            shopName: shopHandle,
             serviceMode: true,
             userId: userId,
             storeId: storeData.id,
