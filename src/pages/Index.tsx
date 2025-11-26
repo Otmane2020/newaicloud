@@ -313,7 +313,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto mb-12 sm:mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto mb-12 sm:mb-16">
           {[
             { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
             { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
@@ -327,54 +327,54 @@ const Index = () => {
             return (
               <Card 
                 key={index}
-                className={`p-8 relative ${planConfig.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
+                className={`p-4 sm:p-6 lg:p-8 relative ${planConfig.featured ? 'border-2 border-primary shadow-primary sm:scale-105' : 'border-2 border-transparent'}`}
               >
                 {plan.badge && (
-                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${planConfig.featured ? 'bg-primary' : 'bg-gradient-primary'}`}>
+                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 text-xs ${planConfig.featured ? 'bg-primary' : 'bg-gradient-primary'}`}>
                     {plan.badge}
                   </Badge>
                 )}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold">{planConfig.icon} {plan.name}</h3>
+                      <h3 className="text-xl sm:text-2xl font-bold">{planConfig.icon} {plan.name}</h3>
                     </div>
-                    <p className="text-muted-foreground text-sm">{plan.description}</p>
+                    <p className="text-muted-foreground text-xs sm:text-sm">{plan.description}</p>
                   </div>
                   
                   <div>
                     {planConfig.hasPromo && originalPrice ? (
                       <div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-semibold text-muted-foreground line-through">
+                          <span className="text-lg sm:text-2xl font-semibold text-muted-foreground line-through">
                             {language === 'fr' ? `${originalPrice.toFixed(2).replace('.', ',')} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${originalPrice.toFixed(2)}`}
                           </span>
-                          <Badge variant="destructive" className="ml-2">
+                          <Badge variant="destructive" className="ml-2 text-xs">
                             -{planConfig.discount}%
                           </Badge>
                         </div>
                       <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-5xl font-bold text-primary">
+                        <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">
                           {language === 'fr' ? `${price} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${price}`}
                         </span>
-                        <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                        <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                       </div>
                       </div>
                     ) : (
                       <div className="flex items-baseline gap-2">
                         {planConfig.isTrial ? (
                           <>
-                            <span className="text-5xl font-bold">
+                            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
                               {language === 'fr' ? `0 ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}0`}
                             </span>
-                            <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                            <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
                         ) : (
                           <>
-                            <span className="text-5xl font-bold">
+                            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
                               {language === 'fr' ? `${price} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${price}`}
                             </span>
-                            <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                            <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
                         )}
                       </div>
