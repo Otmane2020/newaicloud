@@ -66,7 +66,7 @@ const Index = () => {
                 {t.landing.hero.badge}
               </Badge>
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-background/10 backdrop-blur-sm border border-white/20">
-                <span className="text-sm text-white font-medium">Built for</span>
+                <span className="text-sm text-foreground font-medium">Built for</span>
                 <img src="/shopify-logo.svg" alt="Shopify" className="h-6 opacity-90" />
               </div>
             </div>
