@@ -20,38 +20,59 @@ serve(async (req) => {
   try {
     logStep("Starting auto-upgrade flow");
 
-    // Initialize clients
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    // ─────────────────────────────────────────────
+    // 1. INIT SUPABASE + STRIPE
+    // ─────────────────────────────────────────────
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase env vars not configured");
+    }
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
 
-    // Authenticate user
+    const stripe = new Stripe(stripeKey, {
+      // 🔥 VERSION STRIPE VALIDE
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    // ─────────────────────────────────────────────
+    // 2. AUTH USER
+    // ─────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("Authentication failed");
+    if (userError || !userData?.user) {
+      throw new Error("Authentication failed");
+    }
 
     const userId = userData.user.id;
     logStep("User authenticated", { userId });
 
-    // Parse request body
-    const { new_price_id, new_plan_id, billing_period } = await req.json();
+    // ─────────────────────────────────────────────
+    // 3. BODY PARAMS
+    // ─────────────────────────────────────────────
+    const body = await req.json().catch(() => ({}));
+    const { new_price_id, new_plan_id, billing_period } = body;
+
     if (!new_price_id || !new_plan_id) {
       throw new Error("new_price_id and new_plan_id are required");
     }
 
     logStep("Request params", { new_price_id, new_plan_id, billing_period });
 
-    // Get user profile
+    // ─────────────────────────────────────────────
+    // 4. PROFILE + STRIPE CUSTOMER
+    // ─────────────────────────────────────────────
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("stripe_customer_id, email, current_plan_id")
@@ -62,21 +83,22 @@ serve(async (req) => {
       throw new Error("User profile or Stripe customer not found");
     }
 
-    logStep("Profile retrieved", { 
+    logStep("Profile retrieved", {
       customerId: profile.stripe_customer_id,
-      currentPlanId: profile.current_plan_id 
+      currentPlanId: profile.current_plan_id,
     });
 
-    // Step 1: Check local subscriptions table
+    // ─────────────────────────────────────────────
+    // 5. CHERCHER / SYNCHRO LA SUBSCRIPTION
+    // ─────────────────────────────────────────────
     const { data: localSub } = await supabaseAdmin
       .from("subscriptions")
       .select("*")
       .eq("seller_id", userId)
       .maybeSingle();
 
-    let stripeSubscriptionId = localSub?.stripe_subscription_id;
+    let stripeSubscriptionId = localSub?.stripe_subscription_id ?? null;
 
-    // Step 2: If no local subscription, fetch from Stripe and sync
     if (!stripeSubscriptionId) {
       logStep("No local subscription found, fetching from Stripe");
 
@@ -90,40 +112,48 @@ serve(async (req) => {
         throw new Error("No active Stripe subscription found");
       }
 
-      const stripeSub = stripeSubs.data[0];
-      stripeSubscriptionId = stripeSub.id;
+      const stripeSubFromList = stripeSubs.data[0];
+      stripeSubscriptionId = stripeSubFromList.id;
 
-      logStep("Found Stripe subscription, syncing to local DB", { 
-        subscriptionId: stripeSubscriptionId 
+      logStep("Found Stripe subscription, syncing to local DB", {
+        subscriptionId: stripeSubscriptionId,
       });
 
-      // Sync to local DB
-      const interval = stripeSub.items.data[0].price.recurring?.interval || "month";
-      await supabaseAdmin.from("subscriptions").upsert({
-        seller_id: userId,
-        stripe_subscription_id: stripeSub.id,
-        status: stripeSub.status,
-        plan_id: profile.current_plan_id,
-        billing_period: interval === "year" ? "yearly" : "monthly",
-        current_period_start: stripeSub.current_period_start 
-          ? new Date(stripeSub.current_period_start * 1000).toISOString() 
-          : null,
-        current_period_end: stripeSub.current_period_end 
-          ? new Date(stripeSub.current_period_end * 1000).toISOString() 
-          : null,
-      }, { onConflict: "seller_id" });
+      const item0 = stripeSubFromList.items.data[0];
+      const interval = item0?.price.recurring?.interval || "month";
+
+      await supabaseAdmin.from("subscriptions").upsert(
+        {
+          seller_id: userId,
+          stripe_subscription_id: stripeSubFromList.id,
+          status: stripeSubFromList.status,
+          plan_id: profile.current_plan_id,
+          billing_period: interval === "year" ? "yearly" : "monthly",
+          current_period_start: stripeSubFromList.current_period_start
+            ? new Date(stripeSubFromList.current_period_start * 1000).toISOString()
+            : null,
+          current_period_end: stripeSubFromList.current_period_end
+            ? new Date(stripeSubFromList.current_period_end * 1000).toISOString()
+            : null,
+        },
+        { onConflict: "seller_id" },
+      );
 
       logStep("Local DB synced successfully");
     }
 
-    // Step 3: Get full Stripe subscription details
-    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
-      expand: ["items.data.price"],
-    });
+    if (!stripeSubscriptionId) {
+      throw new Error("Stripe subscription ID missing after sync");
+    }
 
-    logStep("Stripe subscription retrieved", { 
+    // ─────────────────────────────────────────────
+    // 6. RÉCUP STRIPE SUB COMPLETE
+    // ─────────────────────────────────────────────
+    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId, { expand: ["items.data.price"] });
+
+    logStep("Stripe subscription retrieved", {
       status: stripeSub.status,
-      itemsCount: stripeSub.items.data.length 
+      itemsCount: stripeSub.items.data.length,
     });
 
     if (stripeSub.items.data.length === 0) {
@@ -134,31 +164,53 @@ serve(async (req) => {
     const currentPrice = currentItem.price;
     const currentCurrency = currentPrice.currency;
     const currentInterval = currentPrice.recurring?.interval || "month";
+    const currentAmount = currentPrice.unit_amount ?? 0;
 
-    // Step 4: Get new price details
+    // ─────────────────────────────────────────────
+    // 7. NOUVEAU PRICE
+    // ─────────────────────────────────────────────
     const newPrice = await stripe.prices.retrieve(new_price_id);
     const newCurrency = newPrice.currency;
     const newInterval = newPrice.recurring?.interval || "month";
+    const newAmount = newPrice.unit_amount ?? 0;
+
+    const isUpgrade = newAmount > currentAmount;
 
     logStep("Price comparison", {
-      current: { currency: currentCurrency, interval: currentInterval },
-      new: { currency: newCurrency, interval: newInterval },
+      isUpgrade,
+      current: {
+        amount: currentAmount,
+        currency: currentCurrency,
+        interval: currentInterval,
+      },
+      new: {
+        amount: newAmount,
+        currency: newCurrency,
+        interval: newInterval,
+      },
     });
 
-    // Step 5: Validate proration conditions
-    const canProrate = 
-      stripeSub.status === "active" &&
-      currentCurrency === newCurrency &&
-      currentInterval === newInterval;
+    // ─────────────────────────────────────────────
+    // 8. CONDITIONS PRORATA
+    // ─────────────────────────────────────────────
+    const canProrate =
+      stripeSub.status === "active" && currentCurrency === newCurrency && currentInterval === newInterval && isUpgrade;
 
-    logStep("Proration validation", { canProrate, status: stripeSub.status });
+    logStep("Proration validation", {
+      canProrate,
+      status: stripeSub.status,
+    });
 
-    // Step 6: Update subscription with appropriate proration behavior
+    // ─────────────────────────────────────────────
+    // 9. UPDATE SUBSCRIPTION STRIPE
+    // ─────────────────────────────────────────────
     const updatePayload: Stripe.SubscriptionUpdateParams = {
-      items: [{
-        id: currentItem.id,
-        price: new_price_id,
-      }],
+      items: [
+        {
+          id: currentItem.id,
+          price: new_price_id,
+        },
+      ],
       proration_behavior: canProrate ? "create_prorations" : "none",
       billing_cycle_anchor: canProrate ? "unchanged" : "now",
       payment_behavior: "pending_if_incomplete",
@@ -168,19 +220,19 @@ serve(async (req) => {
       updatePayload.expand = ["latest_invoice.payment_intent"];
     }
 
-    logStep("Updating Stripe subscription", { 
+    logStep("Updating Stripe subscription", {
       subscriptionId: stripeSubscriptionId,
-      proration_behavior: updatePayload.proration_behavior 
+      proration_behavior: updatePayload.proration_behavior,
+      billing_cycle_anchor: updatePayload.billing_cycle_anchor,
     });
 
-    const updatedSub = await stripe.subscriptions.update(
-      stripeSubscriptionId,
-      updatePayload
-    );
+    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, updatePayload);
 
     logStep("Subscription updated", { newStatus: updatedSub.status });
 
-    // Step 7: Update local profile and subscriptions table
+    // ─────────────────────────────────────────────
+    // 10. UPDATE DB LOCALE (profiles + subscriptions)
+    // ─────────────────────────────────────────────
     await supabaseAdmin
       .from("profiles")
       .update({
@@ -207,39 +259,42 @@ serve(async (req) => {
 
     logStep("Local DB updated with new plan");
 
-    // Step 8: Check if payment is required
-    let paymentUrl = null;
+    // ─────────────────────────────────────────────
+    // 11. FACTURE / PAIEMENT SI PRORATA
+    // ─────────────────────────────────────────────
+    let paymentUrl: string | null = null;
     let amountDue = 0;
 
     if (canProrate && updatedSub.latest_invoice) {
-      const invoice = typeof updatedSub.latest_invoice === "string"
-        ? await stripe.invoices.retrieve(updatedSub.latest_invoice, {
-            expand: ["payment_intent"]
-          })
-        : updatedSub.latest_invoice;
+      const invoice =
+        typeof updatedSub.latest_invoice === "string"
+          ? await stripe.invoices.retrieve(updatedSub.latest_invoice, {
+              expand: ["payment_intent"],
+            })
+          : updatedSub.latest_invoice;
 
       amountDue = invoice.amount_due || 0;
 
-      logStep("Invoice details", { 
+      logStep("Invoice details", {
         invoiceId: invoice.id,
         amountDue,
         status: invoice.status,
-        paid: invoice.paid 
+        paid: invoice.paid,
       });
 
       if (amountDue > 0 && invoice.hosted_invoice_url) {
         paymentUrl = invoice.hosted_invoice_url;
         logStep("Payment required", { amountDue, paymentUrl });
       } else {
-        logStep("No payment required", { 
+        logStep("No payment required", {
           reason: amountDue === 0 ? "zero_amount" : "no_url",
-          invoiceStatus: invoice.status 
+          invoiceStatus: invoice.status,
         });
       }
     } else {
-      logStep("No proration invoice", { 
+      logStep("No proration invoice", {
         canProrate,
-        hasInvoice: !!updatedSub.latest_invoice 
+        hasInvoice: !!updatedSub.latest_invoice,
       });
     }
 
@@ -251,7 +306,7 @@ serve(async (req) => {
       payment_url: paymentUrl,
       amount_due: amountDue,
       currency: newCurrency,
-      upgrade_type: canProrate ? "immediate_with_proration" : "next_cycle",
+      upgrade_type: canProrate ? "immediate_with_proration" : "immediate_without_proration",
     };
 
     logStep("Auto-upgrade completed successfully", responseData);
@@ -260,11 +315,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    
+
     return new Response(
       JSON.stringify({
         success: false,
@@ -273,7 +327,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-      }
+      },
     );
   }
 });
