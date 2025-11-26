@@ -68,6 +68,7 @@ import ShopifyInstall from "./pages/ShopifyInstall";
 import ShopifyRecover from "./pages/ShopifyRecover";
 import ShopifyInstallGuide from "./pages/ShopifyInstallGuide";
 import ShopifySuccess from "./pages/ShopifySuccess";
+import ShopifyApp from "./pages/ShopifyApp";
 import NotFound from "./pages/NotFound";
 import ChatSettings from "./pages/ChatSettings";
 import ChatRobot from "./pages/ChatRobot";
@@ -168,6 +169,7 @@ const App = () => (
           <Route path="/shopify/recover" element={<ShopifyRecover />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
+          <Route path="/app" element={<ShopifyApp />} />
             <Route
               path="/onboarding"
               element={
