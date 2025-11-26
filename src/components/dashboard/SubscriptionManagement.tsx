@@ -60,20 +60,16 @@ export function SubscriptionManagement() {
 
       console.log('✅ Subscription data:', subData);
       
-      if (subData?.subscribed && subData?.product_id) {
-        // Find plan by Stripe product ID
+      if (subData?.subscribed && subData?.plan_id) {
+        // Find plan by internal plan ID returned by backend
         const { data: plansData } = await supabase
           .from('subscription_plans')
           .select('*');
 
         console.log('📋 Available plans:', plansData);
 
-        // Match by product_id from Stripe
-        const plan = plansData?.find((p: Plan) => {
-          // Get product ID from the price IDs in Stripe
-          return p.stripe_price_id_monthly === subData.plan_id || 
-                 p.stripe_price_id_yearly === subData.plan_id;
-        });
+        // Match by plan ID from backend
+        const plan = plansData?.find((p: Plan) => p.id === subData.plan_id);
 
         console.log('🎯 Matched plan:', plan);
         setCurrentPlan(plan || null);
