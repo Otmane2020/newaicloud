@@ -1,4 +1,4 @@
-import { X, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
@@ -11,19 +11,18 @@ export const AnnouncementBar = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="bg-gradient-announcement border-b border-primary-light/30 backdrop-blur-sm relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
+    <div className="bg-black border-b border-orange-500/30 backdrop-blur-sm relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-orange-500/10 animate-pulse" />
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 py-1 pr-8 sm:pr-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary animate-pulse flex-shrink-0" />
-            <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">
+            <span className="text-xs sm:text-sm font-bold text-orange-500 whitespace-nowrap">
               {t.announcement.limitedSale}
             </span>
           </div>
           <button
             onClick={() => navigate('/auth?mode=signup')}
-            className="px-3 sm:px-4 py-1 rounded-lg bg-secondary text-secondary-foreground font-semibold text-xs sm:text-sm hover:bg-secondary/80 transition-all hover:scale-105 whitespace-nowrap"
+            className="px-3 sm:px-4 py-1 rounded-lg bg-orange-500 text-white font-bold text-xs sm:text-sm hover:bg-orange-600 transition-all hover:scale-105 whitespace-nowrap shadow-lg shadow-orange-500/50"
           >
             {t.announcement.checkOut}
           </button>

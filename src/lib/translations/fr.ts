@@ -157,8 +157,8 @@ export const translations = {
 
   // ============= Offre promotionnelle =============
   announcement: {
-    limitedSale: "Offre limitée jusqu'à 30% de RÉDUCTION",
-    checkOut: "Découvrir",
+    limitedSale: "🔥 BLACK FRIDAY : Jusqu'à 30% de RÉDUCTION sur tous les plans",
+    checkOut: "Profiter de l'offre",
   },
 
   // ============= Collection Image Dialog =============
