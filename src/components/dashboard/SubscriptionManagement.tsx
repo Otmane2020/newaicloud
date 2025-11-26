@@ -98,42 +98,47 @@ export function SubscriptionManagement() {
     
     setPortalLoading(true);
     try {
-      // Use create-upgrade-invoice if user already has a subscription
+      // Use auto-upgrade-subscription if user already has a subscription
       if (currentPlan) {
-        console.log('🔄 Upgrading existing subscription...');
-        const { data, error } = await supabase.functions.invoke('create-upgrade-invoice', {
-          body: { new_price_id: plan.stripe_price_id_monthly }
+        console.log('🔄 Auto-upgrading existing subscription...');
+        const { data, error } = await supabase.functions.invoke('auto-upgrade-subscription', {
+          body: { 
+            new_price_id: plan.stripe_price_id_monthly,
+            new_plan_id: plan.id,
+            billing_period: 'monthly'
+          }
         });
 
         if (error) throw error;
 
-        if (data?.payment_required && data?.payment_url) {
-          // Redirect to payment page
+        if (data?.payment_url) {
+          // Proration invoice requires payment
           window.open(data.payment_url, '_blank');
-          toast.success('Redirection vers la page de paiement...');
+          toast.info('Veuillez compléter le paiement dans la nouvelle fenêtre');
         } else {
-          // No payment needed (proration is 0 or negative)
+          // No payment needed or upgrade applied for next cycle
           toast.success('Abonnement mis à niveau avec succès !');
           setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+            loadSubscriptionData();
+          }, 1000);
         }
       } else {
         // New subscription, use regular checkout
         console.log('🆕 Creating new subscription...');
         const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { priceId: plan.stripe_price_id_monthly }
+          body: { price_id: plan.stripe_price_id_monthly }
         });
 
         if (error) throw error;
 
         if (data?.url) {
-          window.location.href = data.url;
+          window.open(data.url, '_blank');
+          toast.info('Redirection vers le paiement...');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during upgrade:', error);
-      toast.error('Erreur lors de la mise à niveau');
+      toast.error(error.message || 'Erreur lors de la mise à niveau');
     } finally {
       setPortalLoading(false);
     }
