@@ -71,8 +71,35 @@ serve(async (req) => {
 
     console.log(`✅ Protecting ${protectedProducts.size} product IDs linked to subscription plans`);
 
-    // Step 2: Archive all products NOT in the protected list
-    console.log("🗑️  Archiving non-protected products and their prices...");
+    // PHASE 1: Cancel all active subscriptions FIRST (this allows products to be archived)
+    console.log("❌ PHASE 1: Canceling all active subscriptions...");
+    let canceledSubscriptionsCount = 0;
+    let hasMoreSubs = true;
+    let subStartingAfter: string | undefined;
+
+    while (hasMoreSubs) {
+      const subscriptionsResponse: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
+        status: "active",
+        limit: 100,
+        starting_after: subStartingAfter,
+      });
+
+      for (const subscription of subscriptionsResponse.data) {
+        await stripe.subscriptions.cancel(subscription.id);
+        canceledSubscriptionsCount++;
+        console.log(`✗ Canceled subscription: ${subscription.id} (customer: ${subscription.customer})`);
+      }
+
+      hasMoreSubs = subscriptionsResponse.has_more;
+      if (hasMoreSubs && subscriptionsResponse.data.length > 0) {
+        subStartingAfter = subscriptionsResponse.data[subscriptionsResponse.data.length - 1].id;
+      }
+    }
+
+    console.log(`📊 Phase 1 complete: ${canceledSubscriptionsCount} subscriptions canceled`);
+
+    // PHASE 2: Archive all products NOT in the protected list
+    console.log("🗑️ PHASE 2: Archiving non-protected products and their prices...");
     let archivedProductsCount = 0;
     let keptProductsCount = 0;
     let archivedPricesCount = 0;
@@ -126,35 +153,8 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Archived ${archivedProductsCount} products, kept ${keptProductsCount} products`);
+    console.log(`📊 Phase 2 complete: Archived ${archivedProductsCount} products, kept ${keptProductsCount} products`);
     console.log(`📊 Archived ${archivedPricesCount} prices, kept ${keptPricesCount} prices`);
-
-    // Step 3: Cancel all active subscriptions
-    console.log("❌ Canceling all active subscriptions...");
-    let canceledSubscriptionsCount = 0;
-    hasMore = true;
-    startingAfter = undefined;
-
-    while (hasMore) {
-      const subscriptionsResponse: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
-        status: "active",
-        limit: 100,
-        starting_after: startingAfter,
-      });
-
-      for (const subscription of subscriptionsResponse.data) {
-        await stripe.subscriptions.cancel(subscription.id);
-        canceledSubscriptionsCount++;
-        console.log(`✗ Canceled subscription: ${subscription.id} (customer: ${subscription.customer})`);
-      }
-
-      hasMore = subscriptionsResponse.has_more;
-      if (hasMore && subscriptionsResponse.data.length > 0) {
-        startingAfter = subscriptionsResponse.data[subscriptionsResponse.data.length - 1].id;
-      }
-    }
-
-    console.log(`📊 Canceled ${canceledSubscriptionsCount} subscriptions`);
 
     // Final report
     const report = {
