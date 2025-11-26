@@ -80,17 +80,21 @@ serve(async (req) => {
       );
     }
 
+    // Déterminer billing_period depuis Stripe
+    const interval = activeSubscription.items.data[0]?.price.recurring?.interval;
+    const billingPeriod = interval === 'year' ? 'yearly' : 'monthly';
+
     // Synchroniser la souscription dans notre DB (CRITICAL: use seller_id)
     const { error: upsertError } = await supabase
       .from('subscriptions')
       .upsert({
         seller_id: user.id,
         stripe_subscription_id: activeSubscription.id,
-        stripe_customer_id: customerId,
         status: activeSubscription.status,
         current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
         current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
         plan_id: plan.id,
+        billing_period: billingPeriod,
       }, {
         onConflict: 'seller_id'
       });
