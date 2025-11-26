@@ -76,21 +76,23 @@ export default function Onboarding() {
   useEffect(() => {
     const autoClaimIfNeeded = async () => {
       if (!user) return;
-      
+
       const shopifyPending = searchParams.get("shopify_pending");
       const checkoutSuccess = searchParams.get("checkout") === "success";
-      
+
       if (!shopifyPending) return;
-      
+
       // 🚫 RACE CONDITION FIX: Ne PAS s'exécuter si checkout=success
       // Dans ce cas, handleCheckSubscription gère TOUT (subscription + claim + import)
       if (checkoutSuccess) {
-        console.log("⏭️ [AUTO-CLAIM] Skipping - checkout=success detected, handleCheckSubscription will manage everything");
+        console.log(
+          "⏭️ [AUTO-CLAIM] Skipping - checkout=success detected, handleCheckSubscription will manage everything",
+        );
         return;
       }
-      
+
       console.log("🔍 [AUTO-CLAIM] No checkout success, checking if auto-claim needed", { shopifyPending });
-      
+
       try {
         // Check if user already has an active subscription
         const { data: profile } = await supabase
@@ -98,40 +100,40 @@ export default function Onboarding() {
           .select("subscription_status, current_plan_id")
           .eq("id", user.id)
           .single();
-        
+
         console.log("📋 [AUTO-CLAIM] Profile status:", profile);
-        
+
         if (profile?.subscription_status === "active" || profile?.subscription_status === "trialing") {
           console.log("✅ [AUTO-CLAIM] User has active subscription, auto-claiming Shopify");
-          
+
           // Check if already has a Shopify connection
           const { data: existingConnection } = await supabase
             .from("shopify_connections")
             .select("id")
             .eq("user_id", user.id)
             .maybeSingle();
-          
+
           if (existingConnection) {
             console.log("⚠️ [AUTO-CLAIM] Connection already exists, redirecting to dashboard");
             navigate("/dashboard?show_shopify_prompt=true");
             return;
           }
-          
+
           // Auto-claim and import will happen via backend trigger-auto-sync
           setClaimingShopify(true);
-          
+
           console.log("⏳ [AUTO-CLAIM] Ensuring auth is complete before claiming...");
           // S'assurer que l'auth est complète avant de claim
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           await claimShopifyConnection(shopifyPending);
-          
+
           // Rafraîchir le StoreContext pour afficher la nouvelle boutique
           await refreshStores();
-          
+
           // Attendre un peu pour que le realtime event se déclenche avant la redirection
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
           // Redirect - AutoSyncProgressDialog will show on dashboard via sessionStorage
           console.log("🎯 [AUTO-CLAIM] Redirecting to dashboard - import will continue in background");
           navigate("/dashboard?show_shopify_prompt=true");
@@ -142,7 +144,7 @@ export default function Onboarding() {
         setClaimingShopify(false);
       }
     };
-    
+
     autoClaimIfNeeded();
   }, [user, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -150,10 +152,10 @@ export default function Onboarding() {
     // ✅ IMPORTANT: Si retour de checkout Stripe sans user, rediriger vers login
     const checkoutSuccess = searchParams.get("checkout") === "success";
     const shopifyPending = searchParams.get("shopify_pending");
-    
+
     if (!user) {
       console.log("🔐 [ONBOARDING] No user detected");
-      
+
       if (checkoutSuccess && shopifyPending) {
         // Retour de Stripe checkout mais pas connecté → forcer le login
         console.log("🔄 [ONBOARDING] Checkout success but no session, redirecting to login");
@@ -205,10 +207,13 @@ export default function Onboarding() {
 
       // If has shopify_pending, let the auto-claim useEffect handle redirection
       const shopifyPending = searchParams.get("shopify_pending");
-      if (shopifyPending && (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")) {
+      if (
+        shopifyPending &&
+        (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")
+      ) {
         console.log("⏸️ Has shopify_pending and active subscription, waiting for auth to complete before claim");
         // Attendre que l'auth soit complète avant de claim
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return;
       }
 
@@ -236,7 +241,7 @@ export default function Onboarding() {
 
       if (subData?.subscribed) {
         console.log("✅ Active subscription found in Stripe");
-        
+
         // Update profile
         await supabase
           .from("profiles")
@@ -273,22 +278,18 @@ export default function Onboarding() {
 
       // Get user's product count to filter appropriate plans
       const { data: usage } = await supabase
-        .from('usage_tracking')
-        .select('products_count')
-        .eq('seller_id', user?.id)
-        .order('created_at', { ascending: false })
+        .from("usage_tracking")
+        .select("products_count")
+        .eq("seller_id", user?.id)
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       const productCount = usage?.products_count || 0;
-      console.log('📊 Onboarding: User has', productCount, 'products');
+      console.log("📊 Onboarding: User has", productCount, "products");
 
       // Récupérer le plan Trial séparément pour afficher les vraies limites
-      const { data: trialData } = await supabase
-        .from("subscription_plans")
-        .select("*")
-        .eq("id", "trial")
-        .single();
+      const { data: trialData } = await supabase.from("subscription_plans").select("*").eq("id", "trial").single();
 
       if (trialData) {
         setTrialPlan({
@@ -313,9 +314,7 @@ export default function Onboarding() {
       })) as Plan[];
 
       // CRITICAL: Filter out plans that can't accommodate user's product count
-      formattedPlans = formattedPlans.filter(plan => 
-        plan.max_products === -1 || plan.max_products >= productCount
-      );
+      formattedPlans = formattedPlans.filter((plan) => plan.max_products === -1 || plan.max_products >= productCount);
 
       setPlans(formattedPlans);
 
@@ -356,12 +355,15 @@ export default function Onboarding() {
     setCheckingSubscription(true);
 
     // 🔄 RETRY LOGIC: Attempt subscription check up to 3 times with progressive delays
-    const checkSubscriptionWithRetry = async (session: any, maxRetries = 3): Promise<{ subscribed: boolean } | null> => {
+    const checkSubscriptionWithRetry = async (
+      session: any,
+      maxRetries = 3,
+    ): Promise<{ subscribed: boolean } | null> => {
       const delays = [1000, 2000, 3000]; // 1s, 2s, 3s
-      
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         console.log(`🔍 [CHECK-SUBSCRIPTION] Attempt ${attempt}/${maxRetries}`);
-        
+
         try {
           const { data, error } = await supabase.functions.invoke("check-subscription", {
             headers: {
@@ -374,10 +376,10 @@ export default function Onboarding() {
             if (attempt < maxRetries) {
               const delay = delays[attempt - 1];
               console.log(`⏳ [CHECK-SUBSCRIPTION] Retrying in ${delay}ms...`);
-              toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, { 
-                id: "check-subscription-retry" 
+              toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, {
+                id: "check-subscription-retry",
               });
-              await new Promise(resolve => setTimeout(resolve, delay));
+              await new Promise((resolve) => setTimeout(resolve, delay));
               continue;
             }
             throw error;
@@ -392,11 +394,13 @@ export default function Onboarding() {
           // Not subscribed yet, retry if we have attempts left
           if (attempt < maxRetries) {
             const delay = delays[attempt - 1];
-            console.log(`⏳ [CHECK-SUBSCRIPTION] Not subscribed yet, retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`);
-            toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, { 
-              id: "check-subscription-retry" 
+            console.log(
+              `⏳ [CHECK-SUBSCRIPTION] Not subscribed yet, retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`,
+            );
+            toast.loading(`Vérification du paiement (tentative ${attempt}/${maxRetries})...`, {
+              id: "check-subscription-retry",
             });
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
 
@@ -404,7 +408,6 @@ export default function Onboarding() {
           console.warn("⚠️ [CHECK-SUBSCRIPTION] All retries exhausted, subscription not active");
           toast.dismiss("check-subscription-retry");
           return data;
-
         } catch (err) {
           console.error(`❌ [CHECK-SUBSCRIPTION] Attempt ${attempt} exception:`, err);
           if (attempt === maxRetries) {
@@ -443,7 +446,7 @@ export default function Onboarding() {
         // Fallback: try fix-stuck-subscriptions
         console.log("🔧 [CHECK-SUBSCRIPTION] Attempting to fix stuck subscription...");
         toast.loading("Activation de l'abonnement...", { id: "check-subscription" });
-        
+
         const { data: fixData, error: fixError } = await supabase.functions.invoke("fix-stuck-subscriptions");
 
         if (fixError) {
@@ -454,14 +457,14 @@ export default function Onboarding() {
 
         if (fixData?.fixed > 0) {
           toast.success(t.onboarding.verification.activated, { id: "check-subscription" });
-          
+
           // ✅ STEP 2: Now claim Shopify AFTER subscription is active
           const shopifyPending = searchParams.get("shopify_pending");
           if (shopifyPending && user?.id) {
             console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription activation");
             await claimShopifyConnection(shopifyPending);
           }
-          
+
           // Redirect immediately - AutoSyncProgressDialog will show on dashboard
           console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
           navigate("/dashboard?show_shopify_prompt=true");
@@ -473,32 +476,32 @@ export default function Onboarding() {
       if (subscriptionData?.subscribed) {
         console.log("✅ [CHECK-SUBSCRIPTION] Subscription verified and active");
         toast.success(t.onboarding.verification.success, { id: "check-subscription" });
-        
+
         // ✅ STEP 2: Now claim Shopify AFTER subscription is confirmed active
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending && user?.id) {
           console.log("🔗 [CHECK-SUBSCRIPTION] Claiming Shopify AFTER subscription verified");
-          
+
           try {
             await claimShopifyConnection(shopifyPending);
           } catch (claimError) {
             console.error("❌ [CHECK-SUBSCRIPTION] Claim error:", claimError);
-            
+
             toast.error("Erreur lors de la connexion Shopify", {
               description: "Veuillez réessayer depuis le tableau de bord.",
             });
-            
+
             // Log error to integration_failures
             await supabase.from("integration_failures").insert({
               user_id: user?.id,
               integration_type: "shopify",
               error_type: "claim_failed",
               error_message: claimError instanceof Error ? claimError.message : String(claimError),
-              context: { shopifyPending }
+              context: { shopifyPending },
             });
           }
         }
-        
+
         // Redirect immediately - AutoSyncProgressDialog will show on dashboard
         console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
         navigate("/dashboard?show_shopify_prompt=true");
@@ -509,17 +512,17 @@ export default function Onboarding() {
     } catch (error) {
       console.error("❌ [CHECK-SUBSCRIPTION] Fatal error:", error);
       toast.error(t.onboarding.errors.paymentError, { id: "check-subscription" });
-      
+
       // Log to integration_failures
       await supabase.from("integration_failures").insert({
         user_id: user?.id,
         integration_type: "stripe",
         error_type: "check_subscription_failed",
         error_message: error instanceof Error ? error.message : String(error),
-        context: { 
+        context: {
           shopifyPending: searchParams.get("shopify_pending"),
-          checkoutSuccess: searchParams.get("checkout") === "success"
-        }
+          checkoutSuccess: searchParams.get("checkout") === "success",
+        },
       });
     } finally {
       setCheckingSubscription(false);
@@ -537,7 +540,7 @@ export default function Onboarding() {
         .select("id, store_name")
         .eq("user_id", user?.id)
         .maybeSingle();
-      
+
       if (existingConnection) {
         console.log("⚠️ [CLAIM-SHOPIFY] Connection already exists:", existingConnection);
         toast.info("Boutique déjà connectée", {
@@ -620,15 +623,15 @@ export default function Onboarding() {
       if (claimData?.success) {
         console.log("✅ [CLAIM-SHOPIFY] Shopify connection claimed successfully", claimData);
         toast.success(t.sync.shopifyConnected);
-        
+
         // Stocker le nom/url de la boutique pour afficher le popup de synchro sur le dashboard
         if (claimData.shop) {
           const cleanName = String(claimData.shop)
-            .replace(/^https?:\/\//, '')
-            .replace(/\/$/, '');
-          sessionStorage.setItem('pending_sync', cleanName);
+            .replace(/^https?:\/\//, "")
+            .replace(/\/$/, "");
+          sessionStorage.setItem("pending_sync", cleanName);
         }
-        
+
         // Backend trigger-auto-sync will handle the import
         toast.info("Synchronisation automatique de vos produits en cours...", {
           duration: 5000,
@@ -644,7 +647,7 @@ export default function Onboarding() {
           error_message: JSON.stringify(claimData),
           context: { pendingToken },
         });
-        
+
         toast.error("Échec de la connexion", {
           description: "Veuillez réessayer ou contacter le support.",
         });
@@ -694,16 +697,16 @@ export default function Onboarding() {
       if (data?.success) {
         console.log("✅ [FREE-TRIAL] Trial activated, status is now 'trialing'");
         toast.success(language === "fr" ? "Essai Gratuit activé !" : "Free trial activated!");
-        
+
         // ✅ STEP 2: Claim Shopify in background (fire and forget)
         const shopifyPending = searchParams.get("shopify_pending");
         if (shopifyPending) {
           console.log("🔗 [FREE-TRIAL] Claiming Shopify connection in background");
-          
+
           // Fire and forget - don't wait for claim to complete
           claimShopifyConnection(shopifyPending).catch((claimError) => {
             console.error("❌ [FREE-TRIAL] Error claiming connection:", claimError);
-            
+
             // Log error to integration_failures
             supabase.from("integration_failures").insert({
               user_id: user.id,
@@ -721,7 +724,7 @@ export default function Onboarding() {
       }
     } catch (error) {
       console.error("💥 [FREE-TRIAL] Error:", error);
-      
+
       // Log error to integration_failures
       await supabase.from("integration_failures").insert({
         user_id: user?.id || "",
@@ -730,14 +733,17 @@ export default function Onboarding() {
         error_message: error instanceof Error ? error.message : "Unknown error",
         context: {},
       });
-      
-      toast.error(language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial", {
-        action: {
-          label: "Réessayer",
-          onClick: () => handleStartFreeTrial(),
+
+      toast.error(
+        language === "fr" ? "Erreur lors de l'activation de l'Essai Gratuit" : "Error activating free trial",
+        {
+          action: {
+            label: "Réessayer",
+            onClick: () => handleStartFreeTrial(),
+          },
         },
-      });
-      
+      );
+
       navigate("/dashboard");
     } finally {
       setLoading(false);
@@ -1035,11 +1041,7 @@ export default function Onboarding() {
           <Label htmlFor="onboarding-manual-promo" className="text-sm cursor-pointer">
             Utiliser un code promo personnalisé
           </Label>
-          <Switch
-            id="onboarding-manual-promo"
-            checked={useManualPromo}
-            onCheckedChange={setUseManualPromo}
-          />
+          <Switch id="onboarding-manual-promo" checked={useManualPromo} onCheckedChange={setUseManualPromo} />
         </div>
 
         {/* Plans */}
@@ -1047,9 +1049,10 @@ export default function Onboarding() {
           className={`grid grid-cols-1 ${!hasUsedTrial ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-[1600px] mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
         >
           {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
-          {!hasUsedTrial && (() => {
-            // Utiliser le vrai plan Trial depuis le state
-            if (!trialPlan) return null;
+          {!hasUsedTrial &&
+            (() => {
+              // Utiliser le vrai plan Trial depuis le state
+              if (!trialPlan) return null;
 
               return (
                 <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col">
@@ -1074,22 +1077,20 @@ export default function Onboarding() {
                   <div className="mb-6">
                     <div className="flex flex-col items-center justify-center gap-1">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold">
-                          {getCurrencySymbol(language)}0
-                        </span>
-                        <span className="text-muted-foreground text-base">
-                          /{t.onboarding.billing.monthly}
-                        </span>
+                        <span className="text-4xl font-bold">{getCurrencySymbol(language)}0</span>
+                        <span className="text-muted-foreground text-base">/{t.onboarding.billing.monthly}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center mt-2">{t.onboarding.trial.noCardRequired}</p>
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      {t.onboarding.trial.noCardRequired}
+                    </p>
                   </div>
 
                   <div className="space-y-3 mb-6 border-t py-4">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(trialPlan?.max_products || 50)} {language === "fr" ? "produits" : "products"}
+                        {formatLimit(trialPlan?.max_products || 10)} {language === "fr" ? "produits" : "products"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1196,9 +1197,7 @@ export default function Onboarding() {
                           language,
                         )}
                       </span>
-                      <span className="text-muted-foreground text-base">
-                        {language === "fr" ? "/mois" : "/month"}
-                      </span>
+                      <span className="text-muted-foreground text-base">{language === "fr" ? "/mois" : "/month"}</span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
@@ -1212,9 +1211,7 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatProductLimit(starterPlan.max_products)}
-                    </span>
+                    <span className="text-sm">{formatProductLimit(starterPlan.max_products)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1359,9 +1356,7 @@ export default function Onboarding() {
                           language,
                         )}
                       </span>
-                      <span className="text-muted-foreground text-base">
-                        {t.onboarding.planFeatures.perMonth}
-                      </span>
+                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-semibold text-muted-foreground line-through">
@@ -1388,9 +1383,7 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatProductLimit(selectedPlan.max_products)}
-                    </span>
+                    <span className="text-sm">{formatProductLimit(selectedPlan.max_products)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1521,9 +1514,7 @@ export default function Onboarding() {
                           language,
                         )}
                       </span>
-                      <span className="text-muted-foreground text-base">
-                        {t.onboarding.planFeatures.perMonth}
-                      </span>
+                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-semibold text-muted-foreground line-through">
@@ -1550,9 +1541,7 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6 border-t py-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-sm">
-                      {formatProductLimit(selectedPlan.max_products)}
-                    </span>
+                    <span className="text-sm">{formatProductLimit(selectedPlan.max_products)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1619,7 +1608,6 @@ export default function Onboarding() {
           })()}
         </div>
       </div>
-
     </div>
   );
 }
