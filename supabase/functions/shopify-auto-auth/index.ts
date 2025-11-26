@@ -156,43 +156,26 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion Shopify claimed");
 
-    // 7.5 Déclencher l'importation automatique des produits
+    // 7.5 Déclencher l'importation automatique complète (produits, collections, pages, articles)
     try {
-      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import produits automatique");
+      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet");
       
-      // Récupérer le store_id de la connexion créée
-      const { data: storeData } = await supabase
-        .from("shopify_connections")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("store_url", shop)
-        .single();
+      // Appeler trigger-auto-sync pour importer tous les types de contenu
+      const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+        }),
+      });
 
-      if (storeData?.id) {
-        // Extraire le shop handle (sans .myshopify.com)
-        const shopHandle = shop.replace(".myshopify.com", "");
-        
-        // Appeler import-products en mode service (sans JWT)
-        const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/import-products`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-          body: JSON.stringify({
-            shopName: shopHandle,
-            serviceMode: true,
-            userId: userId,
-            storeId: storeData.id,
-            autoImport: true,
-          }),
-        });
-
-        if (importResponse.ok) {
-          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import produits déclenché avec succès");
-        } else {
-          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
-        }
+      if (importResponse.ok) {
+        console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique complet déclenché avec succès");
+      } else {
+        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
       }
     } catch (importError) {
       // Ne pas bloquer l'auth si l'import échoue
