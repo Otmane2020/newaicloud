@@ -104,6 +104,7 @@ export default {
         'gradient-dark': 'var(--gradient-dark)',
         'gradient-subtle': 'var(--gradient-subtle)',
         'gradient-announcement': 'var(--gradient-announcement)',
+        'grid-white': 'linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
       },
       boxShadow: {
         'primary': 'var(--shadow-primary)',
