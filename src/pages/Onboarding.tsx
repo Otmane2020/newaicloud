@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components14 days free/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
