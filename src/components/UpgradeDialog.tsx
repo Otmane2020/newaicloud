@@ -226,77 +226,15 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       }
 
       // Check if user has PAID active subscription (not trialing)
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('stripe_subscription_id, status')
-        .eq('seller_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+      const hasPaidSubscription =
+        profile?.subscription_status === 'active' ||
+        profile?.subscription_status === 'past_due';
+      const hasStripeCustomer = !!profile?.stripe_customer_id;
 
-      // 🔧 CRITICAL FIX: If no subscription but user has stripe_customer_id, sync from Stripe
-      if (!subscription?.stripe_subscription_id && profile?.stripe_customer_id) {
-        console.log('🔄 [UpgradeDialog] No local subscription found but user has Stripe customer ID - attempting sync');
-        
-        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-stripe-subscription', {
-          body: { customerId: profile.stripe_customer_id }
-        });
-
-        if (syncError) {
-          console.error('❌ [UpgradeDialog] Sync error:', syncError);
-          // Continue to create-checkout as fallback
-        } else if (syncResult?.hasActiveSubscription) {
-          console.log('✅ [UpgradeDialog] Successfully synced subscription from Stripe');
-          
-          // CRITICAL: Reload subscription from DB after sync
-          const { data: reloadedSub } = await supabase
-            .from('subscriptions')
-            .select('stripe_subscription_id, status')
-            .eq('seller_id', user.id)
-            .eq('status', 'active')
-            .maybeSingle();
-
-          if (reloadedSub?.stripe_subscription_id) {
-            console.log('✅ [UpgradeDialog] Subscription now in local DB, proceeding with proration upgrade');
-            
-            // Use update-subscription with proration
-            const { data, error } = await supabase.functions.invoke('update-subscription', {
-              body: {
-                new_plan_id: selectedPlanId,
-                billing_period: 'monthly',
-              },
-            });
-
-            if (error) throw error;
-
-            // Handle response format with payment info
-            if (data?.payment?.required && data?.payment?.invoiceUrl) {
-              window.open(data.payment.invoiceUrl, '_blank');
-              toast.info(
-                "Veuillez finaliser le paiement pour activer votre nouveau plan.",
-                { duration: 6000 }
-              );
-            } else if (data?.success) {
-              toast.success(`✅ ${t.dialogs.upgrade.planUpgraded}`, { duration: 5000 });
-            }
-
-            if (onUpgradeComplete) {
-              onUpgradeComplete();
-            }
-            onOpenChange(false);
-            return;
-          }
-        }
-      }
-
-      const hasActivePaidSubscription = !!subscription?.stripe_subscription_id;
-
-      // Only use update-subscription for genuine PAID subscriptions
-      if (hasActivePaidSubscription && !isInTrial) {
+      // Use update-subscription + Stripe proration whenever we detect a paid subscription
+      if (hasPaidSubscription && hasStripeCustomer && !isInTrial) {
         console.log('✅ User has paid subscription - using update-subscription for proration');
         
-        const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
-        if (!selectedPlan) throw new Error('Plan not found');
-
         const { data, error } = await supabase.functions.invoke('update-subscription', {
           body: {
             new_plan_id: selectedPlanId,
@@ -306,7 +244,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
         if (error) throw error;
 
-        // Handle new response format with payment info
+        // Handle response format with payment info (prorated invoice)
         if (data?.payment?.required && data?.payment?.invoiceUrl) {
           window.open(data.payment.invoiceUrl, '_blank');
           toast.info(
@@ -324,6 +262,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             toast.success(t.dialogs.upgrade.planUpgraded, { duration: 5000 });
           }
         }
+
         if (onUpgradeComplete) onUpgradeComplete();
         onOpenChange(false);
         return;
