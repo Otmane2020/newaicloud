@@ -278,7 +278,7 @@ serve(async (req) => {
     // 🔥 2. TEST FUNCTIONS IN PARALLEL BATCHES
     // --------------------------------------
     const batchSize = 10;
-
+    
     for (let i = 0; i < allFunctions.length; i += batchSize) {
       // Check global timeout
       if (Date.now() - globalStartTime > GLOBAL_TIMEOUT) {
@@ -287,7 +287,7 @@ serve(async (req) => {
       }
 
       const batch = allFunctions.slice(i, i + batchSize);
-
+      
       await Promise.all(
         batch.map(async (fn) => {
           const category = categorize(fn);
@@ -347,14 +347,9 @@ serve(async (req) => {
               timestamp: new Date().toISOString(),
             });
 
-            failed.push({
-              name: fn,
-              category,
-              error: err instanceof Error ? err.message : "Unknown error",
-              responseTime: ms,
-            });
+            failed.push({ name: fn, category, error: err instanceof Error ? err.message : "Unknown error", responseTime: ms });
           }
-        }),
+        })
       );
     }
 
@@ -399,7 +394,7 @@ serve(async (req) => {
 
       await supabase.functions.invoke("send-notification-email", {
         body: {
-          to: "oben.rockmangmail.com",
+          to: "oben.rockman@gmail.com",
           subject: `🚨 ${failed.length} Supabase Functions en erreur`,
           html,
         },
