@@ -6158,8 +6158,8 @@ export const translations = {
     processing: "Processing...",
   },
   announcement: {
-    limitedSale: "Limited-time Sale up to 30% OFF",
-    checkOut: "Check Out"
+    limitedSale: "🔥 BLACK FRIDAY: Up to 30% OFF all plans",
+    checkOut: "Get the Deal"
   },
   apiKeys: {
     title: "API Keys",
