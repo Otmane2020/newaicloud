@@ -84,6 +84,16 @@ serve(async (req) => {
     const interval = activeSubscription.items.data[0]?.price.recurring?.interval;
     const billingPeriod = interval === 'year' ? 'yearly' : 'monthly';
 
+    // Gérer les timestamps null/undefined
+    const periodStart = activeSubscription.current_period_start 
+      ? new Date(activeSubscription.current_period_start * 1000).toISOString()
+      : null;
+    const periodEnd = activeSubscription.current_period_end
+      ? new Date(activeSubscription.current_period_end * 1000).toISOString()
+      : null;
+
+    log('Period dates', { periodStart, periodEnd });
+
     // Synchroniser la souscription dans notre DB (CRITICAL: use seller_id)
     const { error: upsertError } = await supabase
       .from('subscriptions')
@@ -91,8 +101,8 @@ serve(async (req) => {
         seller_id: user.id,
         stripe_subscription_id: activeSubscription.id,
         status: activeSubscription.status,
-        current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
         plan_id: plan.id,
         billing_period: billingPeriod,
       }, {

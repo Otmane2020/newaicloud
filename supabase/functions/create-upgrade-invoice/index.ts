@@ -101,6 +101,14 @@ serve(async (req) => {
               const interval = activeSubscription.items.data[0]?.price.recurring?.interval;
               const billingPeriod = interval === 'year' ? 'yearly' : 'monthly';
 
+              // Gérer les timestamps null/undefined
+              const periodStart = activeSubscription.current_period_start 
+                ? new Date(activeSubscription.current_period_start * 1000).toISOString()
+                : null;
+              const periodEnd = activeSubscription.current_period_end
+                ? new Date(activeSubscription.current_period_end * 1000).toISOString()
+                : null;
+
               const { error: upsertErr } = await supabase
                 .from("subscriptions")
                 .upsert(
@@ -108,8 +116,8 @@ serve(async (req) => {
                     seller_id: userId,
                     stripe_subscription_id: activeSubscription.id,
                     status: activeSubscription.status,
-                    current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
-                    current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+                    current_period_start: periodStart,
+                    current_period_end: periodEnd,
                     plan_id: plan.id,
                     billing_period: billingPeriod,
                   },
@@ -176,11 +184,24 @@ serve(async (req) => {
       ],
     };
 
+    // Vérifier que le prorata est possible
+    const canProrate = 
+      stripeSub.status === "active" &&
+      newPrice.currency === currentItem.price.currency;
+
+    if (!canProrate && isUpgrade) {
+      log("WARNING: Proration not possible", { 
+        status: stripeSub.status, 
+        currentCurrency: currentItem.price.currency,
+        newCurrency: newPrice.currency 
+      });
+    }
+
     if (isUpgrade) {
       // ⬆️ UPGRADE → PRORATA avec facture immédiate
-      updatePayload.proration_behavior = "create_prorations";
+      updatePayload.proration_behavior = canProrate ? "create_prorations" : "none";
       updatePayload.billing_cycle_anchor = "unchanged";
-      updatePayload.payment_behavior = "pending_if_incomplete";
+      updatePayload.payment_behavior = canProrate ? "pending_if_incomplete" : "allow_incomplete";
     } else {
       // ⬇️ DOWNGRADE → pas de proration, changement au prochain cycle
       updatePayload.proration_behavior = "none";
