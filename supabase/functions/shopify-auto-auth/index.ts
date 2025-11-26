@@ -111,6 +111,7 @@ serve(async (req) => {
 
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: userId,
+        email: email,
         has_used_trial: true,
         trial_ends_at: trialEndDate.toISOString(),
         subscription_status: "trialing",
@@ -157,7 +158,15 @@ serve(async (req) => {
 
     // 8. Créer un client Supabase pour générer une session utilisateur
     // Utiliser signInWithPassword avec les credentials créés
-    const authClient = createClient(SUPABASE_URL, Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!);
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!SUPABASE_ANON_KEY) {
+      console.error("[SHOPIFY-AUTO-AUTH] SUPABASE_ANON_KEY manquant");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
       email,
