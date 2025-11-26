@@ -41,17 +41,24 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Données email invalides - from, to ou email_id manquant");
     }
 
-    // Éviter la boucle : ne pas traiter les emails envoyés par nous-mêmes (copies automatiques)
-    if (from.includes('support@newai.sale') || subject?.includes('[Copie]')) {
-      console.log("⚠️ Email auto-généré détecté, ignoré pour éviter la boucle");
-      return new Response(JSON.stringify({ 
-        success: true,
-        message: 'Email auto-généré ignoré',
-        skipped: true
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+    // Détection de boucle améliorée
+    if (from.includes('newai.sale') || 
+        subject?.includes('[Copie]') || 
+        subject?.includes('[NewAI Copie]')) {
+      console.log("⚠️ Email auto-généré détecté, ignoré pour éviter les boucles");
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          skipped: true,
+          message: 'Email auto-généré ignoré',
+          emailId: null 
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Use Resend Receiving API to fetch the full email content
@@ -198,92 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("  - Body length:", cleanBody.length);
     console.log("  - Attachments:", attachments.length);
 
-    // Envoyer automatiquement une copie à oben.rockman@gmail.com
-    console.log("📧 Envoi d'une copie à oben.rockman@gmail.com...");
-    
-    // Construire le contenu de l'email avec le body disponible
-    const emailBodyForCopy = emailHtml || 
-      (cleanBody ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${cleanBody}</pre>` : '') ||
-      (emailText ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${emailText}</pre>` : '') ||
-      (data.text ? `<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; margin: 0;">${data.text}</pre>` : '') ||
-      (data.html ? data.html : '') ||
-      '<p style="color: #64748b; font-style: italic;">Contenu de l\'email non disponible</p>';
-    
-    console.log("📝 Body pour copie - longueur:", emailBodyForCopy.length);
-    
-    try {
-      const forwardResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "NewAI Notification <notifications@newai.sale>",
-          to: ["oben.rockman@gmail.com"],
-          subject: `[NewAI Copie] ${subject || 'Sans objet'}`,
-          html: `
-            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px; color: #64748b;">
-                  <strong>📧 Copie automatique d'un email reçu sur support@newai.sale</strong>
-                </p>
-              </div>
-              
-              <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                <table style="width: 100%; font-size: 14px;">
-                  <tr>
-                    <td style="color: #64748b; padding: 4px 0; width: 80px;"><strong>De:</strong></td>
-                    <td style="color: #1e293b; padding: 4px 0;">${from}</td>
-                  </tr>
-                  <tr>
-                    <td style="color: #64748b; padding: 4px 0;"><strong>À:</strong></td>
-                    <td style="color: #1e293b; padding: 4px 0;">${Array.isArray(to) ? to[0] : to}</td>
-                  </tr>
-                  <tr>
-                    <td style="color: #64748b; padding: 4px 0;"><strong>Sujet:</strong></td>
-                    <td style="color: #1e293b; padding: 4px 0;">${subject || 'Sans objet'}</td>
-                  </tr>
-                  ${attachments.length > 0 ? `
-                  <tr>
-                    <td style="color: #64748b; padding: 4px 0;"><strong>PJ:</strong></td>
-                    <td style="color: #1e293b; padding: 4px 0;">${attachments.length} pièce(s) jointe(s)</td>
-                  </tr>
-                  ` : ''}
-                </table>
-              </div>
-              
-              <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white;">
-                <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #1e293b;">Message:</h3>
-                ${emailBodyForCopy}
-              </div>
-              
-              ${attachments.length > 0 ? `
-              <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;">
-                <p style="margin: 0; font-size: 14px; color: #92400e;">
-                  ⚠️ Cet email contient ${attachments.length} pièce(s) jointe(s). Consultez la plateforme NewAI pour y accéder.
-                </p>
-              </div>
-              ` : ''}
-              
-              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-                Email reçu le ${new Date().toLocaleString('fr-FR')} • ID: ${email_id}
-              </div>
-            </div>
-          `,
-        }),
-      });
-
-      if (forwardResponse.ok) {
-        console.log("✅ Copie envoyée à oben.rockman@gmail.com");
-      } else {
-        const errorText = await forwardResponse.text();
-        console.error("❌ Erreur lors de l'envoi de la copie:", errorText);
-      }
-    } catch (forwardError: any) {
-      console.error("❌ Erreur lors de l'envoi de la copie:", forwardError.message);
-      // Continue même si l'envoi de la copie échoue
-    }
+    // Forwarding supprimé pour éviter les boucles d'emails
 
     return new Response(JSON.stringify({ 
       success: true,

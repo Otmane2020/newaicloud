@@ -67,6 +67,11 @@ interface EmailStats {
   drafts: number;
   trash: number;
   spam: number;
+  unreadInbox?: number;
+  unreadSent?: number;
+  unreadDrafts?: number;
+  unreadTrash?: number;
+  unreadSpam?: number;
 }
 
 export function EmailInbox() {
@@ -144,6 +149,11 @@ export function EmailInbox() {
         drafts: data?.filter((e) => e.folder === "drafts").length || 0,
         trash: data?.filter((e) => e.folder === "trash").length || 0,
         spam: data?.filter((e) => e.folder === "spam").length || 0,
+        unreadInbox: data?.filter((e) => e.direction === "incoming" && !e.is_read).length || 0,
+        unreadSent: data?.filter((e) => e.direction === "outgoing" && !e.is_read).length || 0,
+        unreadDrafts: data?.filter((e) => e.folder === "drafts" && !e.is_read).length || 0,
+        unreadTrash: data?.filter((e) => e.folder === "trash" && !e.is_read).length || 0,
+        unreadSpam: data?.filter((e) => e.folder === "spam" && !e.is_read).length || 0,
       };
 
       setEmailStats(stats);
@@ -547,80 +557,293 @@ export function EmailInbox() {
           </div>
 
           <ScrollArea className="h-[calc(100vh-300px)]">
-            <div className="space-y-2">
-              {filteredEmails.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucun email dans ce dossier</p>
-              ) : (
-                filteredEmails.map((email) => (
-                  <div
-                    key={email.id}
-                    className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${
-                      !email.is_read ? "bg-primary/5 border-primary/20" : "bg-background"
-                    }`}
-                    onClick={() => {
-                      setSelectedEmail(email);
-                      if (!email.is_read) {
-                        markAsRead(email.id);
-                      }
-                    }}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1 flex items-start gap-2">
-                        {!email.is_read && <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />}
-                        <div className="flex-1">
-                          <p
-                            className={cn(
-                              !email.is_read ? "font-bold text-foreground" : "font-medium text-muted-foreground",
-                            )}
-                          >
-                            {activeFolder === "sent" ? `À: ${email.to_email}` : `De: ${email.from_email}`}
-                          </p>
-                          <p
-                            className={cn(
-                              "text-sm",
-                              !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground",
-                            )}
-                          >
-                            {email.subject}
-                          </p>
+            {filteredEmails.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Aucun email dans ce dossier</p>
+            ) : (
+              <div className="space-y-6">
+                {(() => {
+                  const now = new Date();
+                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  const weekAgo = new Date(today);
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+
+                  const groups = {
+                    today: filteredEmails.filter(e => new Date(e.created_at) >= today),
+                    yesterday: filteredEmails.filter(e => {
+                      const date = new Date(e.created_at);
+                      return date >= yesterday && date < today;
+                    }),
+                    thisWeek: filteredEmails.filter(e => {
+                      const date = new Date(e.created_at);
+                      return date >= weekAgo && date < yesterday;
+                    }),
+                    older: filteredEmails.filter(e => new Date(e.created_at) < weekAgo)
+                  };
+
+                  return (
+                    <>
+                      {groups.today.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1">Aujourd'hui</h3>
+                          <div className="space-y-2">
+                            {groups.today.map((email) => (
+                              <div
+                                key={email.id}
+                                onClick={() => {
+                                  setSelectedEmail(email);
+                                  if (!email.is_read) {
+                                    markAsRead(email.id);
+                                  }
+                                }}
+                                className={cn(
+                                  "p-4 border rounded-lg cursor-pointer transition-colors",
+                                  !email.is_read 
+                                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
+                                    : "bg-background hover:bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4 mb-2">
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    {!email.is_read && (
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={cn(
+                                        "font-medium truncate text-sm",
+                                        !email.is_read && "font-bold text-foreground"
+                                      )}>
+                                        {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
+                                      </p>
+                                      <p className={cn(
+                                        "text-sm mb-1 truncate",
+                                        !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"
+                                      )}>
+                                        {email.subject}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                    {getStatusBadge(email.status)}
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {format(new Date(email.created_at), 'HH:mm', { locale: fr })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {email.body?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                                </p>
+                                {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <FileText className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? 's' : ''} jointe{email.metadata.attachments_count > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {getStatusBadge(email.status)}
-                        {!email.is_read && activeFolder === "inbox" && (
-                          <Badge variant="default" className="text-xs">
-                            Nouveau
-                          </Badge>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(email.created_at), "dd MMM HH:mm", { locale: fr })}
-                        </p>
-                      </div>
-                    </div>
-                    <p
-                      className={cn(
-                        "text-sm line-clamp-2",
-                        !email.is_read ? "font-medium text-foreground" : "text-muted-foreground",
                       )}
-                    >
-                      {email.body ||
-                        email.html_body?.replace(/<[^>]+>/g, "").substring(0, 100) ||
-                        "Aucun aperçu disponible"}
-                    </p>
-                    {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <FileText className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? "s" : ""}{" "}
-                          jointe{email.metadata.attachments_count > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    )}
-                    {email.error_message && <p className="text-xs text-red-600 mt-2">Erreur: {email.error_message}</p>}
-                  </div>
-                ))
-              )}
-            </div>
+
+                      {groups.yesterday.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1">Hier</h3>
+                          <div className="space-y-2">
+                            {groups.yesterday.map((email) => (
+                              <div
+                                key={email.id}
+                                onClick={() => {
+                                  setSelectedEmail(email);
+                                  if (!email.is_read) {
+                                    markAsRead(email.id);
+                                  }
+                                }}
+                                className={cn(
+                                  "p-4 border rounded-lg cursor-pointer transition-colors",
+                                  !email.is_read 
+                                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
+                                    : "bg-background hover:bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4 mb-2">
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    {!email.is_read && (
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={cn(
+                                        "font-medium truncate text-sm",
+                                        !email.is_read && "font-bold text-foreground"
+                                      )}>
+                                        {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
+                                      </p>
+                                      <p className={cn(
+                                        "text-sm mb-1 truncate",
+                                        !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"
+                                      )}>
+                                        {email.subject}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                    {getStatusBadge(email.status)}
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {format(new Date(email.created_at), 'HH:mm', { locale: fr })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {email.body?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                                </p>
+                                {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <FileText className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? 's' : ''} jointe{email.metadata.attachments_count > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {groups.thisWeek.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1">Cette semaine</h3>
+                          <div className="space-y-2">
+                            {groups.thisWeek.map((email) => (
+                              <div
+                                key={email.id}
+                                onClick={() => {
+                                  setSelectedEmail(email);
+                                  if (!email.is_read) {
+                                    markAsRead(email.id);
+                                  }
+                                }}
+                                className={cn(
+                                  "p-4 border rounded-lg cursor-pointer transition-colors",
+                                  !email.is_read 
+                                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
+                                    : "bg-background hover:bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4 mb-2">
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    {!email.is_read && (
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={cn(
+                                        "font-medium truncate text-sm",
+                                        !email.is_read && "font-bold text-foreground"
+                                      )}>
+                                        {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
+                                      </p>
+                                      <p className={cn(
+                                        "text-sm mb-1 truncate",
+                                        !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"
+                                      )}>
+                                        {email.subject}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                    {getStatusBadge(email.status)}
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {format(new Date(email.created_at), 'dd MMM', { locale: fr })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {email.body?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                                </p>
+                                {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <FileText className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? 's' : ''} jointe{email.metadata.attachments_count > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {groups.older.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1">Plus ancien</h3>
+                          <div className="space-y-2">
+                            {groups.older.map((email) => (
+                              <div
+                                key={email.id}
+                                onClick={() => {
+                                  setSelectedEmail(email);
+                                  if (!email.is_read) {
+                                    markAsRead(email.id);
+                                  }
+                                }}
+                                className={cn(
+                                  "p-4 border rounded-lg cursor-pointer transition-colors",
+                                  !email.is_read 
+                                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
+                                    : "bg-background hover:bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4 mb-2">
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    {!email.is_read && (
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={cn(
+                                        "font-medium truncate text-sm",
+                                        !email.is_read && "font-bold text-foreground"
+                                      )}>
+                                        {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
+                                      </p>
+                                      <p className={cn(
+                                        "text-sm mb-1 truncate",
+                                        !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"
+                                      )}>
+                                        {email.subject}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                    {getStatusBadge(email.status)}
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {format(new Date(email.created_at), 'dd/MM/yy', { locale: fr })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {email.body?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                                </p>
+                                {email.metadata?.attachments_count && email.metadata.attachments_count > 0 && (
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <FileText className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {email.metadata.attachments_count} pièce{email.metadata.attachments_count > 1 ? 's' : ''} jointe{email.metadata.attachments_count > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </ScrollArea>
 
           {/* Email Detail Dialog */}
