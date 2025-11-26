@@ -17,25 +17,40 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Read request body first to check for serviceMode
+    const body = await req.json().catch(() => ({}));
+    const { serviceMode, userId: serviceModeUserId } = body;
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
-    }
+    
+    // Service mode: use provided userId without JWT validation
+    let user: any;
+    let supabase: any;
+    
+    if (serviceMode === true && serviceModeUserId) {
+      console.log('[IMPORT-COLLECTIONS] 🔧 SERVICE MODE: Using provided userId:', serviceModeUserId);
+      supabase = createClient(supabaseUrl, supabaseKey);
+      user = { id: serviceModeUserId };
+    } else {
+      // Normal mode: require JWT authentication
+      if (!authHeader) {
+        throw new Error("Missing authorization header");
+      }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+      supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
 
-    if (userError || !user) {
-      throw new Error("Unauthorized");
+      if (userError || !authUser) {
+        throw new Error("Unauthorized");
+      }
+      
+      user = authUser;
     }
 
     console.log(`👤 [IMPORT-COLLECTIONS] User: ${user.id}`);
-
-    // Read request body parameters
-    const body = await req.json().catch(() => ({}));
     const { shopName: bodyShopName, storeId: bodyStoreId } = body;
     
     console.log(`📦 [IMPORT-COLLECTIONS] Body params:`, {
@@ -267,16 +282,16 @@ Deno.serve(async (req: Request) => {
       console.error(`⚠️ [IMPORT-COLLECTIONS] Error fetching existing collections:`, fetchError);
     } else if (existingCollections) {
       const collectionsToDelete = existingCollections.filter(
-        existing => !shopifyCollectionIds.includes(existing.shopify_collection_id)
+        (existing: any) => !shopifyCollectionIds.includes(existing.shopify_collection_id)
       );
       
       if (collectionsToDelete.length > 0) {
         console.log(`🗑️ [IMPORT-COLLECTIONS] Found ${collectionsToDelete.length} collections to delete:`);
-        collectionsToDelete.forEach(c => {
+        collectionsToDelete.forEach((c: any) => {
           console.log(`   - ${c.title} (ID: ${c.shopify_collection_id})`);
         });
         
-        const idsToDelete = collectionsToDelete.map(c => c.id);
+        const idsToDelete = collectionsToDelete.map((c: any) => c.id);
         const { error: deleteError } = await supabase
           .from('shopify_collections')
           .delete()

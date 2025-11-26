@@ -87,40 +87,60 @@ Deno.serve(async (req: Request) => {
   try {
     console.log('🚀 Starting import-products function');
     
-    // Authenticate user first with anon key
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('❌ No authorization header');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    console.log('🔑 Authenticating user...');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError || !user) {
-      console.error('❌ Authentication failed:', authError);
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
+    // Parse request body first to check for serviceMode
     const requestBody = await req.json();
+    const { serviceMode, userId: serviceModeUserId } = requestBody;
+    
+    const authHeader = req.headers.get('Authorization');
+    
+    // Service mode: use provided userId without JWT validation
+    let user: any;
+    let supabaseClient: any;
+    let token: string | null = null;
+    
+    if (serviceMode === true && serviceModeUserId) {
+      console.log('[IMPORT-PRODUCTS] 🔧 SERVICE MODE: Using provided userId:', serviceModeUserId);
+      supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      user = { id: serviceModeUserId };
+      // No token in service mode
+    } else {
+      // Normal mode: require JWT authentication
+      if (!authHeader) {
+        console.error('❌ No authorization header');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      token = authHeader.replace('Bearer ', '');
+      supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      );
+
+      console.log('🔑 Authenticating user...');
+      const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser(token);
+      if (authError || !authUser) {
+        console.error('❌ Authentication failed:', authError);
+        console.error('Auth error:', authError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      user = authUser;
+    }
     
     // Get auto-import config
     const autoImportLimit = requestBody.autoImportLimit;
@@ -354,16 +374,36 @@ Deno.serve(async (req: Request) => {
         .eq('id', storeId);
     }
 
-    const { data: limitsData, error: limitsError } = await supabaseServiceClient.functions.invoke(
-      'check-usage-limits',
-      {
-        headers: { Authorization: `Bearer ${token}` },
+    // Only check limits if we have a token (not in service mode)
+    let limitsData: any = null;
+    if (token) {
+      const { data, error: limitsError } = await supabaseServiceClient.functions.invoke(
+        'check-usage-limits',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      
+      if (limitsError) {
+        console.error('❌ Error fetching limits:', limitsError);
+        throw new Error('Failed to fetch usage limits');
       }
-    );
-
-    if (limitsError) {
-      console.error('❌ Error fetching limits:', limitsError);
-      throw new Error('Failed to fetch usage limits');
+      limitsData = data;
+    } else {
+      // Service mode: get limits from profile directly
+      const { data: profile } = await supabaseServiceClient
+        .from('profiles')
+        .select('current_plan_id')
+        .eq('id', user.id)
+        .single();
+      
+      const { data: plan } = await supabaseServiceClient
+        .from('subscription_plans')
+        .select('max_products')
+        .eq('id', profile?.current_plan_id)
+        .single();
+      
+      limitsData = { limits: { max_products: plan?.max_products || 100 } };
     }
 
     console.log('📊 Raw limitsData:', JSON.stringify(limitsData, null, 2));
@@ -1005,15 +1045,19 @@ Deno.serve(async (req: Request) => {
     let articlesImported = 0;
     try {
       console.log('📰 Importing Shopify blog articles...');
+      const articlesInvokeBody: any = { 
+        shopName: cleanShopName,
+        authToken: authToken,
+        storeId: storeId
+      };
+      
+      const articlesInvokeHeaders: any = token ? {
+        headers: { Authorization: `Bearer ${token}` }
+      } : {};
+      
       const articlesResult = await supabaseServiceClient.functions.invoke('import-shopify-articles', {
-        body: { 
-          shopName: cleanShopName,
-          authToken: authToken,
-          storeId: storeId
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        body: articlesInvokeBody,
+        ...articlesInvokeHeaders
       });
 
       if (articlesResult.data && articlesResult.data.success) {
@@ -1086,17 +1130,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // 🔗 Sync product-collection relationships after import (async, don't block)
-    console.log(`🔗 Starting async product-collection sync for storeId: ${storeId}...`);
-    supabaseClient.functions.invoke('sync-product-collections', {
-      headers: { Authorization: authHeader },
-      body: { storeId: storeId }
-    }).then((syncResult) => {
-      if (syncResult.error) {
-        console.error('⚠️ Product-collection sync failed:', syncResult.error);
-      } else {
-        console.log('✅ Product-collection relationships synced:', syncResult.data);
-      }
-    }).catch((err) => console.error('⚠️ Sync error:', err));
+    // Only if we have a token (not in service mode)
+    if (token) {
+      console.log(`🔗 Starting async product-collection sync for storeId: ${storeId}...`);
+      supabaseClient.functions.invoke('sync-product-collections', {
+        headers: { Authorization: authHeader },
+        body: { storeId: storeId }
+      }).then((syncResult: any) => {
+        if (syncResult.error) {
+          console.error('⚠️ Product-collection sync failed:', syncResult.error);
+        } else {
+          console.log('✅ Product-collection relationships synced:', syncResult.data);
+        }
+      }).catch((err: any) => console.error('⚠️ Sync error:', err));
+    }
 
     return new Response(
       JSON.stringify({

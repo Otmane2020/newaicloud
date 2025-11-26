@@ -17,25 +17,40 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Parse request body first to check for serviceMode
+    const body = await req.json().catch(() => ({}));
+    const { serviceMode, userId: serviceModeUserId, store_id } = body;
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
-    }
+    
+    // Service mode: use provided userId without JWT validation
+    let user: any;
+    let supabase: any;
+    
+    if (serviceMode === true && serviceModeUserId) {
+      console.log('[IMPORT-PAGES] 🔧 SERVICE MODE: Using provided userId:', serviceModeUserId);
+      supabase = createClient(supabaseUrl, supabaseKey);
+      user = { id: serviceModeUserId };
+    } else {
+      // Normal mode: require JWT authentication
+      if (!authHeader) {
+        throw new Error("Missing authorization header");
+      }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+      supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
 
-    if (userError || !user) {
-      throw new Error("Unauthorized");
+      if (userError || !authUser) {
+        throw new Error("Unauthorized");
+      }
+      
+      user = authUser;
     }
 
     console.log(`👤 [IMPORT-PAGES] User: ${user.id}`);
-
-    // Parse request body for optional store_id
-    const { store_id } = await req.json().catch(() => ({}));
     console.log(`🏪 [IMPORT-PAGES] Store ID from request: ${store_id || 'none (using first active)'}`);
 
     // Get user's Shopify connection
@@ -228,16 +243,16 @@ Deno.serve(async (req: Request) => {
       console.error(`⚠️ [IMPORT-PAGES] Error fetching existing pages:`, fetchError);
     } else if (existingPages) {
       const pagesToDelete = existingPages.filter(
-        existing => existing.shopify_page_id && !shopifyPageIds.includes(existing.shopify_page_id)
+        (existing: any) => existing.shopify_page_id && !shopifyPageIds.includes(existing.shopify_page_id)
       );
       
       if (pagesToDelete.length > 0) {
         console.log(`🗑️ [IMPORT-PAGES] Found ${pagesToDelete.length} pages to delete:`);
-        pagesToDelete.forEach(p => {
+        pagesToDelete.forEach((p: any) => {
           console.log(`   - ${p.title} (Shopify ID: ${p.shopify_page_id})`);
         });
         
-        const idsToDelete = pagesToDelete.map(p => p.id);
+        const idsToDelete = pagesToDelete.map((p: any) => p.id);
         const { error: deleteError } = await supabase
           .from('shopify_pages')
           .delete()
