@@ -95,8 +95,10 @@ export default function ShopifyConnectionsList() {
             .replace(/^https?:\/\//, '')
             .replace(/\.myshopify\.com.*$/, '');
 
-          // Only update if store_name is null OR matches the technical name
-          const needsUpdate = !conn.store_name || conn.store_name === technicalName;
+          // Only update if store_name is null, matches the technical name, OR contains .myshopify.com (URL stored as name)
+          const needsUpdate = !conn.store_name || 
+                              conn.store_name === technicalName || 
+                              conn.store_name.includes('.myshopify.com');
           
           console.log(`📦 Store ${conn.id}:`, {
             current_name: conn.store_name,
@@ -106,7 +108,7 @@ export default function ShopifyConnectionsList() {
 
           if (!needsUpdate) continue;
 
-          const response = await fetch(`https://${conn.store_url}/admin/api/2025-10/shop.json`, {
+          const response = await fetch(`https://${conn.store_url}/admin/api/2025-07/shop.json`, {
             headers: {
               'X-Shopify-Access-Token': conn.access_token,
               'Content-Type': 'application/json',
