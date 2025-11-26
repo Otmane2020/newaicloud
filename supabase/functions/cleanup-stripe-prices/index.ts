@@ -30,29 +30,46 @@ serve(async (req) => {
     }
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Step 1: Define protected product IDs (68 derniers produits créés le 25/11 à 23:10)
-    console.log("📋 Setting up protected product IDs...");
-    const protectedProducts = new Set<string>([
-      "prod_TUUMAAENGevDTb", "prod_TUUMQJb25IK2oM", "prod_TUUMjnrZhJ8vao", "prod_TUUMyBDPJVUqnj",
-      "prod_TUUMmnuAD0GbRY", "prod_TUUMWwYtatsvAP", "prod_TUUMJ3IoKgn03a", "prod_TUUMFXB8eZF6Ky",
-      "prod_TUUMPcbz03Sj6o", "prod_TUUMsJZOomGoeV", "prod_TUUMQ7Yrr4biFu", "prod_TUUMA4DGCMtStm",
-      "prod_TUUMXyWndyGnXG", "prod_TUUMxQA0TEe5pm", "prod_TUUMkSq1Arnxxi", "prod_TUUMarGWgpy2kE",
-      "prod_TUUMViMPoAJa0x", "prod_TUUMwxsauAdGnD", "prod_TUUMgLWbtWtiyu", "prod_TUUMPh7jpMQntB",
-      "prod_TUUMsIAU1gjMCu", "prod_TUUMDSpyzutqMG", "prod_TUUMTwlHyERiyR", "prod_TUUMQXD4Z2EKgr",
-      "prod_TUUMgBu6kVLbbr", "prod_TUUMKZWn0CY1JS", "prod_TUUMqFTyQi0SX3", "prod_TUUMlOoZHLybhH",
-      "prod_TUUMqQvAQf8GmI", "prod_TUUMQ1AvAmK8jA", "prod_TUUM1Axalr1K29", "prod_TUUMgzRuokYZ5V",
-      "prod_TUUMqPV1rfYUPN", "prod_TUUMppHlE4P8FR", "prod_TUUMys41Amafa5", "prod_TUUMhq9X1NNWi5",
-      "prod_TUUMuotFiL0AS9", "prod_TUUMnrDoufOWjB", "prod_TUUMfi75Y8ThSx", "prod_TUUMhepQVQXVyE",
-      "prod_TUUMn7TBOpXmUR", "prod_TUUMiNuFNTaC0h", "prod_TUUM42SmXqPlqw", "prod_TUUMvSx7sAV1wL",
-      "prod_TUULANVIWxkAPg", "prod_TUULsbufSlQd39", "prod_TUULQDjsmFrFOz", "prod_TUULwljgPqD4Td",
-      "prod_TUUL93OnY66snF", "prod_TUULAYteRhWFtW", "prod_TUUL3XCvaWqyG2", "prod_TUULDEFkonwjbC",
-      "prod_TUULx6efLr5s7D", "prod_TUULKnVpybMG2w", "prod_TUULPGr1bjqgJS", "prod_TUULmR76kGiIVG",
-      "prod_TUUL3rjElAOk1M", "prod_TUULCo1vIXi0ar", "prod_TUULPVUCtCvYy6", "prod_TUULYdVeTxyDO8",
-      "prod_TUULuN5VSRTjOK", "prod_TUULK66OrsP6MQ", "prod_TUULeBPcZ4P3QD", "prod_TUULbL7qw4Twlu",
-      "prod_TUULb2yHMeCWao", "prod_TUULmiP9qClnfG", "prod_TUULxfnYOMpqed", "prod_TUULnbAPCVZCGK",
-    ]);
+    // Step 1: Get all price IDs from subscription_plans table
+    console.log("📋 Fetching protected prices from subscription_plans...");
+    const { data: plans, error: plansError } = await supabase
+      .from('subscription_plans')
+      .select('stripe_price_id, stripe_price_id_monthly, stripe_price_id_yearly, stripe_price_id_monthly_eur, stripe_price_id_yearly_eur')
+      .eq('is_active', true);
 
-    console.log(`✅ Protecting ${protectedProducts.size} product IDs`);
+    if (plansError) {
+      throw new Error(`Failed to fetch subscription plans: ${plansError.message}`);
+    }
+
+    // Collect all price IDs
+    const protectedPriceIds = new Set<string>();
+    for (const plan of plans || []) {
+      if (plan.stripe_price_id) protectedPriceIds.add(plan.stripe_price_id);
+      if (plan.stripe_price_id_monthly) protectedPriceIds.add(plan.stripe_price_id_monthly);
+      if (plan.stripe_price_id_yearly) protectedPriceIds.add(plan.stripe_price_id_yearly);
+      if (plan.stripe_price_id_monthly_eur) protectedPriceIds.add(plan.stripe_price_id_monthly_eur);
+      if (plan.stripe_price_id_yearly_eur) protectedPriceIds.add(plan.stripe_price_id_yearly_eur);
+    }
+
+    console.log(`✅ Found ${protectedPriceIds.size} protected price IDs`);
+
+    // Step 2: Get product IDs for these prices from Stripe
+    console.log("🔍 Fetching product IDs from Stripe prices...");
+    const protectedProducts = new Set<string>();
+    
+    for (const priceId of protectedPriceIds) {
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        if (typeof price.product === 'string') {
+          protectedProducts.add(price.product);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️  Could not retrieve price ${priceId}: ${errorMessage}`);
+      }
+    }
+
+    console.log(`✅ Protecting ${protectedProducts.size} product IDs linked to subscription plans`);
 
     // Step 2: Archive all products NOT in the protected list
     console.log("🗑️  Archiving non-protected products and their prices...");
