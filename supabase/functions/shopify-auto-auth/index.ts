@@ -72,6 +72,15 @@ serve(async (req) => {
     if (existingUser) {
       console.log("[SHOPIFY-AUTO-AUTH] Utilisateur existant trouvé:", existingUser.id);
       userId = existingUser.id;
+      
+      // Mettre à jour le mot de passe pour permettre la connexion
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        password
+      });
+      
+      if (updateError) {
+        console.error("[SHOPIFY-AUTO-AUTH] Erreur mise à jour password:", updateError);
+      }
     } else {
       // 4. Créer le nouvel utilisateur Supabase
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -126,6 +135,8 @@ serve(async (req) => {
         connected_at: new Date().toISOString(),
         is_active: true,
         connection_type: "oauth",
+      }, {
+        onConflict: 'user_id,store_url'
       });
 
     if (claimError) {
