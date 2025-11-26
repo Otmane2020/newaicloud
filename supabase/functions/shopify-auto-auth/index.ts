@@ -156,6 +156,45 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion Shopify claimed");
 
+    // 7.5 Déclencher l'importation automatique des produits
+    try {
+      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import produits automatique");
+      
+      // Récupérer le store_id de la connexion créée
+      const { data: storeData } = await supabase
+        .from("shopify_connections")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("store_url", shop)
+        .single();
+
+      if (storeData?.id) {
+        // Appeler import-products en mode service (sans JWT)
+        const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/import-products`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({
+            serviceMode: true,
+            userId: userId,
+            storeId: storeData.id,
+            autoImport: true,
+          }),
+        });
+
+        if (importResponse.ok) {
+          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import produits déclenché avec succès");
+        } else {
+          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
+        }
+      }
+    } catch (importError) {
+      // Ne pas bloquer l'auth si l'import échoue
+      console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (non-bloquant):", importError);
+    }
+
     // 8. Créer un client Supabase pour générer une session utilisateur
     // Utiliser signInWithPassword avec les credentials créés
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
