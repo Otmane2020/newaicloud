@@ -97,17 +97,21 @@ serve(async (req) => {
               .single();
 
             if (plan?.id) {
+              // Déterminer billing_period depuis Stripe
+              const interval = activeSubscription.items.data[0]?.price.recurring?.interval;
+              const billingPeriod = interval === 'year' ? 'yearly' : 'monthly';
+
               const { error: upsertErr } = await supabase
                 .from("subscriptions")
                 .upsert(
                   {
                     seller_id: userId,
                     stripe_subscription_id: activeSubscription.id,
-                    stripe_customer_id: customerId,
                     status: activeSubscription.status,
                     current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
                     current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
                     plan_id: plan.id,
+                    billing_period: billingPeriod,
                   },
                   { onConflict: "seller_id" },
                 );
@@ -173,20 +177,23 @@ serve(async (req) => {
     };
 
     if (isUpgrade) {
-      // ⬆️ UPGRADE → PRORATA immédiat sur la période actuelle
+      // ⬆️ UPGRADE → PRORATA avec facture immédiate
       updatePayload.proration_behavior = "create_prorations";
       updatePayload.billing_cycle_anchor = "unchanged";
-      updatePayload.payment_behavior = "default_incomplete";
+      updatePayload.payment_behavior = "pending_if_incomplete";
     } else {
       // ⬇️ DOWNGRADE → pas de proration, changement au prochain cycle
       updatePayload.proration_behavior = "none";
       updatePayload.billing_cycle_anchor = "unchanged";
-      updatePayload.payment_behavior = "default_incomplete";
+      updatePayload.payment_behavior = "allow_incomplete";
     }
 
     log("Updating subscription", updatePayload);
 
-    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, updatePayload);
+    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, {
+      ...updatePayload,
+      expand: ["latest_invoice.payment_intent"],
+    });
 
     // Retrieve invoice (with fallback)
     let invoiceId =
