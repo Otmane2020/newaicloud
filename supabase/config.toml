@@ -396,3 +396,6 @@ verify_jwt = false
 [functions.send-monthly-report]
 verify_jwt = false
 
+[functions.cleanup-stripe-prices]
+verify_jwt = false
+

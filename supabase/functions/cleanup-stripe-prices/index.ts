@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log("📋 Fetching protected price IDs from database...");
     const { data: plans, error: plansError } = await supabase
       .from("subscription_plans")
-      .select("price_id_monthly_usd, price_id_monthly_eur, price_id_yearly_usd, price_id_yearly_eur")
+      .select("stripe_price_id_monthly, stripe_price_id_monthly_eur, stripe_price_id_yearly, stripe_price_id_yearly_eur")
       .neq("id", "trial");
 
     if (plansError) {
@@ -43,10 +43,10 @@ serve(async (req) => {
 
     const protectedPrices = new Set<string>();
     plans?.forEach((plan) => {
-      if (plan.price_id_monthly_usd) protectedPrices.add(plan.price_id_monthly_usd);
-      if (plan.price_id_monthly_eur) protectedPrices.add(plan.price_id_monthly_eur);
-      if (plan.price_id_yearly_usd) protectedPrices.add(plan.price_id_yearly_usd);
-      if (plan.price_id_yearly_eur) protectedPrices.add(plan.price_id_yearly_eur);
+      if (plan.stripe_price_id_monthly) protectedPrices.add(plan.stripe_price_id_monthly);
+      if (plan.stripe_price_id_monthly_eur) protectedPrices.add(plan.stripe_price_id_monthly_eur);
+      if (plan.stripe_price_id_yearly) protectedPrices.add(plan.stripe_price_id_yearly);
+      if (plan.stripe_price_id_yearly_eur) protectedPrices.add(plan.stripe_price_id_yearly_eur);
     });
 
     console.log(`✅ Found ${protectedPrices.size} protected price IDs`);
