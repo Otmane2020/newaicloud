@@ -191,9 +191,19 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // Rediriger vers /auth avec le pending_token
-        const redirectUrl = `${APP_URL}/auth?mode=signup&shopify_pending=${pendingToken}&shop=${encodeURIComponent(shop)}`;
-        console.log("[SHOPIFY-OAUTH] Redirection vers auth avec pending token (expires in 7 days)");
+        // ✅ SHOPIFY COMPLIANCE: Rediriger vers Shopify Admin embedded app
+        const shopHandle = shop.replace('.myshopify.com', '');
+        const redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai-optimize?pending_token=${pendingToken}`;
+        
+        console.log(JSON.stringify({
+          event: 'oauth_callback_success',
+          flow: 'pre-auth',
+          shop: shop,
+          redirect: redirectUrl,
+          expires_in_days: 7,
+          timestamp: new Date().toISOString()
+        }));
+        
         return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
       }
 
@@ -210,10 +220,16 @@ serve(async (req) => {
           is_active: true,
           connection_type: "oauth",
         });
-        console.log("✅ Token enregistré pour", shop, "user:", oauthState.user_id);
+        
+        console.log(JSON.stringify({
+          event: 'oauth_callback_success',
+          flow: 'classic',
+          shop: shop,
+          user_id: oauthState.user_id,
+          timestamp: new Date().toISOString()
+        }));
 
         await supabase.from("oauth_states").delete().eq("state_token", state);
-        console.log("✅ State token nettoyé");
       } catch (dbErr) {
         console.error("⚠️ Erreur Supabase save:", dbErr);
         const errorMessage = dbErr instanceof Error ? dbErr.message : "Unknown database error";
@@ -223,7 +239,9 @@ serve(async (req) => {
         });
       }
 
-      const redirectUrl = `${APP_URL}/shopify/success?shop=${encodeURIComponent(shop)}&status=success`;
+      // ✅ SHOPIFY COMPLIANCE: Rediriger vers Shopify Admin embedded app
+      const shopHandle = shop.replace('.myshopify.com', '');
+      const redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai-optimize`;
       return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
     }
 

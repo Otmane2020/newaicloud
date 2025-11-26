@@ -317,6 +317,9 @@ verify_jwt = false
 [functions.shopify-webhook]
 verify_jwt = false
 
+[functions.shopify-gdpr-webhook]
+verify_jwt = false
+
 [functions.sync-product-images-to-shopify]
 verify_jwt = true
 
