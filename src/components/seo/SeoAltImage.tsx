@@ -650,7 +650,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         
         const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
           body: { 
-            imageId: img.id,
+            image_id: img.id,
             imageType: imageType
           }
         });
@@ -714,7 +714,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         
         const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
           body: { 
-            imageId: img.id,
+            image_id: img.id,
             imageType: imageType,
             force: true
           }

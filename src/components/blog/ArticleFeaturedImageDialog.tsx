@@ -301,7 +301,7 @@ export function ArticleFeaturedImageDialog({
       // Generate ALT text
       const { error: altError } = await supabase.functions.invoke("generate-alt-texts-vision", {
         body: {
-          imageId: generatedImageId,
+          image_id: generatedImageId,
           imageType: "content",
         },
       });
