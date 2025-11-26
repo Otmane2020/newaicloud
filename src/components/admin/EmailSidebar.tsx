@@ -3,16 +3,23 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+interface EmailStats {
+  inbox: number;
+  sent: number;
+  drafts: number;
+  trash: number;
+  spam: number;
+  unreadInbox?: number;
+  unreadSent?: number;
+  unreadDrafts?: number;
+  unreadTrash?: number;
+  unreadSpam?: number;
+}
+
 interface EmailSidebarProps {
   activeFolder: string;
   onFolderChange: (folder: string) => void;
-  stats: {
-    inbox: number;
-    sent: number;
-    drafts: number;
-    trash: number;
-    spam: number;
-  };
+  stats: EmailStats;
   onRefresh: () => void;
   loading?: boolean;
 }
@@ -43,6 +50,9 @@ export function EmailSidebar({ activeFolder, onFolderChange, stats, onRefresh, l
       {folders.map((folder) => {
         const Icon = folder.icon;
         const isActive = activeFolder === folder.id;
+        const unreadKey = `unread${folder.id.charAt(0).toUpperCase() + folder.id.slice(1)}` as keyof EmailStats;
+        const unreadCount = stats[unreadKey] || 0;
+        const totalCount = folder.count;
 
         return (
           <button
@@ -58,14 +68,19 @@ export function EmailSidebar({ activeFolder, onFolderChange, stats, onRefresh, l
               <Icon className={cn("w-5 h-5", folder.color)} />
               <span className="text-sm">{folder.label}</span>
             </div>
-            {folder.count > 0 && (
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
+                  {unreadCount}
+                </Badge>
+              )}
               <Badge 
                 variant={isActive ? "default" : "secondary"}
                 className="ml-auto"
               >
-                {folder.count}
+                {totalCount}
               </Badge>
-            )}
+            </div>
           </button>
         );
       })}
