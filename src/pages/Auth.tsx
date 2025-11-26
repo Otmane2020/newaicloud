@@ -91,7 +91,19 @@ export default function Auth() {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
     } else {
-      await signIn(email, password);
+      const result = await signIn(email, password);
+      
+      // Si échec de connexion avec shopify_pending, suggérer de créer un compte
+      if (result?.error && searchParams.get('shopify_pending')) {
+        const errorMsg = result.error.message || '';
+        if (errorMsg.includes('Invalid login credentials') || errorMsg.includes('Email not confirmed')) {
+          toast.error("Compte non trouvé", {
+            description: "Ce compte n'existe pas encore. Créez un compte pour associer votre boutique Shopify.",
+          });
+          // Auto-switch to signup mode
+          setTimeout(() => setMode('signup'), 2000);
+        }
+      }
     }
 
     setLoading(false);

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
-import { AutoSyncProvider } from "./contexts/AutoSyncContext";
+import { AutoSyncProvider, useAutoSyncProgress } from "./contexts/AutoSyncContext";
 import { OptimizationProvider } from "./contexts/OptimizationContext";
 import { LanguageProvider } from "@/lib/language";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -102,6 +102,7 @@ function AppQuotaMonitor() {
 
 function AutoSyncMonitor() {
   const [userId, setUserId] = useState<string>();
+  const { endSync } = useAutoSyncProgress();
 
   useEffect(() => {
     const getUserId = async () => {
@@ -117,6 +118,13 @@ function AutoSyncMonitor() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Reset sync state when user is not authenticated
+  useEffect(() => {
+    if (!userId) {
+      endSync();
+    }
+  }, [userId, endSync]);
 
   // Activer la synchronisation automatique pour tous les flux
   useAutoSync(userId);

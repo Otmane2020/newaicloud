@@ -6,6 +6,8 @@ import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 
 // Failsafe timeout: 10 minutes for large imports
 const FAILSAFE_MS = 10 * 60 * 1000;
+// Stuck timeout: 2 minutes if no progress
+const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
 
 /**
  * Hook qui écoute les nouvelles connexions Shopify et déclenche automatiquement
@@ -23,8 +25,21 @@ export const useAutoSync = (userId: string | undefined) => {
   useEffect(() => {
     if (!userId) return;
     let isMounted = true;
+    let stuckTimeoutId: NodeJS.Timeout | null = null;
 
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
+    
+    // Global stuck timeout: force close after 2 minutes if dialog is stuck
+    stuckTimeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
+        endSync();
+        if (syncCheckIntervalRef.current) {
+          clearInterval(syncCheckIntervalRef.current);
+          syncCheckIntervalRef.current = null;
+        }
+      }
+    }, STUCK_TIMEOUT_MS);
 
     // Check if there's a pending sync from onboarding page
     const pendingSync = sessionStorage.getItem('pending_sync');
@@ -232,6 +247,9 @@ export const useAutoSync = (userId: string | undefined) => {
       if (syncCheckIntervalRef.current) {
         clearInterval(syncCheckIntervalRef.current);
         syncCheckIntervalRef.current = null;
+      }
+      if (stuckTimeoutId) {
+        clearTimeout(stuckTimeoutId);
       }
     };
   }, [userId, startSync, endSync, location.pathname]);
