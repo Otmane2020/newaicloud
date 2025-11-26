@@ -1106,8 +1106,8 @@ export default function Onboarding() {
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-success flex-shrink-0" />
                       <span className="text-sm">
-                        {formatLimit(trialPlan?.max_articles_monthly || 5)}{" "}
-                        {language === "fr" ? "articles/mois" : "articles/month"}
+                        {formatLimit(trialPlan?.max_articles_monthly || 1)}{" "}
+                        {language === "fr" ? "article/mois" : "article/month"}
                       </span>
                     </div>
                     {(trialPlan?.max_campaigns || 0) > 0 && (
