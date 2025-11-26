@@ -15,7 +15,11 @@ export function AutoSyncProgressDialog() {
   // Si on est sur onboarding AVEC shopify_pending, on affiche le dialog pour montrer le claim en cours
   const isOnboardingWithoutShopify = location.pathname.startsWith('/onboarding') && 
                                       !location.search.includes('shopify_pending');
-  const shouldShow = isSyncing && !isOnboardingWithoutShopify;
+  // Ne jamais afficher sur les pages d'authentification ou Shopify
+  const isAuthPage = location.pathname === '/auth' || 
+                     location.pathname === '/reset-password' ||
+                     location.pathname.startsWith('/shopify/');
+  const shouldShow = isSyncing && !isOnboardingWithoutShopify && !isAuthPage;
 
   // Simulate progress based on currentType
   React.useEffect(() => {
