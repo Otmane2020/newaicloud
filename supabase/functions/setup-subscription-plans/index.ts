@@ -51,6 +51,36 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // ✅ CRITICAL: Check if prices already exist in database to prevent accidental recreation
+    const { data: existingPlans, error: checkError } = await supabaseAdmin
+      .from('subscription_plans')
+      .select('stripe_price_id_monthly')
+      .not('stripe_price_id_monthly', 'is', null)
+      .limit(1);
+
+    if (checkError) {
+      console.error("Error checking existing plans:", checkError);
+    }
+
+    if (existingPlans && existingPlans.length > 0 && !body?.forceRecreate) {
+      console.log("⚠️  Plans already exist in database. Refusing to create duplicates.");
+      console.log("⚠️  Use forceRecreate=true in request body to override this protection.");
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Plans already exist. Use forceRecreate=true to override.",
+        existing_count: existingPlans.length
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (body?.forceRecreate) {
+      console.log("⚠️  forceRecreate=true - proceeding with setup despite existing plans");
+    }
+
+    console.log("Proceeding with plan setup...");
+
     // Define all plans
     const plans: PlanConfig[] = [
       // Trial
