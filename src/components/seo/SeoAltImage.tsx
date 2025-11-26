@@ -860,17 +860,28 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     );
   }
 
-  const imagesNotOptimized = images.filter(img => !img.optimization_count || img.optimization_count === 0).length;
-  const imagesOptimizedByAI = images.filter(img => img.optimization_count && img.optimization_count > 0).length;
-  const imagesToSync = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_synced_at).length;
-  const imagesSynced = images.filter(img => img.alt_text && img.last_synced_at).length;
-  // Calculate ALT SEO score based on ratio of optimized images to total images
-  const altSeoScore = images.length > 0 
-    ? Math.round((imagesOptimizedByAI / images.length) * 100)
+  // Filter images by content type first for accurate stats
+  const imagesFilteredByType = images.filter((img) => {
+    if (contentTypeFilter === 'all') return true;
+    if (contentTypeFilter === 'products' && img.image_type !== 'product') return false;
+    if (contentTypeFilter === 'collections' && (!img.content_type || img.content_type !== 'collection')) return false;
+    if (contentTypeFilter === 'pages' && (!img.content_type || img.content_type !== 'page')) return false;
+    if (contentTypeFilter === 'articles' && (!img.content_type || img.content_type !== 'article')) return false;
+    if (contentTypeFilter === 'homepage' && (!img.content_type || img.content_type !== 'homepage')) return false;
+    return true;
+  });
+
+  const imagesNotOptimized = imagesFilteredByType.filter(img => !img.optimization_count || img.optimization_count === 0).length;
+  const imagesOptimizedByAI = imagesFilteredByType.filter(img => img.optimization_count && img.optimization_count > 0).length;
+  const imagesToSync = imagesFilteredByType.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0 && !img.last_synced_at).length;
+  const imagesSynced = imagesFilteredByType.filter(img => img.alt_text && img.last_synced_at).length;
+  // Calculate ALT SEO score based on ratio of optimized images to total images (filtered)
+  const altSeoScore = imagesFilteredByType.length > 0 
+    ? Math.round((imagesOptimizedByAI / imagesFilteredByType.length) * 100)
     : 0;
 
   const tabs = [
-    { id: 'all' as AltImageTab, label: t.seo.altImage.tabs.all, count: images.length },
+    { id: 'all' as AltImageTab, label: t.seo.altImage.tabs.all, count: imagesFilteredByType.length },
     { id: 'needs-alt' as AltImageTab, label: t.seo.altImage.tabs.notOptimized, count: imagesNotOptimized },
     { id: 'has-alt' as AltImageTab, label: t.seo.altImage.tabs.optimized, count: imagesOptimizedByAI },
     { id: 'to-sync' as AltImageTab, label: t.seo.altImage.tabs.toSync, count: imagesToSync }
@@ -930,7 +941,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                   }`}>
                     {altSeoScore} / 100
                   </div>
-                  <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{images.length})</div>
+                  <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{imagesFilteredByType.length})</div>
                 </div>
                 <Button
                   size="lg"
