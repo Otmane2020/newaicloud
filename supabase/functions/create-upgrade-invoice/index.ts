@@ -45,23 +45,111 @@ serve(async (req) => {
     const { new_price_id } = body;
     if (!new_price_id) throw new Error("new_price_id is required");
 
-    // Get subscription
+    const stripe = new Stripe(stripeSecret, {
+      apiVersion: "2025-08-27.basil",
+    });
+
+    // Try to get local subscription first
+    let stripeSubscriptionId: string | null = null;
+
     const { data: sub, error: subErr } = await supabase
       .from("subscriptions")
       .select("stripe_subscription_id")
       .eq("seller_id", userId)
       .in("status", ["active", "trialing"])
-      .single();
+      .maybeSingle();
 
-    if (subErr || !sub?.stripe_subscription_id) {
+    if (!subErr && sub?.stripe_subscription_id) {
+      stripeSubscriptionId = sub.stripe_subscription_id;
+      log("Found local subscription", { stripeSubscriptionId });
+    } else {
+      log("No local subscription, attempting sync from Stripe");
+
+      // Load profile to get Stripe customer ID
+      const { data: profile, error: profileErr } = await supabase
+        .from("profiles")
+        .select("stripe_customer_id")
+        .eq("id", userId)
+        .single();
+
+      if (profileErr) {
+        log("Profile error while syncing subscription", profileErr);
+      }
+
+      const customerId = (profile?.stripe_customer_id as string) || null;
+      if (customerId) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 1,
+        });
+
+        if (subscriptions.data.length > 0) {
+          const activeSubscription = subscriptions.data[0];
+          stripeSubscriptionId = activeSubscription.id;
+
+          const priceId = activeSubscription.items.data[0]?.price.id;
+          if (priceId) {
+            const { data: plan } = await supabase
+              .from("subscription_plans")
+              .select("id")
+              .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
+              .single();
+
+            if (plan?.id) {
+              const { error: upsertErr } = await supabase
+                .from("subscriptions")
+                .upsert(
+                  {
+                    seller_id: userId,
+                    stripe_subscription_id: activeSubscription.id,
+                    stripe_customer_id: customerId,
+                    status: activeSubscription.status,
+                    current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
+                    current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+                    plan_id: plan.id,
+                  },
+                  { onConflict: "seller_id" },
+                );
+
+              if (upsertErr) {
+                log("ERROR upserting subscription during sync", upsertErr);
+              } else {
+                log("Synced subscription from Stripe into DB", {
+                  subscriptionId: activeSubscription.id,
+                  planId: plan.id,
+                });
+              }
+            } else {
+              log("No matching plan found for Stripe price", { priceId });
+            }
+          }
+        } else {
+          log("No active Stripe subscription found during sync", { customerId });
+        }
+
+        if (!stripeSubscriptionId) {
+          const { data: reloadedSub } = await supabase
+            .from("subscriptions")
+            .select("stripe_subscription_id")
+            .eq("seller_id", userId)
+            .in("status", ["active", "trialing"])
+            .maybeSingle();
+
+          if (reloadedSub?.stripe_subscription_id) {
+            stripeSubscriptionId = reloadedSub.stripe_subscription_id;
+          }
+        }
+      } else {
+        log("No Stripe customer ID on profile", { userId });
+      }
+    }
+
+    if (!stripeSubscriptionId) {
       throw new Error("No active subscription found");
     }
 
-    const stripe = new Stripe(stripeSecret, {
-      apiVersion: "2025-08-27.basil",
-    });
-
-    const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
 
     const currentItem = stripeSub.items.data[0];
     const currentPrice = currentItem.price.unit_amount ?? 0;
@@ -98,7 +186,7 @@ serve(async (req) => {
 
     log("Updating subscription", updatePayload);
 
-    const updatedSub = await stripe.subscriptions.update(sub.stripe_subscription_id, updatePayload);
+    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, updatePayload);
 
     // Retrieve invoice (with fallback)
     let invoiceId =
@@ -106,7 +194,7 @@ serve(async (req) => {
 
     if (!invoiceId) {
       log("No latest_invoice, using fallback");
-      const invoices = await stripe.invoices.list({ subscription: sub.stripe_subscription_id, limit: 1 });
+      const invoices = await stripe.invoices.list({ subscription: stripeSubscriptionId, limit: 1 });
       if (!invoices.data?.[0]) throw new Error("Invoice not created by Stripe");
       invoiceId = invoices.data[0].id;
     }
