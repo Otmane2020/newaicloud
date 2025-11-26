@@ -60,10 +60,16 @@ const Index = () => {
         
         <div className="container relative mx-auto px-4 py-24">
           <div className="flex flex-col items-center text-center space-y-8 animate-fade-in">
-            <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
-              <Sparkles className="w-4 h-4 mr-2" />
-              {t.landing.hero.badge}
-            </Badge>
+            <div className="flex flex-col items-center gap-3">
+              <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
+                <Sparkles className="w-4 h-4 mr-2" />
+                {t.landing.hero.badge}
+              </Badge>
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-background/10 backdrop-blur-sm border border-white/20">
+                <span className="text-sm text-white font-medium">Built for</span>
+                <img src="/shopify-logo.svg" alt="Shopify" className="h-6 opacity-90" />
+              </div>
+            </div>
             
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white max-w-4xl leading-tight px-4">
               {t.landing.hero.title}{" "}

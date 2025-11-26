@@ -23,16 +23,9 @@ export function Footer() {
                 {t.footer.brand}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">
-                {t.footer.tagline}
-              </p>
-              <img 
-                src="/shopify-logo.svg" 
-                alt="Shopify" 
-                className="h-5 w-auto opacity-70 hover:opacity-100 transition-opacity"
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {t.footer.tagline}
+            </p>
           </div>
 
           <div>
