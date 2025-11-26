@@ -343,22 +343,32 @@ Deno.serve(async (req: Request) => {
     const cleanShopName = shopName.replace(".myshopify.com", "");
     const startTime = new Date().toISOString();
 
-    // Fetch shop details to get currency
+    // Fetch shop details to get currency using GraphQL
     let shopCurrency = 'USD';
     try {
+      const shopQuery = `
+        query {
+          shop {
+            currencyCode
+          }
+        }
+      `;
+
       const shopResponse = await fetch(
-        `https://${cleanShopName}.myshopify.com/admin/api/2024-01/shop.json`,
+        `https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`,
         {
+          method: 'POST',
           headers: {
             "X-Shopify-Access-Token": authToken,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ query: shopQuery })
         }
       );
 
       if (shopResponse.ok) {
-        const shopData = await shopResponse.json();
-        shopCurrency = shopData.shop?.currency || 'USD';
+        const shopData: any = await shopResponse.json();
+        shopCurrency = shopData.data?.shop?.currencyCode || 'USD';
         console.log(`Shop currency detected: ${shopCurrency}`);
       }
     } catch (error) {
@@ -449,21 +459,31 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Produits actuels en DB: ${currentProductsCount}/${maxProducts}`);
     console.log(`   - Slots disponibles pour import: ${availableSlots}`);
 
-    // Get total product count from Shopify first
+    // Get total product count from Shopify first using GraphQL
     let totalShopifyProducts = 0;
     try {
+      const countQuery = `
+        query {
+          productsCount {
+            count
+          }
+        }
+      `;
+
       const countResponse = await fetch(
-        `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products/count.json`,
+        `https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`,
         {
+          method: 'POST',
           headers: {
             "X-Shopify-Access-Token": authToken,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ query: countQuery })
         }
       );
       if (countResponse.ok) {
-        const countData = await countResponse.json();
-        totalShopifyProducts = countData.count || 0;
+        const countData: any = await countResponse.json();
+        totalShopifyProducts = countData.data?.productsCount?.count || 0;
         console.log(`📊 Total products in Shopify store: ${totalShopifyProducts}`);
       }
     } catch (error) {
@@ -482,26 +502,83 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Available slots: ${availableSlots}`);
     console.log(`   - Batch size: ${batchSize}`);
     
-    let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=${batchSize}&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
     let quotaReached = false;
+    let cursor: string | null = null;
+    let hasNextPage = true;
 
-    console.log(`🚀 Starting import from ${cleanShopName}`);
+    console.log(`🚀 Starting GraphQL import from ${cleanShopName}`);
 
-    while (nextPageUrl && !quotaReached) {
+    while (hasNextPage && !quotaReached) {
       pageCount++;
-      console.log(`Fetching page ${pageCount}: ${nextPageUrl}`);
+      console.log(`Fetching page ${pageCount} via GraphQL${cursor ? ` (cursor: ${cursor.substring(0, 20)}...)` : ''}`);
 
-      const shopifyResponse = await fetch(nextPageUrl, {
+      // GraphQL query to fetch products with all necessary fields
+      const graphqlQuery = `
+        query getProducts($first: Int!, $after: String) {
+          products(first: $first, after: $after) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              node {
+                id
+                legacyResourceId
+                title
+                descriptionHtml
+                handle
+                vendor
+                productType
+                status
+                tags
+                variants(first: 100) {
+                  edges {
+                    node {
+                      id
+                      legacyResourceId
+                      price
+                      compareAtPrice
+                      inventoryQuantity
+                    }
+                  }
+                }
+                images(first: 10) {
+                  edges {
+                    node {
+                      url
+                      altText
+                    }
+                  }
+                }
+                seo {
+                  title
+                  description
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const shopifyResponse: Response = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`, {
+        method: 'POST',
         headers: {
           "X-Shopify-Access-Token": authToken,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          query: graphqlQuery,
+          variables: {
+            first: batchSize,
+            after: cursor
+          }
+        })
       });
 
       if (!shopifyResponse.ok) {
         const errorText = await shopifyResponse.text();
-        console.error("Shopify API Error:", errorText);
+        console.error("Shopify GraphQL API Error:", errorText);
         return new Response(
           JSON.stringify({
             error: `Failed to fetch products from Shopify: ${shopifyResponse.statusText}`,
@@ -513,10 +590,52 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const shopifyData: ShopifyResponse = await shopifyResponse.json();
-      const pageProducts = shopifyData.products || [];
+      const graphqlData: any = await shopifyResponse.json();
+      
+      if (graphqlData.errors) {
+        console.error("GraphQL Errors:", graphqlData.errors);
+        return new Response(
+          JSON.stringify({
+            error: `GraphQL error: ${graphqlData.errors.map((e: any) => e.message).join(', ')}`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
-      console.log(`Page ${pageCount}: Fetched ${pageProducts.length} products`);
+      // Transform GraphQL response to match REST format
+      const pageProducts = graphqlData.data.products.edges.map((edge: any) => {
+        const node = edge.node;
+        return {
+          id: parseInt(node.legacyResourceId),
+          title: node.title,
+          body_html: node.descriptionHtml,
+          handle: node.handle,
+          vendor: node.vendor,
+          product_type: node.productType,
+          status: node.status.toLowerCase(),
+          tags: node.tags.join(','),
+          variants: node.variants.edges.map((v: any) => ({
+            id: parseInt(v.node.legacyResourceId),
+            price: v.node.price,
+            compare_at_price: v.node.compareAtPrice,
+            inventory_quantity: v.node.inventoryQuantity || 0
+          })),
+          images: node.images.edges.map((i: any) => ({
+            src: i.node.url,
+            alt: i.node.altText
+          })),
+          metafields_global_title_tag: node.seo?.title,
+          metafields_global_description_tag: node.seo?.description
+        };
+      });
+
+      hasNextPage = graphqlData.data.products.pageInfo.hasNextPage;
+      cursor = graphqlData.data.products.pageInfo.endCursor;
+
+      console.log(`Page ${pageCount}: Fetched ${pageProducts.length} products via GraphQL`);
       
       // Vérifier si l'ajout de ces produits dépasserait la limite TOTALE
       const totalIfAdded = currentProductsCount + allProducts.length + pageProducts.length;
@@ -542,11 +661,8 @@ Deno.serve(async (req: Request) => {
       
       allProducts = allProducts.concat(pageProducts);
 
-      const linkHeader = shopifyResponse.headers.get("Link");
-      const parsedNextUrl = parseLinkHeader(linkHeader);
-
       // Update job progress
-      const estimatedTotalPages = parsedNextUrl ? pageCount + 10 : pageCount;
+      const estimatedTotalPages = hasNextPage ? pageCount + 10 : pageCount;
       await supabaseServiceClient
         .from('import_jobs')
         .update({
@@ -556,13 +672,10 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', importJob.id);
 
-      if (parsedNextUrl && !quotaReached) {
-        nextPageUrl = parsedNextUrl;
-        console.log(`Next page URL found, continuing...`);
+      if (hasNextPage && !quotaReached) {
+        console.log(`Next page available, continuing with cursor...`);
         // Réduire le délai pour accélérer l'import
         await new Promise(resolve => setTimeout(resolve, 200));
-      } else {
-        nextPageUrl = null;
       }
     }
 
