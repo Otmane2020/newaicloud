@@ -15,22 +15,31 @@ serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({}));
+
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
     log("START");
 
-    // Env
+    // Stripe ENV
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
+    const stripe = new Stripe(stripeSecret, {
+      apiVersion: "2024-12-18.acacia", // 🔥 FIX CRITIQUE
+    });
+
+    // Supabase ENV
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
       auth: { persistSession: false },
     });
 
-    // Auth
+    // Auth user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing Authorization header");
 
@@ -45,116 +54,21 @@ serve(async (req) => {
     const { new_price_id } = body;
     if (!new_price_id) throw new Error("new_price_id is required");
 
-    const stripe = new Stripe(stripeSecret, {
-      apiVersion: "2025-08-27.basil",
-    });
+    // ─────────────────────────────────────────────
+    // Get user's active subscription
+    // ─────────────────────────────────────────────
 
-    // Try to get local subscription first
     let stripeSubscriptionId: string | null = null;
 
-    const { data: sub, error: subErr } = await supabase
+    const { data: sub } = await supabase
       .from("subscriptions")
       .select("stripe_subscription_id")
       .eq("seller_id", userId)
       .in("status", ["active", "trialing"])
       .maybeSingle();
 
-    if (!subErr && sub?.stripe_subscription_id) {
+    if (sub?.stripe_subscription_id) {
       stripeSubscriptionId = sub.stripe_subscription_id;
-      log("Found local subscription", { stripeSubscriptionId });
-    } else {
-      log("No local subscription, attempting sync from Stripe");
-
-      // Load profile to get Stripe customer ID
-      const { data: profile, error: profileErr } = await supabase
-        .from("profiles")
-        .select("stripe_customer_id")
-        .eq("id", userId)
-        .single();
-
-      if (profileErr) {
-        log("Profile error while syncing subscription", profileErr);
-      }
-
-      const customerId = (profile?.stripe_customer_id as string) || null;
-      if (customerId) {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customerId,
-          status: "active",
-          limit: 1,
-        });
-
-        if (subscriptions.data.length > 0) {
-          const activeSubscription = subscriptions.data[0];
-          stripeSubscriptionId = activeSubscription.id;
-
-          const priceId = activeSubscription.items.data[0]?.price.id;
-          if (priceId) {
-            const { data: plan } = await supabase
-              .from("subscription_plans")
-              .select("id")
-              .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
-              .single();
-
-            if (plan?.id) {
-              // Déterminer billing_period depuis Stripe
-              const interval = activeSubscription.items.data[0]?.price.recurring?.interval;
-              const billingPeriod = interval === 'year' ? 'yearly' : 'monthly';
-
-              // Gérer les timestamps null/undefined
-              const periodStart = activeSubscription.current_period_start 
-                ? new Date(activeSubscription.current_period_start * 1000).toISOString()
-                : null;
-              const periodEnd = activeSubscription.current_period_end
-                ? new Date(activeSubscription.current_period_end * 1000).toISOString()
-                : null;
-
-              const { error: upsertErr } = await supabase
-                .from("subscriptions")
-                .upsert(
-                  {
-                    seller_id: userId,
-                    stripe_subscription_id: activeSubscription.id,
-                    status: activeSubscription.status,
-                    current_period_start: periodStart,
-                    current_period_end: periodEnd,
-                    plan_id: plan.id,
-                    billing_period: billingPeriod,
-                  },
-                  { onConflict: "seller_id" },
-                );
-
-              if (upsertErr) {
-                log("ERROR upserting subscription during sync", upsertErr);
-              } else {
-                log("Synced subscription from Stripe into DB", {
-                  subscriptionId: activeSubscription.id,
-                  planId: plan.id,
-                });
-              }
-            } else {
-              log("No matching plan found for Stripe price", { priceId });
-            }
-          }
-        } else {
-          log("No active Stripe subscription found during sync", { customerId });
-        }
-
-        if (!stripeSubscriptionId) {
-          const { data: reloadedSub } = await supabase
-            .from("subscriptions")
-            .select("stripe_subscription_id")
-            .eq("seller_id", userId)
-            .in("status", ["active", "trialing"])
-            .maybeSingle();
-
-          if (reloadedSub?.stripe_subscription_id) {
-            stripeSubscriptionId = reloadedSub.stripe_subscription_id;
-          }
-        }
-      } else {
-        log("No Stripe customer ID on profile", { userId });
-      }
     }
 
     if (!stripeSubscriptionId) {
@@ -162,19 +76,53 @@ serve(async (req) => {
     }
 
     const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-
     const currentItem = stripeSub.items.data[0];
-    const currentPrice = currentItem.price.unit_amount ?? 0;
 
-    // Fetch new price
+    const currentPrice = currentItem.price.unit_amount ?? 0;
+    const currentCurrency = currentItem.price.currency;
+    const currentInterval = currentItem.price.recurring?.interval;
+
+    // New price
     const newPrice = await stripe.prices.retrieve(new_price_id);
     const newAmount = newPrice.unit_amount ?? 0;
+    const newCurrency = newPrice.currency;
+    const newInterval = newPrice.recurring?.interval;
 
     const isUpgrade = newAmount > currentPrice;
 
-    log("Detected", { isUpgrade, currentPrice, newAmount });
+    log("DETECTED_CHANGE", {
+      isUpgrade,
+      currentAmount: currentPrice,
+      newAmount,
+      currentCurrency,
+      newCurrency,
+      currentInterval,
+      newInterval,
+    });
 
+    // ─────────────────────────────────────────────
+    // Check if proration possible
+    // ─────────────────────────────────────────────
+
+    const canProrate =
+      stripeSub.status === "active" && // not trialing
+      currentCurrency === newCurrency &&
+      currentInterval === newInterval;
+
+    if (isUpgrade && !canProrate) {
+      log("⚠ PRORATION BLOCKED", {
+        status: stripeSub.status,
+        currentCurrency,
+        newCurrency,
+        currentInterval,
+        newInterval,
+      });
+    }
+
+    // ─────────────────────────────────────────────
     // Build update payload
+    // ─────────────────────────────────────────────
+
     const updatePayload: any = {
       items: [
         {
@@ -182,59 +130,56 @@ serve(async (req) => {
           price: new_price_id,
         },
       ],
+      billing_cycle_anchor: "unchanged",
+      proration_behavior: isUpgrade && canProrate ? "create_prorations" : "none",
+      payment_behavior: isUpgrade && canProrate ? "pending_if_incomplete" : "allow_incomplete",
+      expand: ["latest_invoice.payment_intent"],
     };
 
-    // Vérifier que le prorata est possible
-    const canProrate = 
-      stripeSub.status === "active" &&
-      newPrice.currency === currentItem.price.currency;
+    log("UPDATE_PAYLOAD", updatePayload);
 
-    if (!canProrate && isUpgrade) {
-      log("WARNING: Proration not possible", { 
-        status: stripeSub.status, 
-        currentCurrency: currentItem.price.currency,
-        newCurrency: newPrice.currency 
-      });
-    }
+    // Update subscription
+    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, updatePayload);
 
-    if (isUpgrade) {
-      // ⬆️ UPGRADE → PRORATA avec facture immédiate
-      updatePayload.proration_behavior = canProrate ? "create_prorations" : "none";
-      updatePayload.billing_cycle_anchor = "unchanged";
-      updatePayload.payment_behavior = canProrate ? "pending_if_incomplete" : "allow_incomplete";
-    } else {
-      // ⬇️ DOWNGRADE → pas de proration, changement au prochain cycle
-      updatePayload.proration_behavior = "none";
-      updatePayload.billing_cycle_anchor = "unchanged";
-      updatePayload.payment_behavior = "allow_incomplete";
-    }
+    // ─────────────────────────────────────────────
+    // Retrieve invoice
+    // ─────────────────────────────────────────────
 
-    log("Updating subscription", updatePayload);
-
-    const updatedSub = await stripe.subscriptions.update(stripeSubscriptionId, {
-      ...updatePayload,
-      expand: ["latest_invoice.payment_intent"],
-    });
-
-    // Retrieve invoice (with fallback)
     let invoiceId =
       typeof updatedSub.latest_invoice === "string" ? updatedSub.latest_invoice : updatedSub.latest_invoice?.id;
 
     if (!invoiceId) {
-      log("No latest_invoice, using fallback");
-      const invoices = await stripe.invoices.list({ subscription: stripeSubscriptionId, limit: 1 });
-      if (!invoices.data?.[0]) throw new Error("Invoice not created by Stripe");
+      const invoices = await stripe.invoices.list({
+        subscription: stripeSubscriptionId,
+        limit: 1,
+      });
+
+      if (!invoices.data?.length) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            payment_required: false,
+            message: "Plan updated (no invoice needed)",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       invoiceId = invoices.data[0].id;
     }
 
     const invoice = await stripe.invoices.retrieve(invoiceId);
 
-    log("Invoice", {
+    log("INVOICE", {
       invoiceId: invoice.id,
       amount_due: invoice.amount_due,
+      hosted_invoice_url: invoice.hosted_invoice_url,
     });
 
-    // If nothing to pay
+    // ─────────────────────────────────────────────
+    // If no payment required
+    // ─────────────────────────────────────────────
+
     if (invoice.amount_due === 0 || invoice.status === "paid") {
       return new Response(
         JSON.stringify({
@@ -246,15 +191,11 @@ serve(async (req) => {
       );
     }
 
-    // Payment URL (handle null hosted_invoice_url)
+    // Payment URL
     const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`;
-    const paymentUrl = invoice.hosted_invoice_url 
-      ? invoice.hosted_invoice_url + `?return_url=${encodeURIComponent(origin + "/upgrade-success")}`
+    const paymentUrl = invoice.hosted_invoice_url
+      ? `${invoice.hosted_invoice_url}?return_url=${encodeURIComponent(origin + "/upgrade-success")}`
       : null;
-
-    if (!paymentUrl) {
-      log("WARN: No hosted_invoice_url", { invoiceId: invoice.id });
-    }
 
     return new Response(
       JSON.stringify({
@@ -270,8 +211,8 @@ serve(async (req) => {
   } catch (err: any) {
     log("ERROR", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
