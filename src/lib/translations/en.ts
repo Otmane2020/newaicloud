@@ -2715,6 +2715,8 @@ export const translations = {
       subtitle: "Choose the plan that fits your needs and scale at your own pace",
       success: "Payment successful! Your subscription is now active.",
       cancelled: "Payment cancelled. You can try again whenever you want.",
+      useManualPromo: "Use a custom promo code",
+      useManualPromoDiscount: "Use a custom promo code (disables automatic discount)",
       currentPlan: "Current Plan",
       yourCurrentPlan: "Your current plan",
       monthlyOptimizations: "Optimizations/month",
