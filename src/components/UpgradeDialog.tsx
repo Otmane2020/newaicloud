@@ -455,7 +455,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
             <Tag className="w-4 h-4 text-muted-foreground" />
             <Label htmlFor="upgrade-manual-promo" className="text-sm cursor-pointer flex-1">
-              Utiliser un code promo personnalisé
+              {t.subscription.useManualPromo}
             </Label>
             <Switch
               id="upgrade-manual-promo"

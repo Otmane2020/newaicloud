@@ -2734,6 +2734,8 @@ export const translations = {
       subtitle: "Choisissez le plan qui correspond à vos besoins et évoluez à votre rythme",
       success: "Paiement réussi ! Votre abonnement est maintenant actif.",
       cancelled: "Paiement annulé. Vous pouvez réessayer quand vous voulez.",
+      useManualPromo: "Utiliser un code promo personnalisé",
+      useManualPromoDiscount: "Utiliser un code promo personnalisé (désactive la réduction automatique)",
       currentPlan: "Plan actuel",
       yourCurrentPlan: "Votre plan actuel",
       monthlyOptimizations: "Optimisations/mois",

@@ -1039,7 +1039,7 @@ export default function Onboarding() {
         <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6 p-3 bg-muted/50 rounded-lg max-w-md mx-auto">
           <Tag className="w-4 h-4 text-muted-foreground" />
           <Label htmlFor="onboarding-manual-promo" className="text-sm cursor-pointer">
-            Utiliser un code promo personnalisé
+            {t.subscription.useManualPromo}
           </Label>
           <Switch id="onboarding-manual-promo" checked={useManualPromo} onCheckedChange={setUseManualPromo} />
         </div>
