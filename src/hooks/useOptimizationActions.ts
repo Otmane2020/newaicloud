@@ -213,7 +213,7 @@ export const useOptimizationActions = () => {
             try {
               const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
                 body: {
-                  imageId: img.id,
+                  image_id: img.id,
                   imageType: img.image_type || 'product',
                 },
               });
