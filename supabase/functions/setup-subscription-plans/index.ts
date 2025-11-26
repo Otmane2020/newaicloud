@@ -30,6 +30,16 @@ serve(async (req) => {
   }
 
   try {
+    // ✅ CRITICAL: Check for health check to prevent creating new prices
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      console.log("Health check - skipping plan setup");
+      return new Response(JSON.stringify({ ok: true, skipped: true }), { 
+        status: 200, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     console.log("Starting subscription plans setup...");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -317,69 +327,200 @@ serve(async (req) => {
 
       // Skip creating Stripe products for trial (it's free)
       if (plan.id !== "trial") {
-        // Create products and prices for monthly USD
-        const productMonthlyUSD = await stripe.products.create({
-          name: `${plan.name} ${plan.max_optimizations_monthly}`,
-          description: `${plan.description} - ${plan.max_optimizations_monthly} optimizations/month`,
-          type: "service",
+        // ✅ Check if existing product and prices exist to avoid creating duplicates
+        const existingProducts = await stripe.products.search({
+          query: `name:'${plan.name} ${plan.max_optimizations_monthly}'`,
+          limit: 1
         });
 
-        const priceMonthlyUSD = await stripe.prices.create({
-          product: productMonthlyUSD.id,
-          currency: "usd",
-          unit_amount: Math.round(plan.price_usd * 100),
-          recurring: { interval: "month" },
-        });
+        let productMonthlyUSD;
+        let priceMonthlyUSD;
+
+        if (existingProducts.data.length > 0) {
+          productMonthlyUSD = existingProducts.data[0];
+          console.log(`Reusing existing product: ${productMonthlyUSD.id} for ${plan.name}`);
+          
+          // Find existing USD monthly price
+          const existingPrices = await stripe.prices.list({
+            product: productMonthlyUSD.id,
+            currency: "usd",
+            recurring: { interval: "month" },
+            limit: 1
+          });
+          
+          if (existingPrices.data.length > 0) {
+            priceMonthlyUSD = existingPrices.data[0];
+            console.log(`Reusing existing price: ${priceMonthlyUSD.id}`);
+          } else {
+            // Create price for existing product
+            priceMonthlyUSD = await stripe.prices.create({
+              product: productMonthlyUSD.id,
+              currency: "usd",
+              unit_amount: Math.round(plan.price_usd * 100),
+              recurring: { interval: "month" },
+            });
+          }
+        } else {
+          // Create new product and price
+          productMonthlyUSD = await stripe.products.create({
+            name: `${plan.name} ${plan.max_optimizations_monthly}`,
+            description: `${plan.description} - ${plan.max_optimizations_monthly} optimizations/month`,
+            type: "service",
+          });
+
+          priceMonthlyUSD = await stripe.prices.create({
+            product: productMonthlyUSD.id,
+            currency: "usd",
+            unit_amount: Math.round(plan.price_usd * 100),
+            recurring: { interval: "month" },
+          });
+        }
 
         priceIds.stripe_price_id_monthly = priceMonthlyUSD.id;
 
-        // Create products and prices for monthly EUR
-        const productMonthlyEUR = await stripe.products.create({
-          name: `${plan.name} ${plan.max_optimizations_monthly} EUR`,
-          description: `${plan.description} - ${plan.max_optimizations_monthly} optimizations/month`,
-          type: "service",
+        // ✅ Check for existing EUR monthly product/price
+        const existingProductsEUR = await stripe.products.search({
+          query: `name:'${plan.name} ${plan.max_optimizations_monthly} EUR'`,
+          limit: 1
         });
 
-        const priceMonthlyEUR = await stripe.prices.create({
-          product: productMonthlyEUR.id,
-          currency: "eur",
-          unit_amount: Math.round(plan.price_eur * 100),
-          recurring: { interval: "month" },
-        });
+        let productMonthlyEUR;
+        let priceMonthlyEUR;
+
+        if (existingProductsEUR.data.length > 0) {
+          productMonthlyEUR = existingProductsEUR.data[0];
+          console.log(`Reusing existing EUR product: ${productMonthlyEUR.id}`);
+          
+          const existingPricesEUR = await stripe.prices.list({
+            product: productMonthlyEUR.id,
+            currency: "eur",
+            recurring: { interval: "month" },
+            limit: 1
+          });
+          
+          if (existingPricesEUR.data.length > 0) {
+            priceMonthlyEUR = existingPricesEUR.data[0];
+            console.log(`Reusing existing EUR price: ${priceMonthlyEUR.id}`);
+          } else {
+            priceMonthlyEUR = await stripe.prices.create({
+              product: productMonthlyEUR.id,
+              currency: "eur",
+              unit_amount: Math.round(plan.price_eur * 100),
+              recurring: { interval: "month" },
+            });
+          }
+        } else {
+          productMonthlyEUR = await stripe.products.create({
+            name: `${plan.name} ${plan.max_optimizations_monthly} EUR`,
+            description: `${plan.description} - ${plan.max_optimizations_monthly} optimizations/month`,
+            type: "service",
+          });
+
+          priceMonthlyEUR = await stripe.prices.create({
+            product: productMonthlyEUR.id,
+            currency: "eur",
+            unit_amount: Math.round(plan.price_eur * 100),
+            recurring: { interval: "month" },
+          });
+        }
 
         priceIds.stripe_price_id_monthly_eur = priceMonthlyEUR.id;
 
-        // Create products and prices for yearly USD (with 20% discount)
+        // ✅ Check for existing yearly USD product/price
         const yearlyPriceUSD = plan.price_usd * 12 * 0.8;
-        const productYearlyUSD = await stripe.products.create({
-          name: `${plan.name} ${plan.max_optimizations_monthly} Yearly`,
-          description: `${plan.description} (yearly) - ${plan.max_optimizations_monthly} optimizations/month`,
-          type: "service",
+        const existingProductsYearlyUSD = await stripe.products.search({
+          query: `name:'${plan.name} ${plan.max_optimizations_monthly} Yearly'`,
+          limit: 1
         });
 
-        const priceYearlyUSD = await stripe.prices.create({
-          product: productYearlyUSD.id,
-          currency: "usd",
-          unit_amount: Math.round(yearlyPriceUSD * 100),
-          recurring: { interval: "year" },
-        });
+        let productYearlyUSD;
+        let priceYearlyUSD;
+
+        if (existingProductsYearlyUSD.data.length > 0) {
+          productYearlyUSD = existingProductsYearlyUSD.data[0];
+          console.log(`Reusing existing yearly USD product: ${productYearlyUSD.id}`);
+          
+          const existingPricesYearlyUSD = await stripe.prices.list({
+            product: productYearlyUSD.id,
+            currency: "usd",
+            recurring: { interval: "year" },
+            limit: 1
+          });
+          
+          if (existingPricesYearlyUSD.data.length > 0) {
+            priceYearlyUSD = existingPricesYearlyUSD.data[0];
+            console.log(`Reusing existing yearly USD price: ${priceYearlyUSD.id}`);
+          } else {
+            priceYearlyUSD = await stripe.prices.create({
+              product: productYearlyUSD.id,
+              currency: "usd",
+              unit_amount: Math.round(yearlyPriceUSD * 100),
+              recurring: { interval: "year" },
+            });
+          }
+        } else {
+          productYearlyUSD = await stripe.products.create({
+            name: `${plan.name} ${plan.max_optimizations_monthly} Yearly`,
+            description: `${plan.description} (yearly) - ${plan.max_optimizations_monthly} optimizations/month`,
+            type: "service",
+          });
+
+          priceYearlyUSD = await stripe.prices.create({
+            product: productYearlyUSD.id,
+            currency: "usd",
+            unit_amount: Math.round(yearlyPriceUSD * 100),
+            recurring: { interval: "year" },
+          });
+        }
 
         priceIds.stripe_price_id_yearly = priceYearlyUSD.id;
 
-        // Create products and prices for yearly EUR (with 20% discount)
+        // ✅ Check for existing yearly EUR product/price
         const yearlyPriceEUR = plan.price_eur * 12 * 0.8;
-        const productYearlyEUR = await stripe.products.create({
-          name: `${plan.name} ${plan.max_optimizations_monthly} Yearly EUR`,
-          description: `${plan.description} (yearly) - ${plan.max_optimizations_monthly} optimizations/month`,
-          type: "service",
+        const existingProductsYearlyEUR = await stripe.products.search({
+          query: `name:'${plan.name} ${plan.max_optimizations_monthly} Yearly EUR'`,
+          limit: 1
         });
 
-        const priceYearlyEUR = await stripe.prices.create({
-          product: productYearlyEUR.id,
-          currency: "eur",
-          unit_amount: Math.round(yearlyPriceEUR * 100),
-          recurring: { interval: "year" },
-        });
+        let productYearlyEUR;
+        let priceYearlyEUR;
+
+        if (existingProductsYearlyEUR.data.length > 0) {
+          productYearlyEUR = existingProductsYearlyEUR.data[0];
+          console.log(`Reusing existing yearly EUR product: ${productYearlyEUR.id}`);
+          
+          const existingPricesYearlyEUR = await stripe.prices.list({
+            product: productYearlyEUR.id,
+            currency: "eur",
+            recurring: { interval: "year" },
+            limit: 1
+          });
+          
+          if (existingPricesYearlyEUR.data.length > 0) {
+            priceYearlyEUR = existingPricesYearlyEUR.data[0];
+            console.log(`Reusing existing yearly EUR price: ${priceYearlyEUR.id}`);
+          } else {
+            priceYearlyEUR = await stripe.prices.create({
+              product: productYearlyEUR.id,
+              currency: "eur",
+              unit_amount: Math.round(yearlyPriceEUR * 100),
+              recurring: { interval: "year" },
+            });
+          }
+        } else {
+          productYearlyEUR = await stripe.products.create({
+            name: `${plan.name} ${plan.max_optimizations_monthly} Yearly EUR`,
+            description: `${plan.description} (yearly) - ${plan.max_optimizations_monthly} optimizations/month`,
+            type: "service",
+          });
+
+          priceYearlyEUR = await stripe.prices.create({
+            product: productYearlyEUR.id,
+            currency: "eur",
+            unit_amount: Math.round(yearlyPriceEUR * 100),
+            recurring: { interval: "year" },
+          });
+        }
 
         priceIds.stripe_price_id_yearly_eur = priceYearlyEUR.id;
       }
