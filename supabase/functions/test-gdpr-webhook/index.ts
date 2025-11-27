@@ -21,13 +21,67 @@ Deno.serve(async (req) => {
       });
     }
 
+    const simulateShopifyVerification = body?.simulateShopifyVerification === true;
+
     const SHOPIFY_API_SECRET = Deno.env.get('SHOPIFY_API_SECRET');
-    if (!SHOPIFY_API_SECRET) {
+    if (!SHOPIFY_API_SECRET && !simulateShopifyVerification) {
       return new Response(JSON.stringify({ 
         error: 'SHOPIFY_API_SECRET not configured',
         status: 'configuration_error'
       }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get GDPR webhook URL
+    const SUPABASE_PROJECT_ID = Deno.env.get('VITE_SUPABASE_PROJECT_ID') || 'nekqqlhrjgmyudmmewas';
+    const gdprWebhookUrl = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/shopify-gdpr-webhook`;
+
+    if (simulateShopifyVerification) {
+      // Simulate Shopify verification (no HMAC, minimal payload)
+      console.log(JSON.stringify({
+        event: 'test_shopify_verification_mode',
+        timestamp: new Date().toISOString()
+      }));
+
+      const webhookResponse = await fetch(gdprWebhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Shopify Webhook Verification',
+        },
+        body: '{}'
+      });
+
+      const responseText = await webhookResponse.text();
+      let responseData;
+      
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
+      }
+
+      const result = {
+        success: webhookResponse.ok,
+        status_code: webhookResponse.status,
+        hmac_sent: '',
+        payload_sent: {},
+        webhook_response: responseData,
+        interpretation: webhookResponse.status === 200 
+          ? '✅ Vérification Shopify ACCEPTÉE - L\'endpoint répond correctement aux vérifications automatiques (2025)'
+          : `❌ Vérification ÉCHOUÉE - Code: ${webhookResponse.status}`,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log(JSON.stringify({
+        event: 'test_shopify_verification_result',
+        ...result
+      }));
+
+      return new Response(JSON.stringify(result, null, 2), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -46,7 +100,17 @@ Deno.serve(async (req) => {
 
     const payloadString = JSON.stringify(testPayload);
     
-    // Calculate HMAC-SHA256 signature
+    // Calculate HMAC-SHA256 signature (only needed for HMAC test)
+    if (!SHOPIFY_API_SECRET) {
+      return new Response(JSON.stringify({ 
+        error: 'SHOPIFY_API_SECRET not configured',
+        status: 'configuration_error'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const hmac = createHmac('sha256', SHOPIFY_API_SECRET)
       .update(payloadString, 'utf8')
       .digest('base64');
@@ -57,10 +121,6 @@ Deno.serve(async (req) => {
       hmac_length: hmac.length,
       timestamp: new Date().toISOString()
     }));
-
-    // Get GDPR webhook URL
-    const SUPABASE_PROJECT_ID = Deno.env.get('VITE_SUPABASE_PROJECT_ID') || 'nekqqlhrjgmyudmmewas';
-    const gdprWebhookUrl = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/shopify-gdpr-webhook`;
 
     // Call GDPR webhook with proper Shopify headers
     const webhookResponse = await fetch(gdprWebhookUrl, {
