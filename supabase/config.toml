@@ -405,3 +405,6 @@ verify_jwt = false
 [functions.cleanup-stripe-prices]
 verify_jwt = false
 
+[functions.test-gdpr-webhook]
+verify_jwt = false
+
