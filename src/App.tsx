@@ -94,6 +94,7 @@ import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
 import UsageTable from "./pages/UsageTable";
 import TestGdprWebhook from "./pages/TestGdprWebhook";
+import ShopifyWebhooksAdmin from "./pages/ShopifyWebhooksAdmin";
 
 const queryClient = new QueryClient();
 
@@ -551,6 +552,7 @@ const App = () => (
               }
             />
             <Route path="/test-gdpr-webhook" element={<TestGdprWebhook />} />
+            <Route path="/admin/shopify-webhooks" element={<ShopifyWebhooksAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
