@@ -4487,6 +4487,7 @@ export const translations = {
       pleaseWait: "Please wait during synchronization...",
       duration: "This may take up to 1 minute depending on your store size",
       types: {
+        import: "Import",
         products: "Products",
         collections: "Collections",
         pages: "Pages",
