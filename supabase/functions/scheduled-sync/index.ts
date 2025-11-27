@@ -292,43 +292,30 @@ Deno.serve(async (req) => {
           now
         );
 
-        // Update last import AND next import timestamps for this specific store
+        const syncTimestamp = new Date().toISOString();
+        
+        // Update last import AND next import timestamps for sync settings
         await supabase
           .from('shopify_sync_settings')
           .update({ 
-            last_import_at: new Date().toISOString(),
+            last_import_at: syncTimestamp,
             next_import_at: nextImportDate.toISOString()
           })
           .eq('user_id', userId)
           .eq('store_id', storeId);
 
+        // ALSO update shopify_connections.last_sync_at for UI display
+        await supabase
+          .from('shopify_connections')
+          .update({ 
+            last_sync_at: syncTimestamp
+          })
+          .eq('id', storeId);
+
         console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: ${totalImported} items, ${duration}ms`);
         console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
-
-        // Phase 6: Send notifications
-        if (totalImported > 0) {
-          await supabase.functions.invoke('send-notification', {
-            body: {
-              user_id: userId,
-              type: 'sync_complete',
-              title: 'Synchronisation automatique terminée',
-              message: `${totalImported} éléments synchronisés avec succès.`,
-              priority: 'low'
-            }
-          });
-        }
-
-        if (hasError) {
-          await supabase.functions.invoke('send-notification', {
-            body: {
-              user_id: userId,
-              type: 'sync_error',
-              title: 'Erreur de synchronisation automatique',
-              message: errorMessage,
-              priority: 'high'
-            }
-          });
-        }
+        
+        // Notifications removed - no need for sync notifications
       } else {
         console.log(`[SCHEDULED-SYNC] Skipping sync for user ${userId} (not scheduled)`);
       }
