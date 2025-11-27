@@ -125,18 +125,35 @@ serve(async (req) => {
       }
     }
 
-    // 6. Claim la connexion Shopify
+    // 6. Claim la connexion Shopify - vérifier d'abord si connexion existante
+    const { data: existingConnection } = await supabase
+      .from("shopify_connections")
+      .select("id, connected_at")
+      .eq("user_id", userId)
+      .eq("store_url", shop)
+      .maybeSingle();
+
+    // Ne mettre à jour connected_at QUE pour les NOUVELLES connexions
+    const connectionData: Record<string, any> = {
+      user_id: userId,
+      store_url: shop,
+      store_name: pendingConnection.commercial_name || shop,
+      access_token: pendingConnection.access_token,
+      is_active: true,
+      connection_type: "oauth",
+    };
+    
+    // Seulement si c'est une nouvelle connexion, ajouter connected_at
+    if (!existingConnection) {
+      connectionData.connected_at = new Date().toISOString();
+      console.log("[SHOPIFY-AUTO-AUTH] Nouvelle connexion - connected_at sera défini");
+    } else {
+      console.log("[SHOPIFY-AUTO-AUTH] Connexion existante - connected_at préservé");
+    }
+
     const { error: claimError } = await supabase
       .from("shopify_connections")
-      .upsert({
-        user_id: userId,
-        store_url: shop,
-        store_name: pendingConnection.commercial_name || shop,
-        access_token: pendingConnection.access_token,
-        connected_at: new Date().toISOString(),
-        is_active: true,
-        connection_type: "oauth",
-      }, {
+      .upsert(connectionData, {
         onConflict: 'user_id,store_url'
       });
 
