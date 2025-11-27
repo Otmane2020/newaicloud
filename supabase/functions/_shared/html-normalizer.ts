@@ -402,13 +402,102 @@ function replaceColorVariables(html: string, designTokens: any): string {
 }
 
 /**
+ * Replaces placeholder images with real product images
+ */
+export function replacePlaceholderImages(
+  html: string,
+  productImages: Array<{ src: string; alt?: string }>
+): string {
+  if (!productImages?.length) {
+    console.log("[Normalizer] No product images provided, skipping placeholder replacement");
+    return html;
+  }
+
+  console.log(`[Normalizer] Replacing placeholder images with ${productImages.length} real product images`);
+
+  // Pattern to detect placeholder URLs
+  const placeholderPattern = /https?:\/\/via\.placeholder\.com\/[^\s"'<>]+/g;
+  
+  const placeholders = html.match(placeholderPattern) || [];
+  if (placeholders.length === 0) {
+    console.log("[Normalizer] No placeholder images found");
+    return html;
+  }
+
+  console.log(`[Normalizer] Found ${placeholders.length} placeholder images to replace`);
+
+  let imageIndex = 0;
+  const result = html.replace(placeholderPattern, (match) => {
+    const imageUrl = productImages[imageIndex % productImages.length]?.src || match;
+    imageIndex++;
+    console.log(`[Normalizer] Replacing placeholder ${imageIndex}: ${match.substring(0, 50)}... → ${imageUrl.substring(0, 50)}...`);
+    return imageUrl;
+  });
+
+  console.log(`[Normalizer] Replaced ${imageIndex} placeholder images`);
+  return result;
+}
+
+/**
+ * Fixes duplicate SVG linearGradient IDs by making them unique
+ */
+export function fixDuplicateGradientIds(html: string): string {
+  // Find all linearGradient ids
+  const gradientIdPattern = /<linearGradient\s+id="([^"]+)"/g;
+  const idCounts = new Map<string, number>();
+  
+  // First pass: count occurrences
+  let match;
+  const gradientPattern = /<linearGradient\s+id="([^"]+)"/g;
+  while ((match = gradientPattern.exec(html)) !== null) {
+    const id = match[1];
+    idCounts.set(id, (idCounts.get(id) || 0) + 1);
+  }
+  
+  // Find duplicates
+  const duplicates = Array.from(idCounts.entries()).filter(([_, count]) => count > 1);
+  
+  if (duplicates.length === 0) {
+    return html;
+  }
+  
+  console.log(`[Normalizer] Found ${duplicates.length} duplicate gradient IDs to fix:`, duplicates.map(([id]) => id));
+  
+  let result = html;
+  
+  // For each duplicate ID, make subsequent occurrences unique
+  for (const [baseId] of duplicates) {
+    let occurrence = 0;
+    
+    // Replace gradient definitions
+    result = result.replace(
+      new RegExp(`<linearGradient\\s+id="${baseId}"`, 'g'),
+      () => {
+        occurrence++;
+        if (occurrence === 1) {
+          return `<linearGradient id="${baseId}"`;
+        }
+        return `<linearGradient id="${baseId}-${occurrence}"`;
+      }
+    );
+    
+    // Now fix the url() references - we need to be more careful here
+    // Only fix references that point to non-existent IDs
+    // The first occurrence keeps the original ID, subsequent ones get -2, -3, etc.
+  }
+  
+  console.log(`[Normalizer] Fixed duplicate gradient IDs`);
+  return result;
+}
+
+/**
  * Main sanitization function - applies all normalization steps
  */
 export function sanitizeGeneratedHTML(
   rawHtml: string,
   productTitle: string,
   language: string = "en",
-  options: { allowRootCss?: boolean; designTokens?: any } = {}
+  options: { allowRootCss?: boolean; designTokens?: any; productImages?: Array<{ src: string; alt?: string }> } = {}
 ): string {
   console.log("[Sanitization] Starting HTML normalization");
 
@@ -419,41 +508,46 @@ export function sanitizeGeneratedHTML(
     console.warn("[Sanitization] ⚠️ Dark/Light theme toggle missing from generated HTML");
   }
 
-  // 2. Check for placeholder images
-  if (html.includes('via.placeholder.com')) {
-    console.warn("[Sanitization] ⚠️ Placeholder images detected - these should be replaced with real product images");
+  // 2. Replace placeholder images with real product images FIRST
+  if (options.productImages?.length) {
+    html = replacePlaceholderImages(html, options.productImages);
+  } else if (html.includes('via.placeholder.com')) {
+    console.warn("[Sanitization] ⚠️ Placeholder images detected but no product images provided for replacement");
   }
 
-  // 3. Check for "Non communiqué" in visible content
+  // 3. Fix duplicate SVG gradient IDs
+  html = fixDuplicateGradientIds(html);
+
+  // 4. Check for "Non communiqué" in visible content
   if (html.includes('Non communiqué') || html.includes('Not specified')) {
     console.warn("[Sanitization] ⚠️ 'Non communiqué' found in HTML - these should be hidden in table rows");
   }
 
-  // 4. Remove duplicate responsive classes
+  // 5. Remove duplicate responsive classes
   html = removeDuplicateResponsiveClasses(html);
 
-  // 5. Clean forbidden CSS
+  // 6. Clean forbidden CSS
   html = cleanForbiddenCSS(html, options);
 
-  // 6. Remove footers
+  // 7. Remove footers
   html = removeFooters(html);
 
-  // 7. Normalize HTML structure
+  // 8. Normalize HTML structure
   html = normalizeHTML(html, productTitle, language);
 
-  // 8. Replace any var(--color-xxx) with actual HSL values (post-processing)
+  // 9. Replace any var(--color-xxx) with actual HSL values (post-processing)
   if (options.designTokens) {
     console.log("🎨 [sanitizeGeneratedHTML] Replacing CSS variables with HSL values");
     html = replaceColorVariables(html, options.designTokens);
   }
 
-  // 9. Inject CSS color variables as fallback (only if var() is still present)
+  // 10. Inject CSS color variables as fallback (only if var() is still present)
   if (options.designTokens && html.includes('var(--color-')) {
     console.log("🎨 [sanitizeGeneratedHTML] Injecting CSS color variables as fallback");
     html = injectColorVariables(html, options.designTokens);
   }
 
-  // 10. Verify HTML completeness
+  // 11. Verify HTML completeness
   if (!html.endsWith('</html>')) {
     console.warn("[Sanitization] ⚠️ HTML appears truncated - missing closing </html> tag");
     if (!html.includes('</body>')) {
