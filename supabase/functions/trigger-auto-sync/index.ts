@@ -261,12 +261,13 @@ serve(async (req) => {
 
     const duration = Date.now() - startTime;
 
-    // Update history
+    // Update history with final status and sync_type
     try {
       await supabase
         .from("sync_history")
         .update({
           status: hasErrors ? "failed" : "success",
+          sync_type: "completed", // Important: set to "completed" for frontend detection
           store_id: connection.id,
           items_synced: totalImported,
           duration_ms: duration,
