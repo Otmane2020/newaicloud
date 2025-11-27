@@ -52,6 +52,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/lib/language';
 
 interface Domain {
   id: string;
@@ -108,6 +109,7 @@ const MetricCard = ({ title, value, change, icon, trend = 'neutral' }: MetricCar
 };
 
 export function GoogleSearchConsole() {
+  const { t, language } = useTranslation();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
@@ -863,7 +865,7 @@ export function GoogleSearchConsole() {
 
                 {syncConfig?.last_sync_at && (
                   <div className="text-sm text-muted-foreground">
-                    Dernière synchronisation : {new Date(syncConfig.last_sync_at).toLocaleString('fr-FR')}
+                    {t.integration.lastSync}: {new Date(syncConfig.last_sync_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}
                   </div>
                 )}
               </div>

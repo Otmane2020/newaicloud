@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RefreshCw, Calendar, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTranslation } from "@/lib/language";
 
 interface SyncSettings {
   id?: string;
@@ -26,6 +27,7 @@ interface SyncSettings {
 }
 
 export function GoogleMerchantSyncSettings() {
+  const { t, language } = useTranslation();
   const [settings, setSettings] = useState<SyncSettings>({
     auto_sync_enabled: false,
     sync_frequency: "daily",
@@ -61,57 +63,41 @@ export function GoogleMerchantSyncSettings() {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      toast.error("Impossible de charger les paramètres de synchronisation");
+      toast.error(t.toasts.error.loading);
     } finally {
       setLoading(false);
     }
   };
 
   const saveSettings = async () => {
-    setSaving(true);
     try {
+      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const dataToSave = {
-        user_id: user.id,
-        auto_sync_enabled: settings.auto_sync_enabled,
-        sync_frequency: settings.sync_frequency,
-      };
+      const { error } = await supabase
+        .from("google_merchant_sync_settings")
+        .upsert({
+          user_id: user.id,
+          auto_sync_enabled: settings.auto_sync_enabled,
+          sync_frequency: settings.sync_frequency,
+        });
 
-      if (settings.id) {
-        const { error } = await supabase
-          .from("google_merchant_sync_settings")
-          .update(dataToSave)
-          .eq("id", settings.id);
+      if (error) throw error;
 
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from("google_merchant_sync_settings")
-          .insert([dataToSave])
-          .select()
-          .single();
-
-        if (error) throw error;
-        if (data) {
-          setSettings({ ...settings, id: data.id });
-        }
-      }
-
-      toast.success("Paramètres de synchronisation sauvegardés");
+      toast.success(t.toasts.success.saved);
       loadSettings();
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Impossible de sauvegarder les paramètres");
+      toast.error(t.toasts.error.saving);
     } finally {
       setSaving(false);
     }
   };
 
   const formatDate = (date: string | null) => {
-    if (!date) return "Jamais";
-    return new Date(date).toLocaleString("fr-FR", {
+    if (!date) return t.integration.never;
+    return new Date(date).toLocaleString(language === 'fr' ? "fr-FR" : "en-US", {
       dateStyle: "medium",
       timeStyle: "short",
     });
@@ -132,18 +118,18 @@ export function GoogleMerchantSyncSettings() {
       <Card className="p-6">
         <div className="space-y-6">
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Synchronisation Automatique</h3>
+            <h3 className="text-lg font-semibold">{t.googleMerchant.sync.autoSyncTitle}</h3>
             <p className="text-sm text-muted-foreground">
-              Configurez la synchronisation automatique de vos flux Google Merchant
+              {t.googleMerchant.sync.autoSyncSubtitle}
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="auto-sync">Activer la synchronisation automatique</Label>
+                <Label htmlFor="auto-sync">{t.googleMerchant.sync.autoSyncEnabled}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Les flux seront mis à jour automatiquement selon la fréquence choisie
+                  {t.googleMerchant.sync.autoSyncDescription}
                 </p>
               </div>
               <Switch
@@ -157,7 +143,7 @@ export function GoogleMerchantSyncSettings() {
 
             {settings.auto_sync_enabled && (
               <div className="space-y-2">
-                <Label htmlFor="frequency">Fréquence de synchronisation</Label>
+                <Label htmlFor="frequency">{t.googleMerchant.sync.frequencyLabel}</Label>
                 <Select
                   value={settings.sync_frequency}
                   onValueChange={(value) =>
@@ -168,15 +154,12 @@ export function GoogleMerchantSyncSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Quotidienne</SelectItem>
-                    <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                    <SelectItem value="monthly">Mensuelle</SelectItem>
-                    <SelectItem value="manual">Manuelle uniquement</SelectItem>
+                    <SelectItem value="daily">{t.googleMerchant.sync.frequencyOptions.daily}</SelectItem>
+                    <SelectItem value="weekly">{t.googleMerchant.sync.frequencyOptions.weekly}</SelectItem>
+                    <SelectItem value="monthly">{t.integration.monthly}</SelectItem>
+                    <SelectItem value="manual">{t.googleMerchant.sync.frequencyOptions.manual}</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  La synchronisation s'effectuera automatiquement selon la fréquence choisie
-                </p>
               </div>
             )}
 
@@ -188,10 +171,10 @@ export function GoogleMerchantSyncSettings() {
               {saving ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Sauvegarde...
+                  {t.common.saving}
                 </>
               ) : (
-                "Enregistrer les paramètres"
+                t.common.save
               )}
             </Button>
           </div>
@@ -203,18 +186,18 @@ export function GoogleMerchantSyncSettings() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Statut de la synchronisation
+              {t.googleMerchant.sync.title}
             </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Dernière synchronisation</p>
+                <p className="text-sm text-muted-foreground">{t.googleMerchant.sync.lastSync}</p>
                 <p className="text-sm font-medium">{formatDate(settings.last_sync_at)}</p>
               </div>
 
               {settings.auto_sync_enabled && (
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Prochaine synchronisation</p>
+                  <p className="text-sm text-muted-foreground">{t.integration.sync.nextSync.title}</p>
                   <p className="text-sm font-medium">{formatDate(settings.next_sync_at)}</p>
                 </div>
               )}
@@ -226,11 +209,11 @@ export function GoogleMerchantSyncSettings() {
                 <AlertDescription>
                   <div className="space-y-1">
                     <p className="font-semibold">
-                      Erreur lors de la dernière synchronisation
+                      {t.toasts.error.sync}
                     </p>
                     <p className="text-sm">{settings.last_error}</p>
                     <p className="text-xs">
-                      Nombre d'erreurs consécutives: {settings.sync_errors_count}
+                      {t.integration.sync.status.consecutiveErrors}: {settings.sync_errors_count}
                     </p>
                   </div>
                 </AlertDescription>
@@ -241,7 +224,7 @@ export function GoogleMerchantSyncSettings() {
               <Alert>
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription>
-                  La dernière synchronisation s'est terminée avec succès
+                  {t.integration.sync.status.syncSuccess}
                 </AlertDescription>
               </Alert>
             )}
