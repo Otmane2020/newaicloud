@@ -247,10 +247,21 @@ export default function Dashboard() {
       // Detect currency from first product with currency info
       const storeCurrency = products?.find(p => p.currency)?.currency || 'EUR';
 
-      const optimizedProducts = products?.filter((p: any) => p.enrichment_status === 'enriched').length || 0;
+      // Get accurate count of optimized products using count query (not limited by range)
+      let optimizedCountQuery = supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('enrichment_status', 'enriched');
+
+      if (selectedStore?.id) {
+        optimizedCountQuery = optimizedCountQuery.eq('store_id', selectedStore.id);
+      }
+
+      const { count: optimizedProductsCount } = await optimizedCountQuery;
+      const optimizedProducts = optimizedProductsCount || 0;
       
-      // Calculate pending optimization: products that are NOT enriched (same logic as SeoOptimization "not-optimized")
-      const pendingProducts = products?.filter((p: any) => p.enrichment_status !== 'enriched').length || 0;
+      // Calculate pending optimization: totalProducts - optimizedProducts (accurate calculation)
+      const pendingProducts = (totalProducts || 0) - optimizedProducts;
       
       const totalValue = products?.reduce((sum: number, p: any) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
       
