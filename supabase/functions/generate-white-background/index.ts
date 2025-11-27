@@ -86,7 +86,7 @@ serve(async (req) => {
       }
     }
     
-    const { imageUrl, productTitle, imageType = "secondary" } = body;
+    const { imageUrl, productTitle, product_id, imageType = "secondary" } = body;
 
     if (!imageUrl) {
       return new Response(
@@ -372,10 +372,45 @@ EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and p
       promptLength: photographyPrompt.length
     });
 
+    // ✅ Convert base64 to public URL (same as collections)
+    let finalImageUrl = generatedImageUrl;
+    
+    if (product_id && generatedImageUrl.startsWith('data:')) {
+      console.log('🔄 Converting base64 to public URL...');
+      
+      try {
+        // Extract base64 data
+        const base64Match = generatedImageUrl.match(/data:image\/[^;]+;base64,(.+)/);
+        const base64Data = base64Match ? base64Match[1] : generatedImageUrl;
+        const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+        
+        // Upload to Supabase Storage  
+        const fileName = `product-white-${product_id}-${Date.now()}.png`;
+        const { error: uploadError } = await supabaseClient.storage
+          .from('generated-images')
+          .upload(fileName, imageBuffer, { contentType: 'image/png', upsert: true });
+        
+        if (uploadError) {
+          console.error('⚠️ Storage upload failed:', uploadError);
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabaseClient.storage
+            .from('generated-images')
+            .getPublicUrl(fileName);
+          
+          finalImageUrl = publicUrl;
+          console.log('✅ Image uploaded to storage:', publicUrl);
+        }
+      } catch (uploadErr) {
+        console.error('⚠️ Failed to convert base64 to public URL:', uploadErr);
+        // Continue with base64 if upload fails
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        imageUrl: generatedImageUrl,
+        imageUrl: finalImageUrl,
         usedProvider: usedModel,
         metadata: {
           imageType,

@@ -1098,6 +1098,7 @@ export function SmartPricingAI() {
             body: {
               imageUrl: product.image_url,
               productTitle: product.title,
+              product_id: product.id,
             },
           });
 
@@ -1290,6 +1291,7 @@ export function SmartPricingAI() {
         body: {
           imageUrl: preview.originalUrl,
           productTitle: preview.productTitle,
+          product_id: productId,
         },
       });
 

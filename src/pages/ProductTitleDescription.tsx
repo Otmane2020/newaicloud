@@ -801,6 +801,7 @@ export default function ProductTitleDescription() {
             imageUrl: preview.originalUrl,
             productTitle: preview.productTitle,
             imageType: selectedImageType,
+            product_id: preview.productId,
           },
         });
 
@@ -1365,6 +1366,7 @@ export default function ProductTitleDescription() {
           imageUrl: product.image_url,
           productTitle: product.title,
           imageType: selectedImageType,
+          product_id: productId,
         },
       });
 
