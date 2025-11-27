@@ -106,6 +106,7 @@ export function CollectionOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { processBulkOperation, state: optimizationState } = useOptimization();
   const [searchParams] = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
@@ -493,133 +494,55 @@ export function CollectionOptimization() {
     await executeOptimization(collectionsToOptimize);
   };
 
-  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
-
   const executeOptimization = async (collectionsToOptimize: Collection[]) => {
-
-    setOptimizing(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: collectionsToOptimize.length });
-    
-    // Start global optimization tracking
-    startOptimization('collections', collectionsToOptimize.length, 'optimizing');
-
-    let successCount = 0;
-    for (let i = 0; i < collectionsToOptimize.length; i++) {
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
-          body: { 
-            collection_ids: [collectionsToOptimize[i].id],
-            force: true  // Allow re-optimization
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'collections',
+      collectionsToOptimize,
+      async (collection) => {
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
+            body: { 
+              collection_ids: [collection.id],
+              force: true
+            }
+          });
+          
+          if (error) {
+            console.error(`❌ Error optimizing collection ${collection.id}:`, error);
+            return false;
           }
-        });
-        
-        if (error) {
-          console.error(`❌ Error optimizing collection ${collectionsToOptimize[i].id}:`, error);
-          toast.error(tf('collections.optimization.messages.optimizationError', { message: error.message || t.collections.optimization.messages.optimizationFailed }));
-          throw error;
-        }
-        
-        // Check if optimization was successful
-        if (data?.results?.[0]?.success) {
-          successCount++;
-          updateProgress(i + 1, collectionsToOptimize[i].id, 'success');
-        } else {
-          const errorMsg = data?.results?.[0]?.error || t.collections.optimization.messages.optimizationFailed;
-          console.warn(`⚠️ Collection ${collectionsToOptimize[i].id} - ${errorMsg}`);
-          toast.warning(tf('collections.optimization.messages.collectionError', { title: collectionsToOptimize[i].title, message: errorMsg }));
-          updateProgress(i + 1, collectionsToOptimize[i].id, 'error');
-        }
-        
-        setProgress({ current: i + 1, total: collectionsToOptimize.length });
-      } catch (error: any) {
-        console.error('❌ Error optimizing collection:', error);
-        
-        // Handle specific error types
-        if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
-          // Afficher le bon message selon le statut de l'utilisateur
-          if (limits?.isTrialing) {
-            toast.error(t.collections.optimization.messages.trialLimitReached);
-          } else if (limits?.isPaid) {
-            toast.error(t.collections.optimization.messages.monthlyLimitReached);
-          } else {
-            toast.error(t.collections.optimization.messages.trialLimitReached);
+          
+          return data?.results?.[0]?.success || false;
+        } catch (error: any) {
+          console.error('❌ Error optimizing collection:', error);
+          
+          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('403')) {
+            setShowUpgradeDialog(true);
           }
-          setShowUpgradeDialog(true);
-          setShowProgressDialog(false);
-          setOptimizing(false);
-          return;
-        } else if (error.message?.includes('already_optimized')) {
-          toast.error(t.collections.optimization.messages.alreadyOptimizedTrial);
-          setShowUpgradeDialog(true);
-          setShowProgressDialog(false);
-          setOptimizing(false);
-          return;
-        } else {
-          toast.error(tf('collections.optimization.messages.optimizationError', { message: error.message || t.collections.optimization.messages.optimizationFailed }));
+          return false;
+        }
+      },
+      'optimizing',
+      async (results) => {
+        await fetchCollections();
+        await refreshLimits();
+        
+        if (results.success > 0) {
+          const { data: freshCollections } = await supabase
+            .from('shopify_collections')
+            .select('*')
+            .in('id', collectionsToOptimize.map(c => c.id));
+          
+          setOptimizedCollections((freshCollections || []) as Collection[]);
+          toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(results.success)));
+          
+          setTimeout(() => {
+            setShowResultsDialog(true);
+          }, 800);
         }
       }
-    }
-
-    setOptimizing(false);
-    setIsOptimizationComplete(true);
-    setShowProgressDialog(false);
-    completeOptimization();
-    
-    // Refresh data
-    await fetchCollections();
-    await refreshLimits();
-
-    // ✅ CRITICAL: Get fresh optimized data with all SEO fields
-    const { data: freshCollections } = await supabase
-      .from('shopify_collections')
-      .select('*')
-      .in('id', collectionsToOptimize.map(c => c.id));
-
-    const optimized = (freshCollections || []).filter(c => 
-      c.seo_title || c.seo_description || c.body_html
-    ) as Collection[];
-    
-    console.log('📊 [PREVIEW] Freshly loaded optimized collections:', optimized);
-    setOptimizedCollections(optimized);
-    
-    toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(successCount)));
-    
-    // Check if auto-sync is enabled
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: syncSettings } = await supabase
-        .from('shopify_sync_settings')
-        .select('export_after_optimization')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (syncSettings?.export_after_optimization) {
-        // Auto-sync enabled - synchronize automatically without showing dialog
-        console.log('🔄 Auto-sync enabled, syncing collections automatically...');
-        setCollectionsToSync(optimized);
-        
-        // Trigger automatic sync after a small delay
-        setTimeout(async () => {
-          try {
-            // Collections are already set via setCollectionsToSync above
-            await handleSyncCollections();
-          } catch (error) {
-            console.error('Auto-sync error:', error);
-          }
-        }, 1000);
-      } else {
-        // Show results dialog to let user decide
-        setTimeout(() => {
-          setShowResultsDialog(true);
-        }, 800);
-      }
-    } else {
-      setTimeout(() => {
-        setShowResultsDialog(true);
-      }, 800);
-    }
+    );
   };
 
   const handleOptimizeAllCollections = async () => {
@@ -636,175 +559,97 @@ export function CollectionOptimization() {
       return;
     }
 
-    setOptimizing(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: collectionsToOptimize.length });
-    
-    // Start global optimization tracking
-    startOptimization('collections', collectionsToOptimize.length, 'optimizing');
-
-    let successCount = 0;
-    const BATCH_SIZE = 3;
-    for (let i = 0; i < collectionsToOptimize.length; i += BATCH_SIZE) {
-      const batch = collectionsToOptimize.slice(i, i + BATCH_SIZE);
-      
-      await Promise.all(batch.map(async (collection) => {
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'collections',
+      collectionsToOptimize,
+      async (collection) => {
         try {
           const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
             body: { 
               collection_ids: [collection.id],
-              force: false  // Only optimize new ones
+              force: false
             }
           });
           
-          if (!error && data?.results?.[0]?.success) {
-            successCount++;
+          if (error) {
+            console.error(`❌ Error optimizing collection ${collection.id}:`, error);
+            return false;
           }
-          updateProgress(Math.min(i + BATCH_SIZE, collectionsToOptimize.length), collection.id, 'success');
+          
+          return data?.results?.[0]?.success || false;
         } catch (error: any) {
           console.error('❌ Error:', error);
-          updateProgress(Math.min(i + BATCH_SIZE, collectionsToOptimize.length), collection.id, 'error');
-          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
-            // Afficher le bon message selon le statut de l'utilisateur
-            if (limits?.isTrialing) {
-              toast.error(t.collections.optimization.messages.trialLimitReached);
-            } else if (limits?.isPaid) {
-              toast.error(t.collections.optimization.messages.monthlyLimitReached);
-            } else {
-              toast.error(t.collections.optimization.messages.trialLimitReached);
-            }
+          if (error.message?.includes('trial_limit_reached') || error.message?.includes('403')) {
             setShowUpgradeDialog(true);
-            setShowProgressDialog(false);
-            setOptimizing(false);
-            completeOptimization();
-            return;
-          } else if (error.message?.includes('already_optimized')) {
-            toast.error(t.collections.optimization.messages.alreadyOptimizedTrial);
-            setShowUpgradeDialog(true);
-            setShowProgressDialog(false);
-            setOptimizing(false);
-            completeOptimization();
-            return;
           }
+          return false;
         }
-      }));
-
-      setProgress({ current: Math.min(i + BATCH_SIZE, collectionsToOptimize.length), total: collectionsToOptimize.length });
-    }
-
-    setOptimizing(false);
-    setIsOptimizationComplete(true);
-    setShowProgressDialog(false);
-    completeOptimization();
-    
-    // Refresh data
-    await fetchCollections();
-    await refreshLimits();
-
-    // Get updated collections
-    const updatedCollections = await Promise.all(
-      collectionsToOptimize.map(async (c) => {
-        const { data } = await supabase
-          .from('shopify_collections')
-          .select('*')
-          .eq('id', c.id)
-          .single();
-        return data;
-      })
+      },
+      'optimizing',
+      async (results) => {
+        await fetchCollections();
+        await refreshLimits();
+        
+        if (results.success > 0) {
+          const { data: freshCollections } = await supabase
+            .from('shopify_collections')
+            .select('*')
+            .in('id', collectionsToOptimize.map(c => c.id));
+          
+          setOptimizedCollections((freshCollections || []) as Collection[]);
+          toast.success(`✅ ${results.success} collection(s) optimisée(s)`);
+          
+          setTimeout(() => {
+            setShowResultsDialog(true);
+          }, 800);
+        }
+      }
     );
-
-    const optimized = updatedCollections.filter(Boolean) as Collection[];
-    setOptimizedCollections(optimized);
-    
-    toast.success(`✅ ${successCount} collection(s) optimisée(s)`);
-    
-    // Show results dialog after delay
-    setTimeout(() => {
-      setShowResultsDialog(true);
-    }, 800);
   };
 
   const handleSyncCollections = async () => {
     if (collectionsToSync.length === 0) return;
 
-    try {
-      setSyncing(true);
-      setShowSyncDialog(false);
-      
-      // Small delay to ensure dialog closes smoothly
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setShowProgressDialog(true);
-      setProgress({ current: 0, total: collectionsToSync.length });
-      
-      // Start global sync tracking
-      startOptimization('collections', collectionsToSync.length, 'syncing');
-
-      let successCount = 0;
-      let imageSyncCount = 0;
-      
-      for (let i = 0; i < collectionsToSync.length; i++) {
-        const collection = collectionsToSync[i];
+    setShowSyncDialog(false);
+    
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'collections',
+      collectionsToSync,
+      async (collection) => {
         try {
-          // 1. Synchroniser les metafields SEO (title_tag, description_tag, body_html)
           const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
             body: { 
               collectionId: collection.id,
-              force: true // Allow immediate sync after collection optimization
+              force: true
             }
           });
 
-          if (seoError) throw seoError;
+          if (seoError) return false;
           
-          // 2. Synchroniser l'image si elle existe et n'est pas en base64
+          // Sync image if exists
           if (collection.image_url && !collection.image_url.startsWith('data:')) {
-            try {
-              const { error: imageError } = await supabase.functions.invoke('sync-collection-image-to-shopify', {
-                body: { collection_id: collection.id }
-              });
-              
-              if (!imageError) {
-                imageSyncCount++;
-              } else {
-                console.warn(`Image sync skipped for collection ${collection.id}:`, imageError);
-              }
-            } catch (imageErr) {
-              // Log but don't fail the whole sync if image fails
-              console.warn(`Image sync failed for collection ${collection.id}:`, imageErr);
-            }
+            await supabase.functions.invoke('sync-collection-image-to-shopify', {
+              body: { collection_id: collection.id }
+            }).catch(() => {});
           }
           
-          successCount++;
-          updateProgress(i + 1, collection.id, 'success');
+          return true;
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
-          updateProgress(i + 1, collection.id, 'error');
+          return false;
         }
-        setProgress({ current: i + 1, total: collectionsToSync.length });
+      },
+      'syncing',
+      async (results) => {
+        await fetchCollections();
+        setCollectionsToSync([]);
+        if (results.success > 0) {
+          toast.success(`✅ ${results.success} collection(s) synchronisée(s) avec Shopify`);
+        }
       }
-
-      setShowProgressDialog(false);
-      completeOptimization();
-      
-      // Small delay before showing success message
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Message détaillé avec info sur les images
-      if (imageSyncCount > 0) {
-        toast.success(`✅ ${successCount} collection(s) synchronisée(s) (SEO + ${imageSyncCount} image(s))`);
-      } else {
-        toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
-      }
-      
-      await fetchCollections();
-    } catch (error: any) {
-      console.error('Error syncing collections:', error);
-      toast.error('Erreur lors de la synchronisation');
-    } finally {
-      setSyncing(false);
-      setCollectionsToSync([]);
-    }
+    );
   };
 
   const handleSyncAllCollections = async () => {
@@ -815,21 +660,12 @@ export function CollectionOptimization() {
       return;
     }
 
-    try {
-      setSyncing(true);
-      setShowProgressDialog(true);
-      setProgress({ current: 0, total: allOptimized.length });
-      
-      // Start global sync tracking
-      startOptimization('collections', allOptimized.length, 'syncing');
-
-      let successCount = 0;
-      let imageSyncCount = 0;
-      
-      for (let i = 0; i < allOptimized.length; i++) {
-        const collection = allOptimized[i];
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'collections',
+      allOptimized,
+      async (collection) => {
         try {
-          // 1. Synchroniser les metafields SEO (title_tag, description_tag, body_html)
           const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
             body: { 
               collectionId: collection.id,
@@ -837,54 +673,29 @@ export function CollectionOptimization() {
             }
           });
 
-          if (seoError) throw seoError;
+          if (seoError) return false;
           
-          // 2. Synchroniser l'image si elle existe et n'est pas en base64
+          // Sync image if exists
           if (collection.image_url && !collection.image_url.startsWith('data:')) {
-            try {
-              const { error: imageError } = await supabase.functions.invoke('sync-collection-image-to-shopify', {
-                body: { collection_id: collection.id }
-              });
-              
-              if (!imageError) {
-                imageSyncCount++;
-              } else {
-                console.warn(`Image sync skipped for collection ${collection.id}:`, imageError);
-              }
-            } catch (imageErr) {
-              // Log but don't fail the whole sync if image fails
-              console.warn(`Image sync failed for collection ${collection.id}:`, imageErr);
-            }
+            await supabase.functions.invoke('sync-collection-image-to-shopify', {
+              body: { collection_id: collection.id }
+            }).catch(() => {});
           }
           
-          successCount++;
-          updateProgress(i + 1, collection.id, 'success');
+          return true;
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
-          updateProgress(i + 1, collection.id, 'error');
+          return false;
         }
-        setProgress({ current: i + 1, total: allOptimized.length });
+      },
+      'syncing',
+      async (results) => {
+        await fetchCollections();
+        if (results.success > 0) {
+          toast.success(`✅ ${results.success} collection(s) synchronisée(s) avec Shopify`);
+        }
       }
-
-      setShowProgressDialog(false);
-      completeOptimization();
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Message détaillé avec info sur les images
-      if (imageSyncCount > 0) {
-        toast.success(`✅ ${successCount} collection(s) synchronisée(s) (SEO + ${imageSyncCount} image(s))`);
-      } else {
-        toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
-      }
-      
-      await fetchCollections();
-    } catch (error: any) {
-      console.error('Error syncing all collections:', error);
-      toast.error('Erreur lors de la synchronisation');
-    } finally {
-      setSyncing(false);
-    }
+    );
   };
 
   const handleSyncProductCollections = async () => {

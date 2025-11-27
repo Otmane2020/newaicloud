@@ -80,7 +80,8 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 export function TagOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
-  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
+  const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { processBulkOperation, state: optimizationState } = useOptimization();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());

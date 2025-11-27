@@ -100,7 +100,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   );
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
-  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState } = useOptimization();
 
   const loadCategories = async () => {
     try {

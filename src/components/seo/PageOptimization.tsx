@@ -111,7 +111,7 @@ export function PageOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState } = useOptimization();
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -469,38 +469,30 @@ export function PageOptimization() {
     }
 
     setShowOptimizeAllConfirmDialog(false);
-    setOptimizing(true);
-    setShowProgressDialog(true);
-    setProgress({ current: 0, total: pagesToOptimize.length });
     
-    // Start global optimization tracking
-    startOptimization('pages', pagesToOptimize.length, 'optimizing');
-
-    let successCount = 0;
-    
-    for (let i = 0; i < pagesToOptimize.length; i++) {
-      const page = pagesToOptimize[i];
-      try {
-        const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: page.id, force: true }
-        });
-        
-        if (error) throw error;
-        successCount++;
-        updateProgress(i + 1, page.id, 'success');
-      } catch (error) {
-        console.error('Error:', error);
-        updateProgress(i + 1, page.id, 'error');
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'pages',
+      pagesToOptimize,
+      async (page) => {
+        try {
+          const { error } = await supabase.functions.invoke('generate-page-seo', {
+            body: { pageId: page.id, force: true }
+          });
+          return !error;
+        } catch (error) {
+          console.error('Error:', error);
+          return false;
+        }
+      },
+      'optimizing',
+      async (results) => {
+        toast.success(`${results.success}/${pagesToOptimize.length} pages optimized!`);
+        await fetchPages();
+        await refreshLimits();
       }
-      setProgress({ current: i + 1, total: pagesToOptimize.length });
-    }
-    
-    setOptimizing(false);
-    setShowProgressDialog(false);
-    toast.success(`${successCount}/${pagesToOptimize.length} pages optimized!`);
-    await fetchPages();
-    await refreshLimits();
-    completeOptimization();
+    );
+  };
     
     // Check if auto-sync is enabled
     const { data: { user } } = await supabase.auth.getUser();
