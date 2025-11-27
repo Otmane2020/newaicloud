@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
+import { useTranslation } from '@/lib/language';
 
 // Failsafe timeout: 10 minutes for large imports
 const FAILSAFE_MS = 10 * 60 * 1000;
@@ -16,6 +17,7 @@ const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
 export const useAutoSync = (userId: string | undefined) => {
   const { startSync, completeSync, endSync, updateType } = useAutoSyncProgress();
   const location = useLocation();
+  const { t, tf } = useTranslation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Track the specific sync ID we're monitoring
   const currentSyncIdRef = useRef<string | null>(null);
@@ -100,14 +102,14 @@ export const useAutoSync = (userId: string | undefined) => {
             if (latestSync.status === 'success') {
               // Use completeSync to show success state with auto-close
               completeSync(latestSync.items_synced || 0);
-              toast.success('Synchronisation terminée', {
-                description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+              toast.success(t.dialogs.autoSync.syncComplete, {
+                description: tf('dialogs.autoSync.itemsImported', { count: latestSync.items_synced || 0 }),
               });
             } else {
               // Failed sync - just end it
               endSync();
-              toast.error('Erreur de synchronisation', {
-                description: 'La synchronisation a échoué. Veuillez réessayer.',
+              toast.error(t.toasts.error.sync || 'Synchronization error', {
+                description: t.toasts.error.generic || 'An error occurred',
               });
             }
           }
