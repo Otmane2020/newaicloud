@@ -12,8 +12,10 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Safe HealthCheck handler
+  // Parse body once and reuse
   const body = await req.json().catch(() => ({}));
+  
+  // Safe HealthCheck handler
   if (body?.healthCheck === true) {
     return new Response(JSON.stringify({ ok: true }), { 
       status: 200, 
@@ -41,9 +43,9 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { collection_ids, force = false }: { collection_ids: string[], force?: boolean } = await req.json();
+    const { collection_ids, force = false }: { collection_ids: string[], force?: boolean } = body;
 
-    console.log(`🎨 Starting SEO optimization for ${collection_ids.length} collections...`);
+    console.log(`🎨 Starting SEO optimization for ${collection_ids?.length || 0} collections...`);
 
     let successCount = 0;
     let errorCount = 0;
