@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
+import { resolveLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,10 +155,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ✅ Detect language from store
-    const storeLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
-    const language = storeLanguage.split("-")[0];
-    console.log(`🌍 Store language: ${storeLanguage} → ${language}`);
+    // 🛡️ LANGUAGE GUARD - Detect language from content
+    const rawStoreLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
+    const language = resolveLanguage({
+      contentText: `${product.title || ""} ${product.description || ""}`,
+      storeLanguage: rawStoreLanguage
+    });
+    console.log(`🛡️ LANGUAGE GUARD: tags - detected=${language}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
 
     console.log(`Generating tags with DeepSeek for product: ${product.title} (language: ${language})`);
 

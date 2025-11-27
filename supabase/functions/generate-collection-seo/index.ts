@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
+import { resolveLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,8 +89,8 @@ Deno.serve(async (req: Request) => {
         console.log(`📊 Current optimization count: ${collection.optimization_count || 0}`);
         console.log(`📅 Last optimization: ${collection.last_optimization_at || 'never'}`);
 
-        // Get store language
-        let storeLanguage = 'fr';
+        // 🛡️ LANGUAGE GUARD - Detect language from content
+        let rawStoreLanguage = 'fr';
         if (collection.store_id) {
           const { data: storeData } = await supabase
             .from('shopify_connections')
@@ -98,11 +99,15 @@ Deno.serve(async (req: Request) => {
             .single();
           
           if (storeData?.store_language) {
-            storeLanguage = storeData.store_language;
+            rawStoreLanguage = storeData.store_language;
           }
         }
 
-        console.log(`Using language: ${storeLanguage} for collection ${collection_id}`);
+        const storeLanguage = resolveLanguage({
+          contentText: `${collection.title || ""} ${collection.body_html || ""}`,
+          storeLanguage: rawStoreLanguage
+        });
+        console.log(`🛡️ LANGUAGE GUARD: collection - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${collection.title?.substring(0,30)}..."`);
 
         // Get store localization for SERP analysis
         let storeCountry = 'FR';

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
+import { resolveLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -274,10 +275,10 @@ ${baseContent}`;
       console.log(`Generating SEO for page: ${pageTitle}${isContactPage ? ' (Contact page)' : ''}`);
     }
 
-    // Get store language
-    let storeLanguage = 'fr';
+    // 🛡️ LANGUAGE GUARD - Detect language from content
+    let rawStoreLanguage = 'fr';
     if (isHomepage && connection) {
-      storeLanguage = connection.store_language || 'fr';
+      rawStoreLanguage = connection.store_language || 'fr';
     } else {
       const { data: pageData } = await supabaseClient
         .from('shopify_pages')
@@ -293,12 +294,16 @@ ${baseContent}`;
           .single();
         
         if (storeData?.store_language) {
-          storeLanguage = storeData.store_language;
+          rawStoreLanguage = storeData.store_language;
         }
       }
     }
 
-    console.log(`Using language: ${storeLanguage} for ${isHomepage ? 'homepage' : 'page'}`);
+    const storeLanguage = resolveLanguage({
+      contentText: `${pageTitle || ""} ${textContent || ""}`,
+      storeLanguage: rawStoreLanguage
+    });
+    console.log(`🛡️ LANGUAGE GUARD: page - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${pageTitle?.substring(0,30)}..."`);
 
     // Get store localization for SERP analysis
     let storeCountry = 'FR';
