@@ -80,7 +80,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 export function TagOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
-  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -813,7 +813,7 @@ export function TagOptimization() {
                 <Button
                   size="lg"
                   onClick={handleGenerateAll}
-                  disabled={showProgressDialog || productsNotOptimized === 0}
+                  disabled={optimizationState.isRunning || productsNotOptimized === 0}
                   className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -916,7 +916,7 @@ export function TagOptimization() {
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => handleGenerateSelected()}
-              disabled={selectedProducts.size === 0 || showProgressDialog}
+              disabled={selectedProducts.size === 0 || optimizationState.isRunning}
               size="sm"
               className="flex-1 sm:flex-none"
             >
@@ -925,7 +925,7 @@ export function TagOptimization() {
             </Button>
             <Button
               onClick={handleGenerateAllTags}
-              disabled={showProgressDialog || productsNotOptimized === 0}
+              disabled={optimizationState.isRunning || productsNotOptimized === 0}
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
@@ -1088,7 +1088,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={showProgressDialog || productsNotOptimized === 0}
+                disabled={optimizationState.isRunning || productsNotOptimized === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1099,7 +1099,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleGenerateSelected(false)}
-                disabled={showProgressDialog || selectedProducts.size === 0}
+                disabled={optimizationState.isRunning || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1110,7 +1110,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleSyncSelected}
-                disabled={showProgressDialog || selectedProducts.size === 0}
+                disabled={optimizationState.isRunning || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
@@ -1121,7 +1121,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleSyncAll}
-                disabled={showProgressDialog || productsToSyncCount === 0}
+                disabled={optimizationState.isRunning || productsToSyncCount === 0}
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
@@ -1314,7 +1314,7 @@ export function TagOptimization() {
                                // Optimiser directement ce produit
                                handleGenerateSelected(false, [product.id]);
                              }}
-                            disabled={optimizing}
+                            disabled={optimizationState.isRunning}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
                            <Sparkles className="w-4 h-4" />
