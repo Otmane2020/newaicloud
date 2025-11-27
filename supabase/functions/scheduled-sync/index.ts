@@ -14,12 +14,16 @@ function calculateNextImport(
 ): Date {
   const next = new Date(currentTime);
   
+  console.log(`[CALC-NEXT] Input: frequency=${frequency}, hour=${scheduleHour}, day=${scheduleDay}, current=${currentTime.toISOString()}`);
+  
   switch (frequency) {
     case 'hourly':
+      // Simply add 1 hour
       next.setTime(next.getTime() + 60 * 60 * 1000);
       break;
     
     case 'daily':
+      // Set to scheduled hour today, if past, move to tomorrow
       next.setUTCHours(scheduleHour, 0, 0, 0);
       if (next <= currentTime) {
         next.setUTCDate(next.getUTCDate() + 1);
@@ -27,20 +31,45 @@ function calculateNextImport(
       break;
     
     case 'weekly':
+      // scheduleDay: 0=Sunday, 1=Monday, ..., 6=Saturday
       next.setUTCHours(scheduleHour, 0, 0, 0);
-      const daysUntilTarget = ((scheduleDay - next.getUTCDay() + 7) % 7) || 7;
+      const currentDay = next.getUTCDay();
+      let daysUntilTarget = scheduleDay - currentDay;
+      
+      // If same day, check if time has passed
+      if (daysUntilTarget === 0) {
+        // Same day - if scheduled time already passed, wait until next week
+        if (next <= currentTime) {
+          daysUntilTarget = 7;
+        }
+        // else daysUntilTarget stays 0 (later today)
+      } else if (daysUntilTarget < 0) {
+        // Target day already passed this week, go to next week
+        daysUntilTarget += 7;
+      }
+      
       next.setUTCDate(next.getUTCDate() + daysUntilTarget);
       break;
     
     case 'monthly':
-      next.setUTCDate(scheduleDay);
+      // scheduleDay: 1-31 (day of month)
+      const targetDay = Math.min(scheduleDay, 28); // Avoid issues with short months
+      next.setUTCDate(targetDay);
       next.setUTCHours(scheduleHour, 0, 0, 0);
       if (next <= currentTime) {
         next.setUTCMonth(next.getUTCMonth() + 1);
       }
       break;
+      
+    default:
+      console.warn(`[CALC-NEXT] Unknown frequency: ${frequency}, defaulting to daily`);
+      next.setUTCHours(scheduleHour, 0, 0, 0);
+      if (next <= currentTime) {
+        next.setUTCDate(next.getUTCDate() + 1);
+      }
   }
   
+  console.log(`[CALC-NEXT] Output: ${next.toISOString()}`);
   return next;
 }
 
