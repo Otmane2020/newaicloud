@@ -866,10 +866,10 @@ export function CollectionOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {optimizing ? (
+            {optimizationState.isRunning && optimizationState.type === 'collections' ? (
               <ProgressBanner
-                current={progress.current}
-                total={progress.total}
+                current={optimizationState.current}
+                total={optimizationState.total}
                 label="Optimisation des collections"
               />
             ) : (

@@ -750,11 +750,11 @@ export function TagOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {showProgressDialog ? (
+            {optimizationState.isRunning && optimizationState.type === 'tags' ? (
               <ProgressBanner
-                current={progress.current}
-                total={progress.total}
-                label={currentOperation === 'syncing' ? 'Synchronisation des tags' : 'Optimisation des tags'}
+                current={optimizationState.current}
+                total={optimizationState.total}
+                label={optimizationState.operation === 'syncing' ? 'Synchronisation des tags' : 'Optimisation des tags'}
               />
             ) : (
               <>

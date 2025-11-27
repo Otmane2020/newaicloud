@@ -700,11 +700,11 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             </Button>
           </div>
 
-          {showProgressDialog && (
+          {optimizationState.isRunning && optimizationState.type === 'articles' && (
             <div className="w-full sm:w-auto mt-2 sm:mt-0">
               <ProgressBanner
-                current={progress.current}
-                total={progress.total}
+                current={optimizationState.current}
+                total={optimizationState.total}
                 label="Optimisation des articles"
               />
             </div>
