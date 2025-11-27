@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
+import { resolveLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -156,8 +157,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Get store language
-        let storeLanguage = 'fr';
+        // 🛡️ LANGUAGE GUARD - Detect language from content
+        let rawStoreLanguage = 'fr';
         if (article.store_id) {
           const { data: storeData } = await supabase
             .from('shopify_connections')
@@ -166,11 +167,15 @@ Deno.serve(async (req) => {
             .single();
           
           if (storeData?.store_language) {
-            storeLanguage = storeData.store_language;
+            rawStoreLanguage = storeData.store_language;
           }
         }
 
-        console.log(`Using language: ${storeLanguage} for article ${article_id}`);
+        const storeLanguage = resolveLanguage({
+          contentText: `${article.title || ""} ${article.content || ""}`,
+          storeLanguage: rawStoreLanguage
+        });
+        console.log(`🛡️ LANGUAGE GUARD: article - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${article.title?.substring(0,30)}..."`);
 
         // Get store localization for SERP analysis
         let storeCountry = 'FR';

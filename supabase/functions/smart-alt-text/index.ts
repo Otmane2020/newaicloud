@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveLanguage } from "../_shared/language-detector.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -42,13 +43,18 @@ serve(async (req) => {
       .single();
     if (!product) throw new Error("Product not found");
 
-    // 3. Store language
+    // 🛡️ LANGUAGE GUARD - Detect language from content
     const { data: store } = await supabase
       .from("shopify_connections")
       .select("store_language")
       .eq("id", product.store_id)
       .single();
-    const lang = store?.store_language || "en-US";
+    const rawStoreLanguage = store?.store_language || "en-US";
+    const lang = resolveLanguage({
+      contentText: `${product.title || ""} ${product.body_html || ""}`,
+      storeLanguage: rawStoreLanguage
+    });
+    console.log(`🛡️ LANGUAGE GUARD: alt-text - detected=${lang}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
 
     // Clean description
     const cleanDescription = (product.body_html || "")
