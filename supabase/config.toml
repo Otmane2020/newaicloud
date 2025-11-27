@@ -369,6 +369,14 @@ verify_jwt = false
 schedule = "*/5 * * * *"
 function = "cleanup-stuck-syncs"
 
+[cron.generate-daily-notifications-morning]
+schedule = "0 8 * * *"
+function = "generate-daily-notifications"
+
+[cron.generate-daily-notifications-afternoon]
+schedule = "0 15 * * *"
+function = "generate-daily-notifications"
+
 [cron.send-trial-expiring]
 schedule = "0 9 * * *"
 function = "send-trial-expiring"
