@@ -18,7 +18,7 @@ interface OptimizationContextType {
   state: OptimizationState;
   startOptimization: (type: OptimizationType, total: number, operation: 'optimizing' | 'syncing') => void;
   updateProgress: (current: number, itemId?: string, status?: 'success' | 'error') => void;
-  completeOptimization: () => void;
+  completeOptimization: (showCompletedDialog?: boolean) => void;
   cancelOptimization: () => void;
   resetCancellation: () => void;
   toggleDialog: () => void;
@@ -76,11 +76,11 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const completeOptimization = useCallback(() => {
+  const completeOptimization = useCallback((showCompletedDialog: boolean = true) => {
     setState(prev => ({
       ...prev,
       isRunning: false,
-      showCompletedDialog: prev.operation === 'optimizing' && prev.current > 0,
+      showCompletedDialog: showCompletedDialog && prev.operation === 'optimizing' && prev.current > 0,
     }));
   }, []);
 

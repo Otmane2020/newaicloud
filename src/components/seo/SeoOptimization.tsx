@@ -665,7 +665,7 @@ export function SeoOptimization() {
 
     setGenerating(false);
     setIsOptimizationComplete(true);
-    completeOptimization();
+    completeOptimization(false); // Ne pas afficher le dialog global, on utilise ResultsDialog local
     await fetchProducts();
     await refreshLimits();
 
@@ -900,7 +900,7 @@ export function SeoOptimization() {
 
     setSyncing(false);
     setIsOptimizationComplete(true);
-    completeOptimization();
+    completeOptimization(false); // Ne pas afficher le dialog global
 
     await fetchProducts();
     await refreshLimits();
