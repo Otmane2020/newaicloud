@@ -32,6 +32,7 @@ interface Campaign {
   next_execution_at: string;
   last_generation_date: string | null;
   created_at: string;
+  store_id: string | null;
 }
 
 interface Article {
@@ -99,7 +100,8 @@ export default function BlogCampaignMonitoring() {
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user?.id,
-          campaign_id: campaign.id, // 🔥 Send campaign_id instead
+          store_id: campaign.store_id, // ✅ Pass store_id from campaign
+          campaign_id: campaign.id,
           keywords: campaign.keywords,
           mode: 'manual'
         }
