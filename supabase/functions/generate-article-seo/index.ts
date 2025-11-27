@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
       try {
         console.log(`📝 Processing article: ${article_id}`);
 
-        // Récupérer l'article avec images et validation store
+        // Récupérer l'article SANS le nested select problématique
         const { data: article, error: articleError } = await supabase
           .from("blog_articles")
-          .select("*, content_images(src, position), store_id")
+          .select("*")
           .eq("id", article_id)
           .single();
 
@@ -83,6 +83,16 @@ Deno.serve(async (req) => {
           results.push({ article_id, success: false, error: "Article not found" });
           continue;
         }
+
+        // Récupérer les images séparément
+        const { data: contentImages } = await supabase
+          .from("content_images")
+          .select("src, position")
+          .eq("content_id", article_id)
+          .eq("content_type", "article")
+          .order("position", { ascending: true });
+        
+        console.log(`📷 Found ${contentImages?.length || 0} images for article ${article_id}`);
 
         // Vérifier que l'utilisateur a accès à ce store
         const { data: store } = await supabase
@@ -129,7 +139,7 @@ Deno.serve(async (req) => {
 
         // Try to get Vision AI analysis if article has cover image
         let visionData = null;
-        const coverImage = article.content_images?.find((img: any) => img.position === 0) || article.content_images?.[0];
+        const coverImage = contentImages?.find((img: any) => img.position === 0) || contentImages?.[0];
         
         if (coverImage?.src) {
           console.log('Attempting Vision AI analysis for article image:', coverImage.src);
