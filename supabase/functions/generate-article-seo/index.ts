@@ -50,23 +50,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { article_ids } = bodyCheck;
+    const { article_ids, articleId } = bodyCheck as { article_ids?: string[]; articleId?: string };
 
-    if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
+    // Normaliser la liste d'articles acceptée (article_ids ou articleId)
+    const normalizedArticleIds: string[] = Array.isArray(article_ids) && article_ids.length > 0
+      ? article_ids
+      : articleId
+      ? [articleId]
+      : [];
+
+    if (normalizedArticleIds.length === 0) {
       return new Response(JSON.stringify({ error: "article_ids array is required" }), {
         status: 400,
         headers: corsHeaders
       });
     }
 
-    console.log(`🔄 Processing ${article_ids.length} articles for SEO optimization`);
+    console.log(`🔄 Processing ${normalizedArticleIds.length} articles for SEO optimization`);
 
     let successCount = 0;
     let errorCount = 0;
     const results = [];
 
     // Traiter chaque article
-    for (const article_id of article_ids) {
+    for (const article_id of normalizedArticleIds) {
       try {
         console.log(`📝 Processing article: ${article_id}`);
 
@@ -75,9 +82,13 @@ Deno.serve(async (req) => {
           .from("blog_articles")
           .select("*")
           .eq("id", article_id)
-          .single();
+          .maybeSingle();
 
-        if (articleError || !article) {
+        if (articleError) {
+          console.error(`❌ Error loading article ${article_id}:`, articleError);
+        }
+
+        if (!article) {
           console.error(`❌ Article not found: ${article_id}`);
           errorCount++;
           results.push({ article_id, success: false, error: "Article not found" });

@@ -93,7 +93,7 @@ export default function SEO() {
       setLoadingScores(true);
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
+        .select('id, title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
         .eq('store_id', selectedStore.id);
 
       if (error) throw error;
@@ -107,7 +107,8 @@ export default function SEO() {
             article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
             !!article.featured_image,
             article.status === 'published',
-            article.optimization_count || 0
+            article.optimization_count || 0,
+            article.id
           );
           
           return score.score;
