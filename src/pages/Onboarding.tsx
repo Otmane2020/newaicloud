@@ -467,7 +467,7 @@ export default function Onboarding() {
 
           // Redirect immediately - AutoSyncProgressDialog will show on dashboard
           console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
-          navigate("/dashboard?show_shopify_prompt=true");
+          navigate(shopifyPending ? "/dashboard?show_shopify_prompt=true" : "/dashboard");
           return;
         }
       }
@@ -504,7 +504,7 @@ export default function Onboarding() {
 
         // Redirect immediately - AutoSyncProgressDialog will show on dashboard
         console.log("✅ [CHECK-SUBSCRIPTION] Redirecting to dashboard");
-        navigate("/dashboard?show_shopify_prompt=true");
+        navigate(shopifyPending ? "/dashboard?show_shopify_prompt=true" : "/dashboard");
       } else {
         console.warn("⚠️ [CHECK-SUBSCRIPTION] No active subscription found after all retries");
         toast.error(t.onboarding.errors.noActiveSubscription, { id: "check-subscription" });
@@ -720,7 +720,8 @@ export default function Onboarding() {
 
         // Redirect immediately - AutoSyncProgressDialog will show on dashboard
         console.log("✅ [FREE-TRIAL] Redirecting to dashboard");
-        navigate("/dashboard?show_shopify_prompt=true");
+        const shopifyPendingParam = searchParams.get("shopify_pending");
+        navigate(shopifyPendingParam ? "/dashboard?show_shopify_prompt=true" : "/dashboard");
       }
     } catch (error) {
       console.error("💥 [FREE-TRIAL] Error:", error);
