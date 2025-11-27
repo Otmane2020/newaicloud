@@ -3022,10 +3022,12 @@ ${selectedIcon}
 
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
-    // 🧹 Apply HTML normalization and sanitization with designTokens
+    // 🧹 Apply HTML normalization and sanitization with designTokens and product images
+    // This will replace placeholder images (via.placeholder.com) with real product images
     const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en", {
       allowRootCss: false,
-      designTokens: designTokens
+      designTokens: designTokens,
+      productImages: productImages?.length > 0 ? productImages : images
     });
 
     // 📊 Validate final HTML
