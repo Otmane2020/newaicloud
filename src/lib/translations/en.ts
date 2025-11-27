@@ -6642,11 +6642,13 @@ export const translations = {
       title: "Automatic Synchronization",
       storeName: "Your store",
       types: {
+        import: "Import",
         products: "Products",
         collections: "Collections",
         pages: "Pages",
         articles: "Articles",
         images: "Images",
+        completed: "Complete",
       },
       syncComplete: "Synchronization complete!",
       itemsImported: "{{count}} items imported",
@@ -6654,6 +6656,7 @@ export const translations = {
       currentStep: "{{type}}",
       pleaseWait: "Please wait, do not close this window",
       duration: "This operation may take a few minutes depending on the number of items",
+      autoClosing: "Closing automatically...",
     },
     demoBooking: {
       title: "Book a Demo",
@@ -7040,6 +7043,23 @@ export const translations = {
     inProgress: "{{label}} in progress...",
     cancel: "Cancel",
     backgroundProcessing: "💡 Processing continues in the background",
+  },
+
+  // ============= Shopify App =============
+  shopifyApp: {
+    installationError: "Installation error",
+    missingParams: "Missing Shopify connection parameters.",
+    authFailed: "Authentication failed",
+    loginFailed: "Login failed",
+    welcomeBack: "Welcome back!",
+    connectedToStore: "You are now connected to your store.",
+    welcome: "Welcome!",
+    trialActivated: "Your 14-day trial is now active.",
+    unexpectedError: "Unexpected error",
+    installFailed: "Installation failed",
+    somethingWrong: "Something went wrong during installation.",
+    settingUp: "Setting up your app...",
+    activatingTrial: "Your free trial is being activated.",
   },
 };
 

@@ -102,7 +102,7 @@ export function AutoSyncProgressDialog() {
           <div className="text-center space-y-2">
             <h3 className="text-xl font-semibold">
               {isCompleted 
-                ? 'Synchronisation terminée !' 
+                ? t.dialogs.autoSync.syncComplete
                 : t.dialogs.autoSync.title
               }
             </h3>
@@ -114,14 +114,14 @@ export function AutoSyncProgressDialog() {
               <div className="flex items-center justify-center gap-2 pt-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                 <span className="text-sm font-medium text-green-600">
-                  {itemsSynced} éléments importés
+                  {tf('dialogs.autoSync.itemsImported', { count: itemsSynced })}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 pt-2">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 <span className="text-sm font-medium">
-                  {tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })}
+                  {tf('dialogs.autoSync.importingType', { type: getTypeLabel(currentType) })}
                 </span>
               </div>
             )}
@@ -141,8 +141,8 @@ export function AutoSyncProgressDialog() {
             </div>
             <p className="text-xs text-center text-muted-foreground">
               {isCompleted 
-                ? 'Fermeture automatique...'
-                : `${tf('dialogs.autoSync.currentStep', { type: getTypeLabel(currentType) })} • ${progress}%`
+                ? t.dialogs.autoSync.autoClosing
+                : `${getTypeLabel(currentType)} • ${progress}%`
               }
             </p>
           </div>

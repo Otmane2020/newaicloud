@@ -174,6 +174,7 @@ serve(async (req) => {
     const isNewUser = !existingUser;
     // Gérer correctement le count: null, undefined, ou erreur = pas de produits connus
     const hasNoProducts = countError || existingProductsCount === null || existingProductsCount === 0;
+    let importTriggered = false;
 
     if (isNewUser || hasNoProducts) {
       try {
@@ -199,6 +200,7 @@ serve(async (req) => {
         if (importResponse.ok) {
           const importResult = await importResponse.json();
           console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique déclenché:", importResult);
+          importTriggered = true;
         } else {
           console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
         }
@@ -245,6 +247,8 @@ serve(async (req) => {
         access_token: authData.session.access_token,
         refresh_token: authData.session.refresh_token,
         shop: shop,
+        import_triggered: importTriggered, // Indique si un import a été déclenché
+        is_returning_user: !!existingUser, // Indique si c'est un utilisateur existant
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
