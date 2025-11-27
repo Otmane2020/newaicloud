@@ -505,22 +505,15 @@ export function calculateDetailedSeoScore(
   let finalScore: number;
   
   if (isOptimized) {
-    // ✅ Pour produits OPTIMISÉS: Bonus d'optimisation pour garantir > 90% mais MAX 95%
-    // Le bonus est calculé pour atteindre minimum 92% après optimisation
-    const optimizationBonus = Math.max(15, Math.ceil(92 - weightedScore));
-    const baseOptimizedScore = Math.min(95, weightedScore + optimizationBonus);
+    // ✅ Pour produits OPTIMISÉS: Score entre 80-95% avec variation déterministe
+    // Generate deterministic hash from itemId or use random-like variation
+    const hashSource = itemId || `${title}-${description}-${optimizationCount}`;
+    const hash = hashSource.split('').reduce((acc, char) => 
+      char.charCodeAt(0) + ((acc << 5) - acc), 0);
     
-    // NEW: Add deterministic variation based on itemId to avoid identical scores (80-95%)
-    if (itemId) {
-      // Generate deterministic hash from itemId
-      const hash = itemId.split('').reduce((acc, char) => 
-        char.charCodeAt(0) + ((acc << 5) - acc), 0);
-      // Variation between -10 and +5 for range 80-95
-      const variation = (Math.abs(hash) % 16) - 10;
-      finalScore = Math.max(80, Math.min(95, baseOptimizedScore + variation));
-    } else {
-      finalScore = baseOptimizedScore;
-    }
+    // Variation between 0 and 15 for range 80-95
+    const variation = Math.abs(hash) % 16;
+    finalScore = 80 + variation; // Results in 80-95 range
   } else {
     // ❌ Pour produits NON-OPTIMISÉS: Score de base sans pénalité
     // La pondération 30/70 sera appliquée au niveau du calcul global
