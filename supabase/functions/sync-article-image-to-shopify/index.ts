@@ -79,17 +79,60 @@ serve(async (req) => {
 
     console.log(`📸 [SYNC-ARTICLE-IMAGE] Featured image found:`, featuredImage.src.substring(0, 80) + '...');
 
-    // ✅ CRITICAL: Validate image URL format
-    if (featuredImage.src.startsWith('data:')) {
-      console.error('❌ [SYNC-ARTICLE-IMAGE] Base64 image detected - Shopify cannot process base64');
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Base64 images not supported',
-          message: 'L\'image doit être une URL publique HTTP, pas du base64'
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let imageSrc = featuredImage.src;
+    
+    // ✅ CRITICAL: If base64, upload to Storage first
+    if (imageSrc.startsWith('data:image/')) {
+      console.log(`📤 [SYNC-ARTICLE-IMAGE] Base64 detected - uploading to Storage`);
+      try {
+        // Extract base64 data
+        const base64Data = imageSrc.split(',')[1];
+        const mimeType = imageSrc.split(';')[0].split(':')[1];
+        const extension = mimeType.split('/')[1];
+        
+        // Convert base64 to binary
+        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        
+        // Upload to Storage
+        const fileName = `article_${article_id}_${Date.now()}.${extension}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('generated-images')
+          .upload(fileName, binaryData, {
+            contentType: mimeType,
+            upsert: true
+          });
+        
+        if (uploadError) {
+          console.error(`❌ Failed to upload image to Storage:`, uploadError);
+          throw uploadError;
+        }
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('generated-images')
+          .getPublicUrl(fileName);
+        
+        console.log(`✅ Image uploaded to Storage: ${publicUrl}`);
+        imageSrc = publicUrl;
+        
+        // Update image src in database
+        await supabase
+          .from('content_images')
+          .update({ src: publicUrl })
+          .eq('id', featuredImage.id);
+        
+        console.log(`✅ Updated featured image with public URL`);
+      } catch (error) {
+        console.error(`❌ Error uploading base64 image:`, error);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Failed to upload image',
+            message: 'Impossible de convertir l\'image base64 en URL publique'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Get store connection
@@ -155,7 +198,7 @@ serve(async (req) => {
           article: {
             id: article.shopify_article_id,
             image: {
-              src: featuredImage.src,
+              src: imageSrc,
               alt: featuredImage.alt_text || article.title
             }
           }

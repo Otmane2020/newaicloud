@@ -45,6 +45,10 @@ serve(async (req) => {
   try {
     console.log("🔄 [CRON] Starting blog campaign processing...");
 
+    // Get current UTC hour
+    const currentHour = new Date().getUTCHours();
+    console.log(`⏰ [CRON] Current UTC hour: ${currentHour}`);
+
     // Fetch active campaigns that need to run
     const now = new Date().toISOString();
     const { data: campaigns, error: fetchError } = await supabase
@@ -57,14 +61,22 @@ serve(async (req) => {
       throw fetchError;
     }
 
-    console.log(`📋 [CRON] Found ${campaigns?.length || 0} campaigns to process`);
+    // Filter campaigns by execution hour
+    const campaignsToProcess = campaigns?.filter(campaign => {
+      const executionHour = campaign.execution_hour ?? 12; // Default to noon if not set
+      return executionHour === currentHour;
+    }) || [];
 
-    if (!campaigns || campaigns.length === 0) {
+    console.log(`📋 [CRON] Found ${campaigns?.length || 0} campaigns, ${campaignsToProcess.length} match current hour ${currentHour}`);
+
+    if (!campaignsToProcess || campaignsToProcess.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No campaigns to process',
-          processed: 0
+          message: `No campaigns to process at hour ${currentHour}`,
+          processed: 0,
+          totalCampaigns: campaigns?.length || 0,
+          currentHour
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -73,7 +85,7 @@ serve(async (req) => {
     const results = [];
 
     // Process each campaign
-    for (const campaign of campaigns) {
+    for (const campaign of campaignsToProcess) {
       console.log(`🚀 [CRON] Processing campaign: ${campaign.name} (${campaign.id})`);
 
       try {
