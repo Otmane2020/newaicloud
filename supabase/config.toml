@@ -408,3 +408,9 @@ verify_jwt = false
 [functions.test-gdpr-webhook]
 verify_jwt = false
 
+[functions.check-shopify-webhooks]
+verify_jwt = true
+
+[functions.register-gdpr-webhooks]
+verify_jwt = true
+
