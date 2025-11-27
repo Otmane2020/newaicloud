@@ -35,19 +35,33 @@ export const useAutoSync = (userId: string | undefined) => {
       // Query all recent syncs for this user (last 5 minutes to be safe)
       const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
       
-      const { data: latestSync, error: syncError } = await supabase
+      // Build query - optionally filter by specific sync ID if we're tracking one
+      let query = supabase
         .from('sync_history')
         .select('id, status, items_synced, started_at, sync_type, completed_at')
         .eq('user_id', userId)
         .gte('started_at', fiveMinutesAgo)
         .order('started_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
       
-      if (syncError && syncError.code !== 'PGRST116') {
+      // If we have a specific sync ID, filter by it for accuracy
+      if (currentSyncIdRef.current) {
+        query = supabase
+          .from('sync_history')
+          .select('id, status, items_synced, started_at, sync_type, completed_at')
+          .eq('id', currentSyncIdRef.current)
+          .limit(1);
+      }
+
+      const { data: latestSyncs, error: syncError } = await query;
+      
+      if (syncError) {
         console.warn('⚠️ [AutoSync] Error fetching sync status:', syncError.message);
         return false;
       }
+      
+      const latestSync = latestSyncs?.[0];
+      if (!latestSync) return false;
       
       if (latestSync) {
         console.log('📊 [AutoSync] Sync status check:', {
@@ -108,12 +122,38 @@ export const useAutoSync = (userId: string | undefined) => {
       return false; // Not completed yet
     };
     
+    // Détecte si l'utilisateur vient de Shopify "Open app" (host= sans pending_token)
+    const comingFromShopifyOpenApp = location.search.includes('host=') && 
+                                      !location.search.includes('pending_token');
+    
+    if (comingFromShopifyOpenApp) {
+      console.log('⏭️ [AutoSync] Coming from Shopify Open app - skipping auto-sync');
+      return;
+    }
+    
     // Check if there's a pending sync from onboarding page
     const pendingSync = sessionStorage.getItem('pending_sync');
     if (pendingSync && location.pathname === '/dashboard') {
       console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
       startSync(pendingSync);
+      
+      // Try to find the sync ID for better tracking
+      const findSyncId = async () => {
+        const { data: syncRecords } = await supabase
+          .from('sync_history')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'running')
+          .order('started_at', { ascending: false })
+          .limit(1);
+        
+        if (syncRecords?.[0]?.id) {
+          currentSyncIdRef.current = syncRecords[0].id;
+          console.log('🔗 [AutoSync] Tracking sync ID:', currentSyncIdRef.current);
+        }
+      };
+      findSyncId();
       
       // Check immediately then every 3 seconds
       checkSyncStatus();

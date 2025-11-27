@@ -13,6 +13,25 @@ export default function ShopifyApp() {
     const processPendingToken = async () => {
       const shop = params.get("shop");
       const pendingToken = params.get("pending_token");
+      const host = params.get("host");
+
+      // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
+      // Vérifier si l'utilisateur est déjà connecté et le rediriger vers le dashboard
+      if (host && !pendingToken) {
+        console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          console.log('✅ [ShopifyApp] User already authenticated, redirecting to dashboard');
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+        
+        // Si pas de session, rediriger vers l'auth
+        console.log('⚠️ [ShopifyApp] No session, redirecting to auth');
+        navigate("/auth", { replace: true });
+        return;
+      }
 
       if (!shop || !pendingToken) {
         setStatus("error");
