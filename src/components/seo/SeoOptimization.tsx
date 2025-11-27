@@ -579,7 +579,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+  const { processBulkOperation, state: optimizationState } = useOptimization();
 
   const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
@@ -613,8 +613,6 @@ export function SeoOptimization() {
     });
 
     // Check if products can be optimized based on user status
-    const selectedProductsList = products.filter((p) => idsToUse.has(p.id));
-    
     if (productsToGenerate.length === 0) {
       if (limits?.isTrialing) {
         // In trial, all selected products have already been optimized once
@@ -626,64 +624,45 @@ export function SeoOptimization() {
       return;
     }
 
-    setGenerating(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: productsToGenerate.length });
-    
-    // Start global optimization tracking
-    startOptimization('products', productsToGenerate.length, 'optimizing');
-
-    for (let i = 0; i < productsToGenerate.length; i++) {
-      try {
-        await supabase.functions.invoke("generate-seo-with-deepseek", {
-          body: { productId: productsToGenerate[i].id },
-        });
-        setProgress({ current: i + 1, total: productsToGenerate.length });
-        updateProgress(i + 1, productsToGenerate[i].id, 'success');
-      } catch (error: any) {
-        console.error("Error generating SEO:", error);
-
-        if (error.message?.includes("trial_product_already_optimized")) {
-          toast.warning(t.seo.optimization.someAlreadyOptimized);
-        } else if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached") || error.message?.includes("limite_optimisations_atteinte") || error.message?.includes("403")) {
-          // Afficher le bon message selon le statut de l'utilisateur
-          if (limits?.isTrialing) {
-            toast.error(t.seo.optimization.trialLimitReached);
-          } else if (limits?.isPaid) {
-            toast.error("Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.");
-          } else {
-            toast.error(t.seo.optimization.trialLimitReached);
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'products',
+      productsToGenerate,
+      async (product) => {
+        try {
+          const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
+            body: { productId: product.id },
+          });
+          
+          if (error) {
+            if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached") || error.message?.includes("limite_optimisations_atteinte") || error.message?.includes("403")) {
+              setShowUpgradeDialog(true);
+              return false;
+            }
+            return false;
           }
-          setShowUpgradeDialog(true);
-          break;
-        } else {
+          return true;
+        } catch (error: any) {
+          console.error("Error generating SEO:", error);
+          return false;
+        }
+      },
+      'optimizing',
+      async (results) => {
+        // This callback runs when bulk operation completes
+        if (results.error > 0 && results.success > 0) {
+          toast.warning(tf('seo.optimization.partialSuccess', { success: results.success, errors: results.error }) || `${results.success} optimisés, ${results.error} erreurs`);
+        } else if (results.success > 0) {
+          toast.success(t.seo.optimization.productOptimized);
+        } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
         }
+        
+        await fetchProducts();
+        await refreshLimits();
+        setSelectedProducts(new Set());
       }
-    }
-
-    setGenerating(false);
-    setIsOptimizationComplete(true);
-    completeOptimization(false); // Ne pas afficher le dialog global, on utilise ResultsDialog local
-    await fetchProducts();
-    await refreshLimits();
-
-    // Get updated products with new SEO data
-    const updatedProducts = await Promise.all(
-      productsToGenerate.map(async (p) => {
-        const { data } = await supabase
-          .from("shopify_products")
-          .select("id, title, seo_title, seo_description, image_url")
-          .eq("id", p.id)
-          .single();
-        return data;
-      }),
     );
-
-    setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
   };
 
   const handleGenerateAllSeo = async () => {
@@ -712,94 +691,66 @@ export function SeoOptimization() {
       return;
     }
 
-    setGenerating(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: productsToGenerate.length });
-
-    const BATCH_SIZE = 3;
-    for (let i = 0; i < productsToGenerate.length; i += BATCH_SIZE) {
-      const batch = productsToGenerate.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(
-        batch.map(async (product) => {
-          try {
-            await supabase.functions.invoke("generate-seo-with-deepseek", {
-              body: { productId: product.id },
-            });
-          } catch (error: any) {
-            console.error("Error generating SEO:", error);
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'products',
+      productsToGenerate,
+      async (product) => {
+        try {
+          const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
+            body: { productId: product.id },
+          });
+          
+          if (error) {
             if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached") || error.message?.includes("limite_optimisations_atteinte") || error.message?.includes("403")) {
-              // Afficher le bon message selon le statut de l'utilisateur
-              if (limits?.isTrialing) {
-                toast.error(t.seo.optimization.trialLimitReached);
-              } else if (limits?.isPaid) {
-                toast.error("Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.");
-              } else {
-                toast.error(t.seo.optimization.trialLimitReached);
-              }
               setShowUpgradeDialog(true);
-              return;
+              return false;
+            }
+            return false;
+          }
+          return true;
+        } catch (error: any) {
+          console.error("Error generating SEO:", error);
+          return false;
+        }
+      },
+      'optimizing',
+      async (results) => {
+        if (results.success > 0) {
+          toast.success(t.seo.optimization.productOptimized);
+        }
+        
+        await fetchProducts();
+        await refreshLimits();
+        
+        // Check if auto-sync is enabled
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: syncSettings } = await supabase
+            .from('shopify_sync_settings')
+            .select('export_after_optimization')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (syncSettings?.export_after_optimization) {
+            // Auto-sync enabled - synchronize automatically
+            console.log('🔄 Auto-sync enabled, syncing products automatically...');
+            const { data: updatedProducts } = await supabase
+              .from("shopify_products")
+              .select("id, enrichment_status, seo_synced_to_shopify")
+              .in("id", productsToGenerate.map(p => p.id));
+            
+            const toSync = (updatedProducts || [])
+              .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
+              .map((p) => p.id);
+            
+            if (toSync.length > 0) {
+              setTimeout(() => handleSyncProducts(toSync), 1000);
             }
           }
-        }),
-      );
-
-      setProgress({ current: Math.min(i + BATCH_SIZE, productsToGenerate.length), total: productsToGenerate.length });
-    }
-
-    setGenerating(false);
-    setIsOptimizationComplete(true);
-    
-    // Rafraîchir les produits et récupérer les données mises à jour
-    await fetchProducts();
-    await refreshLimits();
-    
-    // Récupérer les produits optimisés pour le dialog de résultats
-    const { data: updatedProducts } = await supabase
-      .from("shopify_products")
-      .select("id, title, seo_title, seo_description, image_url, enrichment_status, seo_synced_to_shopify")
-      .in("id", productsToGenerate.map(p => p.id));
-    
-    if (updatedProducts && updatedProducts.length > 0) {
-      setOptimizedProducts(updatedProducts as Product[]);
-    }
-    
-    // Fermer le dialog de progression et afficher les résultats
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
-    
-    toast.success(t.seo.optimization.productOptimized);
-    
-    // Check if auto-sync is enabled
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: syncSettings } = await supabase
-        .from('shopify_sync_settings')
-        .select('export_after_optimization')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (syncSettings?.export_after_optimization) {
-        // Auto-sync enabled - synchronize automatically
-        console.log('🔄 Auto-sync enabled, syncing products automatically...');
-        // Utiliser les produits mis à jour
-        const toSync = (updatedProducts || [])
-          .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
-          .map((p) => p.id);
-        
-        if (toSync.length > 0) {
-          setShowResultsDialog(false); // Fermer le dialog de résultats si auto-sync
-          setTimeout(async () => {
-            try {
-              await handleSyncProducts(toSync);
-            } catch (error) {
-              console.error('Auto-sync error:', error);
-            }
-          }, 1000);
         }
       }
-    }
+    );
   };
 
   const handleSyncSelected = async () => {
@@ -868,42 +819,38 @@ export function SeoOptimization() {
 
     setShowResultsDialog(false);
     setShowSyncDialog(false);
-    setSyncing(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: productIds.length });
-    
-    // Start global sync tracking
-    startOptimization('products', productIds.length, 'syncing');
 
-    let successCount = 0;
-
-    for (let i = 0; i < productIds.length; i++) {
-      try {
-        await supabase.functions.invoke("sync-seo-to-shopify", {
-          body: {
-            productId: productIds[i],
-            syncTags: true,
-            syncGoogleShopping: true,
-            force: true, // Allow immediate sync after optimization
-          },
-        });
-
-        successCount++;
-        setProgress({ current: i + 1, total: productIds.length });
-        updateProgress(i + 1, productIds[i], 'success');
-      } catch (error) {
-        console.error("Error syncing:", error);
-        updateProgress(i + 1, productIds[i], 'error');
+    // Use global context processor for sync - continues even if user changes tabs
+    processBulkOperation(
+      'products',
+      productIds,
+      async (productId) => {
+        try {
+          const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+            body: {
+              productId,
+              syncTags: true,
+              syncGoogleShopping: true,
+              force: true,
+            },
+          });
+          return !error;
+        } catch (error) {
+          console.error("Error syncing:", error);
+          return false;
+        }
+      },
+      'syncing',
+      async (results) => {
+        if (results.success > 0) {
+          toast.success(t.seo.optimization.syncCompleted, {
+            description: tf("seo.optimization.productsSynced", { count: results.success }),
+          });
+        }
+        await fetchProducts();
+        await refreshLimits();
       }
-    }
-
-    setSyncing(false);
-    setIsOptimizationComplete(true);
-    completeOptimization(false); // Ne pas afficher le dialog global
-
-    await fetchProducts();
-    await refreshLimits();
+    );
   };
 
   const handleCloseProgressDialog = () => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 
 export type OptimizationType = 'products' | 'collections' | 'tags' | 'alt' | 'pages' | 'articles';
 
@@ -14,6 +14,12 @@ interface OptimizationState {
   showCompletedDialog: boolean;
 }
 
+interface BulkOperationResult {
+  success: number;
+  error: number;
+  cancelled: boolean;
+}
+
 interface OptimizationContextType {
   state: OptimizationState;
   startOptimization: (type: OptimizationType, total: number, operation: 'optimizing' | 'syncing') => void;
@@ -24,6 +30,15 @@ interface OptimizationContextType {
   toggleDialog: () => void;
   setShowDialog: (show: boolean) => void;
   setShowCompletedDialog: (show: boolean) => void;
+  // NEW: Global bulk operation processor that continues even when components unmount
+  processBulkOperation: <T>(
+    type: OptimizationType,
+    items: T[],
+    processItem: (item: T, index: number) => Promise<boolean>,
+    operation?: 'optimizing' | 'syncing',
+    onComplete?: (results: BulkOperationResult) => void
+  ) => void;
+  isProcessing: boolean;
 }
 
 const OptimizationContext = createContext<OptimizationContextType | undefined>(undefined);
@@ -42,8 +57,13 @@ const initialState: OptimizationState = {
 
 export function OptimizationProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OptimizationState>(initialState);
+  
+  // Use ref for cancellation to avoid stale closure issues
+  const cancelledRef = useRef(false);
+  const isProcessingRef = useRef(false);
 
   const startOptimization = useCallback((type: OptimizationType, total: number, operation: 'optimizing' | 'syncing') => {
+    cancelledRef.current = false;
     setState({
       type,
       isRunning: true,
@@ -77,6 +97,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const completeOptimization = useCallback((showCompletedDialog: boolean = true) => {
+    isProcessingRef.current = false;
     setState(prev => ({
       ...prev,
       isRunning: false,
@@ -85,6 +106,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const cancelOptimization = useCallback(() => {
+    cancelledRef.current = true;
     setState(prev => ({
       ...prev,
       cancelRequested: true,
@@ -92,6 +114,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetCancellation = useCallback(() => {
+    cancelledRef.current = false;
     setState(prev => ({
       ...prev,
       cancelRequested: false,
@@ -119,6 +142,89 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // NEW: Global bulk operation processor - runs in context, survives component unmounts
+  const processBulkOperation = useCallback(<T,>(
+    type: OptimizationType,
+    items: T[],
+    processItem: (item: T, index: number) => Promise<boolean>,
+    operation: 'optimizing' | 'syncing' = 'optimizing',
+    onComplete?: (results: BulkOperationResult) => void
+  ) => {
+    // Prevent multiple concurrent operations
+    if (isProcessingRef.current) {
+      console.warn('[OptimizationContext] Operation already in progress');
+      return;
+    }
+
+    // Reset cancellation flag
+    cancelledRef.current = false;
+    isProcessingRef.current = true;
+
+    // Initialize state
+    setState({
+      type,
+      isRunning: true,
+      current: 0,
+      total: items.length,
+      operation,
+      items: [],
+      cancelRequested: false,
+      showDialog: true,
+      showCompletedDialog: false,
+    });
+
+    // Run the processing loop asynchronously
+    (async () => {
+      let successCount = 0;
+      let errorCount = 0;
+
+      console.log(`[OptimizationContext] Starting ${operation} for ${items.length} ${type}`);
+
+      for (let i = 0; i < items.length; i++) {
+        // Check if cancellation was requested
+        if (cancelledRef.current) {
+          console.log(`[OptimizationContext] Cancelled at ${i + 1}/${items.length}`);
+          break;
+        }
+
+        try {
+          const success = await processItem(items[i], i);
+          if (success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`[OptimizationContext] Error processing item ${i}:`, error);
+          errorCount++;
+        }
+
+        // Update progress in state
+        setState(prev => ({
+          ...prev,
+          current: i + 1,
+        }));
+      }
+
+      // Mark as complete
+      isProcessingRef.current = false;
+      setState(prev => ({
+        ...prev,
+        isRunning: false,
+        showCompletedDialog: operation === 'optimizing' && successCount > 0,
+      }));
+
+      console.log(`[OptimizationContext] Completed: ${successCount} success, ${errorCount} errors, cancelled: ${cancelledRef.current}`);
+
+      // Call completion callback if provided
+      onComplete?.({
+        success: successCount,
+        error: errorCount,
+        cancelled: cancelledRef.current,
+      });
+    })();
+  }, []);
+
   return (
     <OptimizationContext.Provider
       value={{
@@ -131,6 +237,8 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
         toggleDialog,
         setShowDialog,
         setShowCompletedDialog,
+        processBulkOperation,
+        isProcessing: isProcessingRef.current,
       }}
     >
       {children}
