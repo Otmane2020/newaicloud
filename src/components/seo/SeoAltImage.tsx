@@ -922,14 +922,14 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
               <div className="text-center space-y-3 w-full max-w-md">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span className="font-semibold text-lg">Optimisation en cours...</span>
+                  <span className="font-semibold text-lg">{t.seo.altImage.progress.optimizing}</span>
                 </div>
                 <Progress value={(progress.current / progress.total) * 100} className="h-3" />
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>{progress.current} / {progress.total}</span>
                   <span className="font-bold text-primary">{Math.round((progress.current / progress.total) * 100)}%</span>
                 </div>
-                <p className="text-xs text-muted-foreground">💡 Le traitement continue en arrière-plan</p>
+                <p className="text-xs text-muted-foreground">💡 {t.seo.altImage.progress.backgroundProcessing}</p>
               </div>
             ) : (
               <>

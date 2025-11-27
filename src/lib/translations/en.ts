@@ -2582,6 +2582,8 @@ export const translations = {
       progress: {
         generating: "Generating ALT texts...",
         syncing: "Synchronizing...",
+        optimizing: "Optimization in progress...",
+        backgroundProcessing: "Processing continues in the background",
       },
       toasts: {
         displayNotOptimized: "Showing not optimized images ({{count}})",
