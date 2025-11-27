@@ -14,7 +14,7 @@ const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
  * la synchronisation pour TOUS les flux (OAuth et API)
  */
 export const useAutoSync = (userId: string | undefined) => {
-  const { startSync, endSync } = useAutoSyncProgress();
+  const { startSync, completeSync, endSync, updateType } = useAutoSyncProgress();
   const location = useLocation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Track the specific sync ID we're monitoring
@@ -26,8 +26,73 @@ export const useAutoSync = (userId: string | undefined) => {
     if (!userId) return;
     let isMounted = true;
     let stuckTimeoutId: NodeJS.Timeout | null = null;
+    let failsafeTimeoutId: NodeJS.Timeout | null = null;
 
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
+    
+    // Helper to check sync status and handle completion
+    const checkSyncStatus = async () => {
+      // Query all recent syncs for this user (last 5 minutes to be safe)
+      const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
+      
+      const { data: latestSync } = await supabase
+        .from('sync_history')
+        .select('id, status, items_synced, started_at, sync_type')
+        .eq('user_id', userId)
+        .gte('started_at', fiveMinutesAgo)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (latestSync) {
+        console.log('📊 [AutoSync] Latest sync status:', latestSync.status, latestSync.items_synced);
+        
+        // Update the type based on what's being synced
+        if (latestSync.sync_type) {
+          updateType(latestSync.sync_type);
+        }
+        
+        if (latestSync.status === 'success' || latestSync.status === 'failed') {
+          console.log('✅ [AutoSync] Import completed:', latestSync);
+          
+          // Clear the tracking ref
+          currentSyncIdRef.current = null;
+          
+          if (syncCheckIntervalRef.current) {
+            clearInterval(syncCheckIntervalRef.current);
+            syncCheckIntervalRef.current = null;
+          }
+          
+          if (stuckTimeoutId) {
+            clearTimeout(stuckTimeoutId);
+            stuckTimeoutId = null;
+          }
+          
+          if (failsafeTimeoutId) {
+            clearTimeout(failsafeTimeoutId);
+            failsafeTimeoutId = null;
+          }
+          
+          if (isMounted) {
+            if (latestSync.status === 'success') {
+              // Use completeSync to show success state with auto-close
+              completeSync(latestSync.items_synced || 0);
+              toast.success('Synchronisation terminée', {
+                description: `${latestSync.items_synced || 0} éléments importés avec succès`,
+              });
+            } else {
+              // Failed sync - just end it
+              endSync();
+              toast.error('Erreur de synchronisation', {
+                description: 'La synchronisation a échoué. Veuillez réessayer.',
+              });
+            }
+          }
+          return true; // Signal completion
+        }
+      }
+      return false; // Not completed yet
+    };
     
     // Check if there's a pending sync from onboarding page
     const pendingSync = sessionStorage.getItem('pending_sync');
@@ -35,52 +100,6 @@ export const useAutoSync = (userId: string | undefined) => {
       console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
       startSync(pendingSync);
-      
-      // Poll sync_history to check when import is complete
-      const checkSyncStatus = async () => {
-        // Build query - if we have a specific sync ID, check only that one
-        let query = supabase
-          .from('sync_history')
-          .select('id, status, items_synced, started_at')
-          .eq('user_id', userId);
-        
-        // If we're tracking a specific sync, only check that one
-        if (currentSyncIdRef.current) {
-          query = query.eq('id', currentSyncIdRef.current);
-        } else {
-          // Otherwise, only check recent syncs (last 2 minutes) to avoid detecting old ones
-          const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
-          query = query.gte('started_at', twoMinutesAgo);
-        }
-        
-        const { data: latestSync } = await query
-          .order('started_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
-          console.log('✅ [AutoSync] Import completed:', latestSync);
-          
-          // If this is the sync we were tracking, or if we're not tracking a specific one
-          if (!currentSyncIdRef.current || currentSyncIdRef.current === latestSync.id) {
-            currentSyncIdRef.current = null; // Reset tracking
-            
-            if (syncCheckIntervalRef.current) {
-              clearInterval(syncCheckIntervalRef.current);
-              syncCheckIntervalRef.current = null;
-            }
-            if (isMounted) {
-              endSync();
-              
-              if (latestSync.status === 'success') {
-                toast.success('Synchronisation terminée', {
-                  description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-                });
-              }
-            }
-          }
-        }
-      };
       
       // Check immediately then every 3 seconds
       checkSyncStatus();
@@ -99,7 +118,7 @@ export const useAutoSync = (userId: string | undefined) => {
       }, STUCK_TIMEOUT_MS);
       
       // Failsafe: close dialog after 10 minutes for large imports
-      setTimeout(() => {
+      failsafeTimeoutId = setTimeout(() => {
         if (syncCheckIntervalRef.current) {
           clearInterval(syncCheckIntervalRef.current);
           syncCheckIntervalRef.current = null;
@@ -172,52 +191,6 @@ export const useAutoSync = (userId: string | undefined) => {
           console.log('✅ [AutoSync] Showing sync dialog and monitoring import');
           startSync(storeName);
           
-          // Poll sync_history to check when import is complete
-          const checkSyncStatus = async () => {
-            // Build query - if we have a specific sync ID, check only that one
-            let query = supabase
-              .from('sync_history')
-              .select('id, status, items_synced, started_at')
-              .eq('user_id', userId);
-            
-            // If we're tracking a specific sync, only check that one
-            if (currentSyncIdRef.current) {
-              query = query.eq('id', currentSyncIdRef.current);
-            } else {
-              // Otherwise, only check recent syncs (last 2 minutes) to avoid detecting old ones
-              const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
-              query = query.gte('started_at', twoMinutesAgo);
-            }
-            
-            const { data: latestSync } = await query
-              .order('started_at', { ascending: false })
-              .limit(1)
-              .single();
-            
-            if (latestSync && (latestSync.status === 'success' || latestSync.status === 'failed')) {
-              console.log('✅ [AutoSync] Import completed:', latestSync);
-              
-              // If this is the sync we were tracking, or if we're not tracking a specific one
-              if (!currentSyncIdRef.current || currentSyncIdRef.current === latestSync.id) {
-                currentSyncIdRef.current = null; // Reset tracking
-                
-                if (syncCheckIntervalRef.current) {
-                  clearInterval(syncCheckIntervalRef.current);
-                  syncCheckIntervalRef.current = null;
-                }
-                if (isMounted) {
-                  endSync();
-                  
-                  if (latestSync.status === 'success') {
-                    toast.success('Synchronisation terminée', {
-                      description: `${latestSync.items_synced || 0} éléments importés avec succès`,
-                    });
-                  }
-                }
-              }
-            }
-          };
-          
           // Check immediately then every 3 seconds
           checkSyncStatus();
           syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
@@ -235,7 +208,7 @@ export const useAutoSync = (userId: string | undefined) => {
           }, STUCK_TIMEOUT_MS);
           
           // Failsafe: close dialog after 10 minutes for large imports
-          setTimeout(() => {
+          failsafeTimeoutId = setTimeout(() => {
             if (syncCheckIntervalRef.current) {
               clearInterval(syncCheckIntervalRef.current);
               syncCheckIntervalRef.current = null;
