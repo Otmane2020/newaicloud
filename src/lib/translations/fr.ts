@@ -36,12 +36,13 @@ export const translations = {
       syncError: "Erreur lors de la synchronisation",
       import: {
         title: "Importer des Collections depuis Shopify",
-        description: "Sélectionnez les collections que vous souhaitez importer dans votre compte. Les collections importées pourront être utilisées pour créer des articles de blog ciblés.",
+        description:
+          "Sélectionnez les collections que vous souhaitez importer dans votre compte. Les collections importées pourront être utilisées pour créer des articles de blog ciblés.",
         button: "Importer des Collections",
         noCollections: {
           title: "Aucune collection trouvée",
           description: "Aucune collection n'a été trouvée dans votre boutique Shopify.",
-          retry: "Réessayer"
+          retry: "Réessayer",
         },
         selectAll: "Tout sélectionner ({{count}} disponible(s))",
         selected: "{{count}} sélectionnée(s)",
@@ -56,8 +57,8 @@ export const translations = {
         limitReachedDesc: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur pour continuer.",
         loadingError: "Erreur lors du chargement des collections",
         importError: "Erreur lors de l'importation : {{message}}",
-        importSuccess: "{{count}} collection(s) importée(s) avec succès"
-      }
+        importSuccess: "{{count}} collection(s) importée(s) avec succès",
+      },
     },
     error: {
       generic: "Une erreur s'est produite",
@@ -294,7 +295,7 @@ export const translations = {
       modernDesc: "Dégradés, ombres douces, animations",
       premium: "Premium",
       premiumShort: "Luxueux & sophistiqué",
-      premiumDesc: "Effets visuels riches, typographie imposante"
+      premiumDesc: "Effets visuels riches, typographie imposante",
     },
 
     visualStyle: {
@@ -387,7 +388,7 @@ export const translations = {
       title: "Génération IA de Landing Page",
       badge: "Vision IA",
     },
-    
+
     optimizedTitle: "Titre optimisé par IA",
     syncTitle: "Synchronisez pour appliquer ce titre",
     generationFailed: "Échec de la génération",
@@ -405,7 +406,7 @@ export const translations = {
       mobileOptimizationDetail: "Optimisation mobile",
       finalOptimizationDetail: "Optimisation finale",
       readyDetail: "Prêt !",
-      
+
       chipInitializing: "Initialisation IA",
       chipVision: "Analyse Vision",
       chipContext: "Traitement du contexte",
@@ -446,8 +447,10 @@ export const translations = {
       paymentRequired: "Crédits IA épuisés. Contactez le support pour plus d'informations.",
       limitReached: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
       noGenerated: "Aucun contenu généré. Essayez avec un autre style ou layout.",
-      networkError: "Le service de génération est momentanément indisponible. Merci de réessayer dans quelques minutes.",
-      syncNetworkError: "Impossible de contacter le service de synchronisation. Merci de réessayer dans quelques minutes.",
+      networkError:
+        "Le service de génération est momentanément indisponible. Merci de réessayer dans quelques minutes.",
+      syncNetworkError:
+        "Impossible de contacter le service de synchronisation. Merci de réessayer dans quelques minutes.",
       retrying: "Nouvelle tentative en cours...",
     },
 
@@ -1195,7 +1198,7 @@ export const translations = {
   planNames: {
     "Free Trial": "Essai Gratuit",
     trial: "Essai Gratuit",
-    Starter: "Démarrage",
+    Starter: "Starter",
     Pro: "Pro",
     Business: "Business",
     Enterprise: "Entreprise",
@@ -2122,8 +2125,10 @@ export const translations = {
         campaigns: "Campagnes",
       },
       messages: {
-        trialLimitReached: "🚨 <strong>Certaines limites sont atteintes.</strong> Activez un plan payant pour continuer.",
-        monthlyLimitReached: "⚠️ <strong>Limites mensuelles atteintes.</strong> Elles seront réinitialisées le mois prochain.",
+        trialLimitReached:
+          "🚨 <strong>Certaines limites sont atteintes.</strong> Activez un plan payant pour continuer.",
+        monthlyLimitReached:
+          "⚠️ <strong>Limites mensuelles atteintes.</strong> Elles seront réinitialisées le mois prochain.",
       },
       buttons: {
         activatePlan: "Activer un plan",
@@ -2366,7 +2371,8 @@ export const translations = {
         "{{success}} images optimisées ce mois-ci. {{remaining}} images en attente du prochain cycle",
       banner: {
         title: "Optimisation ALT Images",
-        description: "Générez automatiquement des descriptions ALT optimisées pour vos images. Améliorez l'accessibilité et le référencement de 35%.",
+        description:
+          "Générez automatiquement des descriptions ALT optimisées pour vos images. Améliorez l'accessibilité et le référencement de 35%.",
         maxAccessibility: "Accessibilité maximale",
         seoBoost: "+35% SEO images",
         advancedVision: "IA Vision avancée",
@@ -3166,7 +3172,8 @@ export const translations = {
       quickPress: {
         title: "Quick Press Pro",
         subtitle: "Créez des articles professionnels optimisés SEO en quelques clics",
-        description: "Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout, personnalisation des couleurs, sélection des produits, et génération d'un article complet avec images, table des matières et galeries interactives.",
+        description:
+          "Notre assistant intelligent vous guide pas à pas : sélection de collection, choix du layout, personnalisation des couleurs, sélection des produits, et génération d'un article complet avec images, table des matières et galeries interactives.",
       },
       features: {
         design: {
@@ -4276,20 +4283,21 @@ export const translations = {
     dateRange: {
       last7Days: "7 derniers jours",
       last30Days: "30 derniers jours",
-      last90Days: "90 derniers jours"
+      last90Days: "90 derniers jours",
     },
     domain: {
       selectPlaceholder: "Sélectionnez un domaine",
       verified: "Vérifié",
-      add: "Ajouter un domaine"
-    }
+      add: "Ajouter un domaine",
+    },
   },
 
   // Dialogs
   dialogs: {
     upgrade: {
       planUpgraded: "Plan mis à niveau avec succès !",
-      planUpgradedWithProration: "Plan mis à niveau ! Vous avez été facturé pour {{days}} jours. Les compteurs mensuels ont été réinitialisés.",
+      planUpgradedWithProration:
+        "Plan mis à niveau ! Vous avez été facturé pour {{days}} jours. Les compteurs mensuels ont été réinitialisés.",
       planUpgradedNoProration: "Plan mis à niveau ! Aucune proration appliquée (début de cycle).",
       youReachedLimit: "Vous avez atteint la limite de votre plan",
       chooseOptimizations: "Choisissez votre plan",
@@ -4327,15 +4335,15 @@ export const translations = {
         collections: "Collections",
         pages: "Pages",
         articles: "Articles",
-        images: "Images"
-      }
+        images: "Images",
+      },
     },
     shopifySync: {
       successTitle: "Synchronisation SEO réussie !",
       itemsSynced_one: "{{count}} élément synchronisé avec succès sur Shopify",
       itemsSynced_other: "{{count}} éléments synchronisés avec succès sur Shopify",
       howToVerify: "Comment vérifier votre SEO dans Shopify :",
-      step1: "Cliquez sur \"Voir dans Admin Shopify\" ci-dessous",
+      step1: 'Cliquez sur "Voir dans Admin Shopify" ci-dessous',
       step2: "Scrollez jusqu'à la section",
       step3: "Vérifiez que le titre et la description correspondent",
       previewSection: "Prévisualisation sur les moteurs de recherche",
@@ -4352,8 +4360,8 @@ export const translations = {
         product: "Produit",
         collection: "Collection",
         page: "Page",
-        article: "Article"
-      }
+        article: "Article",
+      },
     },
     syncAll: {
       inProgress: "Synchronisation en cours...",
@@ -4379,8 +4387,8 @@ export const translations = {
         pages: "pages",
         articles: "articles",
         tags: "tags",
-        "alt-images": "images alt"
-      }
+        "alt-images": "images alt",
+      },
     },
     seoWorkflow: {
       progress: {
@@ -4390,7 +4398,7 @@ export const translations = {
         syncingDesc: "Envoi des données optimisées vers Shopify...",
         step: "Étape {{current}} sur {{total}}",
         completeOptimizing: "Optimisation terminée !",
-        completeSyncing: "Synchronisation terminée !"
+        completeSyncing: "Synchronisation terminée !",
       },
       results: {
         seoComplete: "Optimisation SEO terminée",
@@ -4414,8 +4422,8 @@ export const translations = {
         types: {
           products: "produits",
           collections: "collections",
-          articles: "articles"
-        }
+          articles: "articles",
+        },
       },
       confirmation: {
         syncSeoTitle: "Synchroniser les optimisations SEO",
@@ -4428,7 +4436,7 @@ export const translations = {
         syncing: "Synchronisation...",
         cancel: "Annuler",
         confirm: "Confirmer la synchronisation",
-        readyForSync: "Prêt pour la synchronisation"
+        readyForSync: "Prêt pour la synchronisation",
       },
       success: {
         seoSyncedTitle: "SEO synchronisé avec Shopify !",
@@ -4439,8 +4447,8 @@ export const translations = {
         altSyncedDesc: "{{count}} images ont été mises à jour",
         changesLive: "Vos modifications sont maintenant en ligne",
         viewStore: "Voir la boutique",
-        done: "Terminé"
-      }
+        done: "Terminé",
+      },
     },
     variantSelection: {
       title: "Confirmation de l'application",
@@ -4456,7 +4464,7 @@ export const translations = {
       variants_one: "{{count}} variante",
       variants_other: "{{count}} variantes",
       cancel: "Annuler",
-      confirm: "Confirmer et générer"
+      confirm: "Confirmer et générer",
     },
     reoptimize: {
       title: "Confirmer la réoptimisation ?",
@@ -4469,14 +4477,15 @@ export const translations = {
       alreadyOptimized: "Déjà optimisées ({{count}})",
       neverOptimized: "Jamais optimisées ({{count}})",
       warning: "⚠️ Les données SEO actuelles seront écrasées",
-      warningText: "L'IA va générer de nouveaux titres et descriptions SEO. Les anciennes optimisations seront remplacées.",
+      warningText:
+        "L'IA va générer de nouveaux titres et descriptions SEO. Les anciennes optimisations seront remplacées.",
       lastOptimized: "Dernière optimisation : {{date}}",
       optimizations: "{{count}}x",
       new: "Nouveau",
       quotaNote: "Cette optimisation sera comptabilisée dans votre quota mensuel.",
       consumedOptimizations: "{{count}} optimisation{{plural}} sera{{plural2}} consommée{{plural}}.",
       cancel: "Annuler",
-      confirm: "✅ Confirmer la réoptimisation"
+      confirm: "✅ Confirmer la réoptimisation",
     },
     landingPagePreview: {
       title: "Aperçu Landing Page",
@@ -4500,7 +4509,7 @@ export const translations = {
       viewOnline: "Voir en ligne",
       createOptimized: "Créez une landing page optimisée pour ce produit",
       generateLandingPage: "Générer Landing Page",
-      generationTime: "⚡ Génération en 30-60 secondes"
+      generationTime: "⚡ Génération en 30-60 secondes",
     },
     optimizationConfig: {
       title: "Configuration de l'optimisation",
@@ -4517,35 +4526,35 @@ export const translations = {
         modern: "Moderne",
         elegant: "Élégant",
         professional: "Professionnel",
-        creative: "Créatif"
+        creative: "Créatif",
       },
       contentStructure: "Structure du contenu",
       layouts: {
         compact: "Compact",
         detailed: "Détaillé",
-        story: "Storytelling"
+        story: "Storytelling",
       },
       colorPalette: "Palette de couleurs",
       colors: {
         vibrant: "Vibrant",
         pastel: "Pastel",
         monochrome: "Monochrome",
-        warm: "Chaleureux"
+        warm: "Chaleureux",
       },
       contentLength: "Longueur du contenu",
       lengths: {
         short: "Court",
         medium: "Moyen",
-        long: "Long"
+        long: "Long",
       },
       cancel: "Annuler",
-      launchOptimization: "Lancer l'optimisation"
+      launchOptimization: "Lancer l'optimisation",
     },
     optimizationConfirm: {
       title: "Confirmer l'optimisation",
       description: "Vous êtes sur le point d'optimiser les produits sélectionnés",
       productsSelected: "Produits sélectionnés",
-      cancel: "Annuler"
+      cancel: "Annuler",
     },
     demoBooking: {
       title: "Voir Quickshot en action",
@@ -4566,7 +4575,7 @@ export const translations = {
         ceo_founder: "CEO/Fondateur",
         product_manager: "Chef de Produit",
         designer: "Designer",
-        other: "Autre"
+        other: "Autre",
       },
       submitting: "Envoi en cours...",
       submit: "Voir en direct",
@@ -4575,11 +4584,11 @@ export const translations = {
         invalidEmail: "Veuillez entrer un email professionnel valide",
         firstNameRequired: "Le prénom est requis",
         lastNameRequired: "Le nom est requis",
-        roleRequired: "Veuillez compléter ce champ obligatoire."
+        roleRequired: "Veuillez compléter ce champ obligatoire.",
       },
       success: "Demande de démo envoyée !",
       successDesc: "Nous vous contacterons bientôt à ",
-      error: "Erreur lors de l'envoi de la demande"
+      error: "Erreur lors de l'envoi de la demande",
     },
     limit: {
       upgradeRequired: "🚀 Mise à niveau requise",
@@ -4641,7 +4650,7 @@ export const translations = {
   chatSettings: {
     settingsSaved: "Paramètres sauvegardés avec succès",
     saveError: "Erreur lors de la sauvegarde",
-    commercialWelcome: "Activer le widget de chat"
+    commercialWelcome: "Activer le widget de chat",
   },
 
   // Onboarding Tour
@@ -4686,14 +4695,14 @@ export const translations = {
         products: "Produits",
         keywords: "Mots-clés",
         design: "Design",
-        generate: "Générer"
+        generate: "Générer",
       },
       descriptions: {
         topic: "Choisissez le sujet de votre article",
         products: "Sélectionnez les produits associés",
         keywords: "Définissez les mots-clés cibles",
         design: "Configurez le design visuel",
-        generate: "Générez votre article"
+        generate: "Générez votre article",
       },
       design: {
         visualStyle: {
@@ -4708,8 +4717,8 @@ export const translations = {
             modern: "Contemporain et frais",
             elegant: "Sophistiqué et raffiné",
             bold: "Fort et impactant",
-            artistic: "Créatif et unique"
-          }
+            artistic: "Créatif et unique",
+          },
         },
         layout: {
           title: "Mise en page",
@@ -4721,8 +4730,8 @@ export const translations = {
             single_column: "Mise en page blog traditionnelle",
             two_column: "Contenu avec barre latérale",
             magazine: "Style éditorial",
-            grid: "Mise en page par cartes"
-          }
+            grid: "Mise en page par cartes",
+          },
         },
         colorPalette: {
           title: "Palette de couleurs",
@@ -4734,34 +4743,34 @@ export const translations = {
             purple: "Violet",
             red: "Rouge",
             orange: "Orange",
-            pink: "Rose"
-          }
+            pink: "Rose",
+          },
         },
         advanced: {
-          title: "Options Avancées"
+          title: "Options Avancées",
         },
         typography: {
-          title: "Typographie"
+          title: "Typographie",
         },
         productDisplay: {
           title: "Affichage Produits",
           grid: "Grille",
           list: "Liste",
-          carousel: "Carrousel"
+          carousel: "Carrousel",
         },
         imageIntensity: {
           title: "Intensité des Images",
           high: "Haute - Nombreuses images",
           medium: "Moyenne - Équilibré",
-          low: "Basse - Minimal"
+          low: "Basse - Minimal",
         },
         toc: {
           title: "Table des Matières",
           description: "Ajouter une navigation pour les longs articles",
           enabled: "Activé",
-          disabled: "Désactivé"
-        }
-      }
+          disabled: "Désactivé",
+        },
+      },
     },
     shopify: {
       fillAllFields: "Veuillez remplir tous les champs",
@@ -4770,8 +4779,8 @@ export const translations = {
       storeLimit: "Limite de boutiques atteinte",
       storeLimitDescription: "Vous avez atteint la limite de boutiques Shopify de votre plan",
       storeAlreadyConnected: "Cette boutique est déjà connectée",
-      invalidCredentials: "Identifiants invalides. Vérifiez votre clé API et votre secret."
-    }
+      invalidCredentials: "Identifiants invalides. Vérifiez votre clé API et votre secret.",
+    },
   },
 
   // Homepage Audit
@@ -4796,13 +4805,13 @@ export const translations = {
       syncWarning: "Synchronisation terminée avec des avertissements",
       syncWarningDesc: "Certains champs peuvent nécessiter une vérification manuelle",
       permissionDenied: "Permission refusée",
-      permissionDeniedDesc: "Vous n'avez pas la permission de mettre à jour le SEO de la homepage"
+      permissionDeniedDesc: "Vous n'avez pas la permission de mettre à jour le SEO de la homepage",
     },
     scoreLabels: {
       excellent: "Excellent",
       good: "Bien",
       average: "Moyen",
-      needsImprovement: "À améliorer"
+      needsImprovement: "À améliorer",
     },
     features: {
       completeAnalysis: "Analyse complète",
@@ -4811,12 +4820,12 @@ export const translations = {
       autoOptimization: "Optimisation auto",
       scoreBreakdown: "Détail du score",
       aiOptimization: "Optimisation IA",
-      shopifySync: "Sync Shopify"
+      shopifySync: "Sync Shopify",
     },
     buttons: {
       analyzing: "Analyse en cours...",
       analyzeHomepage: "Analyser la Homepage",
-      syncing: "Synchronisation..."
+      syncing: "Synchronisation...",
     },
     sections: {
       overallScore: "Score SEO Global",
@@ -4830,7 +4839,7 @@ export const translations = {
       quickActions: "Actions Rapides",
       seoOptimization: "Optimisation SEO",
       importOptimizeSync: "Importer, Optimiser & Synchroniser",
-      importBeforeOptimize: "Importer le SEO actuel avant optimisation"
+      importBeforeOptimize: "Importer le SEO actuel avant optimisation",
     },
     elements: {
       titleTag: "Balise Title",
@@ -4859,8 +4868,8 @@ export const translations = {
       shopifyEditor: "Éditeur Shopify",
       configureMetadata: "Configurer les Métadonnées",
       importOrGenerate: "Importer ou Générer",
-      analyzedOn: "Analysé le"
-    }
+      analyzedOn: "Analysé le",
+    },
   },
 
   // Media History
@@ -6212,12 +6221,13 @@ export const translations = {
       keyStatusError: "Erreur lors de la mise à jour du statut",
       keyActivated: "Clé API activée",
       keyDeactivated: "Clé API désactivée",
-      copied: "Copié dans le presse-papiers"
+      copied: "Copié dans le presse-papiers",
     },
     dialogs: {
       createKey: {
         title: "Créer une nouvelle clé API",
-        description: "Générez une nouvelle clé API pour accéder aux fonctionnalités de la plateforme de manière programmatique",
+        description:
+          "Générez une nouvelle clé API pour accéder aux fonctionnalités de la plateforme de manière programmatique",
         secretWarning: "Sauvegardez ce secret dans un endroit sûr. Vous ne pourrez plus le revoir.",
         secretLabel: "Secret API",
         keyName: "Nom de la clé",
@@ -6226,13 +6236,13 @@ export const translations = {
         environmentProduction: "Production",
         environmentTest: "Test",
         generate: "Générer la clé",
-        close: "Fermer"
-      }
+        close: "Fermer",
+      },
     },
     empty: {
       title: "Aucune clé API",
-      description: "Créez votre première clé API pour commencer l'intégration"
-    }
+      description: "Créez votre première clé API pour commencer l'intégration",
+    },
   },
 
   systemStatus: {
@@ -6253,7 +6263,8 @@ export const translations = {
     totalFunctions: "Total Fonctions",
     lastChecked: "Dernière vérification",
     detailedStatus: "État Détaillé",
-    noResultsYet: "Aucun résultat de vérification. Cliquez sur 'Lancer la Vérification' pour tester toutes les fonctions.",
+    noResultsYet:
+      "Aucun résultat de vérification. Cliquez sur 'Lancer la Vérification' pour tester toutes les fonctions.",
     components: "composants",
     issues: "problèmes",
     category: {
@@ -6264,7 +6275,7 @@ export const translations = {
       stripe: "Paiement (Stripe)",
       shopify: "Intégration Shopify",
       backgroundprocessing: "Traitement en Arrière-plan",
-      system: "Fonctions Système"
-    }
-  }
+      system: "Fonctions Système",
+    },
+  },
 };
