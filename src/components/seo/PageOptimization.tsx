@@ -934,8 +934,8 @@ export function PageOptimization() {
                     <span>Optimiser sélectionnés</span>
                   </Button>
                   <Button
-                    onClick={handleOptimizeAll}
-                    disabled={optimizationState.isRunning || pages.filter(p => !p.optimized).length === 0}
+                    onClick={pages.filter(p => !p.optimized).length > 0 ? handleOptimizeAll : handleReoptimizeAllPages}
+                    disabled={(optimizationState.type === 'pages' && optimizationState.isRunning)}
                     variant="outline"
                     size="sm"
                     className="gap-2"
@@ -945,7 +945,11 @@ export function PageOptimization() {
                     ) : (
                       <Sparkles className="w-4 h-4" />
                     )}
-                    <span>Optimiser tout</span>
+                    <span>
+                      {pages.filter(p => !p.optimized).length > 0 
+                        ? `Optimiser tout (${pages.filter(p => !p.optimized).length})`
+                        : `Ré-optimiser tout (${pages.length})`}
+                    </span>
                   </Button>
                   <Button
                     onClick={handleSyncSelected}

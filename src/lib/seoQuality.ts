@@ -407,12 +407,13 @@ export function calculateArticlesSeoScore(articles: any[]): number {
   const totalScore = articles.reduce((sum, article) => {
     const scoreRaw = calculateArticleSeoScore(
       article.title,
-      article.title, // blog_articles doesn't have seo_title column, use title
+      article.seo_title || article.title,
       article.meta_description || '',
       article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
       !!article.featured_image,
       article.status === 'published',
-      article.optimization_count || 0
+      article.optimization_count || 0,
+      article.id // CRITICAL: Pass article ID for variation
     );
     
     return sum + scoreRaw.score;
@@ -746,7 +747,8 @@ export function calculateArticleSeoScore(
   keywords: string[] | null | undefined,
   hasFeaturedImage: boolean = false,
   isPublished: boolean = false,
-  optimizationCount: number = 0
+  optimizationCount: number = 0,
+  itemId?: string  // NEW: Unique ID for deterministic variation
 ): ArticleSeoScoreDetails {
   const breakdown: string[] = [];
   let score = 0;
@@ -827,8 +829,8 @@ export function calculateArticleSeoScore(
   let finalScore: number;
   
   if (isOptimized) {
-    // ✅ Pour articles OPTIMISÉS: Score entre 80-95% avec hash du contenu
-    const hashSource = `${title || ''}-${seoTitle || ''}-${seoDescription || ''}-${optimizationCount}`;
+    // ✅ Pour articles OPTIMISÉS: Score entre 80-95% with deterministic variation
+    const hashSource = itemId || `${title || ''}-${seoTitle || ''}-${seoDescription || ''}-${optimizationCount}`;
     const hash = hashSource.split('').reduce((acc, char) => 
       char.charCodeAt(0) + ((acc << 5) - acc), 0);
     const variation = Math.abs(hash) % 16; // 0-15

@@ -673,10 +673,16 @@ export function SeoOptimization() {
       return;
     }
 
-    const productsToGenerate = products.filter((p) => p.enrichment_status !== "enriched");
+    // Determine if we're re-optimizing (all products already optimized) or optimizing new ones
+    const isReoptimization = notEnrichedCount === 0 && products.length > 0;
+    const productsToGenerate = isReoptimization 
+      ? products // Re-optimize ALL products
+      : products.filter((p) => p.enrichment_status !== "enriched"); // Only optimize non-enriched
 
     console.log('🔍 [GENERATE_ALL_DEBUG]', {
       totalProducts: products.length,
+      notEnrichedCount,
+      isReoptimization,
       productsToGenerate: productsToGenerate.length,
       sampleProducts: productsToGenerate.slice(0, 3).map(p => ({
         id: p.id,
@@ -689,6 +695,12 @@ export function SeoOptimization() {
     if (productsToGenerate.length === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
       return;
+    }
+
+    // Show confirmation for re-optimization
+    if (isReoptimization) {
+      const confirmed = confirm(`Ré-optimiser tous les ${products.length} produits ? Cela utilisera vos crédits d'optimisation.`);
+      if (!confirmed) return;
     }
 
     // Use global context processor - continues even if user changes tabs
@@ -952,19 +964,20 @@ export function SeoOptimization() {
                       notEnrichedCount,
                       loading,
                       isRunning: optimizationState.isRunning,
+                      optimizationType: optimizationState.type,
                       totalProducts: products.length,
-                      buttonDisabled: optimizationState.isRunning || loading || notEnrichedCount === 0,
+                      buttonDisabled: (optimizationState.type === 'products' && optimizationState.isRunning) || loading,
                     });
                     handleGenerateAllSeo();
                   }}
-                  disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
+                  disabled={(optimizationState.type === 'products' && optimizationState.isRunning) || loading}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Sparkles className="w-5 h-5" />
                   {loading
                     ? t.common.loading
                     : notEnrichedCount === 0
-                    ? t.seo.optimization.allOptimized
+                    ? "Ré-optimiser tout"
                     : t.seo.optimization.startOptimization}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
