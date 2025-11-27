@@ -184,40 +184,43 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
 
         console.log(`[OptimizationContext] Starting ${operation} for ${items.length} ${type}`);
 
-        for (let i = 0; i < items.length; i++) {
-          // Check if cancellation was requested
-          if (cancelledRef.current) {
-            console.log(`[OptimizationContext] Cancelled at ${i + 1}/${items.length}`);
-            break;
-          }
+        try {
+          for (let i = 0; i < items.length; i++) {
+            // Check if cancellation was requested
+            if (cancelledRef.current) {
+              console.log(`[OptimizationContext] Cancelled at ${i + 1}/${items.length}`);
+              break;
+            }
 
-          try {
-            const success = await processItem(items[i], i);
-            if (success) {
-              successCount++;
-            } else {
+            try {
+              const success = await processItem(items[i], i);
+              if (success) {
+                successCount++;
+              } else {
+                errorCount++;
+              }
+            } catch (error) {
+              console.error(`[OptimizationContext] Error processing item ${i}:`, error);
               errorCount++;
             }
-          } catch (error) {
-            console.error(`[OptimizationContext] Error processing item ${i}:`, error);
-            errorCount++;
-          }
 
-          // Update progress in state
+            // Update progress in state
+            setState(prev => ({
+              ...prev,
+              current: i + 1,
+            }));
+          }
+        } finally {
+          // ALWAYS reset processing flag, even on error
+          isProcessingRef.current = false;
+          
           setState(prev => ({
             ...prev,
-            current: i + 1,
+            type: null,
+            isRunning: false,
+            showCompletedDialog: operation === 'optimizing' && successCount > 0,
           }));
         }
-
-        // Mark as complete
-        isProcessingRef.current = false;
-        setState(prev => ({
-          ...prev,
-          type: null, // Reset type to hide banner
-          isRunning: false,
-          showCompletedDialog: operation === 'optimizing' && successCount > 0,
-        }));
 
         const result: BulkOperationResult = {
           success: successCount,
@@ -227,10 +230,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
 
         console.log(`[OptimizationContext] Completed: ${successCount} success, ${errorCount} errors, cancelled: ${cancelledRef.current}`);
 
-        // Call completion callback if provided
         onComplete?.(result);
-
-        // Resolve the promise
         resolve(result);
       })();
     });
