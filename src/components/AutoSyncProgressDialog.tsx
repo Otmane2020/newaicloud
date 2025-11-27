@@ -75,6 +75,8 @@ export function AutoSyncProgressDialog() {
 
   const getTypeLabel = (type: string) => {
     const types = t.dialogs.autoSync.types as Record<string, string>;
+    // Skip "import" type to avoid "Importing Import..." - use products label instead
+    if (type === 'import') return types['products'] || 'Products';
     return types[type] || type;
   };
 

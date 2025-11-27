@@ -34,94 +34,108 @@ export const useAutoSync = (userId: string | undefined) => {
     
     // Helper to check sync status and handle completion
     const checkSyncStatus = async () => {
-      // Query all recent syncs for this user (last 5 minutes to be safe)
-      const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
+      console.log('🔍 [AutoSync] Checking sync status...');
       
-      // Build query - optionally filter by specific sync ID if we're tracking one
-      let query = supabase
-        .from('sync_history')
-        .select('id, status, items_synced, started_at, sync_type, completed_at')
-        .eq('user_id', userId)
-        .gte('started_at', fiveMinutesAgo)
-        .order('started_at', { ascending: false })
-        .limit(1);
+      // Query syncs for this user - check both by ID and recent ones
+      let latestSync = null;
       
-      // If we have a specific sync ID, filter by it for accuracy
+      // If we have a specific sync ID, check it first
       if (currentSyncIdRef.current) {
-        query = supabase
+        const { data, error } = await supabase
           .from('sync_history')
           .select('id, status, items_synced, started_at, sync_type, completed_at')
           .eq('id', currentSyncIdRef.current)
-          .limit(1);
+          .maybeSingle();
+        
+        if (!error && data) {
+          latestSync = data;
+          console.log('📊 [AutoSync] Found tracked sync:', latestSync.id, 'status:', latestSync.status);
+        }
       }
-
-      const { data: latestSyncs, error: syncError } = await query;
       
-      if (syncError) {
-        console.warn('⚠️ [AutoSync] Error fetching sync status:', syncError.message);
+      // Fallback: Check most recent sync if no tracked ID or not found
+      if (!latestSync) {
+        const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
+        const { data, error } = await supabase
+          .from('sync_history')
+          .select('id, status, items_synced, started_at, sync_type, completed_at')
+          .eq('user_id', userId)
+          .gte('started_at', fiveMinutesAgo)
+          .order('started_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (!error && data) {
+          latestSync = data;
+          console.log('📊 [AutoSync] Found recent sync:', latestSync.id, 'status:', latestSync.status);
+        }
+      }
+      
+      if (!latestSync) {
+        console.log('⚠️ [AutoSync] No sync record found');
         return false;
       }
       
-      const latestSync = latestSyncs?.[0];
-      if (!latestSync) return false;
+      console.log('📊 [AutoSync] Sync status check:', {
+        id: latestSync.id,
+        status: latestSync.status,
+        sync_type: latestSync.sync_type,
+        items_synced: latestSync.items_synced,
+        completed_at: latestSync.completed_at,
+      });
       
-      if (latestSync) {
-        console.log('📊 [AutoSync] Sync status check:', {
-          id: latestSync.id,
-          status: latestSync.status,
-          sync_type: latestSync.sync_type,
-          items_synced: latestSync.items_synced,
-          completed_at: latestSync.completed_at,
-        });
+      // Check completion: status is success/failed OR sync_type is completed OR completed_at is set
+      const isCompleted = 
+        latestSync.status === 'success' || 
+        latestSync.status === 'failed' ||
+        latestSync.sync_type === 'completed' ||
+        !!latestSync.completed_at;
+      
+      if (isCompleted) {
+        console.log('✅ [AutoSync] Import terminé! Status:', latestSync.status, 'Type:', latestSync.sync_type);
         
-        // PRIORITÉ 1: Vérifier d'abord le STATUS pour détecter la completion
-        const isCompleted = latestSync.status === 'success' || latestSync.status === 'failed';
+        // Clear the tracking ref
+        currentSyncIdRef.current = null;
         
-        if (isCompleted) {
-          console.log('✅ [AutoSync] Import terminé avec status:', latestSync.status);
-          
-          // Clear the tracking ref
-          currentSyncIdRef.current = null;
-          
-          if (syncCheckIntervalRef.current) {
-            clearInterval(syncCheckIntervalRef.current);
-            syncCheckIntervalRef.current = null;
-          }
-          
-          if (stuckTimeoutId) {
-            clearTimeout(stuckTimeoutId);
-            stuckTimeoutId = null;
-          }
-          
-          if (failsafeTimeoutId) {
-            clearTimeout(failsafeTimeoutId);
-            failsafeTimeoutId = null;
-          }
-          
-          if (isMounted) {
-            if (latestSync.status === 'success') {
-              // Use completeSync to show success state with auto-close
-              completeSync(latestSync.items_synced || 0);
-              toast.success(t.dialogs.autoSync.syncComplete, {
-                description: tf('dialogs.autoSync.itemsImported', { count: latestSync.items_synced || 0 }),
-              });
-            } else {
-              // Failed sync - just end it
-              endSync();
-              toast.error(t.toasts.error.sync || 'Synchronization error', {
-                description: t.toasts.error.generic || 'An error occurred',
-              });
-            }
-          }
-          return true; // Signal completion
+        if (syncCheckIntervalRef.current) {
+          clearInterval(syncCheckIntervalRef.current);
+          syncCheckIntervalRef.current = null;
         }
         
-        // PRIORITÉ 2: Mettre à jour le type pour afficher la progression
-        if (latestSync.sync_type && latestSync.status === 'running') {
-          updateType(latestSync.sync_type);
+        if (stuckTimeoutId) {
+          clearTimeout(stuckTimeoutId);
+          stuckTimeoutId = null;
         }
+        
+        if (failsafeTimeoutId) {
+          clearTimeout(failsafeTimeoutId);
+          failsafeTimeoutId = null;
+        }
+        
+        if (isMounted) {
+          const isSuccess = latestSync.status === 'success' || latestSync.sync_type === 'completed';
+          
+          if (isSuccess) {
+            completeSync(latestSync.items_synced || 0);
+            toast.success(t.dialogs.autoSync.syncComplete, {
+              description: tf('dialogs.autoSync.itemsImported', { count: latestSync.items_synced || 0 }),
+            });
+          } else {
+            endSync();
+            toast.error(t.toasts.error.sync || 'Synchronization error', {
+              description: t.toasts.error.generic || 'An error occurred',
+            });
+          }
+        }
+        return true;
       }
-      return false; // Not completed yet
+      
+      // Update type for progress display
+      if (latestSync.sync_type && latestSync.status === 'running') {
+        updateType(latestSync.sync_type);
+      }
+      
+      return false;
     };
     
     // Détecte si l'utilisateur vient de Shopify "Open app" (host= sans pending_token)

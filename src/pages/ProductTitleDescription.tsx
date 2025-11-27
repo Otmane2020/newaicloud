@@ -1111,13 +1111,25 @@ export default function ProductTitleDescription() {
           }
         }
       } else {
-        // Mode variantes: créer de nouvelles images pour chaque variante
+        // Mode variantes: mettre à jour l'image de chaque variante
         const variantPreviews = whiteBgPreviews.filter((p) => p.variantId);
 
         for (const preview of variantPreviews) {
           if (!preview.generatedUrl || !preview.variantId) continue;
 
-          // Obtenir la position maximale pour ce produit
+          // ✅ CRITICAL: Mettre à jour l'image_url de la variante directement
+          const { error: variantError } = await supabase
+            .from("product_variants")
+            .update({ image_url: preview.generatedUrl })
+            .eq("id", preview.variantId);
+
+          if (variantError) {
+            console.error(`Erreur mise à jour variante ${preview.variantId}:`, variantError);
+          } else {
+            console.log(`✅ Variante ${preview.variantId} mise à jour avec nouvelle image`);
+          }
+
+          // Optionnel: aussi créer une entrée dans product_images pour l'historique
           const { data: maxPosData } = await supabase
             .from("product_images")
             .select("position")
@@ -1128,7 +1140,6 @@ export default function ProductTitleDescription() {
 
           const nextPosition = (maxPosData?.position || 0) + 1;
 
-          // Créer une nouvelle image pour cette variante
           await supabase.from("product_images").insert({
             product_id: preview.productId,
             variant_id: preview.variantId,
@@ -1254,12 +1265,33 @@ export default function ProductTitleDescription() {
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Check if we're applying to variants
+      const applyingToVariants = pendingAiConfig?.applyTo === "variants" && pendingAiConfig.selectedVariants.size > 0;
+
       for (const productId of productIds) {
         const preview = aiBgPreviews.find((p) => p.productId === productId);
         if (!preview?.generatedUrl) continue;
 
-        // Update product image
-        await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
+        if (applyingToVariants) {
+          // ✅ Mode variantes: mettre à jour l'image de chaque variante sélectionnée
+          const selectedVariantIds = pendingAiConfig.selectedVariants.get(productId) || [];
+          
+          for (const variantId of selectedVariantIds) {
+            const { error: variantError } = await supabase
+              .from("product_variants")
+              .update({ image_url: preview.generatedUrl })
+              .eq("id", variantId);
+
+            if (variantError) {
+              console.error(`❌ Erreur mise à jour variante ${variantId}:`, variantError);
+            } else {
+              console.log(`✅ Variante ${variantId} mise à jour avec nouvelle image IA`);
+            }
+          }
+        } else {
+          // Mode simple: mettre à jour l'image principale du produit
+          await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
+        }
 
         // Save to history if user is authenticated
         if (user) {
