@@ -85,7 +85,8 @@ export default function Products() {
         body: { 
           imageUrl: product.image_url,
           productTitle: product.title,
-          imageType: 'main'
+          imageType: 'main',
+          product_id: product.id
         }
       });
 

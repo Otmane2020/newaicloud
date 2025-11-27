@@ -450,7 +450,8 @@ export function GoogleShopping() {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
           body: {
             imageUrl: product.image_url,
-            productTitle: product.title
+            productTitle: product.title,
+            product_id: product.id
           }
         });
 
@@ -707,7 +708,8 @@ export function GoogleShopping() {
       const { data, error } = await supabase.functions.invoke('generate-white-background', {
         body: {
           imageUrl: product.image_url,
-          productTitle: product.title
+          productTitle: product.title,
+          product_id: product.id
         }
       });
 
