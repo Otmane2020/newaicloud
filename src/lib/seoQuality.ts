@@ -827,11 +827,12 @@ export function calculateArticleSeoScore(
   let finalScore: number;
   
   if (isOptimized) {
-    // ✅ Pour articles OPTIMISÉS: Score aléatoire entre 80-95%
-    // Use a deterministic pseudo-random based on title/description for consistency
-    const seed = (seoTitle || title || '').length + (seoDescription || '').length;
-    const random = (seed % 16) / 16; // Generates a value between 0 and ~0.94
-    finalScore = Math.round(80 + (random * 15)); // 80 + (0 to 15) = 80-95
+    // ✅ Pour articles OPTIMISÉS: Score entre 80-95% avec hash du contenu
+    const hashSource = `${title || ''}-${seoTitle || ''}-${seoDescription || ''}-${optimizationCount}`;
+    const hash = hashSource.split('').reduce((acc, char) => 
+      char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const variation = Math.abs(hash) % 16; // 0-15
+    finalScore = 80 + variation; // 80-95 range
   } else {
     // ❌ Pour articles NON-OPTIMISÉS: Score divisé par 2 (pénalité 50%)
     finalScore = Math.round(score * 0.5);
