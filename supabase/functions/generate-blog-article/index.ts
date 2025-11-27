@@ -75,6 +75,11 @@ async function generateArticle(
       throw new Error("user_id is required");
     }
 
+    // ✅ VALIDATION CRITIQUE: store_id obligatoire pour éviter les articles orphelins
+    if (!store_id) {
+      throw new Error("store_id is required - cannot create article without a valid store");
+    }
+
     console.log("📝 Starting article generation:", { 
       user_id, 
       store_id,
@@ -1118,12 +1123,12 @@ IMPÉRATIF: Respecte EXACTEMENT la longueur demandée (${articleLength} mots), l
       }
     }
 
-    // Étape 6: Sauvegarder l'article
+    // Étape 6: Sauvegarder l'article avec store_id OBLIGATOIRE
     const { data: article, error: saveError } = await supabase
       .from("blog_articles")
       .insert({
         user_id,
-        store_id: store_id || null,
+        store_id: store_id, // ✅ Plus de fallback null - validé en amont
         title: articleTitle,
         content: htmlContent,
         meta_description: metaDescription,
