@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
-import { resolveLanguage, getLanguageName } from "../_shared/language-detector.ts";
+import { resolveLanguage, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -369,7 +369,10 @@ Deno.serve(async (req: Request) => {
     const productKeywords = extractProductKeywords(product);
     const visionContext = buildVisionContext(visionData);
 
-    const enhancedSeoPrompt = getSeoPrompt(storeLanguage, 'product', {
+    // 🛡️ USE DETECTED LANGUAGE (NOT storeLanguage) for prompts
+    console.log(`🛡️ LANGUAGE GUARD: Using detected language "${language}" for SEO prompts (NOT store: ${storeLanguage})`);
+    
+    const enhancedSeoPrompt = getSeoPrompt(language, 'product', {
       title: product.title,
       description: product.description,
       product_type: product.product_type,
@@ -384,7 +387,7 @@ Deno.serve(async (req: Request) => {
       visionContext: visionContext
     });
 
-    const systemRole = getSystemRole(storeLanguage, 'product');
+    const systemRole = getSystemRole(language, 'product');
     
     const response = await callDeepSeek(
       [

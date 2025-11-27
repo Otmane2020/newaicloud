@@ -171,3 +171,61 @@ export function getSeoPromptByLanguage(lang: string): string {
   
   return prompts[lang] || prompts.fr;
 }
+
+/**
+ * 🛡️ LANGUAGE GUARD - Central function that ALL generation functions MUST call
+ * Returns validated language with full logging for debugging
+ */
+export interface LanguageGuardResult {
+  language: string;           // Detected language code (fr, en, de, es, it)
+  languageName: string;       // Full name (français, English, etc.)
+  instructions: string;       // Language-specific instructions for AI
+  seoPrompt: string;          // SEO-specific system prompt
+  isContentDetected: boolean; // True if detected from content, false if fallback
+  sourceText: string;         // First 50 chars of text used for detection
+}
+
+export function getGenerationLanguage(options: {
+  productTitle?: string;
+  productDescription?: string;
+  collectionTitle?: string;
+  pageTitle?: string;
+  articleTitle?: string;
+  explicitLanguage?: string;
+  storeLanguage?: string;
+}): LanguageGuardResult {
+  // Build content text from all available sources
+  const contentParts: string[] = [];
+  
+  if (options.productTitle) contentParts.push(options.productTitle);
+  if (options.productDescription) contentParts.push(options.productDescription);
+  if (options.collectionTitle) contentParts.push(options.collectionTitle);
+  if (options.pageTitle) contentParts.push(options.pageTitle);
+  if (options.articleTitle) contentParts.push(options.articleTitle);
+  
+  const contentText = contentParts.join(' ').trim();
+  
+  // Detect language using priority system
+  const language = resolveLanguage({
+    explicitLanguage: options.explicitLanguage,
+    contentText: contentText,
+    storeLanguage: options.storeLanguage,
+  });
+  
+  const languageName = getLanguageName(language);
+  const instructions = getLanguageInstructions(language);
+  const seoPrompt = getSeoPromptByLanguage(language);
+  const isContentDetected = contentText.length >= 3;
+  
+  // 🛡️ CRITICAL LOG - Always log for debugging
+  console.log(`🛡️ LANGUAGE GUARD: detected="${language}" (${languageName}), contentDetected=${isContentDetected}, source="${contentText.substring(0, 50)}..."`);
+  
+  return {
+    language,
+    languageName,
+    instructions,
+    seoPrompt,
+    isContentDetected,
+    sourceText: contentText.substring(0, 50),
+  };
+}

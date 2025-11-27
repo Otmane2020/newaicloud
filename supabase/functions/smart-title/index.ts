@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
-import { detectContentLanguage, resolveLanguage, getLanguageInstructions } from "../_shared/language-detector.ts";
+import { detectContentLanguage, resolveLanguage, getLanguageInstructions, getGenerationLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

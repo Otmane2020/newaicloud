@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
-import { resolveLanguage, getLanguageInstructions, getLanguageName } from "../_shared/language-detector.ts";
+import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
