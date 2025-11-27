@@ -16,12 +16,14 @@ interface TestResult {
 }
 
 export default function TestGdprWebhook() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<TestResult | null>(null);
+  const [loadingInternal, setLoadingInternal] = useState(false);
+  const [loadingVerification, setLoadingVerification] = useState(false);
+  const [internalResult, setInternalResult] = useState<TestResult | null>(null);
+  const [verificationResult, setVerificationResult] = useState<TestResult | null>(null);
 
-  const runTest = async () => {
-    setLoading(true);
-    setResult(null);
+  const runInternalTest = async () => {
+    setLoadingInternal(true);
+    setInternalResult(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('test-gdpr-webhook', {
@@ -29,10 +31,10 @@ export default function TestGdprWebhook() {
       });
 
       if (error) throw error;
-      setResult(data);
+      setInternalResult(data);
     } catch (error) {
       console.error('Test error:', error);
-      setResult({
+      setInternalResult({
         success: false,
         status_code: 500,
         hmac_sent: '',
@@ -42,11 +44,38 @@ export default function TestGdprWebhook() {
         timestamp: new Date().toISOString()
       });
     } finally {
-      setLoading(false);
+      setLoadingInternal(false);
     }
   };
 
-  const getStatusIcon = () => {
+  const runVerificationTest = async () => {
+    setLoadingVerification(true);
+    setVerificationResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('test-gdpr-webhook', {
+        body: { testMode: true, simulateShopifyVerification: true }
+      });
+
+      if (error) throw error;
+      setVerificationResult(data);
+    } catch (error) {
+      console.error('Test error:', error);
+      setVerificationResult({
+        success: false,
+        status_code: 500,
+        hmac_sent: '',
+        payload_sent: {},
+        webhook_response: { error: error instanceof Error ? error.message : 'Unknown error' },
+        interpretation: '⚠️ Erreur lors du test',
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      setLoadingVerification(false);
+    }
+  };
+
+  const getStatusIcon = (result: TestResult | null) => {
     if (!result) return null;
     
     if (result.status_code === 200) {
@@ -58,7 +87,7 @@ export default function TestGdprWebhook() {
     }
   };
 
-  const getStatusColor = () => {
+  const getStatusColor = (result: TestResult | null) => {
     if (!result) return '';
     
     if (result.status_code === 200) {
@@ -68,6 +97,67 @@ export default function TestGdprWebhook() {
     } else {
       return 'border-yellow-500 bg-yellow-50';
     }
+  };
+
+  const renderTestResult = (result: TestResult | null, title: string) => {
+    if (!result) return null;
+
+    return (
+      <div className="space-y-6">
+        <Card className={`border-2 ${getStatusColor(result)}`}>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              {getStatusIcon(result)}
+              <div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>Status: {result.status_code}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Alert className={result.status_code === 200 ? 'bg-green-50 border-green-200' : result.status_code === 401 ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}>
+              <AlertDescription className="text-lg font-medium">
+                {result.interpretation}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Détails Techniques</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {result.hmac_sent && (
+              <div>
+                <h3 className="font-semibold mb-2">HMAC Envoyé</h3>
+                <code className="block p-3 bg-muted rounded text-sm break-all">
+                  {result.hmac_sent}
+                </code>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold mb-2">Payload de Test</h3>
+              <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
+                {JSON.stringify(result.payload_sent, null, 2)}
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-2">Réponse du Webhook</h3>
+              <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
+                {JSON.stringify(result.webhook_response, null, 2)}
+              </pre>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              <p>Timestamp: {new Date(result.timestamp).toLocaleString('fr-FR')}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   };
 
   return (
@@ -105,76 +195,70 @@ export default function TestGdprWebhook() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-center mb-8">
-        <Button
-          onClick={runTest}
-          disabled={loading}
-          size="lg"
-          className="w-full sm:w-auto"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Test en cours...
-            </>
-          ) : (
-            'Lancer le test HMAC'
-          )}
-        </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Test 1: Validation HMAC</CardTitle>
+            <CardDescription>
+              Teste la validation HMAC avec les headers Shopify complets (webhooks réels)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={runInternalTest}
+              disabled={loadingInternal}
+              size="lg"
+              className="w-full"
+            >
+              {loadingInternal ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Test en cours...
+                </>
+              ) : (
+                'Tester la validation HMAC'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Test 2: Vérification Shopify</CardTitle>
+            <CardDescription>
+              Simule la vérification automatique de Shopify (sans HMAC, acceptée depuis 2025)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={runVerificationTest}
+              disabled={loadingVerification}
+              size="lg"
+              className="w-full"
+              variant="outline"
+            >
+              {loadingVerification ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Test en cours...
+                </>
+              ) : (
+                'Tester la vérification'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {result && (
-        <div className="space-y-6">
-          <Card className={`border-2 ${getStatusColor()}`}>
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                {getStatusIcon()}
-                <div>
-                  <CardTitle>Résultat du Test</CardTitle>
-                  <CardDescription>Status: {result.status_code}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Alert className={result.status_code === 200 ? 'bg-green-50 border-green-200' : result.status_code === 401 ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}>
-                <AlertDescription className="text-lg font-medium">
-                  {result.interpretation}
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+      {internalResult && (
+        <div className="mb-8">
+          {renderTestResult(internalResult, "Résultat du Test HMAC")}
+        </div>
+      )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails Techniques</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">HMAC Envoyé</h3>
-                <code className="block p-3 bg-muted rounded text-sm break-all">
-                  {result.hmac_sent}
-                </code>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Payload de Test</h3>
-                <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
-                  {JSON.stringify(result.payload_sent, null, 2)}
-                </pre>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Réponse du Webhook</h3>
-                <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
-                  {JSON.stringify(result.webhook_response, null, 2)}
-                </pre>
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                <p>Timestamp: {new Date(result.timestamp).toLocaleString('fr-FR')}</p>
-              </div>
-            </CardContent>
-          </Card>
+      {verificationResult && (
+        <div>
+          {renderTestResult(verificationResult, "Résultat de la Vérification Shopify")}
         </div>
       )}
     </div>
