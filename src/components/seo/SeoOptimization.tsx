@@ -750,8 +750,26 @@ export function SeoOptimization() {
 
     setGenerating(false);
     setIsOptimizationComplete(true);
+    
+    // Rafraîchir les produits et récupérer les données mises à jour
     await fetchProducts();
     await refreshLimits();
+    
+    // Récupérer les produits optimisés pour le dialog de résultats
+    const { data: updatedProducts } = await supabase
+      .from("shopify_products")
+      .select("id, title, seo_title, seo_description, image_url, enrichment_status, seo_synced_to_shopify")
+      .in("id", productsToGenerate.map(p => p.id));
+    
+    if (updatedProducts && updatedProducts.length > 0) {
+      setOptimizedProducts(updatedProducts as Product[]);
+    }
+    
+    // Fermer le dialog de progression et afficher les résultats
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
+    
+    toast.success(t.seo.optimization.productOptimized);
     
     // Check if auto-sync is enabled
     const { data: { user } } = await supabase.auth.getUser();
@@ -765,11 +783,13 @@ export function SeoOptimization() {
       if (syncSettings?.export_after_optimization) {
         // Auto-sync enabled - synchronize automatically
         console.log('🔄 Auto-sync enabled, syncing products automatically...');
-        const toSync = products
+        // Utiliser les produits mis à jour
+        const toSync = (updatedProducts || [])
           .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
           .map((p) => p.id);
         
         if (toSync.length > 0) {
+          setShowResultsDialog(false); // Fermer le dialog de résultats si auto-sync
           setTimeout(async () => {
             try {
               await handleSyncProducts(toSync);
