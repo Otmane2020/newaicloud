@@ -1,13 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Wrench, RefreshCw, AlertCircle, Database, Mail } from "lucide-react";
+import { Wrench, RefreshCw, AlertCircle, Database } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useTranslation } from "@/lib/language";
 
 export function AdminToolbox() {
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const [loading, setLoading] = useState<string | null>(null);
 
   const runHealthCheck = async () => {
@@ -15,9 +15,9 @@ export function AdminToolbox() {
     try {
       const { data, error } = await supabase.functions.invoke("system-health-check");
       if (error) throw error;
-      toast.success("Health Check completed successfully");
+      toast.success(t.toasts.admin.healthCheckSuccess);
     } catch (error: any) {
-      toast.error(`Health Check failed: ${error.message}`);
+      toast.error(tf('toasts.admin.healthCheckFailed', { error: error.message }));
     } finally {
       setLoading(null);
     }
@@ -28,9 +28,9 @@ export function AdminToolbox() {
     try {
       const { data, error } = await supabase.functions.invoke("admin-repair-profiles");
       if (error) throw error;
-      toast.success(data?.message || "Profiles repaired successfully");
+      toast.success(data?.message || t.toasts.admin.profilesRepaired);
     } catch (error: any) {
-      toast.error(`Profile repair failed: ${error.message}`);
+      toast.error(tf('toasts.admin.profileRepairFailed', { error: error.message }));
     } finally {
       setLoading(null);
     }
@@ -41,9 +41,9 @@ export function AdminToolbox() {
     try {
       const { data, error } = await supabase.functions.invoke("admin-sync-stripe");
       if (error) throw error;
-      toast.success(data?.message || "Stripe synchronized successfully");
+      toast.success(data?.message || t.toasts.admin.stripeSynced);
     } catch (error: any) {
-      toast.error(`Stripe sync failed: ${error.message}`);
+      toast.error(tf('toasts.admin.stripeSyncFailed', { error: error.message }));
     } finally {
       setLoading(null);
     }
@@ -54,9 +54,9 @@ export function AdminToolbox() {
     try {
       const { data, error } = await supabase.rpc("cleanup_orphaned_data");
       if (error) throw error;
-      toast.success("Orphaned data cleaned up successfully");
+      toast.success(t.toasts.admin.orphansCleaned);
     } catch (error: any) {
-      toast.error(`Cleanup failed: ${error.message}`);
+      toast.error(tf('toasts.admin.cleanupFailed', { error: error.message }));
     } finally {
       setLoading(null);
     }
@@ -69,7 +69,7 @@ export function AdminToolbox() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wrench className="w-5 h-5" />
-              System Tools
+              {t.common.systemTools}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -79,7 +79,7 @@ export function AdminToolbox() {
               disabled={loading === "health"}
             >
               <RefreshCw className={`mr-2 w-4 h-4 ${loading === "health" ? "animate-spin" : ""}`} />
-              Run Health Check
+              {t.systemStatus.runHealthCheck}
             </Button>
 
             <Button
@@ -89,7 +89,7 @@ export function AdminToolbox() {
               disabled={loading === "cleanup"}
             >
               <Database className={`mr-2 w-4 h-4 ${loading === "cleanup" ? "animate-spin" : ""}`} />
-              Cleanup Orphaned Data
+              {t.common.cleanupData}
             </Button>
           </CardContent>
         </Card>
@@ -98,7 +98,7 @@ export function AdminToolbox() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
-              User Management
+              {t.common.userManagement}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -108,7 +108,7 @@ export function AdminToolbox() {
               disabled={loading === "repair"}
             >
               <AlertCircle className={`mr-2 w-4 h-4 ${loading === "repair" ? "animate-spin" : ""}`} />
-              Repair Profiles
+              {t.common.repairProfiles}
             </Button>
           </CardContent>
         </Card>
@@ -117,7 +117,7 @@ export function AdminToolbox() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5" />
-              Integrations
+              {t.common.integrations}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -127,7 +127,7 @@ export function AdminToolbox() {
               disabled={loading === "stripe"}
             >
               <RefreshCw className={`mr-2 w-4 h-4 ${loading === "stripe" ? "animate-spin" : ""}`} />
-              Sync Stripe
+              {t.common.syncStripe}
             </Button>
           </CardContent>
         </Card>

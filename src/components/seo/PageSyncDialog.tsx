@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Upload } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface ShopifyPage {
   id: string;
@@ -21,12 +22,14 @@ interface PageSyncDialogProps {
 }
 
 export function PageSyncDialog({ open, onOpenChange, pages, onConfirm, loading }: PageSyncDialogProps) {
+  const { t, tf } = useTranslation();
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
-        <DialogTitle>Synchroniser avec Shopify</DialogTitle>
+        <DialogTitle>{t.dialogs.pageSync.title}</DialogTitle>
         <DialogDescription>
-          {pages.length} page{pages.length > 1 ? 's' : ''} prête{pages.length > 1 ? 's' : ''} à être synchronisée{pages.length > 1 ? 's' : ''}
+          {tf('dialogs.pageSync.description', { count: pages.length, plural: pages.length > 1 ? 's' : '' })}
         </DialogDescription>
         
         <ScrollArea className="max-h-96">
@@ -36,13 +39,13 @@ export function PageSyncDialog({ open, onOpenChange, pages, onConfirm, loading }
                 <h4 className="font-medium mb-2">{page.title}</h4>
                 {page.seo_title && (
                   <div className="space-y-1">
-                    <Badge variant="outline" className="text-xs">Titre SEO</Badge>
+                    <Badge variant="outline" className="text-xs">{t.dialogs.pageSync.seoTitle}</Badge>
                     <p className="text-sm text-muted-foreground">{page.seo_title}</p>
                   </div>
                 )}
                 {page.seo_description && (
                   <div className="space-y-1 mt-2">
-                    <Badge variant="outline" className="text-xs">Description SEO</Badge>
+                    <Badge variant="outline" className="text-xs">{t.dialogs.pageSync.seoDescription}</Badge>
                     <p className="text-sm text-muted-foreground line-clamp-2">{page.seo_description}</p>
                   </div>
                 )}
@@ -58,7 +61,7 @@ export function PageSyncDialog({ open, onOpenChange, pages, onConfirm, loading }
             className="flex-1"
             disabled={loading}
           >
-            Annuler
+            {t.dialogs.pageSync.cancel}
           </Button>
           <Button 
             onClick={onConfirm} 
@@ -68,12 +71,12 @@ export function PageSyncDialog({ open, onOpenChange, pages, onConfirm, loading }
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Synchronisation...
+                {t.dialogs.pageSync.syncing}
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Synchroniser avec Shopify
+                {t.dialogs.pageSync.syncWithShopify}
               </>
             )}
           </Button>
