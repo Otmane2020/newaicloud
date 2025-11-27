@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { resolveLanguage, getLanguageInstructions, getLanguageName } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -172,6 +173,14 @@ async function generateArticle(
       console.error("❌ Exception during product fetch:", err);
     }
 
+    // ✅ INTELLIGENT LANGUAGE DETECTION from product titles
+    const productTitles = products.map(p => p.title || '').join(' ');
+    const detectedLanguage = resolveLanguage({
+      contentText: productTitles,
+    });
+    const langName = getLanguageName(detectedLanguage);
+    console.log(`🌍 Article language detected from products: ${detectedLanguage} (${langName})`);
+
     // Étape 2: Récupérer les infos de la boutique
     let storeName = "votre boutique";
     let storeUrl = "";
@@ -296,7 +305,47 @@ ${imageAnalysis ? `\n**Analyse Visuelle (Gemini Vision)**:\n${imageAnalysis}` : 
       try {
         console.log("🎯 Generating intelligent title with Lovable AI...");
         
-        const titlePrompt = `Tu es un expert en rédaction de titres SEO concis et percutants pour des articles de blog e-commerce.
+        const titlePrompt = detectedLanguage === 'en' ? `You are an expert in writing concise and impactful SEO titles for e-commerce blog articles.
+
+**CONTEXT**:
+- Store: ${storeName}
+- Category: ${category}
+- Editorial angle: ${editorialAngle}
+- Main keyword: ${keywords[0] || category}
+- Number of products: ${products.length}
+
+**STRICT RULES** (MANDATORY):
+1. ABSOLUTE maximum: 55 characters (not one more!)
+2. Natural and engaging format in English
+3. NO generic formulas like "Perfect X" or "Ideal X"
+4. NO lists in parentheses
+5. Conversational and professional style
+6. Include current year (2025) if relevant
+
+**RECOMMENDED FORMULAS** by editorial angle:
+
+GUIDE:
+- "How to Choose [Product]: The Guide"
+- "[Product]: Buying Guide 2025"
+- "Your Complete [Product] Guide"
+- "Choosing Your [Product]"
+
+COMPARATIVE:
+- "Top ${Math.min(products.length, 10)} [Product] 2025"
+- "[Product]: Detailed Comparison"
+- "Best [Product]: Our Selection"
+
+REVIEW:
+- "[Product]: Our Full Review"
+- "Test & Review [Product]"
+- "[Product]: What You Need to Know"
+
+TUTORIAL:
+- "Installing Your [Product]: Guide"
+- "Using [Product] Like a Pro"
+- "[Product]: User Guide"
+
+Respond ONLY with the optimized title, no quotes, no formatting, no explanation.` : `Tu es un expert en rédaction de titres SEO concis et percutants pour des articles de blog e-commerce.
 
 **CONTEXTE**:
 - Boutique: ${storeName}
@@ -336,18 +385,11 @@ TUTORIEL:
 - "Utiliser [Produit] Comme un Pro"
 - "[Produit]: Mode d'Emploi"
 
-**EXEMPLES PARFAITS**:
-✅ "Comment Choisir Votre Canapé Velours" (37 chars)
-✅ "Buffet Baroque: Guide d'Achat 2025" (35 chars)
-✅ "Top 5 Canapés Scandinaves 2025" (31 chars)
-✅ "Table Basse Marbre: Notre Avis" (31 chars)
-
-**EXEMPLES INTERDITS**:
-❌ "Guide: Canapé Velours Anthracite Parfait"
-❌ "Le Meilleur Buffet Baroque (Marbre, Blanc)"
-❌ "Canapé Parfait Pour Votre Salon"
-
 Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sans explication.`;
+
+        const systemPrompt = detectedLanguage === 'en'
+          ? "You are an expert in writing ultra-concise SEO titles. Return ONLY the title, no quotes or explanations. Maximum 55 characters."
+          : "Tu es un expert en rédaction de titres SEO ultra-concis. Tu retournes UNIQUEMENT le titre, sans guillemets ni explications. Maximum 55 caractères.";
 
         const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -360,7 +402,7 @@ Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sa
             messages: [
               {
                 role: "system",
-                content: "Tu es un expert en rédaction de titres SEO ultra-concis. Tu retournes UNIQUEMENT le titre, sans guillemets ni explications. Maximum 55 caractères."
+                content: systemPrompt
               },
               {
                 role: "user",
@@ -377,15 +419,15 @@ Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sa
           let generatedTitle = titleData.choices?.[0]?.message?.content?.trim();
           
           if (generatedTitle) {
-            // Nettoyage agressif
+            // Aggressive cleanup
             generatedTitle = generatedTitle
               .replace(/^["']|["']$/g, '')
               .replace(/^\*\*|\*\*$/g, '')
-              .replace(/^Titre\s*:\s*/i, '')
-              .replace(/\(.*?\)/g, '') // Supprimer tout entre parenthèses
+              .replace(/^(Titre|Title)\s*:\s*/i, '')
+              .replace(/\(.*?\)/g, '')
               .trim();
             
-            // Validation stricte de longueur
+            // Strict length validation
             if (generatedTitle.length > 55) {
               console.warn(`⚠️ Title too long (${generatedTitle.length} chars), truncating...`);
               generatedTitle = generatedTitle.substring(0, 52) + '...';
@@ -401,23 +443,42 @@ Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sa
         }
       } catch (err) {
         console.warn("⚠️ Failed to generate AI title, using fallback:", err);
-        // Fallback: titre naturel si l'IA échoue
+        // Fallback: natural title if AI fails
         const mainKeyword = keywords[0] || category;
-        switch (editorialAngle) {
-          case 'guide':
-            articleTitle = `Comment Choisir Votre ${mainKeyword}`;
-            break;
-          case 'comparatif':
-            articleTitle = `Top ${Math.min(products.length, 10)} ${mainKeyword} 2025`;
-            break;
-          case 'avis':
-            articleTitle = `${mainKeyword}: Notre Avis Complet`;
-            break;
-          case 'tutoriel':
-            articleTitle = `${mainKeyword}: Mode d'Emploi Complet`;
-            break;
-          default:
-            articleTitle = `${mainKeyword}: Guide d'Achat 2025`;
+        if (detectedLanguage === 'en') {
+          switch (editorialAngle) {
+            case 'guide':
+              articleTitle = `How to Choose Your ${mainKeyword}`;
+              break;
+            case 'comparatif':
+              articleTitle = `Top ${Math.min(products.length, 10)} ${mainKeyword} 2025`;
+              break;
+            case 'avis':
+              articleTitle = `${mainKeyword}: Our Full Review`;
+              break;
+            case 'tutoriel':
+              articleTitle = `${mainKeyword}: Complete User Guide`;
+              break;
+            default:
+              articleTitle = `${mainKeyword}: Buying Guide 2025`;
+          }
+        } else {
+          switch (editorialAngle) {
+            case 'guide':
+              articleTitle = `Comment Choisir Votre ${mainKeyword}`;
+              break;
+            case 'comparatif':
+              articleTitle = `Top ${Math.min(products.length, 10)} ${mainKeyword} 2025`;
+              break;
+            case 'avis':
+              articleTitle = `${mainKeyword}: Notre Avis Complet`;
+              break;
+            case 'tutoriel':
+              articleTitle = `${mainKeyword}: Mode d'Emploi Complet`;
+              break;
+            default:
+              articleTitle = `${mainKeyword}: Guide d'Achat 2025`;
+          }
         }
       }
     }

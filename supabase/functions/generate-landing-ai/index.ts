@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
+import { resolveLanguage, getLanguageInstructions, getLanguageName } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -646,31 +647,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   return sections.join("\n");
 }
 
-function detectLanguage(text: string): string {
-  if (!text || text.length < 10) return "fr"; // Default to French
-
-  const cleanText = text.toLowerCase().trim();
-
-  // French indicators (articles, common words)
-  const frenchWords = ["le", "la", "les", "un", "une", "des", "de", "du", "et", "avec", "pour", "dans", "sur"];
-  const frenchCount = frenchWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
-
-  // English indicators
-  const englishWords = ["the", "and", "for", "with", "this", "that", "from", "our", "your"];
-  const englishCount = englishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
-
-  // Spanish indicators
-  const spanishWords = ["el", "la", "los", "las", "un", "una", "con", "para", "que", "en"];
-  const spanishCount = spanishWords.filter((w) => cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)).length;
-
-  // Determine language by highest count
-  const counts = { fr: frenchCount, en: englishCount, es: spanishCount };
-  const maxLang = Object.entries(counts).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
-
-  console.log(`🌍 Language detection: FR=${frenchCount}, EN=${englishCount}, ES=${spanishCount} → ${maxLang}`);
-
-  return maxLang;
-}
+// Language detection now imported from _shared/language-detector.ts
 
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
@@ -782,7 +759,12 @@ serve(async (req) => {
     let savedVersionNumber = null;
 
     // Auto-detect language from product title and description if not provided
-    const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
+    const detectedLanguage = resolveLanguage({
+      explicitLanguage: language,
+      contentText: `${productTitle || ""} ${description || ""}`,
+    });
+    const langInstructions = getLanguageInstructions(detectedLanguage);
+    console.log(`🌍 Landing page language detected: ${detectedLanguage}`);
 
     // 🎨 Resolve color scheme from database if it's a key string
     let resolvedColorScheme = legacyColorScheme; // Fallback to legacy format
