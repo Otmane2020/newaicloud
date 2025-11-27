@@ -49,6 +49,13 @@ import {
   Target
 } from 'lucide-react';
 
+// Déclarer gtag pour TypeScript
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 interface Stats {
   totalProducts: number;
   optimizedProducts: number;
@@ -188,6 +195,16 @@ export default function Dashboard() {
       supabase.removeChannel(channel);
     };
   }, [user?.id, selectedStore?.id]);
+
+  // Google Ads conversion tracking - track when client reaches dashboard
+  useEffect(() => {
+    if (user && typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'conversion', {
+        'send_to': 'AW-17762155821/FaEPCK7u78cbEK3605VC'
+      });
+      console.log('📊 [GOOGLE ADS] Conversion tracked - Client logged in to Dashboard');
+    }
+  }, [user?.id]);
 
   const loadStats = async () => {
     try {
