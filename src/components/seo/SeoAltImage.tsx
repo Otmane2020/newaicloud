@@ -589,13 +589,12 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     // Get all images not optimized by AI
     const imagesToOptimize = images.filter(img => !img.optimization_count || img.optimization_count === 0);
 
-    if (imagesToOptimize.length === 0) {
-      toast.info('Toutes les images sont déjà optimisées par IA', {
-        action: {
-          label: "Ré-optimiser tout",
-          onClick: () => handleReoptimizeAllImages()
-        }
-      });
+    // If all images are optimized, re-optimize ALL instead
+    const isReoptimization = imagesToOptimize.length === 0;
+    const finalImagesToProcess = isReoptimization ? images : imagesToOptimize;
+
+    if (finalImagesToProcess.length === 0) {
+      toast.info('Aucune image à optimiser');
       return;
     }
 
@@ -613,14 +612,15 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
       'alt',
-      imagesToOptimize,
+      finalImagesToProcess,
       async (img) => {
         const imageType = img.image_type || 'product';
         
         const { error } = await supabase.functions.invoke('smart-alt-text', {
           body: { 
             image_id: img.id,
-            imageType: imageType
+            imageType: imageType,
+            force: isReoptimization // Force re-generation for already optimized
           }
         });
         
@@ -631,7 +631,10 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         if (results.error > 0) {
           toast.warning(tf('seo.altImage.generatedWithErrors', { success: results.success, errors: results.error }));
         } else if (results.success > 0) {
-          toast.success(tf('seo.altImage.allGenerated', { count: results.success }));
+          toast.success(isReoptimization 
+            ? `${results.success} images ré-optimisées avec succès!`
+            : tf('seo.altImage.allGenerated', { count: results.success })
+          );
         }
         
         await fetchImages();
@@ -844,11 +847,14 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                 <Button
                   size="lg"
                   onClick={handleOptimizeAllImages}
-                  disabled={optimizationState.isRunning || imagesNotOptimized === 0 || limitsLoading}
+                  disabled={optimizationState.isRunning || limitsLoading || images.length === 0}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Eye className="w-5 h-5" />
-                  {t.seo.altImage.banner.optimizeAll} ({imagesNotOptimized})
+                  {imagesNotOptimized > 0 
+                    ? `${t.seo.altImage.banner.optimizeAll} (${imagesNotOptimized})`
+                    : `Ré-optimiser tout (${images.length})`
+                  }
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </>
