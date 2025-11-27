@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useStore } from '@/contexts/StoreContext';
+import { useOptimization } from '@/contexts/OptimizationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ import { useTranslation } from '@/lib/language';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
-  Search, 
+  Search,
   RefreshCw, 
   Image as ImageIcon,
   Sparkles,
@@ -520,6 +521,9 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     }
   };
 
+  // Get the global optimization processor
+  const { processBulkOperation, state: optimizationState } = useOptimization();
+
   const handleGenerateForSelected = async (useVision = false) => {
     const imagesToGenerate = images.filter(
       img => selectedImages.has(img.id)
@@ -541,22 +545,16 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    setGenerating(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: imagesToGenerate.length });
-
     const functionName = useVision ? 'smart-alt-text' : 'generate-alt-texts';
 
-    let successCount = 0;
-    let errorCount = 0;
-
-      for (let i = 0; i < imagesToGenerate.length; i++) {
-      try {
-        const img = imagesToGenerate[i];
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'alt',
+      imagesToGenerate,
+      async (img) => {
         const imageType = img.image_type || 'product';
         
-        const { data, error } = await supabase.functions.invoke(functionName, {
+        const { error } = await supabase.functions.invoke(functionName, {
           body: { 
             image_id: img.id,
             imageType: useVision ? imageType : undefined
@@ -565,48 +563,26 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         
         // Check for 403 error (limit reached)
         if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
-          toast.error('Limite d\'optimisations atteinte', {
-            description: 'Passez à un plan supérieur pour continuer.'
-          });
-          setGenerating(false);
-          setShowProgressDialog(false);
           setShowUpgradeDialog(true);
-          await fetchImages();
-          return;
+          return false;
         }
         
-        if (error) {
-          console.error('Error generating ALT text:', error);
-          errorCount++;
-        } else {
-          successCount++;
+        return !error;
+      },
+      'optimizing',
+      async (results) => {
+        // This callback runs when bulk operation completes
+        if (results.error > 0) {
+          toast.warning(tf('seo.altImage.generatedWithErrors', { success: results.success, errors: results.error }));
+        } else if (results.success > 0) {
+          toast.success(tf('seo.altImage.allGenerated', { count: results.success }));
         }
         
-        setProgress({ current: i + 1, total: imagesToGenerate.length });
-      } catch (error) {
-        console.error('Error generating ALT text:', error);
-        errorCount++;
+        await fetchImages();
+        await refreshLimits();
+        setSelectedImages(new Set());
       }
-    }
-
-    if (errorCount > 0) {
-      toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
-    }
-
-    setGenerating(false);
-    setIsOptimizationComplete(true);
-    await fetchImages();
-
-    // Show results dialog with refreshed images including image_url
-    const refreshedImages = images.filter(img => 
-      imagesToGenerate.some(genImg => genImg.id === img.id)
-    ).map(img => ({
-      ...img,
-      image_url: img.src // Map src to image_url for ResultsDialog
-    }));
-    setOptimizedImages(refreshedImages as any);
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
+    );
   };
 
   const handleOptimizeAllImages = async () => {
@@ -634,25 +610,11 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    const toastId = toast.loading(`Optimisation de ${imagesToOptimize.length} images...`);
-    setGenerating(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: imagesToOptimize.length });
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < imagesToOptimize.length; i++) {
-      // Check limits DURING optimization to stop if quota runs out
-      await refreshLimits();
-      if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-        console.log(`⛔ Arrêt de l'optimisation: quota épuisé après ${successCount} images`);
-        break;
-      }
-
-      try {
-        const img = imagesToOptimize[i];
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'alt',
+      imagesToOptimize,
+      async (img) => {
         const imageType = img.image_type || 'product';
         
         const { error } = await supabase.functions.invoke('smart-alt-text', {
@@ -662,38 +624,23 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           }
         });
         
-        if (error) {
-          console.error('Error generating ALT text:', error);
-          errorCount++;
-        } else {
-          successCount++;
+        return !error;
+      },
+      'optimizing',
+      async (results) => {
+        if (results.error > 0) {
+          toast.warning(tf('seo.altImage.generatedWithErrors', { success: results.success, errors: results.error }));
+        } else if (results.success > 0) {
+          toast.success(tf('seo.altImage.allGenerated', { count: results.success }));
         }
         
-        setProgress({ current: i + 1, total: imagesToOptimize.length });
-      } catch (error) {
-        console.error('Error generating ALT text:', error);
-        errorCount++;
+        await fetchImages();
+        await refreshLimits();
       }
-    }
-
-    toast.dismiss(toastId);
-    if (errorCount > 0) {
-      toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
-    } else {
-      toast.success(tf('seo.altImage.allGenerated', { count: successCount }));
-    }
-
-    setGenerating(false);
-    setIsOptimizationComplete(true);
-    await fetchImages();
-    await refreshLimits();
-    setShowProgressDialog(false);
+    );
   };
 
   const handleReoptimizeAllImages = async () => {
-    // Re-optimize ALL images
-    const allImageIds = images.map(img => img.id);
-    
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
@@ -705,25 +652,11 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    const toastId = toast.loading(`Ré-optimisation de ${images.length} images...`);
-    setGenerating(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: images.length });
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < images.length; i++) {
-      // Check limits DURING re-optimization to stop if quota runs out
-      await refreshLimits();
-      if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-        console.log(`⛔ Arrêt de la ré-optimisation: quota épuisé après ${successCount} images`);
-        break;
-      }
-
-      try {
-        const img = images[i];
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'alt',
+      images,
+      async (img) => {
         const imageType = img.image_type || 'product';
         
         const { error } = await supabase.functions.invoke('smart-alt-text', {
@@ -734,32 +667,20 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           }
         });
         
-        if (error) {
-          console.error('Error generating ALT text:', error);
-          errorCount++;
-        } else {
-          successCount++;
+        return !error;
+      },
+      'optimizing',
+      async (results) => {
+        if (results.error > 0) {
+          toast.warning(`${results.success}/${images.length} images ré-optimisées avec succès`);
+        } else if (results.success > 0) {
+          toast.success(`${results.success} images ré-optimisées avec succès!`);
         }
         
-        setProgress({ current: i + 1, total: images.length });
-      } catch (error) {
-        console.error('Error generating ALT text:', error);
-        errorCount++;
+        await fetchImages();
+        await refreshLimits();
       }
-    }
-
-    toast.dismiss(toastId);
-    if (errorCount > 0) {
-      toast.warning(`${successCount}/${images.length} images ré-optimisées avec succès`);
-    } else {
-      toast.success(`${successCount} images ré-optimisées avec succès!`);
-    }
-
-    setGenerating(false);
-    setIsOptimizationComplete(true);
-    await fetchImages();
-    await refreshLimits();
-    setShowProgressDialog(false);
+    );
   };
 
   const handleSyncSelected = async () => {
@@ -789,55 +710,32 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    try {
-      setSyncing(true);
-      setShowProgressDialog(true);
-      setIsOptimizationComplete(false);
-      setProgress({ current: 0, total: imagesToSync.length });
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (let i = 0; i < imagesToSync.length; i++) {
-        try {
-          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-            body: { 
-              imageId: imagesToSync[i].id, 
-              syncAltText: true,
-              force: true // Allow immediate sync after ALT text generation
-            }
-          });
-          
-          if (error) {
-            console.error('Error syncing:', error);
-            errorCount++;
-          } else {
-            successCount++;
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'alt',
+      imagesToSync,
+      async (img) => {
+        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { 
+            imageId: img.id, 
+            syncAltText: true,
+            force: true
           }
-          
-          setProgress({ current: i + 1, total: imagesToSync.length });
-        } catch (error) {
-          console.error('Error syncing:', error);
-          errorCount++;
+        });
+        return !error;
+      },
+      'syncing',
+      async (results) => {
+        if (results.error > 0) {
+          toast.warning(tf('seo.altImage.toasts.syncWithErrors', { success: results.success, errors: results.error }));
+        } else if (results.success > 0) {
+          toast.success(tf('seo.altImage.toasts.syncSuccess', { success: results.success }));
         }
+        
+        setSelectedImages(new Set());
+        await fetchImages();
       }
-
-      if (errorCount > 0) {
-        toast.warning(tf('seo.altImage.toasts.syncWithErrors', { success: successCount, errors: errorCount }));
-      } else {
-        toast.success(tf('seo.altImage.toasts.syncSuccess', { success: successCount }));
-      }
-
-      setSyncing(false);
-      setIsOptimizationComplete(true);
-      setSelectedImages(new Set());
-      await fetchImages();
-    } catch (error) {
-      console.error('Error in sync process:', error);
-      toast.error(t.seo.altImage.toasts.syncError);
-      setSyncing(false);
-      setShowProgressDialog(false);
-    }
+    );
   };
 
   const handleCloseProgressDialog = () => {
@@ -918,15 +816,15 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </div>
           </div>
           <div className="flex flex-col gap-3 items-center">
-            {generating ? (
+            {optimizationState.isRunning && optimizationState.type === 'alt' ? (
               <div className="text-center space-y-3 w-full max-w-md">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <span className="font-semibold text-lg">{t.seo.altImage.progress.optimizing}</span>
                 </div>
-                <Progress value={(progress.current / progress.total) * 100} className="h-3" />
+                <Progress value={(optimizationState.current / optimizationState.total) * 100} className="h-3" />
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{progress.current} / {progress.total}</span>
+                  <span>{optimizationState.current} / {optimizationState.total}</span>
                   <span className="font-bold text-primary">{Math.round((progress.current / progress.total) * 100)}%</span>
                 </div>
                 <p className="text-xs text-muted-foreground">💡 {t.seo.altImage.progress.backgroundProcessing}</p>
@@ -946,7 +844,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                 <Button
                   size="lg"
                   onClick={handleOptimizeAllImages}
-                  disabled={generating || imagesNotOptimized === 0 || limitsLoading}
+                  disabled={optimizationState.isRunning || imagesNotOptimized === 0 || limitsLoading}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Eye className="w-5 h-5" />
@@ -1093,7 +991,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => handleGenerateForSelected(false)}
-              disabled={selectedImages.size === 0 || generating}
+              disabled={selectedImages.size === 0 || optimizationState.isRunning}
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
@@ -1101,7 +999,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </Button>
             <Button
               onClick={() => handleGenerateForSelected(true)}
-              disabled={selectedImages.size === 0 || generating}
+              disabled={selectedImages.size === 0 || optimizationState.isRunning}
               variant="outline"
               size="sm"
             >
@@ -1110,7 +1008,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </Button>
             <Button
               onClick={handleSyncSelected}
-              disabled={selectedImages.size === 0 || syncing}
+              disabled={selectedImages.size === 0 || optimizationState.isRunning}
               variant="outline"
               size="sm"
             >
