@@ -578,6 +578,7 @@ export type Database = {
           articles_generated: number | null
           auto_post: boolean | null
           created_at: string
+          execution_hour: number | null
           frequency: string | null
           id: string
           is_active: boolean | null
@@ -597,6 +598,7 @@ export type Database = {
           articles_generated?: number | null
           auto_post?: boolean | null
           created_at?: string
+          execution_hour?: number | null
           frequency?: string | null
           id?: string
           is_active?: boolean | null
@@ -616,6 +618,7 @@ export type Database = {
           articles_generated?: number | null
           auto_post?: boolean | null
           created_at?: string
+          execution_hour?: number | null
           frequency?: string | null
           id?: string
           is_active?: boolean | null

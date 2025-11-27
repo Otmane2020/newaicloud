@@ -303,21 +303,72 @@ Deno.serve(async (req) => {
 
 
     // Prepare new images to add (only those without shopify_image_id)
-    const newImages = (product.images || [])
-      .filter((img: any) => !img.shopify_image_id) // Only new images
-      .map((img: any) => {
-        const variantIds = imageToVariantMap.get(img.src);
-        const imageData: any = {
-          src: img.src,
-          alt: img.alt_text || "",
-        };
-        // Ajouter variant_ids seulement s'il y en a
-        if (variantIds && variantIds.length > 0) {
-          imageData.variant_ids = variantIds;
-          console.log(`🔗 Assigning variants ${variantIds} to new image: ${img.src}`);
-        }
-        return imageData;
-      });
+    const newImages = await Promise.all(
+      (product.images || [])
+        .filter((img: any) => !img.shopify_image_id) // Only new images
+        .map(async (img: any) => {
+          let imageSrc = img.src;
+          
+          // If image is base64, upload to Supabase Storage first
+          if (imageSrc.startsWith('data:image/')) {
+            console.log(`📤 Uploading base64 image to Storage for image ${img.id}`);
+            try {
+              // Extract base64 data
+              const base64Data = imageSrc.split(',')[1];
+              const mimeType = imageSrc.split(';')[0].split(':')[1];
+              const extension = mimeType.split('/')[1];
+              
+              // Convert base64 to binary
+              const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+              
+              // Upload to Storage
+              const fileName = `${productId}_${img.id}_${Date.now()}.${extension}`;
+              const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                .from('generated-images')
+                .upload(fileName, binaryData, {
+                  contentType: mimeType,
+                  upsert: true
+                });
+              
+              if (uploadError) {
+                console.error(`❌ Failed to upload image to Storage:`, uploadError);
+                throw uploadError;
+              }
+              
+              // Get public URL
+              const { data: { publicUrl } } = supabaseClient.storage
+                .from('generated-images')
+                .getPublicUrl(fileName);
+              
+              console.log(`✅ Image uploaded to Storage: ${publicUrl}`);
+              imageSrc = publicUrl;
+              
+              // Update image src in database
+              await supabaseClient
+                .from('product_images')
+                .update({ src: publicUrl })
+                .eq('id', img.id);
+              
+              console.log(`✅ Updated image ${img.id} with public URL`);
+            } catch (error) {
+              console.error(`❌ Error uploading base64 image:`, error);
+              // Continue with original base64 URL (will likely fail in Shopify but won't crash)
+            }
+          }
+          
+          const variantIds = imageToVariantMap.get(imageSrc);
+          const imageData: any = {
+            src: imageSrc,
+            alt: img.alt_text || "",
+          };
+          // Ajouter variant_ids seulement s'il y en a
+          if (variantIds && variantIds.length > 0) {
+            imageData.variant_ids = variantIds;
+            console.log(`🔗 Assigning variants ${variantIds} to new image: ${imageSrc}`);
+          }
+          return imageData;
+        })
+    );
 
     // Prepare images to update (those with shopify_image_id but src/alt changed)
     // Note: GraphQL Media IDs are GIDs, REST image IDs are numeric - need conversion
