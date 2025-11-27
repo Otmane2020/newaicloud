@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 export type OptimizationType = 'products' | 'collections' | 'tags' | 'alt' | 'pages' | 'articles';
 
@@ -37,7 +38,7 @@ interface OptimizationContextType {
     processItem: (item: T, index: number) => Promise<boolean>,
     operation?: 'optimizing' | 'syncing',
     onComplete?: (results: BulkOperationResult) => void
-  ) => void;
+  ) => Promise<BulkOperationResult>;
   isProcessing: boolean;
 }
 
@@ -150,11 +151,12 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     processItem: (item: T, index: number) => Promise<boolean>,
     operation: 'optimizing' | 'syncing' = 'optimizing',
     onComplete?: (results: BulkOperationResult) => void
-  ) => {
+  ): Promise<BulkOperationResult> => {
     // Prevent multiple concurrent operations
     if (isProcessingRef.current) {
       console.warn('[OptimizationContext] Operation already in progress');
-      return;
+      toast.warning('Une opération est déjà en cours. Veuillez patienter.');
+      return Promise.resolve({ success: 0, error: 0, cancelled: true });
     }
 
     // Reset cancellation flag
@@ -174,57 +176,64 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
       showCompletedDialog: false,
     });
 
-    // Run the processing loop asynchronously
-    (async () => {
-      let successCount = 0;
-      let errorCount = 0;
+    // Return a promise that resolves when the operation completes
+    return new Promise((resolve) => {
+      (async () => {
+        let successCount = 0;
+        let errorCount = 0;
 
-      console.log(`[OptimizationContext] Starting ${operation} for ${items.length} ${type}`);
+        console.log(`[OptimizationContext] Starting ${operation} for ${items.length} ${type}`);
 
-      for (let i = 0; i < items.length; i++) {
-        // Check if cancellation was requested
-        if (cancelledRef.current) {
-          console.log(`[OptimizationContext] Cancelled at ${i + 1}/${items.length}`);
-          break;
-        }
+        for (let i = 0; i < items.length; i++) {
+          // Check if cancellation was requested
+          if (cancelledRef.current) {
+            console.log(`[OptimizationContext] Cancelled at ${i + 1}/${items.length}`);
+            break;
+          }
 
-        try {
-          const success = await processItem(items[i], i);
-          if (success) {
-            successCount++;
-          } else {
+          try {
+            const success = await processItem(items[i], i);
+            if (success) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          } catch (error) {
+            console.error(`[OptimizationContext] Error processing item ${i}:`, error);
             errorCount++;
           }
-        } catch (error) {
-          console.error(`[OptimizationContext] Error processing item ${i}:`, error);
-          errorCount++;
+
+          // Update progress in state
+          setState(prev => ({
+            ...prev,
+            current: i + 1,
+          }));
         }
 
-        // Update progress in state
+        // Mark as complete
+        isProcessingRef.current = false;
         setState(prev => ({
           ...prev,
-          current: i + 1,
+          type: null, // Reset type to hide banner
+          isRunning: false,
+          showCompletedDialog: operation === 'optimizing' && successCount > 0,
         }));
-      }
 
-      // Mark as complete
-      isProcessingRef.current = false;
-      setState(prev => ({
-        ...prev,
-        type: null, // Reset type to hide banner
-        isRunning: false,
-        showCompletedDialog: operation === 'optimizing' && successCount > 0,
-      }));
+        const result: BulkOperationResult = {
+          success: successCount,
+          error: errorCount,
+          cancelled: cancelledRef.current,
+        };
 
-      console.log(`[OptimizationContext] Completed: ${successCount} success, ${errorCount} errors, cancelled: ${cancelledRef.current}`);
+        console.log(`[OptimizationContext] Completed: ${successCount} success, ${errorCount} errors, cancelled: ${cancelledRef.current}`);
 
-      // Call completion callback if provided
-      onComplete?.({
-        success: successCount,
-        error: errorCount,
-        cancelled: cancelledRef.current,
-      });
-    })();
+        // Call completion callback if provided
+        onComplete?.(result);
+
+        // Resolve the promise
+        resolve(result);
+      })();
+    });
   }, []);
 
   return (
