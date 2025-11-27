@@ -111,7 +111,7 @@ export function PageOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
 
   // Get store domain with automatic fetching and caching
   const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
@@ -957,11 +957,11 @@ export function PageOptimization() {
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => handleOptimizeSelected()}
-                    disabled={selectedPages.size === 0 || optimizing}
+                    disabled={selectedPages.size === 0 || optimizationState.isRunning}
                     size="sm"
                     className="gap-2"
                   >
-                    {optimizing ? (
+                    {optimizationState.isRunning ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Sparkles className="w-4 h-4" />
@@ -970,12 +970,12 @@ export function PageOptimization() {
                   </Button>
                   <Button
                     onClick={handleOptimizeAll}
-                    disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
+                    disabled={optimizationState.isRunning || pages.filter(p => !p.optimized).length === 0}
                     variant="outline"
                     size="sm"
                     className="gap-2"
                   >
-                    {optimizing ? (
+                    {optimizationState.isRunning ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Sparkles className="w-4 h-4" />
@@ -1059,7 +1059,7 @@ export function PageOptimization() {
                 </Button>
                 <Button
                   onClick={() => handleOptimizeSelected()}
-                  disabled={optimizing || selectedPages.size === 0}
+                  disabled={optimizationState.isRunning || selectedPages.size === 0}
                   size="sm"
                   className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
                 >
@@ -1271,7 +1271,7 @@ export function PageOptimization() {
                               // Optimiser directement cette page
                               handleOptimizeSelected([page.id]);
                             }}
-                            disabled={optimizing}
+                            disabled={optimizationState.isRunning}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
                             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg gap-2"
                           >

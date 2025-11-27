@@ -100,6 +100,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     isProcessingRef.current = false;
     setState(prev => ({
       ...prev,
+      type: null, // Reset type to hide banner
       isRunning: false,
       showCompletedDialog: showCompletedDialog && prev.operation === 'optimizing' && prev.current > 0,
     }));
@@ -210,6 +211,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
       isProcessingRef.current = false;
       setState(prev => ({
         ...prev,
+        type: null, // Reset type to hide banner
         isRunning: false,
         showCompletedDialog: operation === 'optimizing' && successCount > 0,
       }));

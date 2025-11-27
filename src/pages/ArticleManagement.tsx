@@ -100,7 +100,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   );
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
-  const { startOptimization, updateProgress, completeOptimization } = useOptimization();
+  const { startOptimization, updateProgress, completeOptimization, state: optimizationState } = useOptimization();
 
   const loadCategories = async () => {
     try {
@@ -681,7 +681,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             </Button>
             <Button
               onClick={optimizeAllArticles}
-              disabled={loading || optimizing || articles.filter(a => (a.optimization_count || 0) === 0).length === 0}
+              disabled={loading || optimizationState.isRunning || articles.filter(a => (a.optimization_count || 0) === 0).length === 0}
               size="sm"
               variant="outline"
               className="border-2 border-primary text-primary hover:bg-primary/10 gap-2 flex-1 sm:flex-none"
