@@ -41,10 +41,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // ✅ Extract Authorization header for forwarding to import functions
-  const authHeader = req.headers.get("Authorization");
-  console.log("🔑 [trigger-auto-sync] Authorization header present:", !!authHeader);
-
   // Validate environment variables
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -183,12 +179,6 @@ serve(async (req) => {
     let hasErrors = false;
     const errorMessages: string[] = [];
 
-    // ✅ Prepare common headers for forwarding user token
-    const commonHeaders: { [key: string]: string } | undefined = authHeader 
-      ? { Authorization: authHeader } 
-      : undefined;
-    console.log("📤 [trigger-auto-sync] Will forward headers to import functions:", commonHeaders ? Object.keys(commonHeaders) : 'none');
-
     // Import based on selected types
     for (const type of importTypes) {
       try {
@@ -197,13 +187,14 @@ serve(async (req) => {
         const baseBody = {
           storeId: connection.id,
           shopName: cleanShopName,
+          serviceMode: true,
+          userId: user_id,
         };
 
         let result;
         switch (type) {
           case "products":
             result = await supabase.functions.invoke<FunctionResultData>("import-products", {
-              headers: commonHeaders,
               body: {
                 ...baseBody,
                 apiSecret: connection.access_token,
@@ -212,19 +203,16 @@ serve(async (req) => {
             break;
           case "collections":
             result = await supabase.functions.invoke<FunctionResultData>("import-shopify-collections", {
-              headers: commonHeaders,
               body: baseBody,
             });
             break;
           case "pages":
             result = await supabase.functions.invoke<FunctionResultData>("import-shopify-pages", {
-              headers: commonHeaders,
               body: baseBody,
             });
             break;
           case "articles":
             result = await supabase.functions.invoke<FunctionResultData>("import-shopify-articles", {
-              headers: commonHeaders,
               body: {
                 ...baseBody,
                 authToken: connection.access_token,
@@ -233,9 +221,10 @@ serve(async (req) => {
             break;
           case "images":
             result = await supabase.functions.invoke<FunctionResultData>("import-content-images", {
-              headers: commonHeaders,
               body: {
                 storeId: connection.id,
+                serviceMode: true,
+                userId: user_id,
                 types: ["collections", "pages", "articles", "homepage"],
               },
             });
