@@ -2603,6 +2603,8 @@ export const translations = {
       progress: {
         generating: "Génération des textes ALT...",
         syncing: "Synchronisation...",
+        optimizing: "Optimisation en cours...",
+        backgroundProcessing: "Le traitement continue en arrière-plan",
       },
       toasts: {
         displayNotOptimized: "Affichage des images non optimisées ({{count}})",
