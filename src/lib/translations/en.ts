@@ -499,6 +499,11 @@ export const translations = {
       longDesc: "Detailed with examples",
     },
 
+    regenerateTitle: {
+      label: "Optimize title with Vision AI",
+      description: "Generates an SEO-optimized title based on visual analysis of the product",
+    },
+
     customHighlights: {
       title: "Custom highlights",
       description: "Add specific information to highlight (max 500 characters)",

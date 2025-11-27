@@ -506,6 +506,11 @@ export const translations = {
       longDesc: "Détaillé avec exemples",
     },
 
+    regenerateTitle: {
+      label: "Optimiser le titre avec Vision IA",
+      description: "Génère un titre SEO optimisé basé sur l'analyse visuelle du produit",
+    },
+
     customHighlights: {
       title: "Points forts personnalisés",
       description: "Ajoutez des informations spécifiques à mettre en avant (max 500 caractères)",
