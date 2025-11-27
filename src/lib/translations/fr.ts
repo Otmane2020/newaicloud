@@ -4614,6 +4614,8 @@ export const translations = {
       currentStep: "Étape en cours : {{type}}",
       pleaseWait: "Veuillez patienter, ne fermez pas cette fenêtre",
       duration: "Cette opération peut prendre quelques minutes selon le nombre d'éléments",
+      successMessage: "Votre boutique a été synchronisée avec succès",
+      closeButton: "Fermer",
       types: {
         import: "Import",
         products: "Produits",
@@ -6695,6 +6697,8 @@ export const translations = {
       currentStep: "Étape en cours : {{type}}",
       pleaseWait: "Veuillez patienter, ne fermez pas cette fenêtre",
       duration: "Cette opération peut prendre quelques minutes selon le nombre d'éléments",
+      successMessage: "Votre boutique a été synchronisée avec succès",
+      closeButton: "Fermer",
       types: {
         import: "Import",
         products: "Produits",
