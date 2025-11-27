@@ -1262,6 +1262,12 @@ export const translations = {
     import: "Import",
     impossible: "Impossible",
     dataRefreshed: "Data refreshed",
+    systemTools: "System Tools",
+    cleanupData: "Cleanup Data",
+    userManagement: "User Management",
+    repairProfiles: "Repair Profiles",
+    integrations: "Integrations",
+    syncStripe: "Sync Stripe",
   },
   
   planNames: {
