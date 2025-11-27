@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from '@/lib/language';
 
 interface PreviewImage {
   productId: string;
@@ -30,6 +31,7 @@ export function WhiteBgPreviewDialog({
   onApply,
   onRegenerate,
 }: WhiteBgPreviewDialogProps) {
+  const { t, tf } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [format, setFormat] = useState<string>('square');
 
@@ -77,24 +79,24 @@ export function WhiteBgPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Prévisualisation - Fond Blanc</DialogTitle>
+          <DialogTitle>{t.dialogs.whiteBgPreview.title}</DialogTitle>
           <DialogDescription>
-            Vérifiez les images générées avant de les appliquer
+            {t.dialogs.whiteBgPreview.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Format Selector */}
           <div className="space-y-2">
-            <Label htmlFor="format">Format d'image</Label>
+            <Label htmlFor="format">{t.dialogs.whiteBgPreview.imageFormat}</Label>
             <Select value={format} onValueChange={setFormat}>
               <SelectTrigger id="format">
-                <SelectValue placeholder="Sélectionner un format" />
+                <SelectValue placeholder={t.dialogs.whiteBgPreview.selectFormat} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="square">Carré (1:1)</SelectItem>
-                <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                <SelectItem value="square">{t.dialogs.whiteBgPreview.square}</SelectItem>
+                <SelectItem value="portrait">{t.dialogs.whiteBgPreview.portrait}</SelectItem>
+                <SelectItem value="landscape">{t.dialogs.whiteBgPreview.landscape}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -104,27 +106,27 @@ export function WhiteBgPreviewDialog({
             <div className="flex gap-4 text-sm">
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                {successCount} réussi(s)
+                {successCount} {t.dialogs.whiteBgPreview.success}
               </span>
               {generatingCount > 0 && (
                 <span className="flex items-center gap-1">
                   <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                  {generatingCount} en cours
+                  {generatingCount} {t.dialogs.whiteBgPreview.inProgress}
                 </span>
               )}
               {errorCount > 0 && (
                 <span className="flex items-center gap-1">
                   <XCircle className="w-4 h-4 text-red-600" />
-                  {errorCount} échoué(s)
+                  {errorCount} {t.dialogs.whiteBgPreview.failed}
                 </span>
               )}
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={handleSelectAll}>
-                Tout sélectionner
+                {t.dialogs.whiteBgPreview.selectAll}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDeselectAll}>
-                Tout désélectionner
+                {t.dialogs.whiteBgPreview.deselectAll}
               </Button>
             </div>
           </div>
@@ -150,7 +152,7 @@ export function WhiteBgPreviewDialog({
                   <div className="grid grid-cols-2 gap-4">
                     {/* Original */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Original</p>
+                      <p className="text-xs text-muted-foreground mb-2">{t.dialogs.whiteBgPreview.original}</p>
                       <img
                         src={preview.originalUrl}
                         alt="Original"
@@ -160,10 +162,10 @@ export function WhiteBgPreviewDialog({
 
                     {/* Generated */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Fond blanc</p>
+                      <p className="text-xs text-muted-foreground mb-2">{t.dialogs.whiteBgPreview.whiteBg}</p>
                       {preview.status === 'pending' && (
                         <div className="w-full h-40 border rounded flex items-center justify-center bg-muted">
-                          <span className="text-sm text-muted-foreground">En attente...</span>
+                          <span className="text-sm text-muted-foreground">{t.dialogs.whiteBgPreview.waiting}</span>
                         </div>
                       )}
                       {preview.status === 'generating' && (
@@ -174,7 +176,7 @@ export function WhiteBgPreviewDialog({
                       {preview.status === 'success' && preview.generatedUrl && (
                         <img
                           src={preview.generatedUrl}
-                          alt="Fond blanc"
+                          alt={t.dialogs.whiteBgPreview.whiteBg}
                           className="w-full h-40 object-contain border rounded bg-white"
                         />
                       )}
@@ -182,7 +184,7 @@ export function WhiteBgPreviewDialog({
                         <div className="w-full h-40 border border-red-300 rounded flex flex-col items-center justify-center bg-red-50 gap-2">
                           <XCircle className="w-8 h-8 text-red-600" />
                           <p className="text-xs text-red-600 px-2 text-center">
-                            {preview.error || 'Erreur de génération'}
+                            {preview.error || t.dialogs.whiteBgPreview.generationError}
                           </p>
                           <Button
                             size="sm"
@@ -191,7 +193,7 @@ export function WhiteBgPreviewDialog({
                             className="gap-1"
                           >
                             <RefreshCw className="w-3 h-3" />
-                            Régénérer
+                            {t.dialogs.whiteBgPreview.regenerate}
                           </Button>
                         </div>
                       )}
@@ -205,7 +207,7 @@ export function WhiteBgPreviewDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t.dialogs.whiteBgPreview.cancel}
           </Button>
           <Button
             onClick={handleApply}
@@ -213,7 +215,7 @@ export function WhiteBgPreviewDialog({
             className="gap-2"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Appliquer ({selectedIds.size})
+            {tf('dialogs.whiteBgPreview.apply', { count: selectedIds.size })}
           </Button>
         </DialogFooter>
       </DialogContent>

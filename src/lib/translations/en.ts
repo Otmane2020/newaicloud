@@ -81,6 +81,87 @@ export const translations = {
       importing: "Importing...",
       generating: "Generating...",
     },
+    // Admin toasts
+    admin: {
+      healthCheckSuccess: "Health Check completed successfully",
+      healthCheckFailed: "Health Check failed: {{error}}",
+      profilesRepaired: "Profiles repaired successfully",
+      profileRepairFailed: "Profile repair failed: {{error}}",
+      stripeSynced: "Stripe synchronized successfully",
+      stripeSyncFailed: "Stripe sync failed: {{error}}",
+      orphansCleaned: "Orphaned data cleaned up successfully",
+      cleanupFailed: "Cleanup failed: {{error}}",
+    },
+    // Blog toasts
+    blog: {
+      keywordsSuggested: "AI keyword suggestions generated",
+      keywordAdded: "Keyword added",
+      suggestedKeywordAdded: "Suggested keyword added",
+      selectCollection: "Please select at least one collection",
+      selectProduct: "Please select at least one product",
+      selectProductsOrCollection: "Please select at least products or a collection",
+      articleGenerated: "🎉 Article generated successfully!",
+      articlePublished: "✅ Article published to Shopify",
+      publishError: "Error publishing article",
+      generationError: "Error during generation",
+      trialLimitReached: "Trial limit reached",
+      monthlyLimitReached: "Monthly limit reached",
+      campaignNameRequired: "Please enter a campaign name",
+      campaignTopicRequired: "Please define the main topic",
+      campaignLimitReached: "Campaign limit reached",
+      campaignCreated: "Campaign created successfully!",
+      linkDeleted: "Link deleted",
+      allLinksWorking: "All links are working",
+      brokenLinksDetected: "{{count}} broken link(s) detected",
+      catalogAnalysis: "Analyzing catalog...",
+      articlesGenerated: "Articles generated with automatic netlinking!",
+      pagesAnalysis: "Analyzing Shopify pages...",
+      pagesArticlesGenerated: "Articles generated for pages!",
+      linkCopied: "Link copied!",
+      articleLoadError: "Error loading article",
+      imageApplyError: "Error applying image",
+      imageSyncedShopify: "Article image synchronized with Shopify ✅",
+      imageSavedLocally: "⚠️ Image saved locally (partial Shopify sync)",
+    },
+    // Article toasts
+    articles: {
+      limitReached: "Article limit reached",
+      notFound: "Article not found",
+      storeNotFound: "Store not found",
+      domainNotFound: "Store domain not found",
+      indexRequestSent: "Index request sent successfully",
+      connectGSCFirst: "Please connect Google Search Console first",
+      quotaExceeded: "Indexing quota exceeded, try again tomorrow",
+      indexRequestError: "Error sending index request",
+      noShopifyConnection: "No active Shopify connection",
+    },
+    // Dashboard toasts
+    dashboard: {
+      syncTriggered: "Automatic product sync in progress...",
+      syncTriggerError: "Error triggering synchronization",
+      businessNameUpdated: "Business name updated",
+      businessNameError: "Error updating name",
+      noStoreSelected: "No store selected",
+      subscriptionLoadError: "Error loading subscription",
+      portalError: "Error opening portal",
+      paymentPending: "Please complete the payment in the new window",
+      upgradeSuccess: "Subscription upgraded successfully!",
+      redirectingPayment: "Redirecting to payment...",
+      plansLoadError: "Error loading plans",
+      planUpgradeProration: "✅ Plan upgraded! {{amount}} prorated charge. Your counters have been reset.",
+      planUpgradeNoProration: "✅ Plan upgraded! New cycle started without proration.",
+    },
+    // SEO toasts
+    seo: {
+      connectionCancelled: "Connection cancelled",
+      accessDenied: "You denied access to Google Ads.",
+      invalidCredentials: "Invalid Google credentials. Please contact support.",
+      redirectError: "Error during redirection",
+    },
+    // Netlinking toasts
+    netlinking: {
+      csvExported: "CSV export downloaded",
+    },
   },
 
   // ============= Notification Center Toasts =============
@@ -4177,6 +4258,130 @@ export const translations = {
 
   // Dialogs
   dialogs: {
+    // Templates Dialog
+    templates: {
+      title: "Choose a Template",
+      searchPlaceholder: "Search for a template...",
+      favorites: "Favorites",
+      allCategories: "All categories",
+      noTemplates: "No templates found",
+      usedTimes: "Used {{count}} times",
+      apply: "Apply",
+    },
+    // Plan Upgrade Dialog
+    planUpgradeDialog: {
+      title: "Change plan",
+      description: "Select your new subscription plan",
+      plan: "Plan",
+      selectPlan: "Select a plan",
+      optimizationsMonth: "optimizations/month",
+      billingPeriod: "Billing period",
+      monthly: "Monthly",
+      yearly: "Yearly",
+      yearlySaving: "(save ~20%)",
+      changeSummary: "Change summary",
+      currentPrice: "Current price:",
+      newPrice: "New price:",
+      priceDifference: "Price difference:",
+      cancel: "Cancel",
+      updating: "Updating...",
+      confirmChange: "Confirm change",
+    },
+    // GSC Dialog
+    gsc: {
+      addDomain: {
+        title: "Add a domain",
+        description: "Enter the domain you want to connect to Google Search Console",
+        domainLabel: "Domain",
+        domainPlaceholder: "example.com",
+        domainHint: "Enter only the domain (without http:// or https://)",
+        cancel: "Cancel",
+        add: "Add",
+      },
+      availableSites: {
+        title: "Sites available in Google Search Console",
+        description: "Here are the domains your Google account has access to in Search Console",
+      },
+      disconnect: {
+        title: "Disconnect Google Search Console",
+        description: "Are you sure you want to disconnect your Google Search Console account? You will lose access to SEO performance data.",
+        cancel: "Cancel",
+        confirm: "Disconnect",
+      },
+    },
+    // Netlinking Dialog
+    netlinkingDelete: {
+      title: "Delete this link?",
+      description: "This action is irreversible. The link will be deleted from your netlinking database.",
+      cancel: "Cancel",
+      delete: "Delete",
+    },
+    // Page Sync Dialog  
+    pageSync: {
+      title: "Sync with Shopify",
+      description: "{{count}} page(s) ready to be synchronized",
+      seoTitle: "SEO Title",
+      seoDescription: "SEO Description",
+      cancel: "Cancel",
+      syncing: "Syncing...",
+      syncWithShopify: "Sync with Shopify",
+    },
+    // White BG Preview Dialog
+    whiteBgPreview: {
+      title: "Preview - White Background",
+      description: "Check the generated images before applying",
+      imageFormat: "Image format",
+      selectFormat: "Select a format",
+      square: "Square (1:1)",
+      portrait: "Portrait (3:4)",
+      landscape: "Landscape (4:3)",
+      success: "successful",
+      inProgress: "in progress",
+      failed: "failed",
+      selectAll: "Select all",
+      deselectAll: "Deselect all",
+      original: "Original",
+      whiteBg: "White background",
+      waiting: "Waiting...",
+      generationError: "Generation error",
+      regenerate: "Regenerate",
+      cancel: "Cancel",
+      apply: "Apply ({{count}})",
+    },
+    // Image Generation Preview Dialog
+    imageGeneration: {
+      title: "Preview - {{title}}",
+      compareDescription: "Compare and validate the AI-generated image before applying",
+      previewDescription: "Preview and validate the AI-generated image before applying",
+    },
+    // Product Media Dialog
+    productMedia: {
+      title: "4 AI Background Variants - HD Resolution",
+      description: "Select your preferred variant. Each image is generated at 2000x2000px with the product perfectly centered.",
+    },
+    // Sync Results Dialog
+    syncResults: {
+      title: "Synchronization results",
+    },
+    // Smart Pricing Import Dialog
+    smartPricing: {
+      importCosts: {
+        title: "Import costs from Shopify?",
+        description: "This operation will retrieve the cost prices of all your products from Shopify.",
+        estimatedTime: "⏱️ Estimated time:",
+        seconds: "seconds",
+        productsToProcess: "📦 Products to process:",
+      },
+    },
+    // Common dialog buttons
+    common: {
+      cancel: "Cancel",
+      confirm: "Confirm",
+      close: "Close",
+      save: "Save",
+      delete: "Delete",
+      apply: "Apply",
+    },
     upgrade: {
       planUpgraded: "Plan upgraded successfully!",
       planUpgradedWithProration: "Plan upgraded! You were charged for {{days}} days. Monthly counters have been reset.",

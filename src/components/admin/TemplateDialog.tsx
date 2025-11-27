@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Star } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/language';
 
 interface EmailTemplate {
   id: string;
@@ -28,6 +29,7 @@ interface TemplateDialogProps {
 }
 
 export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate }: TemplateDialogProps) {
+  const { t, tf } = useTranslation();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFavorites, setShowFavorites] = useState(false);
@@ -49,7 +51,7 @@ export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Choisir un Template</DialogTitle>
+          <DialogTitle>{t.dialogs.templates.title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -57,7 +59,7 @@ export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate 
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un template..."
+                placeholder={t.dialogs.templates.searchPlaceholder}
                 className="pl-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -72,7 +74,7 @@ export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate 
                 className="gap-2"
               >
                 <Star className={cn("h-4 w-4", showFavorites && "fill-yellow-500 text-yellow-500")} />
-                Favoris
+                {t.dialogs.templates.favorites}
               </Button>
               
               <select
@@ -82,7 +84,7 @@ export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate 
               >
                 {categories.map(category => (
                   <option key={category} value={category}>
-                    {category === 'all' ? 'Toutes les catégories' : category}
+                    {category === 'all' ? t.dialogs.templates.allCategories : category}
                   </option>
                 ))}
               </select>
@@ -94,7 +96,7 @@ export function TemplateDialog({ open, onOpenChange, templates, onApplyTemplate 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
             {filteredTemplates.length === 0 ? (
               <div className="col-span-2 text-center py-8">
-                <p className="text-muted-foreground">Aucun template trouvé</p>
+                <p className="text-muted-foreground">{t.dialogs.templates.noTemplates}</p>
               </div>
             ) : (
               filteredTemplates.map((template) => (
@@ -118,6 +120,8 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, onApply }: TemplateCardProps) {
+  const { t, tf } = useTranslation();
+  
   return (
     <Card 
       className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50 group"
@@ -153,7 +157,7 @@ function TemplateCard({ template, onApply }: TemplateCardProps) {
         )}
 
         <div className="flex justify-between items-center text-xs text-muted-foreground">
-          <span>Utilisé {template.usage_count} fois</span>
+          <span>{tf('dialogs.templates.usedTimes', { count: template.usage_count })}</span>
           <Button 
             size="sm" 
             variant="ghost"
@@ -162,7 +166,7 @@ function TemplateCard({ template, onApply }: TemplateCardProps) {
               onApply();
             }}
           >
-            Appliquer
+            {t.dialogs.templates.apply}
           </Button>
         </div>
       </CardContent>

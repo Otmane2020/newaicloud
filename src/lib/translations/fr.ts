@@ -82,6 +82,87 @@ export const translations = {
       importing: "Importation en cours...",
       generating: "Génération en cours...",
     },
+    // Admin toasts
+    admin: {
+      healthCheckSuccess: "Vérification santé terminée avec succès",
+      healthCheckFailed: "Échec de la vérification santé : {{error}}",
+      profilesRepaired: "Profils réparés avec succès",
+      profileRepairFailed: "Échec de la réparation des profils : {{error}}",
+      stripeSynced: "Stripe synchronisé avec succès",
+      stripeSyncFailed: "Échec de la synchronisation Stripe : {{error}}",
+      orphansCleaned: "Données orphelines nettoyées avec succès",
+      cleanupFailed: "Échec du nettoyage : {{error}}",
+    },
+    // Blog toasts
+    blog: {
+      keywordsSuggested: "Suggestions de mots-clés générées par IA",
+      keywordAdded: "Mot-clé ajouté",
+      suggestedKeywordAdded: "Mot-clé suggéré ajouté",
+      selectCollection: "Veuillez sélectionner au moins une collection",
+      selectProduct: "Veuillez sélectionner au moins un produit",
+      selectProductsOrCollection: "Veuillez sélectionner au moins des produits ou une collection",
+      articleGenerated: "🎉 Article généré avec succès !",
+      articlePublished: "✅ Article publié sur Shopify",
+      publishError: "Erreur lors de la publication",
+      generationError: "Erreur lors de la génération",
+      trialLimitReached: "Limite d'essai atteinte",
+      monthlyLimitReached: "Limite mensuelle atteinte",
+      campaignNameRequired: "Veuillez saisir un nom de campagne",
+      campaignTopicRequired: "Veuillez définir le sujet principal",
+      campaignLimitReached: "Limite de campagnes atteinte",
+      campaignCreated: "Campagne créée avec succès !",
+      linkDeleted: "Lien supprimé",
+      allLinksWorking: "Tous les liens sont fonctionnels",
+      brokenLinksDetected: "{{count}} lien(s) brisé(s) détecté(s)",
+      catalogAnalysis: "Analyse du catalogue en cours...",
+      articlesGenerated: "Articles générés avec netlinking automatique !",
+      pagesAnalysis: "Analyse des pages Shopify...",
+      pagesArticlesGenerated: "Articles générés pour les pages !",
+      linkCopied: "Lien copié !",
+      articleLoadError: "Erreur lors du chargement de l'article",
+      imageApplyError: "Erreur lors de l'application de l'image",
+      imageSyncedShopify: "Image de l'article synchronisée avec Shopify ✅",
+      imageSavedLocally: "⚠️ Image enregistrée localement (sync Shopify partielle)",
+    },
+    // Article toasts
+    articles: {
+      limitReached: "Limite d'articles atteinte",
+      notFound: "Article introuvable",
+      storeNotFound: "Boutique introuvable",
+      domainNotFound: "Domaine de boutique introuvable",
+      indexRequestSent: "Demande d'indexation envoyée avec succès",
+      connectGSCFirst: "Veuillez connecter Google Search Console d'abord",
+      quotaExceeded: "Quota d'indexation dépassé, réessayez demain",
+      indexRequestError: "Erreur lors de la demande d'indexation",
+      noShopifyConnection: "Aucune connexion Shopify active",
+    },
+    // Dashboard toasts
+    dashboard: {
+      syncTriggered: "Synchronisation automatique de vos produits en cours...",
+      syncTriggerError: "Erreur lors du déclenchement de la synchronisation",
+      businessNameUpdated: "Nom commercial mis à jour",
+      businessNameError: "Erreur lors de la mise à jour",
+      noStoreSelected: "Aucun magasin sélectionné",
+      subscriptionLoadError: "Erreur lors du chargement de l'abonnement",
+      portalError: "Erreur lors de l'ouverture du portail",
+      paymentPending: "Veuillez compléter le paiement dans la nouvelle fenêtre",
+      upgradeSuccess: "Abonnement mis à niveau avec succès !",
+      redirectingPayment: "Redirection vers le paiement...",
+      plansLoadError: "Erreur lors du chargement des plans",
+      planUpgradeProration: "✅ Plan mis à niveau ! Prorata de {{amount}} facturé. Vos compteurs ont été réinitialisés.",
+      planUpgradeNoProration: "✅ Plan mis à niveau ! Nouveau cycle démarré sans prorata.",
+    },
+    // SEO toasts
+    seo: {
+      connectionCancelled: "Connexion annulée",
+      accessDenied: "Vous avez refusé l'accès à Google Ads.",
+      invalidCredentials: "Identifiants Google invalides. Veuillez contacter le support.",
+      redirectError: "Erreur lors de la redirection",
+    },
+    // Netlinking toasts
+    netlinking: {
+      csvExported: "Export CSV téléchargé",
+    },
   },
 
   // ============= Centre de notifications Toasts =============
@@ -4294,6 +4375,130 @@ export const translations = {
 
   // Dialogs
   dialogs: {
+    // Templates Dialog
+    templates: {
+      title: "Choisir un Template",
+      searchPlaceholder: "Rechercher un template...",
+      favorites: "Favoris",
+      allCategories: "Toutes les catégories",
+      noTemplates: "Aucun template trouvé",
+      usedTimes: "Utilisé {{count}} fois",
+      apply: "Appliquer",
+    },
+    // Plan Upgrade Dialog
+    planUpgradeDialog: {
+      title: "Changer de plan",
+      description: "Sélectionnez votre nouveau plan d'abonnement",
+      plan: "Plan",
+      selectPlan: "Sélectionner un plan",
+      optimizationsMonth: "optimizations/mois",
+      billingPeriod: "Période de facturation",
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      yearlySaving: "(économisez ~20%)",
+      changeSummary: "Résumé du changement",
+      currentPrice: "Prix actuel:",
+      newPrice: "Nouveau prix:",
+      priceDifference: "Différence de prix:",
+      cancel: "Annuler",
+      updating: "Mise à jour...",
+      confirmChange: "Confirmer le changement",
+    },
+    // GSC Dialog
+    gsc: {
+      addDomain: {
+        title: "Ajouter un domaine",
+        description: "Entrez le domaine que vous souhaitez connecter à Google Search Console",
+        domainLabel: "Domaine",
+        domainPlaceholder: "exemple.com",
+        domainHint: "Entrez uniquement le domaine (sans http:// ou https://)",
+        cancel: "Annuler",
+        add: "Ajouter",
+      },
+      availableSites: {
+        title: "Sites disponibles dans Google Search Console",
+        description: "Voici les domaines auxquels votre compte Google a accès dans Search Console",
+      },
+      disconnect: {
+        title: "Déconnecter Google Search Console",
+        description: "Êtes-vous sûr de vouloir déconnecter votre compte Google Search Console ? Vous perdrez l'accès aux données de performance SEO.",
+        cancel: "Annuler",
+        confirm: "Déconnecter",
+      },
+    },
+    // Netlinking Dialog
+    netlinkingDelete: {
+      title: "Supprimer ce lien ?",
+      description: "Cette action est irréversible. Le lien sera supprimé de votre base de données netlinking.",
+      cancel: "Annuler",
+      delete: "Supprimer",
+    },
+    // Page Sync Dialog  
+    pageSync: {
+      title: "Synchroniser avec Shopify",
+      description: "{{count}} page(s) prête(s) à être synchronisée(s)",
+      seoTitle: "Titre SEO",
+      seoDescription: "Description SEO",
+      cancel: "Annuler",
+      syncing: "Synchronisation...",
+      syncWithShopify: "Synchroniser avec Shopify",
+    },
+    // White BG Preview Dialog
+    whiteBgPreview: {
+      title: "Prévisualisation - Fond Blanc",
+      description: "Vérifiez les images générées avant de les appliquer",
+      imageFormat: "Format d'image",
+      selectFormat: "Sélectionner un format",
+      square: "Carré (1:1)",
+      portrait: "Portrait (3:4)",
+      landscape: "Paysage (4:3)",
+      success: "réussi(s)",
+      inProgress: "en cours",
+      failed: "échoué(s)",
+      selectAll: "Tout sélectionner",
+      deselectAll: "Tout désélectionner",
+      original: "Original",
+      whiteBg: "Fond blanc",
+      waiting: "En attente...",
+      generationError: "Erreur de génération",
+      regenerate: "Régénérer",
+      cancel: "Annuler",
+      apply: "Appliquer ({{count}})",
+    },
+    // Image Generation Preview Dialog
+    imageGeneration: {
+      title: "Prévisualisation - {{title}}",
+      compareDescription: "Comparez et validez l'image générée par IA avant de l'appliquer",
+      previewDescription: "Prévisualisez et validez l'image générée par IA avant de l'appliquer",
+    },
+    // Product Media Dialog
+    productMedia: {
+      title: "4 Variantes d'Arrière-plans IA - Résolution HD",
+      description: "Sélectionnez votre variante préférée. Chaque image est générée en 2000x2000px avec le produit parfaitement centré.",
+    },
+    // Sync Results Dialog
+    syncResults: {
+      title: "Résultats de synchronisation",
+    },
+    // Smart Pricing Import Dialog
+    smartPricing: {
+      importCosts: {
+        title: "Importer les coûts depuis Shopify ?",
+        description: "Cette opération va récupérer les prix de revient de tous vos produits depuis Shopify.",
+        estimatedTime: "⏱️ Temps estimé :",
+        seconds: "secondes",
+        productsToProcess: "📦 Produits à traiter :",
+      },
+    },
+    // Common dialog buttons
+    common: {
+      cancel: "Annuler",
+      confirm: "Confirmer",
+      close: "Fermer",
+      save: "Enregistrer",
+      delete: "Supprimer",
+      apply: "Appliquer",
+    },
     upgrade: {
       planUpgraded: "Plan mis à niveau avec succès !",
       planUpgradedWithProration:
