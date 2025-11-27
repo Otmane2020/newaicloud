@@ -6741,13 +6741,13 @@ export const translations = {
       additionalInfoHelp: "Ces informations aideront à personnaliser l'optimisation",
       descriptionStyle: "Style de description",
       styles: {
+        modern: "Moderne",
+        elegant: "Élégant",
+        creative: "Créatif",
         professional: "Professionnel",
         friendly: "Convivial",
         technical: "Technique",
         luxury: "Luxe",
-        modern: "Moderne",
-        elegant: "Élégant",
-        creative: "Créatif",
       },
       contentStructure: "Structure du contenu",
       layouts: {

@@ -6698,13 +6698,13 @@ export const translations = {
       additionalInfoHelp: "This information will help customize the optimization",
       descriptionStyle: "Description style",
       styles: {
+        modern: "Modern",
+        elegant: "Elegant",
+        creative: "Creative",
         professional: "Professional",
         friendly: "Friendly",
         technical: "Technical",
         luxury: "Luxury",
-        modern: "Modern",
-        elegant: "Elegant",
-        creative: "Creative",
       },
       contentStructure: "Content structure",
       layouts: {
