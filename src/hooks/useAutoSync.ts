@@ -35,25 +35,34 @@ export const useAutoSync = (userId: string | undefined) => {
       // Query all recent syncs for this user (last 5 minutes to be safe)
       const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
       
-      const { data: latestSync } = await supabase
+      const { data: latestSync, error: syncError } = await supabase
         .from('sync_history')
-        .select('id, status, items_synced, started_at, sync_type')
+        .select('id, status, items_synced, started_at, sync_type, completed_at')
         .eq('user_id', userId)
         .gte('started_at', fiveMinutesAgo)
         .order('started_at', { ascending: false })
         .limit(1)
         .single();
       
+      if (syncError && syncError.code !== 'PGRST116') {
+        console.warn('⚠️ [AutoSync] Error fetching sync status:', syncError.message);
+        return false;
+      }
+      
       if (latestSync) {
-        console.log('📊 [AutoSync] Latest sync status:', latestSync.status, latestSync.items_synced);
+        console.log('📊 [AutoSync] Sync status check:', {
+          id: latestSync.id,
+          status: latestSync.status,
+          sync_type: latestSync.sync_type,
+          items_synced: latestSync.items_synced,
+          completed_at: latestSync.completed_at,
+        });
         
-        // Update the type based on what's being synced
-        if (latestSync.sync_type) {
-          updateType(latestSync.sync_type);
-        }
+        // PRIORITÉ 1: Vérifier d'abord le STATUS pour détecter la completion
+        const isCompleted = latestSync.status === 'success' || latestSync.status === 'failed';
         
-        if (latestSync.status === 'success' || latestSync.status === 'failed') {
-          console.log('✅ [AutoSync] Import completed:', latestSync);
+        if (isCompleted) {
+          console.log('✅ [AutoSync] Import terminé avec status:', latestSync.status);
           
           // Clear the tracking ref
           currentSyncIdRef.current = null;
@@ -89,6 +98,11 @@ export const useAutoSync = (userId: string | undefined) => {
             }
           }
           return true; // Signal completion
+        }
+        
+        // PRIORITÉ 2: Mettre à jour le type pour afficher la progression
+        if (latestSync.sync_type && latestSync.status === 'running') {
+          updateType(latestSync.sync_type);
         }
       }
       return false; // Not completed yet
