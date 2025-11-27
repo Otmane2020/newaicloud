@@ -21,11 +21,12 @@ import {
   Zap,
 } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { SimpleSyncProgress } from "./SyncProgressDialog";
 import { SyncResultDialog } from "./SyncResultDialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useStore } from "@/contexts/StoreContext";
+import { useTranslation } from "@/lib/language";
 
 // Types et constantes
 interface Timezone {
@@ -489,17 +490,17 @@ const AutoExportSettings = ({
   </div>
 );
 
-const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
+const SyncHistoryList = ({ history, t, dateLocale }: { history: SyncHistory[]; t: any; dateLocale: any }) => (
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Clock className="w-5 h-5" />
-        Historique de synchronisation
+        {t.integration.sync.history.title}
       </CardTitle>
     </CardHeader>
     <CardContent>
       {history.length === 0 ? (
-        <p className="text-muted-foreground text-center py-4">Aucune synchronisation récente</p>
+        <p className="text-muted-foreground text-center py-4">{t.integration.sync.noRecentSync}</p>
       ) : (
         <div className="space-y-2">
           {history.map((entry) => (
@@ -511,7 +512,7 @@ const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
                 <div>
                   <p className="font-medium capitalize">{entry.sync_type}</p>
                   <p className="text-sm text-muted-foreground">
-                    {entry.items_synced} éléments • {format(new Date(entry.started_at), "Pp", { locale: fr })}
+                    {entry.items_synced} {t.integration.sync.types.products} • {format(new Date(entry.started_at), "Pp", { locale: dateLocale })}
                   </p>
                 </div>
               </div>
@@ -520,7 +521,7 @@ const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
                   entry.status === "success" ? "default" : entry.status === "failed" ? "destructive" : "secondary"
                 }
               >
-                {entry.status}
+                {t.integration.sync.status?.[entry.status as keyof typeof t.integration.sync.status] || entry.status}
               </Badge>
             </div>
           ))}
@@ -532,6 +533,7 @@ const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
 
 export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncing: boolean) => void }) {
   const { selectedStore } = useStore();
+  const { t, language } = useTranslation();
   const storeId = selectedStore?.id;
   const { settings, history, loading, setSettings, loadSettings, loadHistory } = useSyncData(storeId);
   const [saving, setSaving] = useState(false);
@@ -544,6 +546,27 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
     "articles",
     "images",
   ]);
+
+  // Translated content types
+  const IMPORT_TYPES_TRANSLATED = [
+    { id: "products", label: t.integration.sync.contentTypes.products },
+    { id: "collections", label: t.integration.sync.contentTypes.collections },
+    { id: "pages", label: t.integration.sync.contentTypes.pages },
+    { id: "articles", label: t.integration.sync.contentTypes.articles },
+    { id: "images", label: t.integration.sync.contentTypes.images },
+  ];
+
+  const DAYS_OF_WEEK_TRANSLATED = [
+    { value: 1, label: t.integration.sync.daysOfWeek.monday },
+    { value: 2, label: t.integration.sync.daysOfWeek.tuesday },
+    { value: 3, label: t.integration.sync.daysOfWeek.wednesday },
+    { value: 4, label: t.integration.sync.daysOfWeek.thursday },
+    { value: 5, label: t.integration.sync.daysOfWeek.friday },
+    { value: 6, label: t.integration.sync.daysOfWeek.saturday },
+    { value: 0, label: t.integration.sync.daysOfWeek.sunday },
+  ];
+
+  const dateLocale = language === 'fr' ? fr : enUS;
 
   // États pour les dialogues
   const [showProgress, setShowProgress] = useState(false);
@@ -589,10 +612,10 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
       // Reload settings to get the backend-calculated next_import_at
       await loadSettings();
       
-      toast.success("Paramètres enregistrés avec succès");
+      toast.success(t.integration.sync.toasts.saved);
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(t.integration.sync.toasts.saveError);
     } finally {
       setSaving(false);
     }
@@ -600,7 +623,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
 
   const handleSyncNow = async () => {
     if (!selectedTypes.length) {
-      toast.error("Sélectionnez au moins un type de contenu");
+      toast.error(t.integration.sync.selectContentType);
       return;
     }
 
@@ -901,9 +924,9 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5" />
-              Statut de la synchronisation automatique
+              {t.integration.sync.history.title}
             </CardTitle>
-            <CardDescription>Suivez l'état de vos synchronisations programmées</CardDescription>
+            <CardDescription>{t.integration.sync.mode.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Status */}
@@ -911,13 +934,15 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <div>
-                  <p className="font-medium">Activée</p>
-                  <p className="text-sm text-muted-foreground capitalize">{settings?.import_frequency}</p>
+                  <p className="font-medium">{t.integration.sync.status?.running || 'Active'}</p>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {t.integration.sync.frequency?.labels?.[settings?.import_frequency as keyof typeof t.integration.sync.frequency.labels] || settings?.import_frequency}
+                  </p>
                 </div>
               </div>
               <Badge variant="secondary">
                 <Clock className="w-3 h-3 mr-1" />
-                {settings?.import_frequency}
+                {t.integration.sync.frequency?.labels?.[settings?.import_frequency as keyof typeof t.integration.sync.frequency.labels] || settings?.import_frequency}
               </Badge>
             </div>
 
@@ -928,9 +953,9 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-sm">Dernière synchronisation</p>
+                    <p className="font-medium text-sm">{t.integration.lastSync}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(settings.last_import_at), "PPpp", { locale: fr })}
+                      {format(new Date(settings.last_import_at), "PPpp", { locale: dateLocale })}
                     </p>
                   </div>
                 </div>
@@ -939,7 +964,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
 
             {/* Recent sync logs */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Historique récent des syncs automatiques</Label>
+              <Label className="text-sm font-semibold">{t.integration.sync.history.title}</Label>
               {history.length > 0 ? (
                 <div className="space-y-2">
                   {history.slice(0, 3).map((entry) => (
@@ -952,9 +977,9 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
                         {entry.status === "failed" && <XCircle className="w-4 h-4 text-red-500" />}
                         {entry.status === "running" && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
                         <div>
-                          <p className="text-sm font-medium">{entry.items_synced || 0} éléments</p>
+                          <p className="text-sm font-medium">{entry.items_synced || 0} {t.integration.sync.types.products}</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(entry.started_at), "Pp", { locale: fr })}
+                            {format(new Date(entry.started_at), "Pp", { locale: dateLocale })}
                           </p>
                         </div>
                       </div>
@@ -967,20 +992,20 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
                             : "secondary"
                         }
                       >
-                        {entry.status}
+                        {t.integration.sync.status?.[entry.status as keyof typeof t.integration.sync.status] || entry.status}
                       </Badge>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Aucune synchronisation récente</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t.integration.sync.noRecentSync}</p>
               )}
             </div>
           </CardContent>
         </Card>
       )}
 
-      <SyncHistoryList history={history} />
+      <SyncHistoryList history={history} t={t} dateLocale={dateLocale} />
 
       {/* Dialogues */}
       <SimpleSyncProgress open={showProgress} currentType={currentType} />
