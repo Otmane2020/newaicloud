@@ -66,6 +66,54 @@ const SCOPES = [
   "unauthenticated_read_product_tags",
 ];
 
+// 🔐 Fonction pour créer les webhooks GDPR obligatoires (conformité Shopify 2025)
+async function createGDPRWebhooks(shop: string, accessToken: string): Promise<void> {
+  const GDPR_WEBHOOK_URL = `${SUPABASE_URL.replace('/rest/v1', '')}/functions/v1/shopify-gdpr-webhook`;
+  
+  const gdprTopics = [
+    "customers/data_request",
+    "customers/redact", 
+    "shop/redact"
+  ];
+  
+  console.log("[SHOPIFY-OAUTH] 🔐 Création des webhooks GDPR obligatoires...");
+  
+  for (const topic of gdprTopics) {
+    try {
+      const response = await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
+        },
+        body: JSON.stringify({
+          webhook: {
+            topic: topic,
+            address: GDPR_WEBHOOK_URL,
+            format: "json"
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        console.log(`[SHOPIFY-OAUTH] ✅ Webhook GDPR créé: ${topic}`);
+      } else {
+        const errorText = await response.text();
+        // Ignorer l'erreur si le webhook existe déjà (code 422)
+        if (response.status === 422 && errorText.includes("already exists")) {
+          console.log(`[SHOPIFY-OAUTH] ℹ️ Webhook GDPR déjà existant: ${topic}`);
+        } else {
+          console.error(`[SHOPIFY-OAUTH] ⚠️ Erreur création webhook ${topic}:`, errorText);
+        }
+      }
+    } catch (err) {
+      console.error(`[SHOPIFY-OAUTH] ❌ Exception webhook ${topic}:`, err);
+    }
+  }
+  
+  console.log("[SHOPIFY-OAUTH] 🔐 Webhooks GDPR traités");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -130,6 +178,9 @@ serve(async (req) => {
 
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
+
+      // 🔐 Créer les webhooks GDPR obligatoires (conformité Shopify 2025)
+      await createGDPRWebhooks(shop, accessToken);
 
       // 🔍 Fetch real commercial name from Shopify API
       let realCommercialName = shop;
