@@ -24,6 +24,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+
     // ✅ CRITICAL: Read body as text FIRST (can only be read once)
     const rawBody = await req.text();
 
@@ -86,16 +88,34 @@ Deno.serve(async (req) => {
       .digest('base64');
 
     if (calculatedHmac !== hmac) {
-      console.error(JSON.stringify({
+      const debugMode = url.searchParams.get('debug') === '1';
+
+      const logPayload: Record<string, unknown> = {
         event: 'gdpr_webhook_hmac_failure',
         shop: shopDomain,
         topic: topic,
         calculated_length: calculatedHmac.length,
         received_length: hmac.length,
         body_length: rawBody.length,
-        timestamp: new Date().toISOString()
-      }));
-      return new Response(JSON.stringify({ error: 'Invalid HMAC' }), {
+        debug_mode: debugMode,
+        timestamp: new Date().toISOString(),
+      };
+
+      if (debugMode) {
+        logPayload['calculated_hmac'] = calculatedHmac;
+        logPayload['received_hmac'] = hmac;
+      }
+
+      console.error(JSON.stringify(logPayload));
+
+      const responseBody: Record<string, unknown> = { error: 'Invalid HMAC' };
+      if (debugMode) {
+        responseBody['expected_hmac'] = calculatedHmac;
+        responseBody['received_hmac'] = hmac;
+        responseBody['note'] = 'Debug mode active: values returned for local testing only. Do not expose this URL publicly.';
+      }
+
+      return new Response(JSON.stringify(responseBody), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
