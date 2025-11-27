@@ -121,7 +121,7 @@ export function AutoSyncProgressDialog() {
               <div className="flex items-center justify-center gap-2 pt-2">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 <span className="text-sm font-medium">
-                  {tf('dialogs.autoSync.importingType', { type: getTypeLabel(currentType) })}
+                  {tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })}
                 </span>
               </div>
             )}

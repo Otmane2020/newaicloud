@@ -4608,9 +4608,12 @@ export const translations = {
       title: "Synchronisation automatique",
       storeName: "Votre boutique Shopify",
       importing: "Importation de {{type}}...",
+      syncComplete: "Synchronisation terminée !",
+      itemsImported: "{{count}} éléments importés",
+      autoClosing: "Fermeture automatique...",
       currentStep: "Étape en cours : {{type}}",
-      pleaseWait: "Veuillez patienter pendant la synchronisation...",
-      duration: "Cela peut prendre jusqu'à 1 minute selon la taille de votre boutique",
+      pleaseWait: "Veuillez patienter, ne fermez pas cette fenêtre",
+      duration: "Cette opération peut prendre quelques minutes selon le nombre d'éléments",
       types: {
         import: "Import",
         products: "Produits",
@@ -4618,6 +4621,7 @@ export const translations = {
         pages: "Pages",
         articles: "Articles",
         images: "Images",
+        completed: "Terminé"
       },
     },
     shopifySync: {

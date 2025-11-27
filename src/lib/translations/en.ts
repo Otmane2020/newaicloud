@@ -4487,19 +4487,23 @@ export const translations = {
       },
     },
     autoSync: {
-      title: "Automatic Sync",
+      title: "Automatic Synchronization",
       storeName: "Your Shopify Store",
       importing: "Importing {{type}}...",
+      syncComplete: "Synchronization complete!",
+      itemsImported: "{{count}} items imported",
+      autoClosing: "Auto-closing...",
       currentStep: "Current step: {{type}}",
-      pleaseWait: "Please wait during synchronization...",
-      duration: "This may take up to 1 minute depending on your store size",
+      pleaseWait: "Please wait, do not close this window",
+      duration: "This operation may take a few minutes depending on the number of items",
       types: {
         import: "Import",
         products: "Products",
         collections: "Collections",
         pages: "Pages",
         articles: "Articles",
-        images: "Images"
+        images: "Images",
+        completed: "Completed"
       }
     },
     shopifySync: {
