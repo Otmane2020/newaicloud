@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { resolveLanguage, getLanguageInstructions, getLanguageName } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,6 +150,14 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`✅ Product fetched: ${product.title}`);
+
+    // ✅ INTELLIGENT LANGUAGE DETECTION from product content
+    const detectedLanguage = resolveLanguage({
+      contentText: `${product.title || ""} ${product.description || product.body_html || ""}`,
+    });
+    const langInstructions = getLanguageInstructions(detectedLanguage);
+    const langName = getLanguageName(detectedLanguage);
+    console.log(`🌍 Enrichment language detected: ${detectedLanguage} (${langName})`);
 
     // ============ PHASE 0: CHECK EXISTING DIMENSIONS & EXTRACT FROM DESCRIPTION (HIGHEST PRIORITY) ============
     console.log('🔍 Phase 0: Checking for existing product dimensions...');
@@ -332,17 +341,84 @@ Deno.serve(async (req: Request) => {
     // ============ PHASE 2: DEEPSEEK AI COMPLETION (FILLS REMAINING GAPS) ============
     console.log('🤖 Phase 2: DeepSeek AI completing missing attributes...');
 
-    // Build prompt that includes vision data and asks DeepSeek to ONLY fill gaps
-    const visionDataSummary = visionAttributes ? `
+    // Build multilingual prompt based on detected language
+    const visionDataSummary = visionAttributes ? (detectedLanguage === 'en' ? `
+AVAILABLE VISION AI DATA (DO NOT REPLACE):
+- Colors: ${visionAttributes.primaryColor || 'not detected'}, ${(visionAttributes.secondaryColors || []).join(', ')}
+- Materials: ${(visionAttributes.materials || []).join(', ') || 'not detected'}
+- Style: ${visionAttributes.style || 'not detected'}
+- Finish: ${visionAttributes.finish || 'not detected'}
+- Visible dimensions: ${JSON.stringify(visionAttributes.technicalDimensions || {})}
+` : `
 DONNÉES VISION AI DISPONIBLES (NE PAS REMPLACER):
 - Couleurs: ${visionAttributes.primaryColor || 'non détecté'}, ${(visionAttributes.secondaryColors || []).join(', ')}
 - Matériaux: ${(visionAttributes.materials || []).join(', ') || 'non détecté'}
 - Style: ${visionAttributes.style || 'non détecté'}
 - Finition: ${visionAttributes.finish || 'non détecté'}
 - Dimensions visibles: ${JSON.stringify(visionAttributes.technicalDimensions || {})}
-` : 'AUCUNE DONNÉE VISION AI DISPONIBLE';
+`) : (detectedLanguage === 'en' ? 'NO VISION AI DATA AVAILABLE' : 'AUCUNE DONNÉE VISION AI DISPONIBLE');
 
-    const prompt = `
+    const prompt = detectedLanguage === 'en' ? `
+You are an e-commerce product analysis expert. Analyze this product and extract MISSING attributes.
+
+${visionDataSummary}
+
+PRODUCT:
+- Title: ${product.title || ''}
+- Description: ${product.description || ''}
+- Type: ${product.product_type || ''}
+- Existing category: ${product.category || ''}
+- Vendor: ${product.vendor || ''}
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT REPLACE existing Vision AI data
+2. ONLY complete missing or null attributes
+3. If Vision AI detected materials/colors, don't change them
+4. For dimensions: IF Vision AI has NO technicalDimensions, estimate typical dimensions
+5. If Vision AI has visible weight, DO NOT ESTIMATE IT
+
+Analyze the product and provide the following information:
+
+VISUAL ATTRIBUTES:
+1. ai_color: Main color (e.g., "black", "white", "natural wood")
+2. ai_material: Main material (e.g., "wood", "metal", "glass", "fabric")
+3. ai_shape: Shape (e.g., "rectangular", "round", "square")
+4. ai_texture: Texture (e.g., "smooth", "rough", "matte")
+5. ai_pattern: Pattern if applicable (e.g., "solid", "striped", "floral")
+6. ai_finish: Finish (e.g., "varnished", "matte", "glossy")
+7. ai_design_elements: Notable design elements
+
+VISION ANALYSIS (estimate based on description):
+8. ai_vision_analysis: Detailed product analysis (2-3 sentences)
+9. ai_presentation_quality: Presentation quality score between 0 and 1
+10. ai_craftsmanship_level: Craftsmanship level ("standard", "premium", "luxury")
+11. ai_lighting_type: Apparent lighting type ("natural", "studio", "mixed")
+12. ai_background_style: Background style ("neutral", "contextualized", "lifestyle")
+13. ai_condition_notes: Notes on condition if mentioned
+
+DIMENSIONS (estimate typical dimensions for this product type):
+14. smart_length, smart_length_unit: Length (cm or m)
+15. smart_width, smart_width_unit: Width
+16. smart_height, smart_height_unit: Height
+17. smart_diameter, smart_diameter_unit: Diameter if applicable
+18. smart_depth, smart_depth_unit: Depth if applicable
+19. smart_weight, smart_weight_unit: Weight (kg)
+20. smart_seat_height, smart_seat_height_unit: Seat height if furniture
+
+CATEGORIZATION:
+21. category: Main category (e.g., "Furniture", "Decor")
+22. sub_category: Sub-category (e.g., "Chair", "Lamp")
+23. style: Style (e.g., "Modern", "Vintage", "Industrial")
+24. room: Room (e.g., "Living room", "Bedroom", "Office")
+25. functionality: Main functionality
+26. characteristics: Notable characteristics (string)
+
+OTHER:
+27. chat_text: Conversational description for chatbot (2-3 natural sentences)
+
+If information is not available or applicable, use null.
+
+Respond ONLY in valid JSON.` : `
 Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait les attributs MANQUANTS.
 
 ${visionDataSummary}
@@ -374,7 +450,7 @@ ATTRIBUTS VISUELS:
 
 ANALYSE VISION (estime basé sur description):
 8. ai_vision_analysis: Analyse détaillée du produit (2-3 phrases)
-9. ai_presentation_quality: Note de qualité de présentation entre 0 et 1 (ex: 0.8 pour bonne qualité)
+9. ai_presentation_quality: Note de qualité de présentation entre 0 et 1
 10. ai_craftsmanship_level: Niveau d'artisanat ("standard", "premium", "luxe")
 11. ai_lighting_type: Type d'éclairage apparent ("naturel", "studio", "mixte")
 12. ai_background_style: Style du fond ("neutre", "contextualisé", "lifestyle")
@@ -402,61 +478,18 @@ AUTRES:
 
 Si une information n'est pas disponible ou applicable, utilise null.
 
-RÈGLES ABSOLUES:
-1. **CONSERVER TOUTES LES CARACTÉRISTIQUES**: Copie EXACTEMENT les caractéristiques listées : Volume, Nombre de colis, Teneur en verre, Durabilité, Design flexible, Panneau laminé, Éclairage optionnel, etc.
-2. **DIMENSIONS EXACTES**: Si Dimensions présentes, conserve-les sans modification
-3. **N'INVENTE JAMAIS**: Pas de fabrication (pays), pas de garantie, pas d'autres infos si non mentionnées
-4. **NE RÉÉCRIS PAS**: Pour raw_characteristics, fais un COPIER-COLLER exact
-
-EXEMPLE:
-Si la description dit "Durabilité : Bordure ABS, résistant aux chocs", 
-tu DOIS copier exactement : "Durabilité : Bordure ABS, résistant aux chocs"
-PAS "Durable avec bordure ABS" ou autre reformulation.
-
-Réponds UNIQUEMENT en JSON valide:
-{
-  "ai_color": "string ou null",
-  "ai_material": "string ou null",
-  "ai_shape": "string ou null",
-  "ai_texture": "string ou null",
-  "ai_pattern": "string ou null",
-  "ai_finish": "string ou null",
-  "ai_design_elements": "string ou null",
-  "ai_vision_analysis": "string ou null",
-  "ai_presentation_quality": 8,
-  "ai_craftsmanship_level": "string ou null",
-  "ai_lighting_type": "string ou null",
-  "ai_background_style": "string ou null",
-  "ai_condition_notes": "string ou null",
-  "smart_length": 120,
-  "smart_length_unit": "cm",
-  "smart_width": 60,
-  "smart_width_unit": "cm",
-  "smart_height": 80,
-  "smart_height_unit": "cm",
-  "smart_diameter": null,
-  "smart_diameter_unit": null,
-  "smart_depth": 45,
-  "smart_depth_unit": "cm",
-  "smart_weight": 15.5,
-  "smart_weight_unit": "kg",
-  "smart_seat_height": null,
-  "smart_seat_height_unit": null,
-  "category": "string ou null",
-  "sub_category": "string ou null",
-  "style": "string ou null",
-  "room": "string ou null",
-  "functionality": "string ou null",
-  "characteristics": "string ou null",
-  "chat_text": "string ou null"
-}`;
+Réponds UNIQUEMENT en JSON valide.`;
 
     console.log('🤖 Calling DeepSeek API for attribute detection...');
+    
+    const systemPrompt = detectedLanguage === 'en' 
+      ? 'You are an e-commerce product analysis expert. Respond ONLY in valid JSON without comments.'
+      : 'Tu es un expert en analyse de produits e-commerce. Réponds UNIQUEMENT en JSON valide sans commentaires.';
     
     const aiResponse = await callDeepSeek([
       {
         role: 'system',
-        content: 'Tu es un expert en analyse de produits e-commerce. Réponds UNIQUEMENT en JSON valide sans commentaires.'
+        content: systemPrompt
       },
       {
         role: 'user',

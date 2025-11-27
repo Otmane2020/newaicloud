@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
+import { resolveLanguage, getLanguageName } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -250,10 +251,14 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // ✅ Detect language from store
+    // ✅ INTELLIGENT LANGUAGE DETECTION from product content (NOT store language)
     const storeLanguage = (product as any)?.shopify_connections?.store_language || "en-US";
-    const language = storeLanguage.split("-")[0]; // Extract 'fr' from 'fr-FR'
-    console.log(`🌍 Store language detected: ${storeLanguage} → Using: ${language}`);
+    const language = resolveLanguage({
+      contentText: `${product.title || ""} ${product.description || ""}`,
+      storeLanguage: storeLanguage.split("-")[0],
+    });
+    const langName = getLanguageName(language);
+    console.log(`🌍 SEO language detected from product content: ${language} (${langName}), store: ${storeLanguage}`);
 
     // Enhanced trial and subscription check
     const { data: profile } = await supabaseClient

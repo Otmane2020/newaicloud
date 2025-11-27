@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveLanguage, getLanguageInstructions, getLanguageName } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,10 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { currentTitle, imageUrl, config, customDescription, vendor } = await req.json();
+    const { currentTitle, imageUrl, config, customDescription, vendor, language: explicitLanguage } = await req.json();
 
     if (!currentTitle) {
-      throw new Error("Le titre actuel est requis");
+      throw new Error("Title is required");
     }
 
     // Extraire vendor automatiquement du titre si non fourni
@@ -24,7 +25,7 @@ serve(async (req) => {
       const vendorMatch = currentTitle.match(/\b[A-Z][A-Z]+\b/);
       if (vendorMatch) {
         extractedVendor = vendorMatch[0];
-        console.log("✅ Vendor extrait:", extractedVendor);
+        console.log("✅ Vendor extracted:", extractedVendor);
       }
     }
 
@@ -40,24 +41,28 @@ serve(async (req) => {
       const match = currentTitle.match(pattern);
       if (match) {
         extractedDimensions = match[0];
-        console.log("📏 Dimensions extraites du titre:", extractedDimensions);
+        console.log("📏 Dimensions extracted from title:", extractedDimensions);
         break;
       }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY non configuré");
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
     
-    // ✅ Detect store language from request headers or default
-    const acceptLanguage = req.headers.get('accept-language') || 'en-US';
-    const language = acceptLanguage.split(',')[0].split('-')[0].toLowerCase(); // Extract 'fr', 'en', etc.
-    console.log(`🌍 Language detected from headers: ${acceptLanguage} → Using: ${language}`);
+    // ✅ INTELLIGENT LANGUAGE DETECTION from product title content
+    const language = resolveLanguage({
+      explicitLanguage,
+      contentText: currentTitle + " " + (customDescription || ""),
+    });
+    const langInstructions = getLanguageInstructions(language);
+    const langName = getLanguageName(language);
+    console.log(`🌍 Language detected from title content: ${language} (${langName})`);
 
     let visionAnalysis = "";
     let productDimensions = "";
