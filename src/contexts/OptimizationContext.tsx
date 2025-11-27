@@ -152,12 +152,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     operation: 'optimizing' | 'syncing' = 'optimizing',
     onComplete?: (results: BulkOperationResult) => void
   ): Promise<BulkOperationResult> => {
-    // Prevent multiple concurrent operations
-    if (isProcessingRef.current) {
-      console.warn('[OptimizationContext] Operation already in progress');
-      toast.warning('Une opération est déjà en cours. Veuillez patienter.');
-      return Promise.resolve({ success: 0, error: 0, cancelled: true });
-    }
+    // Allow concurrent operations - no blocking
 
     // Reset cancellation flag
     cancelledRef.current = false;

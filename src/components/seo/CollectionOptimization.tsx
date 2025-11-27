@@ -1028,13 +1028,15 @@ export function CollectionOptimization() {
               <span className="hidden sm:inline">Optimiser</span>
             </Button>
             <Button
-              onClick={handleOptimizeAllCollections}
-              disabled={optimizationState.isRunning || notOptimizedCount === 0}
+              onClick={notOptimizedCount > 0 ? handleOptimizeAllCollections : handleReoptimizeAllCollections}
+              disabled={optimizationState.isRunning || collections.length === 0}
               variant="outline"
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Optimiser tout</span>
+              <span className="hidden sm:inline">
+                {notOptimizedCount > 0 ? `Optimiser tout (${notOptimizedCount})` : `Ré-optimiser tout (${collections.length})`}
+              </span>
             </Button>
             <Button
               onClick={() => {
