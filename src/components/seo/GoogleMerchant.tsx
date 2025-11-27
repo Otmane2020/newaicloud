@@ -122,7 +122,7 @@ export function GoogleMerchant() {
       toast.info(t.merchant.feed.status.generating);
       
       if (!selectedStore) {
-        toast.error('Aucune boutique sélectionnée');
+        toast.error(t.toasts.dashboard.noStoreSelected);
         return;
       }
 
@@ -461,14 +461,14 @@ export function GoogleMerchant() {
             </div>
             <div className="flex-1 space-y-3">
               <div>
-                <h3 className="text-xl font-bold mb-1">URL du Flux XML</h3>
+                <h3 className="text-xl font-bold mb-1">{t.merchant.feed.url.title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Copiez cette URL pour Google Merchant Center
+                  {t.merchant.feed.url.description}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium">URL de votre flux Google Shopping</label>
+                <label className="block text-sm font-medium">{t.merchant.feed.url.label}</label>
                 <div className="flex gap-2">
                   <Input 
                     readOnly 
@@ -479,12 +479,12 @@ export function GoogleMerchant() {
                     {copied ? (
                       <>
                         <Check className="w-4 h-4 mr-2" />
-                        Copié!
+                        {t.merchant.feed.url.copied}
                       </>
                     ) : (
                       <>
                         <Copy className="w-4 h-4 mr-2" />
-                        Copier
+                        {t.merchant.feed.url.copy}
                       </>
                     )}
                   </Button>
@@ -494,7 +494,7 @@ export function GoogleMerchant() {
               <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  <strong>Note:</strong> Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe.
+                  <strong>{t.merchant.feed.url.note.title}</strong> {t.merchant.feed.url.note.description}
                 </AlertDescription>
               </Alert>
 
@@ -502,13 +502,13 @@ export function GoogleMerchant() {
                 <Button asChild variant="default" size="lg">
                   <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Prévisualiser le flux
+                    {t.merchant.feed.url.preview}
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                  <a href="https://business.google.com/fr/merchant-center/" target="_blank" rel="noopener noreferrer">
+                  <a href="https://business.google.com/merchant-center/" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Accéder à Merchant Center
+                    {t.merchant.openMerchantCenter}
                   </a>
                 </Button>
               </div>

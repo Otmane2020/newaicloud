@@ -230,7 +230,7 @@ export function NotificationCenter() {
                 onClick={markAllAsRead}
                 className="text-xs"
               >
-                {language === 'fr' ? 'Tout marquer comme lu' : 'Mark all as read'}
+                {t.notifications.actions.markAllAsRead}
               </Button>
             )}
           </div>
@@ -281,7 +281,7 @@ export function NotificationCenter() {
                         size="icon"
                         className="h-6 w-6"
                         onClick={() => archiveNotification(notification.id)}
-                        title={language === 'fr' ? 'Archiver' : 'Archive'}
+                        title={t.notifications.archive}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
