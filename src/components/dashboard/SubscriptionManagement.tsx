@@ -27,7 +27,7 @@ interface Plan {
 
 export function SubscriptionManagement() {
   const { user } = useAuth();
-  const { language, t } = useTranslation();
+  const { language, t, tf } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -87,7 +87,7 @@ export function SubscriptionManagement() {
       setPlans(allPlans || []);
     } catch (error) {
       console.error('❌ Error loading subscription:', error);
-      toast.error('Erreur lors du chargement de l\'abonnement');
+      toast.error(t.toasts.subscription.loadError);
     } finally {
       setLoading(false);
     }
@@ -114,10 +114,10 @@ export function SubscriptionManagement() {
         if (data?.payment_url) {
           // Proration invoice requires payment
           window.open(data.payment_url, '_blank');
-          toast.info('Veuillez compléter le paiement dans la nouvelle fenêtre');
+          toast.info(t.toasts.subscription.paymentPending);
         } else {
           // No payment needed or upgrade applied for next cycle
-          toast.success('Abonnement mis à niveau avec succès !');
+          toast.success(t.toasts.subscription.upgradeSuccess);
           setTimeout(() => {
             loadSubscriptionData();
           }, 1000);
@@ -133,12 +133,12 @@ export function SubscriptionManagement() {
 
         if (data?.url) {
           window.open(data.url, '_blank');
-          toast.info('Redirection vers le paiement...');
+          toast.info(t.toasts.subscription.redirectingPayment);
         }
       }
     } catch (error: any) {
       console.error('Error during upgrade:', error);
-      toast.error(error.message || 'Erreur lors de la mise à niveau');
+      toast.error(error.message || t.toasts.subscription.upgradeError);
     } finally {
       setPortalLoading(false);
     }
@@ -156,7 +156,7 @@ export function SubscriptionManagement() {
       }
     } catch (error) {
       console.error('Error opening portal:', error);
-      toast.error('Erreur lors de l\'ouverture du portail');
+      toast.error(t.toasts.subscription.portalError);
     } finally {
       setPortalLoading(false);
     }
@@ -188,16 +188,16 @@ export function SubscriptionManagement() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
-                <p className="text-sm text-muted-foreground">Plan actuel</p>
+                <p className="text-sm text-muted-foreground">{t.dialogs.subscription.currentPlan}</p>
               </div>
             </div>
-            <Badge className="bg-success text-success-foreground">Actif</Badge>
+            <Badge className="bg-success text-success-foreground">{t.dialogs.subscription.active}</Badge>
           </div>
 
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <Calendar className="w-4 h-4" />
-              Renouvellement le {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
+              {tf('dialogs.subscription.renewalDate', { date: new Date(subscriptionEnd).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US') })}
             </div>
           )}
 
@@ -210,12 +210,12 @@ export function SubscriptionManagement() {
             {portalLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Chargement...
+                {t.dialogs.subscription.loading}
               </>
             ) : (
               <>
                 <CreditCard className="mr-2 h-4 w-4" />
-                Gérer la facturation
+                {t.dialogs.subscription.manageBilling}
               </>
             )}
           </Button>
@@ -285,9 +285,9 @@ export function SubscriptionManagement() {
                   {portalLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : isCurrentPlan ? (
-                    'Plan actuel'
+                    t.dialogs.subscription.currentPlan
                   ) : (
-                    'Choisir ce plan'
+                    t.dialogs.subscription.chooseThisPlan
                   )}
                 </Button>
               </Card>
