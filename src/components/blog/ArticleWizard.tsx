@@ -1180,7 +1180,7 @@ export function ArticleWizard({
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-background">
                   <div className="flex items-center gap-2">
                     <Eye className="w-4 h-4 text-primary" />
-                    <DialogTitle className="text-base font-semibold">Aperçu de l'article</DialogTitle>
+                    <DialogTitle className="text-base font-semibold">{t.dialogs.articleWizard.previewTitle}</DialogTitle>
                   </div>
                 </div>
                 
@@ -1202,7 +1202,7 @@ export function ArticleWizard({
                       setStep(1);
                     }}
                   >
-                    Créer un autre article
+                    {t.dialogs.articleWizard.createAnother}
                   </Button>
                   {syncedToShopify ? (
                     <Button
@@ -1215,7 +1215,7 @@ export function ArticleWizard({
                       }}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Visualiser en ligne
+                      {t.dialogs.articleWizard.viewOnline}
                     </Button>
                   ) : (
                     <Button onClick={publishToShopify} className="flex-1">
