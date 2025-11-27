@@ -985,11 +985,11 @@ export function PageOptimization() {
                   </Button>
                 </div>
 
-                {optimizing && (
+                {optimizationState.isRunning && optimizationState.type === 'pages' && (
                   <div className="w-full sm:w-auto">
                     <ProgressBanner
-                      current={progress.current}
-                      total={progress.total}
+                      current={optimizationState.current}
+                      total={optimizationState.total}
                       label="Optimisation des pages"
                     />
                   </div>

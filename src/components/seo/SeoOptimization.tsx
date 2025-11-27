@@ -920,10 +920,10 @@ export function SeoOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {generating ? (
+            {optimizationState.isRunning && optimizationState.type === 'products' ? (
               <ProgressBanner
-                current={progress.current}
-                total={progress.total}
+                current={optimizationState.current}
+                total={optimizationState.total}
                 label="Optimisation des produits"
               />
             ) : (
