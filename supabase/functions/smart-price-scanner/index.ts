@@ -45,6 +45,51 @@ interface ScanResult {
   processingTime: number;
 }
 
+// Convert image URL to base64 Data URI for reliable Vision AI processing
+async function fetchImageAsDataUri(url: string): Promise<string> {
+  try {
+    console.log("📥 [BASE64] Downloading image for Vision AI...");
+    
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; SmartPriceScanner/1.0)",
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`⚠️ [BASE64] Failed to fetch image: ${response.status}, using original URL`);
+      return url;
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Check if image is too large (>10MB)
+    if (uint8Array.length > 10 * 1024 * 1024) {
+      console.warn("⚠️ [BASE64] Image too large, using original URL");
+      return url;
+    }
+    
+    // Convert to base64
+    let binary = "";
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    const base64 = btoa(binary);
+    
+    // Detect MIME type
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const mimeType = contentType.split(";")[0].trim();
+    
+    console.log(`✅ [BASE64] Converted to Data URI (${Math.round(uint8Array.length / 1024)}KB, ${mimeType})`);
+    
+    return `data:${mimeType};base64,${base64}`;
+  } catch (err) {
+    console.warn("⚠️ [BASE64] Conversion failed, using original URL:", err instanceof Error ? err.message : "Unknown error");
+    return url;
+  }
+}
+
 // Extract numeric price from string
 function parsePrice(str?: string | number | null): number | null {
   if (str === null || str === undefined) return null;
@@ -148,6 +193,9 @@ serve(async (req) => {
     try {
       console.log("🤖 [VISION] Analyzing image with Gemini...");
       
+      // Convert image to base64 Data URI for reliable processing
+      const imageDataUri = await fetchImageAsDataUri(imageUrl);
+      
       const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -175,7 +223,7 @@ Return ONLY valid JSON, no markdown.`,
                 },
                 {
                   type: "image_url",
-                  image_url: { url: imageUrl },
+                  image_url: { url: imageDataUri },
                 },
               ],
             },
