@@ -951,13 +951,13 @@ export function SeoOptimization() {
                     console.log("🔘 [BUTTON_CLICKED]", {
                       notEnrichedCount,
                       loading,
-                      generating,
+                      isRunning: optimizationState.isRunning,
                       totalProducts: products.length,
-                      buttonDisabled: generating || loading || notEnrichedCount === 0,
+                      buttonDisabled: optimizationState.isRunning || loading || notEnrichedCount === 0,
                     });
                     handleGenerateAllSeo();
                   }}
-                  disabled={generating || loading || notEnrichedCount === 0}
+                  disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -1087,7 +1087,7 @@ export function SeoOptimization() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button onClick={() => handleGenerateForSelected()} disabled={selectedProducts.size === 0 || generating} size="sm">
+            <Button onClick={() => handleGenerateForSelected()} disabled={selectedProducts.size === 0 || optimizationState.isRunning} size="sm">
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Optimiser</span>
             </Button>
@@ -1102,7 +1102,7 @@ export function SeoOptimization() {
                 // Show confirmation dialog
                 setShowBulkOptimizeConfirmDialog(true);
               }}
-              disabled={generating || loading || notEnrichedCount === 0}
+              disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
               variant="outline"
               size="sm"
             >
@@ -1273,7 +1273,7 @@ export function SeoOptimization() {
                 variant="default"
                 size="sm"
                 onClick={() => handleGenerateForSelected()}
-                disabled={generating || selectedProducts.size === 0}
+                disabled={optimizationState.isRunning || selectedProducts.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
               >
                 <Zap className="w-4 h-4" />
@@ -1284,7 +1284,7 @@ export function SeoOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAllSeo}
-                disabled={generating || loading || notEnrichedCount === 0}
+                disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1545,7 +1545,7 @@ export function SeoOptimization() {
                               // Optimiser directement ce produit
                               handleGenerateForSelected([product.id]);
                             }}
-                            disabled={generating}
+                            disabled={optimizationState.isRunning}
                             title={t.seo.optimization.optimize}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
