@@ -890,12 +890,12 @@ export function CollectionOptimization() {
                 <div className="flex gap-3">
                   <Button
                     size="lg"
-                    onClick={handleGenerateAll}
-                    disabled={optimizationState.isRunning || notOptimizedCount === 0}
+                    onClick={notOptimizedCount > 0 ? handleOptimizeAllCollections : handleReoptimizeAllCollections}
+                    disabled={optimizationState.isRunning || collections.length === 0}
                     className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                   >
                     <Sparkles className="w-5 h-5" />
-                    {t.collections.optimization.optimizeAll}
+                    {notOptimizedCount > 0 ? t.collections.optimization.optimizeAll : "Ré-optimiser tout"}
                   </Button>
                 </div>
               </>
