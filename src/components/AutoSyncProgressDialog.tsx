@@ -19,7 +19,13 @@ export function AutoSyncProgressDialog() {
   const isAuthPage = location.pathname === '/auth' || 
                      location.pathname === '/reset-password' ||
                      location.pathname.startsWith('/shopify/');
-  const shouldShow = isSyncing && !isOnboardingWithoutShopify && !isAuthPage;
+  
+  // Détecte si l'utilisateur vient de Shopify "Open app" (host= sans pending_token)
+  // Dans ce cas, ne PAS afficher le dialog de sync automatiquement
+  const comingFromShopifyOpenApp = location.search.includes('host=') && 
+                                    !location.search.includes('pending_token');
+  
+  const shouldShow = isSyncing && !isOnboardingWithoutShopify && !isAuthPage && !comingFromShopifyOpenApp;
 
   // Update progress based on currentType
   React.useEffect(() => {
