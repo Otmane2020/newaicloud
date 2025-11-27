@@ -33,6 +33,7 @@ export interface LandingConfig {
   customHighlights?: string;
   designStyle: "minimalist" | "modern" | "premium";
   theme: "light" | "dark";
+  regenerateTitle?: boolean;
 }
 
 interface LandingConfigDialogProps {
@@ -157,6 +158,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     customHighlights: "",
     designStyle: "modern",
     theme: "light",
+    regenerateTitle: true,
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -589,6 +591,23 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                 <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Option régénération du titre */}
+          <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+            <Checkbox
+              id="regenerate-title"
+              checked={config.regenerateTitle ?? true}
+              onCheckedChange={(checked) => setConfig({ ...config, regenerateTitle: !!checked })}
+            />
+            <div className="flex-1">
+              <Label htmlFor="regenerate-title" className="cursor-pointer font-semibold flex items-center gap-2">
+                🎯 {t.landingConfig.regenerateTitle?.label || "Optimiser le titre avec Vision IA"}
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.landingConfig.regenerateTitle?.description || "Génère un titre SEO optimisé basé sur l'analyse visuelle du produit"}
+              </p>
+            </div>
           </div>
 
           {/* Section Vendor/Marque */}

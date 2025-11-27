@@ -440,53 +440,79 @@ export function replacePlaceholderImages(
 
 /**
  * Fixes duplicate SVG linearGradient IDs by making them unique
+ * Also updates the corresponding url() references in fill and stroke attributes
  */
 export function fixDuplicateGradientIds(html: string): string {
-  // Find all linearGradient ids
-  const gradientIdPattern = /<linearGradient\s+id="([^"]+)"/g;
-  const idCounts = new Map<string, number>();
+  // Find all SVG elements with linearGradient definitions
+  const svgPattern = /<svg[^>]*>[\s\S]*?<\/svg>/gi;
+  const svgElements = html.match(svgPattern) || [];
   
-  // First pass: count occurrences
-  let match;
-  const gradientPattern = /<linearGradient\s+id="([^"]+)"/g;
-  while ((match = gradientPattern.exec(html)) !== null) {
-    const id = match[1];
-    idCounts.set(id, (idCounts.get(id) || 0) + 1);
-  }
-  
-  // Find duplicates
-  const duplicates = Array.from(idCounts.entries()).filter(([_, count]) => count > 1);
-  
-  if (duplicates.length === 0) {
+  if (svgElements.length === 0) {
     return html;
   }
+
+  console.log(`[Normalizer] Found ${svgElements.length} SVG elements to check for duplicate gradient IDs`);
   
-  console.log(`[Normalizer] Found ${duplicates.length} duplicate gradient IDs to fix:`, duplicates.map(([id]) => id));
-  
+  // Track all used gradient IDs globally
+  const usedIds = new Set<string>();
   let result = html;
+  let fixCount = 0;
   
-  // For each duplicate ID, make subsequent occurrences unique
-  for (const [baseId] of duplicates) {
-    let occurrence = 0;
+  // Process each SVG element
+  svgElements.forEach((svgElement, svgIndex) => {
+    // Find gradient IDs in this SVG
+    const gradientPattern = /id="([^"]*-grad[^"]*)"/g;
+    let match;
+    const localGradients: string[] = [];
     
-    // Replace gradient definitions
-    result = result.replace(
-      new RegExp(`<linearGradient\\s+id="${baseId}"`, 'g'),
-      () => {
-        occurrence++;
-        if (occurrence === 1) {
-          return `<linearGradient id="${baseId}"`;
-        }
-        return `<linearGradient id="${baseId}-${occurrence}"`;
+    while ((match = gradientPattern.exec(svgElement)) !== null) {
+      localGradients.push(match[1]);
+    }
+    
+    // For each gradient ID, check if it's a duplicate
+    localGradients.forEach((gradientId) => {
+      if (usedIds.has(gradientId)) {
+        // This is a duplicate - create unique ID
+        const newId = `${gradientId}-${svgIndex + 1}`;
+        console.log(`[Normalizer] Renaming duplicate gradient: ${gradientId} → ${newId}`);
+        
+        // Create a new SVG element with updated ID and url() references
+        let updatedSvg = svgElement;
+        
+        // Update the linearGradient id
+        updatedSvg = updatedSvg.replace(
+          new RegExp(`id="${gradientId}"`, 'g'),
+          `id="${newId}"`
+        );
+        
+        // Update url() references - these can be in fill, stroke, stop-color, etc.
+        updatedSvg = updatedSvg.replace(
+          new RegExp(`url\\(#${gradientId}\\)`, 'g'),
+          `url(#${newId})`
+        );
+        
+        // Also update stroke="url(#id)" and fill="url(#id)" attribute format
+        updatedSvg = updatedSvg.replace(
+          new RegExp(`="url\\(#${gradientId}\\)"`, 'g'),
+          `="url(#${newId})"`
+        );
+        
+        // Replace the original SVG with the updated one
+        result = result.replace(svgElement, updatedSvg);
+        svgElement = updatedSvg; // Update for subsequent gradient fixes in same SVG
+        
+        fixCount++;
+        usedIds.add(newId);
+      } else {
+        usedIds.add(gradientId);
       }
-    );
-    
-    // Now fix the url() references - we need to be more careful here
-    // Only fix references that point to non-existent IDs
-    // The first occurrence keeps the original ID, subsequent ones get -2, -3, etc.
+    });
+  });
+  
+  if (fixCount > 0) {
+    console.log(`[Normalizer] Fixed ${fixCount} duplicate gradient ID(s)`);
   }
   
-  console.log(`[Normalizer] Fixed duplicate gradient IDs`);
   return result;
 }
 

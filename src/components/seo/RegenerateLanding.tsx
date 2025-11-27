@@ -327,28 +327,32 @@ export default function RegenerateLanding({
       setProgress(20);
       setProgressMessage("Optimisation du titre SERP...");
 
-      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI)
-      try {
-        const { data: smartTitleData, error: smartTitleError } = await supabase.functions.invoke("smart-title", {
-          body: {
-            productId: product.id,
-            language: language,
-          },
-        });
-
-        if (smartTitleError) {
-          console.warn("[Landing] Smart title optimization failed:", smartTitleError);
-        } else if (smartTitleData?.success && smartTitleData?.optimizedTitle) {
-          console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
-          setOptimizedTitle(smartTitleData.optimizedTitle);
-          setTitleNeedsSync(true);
-          toast.success(`Titre optimisé: ${smartTitleData.optimizedTitle}`, {
-            description: "Titre basé sur l'analyse visuelle du produit",
+      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI) - seulement si activé
+      if (config.regenerateTitle !== false) {
+        try {
+          const { data: smartTitleData, error: smartTitleError } = await supabase.functions.invoke("smart-title", {
+            body: {
+              productId: product.id,
+              language: language,
+            },
           });
+
+          if (smartTitleError) {
+            console.warn("[Landing] Smart title optimization failed:", smartTitleError);
+          } else if (smartTitleData?.success && smartTitleData?.optimizedTitle) {
+            console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
+            setOptimizedTitle(smartTitleData.optimizedTitle);
+            setTitleNeedsSync(true);
+            toast.success(`Titre optimisé: ${smartTitleData.optimizedTitle}`, {
+              description: "Titre basé sur l'analyse visuelle du produit",
+            });
+          }
+        } catch (err) {
+          console.warn("[Landing] Smart title error:", err);
+          // Continue even if smart title fails
         }
-      } catch (err) {
-        console.warn("[Landing] Smart title error:", err);
-        // Continue even if smart title fails
+      } else {
+        console.log("[Landing] Title regeneration skipped (disabled in config)");
       }
 
       setProgress(35);
