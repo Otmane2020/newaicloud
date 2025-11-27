@@ -262,7 +262,8 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
         !!article.featured_image,
         article.status === 'published',
-        article.optimization_count || 0
+        article.optimization_count || 0,
+        article.id // Pass article ID for variation
       );
       return passesQualityFilter(seoScore.score, qualityFilter);
     })();
@@ -298,7 +299,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
     }
   };
 
-  const optimizeAllArticles = async () => {
+  const handleReoptimizeAllArticles = async () => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
         toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
@@ -310,6 +311,64 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
     }
 
     const articlesToProcess = articles.map(a => ({ id: a.id, title: a.title }));
+
+    await processBulkOperation(
+      'articles',
+      articlesToProcess,
+      async (item) => {
+        try {
+          const { error } = await supabase.functions.invoke('generate-article-seo', {
+            body: { article_ids: [item.id] }
+          });
+          return !error;
+        } catch (err) {
+          console.error(`Error processing article ${item.id}:`, err);
+          return false;
+        }
+      },
+      'optimizing',
+      async (results) => {
+        if (results.success > 0) {
+          toast.success(`✅ ${results.success} article(s) ré-optimisé(s)`, {
+            description: results.error > 0 ? `${results.error} erreur(s)` : undefined
+          });
+        } else {
+          toast.error('Aucun article ré-optimisé');
+        }
+        
+        await loadArticles();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadArticles();
+        await refreshLimits();
+        onOptimizationComplete?.();
+      }
+    );
+  };
+
+  const optimizeAllArticles = async () => {
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    const articlesToOptimize = articles.filter(a => (a.optimization_count || 0) === 0);
+    
+    if (articlesToOptimize.length === 0) {
+      toast.info('Tous les articles sont déjà optimisés', {
+        action: {
+          label: "Ré-optimiser tout",
+          onClick: () => handleReoptimizeAllArticles()
+        }
+      });
+      return;
+    }
+
+    const articlesToProcess = articlesToOptimize.map(a => ({ id: a.id, title: a.title }));
 
     await processBulkOperation(
       'articles',
@@ -644,14 +703,18 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
               <span className="hidden sm:inline">Optimiser sélectionnés</span>
             </Button>
             <Button
-              onClick={optimizeAllArticles}
-              disabled={loading || optimizationState.isRunning || articles.filter(a => (a.optimization_count || 0) === 0).length === 0}
+              onClick={articles.filter(a => (a.optimization_count || 0) === 0).length > 0 ? optimizeAllArticles : handleReoptimizeAllArticles}
+              disabled={loading || (optimizationState.type === 'articles' && optimizationState.isRunning) || articles.length === 0}
               size="sm"
               variant="outline"
               className="border-2 border-primary text-primary hover:bg-primary/10 gap-2 flex-1 sm:flex-none"
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimiser tout</span>
+              <span className="hidden sm:inline">
+                {articles.filter(a => (a.optimization_count || 0) === 0).length > 0 
+                  ? `Optimiser tout (${articles.filter(a => (a.optimization_count || 0) === 0).length})` 
+                  : `Ré-optimiser tout (${articles.length})`}
+              </span>
             </Button>
             <Button
               onClick={() => syncToShopify(selectedArticles)}
