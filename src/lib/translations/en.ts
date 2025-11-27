@@ -4496,6 +4496,8 @@ export const translations = {
       currentStep: "Current step: {{type}}",
       pleaseWait: "Please wait, do not close this window",
       duration: "This operation may take a few minutes depending on the number of items",
+      successMessage: "Your store has been successfully synchronized",
+      closeButton: "Close",
       types: {
         import: "Import",
         products: "Products",
@@ -6652,6 +6654,8 @@ export const translations = {
       currentStep: "Current step: {{type}}",
       pleaseWait: "Please wait, do not close this window",
       duration: "This operation may take a few minutes depending on the number of items",
+      successMessage: "Your store has been successfully synchronized",
+      closeButton: "Close",
       types: {
         import: "Import",
         products: "Products",

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
-import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2 } from 'lucide-react';
+import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
 export function AutoSyncProgressDialog() {
-  const { isSyncing, isCompleted, currentType, storeName, itemsSynced } = useAutoSyncProgress();
+  const { isSyncing, isCompleted, currentType, storeName, itemsSynced, endSync } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
   const [progress, setProgress] = React.useState(20);
@@ -26,6 +27,10 @@ export function AutoSyncProgressDialog() {
                                     !location.search.includes('pending_token');
   
   const shouldShow = isSyncing && !isOnboardingWithoutShopify && !isAuthPage && !comingFromShopifyOpenApp;
+
+  const handleClose = () => {
+    endSync();
+  };
 
   // Update progress based on currentType
   React.useEffect(() => {
@@ -81,8 +86,8 @@ export function AutoSyncProgressDialog() {
   };
 
   return (
-    <Dialog open={shouldShow}>
-      <DialogContent className="sm:max-w-md [&>button]:hidden">
+    <Dialog open={shouldShow} onOpenChange={isCompleted ? handleClose : undefined}>
+      <DialogContent className={`sm:max-w-md ${isCompleted ? '' : '[&>button]:hidden'}`}>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           {/* Icon with animation */}
           <div className="relative">
@@ -143,14 +148,18 @@ export function AutoSyncProgressDialog() {
             </div>
             <p className="text-xs text-center text-muted-foreground">
               {isCompleted 
-                ? t.dialogs.autoSync.autoClosing
+                ? t.dialogs.autoSync.successMessage
                 : `${getTypeLabel(currentType)} • ${progress}%`
               }
             </p>
           </div>
 
-          {/* Footer message */}
-          {!isCompleted && (
+          {/* Footer message or close button */}
+          {isCompleted ? (
+            <Button onClick={handleClose} className="mt-2">
+              {t.dialogs.autoSync.closeButton}
+            </Button>
+          ) : (
             <div className="space-y-1 text-xs text-muted-foreground text-center max-w-xs">
               <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
               <p className="text-xs">{t.dialogs.autoSync.duration}</p>
