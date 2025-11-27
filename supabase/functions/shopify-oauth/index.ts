@@ -68,7 +68,12 @@ const SCOPES = [
 
 // 🔐 Fonction pour créer les webhooks GDPR obligatoires (conformité Shopify 2025)
 async function createGDPRWebhooks(shop: string, accessToken: string): Promise<void> {
-  const GDPR_WEBHOOK_URL = `${SUPABASE_URL.replace('/rest/v1', '')}/functions/v1/shopify-gdpr-webhook`;
+  // ✅ Construct base URL robustly
+  const supabaseUrl = SUPABASE_URL || '';
+  const baseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+  const GDPR_WEBHOOK_URL = `${baseUrl}/functions/v1/shopify-gdpr-webhook`;
+  
+  console.log("[SHOPIFY-OAUTH] 🔐 GDPR Webhook URL:", GDPR_WEBHOOK_URL);
   
   const gdprTopics = [
     "customers/data_request",

@@ -24,9 +24,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Safe HealthCheck handler
-    const body = await req.json().catch(() => ({}));
-    if (body?.healthCheck === true) {
+    // ✅ CRITICAL: Read body as text FIRST (can only be read once)
+    const rawBody = await req.text();
+
+    // Safe HealthCheck handler - parse JSON from rawBody
+    let parsedBody: any = {};
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch {
+      // Not JSON, ignore for health check
+      parsedBody = {};
+    }
+
+    if (parsedBody?.healthCheck === true) {
+      console.log('[GDPR-WEBHOOK] ✅ Health check passed');
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -47,19 +58,18 @@ Deno.serve(async (req) => {
       event: 'gdpr_webhook_received',
       topic: topic,
       shop: shopDomain,
+      has_hmac: !!hmac,
+      body_length: rawBody.length,
       timestamp: new Date().toISOString()
     }));
 
     if (!hmac || !shopDomain || !topic) {
-      console.error('❌ Missing required headers');
+      console.error('❌ Missing required headers:', { hmac: !!hmac, shopDomain: !!shopDomain, topic: !!topic });
       return new Response(JSON.stringify({ error: 'Missing required headers' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Get webhook payload as text for HMAC validation
-    const rawBody = await req.text();
 
     // ✅ SHOPIFY COMPLIANCE: Verify HMAC using app secret
     const apiSecret = Deno.env.get('SHOPIFY_API_SECRET');
@@ -80,6 +90,9 @@ Deno.serve(async (req) => {
         event: 'gdpr_webhook_hmac_failure',
         shop: shopDomain,
         topic: topic,
+        calculated_length: calculatedHmac.length,
+        received_length: hmac.length,
+        body_length: rawBody.length,
         timestamp: new Date().toISOString()
       }));
       return new Response(JSON.stringify({ error: 'Invalid HMAC' }), {
@@ -92,6 +105,7 @@ Deno.serve(async (req) => {
       event: 'gdpr_webhook_verification_success',
       shop: shopDomain,
       topic: topic,
+      hmac_valid: true,
       timestamp: new Date().toISOString()
     }));
 
