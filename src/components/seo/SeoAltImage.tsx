@@ -546,7 +546,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
-    const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
+    const functionName = useVision ? 'smart-alt-text' : 'generate-alt-texts';
 
     let successCount = 0;
     let errorCount = 0;
@@ -655,7 +655,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         const img = imagesToOptimize[i];
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
+        const { error } = await supabase.functions.invoke('smart-alt-text', {
           body: { 
             image_id: img.id,
             imageType: imageType
@@ -726,7 +726,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         const img = images[i];
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
+        const { error } = await supabase.functions.invoke('smart-alt-text', {
           body: { 
             image_id: img.id,
             imageType: imageType,
