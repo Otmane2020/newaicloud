@@ -184,6 +184,12 @@ serve(async (req) => {
       try {
         console.log(`📥 Importing ${type}...`);
 
+        // Update sync_type to reflect current import step
+        await supabase
+          .from("sync_history")
+          .update({ sync_type: type })
+          .eq("id", historyEntry.id);
+
         const baseBody = {
           storeId: connection.id,
           shopName: cleanShopName,

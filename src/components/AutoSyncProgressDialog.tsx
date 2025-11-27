@@ -34,6 +34,7 @@ export function AutoSyncProgressDialog() {
     }
 
     const progressMap: Record<string, number> = {
+      import: 20,
       products: 40,
       collections: 60,
       pages: 70,
@@ -67,14 +68,8 @@ export function AutoSyncProgressDialog() {
   };
 
   const getTypeLabel = (type: string) => {
-    const typeMap: Record<string, string> = {
-      products: t.dialogs.autoSync.types.products,
-      collections: t.dialogs.autoSync.types.collections,
-      pages: t.dialogs.autoSync.types.pages,
-      articles: t.dialogs.autoSync.types.articles,
-      images: t.dialogs.autoSync.types.images
-    };
-    return typeMap[type] || type;
+    const types = t.dialogs.autoSync.types as Record<string, string>;
+    return types[type] || type;
   };
 
   return (

@@ -156,30 +156,43 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion Shopify claimed");
 
-    // 7.5 Déclencher l'importation automatique complète (produits, collections, pages, articles)
-    try {
-      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet");
-      
-      // Appeler trigger-auto-sync pour importer tous les types de contenu
-      const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-        }),
-      });
+    // 7.5 Vérifier si l'utilisateur a déjà des produits importés
+    const { count: existingProductsCount } = await supabase
+      .from("shopify_products")
+      .select("*", { count: "exact", head: true })
+      .eq("seller_id", userId);
 
-      if (importResponse.ok) {
-        console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique complet déclenché avec succès");
-      } else {
-        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
+    // Ne déclencher l'import que pour les NOUVEAUX utilisateurs OU ceux sans produits
+    const isNewUser = !existingUser;
+    const hasNoProducts = (existingProductsCount || 0) === 0;
+
+    if (isNewUser || hasNoProducts) {
+      try {
+        console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet (nouveau user ou sans produits)");
+        
+        // Appeler trigger-auto-sync pour importer tous les types de contenu
+        const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({
+            user_id: userId,
+          }),
+        });
+
+        if (importResponse.ok) {
+          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique complet déclenché avec succès");
+        } else {
+          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
+        }
+      } catch (importError) {
+        // Ne pas bloquer l'auth si l'import échoue
+        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (non-bloquant):", importError);
       }
-    } catch (importError) {
-      // Ne pas bloquer l'auth si l'import échoue
-      console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (non-bloquant):", importError);
+    } else {
+      console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Utilisateur existant avec", existingProductsCount, "produits - Skip import");
     }
 
     // 8. Créer un client Supabase pour générer une session utilisateur
