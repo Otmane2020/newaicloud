@@ -671,15 +671,15 @@ export function NetlinkingTable() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce lien ?</AlertDialogTitle>
+            <AlertDialogTitle>{t.dialogs.netlinking.deleteLink}</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le lien sera supprimé de votre base de données netlinking.
+              {t.dialogs.netlinking.deleteConfirm}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t.dialogs.common.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLink} className="bg-destructive">
-              Supprimer
+              {t.dialogs.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

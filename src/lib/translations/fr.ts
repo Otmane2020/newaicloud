@@ -6945,6 +6945,72 @@ export const translations = {
       cancel: "Annuler",
       confirm: "Confirmer et générer",
     },
+    articlePreview: {
+      title: "Aperçu Article",
+      googlePreview: "Aperçu Google",
+      missingDescription: "Description manquante",
+      close: "Fermer",
+    },
+    articleWizard: {
+      previewTitle: "Aperçu de l'article",
+      createAnother: "Créer un autre article",
+      viewOnline: "Visualiser en ligne",
+    },
+    campaignWizard: {
+      newCampaign: "Nouvelle Campagne",
+      stepOf: "Étape {{step}} sur {{total}}",
+      back: "Retour",
+      next: "Suivant",
+      create: "Créer la campagne",
+      creating: "Création...",
+    },
+    planUpgrade: {
+      title: "Changer de plan",
+      description: "Sélectionnez votre nouveau plan d'abonnement",
+      plan: "Plan",
+      selectPlan: "Sélectionner un plan",
+      optimizationsPerMonth: "optimisations/mois",
+      billingPeriod: "Période de facturation",
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      savePercent: "économisez ~20%",
+      changeSummary: "Résumé du changement",
+      currentPrice: "Prix actuel",
+      newPrice: "Nouveau prix",
+      priceChange: "Différence",
+      features: "Fonctionnalités",
+      applyChanges: "Appliquer les changements",
+      applyingChanges: "Application...",
+      samePlan: "Vous êtes déjà sur ce plan",
+    },
+    autoOptimization: {
+      title: "Optimisation Automatique",
+      description: "Configurez l'optimisation automatique de vos produits",
+    },
+    imagePreview: {
+      title: "Prévisualisation",
+    },
+    smartTitle: {
+      previewTitle: "Aperçu du titre optimisé",
+    },
+    netlinking: {
+      deleteLink: "Supprimer ce lien ?",
+      deleteConfirm: "Cette action est irréversible.",
+    },
+    syncResults: {
+      title: "Résultats de synchronisation",
+    },
+    emailInbox: {
+      compose: "Composer un email",
+      reply: "Répondre à l'email",
+      chooseTemplate: "Choisir un Template",
+    },
+    whiteBgHd: {
+      title: "Fond Blanc HD - Résolution 2000x2000px",
+    },
+    aiBgVariants: {
+      title: "4 Variantes d'Arrière-plans IA - Résolution HD",
+    },
   },
 
   // ============= Progress Banner =============

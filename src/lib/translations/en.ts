@@ -6902,6 +6902,72 @@ export const translations = {
       cancel: "Cancel",
       confirm: "Confirm and generate",
     },
+    articlePreview: {
+      title: "Article Preview",
+      googlePreview: "Google Preview",
+      missingDescription: "Missing description",
+      close: "Close",
+    },
+    articleWizard: {
+      previewTitle: "Article Preview",
+      createAnother: "Create another article",
+      viewOnline: "View online",
+    },
+    campaignWizard: {
+      newCampaign: "New Campaign",
+      stepOf: "Step {{step}} of {{total}}",
+      back: "Back",
+      next: "Next",
+      create: "Create campaign",
+      creating: "Creating...",
+    },
+    planUpgrade: {
+      title: "Change Plan",
+      description: "Select your new subscription plan",
+      plan: "Plan",
+      selectPlan: "Select a plan",
+      optimizationsPerMonth: "optimizations/month",
+      billingPeriod: "Billing Period",
+      monthly: "Monthly",
+      yearly: "Yearly",
+      savePercent: "save ~20%",
+      changeSummary: "Change Summary",
+      currentPrice: "Current Price",
+      newPrice: "New Price",
+      priceChange: "Difference",
+      features: "Features",
+      applyChanges: "Apply Changes",
+      applyingChanges: "Applying...",
+      samePlan: "You are already on this plan",
+    },
+    autoOptimization: {
+      title: "Automatic Optimization",
+      description: "Configure automatic optimization for your products",
+    },
+    imagePreview: {
+      title: "Preview",
+    },
+    smartTitle: {
+      previewTitle: "Optimized Title Preview",
+    },
+    netlinking: {
+      deleteLink: "Delete this link?",
+      deleteConfirm: "This action cannot be undone.",
+    },
+    syncResults: {
+      title: "Sync Results",
+    },
+    emailInbox: {
+      compose: "Compose Email",
+      reply: "Reply to Email",
+      chooseTemplate: "Choose a Template",
+    },
+    whiteBgHd: {
+      title: "White Background HD - 2000x2000px Resolution",
+    },
+    aiBgVariants: {
+      title: "4 AI Background Variants - HD Resolution",
+    },
   },
 
   // ============= Progress Banner =============

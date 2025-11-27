@@ -342,10 +342,10 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <DialogTitle className="text-2xl">Nouvelle Campagne</DialogTitle>
+              <DialogTitle className="text-2xl">{t.dialogs.campaignWizard.newCampaign}</DialogTitle>
             </div>
             <DialogDescription>
-              Étape {step} sur 4
+              {t.dialogs.campaignWizard.stepOf.replace('{{step}}', String(step)).replace('{{total}}', '4')}
             </DialogDescription>
           </DialogHeader>
 
@@ -371,12 +371,12 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
             disabled={step === 1 || loading}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour
+            {t.dialogs.campaignWizard.back}
           </Button>
 
           {step < 4 ? (
             <Button type="button" onClick={nextStep}>
-              Suivant
+              {t.dialogs.campaignWizard.next}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
@@ -384,12 +384,12 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               {loading ? (
                 <>
                   <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                  Création...
+                  {t.dialogs.campaignWizard.creating}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Créer la campagne
+                  {t.dialogs.campaignWizard.create}
                 </>
               )}
             </Button>

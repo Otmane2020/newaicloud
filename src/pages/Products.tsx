@@ -1011,40 +1011,40 @@ export default function Products() {
       <Dialog open={showSyncResultDialog} onOpenChange={setShowSyncResultDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Résultats de synchronisation</DialogTitle>
+            <DialogTitle>{t.dialogs.syncResults.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {syncResults && (
               <>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Produits</span>
+                    <span className="font-medium">{t.dialogs.autoSync.types.products}</span>
                     <span className="text-sm text-muted-foreground">
-                      {syncResults.products.imported} importés
+                      {syncResults.products.imported}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Collections</span>
+                    <span className="font-medium">{t.dialogs.autoSync.types.collections}</span>
                     <span className="text-sm text-muted-foreground">
-                      {syncResults.collections.imported} importées
+                      {syncResults.collections.imported}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Pages</span>
+                    <span className="font-medium">{t.dialogs.autoSync.types.pages}</span>
                     <span className="text-sm text-muted-foreground">
-                      {syncResults.pages.imported} importées
+                      {syncResults.pages.imported}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Articles</span>
+                    <span className="font-medium">{t.dialogs.autoSync.types.articles}</span>
                     <span className="text-sm text-muted-foreground">
-                      {syncResults.articles.imported} importés
+                      {syncResults.articles.imported}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Images</span>
+                    <span className="font-medium">{t.dialogs.autoSync.types.images}</span>
                     <span className="text-sm text-muted-foreground">
-                      {syncResults.images.imported} importées
+                      {syncResults.images.imported}
                     </span>
                   </div>
                 </div>
@@ -1052,7 +1052,7 @@ export default function Products() {
                   onClick={() => setShowSyncResultDialog(false)}
                   className="w-full"
                 >
-                  Fermer
+                  {t.dialogs.common.close}
                 </Button>
               </>
             )}

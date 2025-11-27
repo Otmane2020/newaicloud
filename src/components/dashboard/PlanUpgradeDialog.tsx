@@ -46,7 +46,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [prorationInfo, setProrationInfo] = useState<ProrationInfo | null>(null);
   const [loadingProration, setLoadingProration] = useState(false);
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -195,24 +195,24 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Changer de plan</DialogTitle>
+          <DialogTitle>{t.dialogs.planUpgrade.title}</DialogTitle>
           <DialogDescription>
-            Sélectionnez votre nouveau plan d'abonnement
+            {t.dialogs.planUpgrade.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Plan Selection */}
           <div className="space-y-2">
-            <Label htmlFor="plan-select">Plan</Label>
+            <Label htmlFor="plan-select">{t.dialogs.planUpgrade.plan}</Label>
             <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
               <SelectTrigger id="plan-select">
-                <SelectValue placeholder="Sélectionner un plan" />
+                <SelectValue placeholder={t.dialogs.planUpgrade.selectPlan} />
               </SelectTrigger>
               <SelectContent>
                 {plans.map((plan) => (
                   <SelectItem key={plan.id} value={plan.id}>
-                    {plan.name} - {plan.max_optimizations_monthly} optimizations/mois
+                    {plan.name} - {plan.max_optimizations_monthly} {t.dialogs.planUpgrade.optimizationsPerMonth}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -221,18 +221,18 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
           {/* Billing Period */}
           <div className="space-y-2">
-            <Label>Période de facturation</Label>
+            <Label>{t.dialogs.planUpgrade.billingPeriod}</Label>
             <RadioGroup value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="monthly" id="monthly" />
                 <Label htmlFor="monthly" className="font-normal cursor-pointer">
-                  Mensuel
+                  {t.dialogs.planUpgrade.monthly}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="yearly" id="yearly" />
                 <Label htmlFor="yearly" className="font-normal cursor-pointer">
-                  Annuel <span className="text-sm text-muted-foreground">(économisez ~20%)</span>
+                  {t.dialogs.planUpgrade.yearly} <span className="text-sm text-muted-foreground">({t.dialogs.planUpgrade.savePercent})</span>
                 </Label>
               </div>
             </RadioGroup>
@@ -241,13 +241,13 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
           {/* Summary */}
           {selectedPlan && (
             <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-              <h4 className="font-semibold text-sm">Résumé du changement</h4>
+              <h4 className="font-semibold text-sm">{t.dialogs.planUpgrade.changeSummary}</h4>
               
               <div className="space-y-3 text-sm">
                 {currentPlan && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Prix actuel:</span>
+                      <span className="text-muted-foreground">{t.dialogs.planUpgrade.currentPrice}:</span>
                       <span className="font-semibold text-base">
                         {currentPlan.name} à ${currentPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
                       </span>

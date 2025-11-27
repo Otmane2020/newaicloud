@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { X, Eye, Monitor, Smartphone } from 'lucide-react';
 import { GoogleSearchPreview } from '../seo/GoogleSearchPreview';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/language';
 
 interface ArticlePreviewDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ interface ArticlePreviewDialogProps {
 
 export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePreviewDialogProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const { t } = useTranslation();
   
   if (!article) return null;
 
@@ -33,7 +35,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
         <div className="flex items-center justify-between px-4 py-3 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-primary" />
-            <DialogTitle className="text-base font-semibold">Aperçu Article</DialogTitle>
+            <DialogTitle className="text-base font-semibold">{t.dialogs.articlePreview.title}</DialogTitle>
           </div>
           
           {/* View Mode Switcher */}
@@ -72,10 +74,10 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
               )}>
                 {/* Google Search Preview */}
                 <div className="p-4 border-b">
-                  <h3 className="text-xs font-semibold mb-2 text-muted-foreground">Aperçu Google</h3>
+                  <h3 className="text-xs font-semibold mb-2 text-muted-foreground">{t.dialogs.articlePreview.googlePreview}</h3>
                   <GoogleSearchPreview
                     title={article.seo_title || article.title}
-                    description={article.meta_description || "Description manquante"}
+                    description={article.meta_description || t.dialogs.articlePreview.missingDescription}
                     url={`https://yourstore.com/blogs/news/${article.handle || 'article'}`}
                     compact={viewMode === 'mobile'}
                   />
@@ -122,7 +124,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
             size="sm"
             onClick={() => onOpenChange(false)}
           >
-            Fermer
+            {t.dialogs.articlePreview.close}
           </Button>
         </div>
       </DialogContent>
