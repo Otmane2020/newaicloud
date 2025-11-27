@@ -12,12 +12,32 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Health check
+    const rawBody = await req.text();
+    if (rawBody) {
+      try {
+        const body = JSON.parse(rawBody);
+        if (body?.healthCheck === true) {
+          return new Response(JSON.stringify({ status: "healthy" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+      } catch { /* not JSON, continue */ }
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get time of day from request body (morning or afternoon)
-    const { time } = await req.json().catch(() => ({ time: 'morning' }));
+    // Parse body for time parameter
+    let time = 'morning';
+    if (rawBody) {
+      try {
+        const parsed = JSON.parse(rawBody);
+        time = parsed.time || 'morning';
+      } catch { /* use default */ }
+    }
     const timeOfDay = time === 'afternoon' ? 'afternoon' : 'morning';
 
     console.log(`🔄 Generating ${timeOfDay} SEO notifications for all users...`);
@@ -25,7 +45,7 @@ Deno.serve(async (req: Request) => {
     // Get all users with active settings
     const { data: users, error: usersError } = await supabase
       .from("profiles")
-      .select("id, email, full_name, language");
+      .select("id, email, full_name, preferred_language");
 
     if (usersError) throw usersError;
 
@@ -34,7 +54,7 @@ Deno.serve(async (req: Request) => {
 
     for (const user of users || []) {
       console.log(`Processing user: ${user.email}`);
-      const userLanguage = (user.language || 'fr') as 'en' | 'fr';
+      const userLanguage = (user.preferred_language || 'fr') as 'en' | 'fr';
 
       // Get user's notification settings
       const { data: settings } = await supabase
@@ -51,15 +71,120 @@ Deno.serve(async (req: Request) => {
 
       const notifications: any[] = [];
 
-      // Morning notifications: Opportunities and tasks
+      // Get latest SEO audit for this user
+      const { data: latestAudit } = await supabase
+        .from("seo_audit_reports")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Morning notifications: Based on audit issues
       if (timeOfDay === 'morning') {
-        // Check products needing SEO
+        // Check for critical issues from audit
+        if (latestAudit?.audit_results?.issues) {
+          const issues = latestAudit.audit_results.issues;
+          
+          // High priority issues
+          const criticalIssues = issues.filter((i: any) => i.priority === 'high');
+          if (criticalIssues.length > 0 && settings?.notify_products !== false) {
+            const issue = criticalIssues[0];
+            notifications.push({
+              user_id: user.id,
+              title: userLanguage === 'fr' ? `🚨 Action critique: ${issue.title}` : `🚨 Critical: ${issue.title}`,
+              message: issue.description,
+              type: "seo_task",
+              priority: "high",
+              category: issue.category || "products",
+              action_url: issue.category === 'products' ? "/products/title-description" : 
+                         issue.category === 'collections' ? "/collections" :
+                         issue.category === 'content' ? "/blog" : "/seo",
+              action_label: userLanguage === 'fr' ? "🔧 Corriger maintenant" : "🔧 Fix now",
+              due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+              metadata: { count: issue.count, action: issue.action, from_audit: true }
+            });
+          }
+
+          // Medium priority issues
+          const mediumIssues = issues.filter((i: any) => i.priority === 'medium');
+          if (mediumIssues.length > 0) {
+            const totalCount = mediumIssues.reduce((sum: number, i: any) => sum + (i.count || 0), 0);
+            notifications.push({
+              user_id: user.id,
+              title: userLanguage === 'fr' 
+                ? `⚠️ ${mediumIssues.length} améliorations SEO recommandées` 
+                : `⚠️ ${mediumIssues.length} SEO improvements recommended`,
+              message: userLanguage === 'fr'
+                ? `${totalCount} éléments à optimiser pour améliorer votre référencement`
+                : `${totalCount} items to optimize for better SEO`,
+              type: "seo_task",
+              priority: "medium",
+              category: "audit",
+              action_url: "/seo?tab=audit",
+              action_label: userLanguage === 'fr' ? "📊 Voir l'audit SEO" : "📊 View SEO audit",
+              due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              metadata: { issues: mediumIssues.map((i: any) => i.title), from_audit: true }
+            });
+          }
+        }
+
+        // Score-based notifications
+        if (latestAudit) {
+          const globalScore = latestAudit.global_score || 0;
+          
+          // Low score alert
+          if (globalScore < 50) {
+            notifications.push({
+              user_id: user.id,
+              title: userLanguage === 'fr' ? `📉 Score SEO critique: ${globalScore}%` : `📉 Critical SEO score: ${globalScore}%`,
+              message: userLanguage === 'fr'
+                ? "Votre score SEO nécessite une attention urgente. Consultez votre audit pour les actions prioritaires."
+                : "Your SEO score needs urgent attention. Check your audit for priority actions.",
+              type: "seo_task",
+              priority: "high",
+              category: "audit",
+              action_url: "/seo?tab=audit",
+              action_label: userLanguage === 'fr' ? "🔍 Analyser l'audit" : "🔍 Analyze audit",
+              metadata: { score: globalScore, from_audit: true }
+            });
+          }
+          
+          // Category-specific low scores
+          const categoryScores = [
+            { name: 'products', score: latestAudit.products_score, url: '/products/title-description' },
+            { name: 'collections', score: latestAudit.collections_score, url: '/collections' },
+            { name: 'images', score: latestAudit.images_score, url: '/products/images' },
+            { name: 'blog', score: latestAudit.blog_score, url: '/blog' },
+          ];
+
+          for (const cat of categoryScores) {
+            if (cat.score !== null && cat.score < 60 && settings?.[`notify_${cat.name}`] !== false) {
+              const template = getNotificationTemplate(cat.name as any, 1, userLanguage);
+              notifications.push({
+                user_id: user.id,
+                title: userLanguage === 'fr' 
+                  ? `📊 ${cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}: Score ${cat.score}%` 
+                  : `📊 ${cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}: Score ${cat.score}%`,
+                message: template.message,
+                type: "seo_task",
+                priority: cat.score < 40 ? "high" : "medium",
+                category: cat.name,
+                action_url: cat.url,
+                action_label: userLanguage === 'fr' ? "🚀 Optimiser" : "🚀 Optimize",
+                metadata: { score: cat.score, from_audit: true }
+              });
+            }
+          }
+        }
+
+        // Check products needing SEO (improved query - check for NULL or empty)
         if (settings?.notify_products !== false) {
           const { data: products } = await supabase
             .from("shopify_products")
             .select("id, title, seo_title, seo_description")
             .eq("seller_id", user.id)
-            .is("seo_title", null)
+            .or("seo_title.is.null,seo_title.eq.")
             .limit(20);
 
           if (products && products.length > 0) {
@@ -74,18 +199,18 @@ Deno.serve(async (req: Request) => {
               action_url: "/products/title-description",
               action_label: userLanguage === 'fr' ? "🚀 Optimiser maintenant" : "🚀 Optimize now",
               due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-              metadata: { count: products.length, product_ids: products.map(p => p.id) }
+              metadata: { count: products.length, product_ids: products.slice(0, 10).map(p => p.id) }
             });
           }
         }
 
-        // Check collections needing SEO
+        // Check collections needing SEO (improved query)
         if (settings?.notify_collections !== false) {
           const { data: collections } = await supabase
             .from("shopify_collections")
             .select("id, title, seo_title, seo_description")
             .eq("user_id", user.id)
-            .is("seo_title", null)
+            .or("seo_title.is.null,seo_title.eq.")
             .limit(10);
 
           if (collections && collections.length > 0) {
@@ -108,38 +233,49 @@ Deno.serve(async (req: Request) => {
 
       // Afternoon notifications: Reminders, urgencies, and achievements
       if (timeOfDay === 'afternoon') {
-        // Check images missing ALT
+        // Check images missing ALT (improved query)
         if (settings?.notify_images !== false) {
           const { data: images } = await supabase
             .from("product_images")
             .select("id, product_id")
-            .is("alt_text", null)
+            .or("alt_text.is.null,alt_text.eq.")
             .limit(50);
 
+          // Filter by user's products
           if (images && images.length > 0) {
-            const template = getNotificationTemplate('images', images.length, userLanguage);
-            notifications.push({
-              user_id: user.id,
-              title: template.title,
-              message: template.message,
-              type: "seo_task",
-              priority: template.priority,
-              category: "images",
-              action_url: "/products/images",
-              action_label: userLanguage === 'fr' ? "📸 Optimiser les images" : "📸 Optimize images",
-              due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-              metadata: { count: images.length, image_ids: images.map(i => i.id) }
-            });
+            const { data: userProducts } = await supabase
+              .from("shopify_products")
+              .select("id")
+              .eq("seller_id", user.id);
+            
+            const userProductIds = new Set(userProducts?.map(p => p.id) || []);
+            const userImages = images.filter(img => userProductIds.has(img.product_id));
+
+            if (userImages.length > 0) {
+              const template = getNotificationTemplate('images', userImages.length, userLanguage);
+              notifications.push({
+                user_id: user.id,
+                title: template.title,
+                message: template.message,
+                type: "seo_task",
+                priority: template.priority,
+                category: "images",
+                action_url: "/products/images",
+                action_label: userLanguage === 'fr' ? "📸 Optimiser les images" : "📸 Optimize images",
+                due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                metadata: { count: userImages.length, image_ids: userImages.slice(0, 10).map(i => i.id) }
+              });
+            }
           }
         }
 
-        // Check blog articles needing optimization
+        // Check blog articles needing optimization (improved query)
         if (settings?.notify_blog !== false) {
           const { data: articles } = await supabase
             .from("blog_articles")
             .select("id, title, meta_description")
             .eq("user_id", user.id)
-            .is("meta_description", null)
+            .or("meta_description.is.null,meta_description.eq.")
             .limit(10);
 
           if (articles && articles.length > 0) {
@@ -166,7 +302,7 @@ Deno.serve(async (req: Request) => {
           .eq("seller_id", user.id);
 
         if (allProducts && allProducts.length > 0) {
-          const optimizedCount = allProducts.filter(p => p.seo_title).length;
+          const optimizedCount = allProducts.filter(p => p.seo_title && p.seo_title.trim() !== '').length;
           const optimizationRate = Math.round((optimizedCount / allProducts.length) * 100);
 
           // Milestone notifications (50%, 75%, 90%, 100%)
@@ -200,30 +336,57 @@ Deno.serve(async (req: Request) => {
             });
           }
         }
+
+        // Action plan reminders from audit recommendations
+        if (latestAudit?.recommendations) {
+          const recs = latestAudit.recommendations;
+          const highPriorityRec = recs.find((r: any) => r.priority === 'high');
+          
+          if (highPriorityRec && highPriorityRec.actions?.length > 0) {
+            notifications.push({
+              user_id: user.id,
+              title: userLanguage === 'fr' ? "📋 Plan d'action SEO de la semaine" : "📋 This week's SEO action plan",
+              message: userLanguage === 'fr'
+                ? `Action prioritaire: ${highPriorityRec.actions[0]}`
+                : `Priority action: ${highPriorityRec.actions[0]}`,
+              type: "seo_task",
+              priority: "high",
+              category: "audit",
+              action_url: "/seo?tab=audit",
+              action_label: userLanguage === 'fr' ? "📊 Voir le plan" : "📊 View plan",
+              metadata: { actions: highPriorityRec.actions, from_audit: true }
+            });
+          }
+        }
       }
 
-      // Insert notifications in database (app_notifications instead of seo_notifications)
-      if (notifications.length > 0 && settings?.in_app_enabled) {
+      // Deduplicate notifications by title
+      const uniqueNotifications = notifications.filter((n, index, self) =>
+        index === self.findIndex((t) => t.title === n.title)
+      );
+
+      // Insert notifications in database
+      if (uniqueNotifications.length > 0 && settings?.in_app_enabled) {
         const { error: insertError } = await supabase
           .from("app_notifications")
-          .insert(notifications);
+          .insert(uniqueNotifications);
 
         if (!insertError) {
-          notificationsCreated += notifications.length;
-          console.log(`✅ Created ${notifications.length} notifications for ${user.email}`);
+          notificationsCreated += uniqueNotifications.length;
+          console.log(`✅ Created ${uniqueNotifications.length} notifications for ${user.email}`);
         } else {
           console.error(`❌ Error creating notifications for ${user.email}:`, insertError);
         }
       }
 
       // Send email digest if enabled (only in afternoon)
-      if (timeOfDay === 'afternoon' && notifications.length > 0 && settings?.email_enabled && settings?.daily_digest) {
+      if (timeOfDay === 'afternoon' && uniqueNotifications.length > 0 && settings?.email_enabled && settings?.daily_digest) {
         try {
           const { error: emailError } = await supabase.functions.invoke("send-notification-email", {
             body: {
               to: user.email,
               userName: user.full_name || user.email.split("@")[0],
-              notifications: notifications.map(n => ({
+              notifications: uniqueNotifications.map(n => ({
                 title: n.title,
                 message: n.message,
                 category: n.category,
