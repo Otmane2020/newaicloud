@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit, Infinity } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
@@ -39,7 +39,8 @@ interface ShopifyConnection {
 
 export default function ShopifyConnectionsList() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const dateLocale = language === 'fr' ? fr : enUS;
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
@@ -651,14 +652,14 @@ export default function ShopifyConnectionsList() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {store.connected_at && (
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Connecté:</span>
-                          <span>{format(new Date(store.connected_at), 'PP', { locale: fr })}</span>
+                          <span className="font-medium">{t.integration.connectedAt}</span>
+                          <span>{format(new Date(store.connected_at), 'PP', { locale: dateLocale })}</span>
                         </div>
                       )}
                       {store.last_sync_at && (
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Dernière synchro:</span>
-                          <span>{format(new Date(store.last_sync_at), 'PPp', { locale: fr })}</span>
+                          <span className="font-medium">{t.integration.lastSyncAt}</span>
+                          <span>{format(new Date(store.last_sync_at), 'PPp', { locale: dateLocale })}</span>
                         </div>
                       )}
                     </div>
@@ -676,12 +677,12 @@ export default function ShopifyConnectionsList() {
                     {syncingStoreId === store.id ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        Synchronisation...
+                        {t.integration.synchronizing}
                       </>
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4" />
-                        Synchroniser
+                        {t.integration.synchronize}
                       </>
                     )}
                   </Button>
@@ -690,7 +691,7 @@ export default function ShopifyConnectionsList() {
                     variant="outline"
                     onClick={() => openEditNameDialog(store)}
                     className="gap-2"
-                    title="Modifier le nom"
+                    title={t.integration.editName}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
