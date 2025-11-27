@@ -83,6 +83,7 @@ serve(async (req) => {
           {
             body: {
               user_id: campaign.user_id,
+              store_id: campaign.store_id, // ✅ CRITICAL: Pass store_id to avoid orphaned articles
               campaign_id: campaign.id,
               keywords: campaign.keywords,
               mode: 'auto'
@@ -124,7 +125,8 @@ serve(async (req) => {
             'sync-blog-to-shopify',
             {
               body: {
-                articleId: generationResult.article.id
+                articleId: generationResult.article.id,
+                shopify_connection_id: campaign.store_id // ✅ CRITICAL: Pass store_id for sync
               }
             }
           );
