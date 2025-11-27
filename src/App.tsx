@@ -93,6 +93,7 @@ import ApiKeys from "./pages/ApiKeys";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
 import UsageTable from "./pages/UsageTable";
+import TestGdprWebhook from "./pages/TestGdprWebhook";
 
 const queryClient = new QueryClient();
 
@@ -549,6 +550,7 @@ const App = () => (
                 </ProtectedLayout>
               }
             />
+            <Route path="/test-gdpr-webhook" element={<TestGdprWebhook />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
