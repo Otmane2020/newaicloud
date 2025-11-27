@@ -114,8 +114,6 @@ export function TagOptimization() {
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [itemsToSync, setItemsToSync] = useState<WorkflowItem[]>([]);
   
-  const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-
   const fetchProducts = async () => {
     if (!selectedStore?.id) {
       setProducts([]);
@@ -562,97 +560,70 @@ export function TagOptimization() {
     setShowProgressDialog(true);
     setCurrentOperation('optimizing');
     setProgress({ current: 0, total: productIds.length });
-    
-    // Start global optimization tracking
-    startOptimization('tags', productIds.length, 'optimizing');
 
-    let successCount = 0;
-    let skipCount = 0;
-    let errorCount = 0;
-    const generatedItems: WorkflowItem[] = [];
+    const productsToProcess = productIds.map(id => {
+      const product = products.find(p => p.id === id);
+      return { id, title: product?.title || '', tags: product?.tags || '', image_url: product?.image_url };
+    });
 
-    for (let i = 0; i < productIds.length; i++) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error('No active session');
-        }
+    await processBulkOperation(
+      'tags',
+      productsToProcess,
+      async (item) => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) throw new Error('No active session');
 
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ productId: productIds[i], force }),
-        });
-
-        const result = await response.json();
-        
-        // Check for 403 error (limit reached)
-        if (response.status === 403 || result.error === 'limite_optimisations_atteinte') {
-          toast.error('Limite d\'optimisations atteinte', {
-            description: result.message || 'Passez à un plan supérieur pour continuer.'
+          const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ productId: item.id, force }),
           });
-          setShowProgressDialog(false);
-          setShowUpgradeDialog(true);
-          await fetchProducts();
-          return;
-        }
-        
-        if (response.ok && result.success) {
-          if (result.skipped) {
-            skipCount++;
-            updateProgress(i + 1, productIds[i], 'success');
-          } else {
-            successCount++;
-            const product = products.find(p => p.id === productIds[i]);
-            if (product) {
-              generatedItems.push({
-                id: product.id,
-                title: product.title,
-                tags: product.tags || '',
-                image_url: product.image_url
-              });
-            }
-            updateProgress(i + 1, productIds[i], 'success');
+
+          const result = await response.json();
+          
+          if (response.status === 403 || result.error === 'limite_optimisations_atteinte') {
+            toast.error('Limite d\'optimisations atteinte');
+            setShowUpgradeDialog(true);
+            return false;
           }
-        } else {
-          console.error(`Error for product ${productIds[i]}:`, result);
-          errorCount++;
-          updateProgress(i + 1, productIds[i], 'error');
+          
+          return response.ok && result.success;
+        } catch (error) {
+          console.error('Error generating tags:', error);
+          return false;
         }
-      } catch (error) {
-        console.error('Error generating tags:', error);
-        errorCount++;
-        updateProgress(i + 1, productIds[i], 'error');
+      },
+      'optimizing',
+      async (results) => {
+        await fetchProducts();
+        
+        const updatedProducts = await Promise.all(
+          productIds.map(async (id) => {
+            const { data } = await supabase
+              .from('shopify_products')
+              .select('id, title, tags, image_url')
+              .eq('id', id)
+              .single();
+            return data;
+          })
+        );
+
+        setOptimizedItems(updatedProducts.filter(Boolean).map(p => ({
+          id: p!.id,
+          title: p!.title,
+          tags: p!.tags || '',
+          image_url: p!.image_url
+        })));
+        setShowProgressDialog(false);
+        setShowResultsDialog(true);
+        toast.success(`${results.success}/${productIds.length} tags generated`);
       }
-      setProgress({ current: i + 1, total: productIds.length });
-    }
-
-    await fetchProducts();
-    completeOptimization();
-    
-    const updatedProducts = await Promise.all(
-      productIds.map(async (id) => {
-        const { data } = await supabase
-          .from('shopify_products')
-          .select('id, title, tags, image_url')
-          .eq('id', id)
-          .single();
-        return data;
-      })
     );
-
-    setOptimizedItems(updatedProducts.filter(Boolean).map(p => ({
-      id: p!.id,
-      title: p!.title,
-      tags: p!.tags || '',
-      image_url: p!.image_url
-    })));
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
   };
 
   const handleSyncAll = async () => {
@@ -682,63 +653,49 @@ export function TagOptimization() {
     setShowProgressDialog(true);
     setCurrentOperation('syncing');
     setProgress({ current: 0, total: productIds.length });
-    
-    // Start global sync tracking
-    startOptimization('tags', productIds.length, 'syncing');
 
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
+    const productsToSync = productIds.map(id => {
+      const product = products.find(p => p.id === id);
+      return { id, title: product?.title || '' };
+    });
 
-    for (let i = 0; i < productIds.length; i++) {
-      try {
-        const { data: authData } = await supabase.auth.getSession();
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${authData.session?.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              productId: productIds[i], 
-              syncTags: true,
-              syncGoogleShopping: true,
-              force: true // Allow immediate sync after tag generation
-            }),
-          }
-        );
-
-        if (response.ok) {
-          successCount++;
-          updateProgress(i + 1, productIds[i], 'success');
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          errorCount++;
-          errors.push(`Product ${i + 1}: ${errorData.error || 'Unknown error'}`);
-          console.error(`Sync error for product ${productIds[i]}:`, errorData);
-          updateProgress(i + 1, productIds[i], 'error');
+    await processBulkOperation(
+      'tags',
+      productsToSync,
+      async (item) => {
+        try {
+          const { data: authData } = await supabase.auth.getSession();
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${authData.session?.access_token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                productId: item.id, 
+                syncTags: true,
+                syncGoogleShopping: true,
+                force: true
+              }),
+            }
+          );
+          return response.ok;
+        } catch (error) {
+          console.error('Error syncing:', error);
+          return false;
         }
-      } catch (error) {
-        console.error('Error syncing:', error);
-        errorCount++;
-        errors.push(`Product ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        updateProgress(i + 1, productIds[i], 'error');
+      },
+      'syncing',
+      async (results) => {
+        setShowProgressDialog(false);
+        setShowSuccessDialog(true);
+        setSelectedProducts(new Set());
+        await fetchProducts();
+        toast.success(`${results.success}/${productIds.length} tags synced`);
       }
-      setProgress({ current: i + 1, total: productIds.length });
-    }
-
-    setShowProgressDialog(false);
-    setShowSuccessDialog(true);
-    setSelectedProducts(new Set());
-    completeOptimization();
-    
-    if (errorCount > 0) {
-      console.error('Sync errors:', errors);
-    }
-    
-    await fetchProducts();
+    );
   };
 
   const handleCloseProgressDialog = () => {
