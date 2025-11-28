@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, FileText, Tag, CheckCircle } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface ArticleGenerationProgressProps {
   open: boolean;
@@ -9,19 +10,20 @@ interface ArticleGenerationProgressProps {
 }
 
 export function ArticleGenerationProgress({ open, onClose }: ArticleGenerationProgressProps) {
+  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState("");
   
   const messages = [
-    { progress: 0, message: "🚀 Démarrage de la génération IA...", icon: Sparkles },
-    { progress: 15, message: "📦 Analyse des produits sélectionnés", icon: FileText },
-    { progress: 30, message: "🔍 Intégration des mots-clés SEO", icon: Tag },
-    { progress: 45, message: "✨ Création du contenu par IA", icon: Sparkles },
-    { progress: 60, message: "🎨 Application du design et des couleurs", icon: Sparkles },
-    { progress: 75, message: "🖼️ Génération des galeries d'images", icon: FileText },
-    { progress: 85, message: "🔗 Création des liens Shopify", icon: FileText },
-    { progress: 95, message: "✅ Finalisation de l'article blog", icon: CheckCircle },
-    { progress: 100, message: "🎉 Article prêt !", icon: CheckCircle },
+    { progress: 0, message: t.blog.articleGeneration.steps.start, icon: Sparkles },
+    { progress: 15, message: t.blog.articleGeneration.steps.analyzingProducts, icon: FileText },
+    { progress: 30, message: t.blog.articleGeneration.steps.integratingKeywords, icon: Tag },
+    { progress: 45, message: t.blog.articleGeneration.steps.creatingContent, icon: Sparkles },
+    { progress: 60, message: t.blog.articleGeneration.steps.applyingDesign, icon: Sparkles },
+    { progress: 75, message: t.blog.articleGeneration.steps.generatingGalleries, icon: FileText },
+    { progress: 85, message: t.blog.articleGeneration.steps.creatingLinks, icon: FileText },
+    { progress: 95, message: t.blog.articleGeneration.steps.finalizing, icon: CheckCircle },
+    { progress: 100, message: t.blog.articleGeneration.steps.complete, icon: CheckCircle },
   ];
   
   useEffect(() => {
@@ -55,9 +57,9 @@ export function ArticleGenerationProgress({ open, onClose }: ArticleGenerationPr
           </div>
           
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Génération en cours</h2>
+            <h2 className="text-2xl font-bold mb-2">{t.blog.articleGeneration.title}</h2>
             <p className="text-muted-foreground">
-              Création de votre article SEO optimisé...
+              {t.blog.articleGeneration.description}
             </p>
           </div>
           
@@ -71,7 +73,7 @@ export function ArticleGenerationProgress({ open, onClose }: ArticleGenerationPr
           </div>
           
           <div className="text-xs text-muted-foreground text-center max-w-xs">
-            Cette opération peut prendre 1-2 minutes. Ne fermez pas cette fenêtre.
+            {t.blog.articleGeneration.warning}
           </div>
         </div>
       </DialogContent>
