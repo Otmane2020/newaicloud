@@ -1678,6 +1678,258 @@ export type Database = {
         }
         Relationships: []
       }
+      google_ads_negative_keywords: {
+        Row: {
+          adgroup_id: string | null
+          applied_at: string | null
+          campaign_id: string | null
+          created_at: string
+          id: string
+          is_applied: boolean | null
+          keyword: string
+          match_type: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          adgroup_id?: string | null
+          applied_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          is_applied?: boolean | null
+          keyword: string
+          match_type?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          adgroup_id?: string | null
+          applied_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          is_applied?: boolean | null
+          keyword?: string
+          match_type?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_ads_roas: {
+        Row: {
+          ad_cost: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          created_at: string
+          date: string
+          id: string
+          installs: number | null
+          paid_users: number | null
+          revenue: number | null
+          roas: number | null
+          signups: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_cost?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          installs?: number | null
+          paid_users?: number | null
+          revenue?: number | null
+          roas?: number | null
+          signups?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_cost?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          installs?: number | null
+          paid_users?: number | null
+          revenue?: number | null
+          roas?: number | null
+          signups?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_ads_search_terms: {
+        Row: {
+          account_id: string | null
+          adgroup_id: string | null
+          adgroup_name: string | null
+          avg_cpc: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          clicks: number | null
+          conversion_rate: number | null
+          conversion_value: number | null
+          conversions: number | null
+          cost_micros: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          is_added_keyword: boolean | null
+          is_excluded: boolean | null
+          keyword: string | null
+          match_type: string | null
+          search_term: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          adgroup_id?: string | null
+          adgroup_name?: string | null
+          avg_cpc?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          clicks?: number | null
+          conversion_rate?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cost_micros?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          is_added_keyword?: boolean | null
+          is_excluded?: boolean | null
+          keyword?: string | null
+          match_type?: string | null
+          search_term: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          adgroup_id?: string | null
+          adgroup_name?: string | null
+          avg_cpc?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          clicks?: number | null
+          conversion_rate?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cost_micros?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          is_added_keyword?: boolean | null
+          is_excluded?: boolean | null
+          keyword?: string | null
+          match_type?: string | null
+          search_term?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_ads_strategies: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          current_value: Json | null
+          difficulty: string | null
+          id: string
+          impact_score: number | null
+          is_applied: boolean | null
+          recommendation: string
+          strategy_type: string
+          suggested_value: Json | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          current_value?: Json | null
+          difficulty?: string | null
+          id?: string
+          impact_score?: number | null
+          is_applied?: boolean | null
+          recommendation: string
+          strategy_type: string
+          suggested_value?: Json | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          current_value?: Json | null
+          difficulty?: string | null
+          id?: string
+          impact_score?: number | null
+          is_applied?: boolean | null
+          recommendation?: string
+          strategy_type?: string
+          suggested_value?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_ads_suggested_keywords: {
+        Row: {
+          added_at: string | null
+          adgroup_id: string | null
+          campaign_id: string | null
+          competition: string | null
+          created_at: string
+          id: string
+          is_added: boolean | null
+          keyword: string
+          search_volume: number | null
+          suggested_bid: number | null
+          suggested_match_type: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          adgroup_id?: string | null
+          campaign_id?: string | null
+          competition?: string | null
+          created_at?: string
+          id?: string
+          is_added?: boolean | null
+          keyword: string
+          search_volume?: number | null
+          suggested_bid?: number | null
+          suggested_match_type?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          adgroup_id?: string | null
+          campaign_id?: string | null
+          competition?: string | null
+          created_at?: string
+          id?: string
+          is_added?: boolean | null
+          keyword?: string
+          search_volume?: number | null
+          suggested_bid?: number | null
+          suggested_match_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_merchant_feeds: {
         Row: {
           created_at: string
