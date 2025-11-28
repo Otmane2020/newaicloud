@@ -18,7 +18,7 @@ interface SubscriptionStatus {
 
 export function BillingPortal() {
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
@@ -37,7 +37,6 @@ export function BillingPortal() {
     try {
       setCheckingSubscription(true);
       
-      // Check Supabase profile for plan status
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('current_plan_id, subscription_status, trial_ends_at, stripe_customer_id')
@@ -49,10 +48,8 @@ export function BillingPortal() {
         profileData?.current_plan_id && 
         profileData?.current_plan_id !== 'free';
       
-      // Only check Stripe if we have a customer ID
       let hasStripeSubscription = false;
       if (profileData?.stripe_customer_id) {
-        // Get current session token
         const { data: { session } } = await supabase.auth.getSession();
         const headers = session?.access_token ? {
           Authorization: `Bearer ${session.access_token}`
@@ -92,7 +89,7 @@ export function BillingPortal() {
       if (error) {
         toast({
           title: t.common.error,
-          description: "Impossible d'accéder au portail de facturation pour le moment.",
+          description: t.account.billing.error,
           variant: "destructive"
         });
         throw error;
@@ -102,7 +99,7 @@ export function BillingPortal() {
         window.open(data.url, '_blank');
       }
     } catch (error) {
-      console.error('Erreur lors de l\'ouverture du portail:', error);
+      console.error('Error opening portal:', error);
     } finally {
       setLoading(false);
     }
@@ -118,7 +115,7 @@ export function BillingPortal() {
         <CardHeader>
           <CardTitle>{t.account.billing.title}</CardTitle>
           <CardDescription>
-            Vérification de votre abonnement...
+            {t.account.billing.checkingSubscription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,6 +133,10 @@ export function BillingPortal() {
   const hasActivePaidPlan = subscriptionStatus.subscriptionStatus === 'active' && 
     subscriptionStatus.currentPlan && 
     subscriptionStatus.currentPlan !== 'free';
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US');
+  };
 
   return (
     <div className="space-y-4">
@@ -157,7 +158,6 @@ export function BillingPortal() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Current Status */}
           {subscriptionStatus.currentPlan && (
             <Alert>
               <Check className="h-4 w-4" />
@@ -165,19 +165,19 @@ export function BillingPortal() {
                 <div className="space-y-1">
                   <p className="font-medium">
                     {hasActivePaidPlan ? (
-                      <>Plan actif : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
+                      <>{t.account.billing.activePlan} : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
                     ) : (
-                      <>Plan actuel : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
+                      <>{t.account.billing.currentPlanLabel} : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
                     )}
                   </p>
                   {isTrialing && !hasActivePaidPlan && subscriptionStatus.trialEndsAt && (
                     <p className="text-sm text-muted-foreground">
-                      Période d'essai jusqu'au {new Date(subscriptionStatus.trialEndsAt).toLocaleDateString('fr-FR')}
+                      {tf('account.billing.trialPeriodUntil', { date: formatDate(subscriptionStatus.trialEndsAt) })}
                     </p>
                   )}
                   {hasActivePaidPlan && (
                     <p className="text-sm text-muted-foreground">
-                      Votre plan complet est activé et tous les services sont disponibles
+                      {t.account.billing.planFullyActivated}
                     </p>
                   )}
                 </div>
@@ -185,19 +185,17 @@ export function BillingPortal() {
             </Alert>
           )}
 
-          {/* Trial Warning - only show if still in trial and NOT paid */}
           {!hasActivePaidPlan && isTrialing && subscriptionStatus.currentPlan && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <p className="text-sm">
-                  Vous êtes en période d'essai. Activez votre plan payant pour continuer après l'essai.
+                  {t.account.billing.trialWarning}
                 </p>
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Action Buttons */}
           <div className="space-y-2">
             {hasActivePaidPlan && subscriptionStatus.hasStripeSubscription ? (
               <>
@@ -210,17 +208,17 @@ export function BillingPortal() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Chargement...
+                      {t.account.billing.loading}
                     </>
                   ) : (
                     <>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Facturation
+                      {t.account.billing.portalButton}
                     </>
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Gérez vos moyens de paiement et consultez vos factures
+                  {t.account.billing.managePaymentMethods}
                 </p>
               </>
             ) : hasActivePaidPlan && !subscriptionStatus.hasStripeSubscription ? (
@@ -231,10 +229,10 @@ export function BillingPortal() {
                   variant="default"
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Configurer le paiement
+                  {t.account.billing.setupPayment}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Configurez votre méthode de paiement pour accéder à la facturation
+                  {t.account.billing.setupPaymentDesc}
                 </p>
               </>
             ) : (
@@ -245,10 +243,10 @@ export function BillingPortal() {
                   variant="default"
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  {subscriptionStatus.currentPlan ? 'Activer mon abonnement payant' : 'Choisir un plan'}
+                  {subscriptionStatus.currentPlan ? t.account.billing.activateSubscription : t.account.subscription.choosePlan}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Activez votre plan pour continuer à utiliser tous les services
+                  {t.account.billing.activateDesc}
                 </p>
               </>
             )}
