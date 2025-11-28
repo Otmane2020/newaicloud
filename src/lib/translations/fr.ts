@@ -3534,6 +3534,10 @@ export const translations = {
       title: "Génération en cours",
       description: "Création de votre article SEO optimisé...",
       warning: "Cette opération peut prendre 1-2 minutes. Ne fermez pas cette fenêtre.",
+      successTitle: "Article créé !",
+      successDescription: "Votre article SEO optimisé a été généré avec succès.",
+      viewArticle: "Voir l'article",
+      viewOnShopify: "Voir sur Shopify",
       steps: {
         start: "🚀 Démarrage de la génération IA...",
         analyzingProducts: "📦 Analyse des produits sélectionnés",
