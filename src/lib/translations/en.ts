@@ -3015,6 +3015,49 @@ export const translations = {
         reanalyzeForNewScore: "Reanalyze to see your new score",
         updateError: "Error updating task",
       },
+      // Known task translations (mapped from backend)
+      tasks: {
+        addH1: {
+          title: "Add a main H1 tag",
+          description: "Your homepage doesn't have a main H1 title. This strongly impacts SEO."
+        },
+        createMetaDescription: {
+          title: "Create a meta description",
+          description: "Your homepage meta description is missing or too short."
+        },
+        addSchema: {
+          title: "Add Schema.org structured data",
+          description: "Schema.org tags help get rich snippets in Google search results."
+        },
+        optimizeTitle: {
+          title: "Optimize the page title",
+          description: "Your page title is too short or missing important keywords."
+        },
+        addAltTexts: {
+          title: "Add ALT texts to images",
+          description: "Images without ALT text hurt SEO and accessibility."
+        },
+        addCanonical: {
+          title: "Add a canonical tag",
+          description: "A canonical tag prevents duplicate content issues."
+        },
+        addOpenGraph: {
+          title: "Add Open Graph tags",
+          description: "Open Graph tags improve how your page appears when shared on social media."
+        },
+        addTwitterCard: {
+          title: "Add Twitter Card tags",
+          description: "Twitter Card tags improve how your page appears when shared on Twitter."
+        },
+        addMoreContent: {
+          title: "Add more content",
+          description: "Your homepage has too little content. Add at least 300 words for better SEO."
+        },
+        addMoreLinks: {
+          title: "Add internal links",
+          description: "Internal linking helps search engines discover and index your pages."
+        }
+      },
     },
     actionPlan: {
       title: "SEO Action Plan",
@@ -5259,7 +5302,18 @@ export const translations = {
       syncWarning: "Sync completed with warnings",
       syncWarningDesc: "Some fields may need manual verification",
       permissionDenied: "Permission denied",
-      permissionDeniedDesc: "You don't have permission to update the homepage SEO"
+      permissionDeniedDesc: "You don't have permission to update the homepage SEO",
+      seoOptimizedAndSynced: "SEO optimized and synced",
+      seoOptimizedAndSyncedDesc: "Title and description generated, saved, and synced with Shopify",
+      elementGenerated: "{{element}} generated successfully!",
+      copiedToClipboard: "Copied to clipboard!",
+      copy: "Copy",
+      generationError: "Error generating with AI",
+      elementNames: {
+        title: "SEO Title",
+        metaDescription: "Meta Description",
+        h1: "H1"
+      }
     },
     scoreLabels: {
       excellent: "Excellent",
@@ -5332,6 +5386,18 @@ export const translations = {
       fixImages: "Fix {{count}} image(s)",
       imagesToOptimize: "{{count}} image(s) to optimize",
       optimizeLinks: "Optimize {{count}} link(s)"
+    },
+    // AI recommendations translations
+    recommendations: {
+      addH1Shopify: "Add a main H1 tag to your homepage via the Shopify editor with your main offer",
+      enrichContent: "Enrich your homepage with at least 300 words of unique content describing your products and values",
+      installSchemaApp: "Install a Shopify structured data app to automatically add schema.org tags to your pages",
+      optimizeMetaDescription: "Optimize your meta description with keywords and a clear call to action",
+      addAltTexts: "Add descriptive ALT texts to all your images for better accessibility and SEO",
+      addCanonical: "Add a canonical tag to prevent duplicate content issues",
+      addOpenGraph: "Add Open Graph tags to improve social media sharing appearance",
+      addTwitterCard: "Add Twitter Card tags to improve Twitter sharing appearance",
+      addInternalLinks: "Add more internal links to improve navigation and SEO"
     }
   },
 

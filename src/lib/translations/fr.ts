@@ -3041,6 +3041,49 @@ export const translations = {
         reanalyzeForNewScore: "Analysez à nouveau pour voir votre nouveau score",
         updateError: "Erreur lors de la mise à jour",
       },
+      // Traductions des tâches connues (mappées depuis le backend)
+      tasks: {
+        addH1: {
+          title: "Ajouter une balise H1 principale",
+          description: "Votre page d'accueil n'a pas de titre principal H1. Cela impacte fortement le référencement."
+        },
+        createMetaDescription: {
+          title: "Créer une meta description",
+          description: "La meta description de votre page d'accueil est manquante ou trop courte."
+        },
+        addSchema: {
+          title: "Ajouter des données structurées Schema.org",
+          description: "Les balises schema.org permettent d'obtenir des rich snippets dans Google."
+        },
+        optimizeTitle: {
+          title: "Optimiser le titre de la page",
+          description: "Le titre de votre page est trop court ou manque de mots-clés importants."
+        },
+        addAltTexts: {
+          title: "Ajouter des textes ALT aux images",
+          description: "Les images sans texte ALT nuisent au SEO et à l'accessibilité."
+        },
+        addCanonical: {
+          title: "Ajouter une balise canonical",
+          description: "Une balise canonical empêche les problèmes de contenu dupliqué."
+        },
+        addOpenGraph: {
+          title: "Ajouter des balises Open Graph",
+          description: "Les balises Open Graph améliorent l'affichage lors du partage sur les réseaux sociaux."
+        },
+        addTwitterCard: {
+          title: "Ajouter des balises Twitter Card",
+          description: "Les balises Twitter Card améliorent l'affichage lors du partage sur Twitter."
+        },
+        addMoreContent: {
+          title: "Ajouter plus de contenu",
+          description: "Votre page d'accueil a trop peu de contenu. Ajoutez au moins 300 mots pour un meilleur SEO."
+        },
+        addMoreLinks: {
+          title: "Ajouter des liens internes",
+          description: "Le maillage interne aide les moteurs de recherche à découvrir et indexer vos pages."
+        }
+      },
     },
     actionPlan: {
       title: "Plan d'Action SEO",
@@ -5394,6 +5437,17 @@ export const translations = {
       syncWarningDesc: "Certains champs peuvent nécessiter une vérification manuelle",
       permissionDenied: "Permission refusée",
       permissionDeniedDesc: "Vous n'avez pas la permission de mettre à jour le SEO de la homepage",
+      seoOptimizedAndSynced: "SEO optimisé et synchronisé",
+      seoOptimizedAndSyncedDesc: "Titre et description générés, sauvegardés et synchronisés avec Shopify",
+      elementGenerated: "{{element}} généré avec succès !",
+      copiedToClipboard: "Copié dans le presse-papiers !",
+      copy: "Copier",
+      generationError: "Erreur lors de la génération avec l'IA",
+      elementNames: {
+        title: "Titre SEO",
+        metaDescription: "Meta Description",
+        h1: "H1"
+      }
     },
     scoreLabels: {
       excellent: "Excellent",
@@ -5466,6 +5520,18 @@ export const translations = {
       fixImages: "Corriger {{count}} image(s)",
       imagesToOptimize: "{{count}} image(s) à optimiser",
       optimizeLinks: "Optimiser {{count}} lien(s)",
+    },
+    // Traductions des recommandations IA
+    recommendations: {
+      addH1Shopify: "Intégrez une balise H1 principale sur votre page d'accueil via l'éditeur Shopify avec votre offre principale",
+      enrichContent: "Enrichissez votre page d'accueil avec au moins 300 mots de contenu unique décrivant vos produits et valeurs",
+      installSchemaApp: "Installez une application Shopify de structured data pour ajouter automatiquement les balises schema.org à vos pages",
+      optimizeMetaDescription: "Optimisez votre meta description avec des mots-clés et un appel à l'action clair",
+      addAltTexts: "Ajoutez des textes ALT descriptifs à toutes vos images pour une meilleure accessibilité et SEO",
+      addCanonical: "Ajoutez une balise canonical pour éviter les problèmes de contenu dupliqué",
+      addOpenGraph: "Ajoutez des balises Open Graph pour améliorer l'affichage lors du partage sur les réseaux sociaux",
+      addTwitterCard: "Ajoutez des balises Twitter Card pour améliorer l'affichage lors du partage sur Twitter",
+      addInternalLinks: "Ajoutez plus de liens internes pour améliorer la navigation et le SEO",
     },
   },
 
