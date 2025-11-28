@@ -109,7 +109,7 @@ const MetricCard = ({ title, value, change, icon, trend = 'neutral' }: MetricCar
 };
 
 export function GoogleSearchConsole() {
-  const { t, language } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
@@ -153,7 +153,7 @@ export function GoogleSearchConsole() {
           code: code,
         }, window.location.origin);
         
-        toast.success('Autorisation accordée, fermeture...');
+        toast.success(t.googleSearchConsole.toasts.authGranted);
         setTimeout(() => window.close(), 1000);
       }
     } catch (error) {
@@ -209,7 +209,7 @@ export function GoogleSearchConsole() {
       );
       
       if (!popup) {
-        toast.error('Veuillez autoriser les popups pour ce site');
+        toast.error(t.googleSearchConsole.toasts.enablePopups);
         return;
       }
       
@@ -228,11 +228,11 @@ export function GoogleSearchConsole() {
           
           if (error || !data?.success) {
             console.error('Error exchanging code:', error);
-            toast.error('Erreur lors de la connexion à Google');
+            toast.error(t.googleSearchConsole.toasts.connectionError);
             return;
           }
           
-          toast.success('Connexion à Google Search Console réussie !');
+          toast.success(t.googleSearchConsole.toasts.connectionSuccess);
           setIsConnected(true);
           await checkGoogleConnection();
           await loadDomains();
@@ -247,7 +247,7 @@ export function GoogleSearchConsole() {
       
     } catch (error) {
       console.error('Error connecting to Google:', error);
-      toast.error('Erreur lors de la connexion à Google');
+      toast.error(t.googleSearchConsole.toasts.connectionError);
     }
   };
 
@@ -324,14 +324,14 @@ export function GoogleSearchConsole() {
       if (error) throw error;
 
       if (data?.summary?.total_alerts > 0) {
-        toast.success(`${data.summary.total_alerts} alerte(s) détectée(s)`);
+        toast.success(tf('googleSearchConsole.toasts.alertsDetected', { count: data.summary.total_alerts }));
         await loadAlerts();
       } else {
-        toast.success('Aucune anomalie détectée');
+        toast.success(t.googleSearchConsole.toasts.noAnomalies);
       }
     } catch (error: any) {
       console.error('Error analyzing anomalies:', error);
-      toast.error('Erreur lors de l\'analyse des anomalies');
+      toast.error(t.googleSearchConsole.toasts.analysisError);
     } finally {
       setAnalyzingAnomalies(false);
     }
@@ -352,10 +352,10 @@ export function GoogleSearchConsole() {
       if (error) throw error;
 
       setSyncConfig((prev: any) => ({ ...prev, [field]: value }));
-      toast.success('Configuration mise à jour');
+      toast.success(t.googleSearchConsole.toasts.configUpdated);
     } catch (error) {
       console.error('Error updating sync config:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t.googleSearchConsole.toasts.updateError);
     }
   };
 
@@ -381,11 +381,11 @@ export function GoogleSearchConsole() {
         .eq('id', alertId);
 
       if (error) throw error;
-      toast.success('Alerte résolue');
+      toast.success(t.googleSearchConsole.toasts.alertResolved);
       await loadAlerts();
     } catch (error) {
       console.error('Error resolving alert:', error);
-      toast.error('Erreur lors de la résolution');
+      toast.error(t.googleSearchConsole.toasts.resolveError);
     }
   };
 
@@ -409,9 +409,9 @@ export function GoogleSearchConsole() {
       setData(data.data);
       setTopPages(data.topPages || []);
       setTopQueries(data.topQueries || []);
-      toast.success('Données chargées');
+      toast.success(t.googleSearchConsole.toasts.dataLoaded);
     } catch (error: any) {
-      toast.error(error?.message || 'Erreur de chargement');
+      toast.error(error?.message || t.googleSearchConsole.toasts.loadError);
       setData([]);
       setTopPages([]);
       setTopQueries([]);
@@ -422,7 +422,7 @@ export function GoogleSearchConsole() {
 
   const addDomain = async () => {
     if (!newDomain.trim()) {
-      toast.error('Veuillez saisir un domaine');
+      toast.error(t.googleSearchConsole.toasts.enterDomain);
       return;
     }
 
@@ -439,12 +439,12 @@ export function GoogleSearchConsole() {
 
       if (error) throw error;
 
-      toast.success('Domaine ajouté');
+      toast.success(t.googleSearchConsole.toasts.domainAdded);
       setNewDomain('');
       setShowAddDomainDialog(false);
       await loadDomains();
     } catch (error) {
-      toast.error('Erreur ajout domaine');
+      toast.error(t.googleSearchConsole.toasts.addError);
     }
   };
 
@@ -467,9 +467,9 @@ export function GoogleSearchConsole() {
 
       setIsConnected(false);
       setGoogleConsoleEmail(null);
-      toast.success('Déconnecté');
+      toast.success(t.googleSearchConsole.toasts.disconnected);
     } catch (error) {
-      toast.error('Erreur déconnexion');
+      toast.error(t.googleSearchConsole.toasts.disconnectError);
     }
   };
 
@@ -485,10 +485,10 @@ export function GoogleSearchConsole() {
         setAvailableSites(siteUrls);
         setShowAvailableSitesDialog(true);
       } else {
-        toast.error('Aucun site trouvé');
+        toast.error(t.googleSearchConsole.toasts.noSitesFound);
       }
     } catch (error) {
-      toast.error('Erreur récupération sites');
+      toast.error(t.googleSearchConsole.toasts.fetchSitesError);
     } finally {
       setLoadingAvailableSites(false);
     }
@@ -503,13 +503,13 @@ export function GoogleSearchConsole() {
 
       if (error) throw error;
 
-      toast.success('Domaine supprimé');
+      toast.success(t.googleSearchConsole.toasts.domainDeleted);
       if (selectedDomain === domains.find(d => d.id === domainId)?.domain) {
         setSelectedDomain('');
       }
       loadDomains();
     } catch (error) {
-      toast.error('Erreur suppression');
+      toast.error(t.googleSearchConsole.toasts.deleteError);
     }
   };
 
@@ -565,10 +565,9 @@ export function GoogleSearchConsole() {
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Google Search Console</h2>
+            <h2 className="text-2xl font-bold">{t.googleSearchConsole.connect.title}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Connectez votre compte Google pour importer les données Search Console
-              et suivre l'évolution de votre trafic et l'impact de vos optimisations SEO.
+              {t.googleSearchConsole.connect.description}
             </p>
           </div>
           <div className="space-y-4">
@@ -579,7 +578,7 @@ export function GoogleSearchConsole() {
                 className="gap-2"
               >
                 <Globe className="h-5 w-5" />
-                Se connecter avec Google
+                {t.googleSearchConsole.connect.connectWithGoogle}
               </Button>
               {isConnected && (
                 <Button
@@ -594,15 +593,15 @@ export function GoogleSearchConsole() {
                   ) : (
                     <BarChart3 className="h-5 w-5" />
                   )}
-                  Voir mes sites disponibles
+                  {t.googleSearchConsole.connect.viewMySites}
                 </Button>
               )}
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>✓ Analyse de performance SEO</p>
-              <p>✓ Évolution du trafic par période</p>
-              <p>✓ Support multi-domaines</p>
-              <p>✓ Mesure de l'impact des optimisations</p>
+              <p>✓ {t.googleSearchConsole.connect.features.seoAnalysis}</p>
+              <p>✓ {t.googleSearchConsole.connect.features.trafficEvolution}</p>
+              <p>✓ {t.googleSearchConsole.connect.features.multiDomain}</p>
+              <p>✓ {t.googleSearchConsole.connect.features.optimizationImpact}</p>
             </div>
           </div>
         </div>
@@ -616,14 +615,14 @@ export function GoogleSearchConsole() {
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold">Google Search Console</h2>
+            <h2 className="text-2xl font-bold">{t.googleSearchConsole.title}</h2>
             <p className="text-muted-foreground">
-              Analyse de performance SEO et évolution du trafic
+              {t.googleSearchConsole.description}
             </p>
             {googleConsoleEmail && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                 <Globe className="h-3.5 w-3.5" />
-                <span>Connecté avec : <span className="font-medium text-foreground">{googleConsoleEmail}</span></span>
+                <span>{t.googleSearchConsole.connectedWith} <span className="font-medium text-foreground">{googleConsoleEmail}</span></span>
               </div>
             )}
           </div>
@@ -640,7 +639,7 @@ export function GoogleSearchConsole() {
               ) : (
                 <BarChart3 className="h-4 w-4" />
               )}
-              Mes sites
+              {t.googleSearchConsole.mySites}
             </Button>
             <Button
               variant="outline"
@@ -649,7 +648,7 @@ export function GoogleSearchConsole() {
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
-              Ajouter domaine
+              {t.googleSearchConsole.addDomain}
             </Button>
             <Button
               variant="outline"
@@ -659,7 +658,7 @@ export function GoogleSearchConsole() {
               className="gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualiser
+              {t.googleSearchConsole.refresh}
             </Button>
             <Button
               variant="ghost"
@@ -668,7 +667,7 @@ export function GoogleSearchConsole() {
               className="gap-2"
             >
               <LogOut className="h-4 w-4" />
-              Déconnecter
+              {t.googleSearchConsole.disconnect}
             </Button>
           </div>
         </div>
@@ -680,7 +679,7 @@ export function GoogleSearchConsole() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-primary" />
-              <Label>Domaines connectés</Label>
+              <Label>{t.googleSearchConsole.connectedDomains}</Label>
             </div>
             <div className="grid gap-2">
               {domains.map((domain) => (
@@ -702,12 +701,12 @@ export function GoogleSearchConsole() {
                       {domain.verified ? (
                         <>
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Vérifié
+                          {t.googleSearchConsole.domain.verified}
                         </>
                       ) : (
                         <>
                           <AlertCircle className="h-3 w-3 mr-1" />
-                          Non vérifié
+                          {t.googleSearchConsole.domain.notVerified}
                         </>
                       )}
                     </Badge>
@@ -738,7 +737,7 @@ export function GoogleSearchConsole() {
                 <AlertCircle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-2 text-orange-900">
-                    Alertes détectées ({alerts.length})
+                    {t.googleSearchConsole.alerts.title} ({alerts.length})
                   </h3>
                   <div className="space-y-3">
                     {alerts.map((alert) => (
@@ -753,14 +752,14 @@ export function GoogleSearchConsole() {
                               alert.severity === 'high' ? 'default' :
                               'secondary'
                             }>
-                              {alert.severity === 'critical' ? 'Critique' :
-                               alert.severity === 'high' ? 'Important' :
-                               alert.severity === 'medium' ? 'Moyen' : 'Faible'}
+                              {alert.severity === 'critical' ? t.googleSearchConsole.alerts.critical :
+                               alert.severity === 'high' ? t.googleSearchConsole.alerts.high :
+                               alert.severity === 'medium' ? t.googleSearchConsole.alerts.medium : t.googleSearchConsole.alerts.low}
                             </Badge>
                             <span className="font-medium text-sm">{alert.metric_name}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Baisse de {Math.abs(alert.change_percentage).toFixed(1)}% 
+                            {t.googleSearchConsole.alerts.drop} {Math.abs(alert.change_percentage).toFixed(1)}% 
                             ({alert.previous_value.toLocaleString()} → {alert.current_value.toLocaleString()})
                           </p>
                         </div>
@@ -771,7 +770,7 @@ export function GoogleSearchConsole() {
                               variant="ghost"
                               onClick={() => markAlertAsRead(alert.id)}
                             >
-                              Marquer lu
+                              {t.googleSearchConsole.alerts.markAsRead}
                             </Button>
                           )}
                           <Button
@@ -779,7 +778,7 @@ export function GoogleSearchConsole() {
                             variant="outline"
                             onClick={() => resolveAlert(alert.id)}
                           >
-                            Résoudre
+                            {t.googleSearchConsole.alerts.resolve}
                           </Button>
                         </div>
                       </div>
@@ -795,15 +794,15 @@ export function GoogleSearchConsole() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Calendar className="h-5 w-5 text-primary" />
-                <Label>Période d'analyse</Label>
+                <Label>{t.googleSearchConsole.analysisPeriod}</Label>
                 <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="7">7 derniers jours</SelectItem>
-                    <SelectItem value="30">30 derniers jours</SelectItem>
-                    <SelectItem value="90">90 derniers jours</SelectItem>
+                    <SelectItem value="7">{t.googleSearchConsole.dateRange.last7Days}</SelectItem>
+                    <SelectItem value="30">{t.googleSearchConsole.dateRange.last30Days}</SelectItem>
+                    <SelectItem value="90">{t.googleSearchConsole.dateRange.last90Days}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -818,7 +817,7 @@ export function GoogleSearchConsole() {
                   ) : (
                     <AlertCircle className="h-4 w-4" />
                   )}
-                  Analyser les anomalies
+                  {t.googleSearchConsole.analyzeAnomalies}
                 </Button>
               </div>
               <Button
@@ -828,20 +827,20 @@ export function GoogleSearchConsole() {
                 className="gap-2"
               >
                 <Settings className="h-4 w-4" />
-                Paramètres
+                {t.googleSearchConsole.settings}
               </Button>
             </div>
 
             {/* Settings panel */}
             {showSettings && (
               <div className="mt-6 pt-6 border-t space-y-4">
-                <h4 className="font-semibold mb-4">Paramètres de synchronisation automatique</h4>
+                <h4 className="font-semibold mb-4">{t.googleSearchConsole.settingsTitle}</h4>
                 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Synchronisation automatique</Label>
+                    <Label>{t.googleSearchConsole.autoSync}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Synchroniser automatiquement les données quotidiennement
+                      {t.googleSearchConsole.autoSyncDesc}
                     </p>
                   </div>
                   <Switch
@@ -852,9 +851,9 @@ export function GoogleSearchConsole() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Notifications</Label>
+                    <Label>{t.googleSearchConsole.notifications}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir des notifications pour les alertes et synchronisations
+                      {t.googleSearchConsole.notificationsDesc}
                     </p>
                   </div>
                   <Switch
@@ -876,28 +875,28 @@ export function GoogleSearchConsole() {
           {metrics && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <MetricCard
-                title="Clics totaux"
+                title={t.googleSearchConsole.metrics.totalClicks}
                 value={metrics.totalClicks.toLocaleString()}
                 change={metrics.clicksChange}
                 trend={metrics.clicksChange > 0 ? 'up' : metrics.clicksChange < 0 ? 'down' : 'neutral'}
                 icon={<MousePointer className="h-5 w-5 text-primary" />}
               />
               <MetricCard
-                title="Impressions"
+                title={t.googleSearchConsole.metrics.impressions}
                 value={metrics.totalImpressions.toLocaleString()}
                 change={metrics.impressionsChange}
                 trend={metrics.impressionsChange > 0 ? 'up' : metrics.impressionsChange < 0 ? 'down' : 'neutral'}
                 icon={<Users className="h-5 w-5 text-primary" />}
               />
               <MetricCard
-                title="CTR moyen"
+                title={t.googleSearchConsole.metrics.avgCtr}
                 value={`${metrics.avgCTR}%`}
                 change={metrics.ctrChange}
                 trend={metrics.ctrChange > 0 ? 'up' : metrics.ctrChange < 0 ? 'down' : 'neutral'}
                 icon={<BarChart3 className="h-5 w-5 text-primary" />}
               />
               <MetricCard
-                title="Position moyenne"
+                title={t.googleSearchConsole.metrics.avgPosition}
                 value={metrics.avgPosition}
                 change={metrics.positionChange}
                 trend={metrics.positionChange > 0 ? 'up' : metrics.positionChange < 0 ? 'down' : 'neutral'}
@@ -911,7 +910,7 @@ export function GoogleSearchConsole() {
             <Card className="p-8">
               <div className="flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground">Chargement des données de Google Search Console...</p>
+                <p className="text-muted-foreground">{t.googleSearchConsole.loading}</p>
               </div>
             </Card>
           )}
@@ -924,15 +923,15 @@ export function GoogleSearchConsole() {
                   <BarChart3 className="h-12 w-12 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">Aucune donnée Search Console</h3>
+                  <h3 className="text-xl font-semibold">{t.googleSearchConsole.noData}</h3>
                   <p className="text-muted-foreground">
-                    Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine.
+                    {t.googleSearchConsole.noDataDesc}
                   </p>
                   {!domains.find(d => d.domain === selectedDomain)?.verified && (
                     <div className="flex items-center gap-2 justify-center text-orange-600 mt-2">
                       <AlertCircle className="h-4 w-4" />
                       <p className="text-sm font-medium">
-                        Ce domaine n'est pas encore vérifié dans Google Search Console
+                        {t.googleSearchConsole.domainNotVerified}
                       </p>
                     </div>
                   )}
@@ -944,21 +943,21 @@ export function GoogleSearchConsole() {
                     className="gap-2 w-full"
                   >
                     <RefreshCw className="h-5 w-5" />
-                    Charger les données depuis Google Search Console
+                    {t.googleSearchConsole.loadFromGSC}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Cette action récupère vos statistiques de recherche directement depuis Google
+                    {t.googleSearchConsole.loadFromGSCDesc}
                   </p>
                 </div>
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg w-full">
                   <h4 className="font-medium mb-2 text-sm flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Comment ça marche ?
+                    {t.googleSearchConsole.howItWorks}
                   </h4>
                   <ol className="text-sm text-muted-foreground space-y-2 text-left list-decimal list-inside">
-                    <li>Vérifiez que votre domaine est bien ajouté dans Google Search Console</li>
-                    <li>Cliquez sur "Charger les données" pour synchroniser les statistiques</li>
-                    <li>Les données seront mises à jour et affichées automatiquement</li>
+                    <li>{t.googleSearchConsole.howItWorksStep1}</li>
+                    <li>{t.googleSearchConsole.howItWorksStep2}</li>
+                    <li>{t.googleSearchConsole.howItWorksStep3}</li>
                   </ol>
                 </div>
               </div>
@@ -969,18 +968,18 @@ export function GoogleSearchConsole() {
           {!loading && data.length > 0 && (
             <>
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Évolution des clics et impressions</h3>
+                <h3 className="text-lg font-semibold mb-4">{t.googleSearchConsole.charts.clicksImpressions}</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: 'short' })}
                     />
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip
-                      labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR')}
+                      labelFormatter={(value) => new Date(value).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                       formatter={(value: any) => value.toLocaleString()}
                     />
                     <Legend />
@@ -991,7 +990,7 @@ export function GoogleSearchConsole() {
                       stroke="hsl(var(--primary))"
                       fill="hsl(var(--primary))"
                       fillOpacity={0.3}
-                      name="Clics"
+                      name={t.googleSearchConsole.metrics.clicks}
                     />
                     <Area
                       yAxisId="right"
@@ -1000,25 +999,25 @@ export function GoogleSearchConsole() {
                       stroke="hsl(var(--secondary))"
                       fill="hsl(var(--secondary))"
                       fillOpacity={0.3}
-                      name="Impressions"
+                      name={t.googleSearchConsole.metrics.impressions}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </Card>
 
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">CTR et Position moyenne</h3>
+                <h3 className="text-lg font-semibold mb-4">{t.googleSearchConsole.charts.ctrPosition}</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: 'short' })}
                     />
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" reversed />
                     <Tooltip
-                      labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR')}
+                      labelFormatter={(value) => new Date(value).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                       formatter={(value: any, name: string) =>
                         name === 'CTR' ? `${value.toFixed(2)}%` : value.toFixed(2)
                       }
@@ -1038,7 +1037,7 @@ export function GoogleSearchConsole() {
                       dataKey="position"
                       stroke="#f59e0b"
                       strokeWidth={2}
-                      name="Position"
+                      name={t.googleSearchConsole.metrics.position}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1048,7 +1047,7 @@ export function GoogleSearchConsole() {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Search className="h-5 w-5 text-primary" />
-                  Mots-clés les plus performants
+                  {t.googleSearchConsole.topKeywords}
                 </h3>
                 {topQueries.length > 0 ? (
                   <div className="space-y-2">
@@ -1063,11 +1062,11 @@ export function GoogleSearchConsole() {
                         <div className="flex items-center gap-4 text-sm">
                           <div className="text-right">
                             <p className="font-semibold text-primary">{query.clicks?.toLocaleString() || 0}</p>
-                            <p className="text-xs text-muted-foreground">clics</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.clicks}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">{query.impressions?.toLocaleString() || 0}</p>
-                            <p className="text-xs text-muted-foreground">impressions</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.impressions}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-green-600">{query.ctr?.toFixed(2) || 0}%</p>
@@ -1075,14 +1074,14 @@ export function GoogleSearchConsole() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-orange-600">{query.position?.toFixed(1) || 0}</p>
-                            <p className="text-xs text-muted-foreground">position</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.position}</p>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-4">Aucun mot-clé trouvé</p>
+                  <p className="text-muted-foreground text-center py-4">{t.googleSearchConsole.noKeywords}</p>
                 )}
               </Card>
 
@@ -1090,7 +1089,7 @@ export function GoogleSearchConsole() {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  Pages les plus consultées
+                  {t.googleSearchConsole.topPages}
                 </h3>
                 {topPages.length > 0 ? (
                   <div className="space-y-2">
@@ -1112,11 +1111,11 @@ export function GoogleSearchConsole() {
                         <div className="flex items-center gap-4 text-sm flex-shrink-0">
                           <div className="text-right">
                             <p className="font-semibold text-primary">{page.clicks?.toLocaleString() || 0}</p>
-                            <p className="text-xs text-muted-foreground">clics</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.clicks}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">{page.impressions?.toLocaleString() || 0}</p>
-                            <p className="text-xs text-muted-foreground">impressions</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.impressions}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-green-600">{page.ctr?.toFixed(2) || 0}%</p>
@@ -1124,14 +1123,14 @@ export function GoogleSearchConsole() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-orange-600">{page.position?.toFixed(1) || 0}</p>
-                            <p className="text-xs text-muted-foreground">position</p>
+                            <p className="text-xs text-muted-foreground">{t.googleSearchConsole.metrics.position}</p>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-4">Aucune page trouvée</p>
+                  <p className="text-muted-foreground text-center py-4">{t.googleSearchConsole.noPages}</p>
                 )}
               </Card>
             </>
@@ -1143,31 +1142,31 @@ export function GoogleSearchConsole() {
       <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter un domaine</DialogTitle>
+            <DialogTitle>{t.googleSearchConsole.dialogs.addDomain.title}</DialogTitle>
             <DialogDescription>
-              Entrez le domaine que vous souhaitez connecter à Google Search Console
+              {t.googleSearchConsole.dialogs.addDomain.description}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="domain">Domaine</Label>
+              <Label htmlFor="domain">{t.googleSearchConsole.dialogs.addDomain.domainLabel}</Label>
               <Input
                 id="domain"
-                placeholder="exemple.com"
+                placeholder={t.googleSearchConsole.dialogs.addDomain.placeholder}
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Entrez uniquement le domaine (sans http:// ou https://)
+                {t.googleSearchConsole.dialogs.addDomain.hint}
               </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDomainDialog(false)}>
-              Annuler
+              {t.googleSearchConsole.dialogs.addDomain.cancel}
             </Button>
             <Button onClick={addDomain}>
-              Ajouter
+              {t.googleSearchConsole.dialogs.addDomain.add}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1177,9 +1176,9 @@ export function GoogleSearchConsole() {
       <Dialog open={showAvailableSitesDialog} onOpenChange={setShowAvailableSitesDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sites disponibles dans Google Search Console</DialogTitle>
+            <DialogTitle>{t.googleSearchConsole.dialogs.availableSites.title}</DialogTitle>
             <DialogDescription>
-              Voici les domaines auxquels votre compte Google a accès dans Search Console
+              {t.googleSearchConsole.dialogs.availableSites.description}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1204,7 +1203,7 @@ export function GoogleSearchConsole() {
                       }}
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Ajouter
+                      {t.googleSearchConsole.dialogs.addDomain.add}
                     </Button>
                   </div>
                 ))}
@@ -1212,13 +1211,13 @@ export function GoogleSearchConsole() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-                <p>Aucun site trouvé dans votre Google Search Console</p>
+                <p>{t.googleSearchConsole.dialogs.availableSites.noSites}</p>
               </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAvailableSitesDialog(false)}>
-              Fermer
+              {t.googleSearchConsole.dialogs.availableSites.close}
             </Button>
           </DialogFooter>
         </DialogContent>

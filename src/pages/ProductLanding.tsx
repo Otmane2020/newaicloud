@@ -22,9 +22,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatNumber } from '@/lib/utils';
 import { SeoActionPlan } from '@/components/seo/SeoActionPlan';
+import { useTranslation } from '@/lib/language';
 
-const formatPrice = (price: number, currency: string = 'EUR') => {
-  return new Intl.NumberFormat('fr-FR', {
+const formatPrice = (price: number, currency: string = 'EUR', language: string = 'fr') => {
+  return new Intl.NumberFormat(language === 'fr' ? 'fr-FR' : 'en-US', {
     style: 'currency',
     currency: currency,
   }).format(price);
@@ -32,6 +33,7 @@ const formatPrice = (price: number, currency: string = 'EUR') => {
 
 export default function ProductLanding() {
   const { id } = useParams();
+  const { t, tf, language } = useTranslation();
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
@@ -101,7 +103,7 @@ export default function ProductLanding() {
         }
       }
     } catch (error: any) {
-      toast.error('Erreur lors du chargement du produit');
+      toast.error(t.productLanding.toasts.loadError);
       console.error(error);
     } finally {
       setLoading(false);
@@ -113,7 +115,7 @@ export default function ProductLanding() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Sparkles className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Chargement du produit...</p>
+          <p className="text-muted-foreground">{t.productLanding.loading}</p>
         </div>
       </div>
     );
@@ -124,7 +126,7 @@ export default function ProductLanding() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-bold mb-2">Produit non trouvé</h2>
+          <h2 className="text-2xl font-bold mb-2">{t.productLanding.notFound}</h2>
         </div>
       </div>
     );
@@ -148,14 +150,14 @@ export default function ProductLanding() {
         : `${product.shop_name}.myshopify.com`;
       window.open(`https://${shopUrl}/products/${product.handle}`, '_blank');
     } else {
-      toast.error('Impossible d\'ouvrir le lien du produit');
+      toast.error(t.productLanding.toasts.cantOpenLink);
       console.error('Missing shop_name or handle:', { shop_name: product.shop_name, handle: product.handle });
     }
   };
 
   const handleShare = async () => {
     if (!product.shop_name || !product.handle) {
-      toast.error('Impossible de partager ce produit');
+      toast.error(t.productLanding.toasts.cantShare);
       return;
     }
 
@@ -168,7 +170,7 @@ export default function ProductLanding() {
       try {
         await navigator.share({
           title: product.title,
-          text: `Découvrez ce produit : ${product.title}`,
+          text: `${t.productLanding.share.text} ${product.title}`,
           url: shareUrl
         });
       } catch (err) {
@@ -178,9 +180,9 @@ export default function ProductLanding() {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success('Lien copié dans le presse-papier');
+        toast.success(t.productLanding.toasts.linkCopied);
       } catch (err) {
-        toast.error('Impossible de copier le lien');
+        toast.error(t.productLanding.toasts.cantCopyLink);
       }
     }
   };
@@ -198,7 +200,7 @@ export default function ProductLanding() {
             className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span className="font-medium">Retour</span>
+            <span className="font-medium">{t.productLanding.back}</span>
           </button>
           <div className="flex items-center gap-3">
             <button
@@ -240,7 +242,7 @@ export default function ProductLanding() {
               {product.enrichment_status === 'enriched' && (
                 <div className="absolute top-4 right-4 z-10 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  <span className="text-xs font-semibold">Enrichi par IA</span>
+                  <span className="text-xs font-semibold">{t.productLanding.enrichedByAi}</span>
                 </div>
               )}
               <img
@@ -289,11 +291,11 @@ export default function ProductLanding() {
               {/* Prix */}
               <div className="flex items-baseline gap-3 mb-4">
                 <span className="text-4xl font-bold text-blue-600">
-                  {formatPrice(Number(currentVariant.price || product.price), currentVariant.currency || product.currency || 'EUR')}
+                  {formatPrice(Number(currentVariant.price || product.price), currentVariant.currency || product.currency || 'EUR', language)}
                 </span>
                 {hasDiscount && (
                   <span className="text-2xl text-gray-400 line-through">
-                    {formatPrice(Number(product.compare_at_price), product.currency || 'EUR')}
+                    {formatPrice(Number(product.compare_at_price), product.currency || 'EUR', language)}
                   </span>
                 )}
               </div>
@@ -305,17 +307,17 @@ export default function ProductLanding() {
                     <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">(4.8 sur 5 - 127 avis)</span>
+                <span className="text-sm text-gray-600">{tf('productLanding.rating', { rating: '4.8', reviews: '127' })}</span>
               </div>
             </div>
 
             {/* Variations */}
             {variants.length > 0 && (
               <div className="space-y-3 p-4 bg-gray-50 rounded-xl">
-                <h3 className="font-semibold text-sm text-gray-700">Sélectionnez vos options</h3>
+                <h3 className="font-semibold text-sm text-gray-700">{t.productLanding.selectOptions}</h3>
                 {variants.some(v => v.option1) && (
                   <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1 block">Option</label>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">{t.productLanding.option}</label>
                     <select
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                       value={selectedVariant?.id || ''}
@@ -342,13 +344,13 @@ export default function ProductLanding() {
               {isOutOfStock ? (
                 <>
                   <X className="w-5 h-5 text-red-600" />
-                  <span className="text-red-700 font-medium">Rupture de stock</span>
+                  <span className="text-red-700 font-medium">{t.productLanding.outOfStock}</span>
                 </>
               ) : (
                 <>
                   <Check className="w-5 h-5 text-green-600" />
                   <span className="text-green-700 font-medium">
-                    En stock - {currentVariant.inventory_quantity || product.inventory_quantity || 'Disponible'}
+                    {t.productLanding.inStock} - {currentVariant.inventory_quantity || product.inventory_quantity || t.productLanding.available}
                   </span>
                 </>
               )}
@@ -360,7 +362,7 @@ export default function ProductLanding() {
                 <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200">
                   <Palette className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 uppercase font-medium">Style</p>
+                    <p className="text-xs text-gray-500 uppercase font-medium">{t.productLanding.style}</p>
                     <p className="text-sm font-semibold text-gray-900">{product.style}</p>
                   </div>
                 </div>
@@ -369,7 +371,7 @@ export default function ProductLanding() {
                 <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200">
                   <Eye className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 uppercase font-medium">Couleur</p>
+                    <p className="text-xs text-gray-500 uppercase font-medium">{t.productLanding.color}</p>
                     <p className="text-sm font-semibold text-gray-900">{product.ai_color || product.color}</p>
                   </div>
                 </div>
@@ -378,7 +380,7 @@ export default function ProductLanding() {
                 <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200">
                   <Box className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 uppercase font-medium">Matériau</p>
+                    <p className="text-xs text-gray-500 uppercase font-medium">{t.productLanding.material}</p>
                     <p className="text-sm font-semibold text-gray-900">{product.ai_material || product.material}</p>
                   </div>
                 </div>
@@ -388,23 +390,23 @@ export default function ProductLanding() {
                   <Ruler className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs text-gray-500 uppercase font-medium">Dimensions</p>
+                      <p className="text-xs text-gray-500 uppercase font-medium">{t.productLanding.dimensions}</p>
                       {product.vision_attributes?.technicalDimensions && Object.keys(product.vision_attributes.technicalDimensions).length > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">
                           <Check className="w-3 h-3" />
-                          Vérifié Vision AI
+                          {t.productLanding.verifiedVisionAi}
                         </span>
                       )}
                       {product.serp_verified && !product.vision_attributes?.technicalDimensions && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                           <Check className="w-3 h-3" />
-                          Vérifié SERP
+                          {t.productLanding.verifiedSerp}
                         </span>
                       )}
                       {!product.vision_attributes?.technicalDimensions && !product.serp_verified && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">
                           <Info className="w-3 h-3" />
-                          Estimé IA
+                          {t.productLanding.estimatedAi}
                         </span>
                       )}
                     </div>
@@ -417,7 +419,7 @@ export default function ProductLanding() {
             {/* Quantité et achat */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-gray-700">Quantité:</label>
+                <label className="text-sm font-medium text-gray-700">{t.productLanding.quantity}</label>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -445,7 +447,7 @@ export default function ProductLanding() {
                 }`}
               >
                 <ShoppingCart className="w-6 h-6" />
-                {isOutOfStock ? 'Produit indisponible' : 'Acheter maintenant'}
+                {isOutOfStock ? t.productLanding.productUnavailable : t.productLanding.buyNow}
               </button>
             </div>
 
@@ -468,7 +470,7 @@ export default function ProductLanding() {
         {/* Description complète */}
         {(product.description || product.ai_vision_analysis) && (
           <div className="mt-12 space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Description détaillée</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t.productLanding.detailedDescription}</h2>
 
             {product.description && (
               <div className="bg-white rounded-2xl p-8 shadow-md border border-gray-200">
@@ -486,8 +488,8 @@ export default function ProductLanding() {
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Analyse IA enrichie</h3>
-                    <p className="text-sm text-gray-600">Description générée par intelligence artificielle</p>
+                    <h3 className="text-lg font-bold text-gray-900">{t.productLanding.aiEnrichedAnalysis}</h3>
+                    <p className="text-sm text-gray-600">{t.productLanding.aiGeneratedDescription}</p>
                   </div>
                 </div>
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.ai_vision_analysis}</p>
@@ -502,24 +504,24 @@ export default function ProductLanding() {
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
               <Package className="w-6 h-6 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Livraison rapide</h3>
-            <p className="text-sm text-gray-600">Expédition sous 24-48h partout en France</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t.productLanding.fastDelivery}</h3>
+            <p className="text-sm text-gray-600">{t.productLanding.fastDeliveryDesc}</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
               <Check className="w-6 h-6 text-green-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Garantie qualité</h3>
-            <p className="text-sm text-gray-600">Satisfait ou remboursé sous 30 jours</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t.productLanding.qualityGuarantee}</h3>
+            <p className="text-sm text-gray-600">{t.productLanding.qualityGuaranteeDesc}</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
               <Info className="w-6 h-6 text-purple-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Service client</h3>
-            <p className="text-sm text-gray-600">Support disponible 7j/7 pour vous accompagner</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t.productLanding.customerService}</h3>
+            <p className="text-sm text-gray-600">{t.productLanding.customerServiceDesc}</p>
           </div>
         </div>
 

@@ -4381,7 +4381,156 @@ export const translations = {
     domain: {
       selectPlaceholder: "Select a domain",
       verified: "Verified",
+      notVerified: "Not verified",
       add: "Add domain"
+    },
+    title: "Google Search Console",
+    description: "SEO performance analysis and traffic evolution",
+    connectedWith: "Connected with:",
+    mySites: "My sites",
+    addDomain: "Add domain",
+    refresh: "Refresh",
+    disconnect: "Disconnect",
+    connectedDomains: "Connected domains",
+    analyzeAnomalies: "Analyze anomalies",
+    settings: "Settings",
+    settingsTitle: "Auto-sync settings",
+    autoSync: "Auto sync",
+    autoSyncDesc: "Automatically sync data daily",
+    notifications: "Notifications",
+    notificationsDesc: "Receive notifications for alerts and syncs",
+    loading: "Loading Google Search Console data...",
+    noData: "No Search Console data",
+    noDataDesc: "Google Search Console data has not been synced for this domain yet.",
+    domainNotVerified: "This domain is not yet verified in Google Search Console",
+    loadFromGSC: "Load data from Google Search Console",
+    loadFromGSCDesc: "This action retrieves your search statistics directly from Google",
+    howItWorks: "How does it work?",
+    howItWorksStep1: "Verify that your domain is added in Google Search Console",
+    howItWorksStep2: "Click \"Load data\" to sync statistics",
+    howItWorksStep3: "Data will be updated and displayed automatically",
+    analysisPeriod: "Analysis period",
+    metrics: {
+      totalClicks: "Total clicks",
+      impressions: "Impressions",
+      avgCtr: "Average CTR",
+      avgPosition: "Average position",
+      clicks: "clicks",
+      position: "position"
+    },
+    charts: {
+      clicksImpressions: "Clicks and impressions evolution",
+      ctrPosition: "CTR and Average position"
+    },
+    topKeywords: "Top performing keywords",
+    noKeywords: "No keywords found",
+    topPages: "Most viewed pages",
+    noPages: "No pages found",
+    alerts: {
+      title: "Alerts detected",
+      critical: "Critical",
+      high: "High",
+      medium: "Medium",
+      low: "Low",
+      markAsRead: "Mark as read",
+      resolve: "Resolve",
+      drop: "Drop of"
+    },
+    dialogs: {
+      addDomain: {
+        title: "Add a domain",
+        description: "Enter the domain you want to connect to Google Search Console",
+        domainLabel: "Domain",
+        placeholder: "example.com",
+        hint: "Enter only the domain (without http:// or https://)",
+        cancel: "Cancel",
+        add: "Add"
+      },
+      availableSites: {
+        title: "Sites available in Google Search Console",
+        description: "Here are the domains your Google account has access to in Search Console",
+        noSites: "No sites found in your Google Search Console",
+        close: "Close"
+      }
+    },
+    toasts: {
+      authGranted: "Authorization granted, closing...",
+      enablePopups: "Please enable popups for this site",
+      connectionError: "Error connecting to Google",
+      connectionSuccess: "Successfully connected to Google Search Console!",
+      alertsDetected: "{{count}} alert(s) detected",
+      noAnomalies: "No anomalies detected",
+      analysisError: "Error analyzing anomalies",
+      configUpdated: "Configuration updated",
+      updateError: "Error updating",
+      alertResolved: "Alert resolved",
+      resolveError: "Error resolving",
+      dataLoaded: "Data loaded",
+      loadError: "Loading error",
+      enterDomain: "Please enter a domain",
+      domainAdded: "Domain added",
+      addError: "Error adding domain",
+      disconnected: "Disconnected",
+      disconnectError: "Error disconnecting",
+      noSitesFound: "No sites found",
+      fetchSitesError: "Error fetching sites",
+      domainDeleted: "Domain deleted",
+      deleteError: "Error deleting"
+    },
+    connect: {
+      title: "Google Search Console",
+      description: "Connect your Google account to import Search Console data and track your traffic evolution and SEO optimization impact.",
+      connectWithGoogle: "Connect with Google",
+      viewMySites: "View my available sites",
+      features: {
+        seoAnalysis: "SEO performance analysis",
+        trafficEvolution: "Traffic evolution by period",
+        multiDomain: "Multi-domain support",
+        optimizationImpact: "Optimization impact measurement"
+      }
+    }
+  },
+
+  // Product Landing Page
+  productLanding: {
+    loading: "Loading product...",
+    notFound: "Product not found",
+    back: "Back",
+    enrichedByAi: "Enriched by AI",
+    rating: "({{rating}} out of 5 - {{reviews}} reviews)",
+    selectOptions: "Select your options",
+    option: "Option",
+    outOfStock: "Out of stock",
+    inStock: "In stock",
+    available: "Available",
+    style: "Style",
+    color: "Color",
+    material: "Material",
+    dimensions: "Dimensions",
+    verifiedVisionAi: "Verified Vision AI",
+    verifiedSerp: "Verified SERP",
+    estimatedAi: "Estimated AI",
+    quantity: "Quantity:",
+    buyNow: "Buy now",
+    productUnavailable: "Product unavailable",
+    detailedDescription: "Detailed description",
+    aiEnrichedAnalysis: "AI-enhanced analysis",
+    aiGeneratedDescription: "AI-generated description",
+    fastDelivery: "Fast delivery",
+    fastDeliveryDesc: "Shipping within 24-48h everywhere in France",
+    qualityGuarantee: "Quality guarantee",
+    qualityGuaranteeDesc: "Satisfied or refunded within 30 days",
+    customerService: "Customer service",
+    customerServiceDesc: "Support available 7 days a week to assist you",
+    toasts: {
+      loadError: "Error loading product",
+      cantOpenLink: "Unable to open product link",
+      cantShare: "Unable to share this product",
+      linkCopied: "Link copied to clipboard",
+      cantCopyLink: "Unable to copy link"
+    },
+    share: {
+      text: "Discover this product:"
     }
   },
 
