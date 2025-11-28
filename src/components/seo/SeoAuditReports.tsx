@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { calculateSeoConfidence, calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { useTranslation } from '@/lib/language';
 import { 
   Home, 
   ShoppingBag, 
@@ -163,6 +164,7 @@ const ScoreProgress = ({ score }: { score: number }) => {
 
 export function SeoAuditReports() {
   const { user } = useAuth();
+  const { t, tf } = useTranslation();
   const [searchParams] = useSearchParams();
   const [activeReport, setActiveReport] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);

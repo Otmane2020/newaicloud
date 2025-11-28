@@ -57,11 +57,11 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
 
   const nextStep = () => {
     if (step === 1 && !formData.name) {
-      toast.error('Veuillez saisir un nom de campagne');
+      toast.error(t.dialogs.campaignWizard.toasts.enterCampaignName);
       return;
     }
     if (step === 2 && !formData.topic_niche) {
-      toast.error('Veuillez définir le sujet principal');
+      toast.error(t.dialogs.campaignWizard.toasts.enterMainTopic);
       return;
     }
     setStep(step + 1);
@@ -73,14 +73,14 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non authentifié');
+      if (!user) throw new Error(t.dialogs.campaignWizard.toasts.notAuthenticated);
 
       // Vérifier les limites de campagnes avant de créer
       if (!canDoAction('campaigns')) {
-        toast.error('Limite de campagnes atteinte', {
+        toast.error(t.dialogs.campaignWizard.toasts.campaignLimitReached, {
           description: limits?.isTrialing 
-            ? 'Passez à un plan payant pour créer des campagnes.'
-            : 'Limite mensuelle atteinte.'
+            ? t.dialogs.campaignWizard.toasts.upgradeRequired
+            : t.dialogs.campaignWizard.toasts.monthlyLimitReached
         });
         setShowUpgradeDialog(true);
         setLoading(false);
@@ -109,7 +109,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         p_increment: 1
       });
 
-      toast.success('Campagne créée avec succès !');
+      toast.success(t.dialogs.campaignWizard.toasts.campaignCreated);
       await refreshLimits();
       onSuccess();
       onOpenChange(false);
@@ -126,7 +126,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       });
     } catch (error: any) {
       console.error('Error creating campaign:', error);
-      toast.error(error.message || 'Erreur lors de la création de la campagne');
+      toast.error(error.message || t.dialogs.campaignWizard.toasts.creationError);
     } finally {
       setLoading(false);
     }
@@ -141,30 +141,30 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                 <Target className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Informations de base</h3>
+              <h3 className="text-lg font-semibold">{t.dialogs.campaignWizard.steps.basicInfo.title}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Commençons par nommer votre campagne
+                {t.dialogs.campaignWizard.steps.basicInfo.subtitle}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="name">Nom de la campagne *</Label>
+              <Label htmlFor="name">{t.dialogs.campaignWizard.fields.campaignName}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Campagne Blog Meubles Printemps 2025"
+                placeholder={t.dialogs.campaignWizard.fields.campaignNamePlaceholder}
                 className="mt-1.5"
               />
             </div>
 
             <div>
-              <Label htmlFor="description">Description (optionnel)</Label>
+              <Label htmlFor="description">{t.dialogs.campaignWizard.fields.description}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Décrivez l'objectif de cette campagne..."
+                placeholder={t.dialogs.campaignWizard.fields.descriptionPlaceholder}
                 className="mt-1.5"
                 rows={3}
               />
@@ -179,38 +179,38 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                 <Sparkles className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Sujet et Mots-clés</h3>
+              <h3 className="text-lg font-semibold">{t.dialogs.campaignWizard.steps.topicKeywords.title}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Définissez le thème et les mots-clés SEO
+                {t.dialogs.campaignWizard.steps.topicKeywords.subtitle}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="topic_niche">Sujet principal *</Label>
+              <Label htmlFor="topic_niche">{t.dialogs.campaignWizard.fields.mainTopic}</Label>
               <Input
                 id="topic_niche"
                 value={formData.topic_niche}
                 onChange={(e) => setFormData({ ...formData, topic_niche: e.target.value })}
-                placeholder="Ex: Mobilier scandinave, Décoration moderne..."
+                placeholder={t.dialogs.campaignWizard.fields.mainTopicPlaceholder}
                 className="mt-1.5"
               />
               <p className="text-xs text-muted-foreground mt-1.5">
-                Le thème général des articles à générer
+                {t.dialogs.campaignWizard.fields.mainTopicHint}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="keywords">SEO Keywords</Label>
+              <Label htmlFor="keywords">{t.dialogs.campaignWizard.fields.keywords}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Input
                   id="keywords"
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                  placeholder="Saisissez un mot-clé..."
+                  placeholder={t.dialogs.campaignWizard.fields.keywordsPlaceholder}
                 />
                 <Button type="button" onClick={addKeyword} variant="secondary">
-                  Ajouter
+                  {t.dialogs.campaignWizard.fields.addKeyword}
                 </Button>
               </div>
               
@@ -229,7 +229,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               )}
               
               <p className="text-xs text-muted-foreground mt-1.5">
-                Ajoutez des mots-clés pertinents pour votre campagne
+                {t.dialogs.campaignWizard.fields.keywordsHint}
               </p>
             </div>
           </div>
@@ -242,28 +242,28 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                 <Users className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Audience Cible</h3>
+              <h3 className="text-lg font-semibold">{t.dialogs.campaignWizard.steps.audience.title}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                À qui s'adressent vos articles ?
+                {t.dialogs.campaignWizard.steps.audience.subtitle}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="target_audience">Audience cible</Label>
+              <Label htmlFor="target_audience">{t.dialogs.campaignWizard.fields.targetAudience}</Label>
               <Select
                 value={formData.target_audience}
                 onValueChange={(value) => setFormData({ ...formData, target_audience: value })}
               >
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionnez votre audience" />
+                  <SelectValue placeholder={t.dialogs.campaignWizard.fields.selectAudience} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="professionals">Professionnels</SelectItem>
-                  <SelectItem value="individuals">Particuliers</SelectItem>
-                  <SelectItem value="designers">Designers & Architectes</SelectItem>
-                  <SelectItem value="young_couples">Jeunes couples</SelectItem>
-                  <SelectItem value="families">Familles</SelectItem>
-                  <SelectItem value="all">Tous publics</SelectItem>
+                  <SelectItem value="professionals">{t.dialogs.campaignWizard.audiences.professionals}</SelectItem>
+                  <SelectItem value="individuals">{t.dialogs.campaignWizard.audiences.individuals}</SelectItem>
+                  <SelectItem value="designers">{t.dialogs.campaignWizard.audiences.designers}</SelectItem>
+                  <SelectItem value="young_couples">{t.dialogs.campaignWizard.audiences.youngCouples}</SelectItem>
+                  <SelectItem value="families">{t.dialogs.campaignWizard.audiences.families}</SelectItem>
+                  <SelectItem value="all">{t.dialogs.campaignWizard.audiences.all}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -277,16 +277,16 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                 <Calendar className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Planification</h3>
+              <h3 className="text-lg font-semibold">{t.dialogs.campaignWizard.steps.scheduling.title}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Configurez le rythme de publication
+                {t.dialogs.campaignWizard.steps.scheduling.subtitle}
               </p>
             </div>
 
             <div>
               <Label htmlFor="frequency" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                Fréquence de génération
+                {t.dialogs.campaignWizard.fields.frequency}
               </Label>
               <Select
                 value={formData.frequency}
@@ -296,16 +296,16 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Quotidien</SelectItem>
-                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                  <SelectItem value="biweekly">Toutes les 2 semaines</SelectItem>
-                  <SelectItem value="monthly">Mensuel</SelectItem>
+                  <SelectItem value="daily">{t.dialogs.campaignWizard.frequencies.daily}</SelectItem>
+                  <SelectItem value="weekly">{t.dialogs.campaignWizard.frequencies.weekly}</SelectItem>
+                  <SelectItem value="biweekly">{t.dialogs.campaignWizard.frequencies.biweekly}</SelectItem>
+                  <SelectItem value="monthly">{t.dialogs.campaignWizard.frequencies.monthly}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="start_date">Date de démarrage</Label>
+              <Label htmlFor="start_date">{t.dialogs.campaignWizard.fields.startDate}</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -317,9 +317,9 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
 
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="space-y-0.5">
-                <Label htmlFor="auto_publish">Publication automatique</Label>
+                <Label htmlFor="auto_publish">{t.dialogs.campaignWizard.fields.autoPublish}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Publier les articles dès leur génération
+                  {t.dialogs.campaignWizard.fields.autoPublishDesc}
                 </p>
               </div>
               <Switch
