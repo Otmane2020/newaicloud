@@ -3064,6 +3064,7 @@ export const translations = {
         medium: "Important",
         low: "Optionnel",
       },
+      clickToOptimize: "Cliquez pour optimiser",
       buttons: {
         refresh: "Rafraîchir",
         viewInSeo: "Voir dans SEO",
