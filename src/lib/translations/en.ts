@@ -3001,6 +3001,21 @@ export const translations = {
         synced: "Synchronized",
       },
     },
+    seoTasks: {
+      title: "SEO Tasks To Complete",
+      description: "Complete these actions to improve your score by {{points}} points",
+      fixNow: "Fix Now",
+      priority: {
+        critical: "Critical",
+        important: "Important",
+        optional: "Optional",
+      },
+      toasts: {
+        taskCompleted: "Task completed! +{{impact}} potential SEO points",
+        reanalyzeForNewScore: "Reanalyze to see your new score",
+        updateError: "Error updating task",
+      },
+    },
     actionPlan: {
       title: "SEO Action Plan",
       actionsCompleted: "{{completed}} of {{total}} actions completed",
