@@ -103,7 +103,7 @@ export default function RegenerateLanding({
   onGenerated,
   onClose,
 }: RegenerateLandingProps) {
-  const { t, language } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
@@ -302,11 +302,11 @@ export default function RegenerateLanding({
   const handleGenerate = async (forceFastMode = false) => {
     // ⏱️ Client-side timeout (90 seconds max)
     const timeoutId = setTimeout(() => {
-      setError("La génération a pris trop de temps. Réessayez avec un contenu plus court ou en mode rapide.");
+      setError(t.landingGeneration.timeout.tooLong);
       setLoading(false);
       setProgress(0);
-      toast.error("Timeout : génération trop longue", {
-        description: "Réessayez en sélectionnant 'Contenu court' ou désactivez les analyses secondaires"
+      toast.error(t.landingGeneration.timeout.timeoutError, {
+        description: t.landingGeneration.timeout.timeoutDesc
       });
     }, 90000);
 
@@ -318,14 +318,14 @@ export default function RegenerateLanding({
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
-      setProgressMessage("Résolution du vendeur...");
+      setProgressMessage(t.landingGeneration.progressMessages.resolvingVendor);
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
       setProgress(20);
-      setProgressMessage("Optimisation du titre SERP...");
+      setProgressMessage(t.landingGeneration.progressMessages.optimizingTitle);
 
       // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI) - seulement si activé
       if (config.regenerateTitle !== false) {
@@ -343,8 +343,8 @@ export default function RegenerateLanding({
             console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
             setOptimizedTitle(smartTitleData.optimizedTitle);
             setTitleNeedsSync(true);
-            toast.success(`Titre optimisé: ${smartTitleData.optimizedTitle}`, {
-              description: "Titre basé sur l'analyse visuelle du produit",
+            toast.success(tf("landingGeneration.progressMessages.titleOptimized", { title: smartTitleData.optimizedTitle }), {
+              description: t.landingGeneration.progressMessages.titleBasedOnVision,
             });
           }
         } catch (err) {
@@ -356,7 +356,7 @@ export default function RegenerateLanding({
       }
 
       setProgress(35);
-      setProgressMessage("Analyse des images avec Vision AI...");
+      setProgressMessage(t.landingGeneration.progressMessages.analyzingImages);
 
       // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
       let imageAnalysis = "";
@@ -749,7 +749,7 @@ export default function RegenerateLanding({
                   {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {t.landingGeneration.preview.description} • Optimisé mobile
+                  {t.landingGeneration.preview.description} • {t.landingGeneration.preview.mobileOptimized}
                 </p>
               </div>
             </div>
@@ -760,7 +760,7 @@ export default function RegenerateLanding({
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
-                <span className="sm:hidden">Aperçu</span>
+                <span className="sm:hidden">{t.landingGeneration.preview.title}</span>
               </h3>
               <Tabs
                 value={previewMode}
@@ -789,7 +789,7 @@ export default function RegenerateLanding({
               >
                 <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{t.landingGeneration.preview.download}</span>
-                <span className="sm:hidden">Télécharger</span>
+                <span className="sm:hidden">{t.landingGeneration.preview.download}</span>
               </Button>
 
               {!syncedProductUrl ? (
@@ -803,13 +803,13 @@ export default function RegenerateLanding({
                     <>
                       <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                       <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
-                      <span className="sm:hidden">Sync...</span>
+                      <span className="sm:hidden">{t.landingGeneration.preview.synchronizing}</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
-                      <span className="sm:hidden">Synchroniser</span>
+                      <span className="sm:hidden">{t.landingGeneration.preview.syncShopify}</span>
                     </>
                   )}
                 </Button>
