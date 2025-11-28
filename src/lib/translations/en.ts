@@ -6391,6 +6391,59 @@ export const translations = {
     maintenanceMessage: "We'll be back soon!",
   },
 
+  // ============= Demo Mode =============
+  demo: {
+    banner: {
+      title: "Demo Mode",
+      message: "Changes will not be saved. Feel free to explore all features!",
+    },
+    comparison: {
+      badge: "See the Difference",
+      title: "Before & After NewAI",
+      subtitle: "See how NewAI transforms your Shopify store's SEO scores in minutes",
+      before: "Before",
+      after: "After NewAI",
+      globalScore: "Global SEO Score",
+      poorSeo: "Poor SEO",
+      improvement: "improvement",
+      metrics: {
+        metaTitles: "Meta Titles",
+        metaDescriptions: "Meta Descriptions",
+        altTexts: "Image ALT Texts",
+        productTags: "Product Tags",
+      },
+      issues: {
+        missingMeta: "Missing meta descriptions",
+        noAlt: "No image ALT texts",
+        poorTags: "Poor product tagging",
+      },
+      benefits: {
+        optimizedMeta: "Optimized meta for all products",
+        aiAlt: "AI-generated ALT texts",
+        smartTags: "Smart product tags",
+      },
+      cta: "Try the Demo",
+      noCreditCard: "No credit card required • Instant access",
+    },
+    button: {
+      label: "Demo",
+      badge: "Free",
+    },
+    loading: {
+      title: "Starting Demo...",
+      message: "Preparing your demo experience...",
+    },
+    redirecting: {
+      title: "Redirecting...",
+      message: "Taking you to the dashboard...",
+    },
+    error: {
+      title: "Demo Error",
+      message: "Could not start demo session",
+      redirect: "Redirecting to homepage...",
+    },
+  },
+
   landing: {
     header: {
       home: "Home",
@@ -6399,6 +6452,7 @@ export const translations = {
       pricing: "Pricing",
       login: "Login",
       signup: "Sign Up",
+      demo: "Demo",
     },
     hero: {
       badge: "🚀 AI-Powered E-commerce Optimization",
