@@ -59,14 +59,13 @@ serve(async (req) => {
     }
 
     console.log('[demo-login] Magic link generated successfully');
+    console.log('[demo-login] Link data:', JSON.stringify(linkData, null, 2));
 
-    // Extract the token from the link
-    const url = new URL(linkData.properties?.action_link || '');
-    const token_hash = url.searchParams.get('token_hash');
-    const type = url.searchParams.get('type');
-
-    if (!token_hash) {
-      console.error('[demo-login] No token in magic link');
+    // Use the action_link directly - it contains everything needed
+    const actionLink = linkData.properties?.action_link;
+    
+    if (!actionLink) {
+      console.error('[demo-login] No action link in response');
       return new Response(
         JSON.stringify({ error: 'Failed to generate demo token' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,9 +77,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         message: 'Demo session ready',
-        verifyUrl: linkData.properties?.action_link,
-        tokenHash: token_hash,
-        type: type
+        verifyUrl: actionLink
       }),
       { 
         status: 200, 
