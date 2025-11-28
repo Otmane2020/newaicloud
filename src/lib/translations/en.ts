@@ -495,6 +495,8 @@ export const translations = {
       title: "Content length",
       short: "Short",
       shortDesc: "Concise but complete",
+      medium: "Medium",
+      mediumDesc: "Balanced content",
       long: "Long",
       longDesc: "Detailed with examples",
     },
@@ -8142,6 +8144,7 @@ export const translations = {
       startDate: "Start date",
       autoPublish: "Auto-publish",
       autoPublishDesc: "Publish articles as soon as they are generated",
+      executionHour: "Publication hour",
     },
     placeholders: {
       campaignName: "Ex: Spring 2025 Furniture Blog Campaign",
@@ -8152,6 +8155,7 @@ export const translations = {
     hints: {
       mainTopic: "The general theme of articles to generate",
       keywords: "Add relevant keywords for your campaign",
+      executionHour: "Hour at which the article will be published daily (UTC timezone)",
     },
     audiences: {
       professionals: "Professionals",

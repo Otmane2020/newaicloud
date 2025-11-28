@@ -36,6 +36,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
     frequency: 'weekly',
     start_date: new Date().toISOString().split('T')[0],
     auto_publish: false,
+    execution_hour: 12,
   });
 
   const addKeyword = () => {
@@ -98,6 +99,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
           keywords: formData.keywords,
           target_audience: formData.target_audience,
           next_execution_at: new Date(formData.start_date).toISOString(),
+          execution_hour: formData.execution_hour,
         });
 
       if (error) throw error;
@@ -123,6 +125,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         frequency: 'weekly',
         start_date: new Date().toISOString().split('T')[0],
         auto_publish: false,
+        execution_hour: 12,
       });
     } catch (error: any) {
       console.error('Error creating campaign:', error);
@@ -314,6 +317,33 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                 className="mt-1.5"
               />
             </div>
+
+            {formData.frequency === 'daily' && (
+              <div>
+                <Label htmlFor="execution_hour" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {t.campaignWizard.labels.executionHour}
+                </Label>
+                <Select
+                  value={String(formData.execution_hour)}
+                  onValueChange={(value) => setFormData({ ...formData, execution_hour: parseInt(value) })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        {String(i).padStart(2, '0')}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {t.campaignWizard.hints.executionHour}
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="space-y-0.5">

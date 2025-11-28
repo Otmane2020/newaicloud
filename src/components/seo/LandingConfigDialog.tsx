@@ -326,7 +326,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Thème */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🌓 Thème</Label>
+            <Label className="text-base font-semibold">🌓 {t.landingConfig.theme.title}</Label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -344,8 +344,8 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     {config.theme === "light" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Light</div>
-                    <div className="text-xs text-muted-foreground">Thème clair et lumineux</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.light}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.lightDesc}</div>
                   </div>
                 </div>
               </button>
@@ -366,8 +366,8 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     {config.theme === "dark" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Dark</div>
-                    <div className="text-xs text-muted-foreground">Thème sombre et élégant</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.theme.dark}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.theme.darkDesc}</div>
                   </div>
                 </div>
               </button>
@@ -376,7 +376,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
 
           {/* Modèle de design */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎯 Modèle de design</Label>
+            <Label className="text-base font-semibold">🎯 {t.landingConfig.designStyle.title}</Label>
             <div className="grid grid-cols-3 gap-4">
               <button
                 type="button"
@@ -394,9 +394,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     {config.designStyle === "minimalist" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Minimaliste</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Épuré & élégant</div>
-                    <div className="text-xs text-muted-foreground">Lignes épurées, espaces blancs généreux</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.minimalist}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.minimalistShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.minimalistDesc}</div>
                   </div>
                 </div>
               </button>
@@ -417,9 +417,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     {config.designStyle === "modern" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Moderne</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Dynamique & tendance</div>
-                    <div className="text-xs text-muted-foreground">Dégradés, ombres douces, animations</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.modern}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.modernShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.modernDesc}</div>
                   </div>
                 </div>
               </button>
@@ -440,9 +440,9 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                     {config.designStyle === "premium" && <Check className="w-4 h-4 text-primary animate-scale-in" />}
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-base mb-1">Premium</div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Luxueux & sophistiqué</div>
-                    <div className="text-xs text-muted-foreground">Effets visuels riches, typographie imposante</div>
+                    <div className="font-semibold text-base mb-1">{t.landingConfig.designStyle.premium}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{t.landingConfig.designStyle.premiumShort}</div>
+                    <div className="text-xs text-muted-foreground">{t.landingConfig.designStyle.premiumDesc}</div>
                   </div>
                 </div>
               </button>
@@ -587,7 +587,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="courte (400 mots)">{t.landingConfig.contentLength.short}</SelectItem>
-                <SelectItem value="moyenne (800 mots)">Moyen</SelectItem>
+                <SelectItem value="moyenne (800 mots)">{t.landingConfig.contentLength.medium}</SelectItem>
                 <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>

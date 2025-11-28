@@ -502,6 +502,8 @@ export const translations = {
       title: "Longueur du contenu",
       short: "Courte",
       shortDesc: "Concis mais complet",
+      medium: "Moyen",
+      mediumDesc: "Contenu équilibré",
       long: "Longue",
       longDesc: "Détaillé avec exemples",
     },
@@ -8185,6 +8187,7 @@ export const translations = {
       startDate: "Date de démarrage",
       autoPublish: "Publication automatique",
       autoPublishDesc: "Publier les articles dès leur génération",
+      executionHour: "Heure de publication",
     },
     placeholders: {
       campaignName: "Ex: Campagne Blog Meubles Printemps 2025",
@@ -8195,6 +8198,7 @@ export const translations = {
     hints: {
       mainTopic: "Le thème général des articles à générer",
       keywords: "Ajoutez des mots-clés pertinents pour votre campagne",
+      executionHour: "Heure à laquelle l'article sera publié quotidiennement (fuseau UTC)",
     },
     audiences: {
       professionals: "Professionnels",
