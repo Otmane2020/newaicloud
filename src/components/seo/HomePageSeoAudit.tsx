@@ -792,7 +792,7 @@ export function HomePageSeoAudit() {
                         disabled={generating}
                       >
                         <Sparkles className="w-3 h-3" />
-                        Générer avec l'IA
+                        {t.homepageAudit.buttons.generateWithAI}
                       </Button>
                     )}
                   </div>
@@ -814,7 +814,7 @@ export function HomePageSeoAudit() {
                         disabled={generating}
                       >
                         <Sparkles className="w-3 h-3" />
-                        Générer avec l'IA
+                        {t.homepageAudit.buttons.generateWithAI}
                       </Button>
                     )}
                   </div>
@@ -836,7 +836,7 @@ export function HomePageSeoAudit() {
                         disabled={generating}
                       >
                         <Sparkles className="w-3 h-3" />
-                        Générer avec l'IA
+                        {t.homepageAudit.buttons.generateWithAI}
                       </Button>
                     )}
                   </div>

@@ -5417,6 +5417,7 @@ export const translations = {
       generatingAndSyncing: "Génération et synchronisation...",
       optimizeWithAI: "Optimiser avec l'IA et synchroniser",
       syncManually: "Synchroniser manuellement",
+      generateWithAI: "Générer avec l'IA",
     },
     autoSyncMessage: "Les données sont automatiquement synchronisées depuis Shopify au chargement de la page",
     aiOptimizationNote: "L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify",
