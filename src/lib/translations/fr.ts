@@ -4686,6 +4686,88 @@ export const translations = {
   },
 
   seoAuditReports: {
+    // Header
+    title: "Rapports SEO Automatiques",
+    description: "Analyse complète de votre site Shopify : pages d'accueil, produits, collections et articles",
+    refreshAudit: "Actualiser l'audit",
+    exportPdf: "Exporter en PDF",
+    analyzing: "Analyse...",
+    exporting: "Export...",
+    
+    // Tabs
+    tabs: {
+      overview: "Vue d'ensemble",
+      aiAnalysis: "Analyse IA",
+      homepage: "Page d'accueil",
+      products: "Produits",
+      collections: "Collections",
+      blog: "Blog",
+      global: "Vue globale",
+    },
+    
+    // Loading state
+    loading: {
+      title: "Nous préparons votre audit SEO",
+      subtitle: "Analyse de votre boutique Shopify...",
+      steps: {
+        homepage: "Analyse de la structure de votre page d'accueil...",
+        metaTags: "Vérification des balises meta et éléments SEO...",
+        products: "Scan de tous les produits...",
+        collections: "Révision des collections...",
+        blog: "Analyse des articles de blog...",
+        recommendations: "Génération des recommandations...",
+        finalizing: "Finalisation de votre audit SEO...",
+      },
+    },
+    
+    // Empty state
+    empty: {
+      title: "Aucune donnée d'audit",
+      description: "Lancez votre premier audit SEO pour obtenir des insights détaillés sur les performances de votre boutique",
+      startButton: "Démarrer l'audit SEO",
+    },
+    
+    // Overview tab
+    overview: {
+      title: "Audit SEO Professionnel",
+      subtitle: "Analyse détaillée de votre optimisation SEO selon les standards Yoast",
+      globalScore: "Score SEO Global",
+      globalScoreDesc: "Évaluation globale basée sur 6 catégories d'audit",
+      detailedAudit: "Audit détaillé par catégorie",
+      detailedAuditDesc: "Analyse approfondie de chaque aspect SEO",
+      noData: "Aucune donnée disponible",
+      importProducts: "Importez vos produits pour voir l'analyse détaillée",
+    },
+    
+    // Score labels
+    scores: {
+      excellent: "Excellent",
+      good: "Bon",
+      needsImprovement: "À améliorer",
+      critical: "Critique",
+      excellentWork: "Excellent travail !",
+      goodLevel: "Bon niveau SEO",
+      improvementsNeeded: "Améliorations nécessaires",
+      urgentOptimization: "Optimisation urgente requise",
+    },
+    
+    // Categories
+    categories: {
+      titleQuality: "Qualité des titres SEO",
+      titleQualityDesc: "{{issues}} problèmes / {{total}}",
+      descQuality: "Qualité des meta descriptions",
+      descQualityDesc: "{{issues}} descriptions problématiques sur {{total}}",
+      altQuality: "Qualité des ALT texts images",
+      altQualityDesc: "{{issues}} images avec problèmes sur {{total}}",
+      homepageSeo: "SEO de la page d'accueil",
+      homepageNotImported: "Page non importée",
+      contentQuality: "Qualité du contenu",
+      contentQualityDesc: "Descriptions: {{withDesc}}/{{total}} • Tags: {{withTags}}/{{total}}",
+      technicalSeo: "SEO technique",
+      technicalSeoDesc: "Synchronisation Shopify et optimisations techniques",
+    },
+    
+    // Priority recommendations
     priorityRecommendations: "Recommandations prioritaires",
     actionsToImprove: "Actions à prendre pour améliorer votre SEO",
     urgent: "URGENT",
@@ -4701,11 +4783,64 @@ export const translations = {
     enrichAltTexts: "Enrichir {{count}} ALT texts",
     excellentWork: "Excellent travail ! 🎉",
     topOptimization: "Votre optimisation SEO est au top. Continuez à maintenir ce niveau d'excellence.",
+    
+    // Detailed issues
     detailedIssues: "Détails des problèmes détectés",
     clickToSeeIssues: "Cliquez pour voir les problèmes spécifiques par catégorie",
     titleIssues: "Problèmes de titres SEO ({{count}})",
-    descIssues: "Problèmes de descriptions SEO ({{count}})",
-    altIssues: "Problèmes d'ALT text ({{count}})",
+    descIssues: "Problèmes de meta descriptions ({{count}})",
+    altIssues: "Problèmes d'ALT texts ({{count}})",
+    currentTitle: "Titre actuel",
+    currentDesc: "Description actuelle",
+    currentAlt: "ALT actuel",
+    chars: "car.",
+    andMoreIssues: "... et {{count}} autres problèmes",
+    
+    // AI Analysis tab
+    aiAnalysis: {
+      noData: "Aucune analyse IA disponible",
+      noDataDesc: "Lancez un nouvel audit pour obtenir une analyse détaillée",
+      startAnalysis: "Démarrer l'analyse",
+    },
+    
+    // Actions
+    automatedActions: "Actions Automatisées NewAI",
+    automatedActionsDesc: "Actions rapides optimisées par l'IA",
+    elementsToOptimize: "{{count}} éléments à optimiser",
+    optimize: "Optimiser",
+    recommendations: "Recommandations",
+    
+    // Sections
+    technicalAnalysis: "🔍 Analyse Technique",
+    contentSemantic: "💡 Contenu & Sémantique",
+    productElements: "🛍️ Éléments SEO Produit",
+    collectionElements: "📁 Éléments SEO Collection",
+    blogElements: "📝 Éléments SEO Blog",
+    
+    // Quality analysis issues (from functions)
+    issues: {
+      titleMissing: "Titre SEO manquant",
+      tooShort: "Trop court (< {{min}} caractères)",
+      tooLong: "Trop long (> {{max}} caractères)",
+      missingKeyword: "Ne contient pas le mot-clé principal",
+      descMissing: "Description manquante",
+      missingCta: "Manque d'appel à l'action",
+      altMissing: "ALT text manquant",
+      looksLikeFilename: "Ressemble à un nom de fichier",
+      tooGeneric: "Trop générique",
+    },
+    
+    // Toast messages
+    toasts: {
+      auditSuccess: "Audit SEO complété avec succès !",
+      auditSuccessDesc: "Score global: {{score}}/100",
+      auditError: "Erreur lors de l'audit SEO",
+      exportSuccess: "Rapport généré",
+      exportSuccessDesc: "Le rapport s'ouvre dans une nouvelle fenêtre. Vous pouvez l'imprimer ou l'enregistrer en PDF.",
+      exportError: "Impossible d'exporter le rapport PDF",
+      loginRequired: "Vous devez être connecté pour exporter le rapport",
+      enablePopups: "Veuillez autoriser les pop-ups pour exporter le rapport",
+    },
   },
 
   // Google Console Navigation

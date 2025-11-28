@@ -7108,6 +7108,88 @@ export const translations = {
   },
 
   seoAuditReports: {
+    // Header
+    title: "Automated SEO Reports",
+    description: "Complete analysis of your Shopify site: homepage, products, collections and articles",
+    refreshAudit: "Refresh Audit",
+    exportPdf: "Export to PDF",
+    analyzing: "Analyzing...",
+    exporting: "Exporting...",
+    
+    // Tabs
+    tabs: {
+      overview: "Overview",
+      aiAnalysis: "AI Analysis",
+      homepage: "Homepage",
+      products: "Products",
+      collections: "Collections",
+      blog: "Blog",
+      global: "Global View",
+    },
+    
+    // Loading state
+    loading: {
+      title: "We're preparing your SEO Audit",
+      subtitle: "Analyzing your entire Shopify store...",
+      steps: {
+        homepage: "Analyzing your homepage structure...",
+        metaTags: "Checking meta tags and SEO elements...",
+        products: "Scanning all products...",
+        collections: "Reviewing collections...",
+        blog: "Analyzing blog articles...",
+        recommendations: "Generating recommendations...",
+        finalizing: "Finalizing your SEO audit...",
+      },
+    },
+    
+    // Empty state
+    empty: {
+      title: "No audit data yet",
+      description: "Start your first SEO audit to get detailed insights about your store's performance",
+      startButton: "Start SEO Audit",
+    },
+    
+    // Overview tab
+    overview: {
+      title: "Professional SEO Audit",
+      subtitle: "Detailed analysis of your SEO optimization according to Yoast standards",
+      globalScore: "Global SEO Score",
+      globalScoreDesc: "Overall evaluation based on 6 audit categories",
+      detailedAudit: "Detailed Audit by Category",
+      detailedAuditDesc: "In-depth analysis of each SEO aspect",
+      noData: "No data available",
+      importProducts: "Import your products to see the detailed analysis",
+    },
+    
+    // Score labels
+    scores: {
+      excellent: "Excellent",
+      good: "Good",
+      needsImprovement: "Needs Improvement",
+      critical: "Critical",
+      excellentWork: "Excellent work!",
+      goodLevel: "Good SEO level",
+      improvementsNeeded: "Improvements needed",
+      urgentOptimization: "Urgent optimization required",
+    },
+    
+    // Categories
+    categories: {
+      titleQuality: "SEO Title Quality",
+      titleQualityDesc: "{{issues}} issues / {{total}}",
+      descQuality: "Meta Description Quality",
+      descQualityDesc: "{{issues}} problematic descriptions out of {{total}}",
+      altQuality: "Image ALT Text Quality",
+      altQualityDesc: "{{issues}} images with issues out of {{total}}",
+      homepageSeo: "Homepage SEO",
+      homepageNotImported: "Page not imported",
+      contentQuality: "Content Quality",
+      contentQualityDesc: "Descriptions: {{withDesc}}/{{total}} • Tags: {{withTags}}/{{total}}",
+      technicalSeo: "Technical SEO",
+      technicalSeoDesc: "Shopify sync and technical optimizations",
+    },
+    
+    // Priority recommendations
     priorityRecommendations: "Priority Recommendations",
     actionsToImprove: "Actions to take to improve your SEO",
     urgent: "URGENT",
@@ -7123,11 +7205,64 @@ export const translations = {
     enrichAltTexts: "Enrich {{count}} ALT texts",
     excellentWork: "Excellent work! 🎉",
     topOptimization: "Your SEO optimization is at the top. Keep maintaining this level of excellence.",
+    
+    // Detailed issues
     detailedIssues: "Detailed Issues Detected",
     clickToSeeIssues: "Click to see specific issues by category",
     titleIssues: "SEO Title Issues ({{count}})",
-    descIssues: "SEO Description Issues ({{count}})",
+    descIssues: "Meta Description Issues ({{count}})",
     altIssues: "ALT Text Issues ({{count}})",
+    currentTitle: "Current title",
+    currentDesc: "Current description",
+    currentAlt: "Current ALT",
+    chars: "chars",
+    andMoreIssues: "... and {{count}} more issues",
+    
+    // AI Analysis tab
+    aiAnalysis: {
+      noData: "No AI analysis available",
+      noDataDesc: "Run a new audit to get a detailed analysis",
+      startAnalysis: "Start analysis",
+    },
+    
+    // Actions
+    automatedActions: "NewAI Automated Actions",
+    automatedActionsDesc: "Quick actions optimized by AI",
+    elementsToOptimize: "{{count}} elements to optimize",
+    optimize: "Optimize",
+    recommendations: "Recommendations",
+    
+    // Sections
+    technicalAnalysis: "🔍 Technical Analysis",
+    contentSemantic: "💡 Content & Semantic",
+    productElements: "🛍️ Product SEO Elements",
+    collectionElements: "📁 Collection SEO Elements",
+    blogElements: "📝 Blog SEO Elements",
+    
+    // Quality analysis issues (from functions)
+    issues: {
+      titleMissing: "SEO title missing",
+      tooShort: "Too short (< {{min}} characters)",
+      tooLong: "Too long (> {{max}} characters)",
+      missingKeyword: "Does not contain main keyword",
+      descMissing: "Description missing",
+      missingCta: "Missing call to action",
+      altMissing: "ALT text missing",
+      looksLikeFilename: "Looks like a filename",
+      tooGeneric: "Too generic",
+    },
+    
+    // Toast messages
+    toasts: {
+      auditSuccess: "SEO audit completed successfully!",
+      auditSuccessDesc: "Global score: {{score}}/100",
+      auditError: "Error during SEO audit",
+      exportSuccess: "Report generated",
+      exportSuccessDesc: "The report opens in a new window. You can print it or save it as PDF.",
+      exportError: "Unable to export PDF report",
+      loginRequired: "You must be logged in to export the report",
+      enablePopups: "Please allow pop-ups to export the report",
+    },
   },
 
   // ============= Auto Optimization Dialog =============
