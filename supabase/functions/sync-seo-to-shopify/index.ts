@@ -288,29 +288,83 @@ Deno.serve(async (req: Request) => {
         updateData.product.product_type = product.category;
       }
 
-      // Only make REST call if we have something to update (tags, product_type, or metafields)
+      // Update tags and product_type via GraphQL instead of REST (REST deprecated April 2025)
       if (updateData.product.tags || updateData.product.product_type || updateData.product.metafields) {
-        const shopifyResponse = await fetch(
-          `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}.json`,
-          {
-            method: "PUT",
-            headers: {
-              "X-Shopify-Access-Token": shopifyAccessToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(updateData),
+        const productUpdateTagsMutation = `
+          mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product {
+                id
+                tags
+                productType
+              }
+              userErrors {
+                field
+                message
+              }
+            }
           }
-        );
+        `;
 
-        if (!shopifyResponse.ok) {
-          const errorText = await shopifyResponse.text();
-          console.error(`Shopify API error for product ${product.shopify_id}:`, errorText);
-          throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+        const tagsInput: any = {
+          id: `gid://shopify/Product/${product.shopify_id}`,
+        };
+
+        if (syncTags && product.tags) {
+          // Convert comma-separated tags to array for GraphQL
+          const tagsArray = typeof product.tags === 'string' 
+            ? product.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+            : [];
+          tagsInput.tags = tagsArray;
         }
-        
-        console.log("[SYNC-SEO] ✅ Tags, product_type, and metafields updated successfully via REST");
+
+        if (syncGoogleShopping && product.category) {
+          tagsInput.productType = product.category;
+        }
+
+        try {
+          const tagsResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, productUpdateTagsMutation, { input: tagsInput });
+          console.log("[SYNC-SEO] ✅ Tags and product_type updated successfully via GraphQL");
+        } catch (tagsError: any) {
+          console.error("[SYNC-SEO] ⚠️ Failed to update tags via GraphQL:", tagsError.message);
+          // Non-blocking - continue with sync
+        }
+
+        // Metafields need to be updated via separate GraphQL mutation
+        if (metafields.length > 0) {
+          const metafieldSetMutation = `
+            mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+              metafieldsSet(metafields: $metafields) {
+                metafields {
+                  id
+                  key
+                  value
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+
+          const metafieldsInput = metafields.map(mf => ({
+            ownerId: `gid://shopify/Product/${product.shopify_id}`,
+            namespace: mf.namespace,
+            key: mf.key,
+            value: mf.value,
+            type: mf.type
+          }));
+
+          try {
+            await shopifyGraphQL(shopUrl, shopifyAccessToken, metafieldSetMutation, { metafields: metafieldsInput });
+            console.log("[SYNC-SEO] ✅ Metafields updated successfully via GraphQL");
+          } catch (mfError: any) {
+            console.error("[SYNC-SEO] ⚠️ Failed to update metafields via GraphQL:", mfError.message);
+          }
+        }
       } else {
-        console.log("[SYNC-SEO] No tags, product_type, or metafields to update via REST");
+        console.log("[SYNC-SEO] No tags, product_type, or metafields to update");
       }
 
       // Store snapshot of synced data
@@ -586,41 +640,77 @@ Deno.serve(async (req: Request) => {
       shopUrl = storeConnection.store_url;
       shopifyAccessToken = storeConnection.access_token;
       
-      console.log(`[SYNC-IMAGE] Syncing to Shopify:`, {
+      console.log(`[SYNC-IMAGE] Syncing ALT text to Shopify via GraphQL:`, {
         shopUrl,
         contentId: shopifyId,
         imageId: imageData.shopify_image_id,
         altText: imageData.alt_text?.substring(0, 50) + '...'
       });
       
-      const shopifyResponse = await fetch(
-        `https://${shopUrl}/admin/api/2024-01/products/${shopifyId}/images/${imageData.shopify_image_id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            "X-Shopify-Access-Token": shopifyAccessToken,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image: {
-              id: imageData.shopify_image_id,
-              alt: imageData.alt_text,
-            },
-          }),
+      // Use GraphQL to update product media ALT text (product images endpoint is deprecated)
+      const updateMediaMutation = `
+        mutation productUpdateMedia($productId: ID!, $media: [UpdateMediaInput!]!) {
+          productUpdateMedia(productId: $productId, media: $media) {
+            media {
+              ... on MediaImage {
+                id
+                alt
+              }
+            }
+            mediaUserErrors {
+              field
+              message
+            }
+          }
         }
-      );
+      `;
 
-      if (!shopifyResponse.ok) {
-        const errorText = await shopifyResponse.text();
-        console.error(`[SYNC-IMAGE] Shopify API error:`, {
-          status: shopifyResponse.status,
-          imageId: imageData.shopify_image_id,
-          error: errorText
+      try {
+        const productGid = `gid://shopify/Product/${shopifyId}`;
+        const mediaGid = `gid://shopify/MediaImage/${imageData.shopify_image_id}`;
+        
+        const mediaResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, updateMediaMutation, {
+          productId: productGid,
+          media: [{
+            id: mediaGid,
+            alt: imageData.alt_text
+          }]
         });
-        throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
-      }
+        
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL for image ${imageData.shopify_image_id}`);
+      } catch (gqlError: any) {
+        // Fallback to REST if GraphQL fails (for backwards compatibility)
+        console.warn(`[SYNC-IMAGE] GraphQL failed, falling back to REST:`, gqlError.message);
+        
+        const shopifyResponse = await fetch(
+          `https://${shopUrl}/admin/api/2025-01/products/${shopifyId}/images/${imageData.shopify_image_id}.json`,
+          {
+            method: "PUT",
+            headers: {
+              "X-Shopify-Access-Token": shopifyAccessToken,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              image: {
+                id: imageData.shopify_image_id,
+                alt: imageData.alt_text,
+              },
+            }),
+          }
+        );
 
-      console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text for image ${imageData.shopify_image_id}`);
+        if (!shopifyResponse.ok) {
+          const errorText = await shopifyResponse.text();
+          console.error(`[SYNC-IMAGE] REST API error:`, {
+            status: shopifyResponse.status,
+            imageId: imageData.shopify_image_id,
+            error: errorText
+          });
+          throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
+        }
+        
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via REST fallback for image ${imageData.shopify_image_id}`);
+      }
 
       // Update image last_synced_at timestamp in database
       const updateTable = imageType === 'product' ? 'product_images' : 'content_images';

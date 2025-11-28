@@ -1,10 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shopifyGraphQL, fetchAllProductIds } from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// GraphQL query to fetch all collection IDs
+const COLLECTIONS_IDS_QUERY = `
+  query getCollectionIds($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
+      edges {
+        node {
+          id
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
 
 interface ShopifyPaginationLink {
   rel: string;
@@ -20,13 +38,14 @@ function parseLinkHeader(linkHeader: string | null): string | null {
   return match ? match[1] : null;
 }
 
+// For non-deprecated resources (blogs, pages), use REST with pagination
 async function fetchAllShopifyResources(
   baseUrl: string,
   accessToken: string,
   endpoint: string
 ): Promise<any[]> {
   const allItems: any[] = [];
-  let nextUrl: string | null = `https://${baseUrl}/admin/api/2024-01/${endpoint}?limit=250`;
+  let nextUrl: string | null = `https://${baseUrl}/admin/api/2025-01/${endpoint}?limit=250`;
   
   while (nextUrl) {
     const response = await fetch(nextUrl, {
@@ -44,14 +63,44 @@ async function fetchAllShopifyResources(
       allItems.push(...data[key]);
     }
     
-    // Parse Link header for pagination
     nextUrl = parseLinkHeader(response.headers.get("Link"));
-    
-    // Rate limiting
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
   
   return allItems;
+}
+
+// Fetch all collection IDs via GraphQL
+async function fetchAllCollectionIds(
+  storeUrl: string,
+  accessToken: string
+): Promise<number[]> {
+  const ids: number[] = [];
+  let cursor: string | undefined;
+  let hasNext = true;
+
+  while (hasNext) {
+    const result = await shopifyGraphQL<{
+      collections: {
+        edges: Array<{ node: { id: string } }>;
+        pageInfo: { hasNextPage: boolean; endCursor: string };
+      };
+    }>(storeUrl, accessToken, COLLECTIONS_IDS_QUERY, { first: 250, after: cursor });
+
+    for (const edge of result.collections.edges) {
+      const numericId = parseInt(edge.node.id.split('/').pop() || '0', 10);
+      ids.push(numericId);
+    }
+
+    hasNext = result.collections.pageInfo.hasNextPage;
+    cursor = result.collections.pageInfo.endCursor;
+
+    if (hasNext) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
+  return ids;
 }
 
 serve(async (req) => {
@@ -65,20 +114,17 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    console.log("🔄 Starting comprehensive cleanup sync for all users...");
+    console.log("🔄 Starting comprehensive cleanup sync (GraphQL) for all users...");
 
-    // Get all active Shopify connections
     const { data: connections, error: connectionsError } = await supabaseAdmin
       .from("shopify_connections")
       .select("id, user_id, store_url, access_token");
 
     if (connectionsError) {
-      console.error("Error fetching connections:", connectionsError);
       throw connectionsError;
     }
 
     if (!connections || connections.length === 0) {
-      console.log("No active Shopify connections found");
       return new Response(
         JSON.stringify({ success: true, message: "No connections to sync" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -97,24 +143,18 @@ serve(async (req) => {
 
     for (const connection of connections) {
       try {
-        console.log(`\n🔹 Processing user: ${connection.user_id} (Store: ${connection.store_url})`);
+        console.log(`\n🔹 Processing user: ${connection.user_id}`);
+        const storeUrl = (connection.store_url || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
 
-        // ========== COLLECTIONS (Custom + Smart) ==========
-        console.log("📦 Syncing collections...");
+        // ========== COLLECTIONS via GraphQL ==========
+        console.log("📦 Syncing collections via GraphQL...");
         const { data: dbCollections } = await supabaseAdmin
           .from("shopify_collections")
           .select("id, shopify_collection_id")
           .eq("user_id", connection.user_id);
 
         if (dbCollections && dbCollections.length > 0) {
-          // Fetch both custom and smart collections
-          const [customCollections, smartCollections] = await Promise.all([
-            fetchAllShopifyResources(connection.store_url, connection.access_token, "custom_collections.json"),
-            fetchAllShopifyResources(connection.store_url, connection.access_token, "smart_collections.json"),
-          ]);
-
-          const allShopifyCollections = [...customCollections, ...smartCollections];
-          const shopifyCollectionIds = new Set(allShopifyCollections.map((c: any) => c.id));
+          const shopifyCollectionIds = new Set(await fetchAllCollectionIds(storeUrl, connection.access_token));
 
           for (const collection of dbCollections) {
             if (!shopifyCollectionIds.has(collection.shopify_collection_id)) {
@@ -126,15 +166,13 @@ serve(async (req) => {
               if (!error) {
                 results.totalCollectionsDeleted++;
                 console.log(`   ✅ Deleted collection: ${collection.id}`);
-              } else {
-                console.error(`   ❌ Error deleting collection ${collection.id}:`, error);
               }
             }
           }
         }
 
-        // ========== PRODUCTS (All, with pagination) ==========
-        console.log("🛍️ Syncing products...");
+        // ========== PRODUCTS via GraphQL ==========
+        console.log("🛍️ Syncing products via GraphQL...");
         const { data: dbProducts } = await supabaseAdmin
           .from("shopify_products")
           .select("id, shopify_id")
@@ -142,12 +180,7 @@ serve(async (req) => {
           .not("shopify_id", "is", null);
 
         if (dbProducts && dbProducts.length > 0) {
-          const shopifyProducts = await fetchAllShopifyResources(
-            connection.store_url,
-            connection.access_token,
-            "products.json"
-          );
-          const shopifyProductIds = new Set(shopifyProducts.map((p: any) => p.id));
+          const shopifyProductIds = new Set(await fetchAllProductIds(storeUrl, connection.access_token));
 
           for (const product of dbProducts) {
             if (!shopifyProductIds.has(product.shopify_id)) {
@@ -159,14 +192,12 @@ serve(async (req) => {
               if (!error) {
                 results.totalProductsDeleted++;
                 console.log(`   ✅ Deleted product: ${product.id}`);
-              } else {
-                console.error(`   ❌ Error deleting product ${product.id}:`, error);
               }
             }
           }
         }
 
-        // ========== ARTICLES ==========
+        // ========== ARTICLES via REST (not deprecated) ==========
         console.log("📝 Syncing articles...");
         const { data: dbArticles } = await supabaseAdmin
           .from("blog_articles")
@@ -174,18 +205,12 @@ serve(async (req) => {
           .eq("store_id", connection.id);
 
         if (dbArticles && dbArticles.length > 0) {
-          // Fetch all blogs first
-          const blogs = await fetchAllShopifyResources(
-            connection.store_url,
-            connection.access_token,
-            "blogs.json"
-          );
-
-          // Fetch articles from all blogs
+          const blogs = await fetchAllShopifyResources(storeUrl, connection.access_token, "blogs.json");
           const allArticles: any[] = [];
+          
           for (const blog of blogs) {
             const articles = await fetchAllShopifyResources(
-              connection.store_url,
+              storeUrl,
               connection.access_token,
               `blogs/${blog.id}/articles.json`
             );
@@ -204,14 +229,12 @@ serve(async (req) => {
               if (!error) {
                 results.totalArticlesDeleted++;
                 console.log(`   ✅ Deleted article: ${article.id}`);
-              } else {
-                console.error(`   ❌ Error deleting article ${article.id}:`, error);
               }
             }
           }
         }
 
-        // ========== PAGES ==========
+        // ========== PAGES via REST (not deprecated) ==========
         console.log("📄 Syncing pages...");
         const { data: dbPages } = await supabaseAdmin
           .from("shopify_pages")
@@ -219,11 +242,7 @@ serve(async (req) => {
           .eq("store_id", connection.id);
 
         if (dbPages && dbPages.length > 0) {
-          const shopifyPages = await fetchAllShopifyResources(
-            connection.store_url,
-            connection.access_token,
-            "pages.json"
-          );
+          const shopifyPages = await fetchAllShopifyResources(storeUrl, connection.access_token, "pages.json");
           const shopifyPageIds = new Set(shopifyPages.map((p: any) => p.id));
 
           for (const page of dbPages) {
@@ -236,8 +255,6 @@ serve(async (req) => {
               if (!error) {
                 results.totalPagesDeleted++;
                 console.log(`   ✅ Deleted page: ${page.id}`);
-              } else {
-                console.error(`   ❌ Error deleting page ${page.id}:`, error);
               }
             }
           }
@@ -246,7 +263,6 @@ serve(async (req) => {
         // ========== ORPHANED IMAGES ==========
         console.log("🖼️ Cleaning orphaned images...");
         
-        // Clean product_images without parent product
         const { data: orphanedProductImages } = await supabaseAdmin
           .from("product_images")
           .select("id, product_id")
@@ -260,11 +276,9 @@ serve(async (req) => {
 
           if (!error) {
             results.totalImagesDeleted += orphanedProductImages.length;
-            console.log(`   ✅ Deleted ${orphanedProductImages.length} orphaned product images`);
           }
         }
 
-        // Clean content_images without parent content
         const { data: orphanedContentImages } = await supabaseAdmin
           .from("content_images")
           .select("id, content_id, content_type, user_id")
@@ -301,21 +315,17 @@ serve(async (req) => {
 
             if (!error) {
               results.totalImagesDeleted += imagesToDelete.length;
-              console.log(`   ✅ Deleted ${imagesToDelete.length} orphaned content images`);
             }
           }
         }
 
         results.usersProcessed++;
-        console.log(`✅ User ${connection.user_id} processed successfully`);
+        console.log(`✅ User ${connection.user_id} processed`);
         
-        // Rate limiting between users
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error(String(error));
-        const errorMsg = `Error processing user ${connection.user_id}: ${err.message}`;
-        console.error(`❌ ${errorMsg}`);
-        results.errors.push(errorMsg);
+        results.errors.push(`Error processing user ${connection.user_id}: ${err.message}`);
       }
     }
 
@@ -324,7 +334,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Automatic cleanup completed",
+        message: "Automatic cleanup completed (GraphQL)",
         results 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
+import { shopifyGraphQL, PRODUCTS_COUNT_QUERY } from '../_shared/shopify-graphql.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 Fetching Shopify product count...');
+    console.log('🔍 Fetching Shopify product count via GraphQL...');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -43,7 +44,7 @@ serve(async (req) => {
     // Get user's Shopify connections
     const { data: connections, error: connectionsError } = await supabase
       .from('shopify_connections')
-      .select('shop_name, access_token')
+      .select('shop_name, store_url, access_token')
       .eq('user_id', user.id)
       .eq('is_active', true);
 
@@ -67,30 +68,24 @@ serve(async (req) => {
 
     console.log(`📦 Imported products: ${importedCount || 0}`);
 
-    // Get total count from Shopify API for all stores
+    // Get total count from Shopify GraphQL API for all stores
     let totalShopifyCount = 0;
     
     for (const connection of connections) {
       try {
-        const shopifyResponse = await fetch(
-          `https://${connection.shop_name}/admin/api/2025-01/products/count.json`,
-          {
-            headers: {
-              'X-Shopify-Access-Token': connection.access_token,
-              'Content-Type': 'application/json',
-            },
-          }
+        const storeUrl = connection.store_url || connection.shop_name;
+        const cleanStoreUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        
+        const result = await shopifyGraphQL<{ productsCount: { count: number } }>(
+          cleanStoreUrl,
+          connection.access_token,
+          PRODUCTS_COUNT_QUERY
         );
-
-        if (shopifyResponse.ok) {
-          const data = await shopifyResponse.json();
-          totalShopifyCount += data.count || 0;
-          console.log(`📊 Store ${connection.shop_name}: ${data.count || 0} products`);
-        } else {
-          console.error(`❌ Failed to fetch count from ${connection.shop_name}`);
-        }
+        
+        totalShopifyCount += result.productsCount?.count || 0;
+        console.log(`📊 Store ${cleanStoreUrl}: ${result.productsCount?.count || 0} products`);
       } catch (error) {
-        console.error(`❌ Error fetching from ${connection.shop_name}:`, error);
+        console.error(`❌ Error fetching from store:`, error);
       }
     }
 

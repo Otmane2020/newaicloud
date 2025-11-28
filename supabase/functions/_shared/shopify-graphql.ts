@@ -316,3 +316,187 @@ export const PRODUCT_DELETE_MUTATION = `
     }
   }
 `;
+
+// ============= ADDITIONAL QUERIES FOR MIGRATION =============
+
+/**
+ * GraphQL query to get products count
+ */
+export const PRODUCTS_COUNT_QUERY = `
+  query getProductsCount {
+    productsCount {
+      count
+    }
+  }
+`;
+
+/**
+ * GraphQL query to fetch all product IDs with pagination (for sync/cleanup)
+ */
+export const PRODUCTS_IDS_QUERY = `
+  query getProductIds($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      edges {
+        node {
+          id
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL query to check if product exists
+ */
+export const PRODUCT_EXISTS_QUERY = `
+  query productExists($id: ID!) {
+    product(id: $id) {
+      id
+    }
+  }
+`;
+
+/**
+ * GraphQL query to fetch product with variants for pricing sync
+ */
+export const PRODUCT_VARIANTS_QUERY = `
+  query getProductVariants($id: ID!) {
+    product(id: $id) {
+      id
+      title
+      variants(first: 100) {
+        edges {
+          node {
+            id
+            title
+            price
+            compareAtPrice
+            inventoryItem {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL mutation to update variant pricing
+ */
+export const VARIANT_UPDATE_MUTATION = `
+  mutation productVariantUpdate($input: ProductVariantInput!) {
+    productVariantUpdate(input: $input) {
+      productVariant {
+        id
+        price
+        compareAtPrice
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL mutation to update inventory item cost
+ */
+export const INVENTORY_ITEM_UPDATE_MUTATION = `
+  mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+    inventoryItemUpdate(id: $id, input: $input) {
+      inventoryItem {
+        id
+        unitCost {
+          amount
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL mutation to update product title and body HTML
+ */
+export const PRODUCT_UPDATE_FULL_MUTATION = `
+  mutation productUpdate($input: ProductInput!) {
+    productUpdate(input: $input) {
+      product {
+        id
+        title
+        descriptionHtml
+        handle
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+/**
+ * Fetch all product IDs from Shopify using pagination
+ */
+export async function fetchAllProductIds(
+  storeUrl: string,
+  accessToken: string
+): Promise<number[]> {
+  const ids: number[] = [];
+  let cursor: string | undefined;
+  let hasNext = true;
+
+  while (hasNext) {
+    const result = await shopifyGraphQL<{
+      products: {
+        edges: Array<{ node: { id: string } }>;
+        pageInfo: { hasNextPage: boolean; endCursor: string };
+      };
+    }>(storeUrl, accessToken, PRODUCTS_IDS_QUERY, { first: 250, after: cursor });
+
+    for (const edge of result.products.edges) {
+      ids.push(gidToRestId(edge.node.id));
+    }
+
+    hasNext = result.products.pageInfo.hasNextPage;
+    cursor = result.products.pageInfo.endCursor;
+
+    // Rate limit
+    if (hasNext) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
+  return ids;
+}
+
+/**
+ * Check if a product exists in Shopify
+ */
+export async function productExists(
+  storeUrl: string,
+  accessToken: string,
+  shopifyId: number
+): Promise<boolean> {
+  try {
+    const gid = restIdToGid(shopifyId, 'Product');
+    const result = await shopifyGraphQL<{ product: { id: string } | null }>(
+      storeUrl,
+      accessToken,
+      PRODUCT_EXISTS_QUERY,
+      { id: gid }
+    );
+    return result.product !== null;
+  } catch {
+    return false;
+  }
+}
