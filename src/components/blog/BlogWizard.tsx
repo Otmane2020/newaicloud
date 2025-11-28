@@ -519,31 +519,31 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         });
         setGeneratedArticleId(response.data.article.id);
         
-        toast.success("🎉 Article généré avec succès !", {
-          description: "Votre contenu SEO optimisé est prêt."
+        toast.success(t.blogWizardExtended.generation.articleGenerated, {
+          description: t.blogWizardExtended.generation.articleGeneratedDesc
         });
         
         setShowResultsDialog(true);
       } else {
-        throw new Error("Aucun article généré");
+        throw new Error(t.blogWizardExtended.generation.noArticleGenerated);
       }
     } catch (error: any) {
       console.error("❌ Erreur génération:", error);
       
       if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
         if (limits?.isTrialing) {
-          toast.error("Limite d'essai atteinte", {
-            description: "Passez à un abonnement pour continuer à générer des articles."
+          toast.error(t.blogWizardExtended.generation.trialLimitReached, {
+            description: t.blogWizardExtended.generation.trialLimitDesc
           });
         } else {
-          toast.error("Limite mensuelle atteinte", {
-            description: "Votre forfait mensuel est épuisé."
+          toast.error(t.blogWizardExtended.generation.monthlyLimitReached, {
+            description: t.blogWizardExtended.generation.monthlyLimitDesc
           });
         }
         setShowUpgradeDialog(true);
       } else {
-        toast.error("Erreur lors de la génération", {
-          description: error.message || "Une erreur est survenue"
+        toast.error(t.blogWizardExtended.generation.generationError, {
+          description: error.message || t.toasts.error.generic
         });
       }
     } finally {
@@ -568,13 +568,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         throw syncResponse.error;
       } else {
         setIsOptimizationComplete(true);
-        toast.success("✅ Article publié sur Shopify", {
-          description: "Votre article est maintenant en ligne."
+        toast.success(t.blogWizardExtended.generation.articlePublished, {
+          description: t.blogWizardExtended.generation.articlePublishedDesc
         });
       }
     } catch (error) {
       console.error("Error publishing to Shopify:", error);
-      toast.error("Erreur lors de la publication");
+      toast.error(t.blogWizardExtended.generation.publishError);
     }
   };
 
@@ -590,13 +590,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           <div className="space-y-6">
             {/* Sélection de l'angle éditorial */}
             <div>
-              <label className="block text-sm font-semibold mb-3">Angle éditorial</label>
+              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.editorialAngle.title}</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { value: "guide", label: "📚 Guide", description: "Guide complet" },
-                  { value: "comparison", label: "⚖️ Comparatif", description: "Comparaison produits" },
-                  { value: "review", label: "⭐ Avis", description: "Tests et avis" },
-                  { value: "tutorial", label: "🎓 Tutoriel", description: "Guide pratique" },
+                  { value: "guide", label: t.blogWizardExtended.editorialAngle.guide, description: t.blogWizardExtended.editorialAngle.guideDesc },
+                  { value: "comparison", label: t.blogWizardExtended.editorialAngle.comparison, description: t.blogWizardExtended.editorialAngle.comparisonDesc },
+                  { value: "review", label: t.blogWizardExtended.editorialAngle.review, description: t.blogWizardExtended.editorialAngle.reviewDesc },
+                  { value: "tutorial", label: t.blogWizardExtended.editorialAngle.tutorial, description: t.blogWizardExtended.editorialAngle.tutorialDesc },
                 ].map((angle) => (
                   <button
                     key={angle.value}
@@ -617,12 +617,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {/* Audience cible */}
             <div>
-              <label className="block text-sm font-semibold mb-3">Audience cible</label>
+              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.targetAudience.title}</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: "beginner", label: "👶 Débutant", icon: Users },
-                  { value: "general", label: "👥 Général", icon: Target },
-                  { value: "expert", label: "🎯 Expert", icon: Zap },
+                  { value: "beginner", label: t.blogWizardExtended.targetAudience.beginner, icon: Users },
+                  { value: "general", label: t.blogWizardExtended.targetAudience.general, icon: Target },
+                  { value: "expert", label: t.blogWizardExtended.targetAudience.expert, icon: Zap },
                 ].map((audience) => {
                   const Icon = audience.icon;
                   return (
@@ -646,7 +646,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {/* Sélection des collections */}
             <div>
-              <label className="block text-sm font-semibold mb-3">Collections</label>
+              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.collections.title}</label>
               
               {formData.collection_ids.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -671,7 +671,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher une collection..."
+                  placeholder={t.blogWizardExtended.collections.searchPlaceholder}
                   value={collectionSearchTerm}
                   onChange={(e) => setCollectionSearchTerm(e.target.value)}
                   className="pl-9"
@@ -681,11 +681,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="border rounded-lg max-h-[300px] overflow-auto">
                 {collections.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">
-                    Aucune collection trouvée. Importez d'abord vos collections depuis Shopify.
+                    {t.blogWizardExtended.collections.noCollections}
                   </div>
                 ) : filteredCollections.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">
-                    Aucune collection ne correspond à votre recherche.
+                    {t.blogWizardExtended.collections.noResults}
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -710,7 +710,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                           </div>
                           <span className="flex-1 text-sm font-medium">{collection.title}</span>
                           <Badge variant="outline" className="ml-auto">
-                            {productCount} produit(s)
+                            {productCount} {t.blogWizardExtended.collections.productsCount}
                           </Badge>
                         </div>
                       );
@@ -722,19 +722,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               {formData.collection_ids.length > 0 && (
                 <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  {productsInCollection} produit(s) dans les collections sélectionnées
+                  {productsInCollection} {t.blogWizardExtended.collections.productsInSelected}
                 </div>
               )}
             </div>
 
             {/* Longueur de l'article */}
             <div>
-              <label className="block text-sm font-semibold mb-3">Longueur de l'article</label>
+              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.articleLength.title}</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: "700", label: "Court", words: "~700 mots", time: "3-4 min" },
-                  { value: "2000", label: "Long", words: "~2000 mots", time: "8-10 min" },
-                  { value: "4000", label: "Complet", words: "~4000 mots", time: "15-20 min" },
+                  { value: "700", label: t.blogWizardExtended.articleLength.short, words: t.blogWizardExtended.articleLength.shortWords, time: t.blogWizardExtended.articleLength.shortTime },
+                  { value: "2000", label: t.blogWizardExtended.articleLength.long, words: t.blogWizardExtended.articleLength.longWords, time: t.blogWizardExtended.articleLength.longTime },
+                  { value: "4000", label: t.blogWizardExtended.articleLength.complete, words: t.blogWizardExtended.articleLength.completeWords, time: t.blogWizardExtended.articleLength.completeTime },
                 ].map((length) => (
                   <button
                     key={length.value}
