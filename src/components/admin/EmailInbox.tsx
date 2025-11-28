@@ -20,6 +20,7 @@ import {
   DialogTitle as TemplateDialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/language";
 
 interface EmailTemplate {
   id: string;
@@ -86,6 +87,7 @@ export function EmailInbox() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t, tf } = useTranslation();
 
   // Form state
   const [to, setTo] = useState("");
@@ -128,8 +130,8 @@ export function EmailInbox() {
     } catch (error) {
       console.error("Error loading emails:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les emails",
+        title: t.emailInboxPage.error,
+        description: t.emailInboxPage.unableToLoad,
         variant: "destructive",
       });
     } finally {

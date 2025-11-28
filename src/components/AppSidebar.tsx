@@ -158,12 +158,12 @@ export function AppSidebar() {
     { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
-    { title: "Monitoring Crons", url: "/cron-monitoring", icon: Clock, key: "cron-monitoring" },
+    { title: t.adminSidebar.cronMonitoring, url: "/cron-monitoring", icon: Clock, key: "cron-monitoring" },
     // API Access - Enterprise only
     ...(isEnterprise ? [
-      { title: "Clés API", url: "/api-keys", icon: Key, key: "api-keys" },
-      { title: "Documentation API", url: "/api-docs", icon: Code, key: "api-docs" },
-      { title: "Analytics API", url: "/api-analytics", icon: Activity, key: "api-analytics" },
+      { title: t.adminSidebar.apiKeys, url: "/api-keys", icon: Key, key: "api-keys" },
+      { title: t.adminSidebar.apiDocs, url: "/api-docs", icon: Code, key: "api-docs" },
+      { title: t.adminSidebar.apiAnalytics, url: "/api-analytics", icon: Activity, key: "api-analytics" },
     ] : []),
   ];
 
@@ -369,7 +369,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild isActive={isActive('/seo?tab=google-console')}>
                   <NavLink to="/seo?tab=google-console">
                     <TrendingUp className="h-4 w-4" />
-                    <span>Console Google Search</span>
+                    <span>{t.adminSidebar.googleSearchConsole}</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -25,110 +25,62 @@ export function OnboardingTour() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t, tf, language } = useTranslation();
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
-  const [steps, setSteps] = useState<OnboardingStep[]>([
-    {
-      id: 'connect_shopify',
-      title: t.onboardingTour.steps.connectShopify.title,
-      description: t.onboardingTour.steps.connectShopify.description,
-      icon: Target,
-      action: t.onboardingTour.steps.connectShopify.action,
-      route: '/integration',
-      completed: false,
-      quickWin: true
-    },
-    {
-      id: 'optimize_first_product',
-      title: t.onboardingTour.steps.optimizeProduct.title,
-      description: t.onboardingTour.steps.optimizeProduct.description,
-      icon: Sparkles,
-      action: t.onboardingTour.steps.optimizeProduct.action,
-      route: '/seo',
-      completed: false,
-      quickWin: true
-    },
-    {
-      id: 'generate_article',
-      title: t.onboardingTour.steps.createArticle.title,
-      description: t.onboardingTour.steps.createArticle.description,
-      icon: FileText,
-      action: t.onboardingTour.steps.createArticle.action,
-      route: '/blog',
-      completed: false
-    },
-    {
-      id: 'setup_automation',
-      title: t.onboardingTour.steps.enableAutoOptimizations.title,
-      description: t.onboardingTour.steps.enableAutoOptimizations.description,
-      icon: Zap,
-      action: t.onboardingTour.steps.enableAutoOptimizations.action,
-      route: '/seo',
-      completed: false
-    },
-    {
-      id: 'view_analytics',
-      title: t.onboardingTour.steps.viewStatistics.title,
-      description: t.onboardingTour.steps.viewStatistics.description,
-      icon: BarChart3,
-      action: t.onboardingTour.steps.viewStatistics.action,
-      route: '/dashboard',
-      completed: false
-    }
-  ]);
+  const [steps, setSteps] = useState<OnboardingStep[]>([]);
 
+  // Initialize steps based on translations
   useEffect(() => {
-    // Update steps when language changes
     setSteps([
       {
         id: 'connect_shopify',
-        title: language === 'fr' ? 'Connectez votre boutique Shopify' : 'Connect your Shopify store',
-        description: language === 'fr' ? 'Synchronisez vos produits en 1 clic' : 'Sync your products in 1 click',
+        title: t.onboardingTour.steps.connectShopify.title,
+        description: t.onboardingTour.steps.connectShopify.description,
         icon: Target,
-        action: language === 'fr' ? 'Connecter' : 'Connect',
+        action: t.onboardingTour.steps.connectShopify.action,
         route: '/integration',
-        completed: steps.find(s => s.id === 'connect_shopify')?.completed || false,
+        completed: false,
         quickWin: true
       },
       {
         id: 'optimize_first_product',
-        title: language === 'fr' ? 'Optimisez votre premier produit' : 'Optimize your first product',
-        description: language === 'fr' ? 'Améliorez le SEO d\'un produit en 30 secondes' : 'Improve product SEO in 30 seconds',
+        title: t.onboardingTour.steps.optimizeProduct.title,
+        description: t.onboardingTour.steps.optimizeProduct.description,
         icon: Sparkles,
-        action: language === 'fr' ? 'Optimiser' : 'Optimize',
+        action: t.onboardingTour.steps.optimizeProduct.action,
         route: '/seo',
-        completed: steps.find(s => s.id === 'optimize_first_product')?.completed || false,
+        completed: false,
         quickWin: true
       },
       {
         id: 'generate_article',
-        title: language === 'fr' ? 'Créez votre premier article de blog' : 'Create your first blog article',
-        description: language === 'fr' ? 'Générez du contenu optimisé SEO avec l\'IA' : 'Generate AI-optimized SEO content',
+        title: t.onboardingTour.steps.createArticle.title,
+        description: t.onboardingTour.steps.createArticle.description,
         icon: FileText,
-        action: language === 'fr' ? 'Créer' : 'Create',
+        action: t.onboardingTour.steps.createArticle.action,
         route: '/blog',
-        completed: steps.find(s => s.id === 'generate_article')?.completed || false
+        completed: false
       },
       {
         id: 'setup_automation',
-        title: language === 'fr' ? 'Activez les optimisations automatiques' : 'Enable automatic optimizations',
-        description: language === 'fr' ? 'Laissez l\'IA travailler pour vous' : 'Let AI work for you',
+        title: t.onboardingTour.steps.enableAutoOptimizations.title,
+        description: t.onboardingTour.steps.enableAutoOptimizations.description,
         icon: Zap,
-        action: language === 'fr' ? 'Activer' : 'Enable',
+        action: t.onboardingTour.steps.enableAutoOptimizations.action,
         route: '/seo',
-        completed: steps.find(s => s.id === 'setup_automation')?.completed || false
+        completed: false
       },
       {
         id: 'view_analytics',
-        title: language === 'fr' ? 'Consultez vos premières statistiques' : 'View your first statistics',
-        description: language === 'fr' ? 'Suivez l\'impact de vos optimisations' : 'Track the impact of your optimizations',
+        title: t.onboardingTour.steps.viewStatistics.title,
+        description: t.onboardingTour.steps.viewStatistics.description,
         icon: BarChart3,
-        action: language === 'fr' ? 'Voir' : 'View',
+        action: t.onboardingTour.steps.viewStatistics.action,
         route: '/dashboard',
-        completed: steps.find(s => s.id === 'view_analytics')?.completed || false
+        completed: false
       }
     ]);
-  }, [language]);
+  }, [t]);
 
   useEffect(() => {
     const completed = localStorage.getItem('onboarding_completed');
@@ -200,8 +152,8 @@ export function OnboardingTour() {
     setShow(false);
     localStorage.setItem('onboarding_completed', 'true');
     toast({
-      title: "Onboarding terminé",
-      description: "Vous pouvez toujours accéder aux guides depuis les paramètres",
+      title: t.onboardingTour.onboardingCompleted,
+      description: t.onboardingTour.accessGuides,
     });
   };
 
@@ -218,13 +170,10 @@ export function OnboardingTour() {
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              {language === 'fr' ? 'Bienvenue sur votre plateforme SEO' : 'Welcome to your SEO platform'}
+              {t.onboardingTour.welcome}
             </CardTitle>
             <CardDescription>
-              {language === 'fr' 
-                ? 'Suivez ces étapes pour obtenir vos premiers résultats en moins de 10 minutes'
-                : 'Follow these steps to get your first results in less than 10 minutes'
-              }
+              {t.onboardingTour.followSteps}
             </CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={handleDismiss}>
@@ -233,8 +182,8 @@ export function OnboardingTour() {
         </div>
         <div className="pt-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{language === 'fr' ? 'Progression' : 'Progress'}</span>
-            <span className="font-medium">{completedCount}/{steps.length} {language === 'fr' ? 'complétées' : 'completed'}</span>
+            <span className="text-muted-foreground">{t.onboardingTour.progress}</span>
+            <span className="font-medium">{completedCount}/{steps.length} {t.onboardingTour.completed}</span>
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
@@ -244,14 +193,11 @@ export function OnboardingTour() {
             <div className="bg-primary/5 rounded-lg p-3 mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">{language === 'fr' ? 'Quick Wins' : 'Quick Wins'}</span>
-                <Badge variant="secondary" className="text-xs">{language === 'fr' ? 'Recommandé' : 'Recommended'}</Badge>
+                <span className="font-semibold text-sm">{t.onboardingTour.quickWins}</span>
+                <Badge variant="secondary" className="text-xs">{t.onboardingTour.recommended}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {language === 'fr' 
-                  ? 'Commencez par ces actions pour des résultats immédiats'
-                  : 'Start with these actions for immediate results'
-                }
+                {t.onboardingTour.startWithThese}
               </p>
           </div>
         )}
@@ -307,12 +253,12 @@ export function OnboardingTour() {
         {completedCount === steps.length && (
           <div className="mt-4 p-4 bg-primary/10 rounded-lg text-center">
             <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
-            <p className="font-semibold">Félicitations ! 🎉</p>
+            <p className="font-semibold">{t.onboardingTour.congratulations}</p>
             <p className="text-sm text-muted-foreground">
-              Vous avez terminé l'onboarding. Votre boutique est prête à décoller !
+              {t.onboardingTour.onboardingComplete}
             </p>
             <Button onClick={handleDismiss} className="mt-3" size="sm">
-              Commencer l'optimisation
+              {t.onboardingTour.startOptimization}
             </Button>
           </div>
         )}

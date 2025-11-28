@@ -4809,31 +4809,43 @@ export const translations = {
 
   // Onboarding Tour
   onboardingTour: {
+    welcome: "Welcome to your SEO platform",
+    followSteps: "Follow these steps to get your first results in less than 10 minutes",
+    progress: "Progress",
+    completed: "completed",
+    quickWins: "Quick Wins",
+    recommended: "Recommended",
+    startWithThese: "Start with these actions for immediate results",
+    congratulations: "Congratulations! 🎉",
+    onboardingComplete: "You've completed the onboarding. Your store is ready to take off!",
+    startOptimization: "Start optimization",
+    onboardingCompleted: "Onboarding completed",
+    accessGuides: "You can always access guides from settings",
     steps: {
       connectShopify: {
         title: "Connect your Shopify store",
-        description: "Connect your store to start optimizing",
-        action: "Connect Store",
+        description: "Sync your products in 1 click",
+        action: "Connect",
       },
       optimizeProduct: {
         title: "Optimize your first product",
-        description: "Generate SEO-optimized content for a product",
-        action: "Optimize Product",
+        description: "Improve product SEO in 30 seconds",
+        action: "Optimize",
       },
       createArticle: {
-        title: "Create your first article",
-        description: "Generate an AI-powered blog article",
-        action: "Create Article",
+        title: "Create your first blog article",
+        description: "Generate AI-optimized SEO content",
+        action: "Create",
       },
       enableAutoOptimizations: {
-        title: "Enable auto-optimizations",
-        description: "Set up automatic SEO optimizations",
-        action: "Enable Automation",
+        title: "Enable automatic optimizations",
+        description: "Let AI work for you",
+        action: "Enable",
       },
       viewStatistics: {
-        title: "View your statistics",
-        description: "Check your SEO performance metrics",
-        action: "View Stats",
+        title: "View your first statistics",
+        description: "Track the impact of your optimizations",
+        action: "View",
       },
     },
   },
@@ -7068,6 +7080,57 @@ export const translations = {
     somethingWrong: "Something went wrong during installation.",
     settingUp: "Setting up your app...",
     activatingTrial: "Your free trial is being activated.",
+  },
+
+  // ============= Loading State =============
+  loadingState: {
+    estimatedTime: "Estimated time:",
+  },
+
+  // ============= Admin Sidebar =============
+  adminSidebar: {
+    cronMonitoring: "Cron Monitoring",
+    apiKeys: "API Keys",
+    apiDocs: "API Documentation",
+    apiAnalytics: "API Analytics",
+    googleSearchConsole: "Google Search Console",
+  },
+
+  // ============= Email Inbox Page =============
+  emailInboxPage: {
+    title: "Inbox",
+    sent: "Sent",
+    drafts: "Drafts",
+    trash: "Trash",
+    spam: "Spam",
+    unread: "unread",
+    testEmail: "Test Email",
+    new: "New",
+    replyToEmail: "Reply to Email",
+    composeEmail: "Compose Email",
+    fillAllFields: "Please fill all fields",
+    emailSent: "Email sent successfully",
+    unableToSend: "Unable to send email",
+    emailMoved: "Email moved",
+    movedTo: "Email moved to {{folder}}",
+    unableToMove: "Unable to move email",
+    testReceived: "Test email received",
+    testReceivedDesc: "A test email has been added to your inbox",
+    unableToSimulate: "Unable to simulate email",
+    templateApplied: "Template applied",
+    templateAppliedDesc: 'Template "{{name}}" applied successfully',
+    loading: "Loading...",
+    download: "Download",
+    downloadDesc: "Downloading {{filename}}...",
+    error: "Error",
+    unableToLoad: "Unable to load emails",
+    folders: {
+      inbox: "Inbox",
+      sent: "Sent Emails",
+      drafts: "Drafts",
+      trash: "Trash",
+      spam: "Spam",
+    },
   },
 };
 
