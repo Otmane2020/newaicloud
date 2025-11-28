@@ -124,26 +124,6 @@ const ShopifyInstallGuide = () => {
               </div>
 
               <div className="pt-4 space-y-3">
-                {shop && (
-                  <Button
-                    onClick={handleInstallApp}
-                    className="w-full"
-                    size="lg"
-                    disabled={installing}
-                  >
-                    {installing ? "Installation en cours..." : "🚀 Installer l'app maintenant"}
-                    {!installing && <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
-                )}
-                
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">ou</span>
-                  </div>
-                </div>
                 
                 <Button
                   onClick={() => navigate(`/auth?mode=signup&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
