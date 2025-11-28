@@ -1845,9 +1845,8 @@ export default function ProductTitleDescription() {
         <Alert className="bg-gradient-to-r from-primary/5 to-background border-primary/20">
           <ImageIcon className="h-4 w-4" />
           <AlertDescription>
-            <strong>White background :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc
-            professionnel. <strong>AI Background :</strong> Génère un nouvel arrière-plan personnalisé avec
-            l'intelligence artificielle.
+            <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(': ')[1]}{' '}
+            <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(': ')[1]}
           </AlertDescription>
         </Alert>
 
