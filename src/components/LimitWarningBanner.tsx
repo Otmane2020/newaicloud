@@ -53,7 +53,7 @@ export function LimitWarningBanner() {
       navigate("/account?tab=subscription");
     } catch (error) {
       console.error("Upgrade error:", error);
-      toast.error("Erreur lors de la redirection");
+      toast.error(t.toasts.seo.redirectError);
     } finally {
       setUpgrading(false);
     }

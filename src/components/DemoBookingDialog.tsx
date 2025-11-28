@@ -107,7 +107,7 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
     } catch (error: any) {
       console.error('Error sending demo booking:', error);
       toast({
-        title: "Error",
+        title: t.toasts.error.generic,
         description: t.dialogs.demoBooking.error,
         variant: "destructive",
       });

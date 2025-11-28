@@ -4943,31 +4943,43 @@ export const translations = {
 
   // Onboarding Tour
   onboardingTour: {
+    welcome: "Bienvenue sur votre plateforme SEO",
+    followSteps: "Suivez ces étapes pour obtenir vos premiers résultats en moins de 10 minutes",
+    progress: "Progression",
+    completed: "complétées",
+    quickWins: "Quick Wins",
+    recommended: "Recommandé",
+    startWithThese: "Commencez par ces actions pour des résultats immédiats",
+    congratulations: "Félicitations ! 🎉",
+    onboardingComplete: "Vous avez terminé l'onboarding. Votre boutique est prête à décoller !",
+    startOptimization: "Commencer l'optimisation",
+    onboardingCompleted: "Onboarding terminé",
+    accessGuides: "Vous pouvez toujours accéder aux guides depuis les paramètres",
     steps: {
       connectShopify: {
         title: "Connectez votre boutique Shopify",
-        description: "Connectez votre boutique pour commencer l'optimisation",
-        action: "Connecter la boutique",
+        description: "Synchronisez vos produits en 1 clic",
+        action: "Connecter",
       },
       optimizeProduct: {
         title: "Optimisez votre premier produit",
-        description: "Générez du contenu SEO optimisé pour un produit",
-        action: "Optimiser un produit",
+        description: "Améliorez le SEO d'un produit en 30 secondes",
+        action: "Optimiser",
       },
       createArticle: {
-        title: "Créez votre premier article",
-        description: "Générez un article de blog avec l'IA",
-        action: "Créer un article",
+        title: "Créez votre premier article de blog",
+        description: "Générez du contenu optimisé SEO avec l'IA",
+        action: "Créer",
       },
       enableAutoOptimizations: {
         title: "Activez les optimisations automatiques",
-        description: "Configurez les optimisations SEO automatiques",
-        action: "Activer l'automatisation",
+        description: "Laissez l'IA travailler pour vous",
+        action: "Activer",
       },
       viewStatistics: {
-        title: "Consultez vos statistiques",
-        description: "Vérifiez vos métriques de performance SEO",
-        action: "Voir les stats",
+        title: "Consultez vos premières statistiques",
+        description: "Suivez l'impact de vos optimisations",
+        action: "Voir",
       },
     },
   },
@@ -7111,5 +7123,56 @@ export const translations = {
     somethingWrong: "Une erreur s'est produite lors de l'installation.",
     settingUp: "Configuration de votre application...",
     activatingTrial: "Votre essai gratuit est en cours d'activation.",
+  },
+
+  // ============= Loading State =============
+  loadingState: {
+    estimatedTime: "Temps estimé :",
+  },
+
+  // ============= Admin Sidebar =============
+  adminSidebar: {
+    cronMonitoring: "Monitoring Crons",
+    apiKeys: "Clés API",
+    apiDocs: "Documentation API",
+    apiAnalytics: "Analytics API",
+    googleSearchConsole: "Console Google Search",
+  },
+
+  // ============= Email Inbox Page =============
+  emailInboxPage: {
+    title: "Boîte de réception",
+    sent: "Envoyés",
+    drafts: "Brouillons",
+    trash: "Corbeille",
+    spam: "Spam",
+    unread: "non lu(s)",
+    testEmail: "Email Test",
+    new: "Nouveau",
+    replyToEmail: "Répondre à l'email",
+    composeEmail: "Composer un email",
+    fillAllFields: "Veuillez remplir tous les champs",
+    emailSent: "Email envoyé avec succès",
+    unableToSend: "Impossible d'envoyer l'email",
+    emailMoved: "Email déplacé",
+    movedTo: "Email déplacé vers {{folder}}",
+    unableToMove: "Impossible de déplacer l'email",
+    testReceived: "Email de test reçu",
+    testReceivedDesc: "Un email de test a été ajouté à votre boîte de réception",
+    unableToSimulate: "Impossible de simuler l'email",
+    templateApplied: "Template appliqué",
+    templateAppliedDesc: 'Template "{{name}}" appliqué avec succès',
+    loading: "Chargement...",
+    download: "Téléchargement",
+    downloadDesc: "Téléchargement de {{filename}}...",
+    error: "Erreur",
+    unableToLoad: "Impossible de charger les emails",
+    folders: {
+      inbox: "Boîte de réception",
+      sent: "Emails envoyés",
+      drafts: "Brouillons",
+      trash: "Corbeille",
+      spam: "Spam",
+    },
   },
 };

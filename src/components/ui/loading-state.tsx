@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { Progress } from "./progress";
+import { useTranslation } from "@/lib/language";
 
 interface LoadingStateProps {
   message?: string;
@@ -9,6 +10,8 @@ interface LoadingStateProps {
 }
 
 export function LoadingState({ message, progress, estimatedTime, details }: LoadingStateProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -25,7 +28,7 @@ export function LoadingState({ message, progress, estimatedTime, details }: Load
       )}
       {estimatedTime && (
         <p className="text-sm text-muted-foreground">
-          Temps estimé: {estimatedTime}
+          {t.loadingState.estimatedTime} {estimatedTime}
         </p>
       )}
       {details && (
