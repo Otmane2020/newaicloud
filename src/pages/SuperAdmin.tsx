@@ -22,6 +22,7 @@ import { UserInsightPanel } from '@/components/admin/UserInsightPanel';
 import { SystemEventLogs } from '@/components/admin/SystemEventLogs';
 import { AdminToolbox } from '@/components/admin/AdminToolbox';
 import { AdminSmartSearch } from '@/components/admin/AdminSmartSearch';
+import { GoogleAdsAdmin } from '@/components/admin/GoogleAdsAdmin';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -661,6 +662,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'search' && (
         <AdminSmartSearch />
+      )}
+
+      {activeTab === 'google-ads' && (
+        <GoogleAdsAdmin />
       )}
     </div>
   );

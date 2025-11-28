@@ -426,3 +426,15 @@ verify_jwt = true
 verify_jwt = true
 memory_limit_mb = 512
 
+[functions.import-google-ads-search-terms]
+verify_jwt = true
+
+[functions.suggest-negative-keywords]
+verify_jwt = true
+
+[functions.generate-ads-strategy]
+verify_jwt = true
+
+[functions.list-google-ads-campaigns]
+verify_jwt = true
+
