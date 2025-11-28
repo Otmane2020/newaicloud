@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -163,7 +164,10 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl, productTitle, country = "fr" } = body;
+    const { imageUrl, productTitle, country = "fr", productId, variantId, storeId } = body;
+    
+    // Get user from authorization header
+    const authHeader = req.headers.get("authorization") || "";
 
     if (!imageUrl) {
       return new Response(
@@ -177,6 +181,8 @@ serve(async (req) => {
     const DATAFORSEO_PASSWORD = Deno.env.get("DATAFORSEO_PASSWORD");
     const GOOGLE_CSE_API_KEY = Deno.env.get("GOOGLE_CSE_API_KEY");
     const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
@@ -462,6 +468,9 @@ Return ONLY valid JSON, no markdown.`,
 
     const processingTime = Date.now() - startTime;
 
+    // Keep top 10 merchants for storage
+    const merchantsToStore = allMerchants.slice(0, 10);
+
     const result: ScanResult = {
       vision: visionAnalysis,
       searchQuery,
@@ -476,6 +485,58 @@ Return ONLY valid JSON, no markdown.`,
       },
       processingTime,
     };
+
+    // Save results to database if we have Supabase credentials and user context
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && authHeader) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+
+        // Get user ID from auth
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const scanRecord = {
+            product_id: productId || null,
+            variant_id: variantId || null,
+            user_id: user.id,
+            store_id: storeId || null,
+            vision_title: visionAnalysis?.title || null,
+            vision_brand: visionAnalysis?.brand || null,
+            vision_category: visionAnalysis?.category || null,
+            vision_keywords: visionAnalysis?.keywords || [],
+            vision_segment: visionAnalysis?.segment || null,
+            search_query: searchQuery,
+            price_min: priceStats.min,
+            price_max: priceStats.max,
+            price_avg: priceStats.avg,
+            price_median: priceStats.median,
+            currency: priceStats.currency,
+            merchants: merchantsToStore,
+            sources_shopping: shoppingCount,
+            sources_organic: organicCount,
+            sources_images: imagesCount,
+            products_found: shoppingCount + organicCount + imagesCount,
+            confidence: Math.round(confidence * 100) / 100,
+            processing_time_ms: processingTime,
+            image_url: imageUrl,
+          };
+
+          const { error: insertError } = await supabase
+            .from("price_scan_results")
+            .insert(scanRecord);
+
+          if (insertError) {
+            console.error("⚠️ [SMART-PRICE-SCANNER] Failed to save results:", insertError.message);
+          } else {
+            console.log("✅ [SMART-PRICE-SCANNER] Results saved to database");
+          }
+        }
+      } catch (dbError) {
+        console.error("⚠️ [SMART-PRICE-SCANNER] Database error:", dbError);
+      }
+    }
 
     console.log(`✅ [SMART-PRICE-SCANNER] Complete in ${processingTime}ms - Confidence: ${confidence}`);
 

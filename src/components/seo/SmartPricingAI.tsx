@@ -457,9 +457,18 @@ export function SmartPricingAI() {
     setProducts((prev) => prev.map((p) => ({ ...p, selected: !allSelected })));
   };
 
-  const applyBulkOperation = () => {
-    setProducts((prev) => {
-      return prev.map((product) => {
+  const applyBulkOperation = async () => {
+    if (bulkOperation.amount <= 0) {
+      toast.error("Veuillez entrer un montant valide");
+      return;
+    }
+
+    const toastId = toast.loading("🔄 Application des modifications...");
+    
+    try {
+      const productsToUpdate: { id: string; newPrice: number; newComparePrice: number | null }[] = [];
+      
+      const updatedProducts = products.map((product) => {
         // Check if product belongs to selected collection
         const matchesCollection =
           bulkOperation.collection === "all" || product.collection_ids.includes(bulkOperation.collection);
@@ -488,15 +497,43 @@ export function SmartPricingAI() {
           }
         }
 
+        const finalPrice = Math.max(0, Math.round(newPrice * 100) / 100);
+        
+        productsToUpdate.push({
+          id: product.id,
+          newPrice: finalPrice,
+          newComparePrice: newComparePrice
+        });
+
         return {
           ...product,
-          price: Math.max(0, Math.round(newPrice * 100) / 100),
+          price: finalPrice,
           compare_at_price: newComparePrice,
         };
       });
-    });
 
-    toast.success("💰 Modification appliquée avec succès");
+      // Save to database
+      let savedCount = 0;
+      for (const item of productsToUpdate) {
+        const { error } = await supabase
+          .from("shopify_products")
+          .update({
+            price: item.newPrice,
+            compare_at_price: item.newComparePrice
+          })
+          .eq("id", item.id);
+        
+        if (!error) savedCount++;
+      }
+
+      // Update local state
+      setProducts(updatedProducts);
+
+      toast.success(`💰 ${savedCount} produit(s) modifié(s) et sauvegardé(s)`, { id: toastId });
+    } catch (error) {
+      console.error("Bulk operation error:", error);
+      toast.error("Erreur lors de l'application des modifications", { id: toastId });
+    }
   };
 
   const importCostsFromShopify = async () => {
