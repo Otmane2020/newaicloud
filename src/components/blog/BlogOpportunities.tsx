@@ -517,14 +517,14 @@ export function BlogOpportunities() {
                   <Icon className="w-8 h-8 text-primary mb-2 flex-shrink-0" />
                   <div className="flex flex-col gap-1 items-end">
                     <Badge variant="outline">
-                      {opp.productsCount} produit{opp.productsCount > 1 ? "s" : ""}
+                      {opp.productsCount} {opp.productsCount > 1 ? t.blog.dialogs.opportunities.products : t.blog.dialogs.opportunities.product}
                     </Badge>
                     <Badge variant={opp.seoScore >= 80 ? "default" : "secondary"}>
                       SEO: {opp.seoScore}/100
                     </Badge>
                     {opp.collectionIds && opp.collectionIds.length > 0 && (
                       <Badge variant="outline">
-                        {opp.collectionIds.length} collection{opp.collectionIds.length > 1 ? "s" : ""}
+                        {opp.collectionIds.length} {opp.collectionIds.length > 1 ? t.blog.dialogs.opportunities.collections : t.blog.dialogs.opportunities.collection}
                       </Badge>
                     )}
                   </div>
@@ -541,13 +541,13 @@ export function BlogOpportunities() {
                   
                   {opp.angle && (
                     <div className="text-sm">
-                      <span className="font-semibold">Angle:</span> {opp.angle}
+                      <span className="font-semibold">{t.blog.dialogs.opportunities.angle}:</span> {opp.angle}
                     </div>
                   )}
                   
                   {opp.targetAudience && (
                     <div className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Audience:</span> {opp.targetAudience}
+                      <span className="font-semibold">{t.blog.dialogs.opportunities.audience}:</span> {opp.targetAudience}
                     </div>
                   )}
                   
@@ -556,7 +556,7 @@ export function BlogOpportunities() {
                       {opp.type}
                     </Badge>
                     <Badge variant="outline" className="capitalize">
-                      {opp.difficulty === 'easy' ? '🟢 Facile' : opp.difficulty === 'medium' ? '🟡 Moyen' : '🔴 Difficile'}
+                      {opp.difficulty === 'easy' ? `🟢 ${t.blog.dialogs.opportunities.easy}` : opp.difficulty === 'medium' ? `🟡 ${t.blog.dialogs.opportunities.medium}` : `🔴 ${t.blog.dialogs.opportunities.hard}`}
                     </Badge>
                   </div>
 
@@ -571,7 +571,7 @@ export function BlogOpportunities() {
                   )}
 
                   <div className="text-xs text-muted-foreground">
-                    📝 ~{opp.estimatedWordCount} mots
+                    📝 ~{opp.estimatedWordCount} {t.blog.dialogs.opportunities.words}
                   </div>
 
                   <div className="flex gap-2 w-full">
@@ -583,12 +583,12 @@ export function BlogOpportunities() {
                       {generating === opp.id ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Génération...
+                          {t.blog.dialogs.opportunities.generatingBtn}
                         </>
                       ) : (
                         <>
                           <Sparkles className="mr-2 h-4 w-4" />
-                          Créer Auto
+                          {t.blog.dialogs.opportunities.createAuto}
                         </>
                       )}
                     </Button>
@@ -596,8 +596,10 @@ export function BlogOpportunities() {
                       variant="outline" 
                       onClick={() => handleCreateWithWizard(opp)}
                       disabled={generating === opp.id}
+                      className="flex-shrink-0"
                     >
-                      Personnaliser
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      {t.blog.dialogs.opportunities.customize}
                     </Button>
                   </div>
                 </div>
