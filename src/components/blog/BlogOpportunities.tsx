@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -43,6 +43,7 @@ export function BlogOpportunities() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardInitialData, setWizardInitialData] = useState<any>(null);
   const [wizardAutoGenerate, setWizardAutoGenerate] = useState(false);
+  const [generatedArticle, setGeneratedArticle] = useState<{ id: string; title: string; shopifyUrl?: string } | null>(null);
   const [collections, setCollections] = useState<any[]>([]);
   const [userId, setUserId] = useState<string>('');
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
@@ -312,17 +313,23 @@ export function BlogOpportunities() {
       if (error) throw error;
 
       if (data?.success && data?.article?.id) {
-        toast.success(t.toasts.success.created, {
-          description: tf('blog.generation.articleAvailable', { title: opp.title }),
-          duration: 6000
-        });
-
         await refreshLimits();
         await loadOpportunities();
         
-        setTimeout(() => {
-          window.location.href = `/blog?subtab=articles&articleId=${data.article.id}`;
-        }, 1000);
+        // Build Shopify URL if article was synced
+        let shopifyUrl: string | undefined;
+        if (data.article.shopify_article_id && selectedStore?.store_name) {
+          const storeDomain = selectedStore.store_name.includes('.myshopify.com') 
+            ? selectedStore.store_name 
+            : `${selectedStore.store_name}.myshopify.com`;
+          shopifyUrl = `https://${storeDomain}/blogs/news/${data.article.handle || data.article.id}`;
+        }
+        
+        setGeneratedArticle({
+          id: data.article.id,
+          title: data.article.title || opp.title,
+          shopifyUrl
+        });
       } else {
         throw new Error(t.toasts.error.generic);
       }
@@ -577,7 +584,7 @@ export function BlogOpportunities() {
                   <div className="flex gap-2 w-full">
                     <Button 
                       onClick={() => handleCreateArticle(opp)} 
-                      className="flex-1"
+                      className="w-full"
                       disabled={generating === opp.id}
                     >
                       {generating === opp.id ? (
@@ -591,15 +598,6 @@ export function BlogOpportunities() {
                           {t.blog.dialogs.opportunities.createAuto}
                         </>
                       )}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleCreateWithWizard(opp)}
-                      disabled={generating === opp.id}
-                      className="flex-shrink-0"
-                    >
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      {t.blog.dialogs.opportunities.customize}
                     </Button>
                   </div>
                 </div>
@@ -617,7 +615,16 @@ export function BlogOpportunities() {
       
       <ArticleGenerationProgress 
         open={showGenerationProgress} 
-        onClose={() => setShowGenerationProgress(false)} 
+        onClose={() => {
+          setShowGenerationProgress(false);
+          setGeneratedArticle(null);
+        }}
+        generatedArticle={generatedArticle}
+        onViewArticle={(articleId) => {
+          setShowGenerationProgress(false);
+          setGeneratedArticle(null);
+          window.location.href = `/blog?subtab=articles&articleId=${articleId}`;
+        }}
       />
       
       <ArticleWizard

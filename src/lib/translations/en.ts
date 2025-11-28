@@ -3507,6 +3507,10 @@ export const translations = {
       title: "Generation in progress",
       description: "Creating your SEO optimized article...",
       warning: "This operation may take 1-2 minutes. Do not close this window.",
+      successTitle: "Article created!",
+      successDescription: "Your SEO optimized article has been generated successfully.",
+      viewArticle: "View Article",
+      viewOnShopify: "View on Shopify",
       steps: {
         start: "🚀 Starting AI generation...",
         analyzingProducts: "📦 Analyzing selected products",
