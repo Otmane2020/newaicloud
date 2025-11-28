@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface ShopifyRetryClaimButtonProps {
   pendingToken?: string;
@@ -14,6 +15,7 @@ export function ShopifyRetryClaimButton({
   onSuccess 
 }: ShopifyRetryClaimButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleRetryClaim = async () => {
     setIsLoading(true);
@@ -32,8 +34,8 @@ export function ShopifyRetryClaimButton({
       }
 
       if (!pendingToken) {
-        toast.error("No pending Shopify connection found", {
-          description: "Please reinstall the app from your Shopify Partner Dashboard."
+        toast.error(t.shopifyRetryClaim.noPendingConnection, {
+          description: t.shopifyRetryClaim.reinstallApp
         });
         setIsLoading(false);
         return;
@@ -45,8 +47,8 @@ export function ShopifyRetryClaimButton({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
-        toast.error("Authentication required", {
-          description: "Please log in to continue."
+        toast.error(t.shopifyRetryClaim.authRequired, {
+          description: t.shopifyRetryClaim.pleaseLogin
         });
         setIsLoading(false);
         return;
@@ -67,16 +69,16 @@ export function ShopifyRetryClaimButton({
         
         const errorMessage = claimError.message || '';
         if (errorMessage.includes('expired') || errorMessage.includes('Token expired')) {
-          toast.error("Connection token expired", {
-            description: "Please reinstall the app from your Shopify Partner Dashboard."
+          toast.error(t.shopifyRetryClaim.tokenExpired, {
+            description: t.shopifyRetryClaim.reinstallApp
           });
         } else if (errorMessage.includes('Invalid or expired token')) {
-          toast.error("Invalid connection token", {
-            description: "Please reinstall the app from your Shopify Partner Dashboard."
+          toast.error(t.shopifyRetryClaim.invalidToken, {
+            description: t.shopifyRetryClaim.reinstallApp
           });
         } else {
-          toast.error("Failed to connect store", {
-            description: errorMessage || "Please try again or contact support."
+          toast.error(t.shopifyRetryClaim.failedToConnect, {
+            description: errorMessage || t.shopifyRetryClaim.tryAgainOrContact
           });
         }
         setIsLoading(false);
@@ -88,8 +90,8 @@ export function ShopifyRetryClaimButton({
       // Clear the stored token
       localStorage.removeItem('shopify_pending_token');
       
-      toast.success("Shopify store connected successfully!", {
-        description: "Your products are being imported."
+      toast.success(t.shopifyRetryClaim.storeConnectedSuccess, {
+        description: t.shopifyRetryClaim.productsImporting
       });
 
       if (onSuccess) {
@@ -103,8 +105,8 @@ export function ShopifyRetryClaimButton({
 
     } catch (error) {
       console.error('[RETRY-CLAIM] Exception:', error);
-      toast.error("Connection failed", {
-        description: error instanceof Error ? error.message : "An unexpected error occurred."
+      toast.error(t.shopifyRetryClaim.connectionFailed, {
+        description: error instanceof Error ? error.message : t.shopifyRetryClaim.unexpectedError
       });
     } finally {
       setIsLoading(false);
@@ -119,7 +121,7 @@ export function ShopifyRetryClaimButton({
       className="gap-2"
     >
       <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-      {isLoading ? "Connecting..." : "Retry Shopify Connection"}
+      {isLoading ? t.shopifyRetryClaim.retrying : t.shopifyRetryClaim.retryConnection}
     </Button>
   );
 }

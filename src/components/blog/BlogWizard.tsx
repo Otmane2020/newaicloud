@@ -175,7 +175,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       if (response.data?.suggestions) {
         setKeywordSuggestions(response.data.suggestions);
-        toast.success("Suggestions de mots-clés générées par IA");
+        toast.success(t.blogWizardToasts.keywordsSuggested);
       }
     } catch (error) {
       console.error("Erreur génération suggestions IA:", error);
@@ -227,7 +227,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const selectAllKeywords = () => {
     const allKeywords = [...new Set([...keywords, ...keywordSuggestions])];
     setKeywords(allKeywords);
-    toast.success(`${keywordSuggestions.length - keywords.length} mots-clés ajoutés`);
+    toast.success(t.blogWizardToasts.keywordsAdded.replace('{{count}}', String(keywordSuggestions.length - keywords.length)));
   };
 
   // Prefill from URL params (opportunity data)
@@ -413,7 +413,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (newKeyword && !keywords.includes(newKeyword)) {
       setKeywords([...keywords, newKeyword]);
       setKeywordInput("");
-      toast.success("Mot-clé ajouté");
+      toast.success(t.blogWizardToasts.keywordAdded);
     }
   };
 
@@ -424,19 +424,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const addSuggestedKeyword = (suggestion: string) => {
     if (!keywords.includes(suggestion)) {
       setKeywords([...keywords, suggestion]);
-      toast.success("Mot-clé suggéré ajouté");
+      toast.success(t.blogWizardToasts.suggestedKeywordAdded);
     }
   };
 
   const handleNext = () => {
     // Validation selon l'étape
     if (currentStep === 1 && formData.collection_ids.length === 0) {
-      toast.error("Veuillez sélectionner au moins une collection");
+      toast.error(t.blogWizardToasts.selectCollection);
       return;
     }
     
     if (currentStep === 2 && selectedProducts.length === 0) {
-      toast.error("Veuillez sélectionner au moins un produit");
+      toast.error(t.blogWizardToasts.selectProduct);
       return;
     }
 
@@ -454,8 +454,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const handleGenerate = async () => {
     // Vérification des limites
     if (!limits?.canUseArticles) {
-      toast.error("Limite d'articles atteinte", {
-        description: `Vous avez utilisé ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles.`
+      toast.error(t.blogWizardToasts.articleLimitReached, {
+        description: t.blogWizardToasts.articleLimitDesc.replace('{{used}}', String(limits?.usage.articles_count)).replace('{{max}}', String(limits?.limits.max_articles))
       });
       setShowUpgradeDialog(true);
       return;
@@ -463,7 +463,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
     // Validation finale
     if (selectedProducts.length === 0 && formData.collection_ids.length === 0) {
-      toast.error("Veuillez sélectionner au moins des produits ou une collection");
+      toast.error(t.blogWizardToasts.selectProductsOrCollection);
       return;
     }
 
@@ -472,7 +472,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setShowGenerationProgress(true);
 
       if (!user?.id || !selectedStore?.id) {
-        throw new Error("Utilisateur non connecté ou boutique non sélectionnée");
+        throw new Error(t.blogWizardToasts.userNotConnected);
       }
 
       console.log("🚀 [WIZARD] Lancement de la génération:");
