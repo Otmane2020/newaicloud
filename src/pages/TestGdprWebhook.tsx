@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
 
 interface TestResult {
   success: boolean;
@@ -16,6 +17,7 @@ interface TestResult {
 }
 
 export default function TestGdprWebhook() {
+  const { t } = useTranslation();
   const [loadingInternal, setLoadingInternal] = useState(false);
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [internalResult, setInternalResult] = useState<TestResult | null>(null);
@@ -40,7 +42,7 @@ export default function TestGdprWebhook() {
         hmac_sent: '',
         payload_sent: {},
         webhook_response: { error: error instanceof Error ? error.message : 'Unknown error' },
-        interpretation: '⚠️ Erreur lors du test',
+        interpretation: `⚠️ ${t.adminGdprWebhookTest.results.testError}`,
         timestamp: new Date().toISOString()
       });
     } finally {
@@ -67,7 +69,7 @@ export default function TestGdprWebhook() {
         hmac_sent: '',
         payload_sent: {},
         webhook_response: { error: error instanceof Error ? error.message : 'Unknown error' },
-        interpretation: '⚠️ Erreur lors du test',
+        interpretation: `⚠️ ${t.adminGdprWebhookTest.results.testError}`,
         timestamp: new Date().toISOString()
       });
     } finally {
@@ -91,11 +93,11 @@ export default function TestGdprWebhook() {
     if (!result) return '';
     
     if (result.status_code === 200) {
-      return 'border-green-500 bg-green-50';
+      return 'border-green-500 bg-green-50 dark:bg-green-950/20';
     } else if (result.status_code === 401) {
-      return 'border-red-500 bg-red-50';
+      return 'border-red-500 bg-red-50 dark:bg-red-950/20';
     } else {
-      return 'border-yellow-500 bg-yellow-50';
+      return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20';
     }
   };
 
@@ -110,12 +112,12 @@ export default function TestGdprWebhook() {
               {getStatusIcon(result)}
               <div>
                 <CardTitle>{title}</CardTitle>
-                <CardDescription>Status: {result.status_code}</CardDescription>
+                <CardDescription>{t.adminGdprWebhookTest.results.status}: {result.status_code}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Alert className={result.status_code === 200 ? 'bg-green-50 border-green-200' : result.status_code === 401 ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}>
+            <Alert className={result.status_code === 200 ? 'bg-green-50 border-green-200 dark:bg-green-950/20' : result.status_code === 401 ? 'bg-red-50 border-red-200 dark:bg-red-950/20' : 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20'}>
               <AlertDescription className="text-lg font-medium">
                 {result.interpretation}
               </AlertDescription>
@@ -125,12 +127,12 @@ export default function TestGdprWebhook() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Détails Techniques</CardTitle>
+            <CardTitle>{t.adminGdprWebhookTest.results.technicalDetails}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {result.hmac_sent && (
               <div>
-                <h3 className="font-semibold mb-2">HMAC Envoyé</h3>
+                <h3 className="font-semibold mb-2">{t.adminGdprWebhookTest.results.hmacSent}</h3>
                 <code className="block p-3 bg-muted rounded text-sm break-all">
                   {result.hmac_sent}
                 </code>
@@ -138,21 +140,21 @@ export default function TestGdprWebhook() {
             )}
 
             <div>
-              <h3 className="font-semibold mb-2">Payload de Test</h3>
+              <h3 className="font-semibold mb-2">{t.adminGdprWebhookTest.results.testPayload}</h3>
               <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
                 {JSON.stringify(result.payload_sent, null, 2)}
               </pre>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Réponse du Webhook</h3>
+              <h3 className="font-semibold mb-2">{t.adminGdprWebhookTest.results.webhookResponse}</h3>
               <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
                 {JSON.stringify(result.webhook_response, null, 2)}
               </pre>
             </div>
 
             <div className="text-sm text-muted-foreground">
-              <p>Timestamp: {new Date(result.timestamp).toLocaleString('fr-FR')}</p>
+              <p>{t.adminGdprWebhookTest.results.timestamp}: {new Date(result.timestamp).toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
@@ -163,34 +165,34 @@ export default function TestGdprWebhook() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Test GDPR Webhook HMAC</h1>
+        <h1 className="text-3xl font-bold mb-2">{t.adminGdprWebhookTest.title}</h1>
         <p className="text-muted-foreground">
-          Testez la validation HMAC de vos webhooks GDPR obligatoires pour Shopify
+          {t.adminGdprWebhookTest.description}
         </p>
       </div>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Webhooks GDPR Obligatoires</CardTitle>
+          <CardTitle>{t.adminGdprWebhookTest.mandatoryWebhooks}</CardTitle>
           <CardDescription>
-            Shopify requiert l'implémentation de 3 webhooks GDPR avec validation HMAC
+            {t.adminGdprWebhookTest.shopifyRequires}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="font-medium">customers/data_request</span>
-            <span className="text-sm text-muted-foreground">- Demande de données client</span>
+            <span className="text-sm text-muted-foreground">- {t.adminGdprWebhookTest.webhookTopics.customersDataRequest}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="font-medium">customers/redact</span>
-            <span className="text-sm text-muted-foreground">- Suppression des données client</span>
+            <span className="text-sm text-muted-foreground">- {t.adminGdprWebhookTest.webhookTopics.customersRedact}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="font-medium">shop/redact</span>
-            <span className="text-sm text-muted-foreground">- Suppression des données boutique</span>
+            <span className="text-sm text-muted-foreground">- {t.adminGdprWebhookTest.webhookTopics.shopRedact}</span>
           </div>
         </CardContent>
       </Card>
@@ -198,9 +200,9 @@ export default function TestGdprWebhook() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Test 1: Validation HMAC</CardTitle>
+            <CardTitle>{t.adminGdprWebhookTest.test1.title}</CardTitle>
             <CardDescription>
-              Teste la validation HMAC avec les headers Shopify complets (webhooks réels)
+              {t.adminGdprWebhookTest.test1.description}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -213,10 +215,10 @@ export default function TestGdprWebhook() {
               {loadingInternal ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Test en cours...
+                  {t.adminGdprWebhookTest.test1.running}
                 </>
               ) : (
-                'Tester la validation HMAC'
+                t.adminGdprWebhookTest.test1.button
               )}
             </Button>
           </CardContent>
@@ -224,9 +226,9 @@ export default function TestGdprWebhook() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Test 2: Vérification Shopify</CardTitle>
+            <CardTitle>{t.adminGdprWebhookTest.test2.title}</CardTitle>
             <CardDescription>
-              Simule la vérification automatique de Shopify (sans HMAC, acceptée depuis 2025)
+              {t.adminGdprWebhookTest.test2.description}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -240,10 +242,10 @@ export default function TestGdprWebhook() {
               {loadingVerification ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Test en cours...
+                  {t.adminGdprWebhookTest.test2.running}
                 </>
               ) : (
-                'Tester la vérification'
+                t.adminGdprWebhookTest.test2.button
               )}
             </Button>
           </CardContent>
@@ -252,13 +254,13 @@ export default function TestGdprWebhook() {
 
       {internalResult && (
         <div className="mb-8">
-          {renderTestResult(internalResult, "Résultat du Test HMAC")}
+          {renderTestResult(internalResult, t.adminGdprWebhookTest.results.hmacTitle)}
         </div>
       )}
 
       {verificationResult && (
         <div>
-          {renderTestResult(verificationResult, "Résultat de la Vérification Shopify")}
+          {renderTestResult(verificationResult, t.adminGdprWebhookTest.results.verificationTitle)}
         </div>
       )}
     </div>

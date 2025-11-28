@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, XCircle, RefreshCw, Wrench, ArrowLeft, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface WebhookStatus {
   topic: string;
@@ -32,6 +33,7 @@ interface StoreWebhooksData {
 
 export default function ShopifyWebhooksAdmin() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [stores, setStores] = useState<StoreWebhooksData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +46,7 @@ export default function ShopifyWebhooksAdmin() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Non authentifié");
+        toast.error(t.adminShopifyWebhooks.toasts.notAuthenticated);
         navigate("/auth");
         return;
       }
@@ -66,7 +68,7 @@ export default function ShopifyWebhooksAdmin() {
       })));
     } catch (error) {
       console.error("Error fetching stores:", error);
-      toast.error("Erreur lors du chargement des boutiques");
+      toast.error(t.adminShopifyWebhooks.toasts.loadError);
     } finally {
       setLoading(false);
     }
@@ -95,9 +97,9 @@ export default function ShopifyWebhooksAdmin() {
       ));
 
       if (data.allGdprWebhooksOk) {
-        toast.success("Tous les webhooks GDPR sont correctement configurés");
+        toast.success(t.adminShopifyWebhooks.toasts.allConfigured);
       } else {
-        toast.warning("Certains webhooks GDPR manquent ou sont mal configurés");
+        toast.warning(t.adminShopifyWebhooks.toasts.someMissing);
       }
     } catch (error) {
       console.error("Error checking webhooks:", error);
@@ -105,10 +107,10 @@ export default function ShopifyWebhooksAdmin() {
         s.id === storeId ? { 
           ...s, 
           checking: false, 
-          error: error instanceof Error ? error.message : "Erreur" 
+          error: error instanceof Error ? error.message : t.toasts.error.generic 
         } : s
       ));
-      toast.error("Erreur lors de la vérification");
+      toast.error(t.adminShopifyWebhooks.toasts.checkError);
     }
   };
 
@@ -125,11 +127,10 @@ export default function ShopifyWebhooksAdmin() {
       if (error) throw error;
 
       if (data.success) {
-        toast.success("Webhooks GDPR enregistrés avec succès");
-        // Re-check to update status
+        toast.success(t.adminShopifyWebhooks.toasts.registerSuccess);
         await checkWebhooks(storeId);
       } else {
-        toast.error("Certains webhooks n'ont pas pu être créés");
+        toast.error(t.adminShopifyWebhooks.toasts.registerPartial);
       }
 
       setStores(prev => prev.map(s => 
@@ -141,10 +142,10 @@ export default function ShopifyWebhooksAdmin() {
         s.id === storeId ? { 
           ...s, 
           registering: false, 
-          error: error instanceof Error ? error.message : "Erreur" 
+          error: error instanceof Error ? error.message : t.toasts.error.generic 
         } : s
       ));
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(t.adminShopifyWebhooks.toasts.registerError);
     }
   };
 
@@ -164,9 +165,9 @@ export default function ShopifyWebhooksAdmin() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Diagnostic Webhooks Shopify</h1>
+            <h1 className="text-2xl font-bold">{t.adminShopifyWebhooks.title}</h1>
             <p className="text-muted-foreground">
-              Vérifiez et réparez les webhooks GDPR obligatoires
+              {t.adminShopifyWebhooks.description}
             </p>
           </div>
         </div>
@@ -174,12 +175,12 @@ export default function ShopifyWebhooksAdmin() {
         <Card className="border-amber-500/50 bg-amber-500/10">
           <CardContent className="pt-4">
             <p className="text-sm">
-              <strong>Important :</strong> Shopify exige 3 webhooks GDPR obligatoires pour l'approbation de l'app :
+              <strong>{t.adminShopifyWebhooks.important} :</strong> {t.adminShopifyWebhooks.shopifyRequires}
             </p>
             <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-              <li><code>customers/data_request</code> - Demande de données client</li>
-              <li><code>customers/redact</code> - Suppression données client</li>
-              <li><code>shop/redact</code> - Suppression données boutique</li>
+              <li><code>customers/data_request</code> - {t.adminShopifyWebhooks.webhookTopics.customersDataRequest}</li>
+              <li><code>customers/redact</code> - {t.adminShopifyWebhooks.webhookTopics.customersRedact}</li>
+              <li><code>shop/redact</code> - {t.adminShopifyWebhooks.webhookTopics.shopRedact}</li>
             </ul>
           </CardContent>
         </Card>
@@ -187,9 +188,9 @@ export default function ShopifyWebhooksAdmin() {
         {stores.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">Aucune boutique connectée</p>
+              <p className="text-muted-foreground">{t.adminShopifyWebhooks.noStoresConnected}</p>
               <Button className="mt-4" onClick={() => navigate("/dashboard")}>
-                Connecter une boutique
+                {t.adminShopifyWebhooks.connectStore}
               </Button>
             </CardContent>
           </Card>
@@ -217,9 +218,9 @@ export default function ShopifyWebhooksAdmin() {
                   {store.allGdprWebhooksOk !== undefined && (
                     <Badge variant={store.allGdprWebhooksOk ? "default" : "destructive"}>
                       {store.allGdprWebhooksOk ? (
-                        <><CheckCircle className="h-3 w-3 mr-1" /> OK</>
+                        <><CheckCircle className="h-3 w-3 mr-1" /> {t.adminShopifyWebhooks.status.ok}</>
                       ) : (
-                        <><XCircle className="h-3 w-3 mr-1" /> Problème</>
+                        <><XCircle className="h-3 w-3 mr-1" /> {t.adminShopifyWebhooks.status.problem}</>
                       )}
                     </Badge>
                   )}
@@ -234,7 +235,7 @@ export default function ShopifyWebhooksAdmin() {
 
                 {store.gdprWebhooks && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Webhooks GDPR :</p>
+                    <p className="text-sm font-medium">{t.adminShopifyWebhooks.gdprWebhooks}</p>
                     <div className="grid gap-2">
                       {store.gdprWebhooks.map(webhook => (
                         <div 
@@ -257,19 +258,19 @@ export default function ShopifyWebhooksAdmin() {
                             <p className="text-xs text-muted-foreground mt-1 truncate">
                               URL: {webhook.address}
                               {!webhook.correctUrl && (
-                                <span className="text-red-500 ml-2">(URL incorrecte)</span>
+                                <span className="text-red-500 ml-2">{t.adminShopifyWebhooks.incorrectUrl}</span>
                               )}
                             </p>
                           )}
                           {!webhook.exists && (
-                            <p className="text-xs text-red-500 mt-1">Non enregistré</p>
+                            <p className="text-xs text-red-500 mt-1">{t.adminShopifyWebhooks.notRegistered}</p>
                           )}
                         </div>
                       ))}
                     </div>
                     {store.totalWebhooks !== undefined && (
                       <p className="text-xs text-muted-foreground">
-                        Total webhooks enregistrés : {store.totalWebhooks}
+                        {t.adminShopifyWebhooks.totalWebhooksRegistered} {store.totalWebhooks}
                       </p>
                     )}
                   </div>
@@ -287,7 +288,7 @@ export default function ShopifyWebhooksAdmin() {
                     ) : (
                       <RefreshCw className="h-4 w-4 mr-2" />
                     )}
-                    Vérifier
+                    {t.adminShopifyWebhooks.buttons.check}
                   </Button>
                   <Button
                     variant="default"
@@ -300,7 +301,7 @@ export default function ShopifyWebhooksAdmin() {
                     ) : (
                       <Wrench className="h-4 w-4 mr-2" />
                     )}
-                    Réparer / Créer webhooks
+                    {t.adminShopifyWebhooks.buttons.repair}
                   </Button>
                   <Button
                     variant="destructive"
@@ -308,7 +309,7 @@ export default function ShopifyWebhooksAdmin() {
                     onClick={() => registerWebhooks(store.id, true)}
                     disabled={store.registering}
                   >
-                    Recréer tout
+                    {t.adminShopifyWebhooks.buttons.recreateAll}
                   </Button>
                 </div>
               </CardContent>

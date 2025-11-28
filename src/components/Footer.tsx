@@ -33,7 +33,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="/#features" className="hover:text-primary transition-colors">{t.footer.features}</a></li>
               <li><a href="/#pricing" className="hover:text-primary transition-colors">{t.footer.pricing}</a></li>
-              <li><a href="/auth" className="hover:text-primary transition-colors">Demo</a></li>
+              <li><a href="/auth" className="hover:text-primary transition-colors">{t.footer.demo}</a></li>
             </ul>
           </div>
 
@@ -51,7 +51,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="/privacy" className="hover:text-primary transition-colors">{t.footer.privacy}</a></li>
               <li><a href="/terms" className="hover:text-primary transition-colors">{t.footer.terms}</a></li>
-              <li><a href="/privacy#cookies" className="hover:text-primary transition-colors">Cookie Policy</a></li>
+              <li><a href="/privacy#cookies" className="hover:text-primary transition-colors">{t.footer.cookiePolicy}</a></li>
             </ul>
           </div>
 

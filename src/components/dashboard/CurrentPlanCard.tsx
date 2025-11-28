@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package, RefreshCw, TrendingUp } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, TrendingUp } from 'lucide-react';
 import { PlanUpgradeDialog } from './PlanUpgradeDialog';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -24,8 +24,8 @@ interface Plan {
 
 export function CurrentPlanCard() {
   const { user } = useAuth();
-  const { t } = useTranslation();
-  const { limits: limitsData, loading: limitsLoading } = useUsageLimits();
+  const { t, tf } = useTranslation();
+  const { limits: limitsData } = useUsageLimits();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -41,14 +41,12 @@ export function CurrentPlanCard() {
 
   const loadSubscriptionData = async () => {
     try {
-      // Récupérer d'abord les données du profil Supabase
       const { data: profileData } = await supabase
         .from('profiles')
         .select('current_plan_id, subscription_status, trial_ends_at, created_at')
         .eq('id', user?.id)
         .single();
 
-      // Récupérer les données d'abonnement pour obtenir le billing_period
       const { data: subscriptionData } = await supabase
         .from('subscriptions')
         .select('billing_period, current_period_end')
@@ -61,11 +59,9 @@ export function CurrentPlanCard() {
         .select('*')
         .order('max_optimizations_monthly', { ascending: true });
 
-      // Si l'utilisateur a un plan dans Supabase, l'utiliser directement
       if (profileData?.current_plan_id) {
         const plan = plansData?.find((p: Plan) => p.id === profileData.current_plan_id);
         
-        // Trouver le plan suivant suggéré
         if (plan && plansData) {
           const currentIndex = plansData.findIndex((p: Plan) => p.id === plan.id);
           if (currentIndex >= 0 && currentIndex < plansData.length - 1) {
@@ -84,12 +80,9 @@ export function CurrentPlanCard() {
             isTrial: isTrialPlan,
           });
           
-          // Set billing period from subscription data or default to monthly
           const period = subscriptionData?.billing_period;
           setBillingPeriod((period === 'yearly' || period === 'monthly') ? period : 'monthly');
           
-          // Always try to get fresh data from Stripe via check-subscription
-          // This ensures subscription_end is always up to date
           const { data: { session } } = await supabase.auth.getSession();
           const headers = session?.access_token ? {
             Authorization: `Bearer ${session.access_token}`
@@ -102,15 +95,12 @@ export function CurrentPlanCard() {
           if (stripeData?.subscription_end) {
             setSubscriptionEnd(stripeData.subscription_end);
           } else if ((isTrialing || plan.id === 'trial') && profileData.trial_ends_at) {
-            // Fallback to trial_ends_at if in trial
             setSubscriptionEnd(profileData.trial_ends_at);
           } else if (plan.id === 'trial' && profileData.created_at) {
-            // Calculate trial end for Trial plan (14 days from creation)
             const trialEnd = new Date(profileData.created_at);
             trialEnd.setDate(trialEnd.getDate() + 14);
             setSubscriptionEnd(trialEnd.toISOString());
           } else if (subscriptionData?.current_period_end) {
-            // Fallback to local subscription data
             setSubscriptionEnd(subscriptionData.current_period_end);
           }
         }
@@ -162,13 +152,11 @@ export function CurrentPlanCard() {
     );
   }
 
-  // Calculer le pourcentage d'utilisation des optimisations
   const optimizationsUsed = limitsData?.usage.optimizations_count || 0;
   const optimizationsLimit = limitsData?.limits.max_optimizations || 0;
   const usagePercentage = optimizationsLimit > 0 ? (optimizationsUsed / optimizationsLimit) * 100 : 0;
   const shouldShowUpgradeAlert = usagePercentage >= 80 && nextPlan;
 
-  // Formater le nombre d'optimisations pour l'affichage
   const formatOptimizationsCount = (count: number) => {
     if (count >= 1000) return `${(count / 1000).toFixed(0)}K`;
     return count.toString();
@@ -187,13 +175,14 @@ export function CurrentPlanCard() {
             <Alert className="border-orange-500/50 bg-orange-50 dark:bg-orange-950/20">
               <TrendingUp className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-sm">
-                <span className="font-semibold">Upgrade recommandé:</span> Vous avez utilisé {usagePercentage.toFixed(0)}% de vos optimisations. 
+                <span className="font-semibold">{t.account.subscription.upgradeRecommended}:</span>{' '}
+                {tf('account.subscription.usedPercentage', { percent: usagePercentage.toFixed(0) })}
                 <Button
                   variant="link"
                   className="px-1 h-auto font-semibold text-orange-600 hover:text-orange-700"
                   onClick={() => setUpgradeDialogOpen(true)}
                 >
-                  Passer à {formatOptimizationsCount(nextPlan.max_optimizations_monthly)} optimisations
+                  {tf('account.subscription.switchToPlan', { count: formatOptimizationsCount(nextPlan.max_optimizations_monthly || 0) })}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -207,7 +196,7 @@ export function CurrentPlanCard() {
                 </h3>
                 {(currentPlan.id.includes('pro') || currentPlan.id.includes('enterprise')) && (
                   <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                    {formatOptimizationsCount(currentPlan.max_optimizations_monthly)}
+                    {formatOptimizationsCount(currentPlan.max_optimizations_monthly || 0)}
                   </Badge>
                 )}
               </div>
