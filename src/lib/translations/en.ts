@@ -4207,6 +4207,15 @@ export const translations = {
     startTrial: "Start Free Trial",
     features: "Features",
     allFeatures: "All Features",
+    // New keys for hardcoded texts
+    connectedStores: "Connected stores",
+    connectedStore: "Connected store",
+    unlimitedProducts: "Unlimited products",
+    freeTag: "FREE",
+    freeTrial: "Free Trial",
+    trialDays: "14 days free",
+    billedAnnually: "billed annually",
+    perMonthShort: "/month",
     billing: {
       monthly: "Monthly",
       yearly: "Yearly",
@@ -4254,6 +4263,38 @@ export const translations = {
       cancelAnytime: "🔒 Cancel anytime",
     },
     choosePlanAfterTrial: "Choose your plan after trial",
+  },
+
+  // ============= Product Title Description Page =============
+  productTitleDescription: {
+    toasts: {
+      generationCancelled: "Generation cancelled",
+      productsCancelledDesc: "{{count}} product(s) were optimized before cancellation.",
+      limitReached: "Limit reached",
+      limitReachedDesc: "You've reached your optimization limit. Upgrade to a higher plan.",
+      creditsDepleted: "AI credits depleted",
+      creditsDepletedDesc: "Add credits in Settings → Workspace → Usage.",
+      tooManyRequests: "Too many requests",
+      tooManyRequestsDesc: "Please wait a moment before retrying.",
+      generationTimeout: "Generation too long (>45s)",
+      generationTimeoutDesc: "The content may be too complex. Please retry.",
+      networkError: "Network error",
+      networkErrorDesc: "Check your internet connection.",
+      optimizationError: "Error during optimization",
+      unknownError: "Unknown error",
+      productNotFound: "Product not found",
+      productPublished: "Product published on Shopify",
+      productDraft: "Product set to draft on Shopify",
+      statusUpdateError: "Error updating status",
+      productDeleted: "Product deleted successfully",
+      deleteError: "Error deleting product",
+      notAuthenticated: "Not authenticated",
+      updateFailed: "Update failed",
+    },
+    labels: {
+      mainImage: "Main image",
+      main: "Main",
+    },
   },
 
   merchant: {

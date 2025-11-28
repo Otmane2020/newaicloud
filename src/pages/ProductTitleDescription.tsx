@@ -145,7 +145,7 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
   // Removed local background removal hook - using edge function instead
@@ -612,40 +612,40 @@ export default function ProductTitleDescription() {
       const errorMessage = error?.message || String(error);
 
       if (errorMessage.includes("CANCELLED")) {
-        toast.info("Génération annulée", {
+        toast.info(t.productTitleDescription.toasts.generationCancelled, {
           id: toastId,
-          description: `${optimizedProducts.length} produit(s) ont été optimisé(s) avant l'annulation.`,
+          description: tf("productTitleDescription.toasts.productsCancelledDesc", { count: optimizedProducts.length }),
         });
       } else if (errorMessage.includes("LIMIT_REACHED")) {
-        toast.error("Limite atteinte", {
+        toast.error(t.productTitleDescription.toasts.limitReached, {
           id: toastId,
-          description: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur.",
+          description: t.productTitleDescription.toasts.limitReachedDesc,
         });
         setShowUpgradeDialog(true);
       } else if (errorMessage.includes("CREDITS_DEPLETED")) {
-        toast.error("Crédits IA épuisés", {
+        toast.error(t.productTitleDescription.toasts.creditsDepleted, {
           id: toastId,
-          description: "Ajoutez des crédits dans Settings → Workspace → Usage.",
+          description: t.productTitleDescription.toasts.creditsDepletedDesc,
         });
       } else if (errorMessage.includes("RATE_LIMIT")) {
-        toast.error("Trop de requêtes", {
+        toast.error(t.productTitleDescription.toasts.tooManyRequests, {
           id: toastId,
-          description: "Patientez quelques instants avant de réessayer.",
+          description: t.productTitleDescription.toasts.tooManyRequestsDesc,
         });
       } else if (errorMessage.includes("TIMEOUT")) {
-        toast.error("Génération trop longue (>45s)", {
+        toast.error(t.productTitleDescription.toasts.generationTimeout, {
           id: toastId,
-          description: "Le contenu est peut-être trop complexe. Réessayez.",
+          description: t.productTitleDescription.toasts.generationTimeoutDesc,
         });
       } else if (errorMessage.includes("NETWORK")) {
-        toast.error("Erreur réseau", {
+        toast.error(t.productTitleDescription.toasts.networkError, {
           id: toastId,
-          description: "Vérifiez votre connexion internet.",
+          description: t.productTitleDescription.toasts.networkErrorDesc,
         });
       } else {
-        toast.error("Erreur lors de l'optimisation", {
+        toast.error(t.productTitleDescription.toasts.optimizationError, {
           id: toastId,
-          description: errorMessage || "Erreur inconnue",
+          description: errorMessage || t.productTitleDescription.toasts.unknownError,
         });
       }
     } finally {
@@ -890,7 +890,7 @@ export default function ProductTitleDescription() {
           console.error(`❌ [AI BG] Product not found for preview: ${preview.productId}`);
           // Marquer comme erreur au lieu de continue
           setAiBgPreviews((prev) =>
-            prev.map((p) => (p === preview ? { ...p, status: "error", error: "Produit introuvable" } : p)),
+            prev.map((p) => (p === preview ? { ...p, status: "error", error: t.productTitleDescription.toasts.productNotFound } : p)),
           );
           continue;
         }
@@ -1988,19 +1988,19 @@ export default function ProductTitleDescription() {
                                 });
 
                                 if (error) throw error;
-                                if (!data?.success) throw new Error("Échec de la mise à jour");
+                                if (!data?.success) throw new Error(t.productTitleDescription.toasts.updateFailed);
 
                                 setProducts((prev) =>
                                   prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p)),
                                 );
 
                                 // Show success message for Shopify sync
-                                toast.success(`Produit ${newStatus === "active" ? "publié" : "en brouillon"} sur Shopify`, {
+                                toast.success(newStatus === "active" ? t.productTitleDescription.toasts.productPublished : t.productTitleDescription.toasts.productDraft, {
                                   id: toastId,
                                 });
                               } catch (error) {
                                 console.error("Error updating status:", error);
-                                toast.error("Erreur lors de la mise à jour", { id: toastId });
+                                toast.error(t.productTitleDescription.toasts.statusUpdateError, { id: toastId });
                               }
                             }}
                             className={`gap-2 ${product.status === "active" ? "text-green-600" : "text-muted-foreground"}`}
@@ -2521,11 +2521,11 @@ export default function ProductTitleDescription() {
                         >
                           <img
                             src={product.image_url || ""}
-                            alt="Image principale"
+                            alt={t.productTitleDescription.labels.mainImage}
                             className="w-full h-24 object-cover rounded"
                           />
                           <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-                            Principal
+                            {t.productTitleDescription.labels.main}
                           </div>
                         </div>
 
@@ -3027,7 +3027,7 @@ export default function ProductTitleDescription() {
                   const {
                     data: { session },
                   } = await supabase.auth.getSession();
-                  if (!session) throw new Error("Non authentifié");
+                  if (!session) throw new Error(t.productTitleDescription.toasts.notAuthenticated);
 
                   const { data, error } = await supabase.functions.invoke("delete-shopify-product", {
                     body: { productId: productToDelete.id },
@@ -3037,15 +3037,15 @@ export default function ProductTitleDescription() {
                   });
 
                   if (error) throw error;
-                  if (!data.success) throw new Error(data.error || "Erreur inconnue");
+                  if (!data.success) throw new Error(data.error || t.productTitleDescription.toasts.unknownError);
 
                   setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
-                  toast.success("Produit supprimé avec succès", { id: toastId });
+                  toast.success(t.productTitleDescription.toasts.productDeleted, { id: toastId });
                   setShowDeleteDialog(false);
                   setProductToDelete(null);
                 } catch (error) {
                   console.error("Error deleting product:", error);
-                  toast.error("Erreur lors de la suppression", { id: toastId });
+                  toast.error(t.productTitleDescription.toasts.deleteError, { id: toastId });
                 } finally {
                   setDeletingProductId(null);
                 }

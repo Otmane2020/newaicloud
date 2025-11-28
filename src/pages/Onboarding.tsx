@@ -903,17 +903,13 @@ export default function Onboarding() {
     const formattedValue = formatLimit(value);
     const isUnlimited = formattedValue === t.onboarding.planFeatures.unlimited;
     const isPlural = value > 1 || isUnlimited;
-
-    if (language === "fr") {
-      return `${formattedValue} ${isPlural ? "Boutiques connectées" : "Boutique connectée"}`;
-    }
-    return `${formattedValue} ${isPlural ? "Connected stores" : "Connected store"}`;
+    return `${formattedValue} ${isPlural ? t.onboarding.connectedStores : t.onboarding.connectedStore}`;
   };
 
   const formatProductLimit = (maxProducts: number): string => {
     const isUnlimitedValue = maxProducts === -1 || maxProducts >= 999999;
     if (isUnlimitedValue) {
-      return language === "fr" ? "Produits illimités" : "Unlimited products";
+      return t.onboarding.unlimitedProducts;
     }
     return `${formatLimit(maxProducts)} ${t.onboarding.planFeatures.products}`;
   };
@@ -1058,7 +1054,7 @@ export default function Onboarding() {
               return (
                 <Card className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-4 border-green-500/50 relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg shadow-lg">
-                    {language === "fr" ? "GRATUIT" : "FREE"}
+                    {t.onboarding.freeTag}
                   </div>
 
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
@@ -1066,13 +1062,13 @@ export default function Onboarding() {
                   </div>
 
                   <h3 className="text-xl sm:text-2xl font-bold mb-2">
-                    {language === "fr" ? "Essai Gratuit" : "Free Trial"}
+                    {t.onboarding.freeTrial}
                   </h3>
                   <Badge
                     variant="outline"
                     className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs"
                   >
-                    {language === "fr" ? "14 jours Essai Gratuit" : "14 days free"}
+                    {t.onboarding.trialDays}
                   </Badge>
 
                   <div className="mb-6">
@@ -1198,12 +1194,12 @@ export default function Onboarding() {
                           language,
                         )}
                       </span>
-                      <span className="text-muted-foreground text-base">{language === "fr" ? "/mois" : "/month"}</span>
+                      <span className="text-muted-foreground text-base">{t.onboarding.perMonthShort}</span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)}{" "}
-                        {language === "fr" ? "facturé annuellement" : "billed annually"}
+                        {t.onboarding.billedAnnually}
                       </span>
                     )}
                   </div>
@@ -1375,7 +1371,7 @@ export default function Onboarding() {
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)}{" "}
-                        {language === "fr" ? "facturé annuellement" : "billed annually"}
+                        {t.onboarding.billedAnnually}
                       </span>
                     )}
                   </div>
@@ -1533,7 +1529,7 @@ export default function Onboarding() {
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)}{" "}
-                        {language === "fr" ? "facturé annuellement" : "billed annually"}
+                        {t.onboarding.billedAnnually}
                       </span>
                     )}
                   </div>

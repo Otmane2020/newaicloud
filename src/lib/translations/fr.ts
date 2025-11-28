@@ -4244,6 +4244,15 @@ export const translations = {
     startTrial: "Essai Gratuit",
     features: "Fonctionnalités",
     allFeatures: "Toutes les Fonctionnalités",
+    // New keys for hardcoded texts
+    connectedStores: "Boutiques connectées",
+    connectedStore: "Boutique connectée",
+    unlimitedProducts: "Produits illimités",
+    freeTag: "GRATUIT",
+    freeTrial: "Essai Gratuit",
+    trialDays: "14 jours Essai Gratuit",
+    billedAnnually: "facturé annuellement",
+    perMonthShort: "/mois",
     billing: {
       monthly: "Mensuel",
       yearly: "Annuel",
@@ -4291,6 +4300,38 @@ export const translations = {
       cancelAnytime: "🔒 Annulez à tout moment",
     },
     choosePlanAfterTrial: "Choisissez votre plan après l'essai",
+  },
+
+  // ============= Product Title Description Page =============
+  productTitleDescription: {
+    toasts: {
+      generationCancelled: "Génération annulée",
+      productsCancelledDesc: "{{count}} produit(s) ont été optimisé(s) avant l'annulation.",
+      limitReached: "Limite atteinte",
+      limitReachedDesc: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur.",
+      creditsDepleted: "Crédits IA épuisés",
+      creditsDepletedDesc: "Ajoutez des crédits dans Settings → Workspace → Usage.",
+      tooManyRequests: "Trop de requêtes",
+      tooManyRequestsDesc: "Patientez quelques instants avant de réessayer.",
+      generationTimeout: "Génération trop longue (>45s)",
+      generationTimeoutDesc: "Le contenu est peut-être trop complexe. Réessayez.",
+      networkError: "Erreur réseau",
+      networkErrorDesc: "Vérifiez votre connexion internet.",
+      optimizationError: "Erreur lors de l'optimisation",
+      unknownError: "Erreur inconnue",
+      productNotFound: "Produit introuvable",
+      productPublished: "Produit publié sur Shopify",
+      productDraft: "Produit en brouillon sur Shopify",
+      statusUpdateError: "Erreur lors de la mise à jour",
+      productDeleted: "Produit supprimé avec succès",
+      deleteError: "Erreur lors de la suppression",
+      notAuthenticated: "Non authentifié",
+      updateFailed: "Échec de la mise à jour",
+    },
+    labels: {
+      mainImage: "Image principale",
+      main: "Principal",
+    },
   },
 
   merchant: {
