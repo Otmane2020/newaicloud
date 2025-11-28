@@ -40,6 +40,7 @@ import TestGlobale from "./pages/TestGlobale";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
+import BlogSeoManagement from "./pages/BlogSeoManagement";
 import BlogCampaignMonitoring from "./pages/BlogCampaignMonitoring";
 import CronMonitoring from "./pages/CronMonitoring";
 import SEO from "./pages/SEO";
@@ -156,6 +157,7 @@ const App = () => (
             <Route path="/translation" element={<TranslationAudit />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/blog-newai/:slug" element={<BlogNewAI />} />
+            <Route path="/blog-seo-management" element={<BlogSeoManagement />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />

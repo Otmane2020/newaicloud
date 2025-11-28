@@ -438,3 +438,9 @@ verify_jwt = true
 [functions.list-google-ads-campaigns]
 verify_jwt = true
 
+[functions.generate-blog-seo-topics]
+verify_jwt = true
+
+[functions.generate-promotional-article]
+verify_jwt = true
+
