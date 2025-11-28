@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useTranslation } from '@/lib/language';
 import {
   CheckCircle,
   Sparkles,
@@ -15,13 +16,14 @@ import {
   Tag,
   AlertCircle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
 
 interface SeoAction {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: any;
   completed: boolean;
   priority: 'high' | 'medium' | 'low';
@@ -33,6 +35,7 @@ interface SeoActionPlanProps {
 }
 
 export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) {
+  const { t } = useTranslation();
   const [actions, setActions] = useState<SeoAction[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -49,6 +52,8 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
   const loadProduct = async () => {
     try {
       setLoading(true);
+      
+      // Get product data
       const { data, error } = await supabase
         .from('shopify_products')
         .select('*')
@@ -57,44 +62,54 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
 
       if (error) throw error;
 
-      // Définir les actions basées sur ce qui manque au produit
+      // Get product images to check ALT texts
+      const { data: images } = await supabase
+        .from('product_images')
+        .select('id, alt_text')
+        .eq('product_id', productId);
+
+      const totalImages = images?.length || 0;
+      const imagesWithAlt = images?.filter(img => img.alt_text && img.alt_text.trim().length > 0).length || 0;
+      const hasAllAltTexts = totalImages > 0 && imagesWithAlt === totalImages;
+
+      // Define actions based on product data
       const productActions: SeoAction[] = [
         {
           id: 'seo_title',
-          title: 'Titre SEO optimisé',
-          description: 'Un titre SEO de 50-60 caractères avec mots-clés',
+          titleKey: 'seoTitle',
+          descriptionKey: 'seoTitle',
           icon: FileText,
           completed: Boolean(data.seo_title && data.seo_title.length >= 30),
           priority: 'high'
         },
         {
           id: 'seo_description',
-          title: 'Meta Description',
-          description: 'Description SEO de 150-160 caractères',
+          titleKey: 'metaDescription',
+          descriptionKey: 'metaDescription',
           icon: FileText,
           completed: Boolean(data.seo_description && data.seo_description.length >= 100),
           priority: 'high'
         },
         {
           id: 'alt_images',
-          title: 'Textes ALT des images',
-          description: 'Tous les images ont des textes ALT descriptifs',
+          titleKey: 'altImages',
+          descriptionKey: 'altImages',
           icon: ImageIcon,
-          completed: Boolean(data.image_url), // Simplifié, à améliorer
+          completed: hasAllAltTexts,
           priority: 'high'
         },
         {
           id: 'tags',
-          title: 'Tags et mots-clés',
-          description: 'Au moins 5 tags pertinents pour le référencement',
+          titleKey: 'tags',
+          descriptionKey: 'tags',
           icon: Tag,
           completed: Boolean(data.tags && data.tags.split(',').length >= 5),
           priority: 'medium'
         },
         {
           id: 'enrichment',
-          title: 'Enrichissement produit',
-          description: 'Description enrichie avec analyse IA',
+          titleKey: 'enrichment',
+          descriptionKey: 'enrichment',
           icon: Sparkles,
           completed: data.enrichment_status === 'enriched',
           priority: 'medium'
@@ -105,17 +120,14 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
       calculateSeoScore(productActions);
     } catch (error) {
       console.error('Error loading product:', error);
-      toast.error('Erreur lors du chargement du produit');
+      toast.error(t.seo.actionPlan.toasts.loadError);
     } finally {
       setLoading(false);
     }
   };
 
   const calculateSeoScore = (currentActions: SeoAction[]) => {
-    const totalActions = currentActions.length;
-    const completedActions = currentActions.filter(a => a.completed).length;
-    
-    // Poids différent selon priorité
+    // Weighted score based on priority
     let weightedScore = 0;
     let totalWeight = 0;
     
@@ -127,7 +139,7 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
       }
     });
     
-    const score = Math.round((weightedScore / totalWeight) * 100);
+    const score = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 100) : 0;
     setSeoScore(score);
     onScoreUpdate?.(score);
   };
@@ -136,51 +148,50 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
     const action = actions.find(a => a.id === actionId);
     if (!action) return;
 
-    // Si l'action n'est pas complétée, on lance l'optimisation
+    // If action is not completed, run optimization
     if (!action.completed) {
       setUpdating(true);
       try {
-        // Appeler la fonction d'optimisation appropriée
         if (actionId === 'seo_title' || actionId === 'seo_description') {
           const { error } = await supabase.functions.invoke('generate-seo-with-deepseek', {
             body: { productId }
           });
           if (error) throw error;
-          toast.success('SEO optimisé avec succès');
+          toast.success(t.seo.actionPlan.toasts.seoOptimized);
         } else if (actionId === 'enrichment') {
           const { error } = await supabase.functions.invoke('enrich-product', {
             body: { productId }
           });
           if (error) throw error;
-          toast.success('Produit enrichi avec succès');
+          toast.success(t.seo.actionPlan.toasts.productEnriched);
         } else if (actionId === 'tags') {
           const { error } = await supabase.functions.invoke('generate-tags', {
             body: { productId }
           });
           if (error) throw error;
-          toast.success('Tags générés avec succès');
+          toast.success(t.seo.actionPlan.toasts.tagsGenerated);
         }
 
-        // Recharger le produit
+        // Reload product
         await loadProduct();
       } catch (error: any) {
         console.error('Error:', error);
         
-        // Vérifier si c'est une erreur de limite atteinte
+        // Check if limit reached
         if (error.context?.limitReached === true || error.message?.includes('limitReached')) {
           setLimitType('optimizations');
           setCurrentUsage(error.context?.usage || 0);
           setMaxLimit(error.context?.limit || 0);
           setShowUpgradeDialog(true);
-          toast.error('Limite d\'optimisations atteinte');
+          toast.error(t.seo.actionPlan.toasts.limitReached);
         } else {
-          toast.error(error.message || 'Erreur lors de l\'optimisation');
+          toast.error(error.message || t.seo.actionPlan.toasts.optimizationError);
         }
       } finally {
         setUpdating(false);
       }
     } else {
-      // Marquer comme non complété (pour permettre un re-traitement)
+      // Mark as not completed (to allow reprocessing)
       const updatedActions = actions.map(a =>
         a.id === actionId ? { ...a, completed: false } : a
       );
@@ -201,14 +212,30 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
 
   const completedCount = actions.filter(a => a.completed).length;
 
+  const getActionTitle = (key: string) => {
+    const actionTranslations = t.seo.actionPlan.actions as Record<string, { title: string; description: string }>;
+    return actionTranslations[key]?.title || key;
+  };
+
+  const getActionDescription = (key: string) => {
+    const actionTranslations = t.seo.actionPlan.actions as Record<string, { title: string; description: string }>;
+    return actionTranslations[key]?.description || key;
+  };
+
+  const getPriorityLabel = (priority: 'high' | 'medium' | 'low') => {
+    return t.seo.actionPlan.priority[priority];
+  };
+
   return (
     <Card className="p-6 space-y-6">
-      {/* Header avec score */}
+      {/* Header with score */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Plan d'Action SEO</h3>
+          <h3 className="text-xl font-bold text-foreground">{t.seo.actionPlan.title}</h3>
           <p className="text-sm text-muted-foreground">
-            {completedCount} sur {actions.length} actions complétées
+            {t.seo.actionPlan.actionsCompleted
+              .replace('{{completed}}', String(completedCount))
+              .replace('{{total}}', String(actions.length))}
           </p>
         </div>
         <div className="text-center">
@@ -219,7 +246,7 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
           }`}>
             {seoScore}
           </div>
-          <div className="text-xs text-muted-foreground">Score SEO</div>
+          <div className="text-xs text-muted-foreground">{t.seo.actionPlan.seoScore}</div>
           <Progress 
             value={seoScore} 
             className={`mt-2 h-2 w-20 ${
@@ -231,22 +258,22 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
         </div>
       </div>
 
-      {/* Guide d'utilisation */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* Usage guide */}
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-semibold text-blue-900 mb-1">Comment mettre à jour le SEO sur Shopify</p>
-            <ol className="list-decimal list-inside space-y-1 text-blue-800">
-              <li>Cochez les actions ci-dessous pour les optimiser automatiquement</li>
-              <li>Une fois terminé, les données seront prêtes pour la synchronisation</li>
-              <li>Utilisez le bouton "Synchroniser avec Shopify" pour appliquer les changements</li>
+            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">{t.seo.actionPlan.guide.title}</p>
+            <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
+              <li>{t.seo.actionPlan.guide.step1}</li>
+              <li>{t.seo.actionPlan.guide.step2}</li>
+              <li>{t.seo.actionPlan.guide.step3}</li>
             </ol>
           </div>
         </div>
       </div>
 
-      {/* Liste des actions */}
+      {/* Actions list */}
       <div className="space-y-3">
         {actions.map((action) => {
           const Icon = action.icon;
@@ -255,8 +282,8 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
               key={action.id}
               className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all ${
                 action.completed
-                  ? 'bg-green-50 border-green-300'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
+                  ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700'
+                  : 'bg-background border-border hover:border-primary/50'
               }`}
             >
               <Checkbox
@@ -268,31 +295,31 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Icon className={`w-4 h-4 ${
-                    action.completed ? 'text-green-600' : 'text-gray-600'
+                    action.completed ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
                   }`} />
                   <h4 className={`font-semibold ${
-                    action.completed ? 'text-green-900' : 'text-gray-900'
+                    action.completed ? 'text-green-900 dark:text-green-100' : 'text-foreground'
                   }`}>
-                    {action.title}
+                    {getActionTitle(action.titleKey)}
                   </h4>
                   <Badge 
                     variant={action.priority === 'high' ? 'destructive' : 'secondary'}
                     className="text-xs"
                   >
-                    {action.priority === 'high' ? 'Prioritaire' : 'Important'}
+                    {getPriorityLabel(action.priority)}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{action.description}</p>
+                <p className="text-sm text-muted-foreground">{getActionDescription(action.descriptionKey)}</p>
               </div>
               {action.completed && (
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Bouton de synchronisation */}
+      {/* Action buttons */}
       <div className="flex gap-3 pt-4 border-t">
         <Button
           onClick={loadProduct}
@@ -300,18 +327,18 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
           disabled={updating}
           className="flex-1"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Rafraîchir
+          <RefreshCw className="w-4 h-4 mr-2" />
+          {t.seo.actionPlan.buttons.refresh}
         </Button>
         <Button
           onClick={() => {
-            toast.info('Utilisez la page SEO > Optimisation pour synchroniser avec Shopify');
+            toast.info(t.seo.actionPlan.toasts.useSeoPage);
           }}
           disabled={completedCount === 0}
           className="flex-1 bg-gradient-primary"
         >
           <ExternalLink className="w-4 h-4 mr-2" />
-          Voir dans SEO
+          {t.seo.actionPlan.buttons.viewInSeo}
         </Button>
       </div>
 

@@ -3001,6 +3001,57 @@ export const translations = {
         synced: "Synchronized",
       },
     },
+    actionPlan: {
+      title: "SEO Action Plan",
+      actionsCompleted: "{{completed}} of {{total}} actions completed",
+      seoScore: "SEO Score",
+      guide: {
+        title: "How to update SEO on Shopify",
+        step1: "Check the actions below to optimize them automatically",
+        step2: "Once done, data will be ready for synchronization",
+        step3: "Use the \"Sync with Shopify\" button to apply changes",
+      },
+      actions: {
+        seoTitle: {
+          title: "Optimized SEO Title",
+          description: "An SEO title of 50-60 characters with keywords",
+        },
+        metaDescription: {
+          title: "Meta Description",
+          description: "SEO description of 150-160 characters",
+        },
+        altImages: {
+          title: "Image ALT Texts",
+          description: "All images have descriptive ALT texts",
+        },
+        tags: {
+          title: "Tags and Keywords",
+          description: "At least 5 relevant tags for SEO",
+        },
+        enrichment: {
+          title: "Product Enrichment",
+          description: "Enhanced description with AI analysis",
+        },
+      },
+      priority: {
+        high: "Priority",
+        medium: "Important",
+        low: "Optional",
+      },
+      buttons: {
+        refresh: "Refresh",
+        viewInSeo: "View in SEO",
+      },
+      toasts: {
+        seoOptimized: "SEO optimized successfully",
+        productEnriched: "Product enriched successfully",
+        tagsGenerated: "Tags generated successfully",
+        loadError: "Error loading product",
+        optimizationError: "Error during optimization",
+        limitReached: "Optimization limit reached",
+        useSeoPage: "Use SEO > Optimization page to sync with Shopify",
+      },
+    },
     imagePreview: {
       whiteBackground: {
         title: "Preview - HD White Background",

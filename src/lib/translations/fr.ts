@@ -3027,6 +3027,57 @@ export const translations = {
         synced: "Synchronisé",
       },
     },
+    actionPlan: {
+      title: "Plan d'Action SEO",
+      actionsCompleted: "{{completed}} sur {{total}} actions complétées",
+      seoScore: "Score SEO",
+      guide: {
+        title: "Comment mettre à jour le SEO sur Shopify",
+        step1: "Cochez les actions ci-dessous pour les optimiser automatiquement",
+        step2: "Une fois terminé, les données seront prêtes pour la synchronisation",
+        step3: "Utilisez le bouton \"Synchroniser avec Shopify\" pour appliquer les changements",
+      },
+      actions: {
+        seoTitle: {
+          title: "Titre SEO optimisé",
+          description: "Un titre SEO de 50-60 caractères avec mots-clés",
+        },
+        metaDescription: {
+          title: "Meta Description",
+          description: "Description SEO de 150-160 caractères",
+        },
+        altImages: {
+          title: "Textes ALT des images",
+          description: "Toutes les images ont des textes ALT descriptifs",
+        },
+        tags: {
+          title: "Tags et mots-clés",
+          description: "Au moins 5 tags pertinents pour le référencement",
+        },
+        enrichment: {
+          title: "Enrichissement produit",
+          description: "Description enrichie avec analyse IA",
+        },
+      },
+      priority: {
+        high: "Prioritaire",
+        medium: "Important",
+        low: "Optionnel",
+      },
+      buttons: {
+        refresh: "Rafraîchir",
+        viewInSeo: "Voir dans SEO",
+      },
+      toasts: {
+        seoOptimized: "SEO optimisé avec succès",
+        productEnriched: "Produit enrichi avec succès",
+        tagsGenerated: "Tags générés avec succès",
+        loadError: "Erreur lors du chargement du produit",
+        optimizationError: "Erreur lors de l'optimisation",
+        limitReached: "Limite d'optimisations atteinte",
+        useSeoPage: "Utilisez la page SEO > Optimisation pour synchroniser avec Shopify",
+      },
+    },
     imagePreview: {
       whiteBackground: {
         title: "Prévisualisation - Fond Blanc HD",
