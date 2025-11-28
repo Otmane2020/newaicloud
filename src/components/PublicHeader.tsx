@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, Play } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "@/lib/language";
 
@@ -66,6 +67,11 @@ export const PublicHeader = () => {
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <LanguageSwitcher />
+            <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/demo")}>
+              <Play className="w-4 h-4 mr-1" />
+              {t.landing.header.demo}
+              <Badge className="ml-2 bg-success text-success-foreground text-[10px] px-1.5">{t.demo?.button?.badge || "Free"}</Badge>
+            </Button>
             <Button variant="ghost" onClick={() => navigate("/auth?mode=login")}>
               {t.landing.header.login}
             </Button>
@@ -114,6 +120,11 @@ export const PublicHeader = () => {
                 <div className="pb-2">
                   <LanguageSwitcher />
                 </div>
+                <Button variant="outline" className="w-full border-primary/50 text-primary" onClick={() => navigate("/demo")}>
+                  <Play className="w-4 h-4 mr-1" />
+                  {t.landing.header.demo}
+                  <Badge className="ml-2 bg-success text-success-foreground text-[10px]">{t.demo?.button?.badge || "Free"}</Badge>
+                </Button>
                 <Button variant="outline" onClick={() => navigate("/auth?mode=login")} className="w-full">
                   {t.landing.header.login}
                 </Button>

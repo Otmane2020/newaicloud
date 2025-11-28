@@ -31,6 +31,18 @@ function detectLanguage(req: Request): 'fr' | 'en' {
   return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
 }
 
+// Demo account configuration
+const DEMO_CONFIG = {
+  email: 'store-demo-20240334@shopify.newai.sale',
+  userId: '86ff1fc7-bd11-4e6a-9b11-af3db227e552',
+};
+
+// Helper to check if user is demo account
+const isDemoAccount = (email: string | undefined, userId: string | undefined): boolean => {
+  if (!email && !userId) return false;
+  return email?.toLowerCase() === DEMO_CONFIG.email.toLowerCase() || userId === DEMO_CONFIG.userId;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -88,6 +100,56 @@ serve(async (req) => {
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
+      );
+    }
+
+    // 🎮 DEMO ACCOUNT: Return unlimited access for demo user
+    if (isDemoAccount(user.email, user.id)) {
+      console.log('[LIMITS] 🎮 DEMO ACCOUNT detected - returning unlimited access');
+      return new Response(
+        JSON.stringify({
+          canUseOptimizations: true,
+          canUseArticles: true,
+          canUseChat: true,
+          canUseShopifySearch: true,
+          canAddProducts: true,
+          canAddShopifyStore: false, // Demo cannot add new stores
+          canUseCampaigns: true,
+          limitReached: {
+            optimizations: false,
+            articles: false,
+            chat: false,
+            shopifySearch: false,
+            products: false,
+            shopifyStores: true, // Demo store is fixed
+            campaigns: false,
+          },
+          usage: {
+            optimizations_count: 0,
+            articles_count: 0,
+            chat_responses_count: 0,
+            shopify_requests_count: 0,
+            products_count: 0,
+            shopify_stores_count: 1,
+            campaigns_count: 0,
+          },
+          limits: {
+            max_optimizations: 999999,
+            max_articles: 999999,
+            max_chat_responses: 999999,
+            max_shopify_requests: 999999,
+            max_products: 999999,
+            max_shopify_stores: 1,
+            max_campaigns: 999999,
+          },
+          isTrialing: false,
+          isPaid: true,
+          planId: 'demo',
+          isDemoMode: true,
+          shouldForcePayment: false,
+          forcePaymentReason: '',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

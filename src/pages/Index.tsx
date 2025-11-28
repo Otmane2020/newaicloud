@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
 import PricingComparison from "@/components/PricingComparison";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
+import { DemoSeoComparison } from "@/components/demo/DemoSeoComparison";
 
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { ContactForm } from "@/components/ContactForm";
@@ -89,9 +90,10 @@ const Index = () => {
                 {t.trial.ctaPrimary}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto" onClick={() => navigate('/demo')}>
                 <Play className="mr-2 w-5 h-5" />
-                {t.landing.hero.ctaSecondary}
+                {t.demo?.button?.label || "Demo"}
+                <Badge className="ml-2 bg-primary text-primary-foreground text-[10px]">{t.demo?.button?.badge || "Free"}</Badge>
               </Button>
             </div>
             
@@ -160,6 +162,9 @@ const Index = () => {
           ))}
         </div>
       </section>
+
+      {/* Demo SEO Comparison Section */}
+      <DemoSeoComparison />
 
       {/* Key Features Section */}
       <section id="features" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">

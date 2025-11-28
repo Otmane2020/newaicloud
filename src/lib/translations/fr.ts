@@ -6512,6 +6512,59 @@ export const translations = {
     maintenanceMessage: "Nous serons de retour bientôt !",
   },
 
+  // ============= Demo Mode =============
+  demo: {
+    banner: {
+      title: "Mode Démonstration",
+      message: "Les modifications ne seront pas sauvegardées. Explorez librement toutes les fonctionnalités !",
+    },
+    comparison: {
+      badge: "Voir la différence",
+      title: "Avant & Après NewAI",
+      subtitle: "Voyez comment NewAI transforme les scores SEO de votre boutique Shopify en quelques minutes",
+      before: "Avant",
+      after: "Après NewAI",
+      globalScore: "Score SEO Global",
+      poorSeo: "SEO Faible",
+      improvement: "d'amélioration",
+      metrics: {
+        metaTitles: "Titres Meta",
+        metaDescriptions: "Descriptions Meta",
+        altTexts: "Textes ALT Images",
+        productTags: "Tags Produits",
+      },
+      issues: {
+        missingMeta: "Descriptions meta manquantes",
+        noAlt: "Pas de textes ALT images",
+        poorTags: "Mauvais tagging produits",
+      },
+      benefits: {
+        optimizedMeta: "Meta optimisés pour tous les produits",
+        aiAlt: "Textes ALT générés par IA",
+        smartTags: "Tags produits intelligents",
+      },
+      cta: "Essayer la Demo",
+      noCreditCard: "Sans carte bancaire • Accès instantané",
+    },
+    button: {
+      label: "Demo",
+      badge: "Gratuit",
+    },
+    loading: {
+      title: "Démarrage de la Demo...",
+      message: "Préparation de votre expérience demo...",
+    },
+    redirecting: {
+      title: "Redirection...",
+      message: "Vous allez être redirigé vers le tableau de bord...",
+    },
+    error: {
+      title: "Erreur Demo",
+      message: "Impossible de démarrer la session demo",
+      redirect: "Redirection vers l'accueil...",
+    },
+  },
+
   landing: {
     header: {
       home: "Accueil",
@@ -6520,6 +6573,7 @@ export const translations = {
       pricing: "Tarifs",
       login: "Connexion",
       signup: "S'inscrire",
+      demo: "Demo",
     },
     hero: {
       badge: "🚀 Optimisation E-commerce avec IA",

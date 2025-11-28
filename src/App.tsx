@@ -95,6 +95,7 @@ import ApiAnalytics from "./pages/ApiAnalytics";
 import UsageTable from "./pages/UsageTable";
 import TestGdprWebhook from "./pages/TestGdprWebhook";
 import ShopifyWebhooksAdmin from "./pages/ShopifyWebhooksAdmin";
+import Demo from "./pages/Demo";
 
 const queryClient = new QueryClient();
 
@@ -151,6 +152,7 @@ const App = () => (
                 <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/demo" element={<Demo />} />
             <Route path="/translation" element={<TranslationAudit />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/blog-newai/:slug" element={<BlogNewAI />} />
