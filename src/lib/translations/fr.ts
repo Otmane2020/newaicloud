@@ -7565,4 +7565,212 @@ export const translations = {
     next: "Suivant",
     pageOf: "Page {{current}} sur {{total}}",
   },
+
+  // ============= Netlinking =============
+  netlinking: {
+    stats: {
+      totalLinks: "Total Liens",
+      internalLinks: "Liens Internes",
+      externalLinks: "Liens Externes",
+      brokenLinks: "Liens Brisés",
+      totalClicks: "Total Clics",
+    },
+    table: {
+      headers: {
+        link: "Lien",
+        status: "Statut",
+        productPage: "Produit / Page",
+        linkedArticle: "Article lié",
+        type: "Type",
+        seoScore: "Score SEO",
+        actions: "Actions",
+      },
+    },
+    tabs: {
+      all: "Tous",
+      broken: "Brisés",
+      working: "Actifs",
+    },
+    actions: {
+      checkAllLinks: "Vérifier tous les liens",
+      exportCsv: "Exporter CSV",
+      analyze: "Analyser tous les articles",
+      analyzing: "Analyse...",
+      runNow: "Exécuter maintenant",
+      replace: "Remplacer",
+      delete: "Supprimer",
+    },
+    empty: {
+      unknownPage: "Page inconnue",
+      deletedArticle: "Article supprimé",
+      collection: "Collection",
+      page: "Page",
+      noLinks: "Aucun lien détecté",
+      autoDetect: "Les liens dans vos articles de blog sont automatiquement détectés.",
+    },
+    status: {
+      active: "Actif",
+      broken: "Brisé",
+      unchecked: "Non vérifié",
+      internal: "Interne",
+      external: "Externe",
+    },
+    title: "Analyse Netlinking",
+    description: "Tous vos liens créés dans les articles",
+    toasts: {
+      brokenDetected: "{{count}} lien(s) brisé(s) détecté(s)",
+      allWorking: "Tous les liens sont fonctionnels",
+      linkDeleted: "Lien supprimé",
+      csvExported: "Export CSV téléchargé",
+      errorLoading: "Erreur lors du chargement des données netlinking",
+      errorAnalysis: "Erreur lors de l'analyse des articles",
+      extracted: "{{count}} liens extraits de {{articles}} articles",
+    },
+    deleteConfirm: {
+      title: "Supprimer le lien",
+      description: "Êtes-vous sûr de vouloir supprimer ce lien ? Cette action est irréversible.",
+      cancel: "Annuler",
+      confirm: "Supprimer",
+    },
+  },
+
+  // ============= API Docs =============
+  apiDocs: {
+    title: "Documentation API",
+    description: "Guide complet d'utilisation de l'API NewAI.sale",
+    tabs: {
+      intro: "Introduction",
+      auth: "Authentification",
+      endpoints: "Endpoints",
+      examples: "Exemples",
+    },
+    intro: {
+      welcome: "Bienvenue",
+      welcomeDesc: "L'API NewAI.sale vous permet d'automatiser toutes les fonctionnalités de la plateforme",
+      features: "🚀 Fonctionnalités principales",
+      featuresList: {
+        seo: "Optimisation SEO automatique de produits",
+        blog: "Génération d'articles de blog IA",
+        products: "Création et gestion de produits Shopify",
+        images: "Traitement d'images (suppression de fond, génération)",
+        analytics: "Analytics et statistiques en temps réel",
+      },
+      rateLimits: "⚡ Rate Limits",
+      rateLimitsDesc: "Plan Enterprise : {{limit}} requêtes/minute par clé API",
+      security: "🔒 Sécurité",
+      securityDesc: "Toutes les requêtes doivent être faites en HTTPS. Les secrets API ne sont jamais exposés.",
+    },
+    auth: {
+      title: "Authentification",
+      obtainKey: "1. Obtenir une clé API",
+      obtainKeyDesc: "Rendez-vous dans la section \"Accès API\" pour générer votre clé.",
+      useKey: "2. Utiliser la clé",
+      useKeyDesc: "Ajoutez le header à chaque requête :",
+      errorManagement: "3. Gestion des erreurs",
+      errors: {
+        401: "Clé API manquante ou invalide",
+        403: "Endpoint non autorisé pour cette clé",
+        429: "Rate limit dépassé",
+        500: "Erreur serveur",
+      },
+    },
+    endpoints: {
+      optimizeProduct: {
+        title: "POST /seo/optimize-product",
+        desc: "Optimise le SEO d'un produit avec l'IA",
+      },
+      generateArticle: {
+        title: "POST /content/generate-article",
+        desc: "Génère un article de blog avec l'IA",
+      },
+      createProduct: {
+        title: "POST /products/create",
+        desc: "Crée un nouveau produit automatiquement",
+      },
+      listProducts: {
+        title: "GET /products/list",
+        desc: "Liste les produits",
+      },
+      requestBody: "Request Body",
+      response: "Response",
+      queryParams: "Paramètres de requête",
+      example: "Exemple",
+    },
+    examples: {
+      javascript: "JavaScript / TypeScript",
+      python: "Python",
+      php: "PHP",
+    },
+  },
+
+  // ============= API Analytics =============
+  apiAnalytics: {
+    title: "Analytics API",
+    description: "Statistiques d'utilisation des 7 derniers jours",
+    loading: "Chargement...",
+    stats: {
+      totalCalls: "Total d'appels",
+      successRate: "Taux de succès",
+      responseTime: "Temps de réponse",
+      errors: "Erreurs",
+      last7days: "7 derniers jours",
+      average: "Moyenne",
+      ofTotal: "du total",
+      success: "succès",
+    },
+    endpoints: {
+      title: "Statistiques par endpoint",
+      description: "Performance et utilisation de chaque endpoint",
+      calls: "appels",
+      avgTime: "moyen",
+      errors: "erreurs",
+    },
+    recentCalls: {
+      title: "Appels récents",
+      description: "20 dernières requêtes API",
+      noData: "Aucun appel API enregistré",
+    },
+  },
+
+  // ============= Cron Monitoring =============
+  cronMonitoring: {
+    title: "Monitoring des Synchronisations",
+    description: "Suivez l'état des synchronisations automatiques en temps réel",
+    loading: "Chargement du monitoring...",
+    refresh: "Actualiser",
+    stats: {
+      activeTasks: "Tâches actives",
+      overdue: "En retard",
+      neverRun: "Jamais exécuté",
+    },
+    status: {
+      active: "Actif",
+      overdue: "En retard",
+      neverRun: "Jamais exécuté",
+      inactive: "Inactif",
+    },
+    jobs: {
+      shopifySync: "Synchronisation Shopify",
+      shopifySyncDesc: "Import automatique des produits, collections, pages et articles depuis Shopify",
+      googleMerchant: "Synchronisation Google Merchant",
+      googleMerchantDesc: "Synchronisation automatique du flux produits vers Google Merchant Center",
+      blogGeneration: "Génération d'articles de blog",
+      blogGenerationDesc: "Génération automatique d'articles de blog selon les campagnes actives",
+    },
+    actions: {
+      runNow: "Exécuter maintenant",
+    },
+    labels: {
+      frequency: "Fréquence",
+      lastExecution: "Dernière exécution",
+      nextExecution: "Prochaine exécution",
+      never: "Jamais",
+      notScheduled: "Non planifiée",
+    },
+    toasts: {
+      loadError: "Erreur lors du chargement des statuts",
+      syncTriggered: "Synchronisation manuelle déclenchée avec succès",
+      syncError: "Erreur lors du déclenchement",
+    },
+  },
 };

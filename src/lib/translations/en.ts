@@ -7522,6 +7522,214 @@ export const translations = {
     next: "Next",
     pageOf: "Page {{current}} of {{total}}",
   },
+
+  // ============= Netlinking =============
+  netlinking: {
+    stats: {
+      totalLinks: "Total Links",
+      internalLinks: "Internal Links",
+      externalLinks: "External Links",
+      brokenLinks: "Broken Links",
+      totalClicks: "Total Clicks",
+    },
+    table: {
+      headers: {
+        link: "Link",
+        status: "Status",
+        productPage: "Product / Page",
+        linkedArticle: "Linked Article",
+        type: "Type",
+        seoScore: "SEO Score",
+        actions: "Actions",
+      },
+    },
+    tabs: {
+      all: "All",
+      broken: "Broken",
+      working: "Active",
+    },
+    actions: {
+      checkAllLinks: "Check all links",
+      exportCsv: "Export CSV",
+      analyze: "Analyze all articles",
+      analyzing: "Analyzing...",
+      runNow: "Run now",
+      replace: "Replace",
+      delete: "Delete",
+    },
+    empty: {
+      unknownPage: "Unknown page",
+      deletedArticle: "Deleted article",
+      collection: "Collection",
+      page: "Page",
+      noLinks: "No links detected",
+      autoDetect: "Links in your blog articles are automatically detected.",
+    },
+    status: {
+      active: "Active",
+      broken: "Broken",
+      unchecked: "Unchecked",
+      internal: "Internal",
+      external: "External",
+    },
+    title: "Netlinking Analysis",
+    description: "All your links created in articles",
+    toasts: {
+      brokenDetected: "{{count}} broken link(s) detected",
+      allWorking: "All links are working",
+      linkDeleted: "Link deleted",
+      csvExported: "CSV export downloaded",
+      errorLoading: "Error loading netlinking data",
+      errorAnalysis: "Error analyzing articles",
+      extracted: "{{count}} links extracted from {{articles}} articles",
+    },
+    deleteConfirm: {
+      title: "Delete link",
+      description: "Are you sure you want to delete this link? This action cannot be undone.",
+      cancel: "Cancel",
+      confirm: "Delete",
+    },
+  },
+
+  // ============= API Docs =============
+  apiDocs: {
+    title: "API Documentation",
+    description: "Complete guide to using the NewAI.sale API",
+    tabs: {
+      intro: "Introduction",
+      auth: "Authentication",
+      endpoints: "Endpoints",
+      examples: "Examples",
+    },
+    intro: {
+      welcome: "Welcome",
+      welcomeDesc: "The NewAI.sale API allows you to automate all platform features",
+      features: "🚀 Main Features",
+      featuresList: {
+        seo: "Automatic SEO optimization of products",
+        blog: "AI blog article generation",
+        products: "Shopify product creation and management",
+        images: "Image processing (background removal, generation)",
+        analytics: "Real-time analytics and statistics",
+      },
+      rateLimits: "⚡ Rate Limits",
+      rateLimitsDesc: "Enterprise plan: {{limit}} requests/minute per API key",
+      security: "🔒 Security",
+      securityDesc: "All requests must be made over HTTPS. API secrets are never exposed.",
+    },
+    auth: {
+      title: "Authentication",
+      obtainKey: "1. Obtain an API key",
+      obtainKeyDesc: "Go to the \"API Access\" section to generate your key.",
+      useKey: "2. Use the key",
+      useKeyDesc: "Add the header to each request:",
+      errorManagement: "3. Error management",
+      errors: {
+        401: "Missing or invalid API key",
+        403: "Endpoint not authorized for this key",
+        429: "Rate limit exceeded",
+        500: "Server error",
+      },
+    },
+    endpoints: {
+      optimizeProduct: {
+        title: "POST /seo/optimize-product",
+        desc: "Optimizes a product's SEO with AI",
+      },
+      generateArticle: {
+        title: "POST /content/generate-article",
+        desc: "Generates a blog article with AI",
+      },
+      createProduct: {
+        title: "POST /products/create",
+        desc: "Creates a new product automatically",
+      },
+      listProducts: {
+        title: "GET /products/list",
+        desc: "Lists products",
+      },
+      requestBody: "Request Body",
+      response: "Response",
+      queryParams: "Query Parameters",
+      example: "Example",
+    },
+    examples: {
+      javascript: "JavaScript / TypeScript",
+      python: "Python",
+      php: "PHP",
+    },
+  },
+
+  // ============= API Analytics =============
+  apiAnalytics: {
+    title: "API Analytics",
+    description: "Usage statistics for the last 7 days",
+    loading: "Loading...",
+    stats: {
+      totalCalls: "Total Calls",
+      successRate: "Success Rate",
+      responseTime: "Response Time",
+      errors: "Errors",
+      last7days: "Last 7 days",
+      average: "Average",
+      ofTotal: "of total",
+      success: "success",
+    },
+    endpoints: {
+      title: "Statistics by endpoint",
+      description: "Performance and usage of each endpoint",
+      calls: "calls",
+      avgTime: "avg",
+      errors: "errors",
+    },
+    recentCalls: {
+      title: "Recent calls",
+      description: "Last 20 API requests",
+      noData: "No API calls recorded",
+    },
+  },
+
+  // ============= Cron Monitoring =============
+  cronMonitoring: {
+    title: "Sync Monitoring",
+    description: "Track automatic synchronization status in real time",
+    loading: "Loading monitoring...",
+    refresh: "Refresh",
+    stats: {
+      activeTasks: "Active Tasks",
+      overdue: "Overdue",
+      neverRun: "Never Run",
+    },
+    status: {
+      active: "Active",
+      overdue: "Overdue",
+      neverRun: "Never run",
+      inactive: "Inactive",
+    },
+    jobs: {
+      shopifySync: "Shopify Sync",
+      shopifySyncDesc: "Automatic import of products, collections, pages and articles from Shopify",
+      googleMerchant: "Google Merchant Sync",
+      googleMerchantDesc: "Automatic product feed sync to Google Merchant Center",
+      blogGeneration: "Blog Article Generation",
+      blogGenerationDesc: "Automatic blog article generation according to active campaigns",
+    },
+    actions: {
+      runNow: "Run now",
+    },
+    labels: {
+      frequency: "Frequency",
+      lastExecution: "Last execution",
+      nextExecution: "Next execution",
+      never: "Never",
+      notScheduled: "Not scheduled",
+    },
+    toasts: {
+      loadError: "Error loading statuses",
+      syncTriggered: "Manual synchronization triggered successfully",
+      syncError: "Error triggering synchronization",
+    },
+  },
 };
 
 export type Translations = typeof translations;
