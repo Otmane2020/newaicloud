@@ -3531,6 +3531,23 @@ export const translations = {
         errorGenerate: "Error generating article",
         analyzing: "Analyzing catalog...",
         patience: "Patience, this can take up to 30 seconds",
+        // Card labels
+        product: "product",
+        products: "products",
+        collection: "collection",
+        collections: "collections",
+        angle: "Angle",
+        audience: "Audience",
+        words: "words",
+        // Difficulty badges
+        easy: "Easy",
+        medium: "Medium",
+        hard: "Hard",
+        // Buttons
+        createAuto: "Create Auto",
+        generatingBtn: "Generating...",
+        customize: "Customize",
+        regenerate: "Regenerate opportunities",
       },
       netlinking: {
         errorLoading: "Error loading",

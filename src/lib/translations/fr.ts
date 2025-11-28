@@ -3558,6 +3558,23 @@ export const translations = {
         errorGenerate: "Erreur lors de la génération de l'article",
         analyzing: "Analyse du catalogue en cours...",
         patience: "Patience, cela peut prendre jusqu'à 30 secondes",
+        // Card labels
+        product: "produit",
+        products: "produits",
+        collection: "collection",
+        collections: "collections",
+        angle: "Angle",
+        audience: "Audience",
+        words: "mots",
+        // Difficulty badges
+        easy: "Facile",
+        medium: "Moyen",
+        hard: "Difficile",
+        // Buttons
+        createAuto: "Créer Auto",
+        generatingBtn: "Génération...",
+        customize: "Personnaliser",
+        regenerate: "Régénérer les opportunités",
       },
       netlinking: {
         errorLoading: "Erreur lors du chargement",
