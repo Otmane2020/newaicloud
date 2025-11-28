@@ -384,73 +384,85 @@ Deno.serve(async (req) => {
     console.log(`➕ Adding ${newImages.length} new images to Shopify`);
     console.log(`🔄 Updating ${imagesToUpdate.length} existing images in Shopify`);
 
-    // Update existing images first
+    // Update existing images using GraphQL
     let updatedCount = 0;
     for (const imgToUpdate of imagesToUpdate) {
       try {
-        console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} with new src: ${imgToUpdate.src}`);
-        const variantIds = imageToVariantMap.get(imgToUpdate.src);
-        const updateData: any = {
-          id: imgToUpdate.shopify_image_id,
-          src: imgToUpdate.src,
-          alt: imgToUpdate.alt_text || "",
-        };
+        console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} via GraphQL`);
         
-        // Ajouter variant_ids seulement s'il y en a
-        if (variantIds && variantIds.length > 0) {
-          updateData.variant_ids = variantIds;
-          console.log(`🔗 Assigning variants ${variantIds} to updated image: ${imgToUpdate.src}`);
-        }
-
-        const updateResponse = await fetch(
-          `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_id}/images/${imgToUpdate.shopify_image_id}.json`,
+        // Convert to GID format
+        const mediaGid = restIdToGid(imgToUpdate.shopify_image_id, 'MediaImage');
+        
+        const updateResult = await shopifyGraphQL(
+          connection.shop_domain,
+          connection.access_token,
+          PRODUCT_UPDATE_MEDIA_MUTATION,
           {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": connection.access_token,
-            },
-            body: JSON.stringify({ image: updateData }),
+            productId: productGid,
+            media: [{
+              id: mediaGid,
+              alt: imgToUpdate.alt_text || ""
+            }]
           }
         );
 
-        if (updateResponse.ok) {
-          updatedCount++;
-          console.log(`✅ Updated image ${imgToUpdate.shopify_image_id}`);
+        if (updateResult.productUpdateMedia?.mediaUserErrors?.length > 0) {
+          const errors = updateResult.productUpdateMedia.mediaUserErrors;
+          console.error(`❌ GraphQL errors updating image:`, errors);
         } else {
-          const errorText = await updateResponse.text();
-          console.error(`❌ Failed to update image ${imgToUpdate.shopify_image_id}:`, errorText);
+          updatedCount++;
+          console.log(`✅ Updated image ${imgToUpdate.shopify_image_id} via GraphQL`);
         }
       } catch (updateError) {
         console.error(`Error updating image ${imgToUpdate.shopify_image_id}:`, updateError);
       }
     }
 
-    // Add new images one by one to preserve existing ones
-    const addedImages = [];
+    // Add new images using GraphQL productCreateMedia mutation
+    const addedImages: any[] = [];
     for (const newImage of newImages) {
-      const addResponse = await fetch(
-        `https://${connection.shop_domain}/admin/api/2024-01/products/${product.shopify_id}/images.json`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": connection.access_token,
-          },
-          body: JSON.stringify({ image: newImage }),
-        }
-      );
-
-      if (addResponse.ok) {
-        const result = await addResponse.json();
-        addedImages.push(result.image);
-        console.log(`✅ Added image: ${result.image.id}`);
-      } else {
-        const errorText = await addResponse.text();
-        console.error(`Failed to add image ${newImage.src}:`, addResponse.status, errorText);
+      try {
+        console.log(`➕ Adding new image via GraphQL: ${newImage.src.substring(0, 50)}...`);
         
-        if (addResponse.status === 401) {
-          throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+        const createResult = await shopifyGraphQL(
+          connection.shop_domain,
+          connection.access_token,
+          PRODUCT_CREATE_MEDIA_MUTATION,
+          {
+            productId: productGid,
+            media: [{
+              originalSource: newImage.src,
+              alt: newImage.alt || "",
+              mediaContentType: "IMAGE"
+            }]
+          }
+        );
+
+        if (createResult.productCreateMedia?.mediaUserErrors?.length > 0) {
+          const errors = createResult.productCreateMedia.mediaUserErrors;
+          console.error(`❌ GraphQL errors creating image:`, errors);
+          
+          // Check for auth errors
+          const authError = errors.find((e: any) => e.message?.includes('access') || e.message?.includes('permission'));
+          if (authError) {
+            throw new Error('Token Shopify invalide ou expiré. Veuillez reconnecter votre boutique Shopify.');
+          }
+        } else if (createResult.productCreateMedia?.media?.length > 0) {
+          const createdMedia = createResult.productCreateMedia.media[0];
+          // Extract legacy ID from GID for database storage
+          const legacyId = createdMedia.id?.replace('gid://shopify/MediaImage/', '');
+          addedImages.push({
+            id: legacyId ? parseInt(legacyId) : null,
+            src: newImage.src,
+            alt: newImage.alt
+          });
+          console.log(`✅ Added image via GraphQL: ${legacyId}`);
+        }
+      } catch (createError: any) {
+        console.error(`Failed to add image ${newImage.src}:`, createError?.message || createError);
+        
+        if (createError?.message?.includes('invalide') || createError?.message?.includes('expiré')) {
+          throw createError;
         }
       }
     }

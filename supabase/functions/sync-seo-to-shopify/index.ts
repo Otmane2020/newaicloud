@@ -679,37 +679,9 @@ Deno.serve(async (req: Request) => {
         
         console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL for image ${imageData.shopify_image_id}`);
       } catch (gqlError: any) {
-        // Fallback to REST if GraphQL fails (for backwards compatibility)
-        console.warn(`[SYNC-IMAGE] GraphQL failed, falling back to REST:`, gqlError.message);
-        
-        const shopifyResponse = await fetch(
-          `https://${shopUrl}/admin/api/2025-01/products/${shopifyId}/images/${imageData.shopify_image_id}.json`,
-          {
-            method: "PUT",
-            headers: {
-              "X-Shopify-Access-Token": shopifyAccessToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              image: {
-                id: imageData.shopify_image_id,
-                alt: imageData.alt_text,
-              },
-            }),
-          }
-        );
-
-        if (!shopifyResponse.ok) {
-          const errorText = await shopifyResponse.text();
-          console.error(`[SYNC-IMAGE] REST API error:`, {
-            status: shopifyResponse.status,
-            imageId: imageData.shopify_image_id,
-            error: errorText
-          });
-          throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
-        }
-        
-        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via REST fallback for image ${imageData.shopify_image_id}`);
+        // No REST fallback - GraphQL is required for compliance
+        console.error(`[SYNC-IMAGE] GraphQL failed:`, gqlError.message);
+        throw new Error(`Erreur Shopify GraphQL: ${gqlError.message}`);
       }
 
       // Update image last_synced_at timestamp in database
