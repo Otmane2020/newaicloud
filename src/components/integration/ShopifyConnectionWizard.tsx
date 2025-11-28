@@ -34,7 +34,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
   const handleOAuthConnect = async () => {
     if (!shopName.trim()) {
-      toast.error("Veuillez entrer le nom de votre boutique");
+      toast.error(t.shopifyConnection.enterStoreName);
       return;
     }
 
@@ -46,7 +46,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       // Get current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        toast.error("Veuillez vous connecter d'abord");
+        toast.error(t.shopifyConnection.pleaseLogin);
         setManualLoading(false);
         return;
       }
@@ -67,7 +67,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       
       if (error || !data?.authUrl) {
         console.error('Failed to generate OAuth URL:', error);
-        toast.error("Échec de la connexion");
+        toast.error(t.shopifyConnection.connectionFailed);
         setManualLoading(false);
         return;
       }
@@ -78,7 +78,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       window.location.href = data.authUrl;
     } catch (error) {
       console.error('Error connecting with Shopify:', error);
-      toast.error("Une erreur s'est produite");
+      toast.error(t.shopifyConnection.anErrorOccurred);
       setManualLoading(false);
     }
   };
@@ -183,14 +183,14 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
       // Show warning if permissions are missing
       if (missingPermissions.length > 0) {
-        toast.warning('Permissions limitées détectées', {
-          description: `Accès manquant: ${missingPermissions.join(', ')}. Certaines fonctionnalités seront désactivées. Vérifiez les permissions API dans Shopify Admin.`,
+        toast.warning(t.shopifyConnection.limitedPermissions, {
+          description: t.shopifyConnection.missingAccess.replace('{{permissions}}', missingPermissions.join(', ')),
           duration: 8000
         });
       }
 
-      toast.success("Store connected successfully!");
-      toast.info("Synchronisation automatique en cours...", { duration: 5000 });
+      toast.success(t.shopifyConnection.storeConnectedSuccess);
+      toast.info(t.shopifyConnection.autoSyncStarted, { duration: 5000 });
 
       // 4. Rafraîchir les limites d'usage et le contexte du store
       await refreshLimits();
@@ -220,7 +220,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       setView('initial');
     } catch (error: any) {
       console.error("Error during manual connection:", error);
-      toast.error(error.message || "Failed to connect store");
+      toast.error(error.message || t.shopifyConnection.connectionFailed);
     } finally {
       setManualLoading(false);
     }
@@ -246,7 +246,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             />
 
             <h2 className="text-3xl font-semibold text-center">
-              Connectez votre boutique Shopify
+              {t.shopifyConnection.connectYourStore}
             </h2>
 
             <div className="w-full max-w-sm space-y-3">
@@ -255,7 +255,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
                 size="lg"
               >
-                Connecter votre boutique
+                {t.shopifyConnection.connectStore}
               </Button>
 
               <Button
@@ -264,7 +264,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 className="w-full h-14 text-lg border-2 rounded-lg"
                 size="lg"
               >
-                Connexion avec clés API
+                {t.shopifyConnection.apiKeysConnection}
               </Button>
             </div>
           </div>
@@ -280,17 +280,17 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <DialogTitle className="text-xl">
-                Connexion OAuth Shopify
+                {t.shopifyConnection.oauthShopifyConnection}
               </DialogTitle>
             </div>
 
             <div className="space-y-4">
               <div>
                 <Label htmlFor="oauthShopName" className="text-base font-semibold">
-                  Nom de votre boutique
+                  {t.shopifyConnection.shopName}
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Entrez le nom de votre boutique Shopify
+                  {t.shopifyConnection.enterShopName}
                 </p>
                 <div className="flex gap-2 items-center">
                   <Input
@@ -311,7 +311,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 </div>
                 {shopName && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Domaine: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
+                    {t.shopifyConnection.domain}: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
                   </p>
                 )}
               </div>
@@ -326,10 +326,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               {manualLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connexion en cours...
+                  {t.shopifyConnection.connectionInProgress}
                 </>
               ) : (
-                'Continuer vers Shopify'
+                t.shopifyConnection.continueToShopify
               )}
             </Button>
           </div>
@@ -345,14 +345,14 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <DialogTitle className="text-xl">
-                Connexion avec clés API
+                {t.shopifyConnection.apiKeysConnection}
               </DialogTitle>
             </div>
 
             <Collapsible defaultOpen>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
                 <HelpCircle className="h-4 w-4" />
-                Comment générer vos clés API
+                {t.shopifyConnection.howToGenerateApiKeys}
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-3">
                 <ShopifyTokenGuide />
@@ -362,10 +362,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             <div className="space-y-4">
               <div>
                 <Label htmlFor="shopName" className="text-base font-semibold">
-                  1️⃣ Nom de la boutique
+                  1️⃣ {t.shopifyConnection.shopName}
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Entrez le nom de votre boutique Shopify
+                  {t.shopifyConnection.enterShopName}
                 </p>
                 <div className="flex gap-2 items-center">
                   <Input
@@ -381,17 +381,17 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 </div>
                 {shopName && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Domaine complet: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
+                    {t.shopifyConnection.fullDomain}: <span className="font-mono font-semibold">{shopName.trim().replace('.myshopify.com', '')}.myshopify.com</span>
                   </p>
                 )}
               </div>
 
               <div>
                 <Label htmlFor="apiKey" className="text-base font-semibold">
-                  2️⃣ API Key
+                  2️⃣ {t.shopifyConnection.apiKey}
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Votre clé API Shopify
+                  {t.shopifyConnection.yourApiKey}
                 </p>
                 <Input
                   id="apiKey"
@@ -404,10 +404,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
               <div>
                 <Label htmlFor="apiSecret" className="text-base font-semibold">
-                  3️⃣ Admin API Access Token
+                  3️⃣ {t.shopifyConnection.adminApiAccessToken}
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Votre token d'accès API Admin
+                  {t.shopifyConnection.yourAdminToken}
                 </p>
                 <Input
                   id="apiSecret"
@@ -427,12 +427,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               {manualLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
+                  {t.shopifyConnection.connecting}
                 </>
               ) : (
                 <>
                   <Key className="mr-2 h-4 w-4" />
-                  Connect with API Keys
+                  {t.shopifyConnection.connectWithApiKeys}
                 </>
               )}
             </Button>

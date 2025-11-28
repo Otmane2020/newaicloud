@@ -11,6 +11,7 @@ import { ShopifyTokenGuide } from "./ShopifyTokenGuide";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useTranslation } from "@/lib/language";
 
 interface ShopifyConnectionDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ShopifyConnectionDialogProps {
 
 export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectionDialogProps) {
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { t } = useTranslation();
   const [oauthShopName, setOauthShopName] = useState("");
   const [oauthCommercialName, setOauthCommercialName] = useState("");
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -31,7 +33,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
   const handleOAuthConnect = async () => {
     if (!oauthShopName.trim()) {
-      toast.error("Veuillez entrer le nom de votre boutique");
+      toast.error(t.shopifyConnection.enterStoreName);
       return;
     }
 
@@ -57,8 +59,8 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       // ✅ Check store limit with real count
       if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
-        toast.error('Store limit reached', {
-          description: `You have reached the maximum number of stores (${currentStoreCount}/${maxStores}). Upgrade your plan to add more stores.`,
+        toast.error(t.shopifyConnection.storeLimitReached, {
+          description: t.shopifyConnection.storeLimitDesc.replace('{{current}}', String(currentStoreCount)).replace('{{max}}', String(maxStores)),
         });
         setOauthLoading(false);
         return;
@@ -80,12 +82,12 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       if (error) throw error;
 
       if (data?.authUrl) {
-        toast.success("Connexion à Shopify...");
+        toast.success(t.shopifyConnection.connecting);
         window.location.href = data.authUrl;
       }
     } catch (error: any) {
       console.error("OAuth error:", error);
-      toast.error(error.message || "Erreur lors de la connexion OAuth");
+      toast.error(error.message || t.shopifyConnection.oauthError);
     } finally {
       setOauthLoading(false);
     }
@@ -93,7 +95,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
   const handleManualConnect = async () => {
     if (!manualStoreName.trim() || !manualApiKey.trim() || !manualApiSecret.trim()) {
-      toast.error("Please fill in all fields");
+      toast.error(t.shopifyConnection.fillAllFields);
       return;
     }
 
@@ -127,8 +129,8 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       // ✅ 1. FIRST: Check store limit with real count (before checking if store exists)
       if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
-        toast.error('Store limit reached', {
-          description: `You have reached the maximum number of stores (${currentStoreCount}/${maxStores}). Upgrade your plan to add more stores.`,
+        toast.error(t.shopifyConnection.storeLimitReached, {
+          description: t.shopifyConnection.storeLimitDesc.replace('{{current}}', String(currentStoreCount)).replace('{{max}}', String(maxStores)),
         });
         setManualLoading(false);
         return;
@@ -143,7 +145,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         .single();
 
       if (existing) {
-        toast.error("This store is already connected");
+        toast.error(t.shopifyConnection.storeAlreadyConnected);
         return;
       }
 
@@ -159,7 +161,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       });
 
       if (!shopInfoResponse.ok) {
-        toast.error("Invalid credentials. Please check your API Key and Admin API Access Token.");
+        toast.error(t.shopifyConnection.invalidCredentials);
         return;
       }
 
@@ -192,7 +194,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         p_increment: 1
       });
 
-      toast.success("Store connected successfully! 🎉");
+      toast.success(t.shopifyConnection.storeConnectedSuccess);
       
       // Refresh limits
       await refreshLimits();
@@ -213,7 +215,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error("Manual connection error:", error);
-      toast.error(error.message || "Erreur lors de la connexion manuelle");
+      toast.error(error.message || t.shopifyConnection.oauthError);
     } finally {
       setManualLoading(false);
     }
