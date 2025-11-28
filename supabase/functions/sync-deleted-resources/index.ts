@@ -1,10 +1,33 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  shopifyGraphQL, 
+  restIdToGid, 
+  fetchAllProductIds,
+  productExists 
+} from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// GraphQL query to fetch all collection IDs
+const COLLECTIONS_IDS_QUERY = `
+  query getCollectionIds($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
+      edges {
+        node {
+          id
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,6 +65,8 @@ serve(async (req) => {
       throw new Error("Shopify connection not found");
     }
 
+    const storeUrl = (connection.store_url || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+
     const results = {
       productsDeleted: 0,
       collectionsDeleted: 0,
@@ -49,7 +74,7 @@ serve(async (req) => {
       pagesDeleted: 0,
     };
 
-    // Sync Collections
+    // Sync Collections via GraphQL
     if (resourceType === "collections" || resourceType === "all") {
       const { data: dbCollections } = await supabaseAdmin
         .from("shopify_collections")
@@ -57,35 +82,41 @@ serve(async (req) => {
         .eq("user_id", user.id);
 
       if (dbCollections && dbCollections.length > 0) {
-        // Fetch all collections from Shopify
-        const shopifyResponse = await fetch(
-          `https://${connection.store_url}/admin/api/2024-01/custom_collections.json?limit=250`,
-          {
-            headers: {
-              "X-Shopify-Access-Token": connection.access_token,
-            },
+        // Fetch all collection IDs from Shopify via GraphQL
+        const shopifyCollectionIds = new Set<number>();
+        let cursor: string | undefined;
+        let hasNext = true;
+
+        while (hasNext) {
+          const result = await shopifyGraphQL<{
+            collections: {
+              edges: Array<{ node: { id: string } }>;
+              pageInfo: { hasNextPage: boolean; endCursor: string };
+            };
+          }>(storeUrl, connection.access_token, COLLECTIONS_IDS_QUERY, { first: 250, after: cursor });
+
+          for (const edge of result.collections.edges) {
+            const numericId = parseInt(edge.node.id.split('/').pop() || '0', 10);
+            shopifyCollectionIds.add(numericId);
           }
-        );
 
-        if (shopifyResponse.ok) {
-          const { custom_collections } = await shopifyResponse.json();
-          const shopifyIds = new Set(custom_collections.map((c: any) => c.id));
+          hasNext = result.collections.pageInfo.hasNextPage;
+          cursor = result.collections.pageInfo.endCursor;
+        }
 
-          // Delete collections that no longer exist in Shopify
-          for (const collection of dbCollections) {
-            if (!shopifyIds.has(collection.shopify_collection_id)) {
-              await supabaseAdmin
-                .from("shopify_collections")
-                .delete()
-                .eq("id", collection.id);
-              results.collectionsDeleted++;
-            }
+        for (const collection of dbCollections) {
+          if (!shopifyCollectionIds.has(collection.shopify_collection_id)) {
+            await supabaseAdmin
+              .from("shopify_collections")
+              .delete()
+              .eq("id", collection.id);
+            results.collectionsDeleted++;
           }
         }
       }
     }
 
-    // Sync Products
+    // Sync Products via GraphQL
     if (resourceType === "products" || resourceType === "all") {
       const { data: dbProducts } = await supabaseAdmin
         .from("shopify_products")
@@ -94,42 +125,22 @@ serve(async (req) => {
         .not("shopify_id", "is", null);
 
       if (dbProducts && dbProducts.length > 0) {
-        const BATCH_SIZE = 50;
-        for (let i = 0; i < dbProducts.length; i += BATCH_SIZE) {
-          const batch = dbProducts.slice(i, i + BATCH_SIZE);
-          
-          for (const product of batch) {
-            try {
-              const shopifyResponse = await fetch(
-                `https://${connection.store_url}/admin/api/2024-01/products/${product.shopify_id}.json`,
-                {
-                  headers: {
-                    "X-Shopify-Access-Token": connection.access_token,
-                  },
-                }
-              );
+        // Fetch all product IDs from Shopify
+        const shopifyProductIds = new Set(await fetchAllProductIds(storeUrl, connection.access_token));
 
-              if (shopifyResponse.status === 404) {
-                await supabaseAdmin
-                  .from("shopify_products")
-                  .delete()
-                  .eq("id", product.id);
-                results.productsDeleted++;
-              }
-            } catch (error) {
-              console.error(`Error checking product ${product.shopify_id}:`, error);
-            }
-          }
-
-          // Rate limiting
-          if (i + BATCH_SIZE < dbProducts.length) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+        for (const product of dbProducts) {
+          if (!shopifyProductIds.has(product.shopify_id)) {
+            await supabaseAdmin
+              .from("shopify_products")
+              .delete()
+              .eq("id", product.id);
+            results.productsDeleted++;
           }
         }
       }
     }
 
-    // Sync Articles
+    // Sync Articles (blogs endpoint is still REST - not deprecated)
     if (resourceType === "articles" || resourceType === "all") {
       const { data: dbArticles } = await supabaseAdmin
         .from("blog_articles")
@@ -141,7 +152,7 @@ serve(async (req) => {
         for (const article of dbArticles) {
           try {
             const shopifyResponse = await fetch(
-              `https://${connection.store_url}/admin/api/2024-01/blogs/${article.shopify_blog_id}/articles/${article.shopify_article_id}.json`,
+              `https://${storeUrl}/admin/api/2025-01/blogs/${article.shopify_blog_id}/articles/${article.shopify_article_id}.json`,
               {
                 headers: {
                   "X-Shopify-Access-Token": connection.access_token,
@@ -163,7 +174,7 @@ serve(async (req) => {
       }
     }
 
-    // Sync Pages
+    // Sync Pages (pages endpoint is still REST - not deprecated)
     if (resourceType === "pages" || resourceType === "all") {
       const { data: dbPages } = await supabaseAdmin
         .from("shopify_pages")
@@ -175,7 +186,7 @@ serve(async (req) => {
         for (const page of dbPages) {
           try {
             const shopifyResponse = await fetch(
-              `https://${connection.store_url}/admin/api/2024-01/pages/${page.shopify_page_id}.json`,
+              `https://${storeUrl}/admin/api/2025-01/pages/${page.shopify_page_id}.json`,
               {
                 headers: {
                   "X-Shopify-Access-Token": connection.access_token,
@@ -200,7 +211,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Synchronization complete",
+        message: "Synchronization complete (GraphQL)",
         results 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

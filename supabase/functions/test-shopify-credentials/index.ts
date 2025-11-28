@@ -1,12 +1,49 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { shopifyGraphQL } from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// GraphQL query to test shop access and permissions
+const SHOP_QUERY = `
+  query {
+    shop {
+      name
+      myshopifyDomain
+      email
+    }
+  }
+`;
+
+// GraphQL query to test product access
+const PRODUCTS_TEST_QUERY = `
+  query {
+    products(first: 1) {
+      edges {
+        node {
+          id
+        }
+      }
+    }
+  }
+`;
+
+// GraphQL query to test collection access
+const COLLECTIONS_TEST_QUERY = `
+  query {
+    collections(first: 1) {
+      edges {
+        node {
+          id
+        }
+      }
+    }
+  }
+`;
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,30 +51,29 @@ serve(async (req) => {
   try {
     const { shopDomain, apiKey, accessToken } = await req.json();
 
-    console.log('🔍 Testing Shopify credentials for:', shopDomain);
+    console.log('🔍 Testing Shopify credentials via GraphQL for:', shopDomain);
 
-    const authHeader = btoa(`${apiKey}:${accessToken}`);
-    const baseUrl = `https://${shopDomain}/admin/api/2024-01`;
+    const storeUrl = shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    // Test shop access first
-    console.log('📞 Testing shop access...');
-    const shopResponse = await fetch(`${baseUrl}/shop.json`, {
-      headers: {
-        'Authorization': `Basic ${authHeader}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!shopResponse.ok) {
-      console.error('❌ Shopify API error:', shopResponse.status, shopResponse.statusText);
-      const errorText = await shopResponse.text();
-      console.error('Error details:', errorText);
-      
+    // Test shop access via GraphQL
+    console.log('📞 Testing shop access via GraphQL...');
+    
+    let shopData;
+    try {
+      shopData = await shopifyGraphQL<{
+        shop: {
+          name: string;
+          myshopifyDomain: string;
+          email: string;
+        };
+      }>(storeUrl, accessToken, SHOP_QUERY);
+    } catch (error) {
+      console.error('❌ GraphQL shop access failed:', error);
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Invalid credentials or shop domain',
-          statusCode: shopResponse.status
+          details: error instanceof Error ? error.message : 'Unknown error'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -46,11 +82,10 @@ serve(async (req) => {
       );
     }
 
-    const shopData = await shopResponse.json();
     console.log('✅ Successfully connected to Shopify shop:', shopData.shop?.name);
 
-    // Test specific permissions
-    console.log('🔐 Testing API permissions...');
+    // Test specific permissions via GraphQL
+    console.log('🔐 Testing API permissions via GraphQL...');
     const permissions = {
       products: false,
       collections: false,
@@ -61,30 +96,26 @@ serve(async (req) => {
 
     // Test products
     try {
-      const productsRes = await fetch(`${baseUrl}/products.json?limit=1`, {
-        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
-      });
-      permissions.products = productsRes.ok;
-      console.log(`Products access: ${productsRes.ok ? '✅' : '❌'}`);
+      await shopifyGraphQL(storeUrl, accessToken, PRODUCTS_TEST_QUERY);
+      permissions.products = true;
+      console.log(`Products access: ✅`);
     } catch (e) {
       console.log('Products access: ❌');
     }
 
     // Test collections
     try {
-      const collectionsRes = await fetch(`${baseUrl}/custom_collections.json?limit=1`, {
-        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
-      });
-      permissions.collections = collectionsRes.ok;
-      console.log(`Collections access: ${collectionsRes.ok ? '✅' : '❌'}`);
+      await shopifyGraphQL(storeUrl, accessToken, COLLECTIONS_TEST_QUERY);
+      permissions.collections = true;
+      console.log(`Collections access: ✅`);
     } catch (e) {
       console.log('Collections access: ❌');
     }
 
-    // Test pages
+    // Test pages (REST - not deprecated)
     try {
-      const pagesRes = await fetch(`${baseUrl}/pages.json?limit=1`, {
-        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      const pagesRes = await fetch(`https://${storeUrl}/admin/api/2025-01/pages.json?limit=1`, {
+        headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }
       });
       permissions.pages = pagesRes.ok;
       console.log(`Pages access: ${pagesRes.ok ? '✅' : '❌'}`);
@@ -92,10 +123,10 @@ serve(async (req) => {
       console.log('Pages access: ❌');
     }
 
-    // Test articles (blogs)
+    // Test articles (REST - not deprecated)
     try {
-      const blogsRes = await fetch(`${baseUrl}/blogs.json?limit=1`, {
-        headers: { 'Authorization': `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+      const blogsRes = await fetch(`https://${storeUrl}/admin/api/2025-01/blogs.json?limit=1`, {
+        headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }
       });
       permissions.articles = blogsRes.ok;
       console.log(`Articles access: ${blogsRes.ok ? '✅' : '❌'}`);
@@ -111,7 +142,7 @@ serve(async (req) => {
         success: true, 
         shop: {
           name: shopData.shop?.name,
-          domain: shopData.shop?.myshopify_domain,
+          domain: shopData.shop?.myshopifyDomain,
           email: shopData.shop?.email,
         },
         permissions

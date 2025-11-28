@@ -1,5 +1,13 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { 
+  shopifyGraphQL, 
+  restIdToGid, 
+  handleUserErrors,
+  PRODUCT_VARIANTS_QUERY,
+  VARIANT_UPDATE_MUTATION,
+  INVENTORY_ITEM_UPDATE_MUTATION
+} from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('💰 [SYNC-PRICING] Starting pricing sync to Shopify...');
+    console.log('💰 [SYNC-PRICING] Starting pricing sync to Shopify via GraphQL...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -29,8 +37,6 @@ serve(async (req) => {
 
     const { product_ids } = await req.json();
     console.log(`📦 [SYNC-PRICING] Syncing ${product_ids.length} product(s)`);
-    console.log(`📊 [SYNC-PRICING] Product IDs:`, product_ids);
-    console.log(`⏱️ [SYNC-PRICING] Estimated time: ${product_ids.length * 0.5}s`);
 
     // Get user's Shopify connection
     const { data: connection, error: connectionError } = await supabase
@@ -44,7 +50,8 @@ serve(async (req) => {
       throw new Error('No active Shopify connection found');
     }
 
-    console.log(`🏪 [SYNC-PRICING] Store: ${connection.store_url}`);
+    const storeUrl = (connection.store_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+    console.log(`🏪 [SYNC-PRICING] Store: ${storeUrl}`);
 
     // Fetch products to sync with ALL their variants
     const { data: products, error: productsError } = await supabase
@@ -62,15 +69,10 @@ serve(async (req) => {
 
     if (productsError) throw productsError;
 
-    const storeUrl = connection.store_url.startsWith('http')
-      ? connection.store_url
-      : `https://${connection.store_url}`;
-
     let successCount = 0;
     let errorCount = 0;
     const failedProducts: Array<{ title: string; error: string }> = [];
 
-    // Sync each product with ALL its variants
     for (const product of products || []) {
       if (!product.shopify_id) {
         console.warn(`⚠️ [SYNC-PRICING] Product ${product.title} has no Shopify ID`);
@@ -82,9 +84,7 @@ serve(async (req) => {
       try {
         console.log(`🔄 [SYNC-PRICING] Syncing "${product.title}"...`);
 
-        // Récupérer TOUS les variants du produit depuis notre DB
         const dbVariants = (product as any).product_variants || [];
-
         if (dbVariants.length === 0) {
           console.warn(`⚠️ [SYNC-PRICING] No variants found for ${product.title}`);
           errorCount++;
@@ -92,41 +92,39 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`   Found ${dbVariants.length} variant(s) to sync`);
+        // Fetch product variants from Shopify via GraphQL
+        const productGid = restIdToGid(product.shopify_id, 'Product');
+        const shopifyProduct = await shopifyGraphQL<{
+          product: {
+            id: string;
+            variants: {
+              edges: Array<{
+                node: {
+                  id: string;
+                  title: string;
+                  price: string;
+                  compareAtPrice: string | null;
+                  inventoryItem: { id: string };
+                };
+              }>;
+            };
+          };
+        }>(storeUrl, connection.access_token, PRODUCT_VARIANTS_QUERY, { id: productGid });
 
-        // Récupérer le produit Shopify pour mapper les variants
-        const getResponse = await fetch(
-          `${storeUrl}/admin/api/2025-01/products/${product.shopify_id}.json`,
-          {
-            headers: {
-              'X-Shopify-Access-Token': connection.access_token,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (!getResponse.ok) {
-          throw new Error(`Failed to fetch product: ${getResponse.status}`);
+        if (!shopifyProduct.product) {
+          throw new Error('Product not found in Shopify');
         }
 
-        const productData = await getResponse.json();
-        const shopifyVariants = productData.product?.variants || [];
-
-        if (shopifyVariants.length === 0) {
-          throw new Error('No variants found in Shopify');
-        }
-
+        const shopifyVariants = shopifyProduct.product.variants.edges.map(e => e.node);
         console.log(`   Found ${shopifyVariants.length} variant(s) in Shopify`);
 
-        // Synchroniser chaque variant individuellement
         let variantsSynced = 0;
         let variantsErrored = 0;
 
         for (const dbVariant of dbVariants) {
-          // Trouver le variant Shopify correspondant par shopify_variant_id
-          const shopifyVariant = shopifyVariants.find((sv: any) => 
-            String(sv.id) === String(dbVariant.shopify_variant_id)
-          );
+          // Find matching Shopify variant by ID
+          const variantGid = restIdToGid(dbVariant.shopify_variant_id, 'ProductVariant');
+          const shopifyVariant = shopifyVariants.find(sv => sv.id === variantGid);
 
           if (!shopifyVariant) {
             console.warn(`⚠️ [SYNC-PRICING] Variant ${dbVariant.title} not found in Shopify`);
@@ -134,66 +132,42 @@ serve(async (req) => {
             continue;
           }
 
-          // Mettre à jour le variant
           try {
-            const updateResponse = await fetch(
-              `${storeUrl}/admin/api/2025-01/variants/${shopifyVariant.id}.json`,
-              {
-                method: 'PUT',
-                headers: {
-                  'X-Shopify-Access-Token': connection.access_token,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  variant: {
-                    id: shopifyVariant.id,
-                    price: dbVariant.price?.toString() || '0',
-                    compare_at_price: dbVariant.compare_at_price?.toString() || null,
-                  }
-                })
+            // Update variant price via GraphQL
+            const variantUpdateResult = await shopifyGraphQL<{
+              productVariantUpdate: {
+                productVariant: { id: string; price: string };
+                userErrors: Array<{ field: string[]; message: string }>;
+              };
+            }>(storeUrl, connection.access_token, VARIANT_UPDATE_MUTATION, {
+              input: {
+                id: variantGid,
+                price: dbVariant.price?.toString() || '0',
+                compareAtPrice: dbVariant.compare_at_price?.toString() || null,
               }
-            );
+            });
 
-            if (!updateResponse.ok) {
-              const errorText = await updateResponse.text();
-              console.error(`❌ [SYNC-PRICING] Failed to sync variant ${dbVariant.title}: ${errorText}`);
-              variantsErrored++;
-              continue;
-            }
-
-            console.log(`   ✅ Variant "${dbVariant.title}" synced`);
+            handleUserErrors(variantUpdateResult.productVariantUpdate?.userErrors, 'productVariantUpdate');
+            console.log(`   ✅ Variant "${dbVariant.title}" price synced`);
             variantsSynced++;
 
-            // Synchroniser le cost_price si disponible
-            if (dbVariant.cost_price !== null && shopifyVariant.inventory_item_id) {
+            // Sync cost price if available
+            if (dbVariant.cost_price !== null && shopifyVariant.inventoryItem?.id) {
               try {
-                const inventoryUpdateResponse = await fetch(
-                  `${storeUrl}/admin/api/2025-01/inventory_items/${shopifyVariant.inventory_item_id}.json`,
-                  {
-                    method: 'PUT',
-                    headers: {
-                      'X-Shopify-Access-Token': connection.access_token,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      inventory_item: {
-                        id: shopifyVariant.inventory_item_id,
-                        cost: dbVariant.cost_price.toString()
-                      }
-                    })
+                await shopifyGraphQL(storeUrl, connection.access_token, INVENTORY_ITEM_UPDATE_MUTATION, {
+                  id: shopifyVariant.inventoryItem.id,
+                  input: {
+                    cost: dbVariant.cost_price
                   }
-                );
-
-                if (inventoryUpdateResponse.ok) {
-                  console.log(`   💰 Cost synced for "${dbVariant.title}"`);
-                }
+                });
+                console.log(`   💰 Cost synced for "${dbVariant.title}"`);
               } catch (costError) {
                 console.error(`❌ [SYNC-PRICING] Error syncing cost:`, costError);
               }
             }
 
-            // Rate limiting entre variants
-            await new Promise(resolve => setTimeout(resolve, 250));
+            // Rate limiting
+            await new Promise(resolve => setTimeout(resolve, 150));
 
           } catch (variantError) {
             console.error(`❌ [SYNC-PRICING] Error syncing variant ${dbVariant.title}:`, variantError);
@@ -201,7 +175,6 @@ serve(async (req) => {
           }
         }
 
-        // Résultat pour ce produit
         if (variantsSynced > 0) {
           console.log(`✅ [SYNC-PRICING] Product "${product.title}": ${variantsSynced}/${dbVariants.length} variants synced`);
           successCount++;
@@ -220,15 +193,11 @@ serve(async (req) => {
         });
       }
 
-      // Rate limiting entre produits
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Rate limiting between products
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     console.log(`📊 [SYNC-PRICING] Sync complete: ${successCount} success, ${errorCount} errors`);
-    
-    if (failedProducts.length > 0) {
-      console.warn(`⚠️ [SYNC-PRICING] Failed products:`, failedProducts);
-    }
 
     return new Response(
       JSON.stringify({
@@ -236,11 +205,9 @@ serve(async (req) => {
         synced: successCount,
         errors: errorCount,
         total: products?.length || 0,
-        failedProducts: failedProducts
+        failedProducts
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
@@ -250,10 +217,7 @@ serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
