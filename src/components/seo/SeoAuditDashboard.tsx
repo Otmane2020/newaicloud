@@ -759,10 +759,10 @@ export function SeoAuditDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-primary" />
-                    {t.seoAuditDashboard.synthesis.title}
+                    Synthèse et Actions Prioritaires
                   </CardTitle>
                   <CardDescription>
-                    {t.seoAuditDashboard.synthesis.subtitle}
+                    Recommandations basées sur votre analyse SEO
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -770,16 +770,16 @@ export function SeoAuditDashboard() {
                   <div className="p-4 rounded-lg bg-success/10 border border-success/20">
                     <h4 className="font-semibold text-success mb-2 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
-                      {t.seoAuditDashboard.synthesis.strengths}
+                      Points Forts
                     </h4>
                     <ul className="text-sm space-y-1 text-muted-foreground">
                       {(() => {
                         const strengths = [];
-                        if ((stats?.products?.score || 0) >= 70) strengths.push(`${t.seoAuditDashboard.synthesis.productsOptimized} (${stats?.products?.optimized}/${stats?.products?.total})`);
-                        if ((stats?.collections?.score || 0) >= 70) strengths.push(`${t.seoAuditDashboard.synthesis.collectionsOptimized} (${stats?.collections?.optimized}/${stats?.collections?.total})`);
-                        if ((stats?.images?.score || 0) >= 70) strengths.push(`${t.seoAuditDashboard.synthesis.imagesOptimized} (${stats?.images?.optimized}/${stats?.images?.total})`);
-                        if ((stats?.articles?.score || 0) >= 70) strengths.push(`${t.seoAuditDashboard.synthesis.articlesOptimized} (${stats?.articles?.optimized}/${stats?.articles?.total})`);
-                        return strengths.length > 0 ? strengths.map((s, i) => <li key={i}>✓ {s}</li>) : <li>{t.seoAuditDashboard.synthesis.continueEfforts}</li>;
+                        if ((stats?.products?.score || 0) >= 70) strengths.push(`Produits bien optimisés (${stats?.products?.optimized}/${stats?.products?.total})`);
+                        if ((stats?.collections?.score || 0) >= 70) strengths.push(`Collections performantes (${stats?.collections?.optimized}/${stats?.collections?.total})`);
+                        if ((stats?.images?.score || 0) >= 70) strengths.push(`Images correctement décrites (${stats?.images?.optimized}/${stats?.images?.total})`);
+                        if ((stats?.articles?.score || 0) >= 70) strengths.push(`Articles bien structurés (${stats?.articles?.optimized}/${stats?.articles?.total})`);
+                        return strengths.length > 0 ? strengths.map((s, i) => <li key={i}>✓ {s}</li>) : <li>Continuez vos efforts d'optimisation</li>;
                       })()}
                     </ul>
                   </div>
@@ -788,35 +788,35 @@ export function SeoAuditDashboard() {
                   <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
                     <h4 className="font-semibold text-warning mb-2 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      {t.seoAuditDashboard.synthesis.priorities}
+                      Priorités d'Amélioration
                     </h4>
                     <div className="space-y-2">
                       {(() => {
                         const priorities = [];
                         if ((stats?.homepage?.score || 0) < 50) {
                           priorities.push({
-                            label: t.seoAuditDashboard.synthesis.homepageLabel,
+                            label: "Page d'accueil",
                             score: stats?.homepage?.score || 0,
                             action: () => navigate('/seo?tab=audit-dashboard&subtab=homepage')
                           });
                         }
                         if ((stats?.products?.score || 0) < 50) {
                           priorities.push({
-                            label: t.seoAuditDashboard.synthesis.productPages,
+                            label: "Fiches produits",
                             score: stats?.products?.score || 0,
                             action: () => navigate('/seo?tab=products')
                           });
                         }
                         if ((stats?.images?.score || 0) < 50) {
                           priorities.push({
-                            label: t.seoAuditDashboard.synthesis.imagesAltText,
+                            label: "Images (alt text)",
                             score: stats?.images?.score || 0,
                             action: () => navigate('/seo?tab=alt')
                           });
                         }
                         if ((stats?.collections?.score || 0) < 50) {
                           priorities.push({
-                            label: t.seoAuditDashboard.synthesis.collectionsLabel,
+                            label: "Collections",
                             score: stats?.collections?.score || 0,
                             action: () => navigate('/seo?tab=collections')
                           });
@@ -832,13 +832,13 @@ export function SeoAuditDashboard() {
                               onClick={p.action}
                             >
                               <span className="text-left">
-                                {i + 1}. {t.seoAuditDashboard.synthesis.optimize} {p.label} <span className="text-xs text-muted-foreground">({p.score}/100)</span>
+                                {i + 1}. Optimiser {p.label} <span className="text-xs text-muted-foreground">({p.score}/100)</span>
                               </span>
                               <ArrowRight className="w-4 h-4" />
                             </Button>
                           ))
                         ) : (
-                          <p className="text-sm text-muted-foreground">{t.seoAuditDashboard.synthesis.noPriority}</p>
+                          <p className="text-sm text-muted-foreground">Aucune priorité urgente détectée ✓</p>
                         );
                       })()}
                     </div>
@@ -853,7 +853,7 @@ export function SeoAuditDashboard() {
                       onClick={() => navigate('/seo?tab=audit-dashboard&subtab=quick-wins')}
                     >
                       <Zap className="w-4 h-4 mr-2" />
-                      {t.seoAuditDashboard.buttons.viewQuickWins}
+                      Voir les Quick Wins
                     </Button>
                     <Button
                       variant="outline"
@@ -862,7 +862,7 @@ export function SeoAuditDashboard() {
                       onClick={() => navigate('/seo?tab=audit-dashboard&subtab=actions')}
                     >
                       <Target className="w-4 h-4 mr-2" />
-                      {t.seoAuditDashboard.buttons.fullActionPlan}
+                      Plan d'Action Complet
                     </Button>
                   </div>
                 </CardContent>
@@ -880,53 +880,53 @@ export function SeoAuditDashboard() {
               {[
                 {
                   key: "homepage_score",
-                  label: t.seoAuditDashboard.categories.homepage,
+                  label: "Page d'accueil",
                   icon: Home,
                   tab: "audit-dashboard",
                   subtab: "homepage",
-                  desc: t.seoAuditDashboard.categoryDescriptions.homepage,
+                  desc: "Optimisation de votre page d'accueil",
                 },
                 {
                   key: "products_score",
-                  label: t.seoAuditDashboard.categories.products,
+                  label: "Produits",
                   icon: ShoppingBag,
                   tab: "products",
-                  desc: t.seoAuditDashboard.categoryDescriptions.products,
+                  desc: "Optimisation de vos fiches produits",
                 },
                 {
                   key: "collections_score",
-                  label: t.seoAuditDashboard.categories.collections,
+                  label: "Collections",
                   icon: Layers,
                   tab: "collections",
-                  desc: t.seoAuditDashboard.categoryDescriptions.collections,
+                  desc: "Optimisation de vos collections",
                 },
                 { 
                   key: "pages_score", 
-                  label: t.seoAuditDashboard.categories.pages, 
+                  label: "Pages", 
                   icon: FileText, 
                   tab: "pages", 
-                  desc: t.seoAuditDashboard.categoryDescriptions.pages, 
+                  desc: "Optimisation de vos pages" 
                 },
                 { 
                   key: "articles_score", 
-                  label: t.seoAuditDashboard.categories.articles, 
+                  label: "Articles", 
                   icon: FileText, 
                   tab: "articles", 
-                  desc: t.seoAuditDashboard.categoryDescriptions.articles, 
+                  desc: "Optimisation de vos articles de blog" 
                 },
                 { 
                   key: "images_score", 
-                  label: t.seoAuditDashboard.categories.images, 
+                  label: "Images", 
                   icon: ImageIcon, 
                   tab: "alt", 
-                  desc: t.seoAuditDashboard.categoryDescriptions.images, 
+                  desc: "Optimisation des balises alt" 
                 },
                 {
                   key: "tags_score",
-                  label: t.seoAuditDashboard.categories.tags,
+                  label: "Tags",
                   icon: Sparkles,
                   tab: "products",
-                  desc: t.seoAuditDashboard.categoryDescriptions.tags,
+                  desc: "Score des tags de produits",
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 // Fixed: Map directly by key instead of tab
@@ -988,7 +988,7 @@ export function SeoAuditDashboard() {
                         </div>
                         {key === 'homepage_score' ? (
                           <Badge variant="outline" className="text-xs font-semibold">
-                            {t.seoAuditDashboard.badges.uniquePage}
+                            Page unique
                           </Badge>
                         ) : key === 'tags_score' ? (
                           <Badge 
@@ -999,7 +999,7 @@ export function SeoAuditDashboard() {
                               navigate('/seo?tab=products');
                             }}
                           >
-                            {stats?.products?.total || 0} {t.seoAuditDashboard.badges.products} →
+                            {stats?.products?.total || 0} produits →
                           </Badge>
                         ) : totalCount > 0 ? (
                           <Badge 
@@ -1058,15 +1058,15 @@ export function SeoAuditDashboard() {
                       <div className="p-3 rounded-xl bg-[#22c55e]/10">
                         <Zap className="w-6 h-6 text-[#22c55e]" />
                       </div>
-                      {t.seoAuditDashboard.quickWins.title}
+                      Quick Wins ⚡ - Actions Rapides à Fort Impact
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      {tf('seoAuditDashboard.quickWins.subtitle', { count: audit?.audit_results?.quick_wins?.length || 0 })}
+                      {audit?.audit_results?.quick_wins?.length || 0} opportunités d'amélioration immédiate
                     </CardDescription>
                   </div>
                   {audit?.audit_results?.quick_wins && audit.audit_results.quick_wins.length > 0 && (
                     <Badge className="bg-[#22c55e] text-white text-lg px-4 py-2">
-                      {audit.audit_results.quick_wins.length} {t.seoAuditDashboard.quickWins.actions}
+                      {audit.audit_results.quick_wins.length} actions
                     </Badge>
                   )}
                 </div>
@@ -1077,9 +1077,9 @@ export function SeoAuditDashboard() {
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 mx-auto mb-6 flex items-center justify-center">
                       <AlertCircle className="w-10 h-10 text-yellow-600" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3">{t.seoAuditDashboard.quickWins.notAvailable}</h3>
+                    <h3 className="text-2xl font-bold mb-3">Quick Wins non disponibles</h3>
                     <p className="text-muted-foreground text-lg mb-6 max-w-2xl mx-auto">
-                      {t.seoAuditDashboard.quickWins.notAvailableDesc}
+                      Cette fonctionnalité nécessite un nouvel audit. Régénérez votre audit pour découvrir les actions rapides qui auront le plus d'impact sur votre SEO.
                     </p>
                     <Button
                       onClick={handleGenerateAudit}
@@ -1090,12 +1090,12 @@ export function SeoAuditDashboard() {
                       {generating ? (
                         <>
                           <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                          {t.seoAuditDashboard.quickWins.generatingAudit}
+                          Génération en cours...
                         </>
                       ) : (
                         <>
                           <FileSearch className="w-5 h-5 mr-2" />
-                          {t.seoAuditDashboard.quickWins.generateNewAudit}
+                          Générer un nouvel audit
                         </>
                       )}
                     </Button>
