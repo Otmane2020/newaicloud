@@ -80,7 +80,7 @@ export function SystemEventLogs() {
     <div className="p-4 space-y-4">
       <div className="flex gap-2">
         <Input
-          placeholder="Search logs..."
+          placeholder={t.adminComponents.eventLogs.searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1"
@@ -90,23 +90,23 @@ export function SystemEventLogs() {
           onChange={(e) => setFilterType(e.target.value)}
           className="px-3 py-2 rounded-md border bg-background"
         >
-          <option value="all">All Types</option>
-          <option value="error">Errors</option>
-          <option value="warning">Warnings</option>
-          <option value="info">Info</option>
-          <option value="debug">Debug</option>
+          <option value="all">{t.adminComponents.eventLogs.allTypes}</option>
+          <option value="error">{t.adminComponents.eventLogs.errors}</option>
+          <option value="warning">{t.adminComponents.eventLogs.warnings}</option>
+          <option value="info">{t.adminComponents.eventLogs.info}</option>
+          <option value="debug">{t.adminComponents.eventLogs.debug}</option>
         </select>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>
-            System Logs ({filteredLogs.length} / {logs.length})
+            {t.adminComponents.eventLogs.title} ({filteredLogs.length} / {logs.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
           {filteredLogs.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No logs found</p>
+            <p className="text-center text-muted-foreground py-8">{t.adminComponents.eventLogs.noLogs}</p>
           ) : (
             filteredLogs.map((log) => (
               <div
