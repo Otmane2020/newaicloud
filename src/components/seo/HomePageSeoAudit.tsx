@@ -346,8 +346,8 @@ export function HomePageSeoAudit() {
 
         if (syncResult.error) throw syncResult.error;
 
-        sonnerToast.success('SEO optimisé et synchronisé', {
-          description: 'Titre et description générés, sauvegardés et synchronisés avec Shopify'
+        sonnerToast.success(t.homepageAudit.toasts.seoOptimizedAndSynced, {
+          description: t.homepageAudit.toasts.seoOptimizedAndSyncedDesc
         });
       }
     } catch (error: any) {
@@ -366,7 +366,6 @@ export function HomePageSeoAudit() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Préparer le contexte de la page
       const pageContext = {
         url: result.analyzedUrl,
         existingTitle: result.elements.title,
@@ -388,23 +387,20 @@ export function HomePageSeoAudit() {
 
       const generatedText = data.generatedText;
 
-      // Afficher le résultat dans un toast avec possibilité de copier
-      const elementName = elementType === 'title' ? 'Titre SEO' : 
-                         elementType === 'metaDescription' ? 'Meta Description' : 'H1';
+      const elementName = t.homepageAudit.toasts.elementNames[elementType as keyof typeof t.homepageAudit.toasts.elementNames];
       
-      sonnerToast.success(`${elementName} généré avec succès !`, {
+      sonnerToast.success(tf('homepageAudit.toasts.elementGenerated', { element: elementName }), {
         description: generatedText.length > 100 ? generatedText.substring(0, 100) + '...' : generatedText,
         duration: 10000,
         action: {
-          label: 'Copier',
+          label: t.homepageAudit.toasts.copy,
           onClick: () => {
             navigator.clipboard.writeText(generatedText);
-            sonnerToast.success('Copié dans le presse-papiers !');
+            sonnerToast.success(t.homepageAudit.toasts.copiedToClipboard);
           }
         }
       });
 
-      // Si la meta/titre est vide, le remplir automatiquement
       if (elementType === 'title' && !seoTitle) {
         setSeoTitle(generatedText);
       } else if (elementType === 'metaDescription' && !seoDescription) {
@@ -413,7 +409,7 @@ export function HomePageSeoAudit() {
 
     } catch (error: any) {
       console.error('Error generating SEO element:', error);
-      sonnerToast.error('Erreur lors de la génération avec l\'IA');
+      sonnerToast.error(t.homepageAudit.toasts.generationError);
     } finally {
       setGenerating(false);
     }
@@ -950,15 +946,48 @@ export function HomePageSeoAudit() {
               <CardContent>
                 <div className="space-y-4">
                   {result.recommendations.map((recommendation, index) => {
-                    // Detect recommendation type for action buttons
-                    const isImageAltRecommendation = recommendation.toLowerCase().includes('alt') || 
-                      recommendation.toLowerCase().includes('image');
-                    const isMetadataRecommendation = recommendation.toLowerCase().includes('métadonnées') || 
-                      recommendation.toLowerCase().includes('boutique') ||
-                      recommendation.toLowerCase().includes('nom commercial');
-                    const isH1Recommendation = recommendation.toLowerCase().includes('h1') ||
-                      recommendation.toLowerCase().includes('titre principal');
+                    // Detect recommendation type for action buttons and translation
+                    const recLower = recommendation.toLowerCase();
+                    const isImageAltRecommendation = recLower.includes('alt') || recLower.includes('image');
+                    const isMetadataRecommendation = recLower.includes('métadonnées') || 
+                      recLower.includes('boutique') || recLower.includes('nom commercial');
+                    const isH1Recommendation = recLower.includes('h1') || recLower.includes('titre principal');
                     const missingAlts = result.elements.totalImages - result.elements.altsCount;
+                    
+                    // Get translated recommendation if available
+                    const getTranslatedRecommendation = () => {
+                      const recs = (t.homepageAudit as any)?.recommendations;
+                      if (!recs) return recommendation;
+                      
+                      if (recLower.includes('h1') && (recLower.includes('éditeur') || recLower.includes('editor'))) {
+                        return recs.addH1Shopify || recommendation;
+                      }
+                      if (recLower.includes('300') && (recLower.includes('contenu') || recLower.includes('content'))) {
+                        return recs.enrichContent || recommendation;
+                      }
+                      if (recLower.includes('schema') && recLower.includes('app')) {
+                        return recs.installSchemaApp || recommendation;
+                      }
+                      if (recLower.includes('meta') && recLower.includes('description')) {
+                        return recs.optimizeMetaDescription || recommendation;
+                      }
+                      if (recLower.includes('alt') && recLower.includes('image')) {
+                        return recs.addAltTexts || recommendation;
+                      }
+                      if (recLower.includes('canonical')) {
+                        return recs.addCanonical || recommendation;
+                      }
+                      if (recLower.includes('open graph')) {
+                        return recs.addOpenGraph || recommendation;
+                      }
+                      if (recLower.includes('twitter')) {
+                        return recs.addTwitterCard || recommendation;
+                      }
+                      if (recLower.includes('lien') || recLower.includes('link')) {
+                        return recs.addInternalLinks || recommendation;
+                      }
+                      return recommendation;
+                    };
                     
                     return (
                       <Alert key={index} className="p-4">
@@ -966,7 +995,7 @@ export function HomePageSeoAudit() {
                           {getPriorityIcon(index)}
                           <div className="flex-1 space-y-3">
                             <AlertDescription>
-                              {recommendation}
+                              {getTranslatedRecommendation()}
                             </AlertDescription>
                             
                             {/* Action Buttons */}

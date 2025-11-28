@@ -20,11 +20,40 @@ interface SeoTask {
   created_at: string;
 }
 
+// Map French task titles to translation keys
+const getTaskTranslationKey = (title: string): string | null => {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('h1') || titleLower.includes('titre principal')) return 'addH1';
+  if (titleLower.includes('meta description')) return 'createMetaDescription';
+  if (titleLower.includes('schema') || titleLower.includes('structur')) return 'addSchema';
+  if (titleLower.includes('titre') && titleLower.includes('optimis')) return 'optimizeTitle';
+  if (titleLower.includes('alt') || titleLower.includes('image')) return 'addAltTexts';
+  if (titleLower.includes('canonical')) return 'addCanonical';
+  if (titleLower.includes('open graph')) return 'addOpenGraph';
+  if (titleLower.includes('twitter')) return 'addTwitterCard';
+  if (titleLower.includes('contenu') || titleLower.includes('content')) return 'addMoreContent';
+  if (titleLower.includes('lien') || titleLower.includes('link')) return 'addMoreLinks';
+  return null;
+};
+
 export function SeoTasksList() {
   const { t, tf } = useTranslation();
   const [tasks, setTasks] = useState<SeoTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
+
+  // Helper to get translated task title/description
+  const getTranslatedTask = (task: SeoTask) => {
+    const key = getTaskTranslationKey(task.title);
+    const tasksTranslations = (t.seo?.seoTasks as any)?.tasks;
+    if (key && tasksTranslations && tasksTranslations[key]) {
+      return {
+        title: tasksTranslations[key].title || task.title,
+        description: tasksTranslations[key].description || task.description
+      };
+    }
+    return { title: task.title, description: task.description };
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -123,7 +152,9 @@ export function SeoTasksList() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {tasks.map((task) => (
+          {tasks.map((task) => {
+            const translated = getTranslatedTask(task);
+            return (
             <div
               key={task.id}
               className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -137,10 +168,10 @@ export function SeoTasksList() {
               <div className="flex-1 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="font-medium">{task.title}</div>
-                    {task.description && (
+                    <div className="font-medium">{translated.title}</div>
+                    {translated.description && (
                       <div className="text-sm text-muted-foreground mt-1">
-                        {task.description}
+                        {translated.description}
                       </div>
                     )}
                   </div>
@@ -172,7 +203,7 @@ export function SeoTasksList() {
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </CardContent>
     </Card>
