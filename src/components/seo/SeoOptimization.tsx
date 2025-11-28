@@ -94,11 +94,12 @@ type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 // Helper component for Google Search Preview in table
 function GoogleSearchPreviewCell({ product }: { product: Product }) {
   const { domain } = useStoreDomain();
+  const { t } = useTranslation();
 
   if (!product.seo_title || !product.seo_description) {
     return (
       <Badge variant="outline" className="text-xs">
-        Non optimisé
+        {t.seo.optimization.notOptimized}
       </Badge>
     );
   }
@@ -1426,7 +1427,7 @@ export function SeoOptimization() {
                   </TableHead>
                   <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
                   <TableHead>{t.products.title}</TableHead>
-                  <TableHead className="min-w-[350px]">Aperçu Google</TableHead>
+                  <TableHead className="min-w-[350px]">{t.seo.optimization.googlePreview}</TableHead>
                   <TableHead className="w-32">
                     <button
                       onClick={handleSeoScoreSortToggle}

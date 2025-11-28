@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, AlertTriangle } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 import { ShopifyThemeGuide } from "@/components/shopify/ShopifyThemeGuide";
+import { useTranslation } from "@/lib/language";
 
 interface LandingPagePreviewDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function LandingPagePreviewDialog({
   storeUrl,
   onGenerateClick,
 }: LandingPagePreviewDialogProps) {
+  const { t } = useTranslation();
   const [isSyncing, setIsSyncing] = useState(false);
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
@@ -111,8 +113,8 @@ export function LandingPagePreviewDialog({
 <body>
   <div class="container">
     <h1>${productTitle}</h1>
-    <p>Génération de la landing page en cours...</p>
-    <p style="margin-top: 1rem; font-size: 0.875rem;">Veuillez patienter quelques instants.</p>
+    <p>${t.landingGeneration.preview.generationInProgress}</p>
+    <p style="margin-top: 1rem; font-size: 0.875rem;">${t.landingGeneration.preview.pleaseWait}</p>
   </div>
 </body>
 </html>`;
@@ -173,7 +175,7 @@ ${htmlContent}
       return data;
     },
     onSuccess: (data) => {
-      toast.success("Landing page synchronisée avec Shopify");
+      toast.success(t.landingGeneration.preview.syncSuccess);
       if (data.productUrl) {
         setProductUrl(data.productUrl);
       }
@@ -182,7 +184,7 @@ ${htmlContent}
     onError: (error: any) => {
       if (error.message !== "Theme CSS not configured") {
         console.error("Sync error:", error);
-        toast.error("Erreur lors de la synchronisation");
+        toast.error(t.landingGeneration.preview.syncError);
       }
       setIsSyncing(false);
     },
@@ -222,10 +224,10 @@ ${htmlContent}
                   className={viewMode === "mobile" ? "w-full sm:w-auto" : ""}
                 >
                   {viewMode === "desktop" ? <Smartphone className="h-4 w-4 mr-2" /> : <Monitor className="h-4 w-4 mr-2" />}
-                  {viewMode === "desktop" ? "Vue mobile" : "Vue desktop"}
+                  {viewMode === "desktop" ? t.landingGeneration.preview.viewMobile : t.landingGeneration.preview.viewDesktop}
                 </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{viewMode === "desktop" ? "Voir en mobile" : "Voir en desktop"}</TooltipContent>
+                    <TooltipContent>{viewMode === "desktop" ? t.landingGeneration.preview.viewMobile : t.landingGeneration.preview.viewDesktop}</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -234,16 +236,16 @@ ${htmlContent}
                         size="sm"
                         onClick={() => setViewShopifyMode(!viewShopifyMode)}
                       >
-                        {viewShopifyMode ? "Vue Shopify" : "Vue brute"}
+                        {viewShopifyMode ? t.landingGeneration.preview.shopifyView : t.landingGeneration.preview.rawView}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {viewShopifyMode ? "Voir sans CSS Shopify" : "Simuler rendu Shopify"}
+                      {viewShopifyMode ? t.landingGeneration.preview.showWithoutCss : t.landingGeneration.preview.simulateShopify}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
-                  Télécharger HTML
+                  {t.landingGeneration.preview.downloadHtml}
                 </Button>
                 {!productUrl ? (
                   <Button
@@ -253,10 +255,10 @@ ${htmlContent}
                     {isSyncing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Synchronisation...
+                        {t.landingGeneration.preview.synchronization}
                       </>
                     ) : (
-                      "Synchroniser avec Shopify"
+                      t.landingGeneration.preview.syncWithShopify
                     )}
                   </Button>
                 ) : (
@@ -267,7 +269,7 @@ ${htmlContent}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Visualiser en ligne
+                    {t.landingGeneration.preview.viewOnline}
                   </Button>
                 )}
               </div>
@@ -279,13 +281,12 @@ ${htmlContent}
           <Alert className="mx-6 border-orange-200 bg-orange-50">
             <AlertTriangle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800 text-sm">
-              <strong>Configuration requise:</strong> Pour que vos landing pages s'affichent correctement sur Shopify, 
-              vous devez ajouter un CSS personnalisé à votre thème.{" "}
+              <strong>{t.landingGeneration.preview.configRequired}</strong> {t.landingGeneration.preview.configRequiredDesc}{" "}
               <button 
                 onClick={() => setShowThemeGuide(true)}
                 className="underline font-semibold hover:text-orange-900"
               >
-                Voir le guide
+                {t.landingGeneration.preview.seeGuide}
               </button>
             </AlertDescription>
           </Alert>
@@ -298,7 +299,7 @@ ${htmlContent}
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                   <div className="text-center">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-                    <p className="text-sm text-muted-foreground">Chargement de la preview...</p>
+                    <p className="text-sm text-muted-foreground">{t.landingGeneration.preview.loading}</p>
                   </div>
                 </div>
               )}
@@ -307,8 +308,8 @@ ${htmlContent}
                   <Alert className="max-w-md border-destructive">
                     <AlertTriangle className="h-4 w-4 text-destructive" />
                     <AlertDescription>
-                      <p className="font-semibold mb-2">Erreur de chargement</p>
-                      <p className="text-sm">Le contenu HTML ne peut pas être affiché. Vérifiez les logs de la console.</p>
+                      <p className="font-semibold mb-2">{t.landingGeneration.preview.loadError}</p>
+                      <p className="text-sm">{t.landingGeneration.preview.loadErrorDesc}</p>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -318,7 +319,7 @@ ${htmlContent}
                           setIsIframeLoading(true);
                         }}
                       >
-                        Réessayer
+                        {t.landingGeneration.preview.retryLoad}
                       </Button>
                     </AlertDescription>
                   </Alert>
@@ -333,7 +334,7 @@ ${htmlContent}
                 }`}
                 style={{ minHeight: viewMode === "mobile" ? "667px" : "600px" }}
                 sandbox="allow-same-origin allow-scripts"
-                title="Landing Page Preview"
+                title={t.landingGeneration.preview.title}
                 onLoad={(e) => {
                   console.log("Iframe loaded");
                   setIsIframeLoading(false);
@@ -359,7 +360,7 @@ ${htmlContent}
                   console.error("Iframe error:", e);
                   setIsIframeLoading(false);
                   setIframeError(true);
-                  toast.error("Erreur lors du chargement de la preview");
+                  toast.error(t.landingGeneration.preview.loadError);
                 }}
               />
             </div>
@@ -370,9 +371,9 @@ ${htmlContent}
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 blur-3xl" />
                   <FileText className="h-20 w-20 mx-auto text-muted-foreground/50 relative" />
                 </div>
-                <p className="font-semibold text-lg mb-2">Aucune landing page disponible</p>
+                <p className="font-semibold text-lg mb-2">{t.landingGeneration.preview.noLandingPage}</p>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Créez une landing page optimisée pour ce produit et visualisez-la instantanément
+                  {t.landingGeneration.preview.noLandingPageDesc}
                 </p>
                 <Button
                   onClick={() => {
@@ -385,9 +386,9 @@ ${htmlContent}
                   size="lg"
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Générer ma Landing Page
+                  {t.landingGeneration.preview.generateMyLanding}
                 </Button>
-                <p className="text-xs mt-4 text-muted-foreground/70">La génération prend quelques secondes</p>
+                <p className="text-xs mt-4 text-muted-foreground/70">{t.landingGeneration.preview.generationTakes}</p>
               </div>
             </div>
           )}
