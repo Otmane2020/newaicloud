@@ -64,7 +64,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
   if (!userId) {
     return (
       <div className="p-4 text-center text-muted-foreground">
-        Please select a user to view insights
+        {t.adminComponents.userInsight.selectUser}
       </div>
     );
   }
@@ -72,7 +72,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
   if (!insight) {
     return (
       <div className="p-4 text-center text-muted-foreground">
-        No insight data available
+        {t.adminComponents.userInsight.noData}
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Total Activity</CardTitle>
+          <CardTitle className="text-lg">{t.adminComponents.userInsight.totalActivity}</CardTitle>
         </CardHeader>
         <CardContent className="text-3xl font-bold flex items-center gap-2">
           <Activity className="w-6 h-6 text-primary" />
@@ -97,7 +97,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Last Login</CardTitle>
+          <CardTitle className="text-lg">{t.adminComponents.userInsight.lastLogin}</CardTitle>
         </CardHeader>
         <CardContent className="text-lg">
           {insight.lastLogin ? (
@@ -106,26 +106,26 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
               {new Date(insight.lastLogin).toLocaleString()}
             </div>
           ) : (
-            <span className="text-muted-foreground">Never</span>
+            <span className="text-muted-foreground">{t.adminComponents.userInsight.never}</span>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Favorite Feature</CardTitle>
+          <CardTitle className="text-lg">{t.adminComponents.userInsight.favoriteFeature}</CardTitle>
         </CardHeader>
         <CardContent className="text-lg flex items-center gap-2">
           <Zap className="w-5 h-5 text-yellow-500" />
           {insight.favoriteFeature || (
-            <span className="text-muted-foreground">No data</span>
+            <span className="text-muted-foreground">{t.adminComponents.userInsight.noDataShort}</span>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Weekly Actions</CardTitle>
+          <CardTitle className="text-lg">{t.adminComponents.userInsight.weeklyActions}</CardTitle>
         </CardHeader>
         <CardContent className="text-3xl font-bold">
           {insight.weeklyActions}
@@ -134,7 +134,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Monthly Actions</CardTitle>
+          <CardTitle className="text-lg">{t.adminComponents.userInsight.monthlyActions}</CardTitle>
         </CardHeader>
         <CardContent className="text-3xl font-bold">
           {insight.monthlyActions}
@@ -145,7 +145,7 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <TrendingDown className="w-5 h-5" />
-            Churn Risk Score
+            {t.adminComponents.userInsight.churnRiskScore}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -156,9 +156,9 @@ export function UserInsightPanel({ userId }: UserInsightPanelProps) {
             {insight.churnScore} / 100
           </Badge>
           <p className="text-sm text-muted-foreground">
-            {insight.churnScore < 30 && "Low risk - User is highly engaged"}
-            {insight.churnScore >= 30 && insight.churnScore < 70 && "Medium risk - Monitor activity"}
-            {insight.churnScore >= 70 && "High risk - Intervention recommended"}
+            {insight.churnScore < 30 && t.adminComponents.userInsight.lowRisk}
+            {insight.churnScore >= 30 && insight.churnScore < 70 && t.adminComponents.userInsight.mediumRisk}
+            {insight.churnScore >= 70 && t.adminComponents.userInsight.highRisk}
           </p>
         </CardContent>
       </Card>

@@ -99,7 +99,7 @@ export function AdvancedAnalytics() {
         if (!planMap.has(planId)) {
           planMap.set(planId, {
             plan_id: planId,
-            plan_name: planId === 'no_plan' ? 'Sans plan' : planId,
+            plan_name: planId === 'no_plan' ? t.adminComponents.analytics.noPlan : planId,
             user_count: 0,
             active_count: 0,
             trialing_count: 0,
@@ -162,7 +162,7 @@ export function AdvancedAnalytics() {
       console.error('Error loading analytics:', error);
       toast({
         title: t.common.error,
-        description: 'Impossible de charger les analytics',
+        description: t.adminComponents.analytics.loadError,
         variant: 'destructive'
       });
     } finally {
@@ -195,9 +195,9 @@ export function AdvancedAnalytics() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
-            Analytics par Plan
+            {t.adminComponents.analytics.title}
           </CardTitle>
-          <CardDescription>Vue d'ensemble des statistiques par plan d'abonnement</CardDescription>
+          <CardDescription>{t.adminComponents.analytics.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -208,27 +208,27 @@ export function AdvancedAnalytics() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Utilisateurs</span>
+                    <span className="text-sm text-muted-foreground">{t.adminComponents.analytics.users}</span>
                     <Badge variant="secondary">{stat.user_count}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-success">Actifs</span>
+                    <span className="text-sm text-success">{t.adminComponents.analytics.active}</span>
                     <Badge className="bg-green-100 text-green-700">{stat.active_count}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-600">En essai</span>
+                    <span className="text-sm text-blue-600">{t.adminComponents.analytics.trialing}</span>
                     <Badge className="bg-blue-100 text-blue-700">{stat.trialing_count}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Boutiques</span>
+                    <span className="text-sm text-muted-foreground">{t.adminComponents.analytics.stores}</span>
                     <Badge variant="outline">{stat.total_stores}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Produits</span>
+                    <span className="text-sm text-muted-foreground">{t.adminComponents.analytics.products}</span>
                     <Badge variant="outline">{stat.total_products}</Badge>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="text-sm font-medium">Moy. produits/user</span>
+                    <span className="text-sm font-medium">{t.adminComponents.analytics.avgProductsPerUser}</span>
                     <Badge className="bg-purple-100 text-purple-700">{stat.avg_products_per_user}</Badge>
                   </div>
                 </CardContent>
@@ -245,16 +245,16 @@ export function AdvancedAnalytics() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-primary" />
-                Détails par Client
+                {t.adminComponents.analytics.clientDetails}
               </CardTitle>
-              <CardDescription>Vue détaillée des utilisateurs filtrés par plan</CardDescription>
+              <CardDescription>{t.adminComponents.analytics.clientDetailsDesc}</CardDescription>
             </div>
             <Select value={selectedPlan} onValueChange={setSelectedPlan}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrer par plan" />
+                <SelectValue placeholder={t.adminComponents.analytics.filterByPlan} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les plans</SelectItem>
+                <SelectItem value="all">{t.adminComponents.analytics.allPlans}</SelectItem>
                 {planStats.map(plan => (
                   <SelectItem key={plan.plan_id} value={plan.plan_id}>
                     {plan.plan_name} ({plan.user_count})
@@ -269,14 +269,14 @@ export function AdvancedAnalytics() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3">Email</th>
-                  <th className="text-left p-3">Nom</th>
-                  <th className="text-left p-3">Statut</th>
-                  <th className="text-left p-3">Plan</th>
-                  <th className="text-right p-3">Boutiques</th>
-                  <th className="text-right p-3">Produits (Quota)</th>
-                  <th className="text-right p-3">Optimisations (Quota)</th>
-                  <th className="text-right p-3">Articles (Quota)</th>
+                  <th className="text-left p-3">{t.adminComponents.analytics.email}</th>
+                  <th className="text-left p-3">{t.adminComponents.analytics.name}</th>
+                  <th className="text-left p-3">{t.adminComponents.analytics.status}</th>
+                  <th className="text-left p-3">{t.adminComponents.analytics.plan}</th>
+                  <th className="text-right p-3">{t.adminComponents.analytics.stores}</th>
+                  <th className="text-right p-3">{t.adminComponents.analytics.productsQuota}</th>
+                  <th className="text-right p-3">{t.adminComponents.analytics.optimizationsQuota}</th>
+                  <th className="text-right p-3">{t.adminComponents.analytics.articlesQuota}</th>
                 </tr>
               </thead>
               <tbody>

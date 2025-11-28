@@ -74,7 +74,7 @@ export function AdminSmartSearch() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <Input
-          placeholder="Search users, logs, emails, functions..."
+          placeholder={t.adminComponents.smartSearch.placeholder}
           value={query}
           onChange={(e) => search(e.target.value)}
           className="pl-10"
@@ -87,16 +87,16 @@ export function AdminSmartSearch() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Search Results {results.length > 0 && `(${results.length})`}
+            {t.adminComponents.smartSearch.results} {results.length > 0 && `(${results.length})`}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 max-h-[500px] overflow-y-auto">
           {query.length < 2 ? (
             <p className="text-center text-muted-foreground py-8">
-              Enter at least 2 characters to search
+              {t.adminComponents.smartSearch.minChars}
             </p>
           ) : results.length === 0 && !searching ? (
-            <p className="text-center text-muted-foreground py-8">No results found</p>
+            <p className="text-center text-muted-foreground py-8">{t.adminComponents.smartSearch.noResults}</p>
           ) : (
             results.map((result) => (
               <div

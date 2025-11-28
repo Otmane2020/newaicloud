@@ -192,16 +192,16 @@ export function StoreMetadataForm() {
 
         <div className="space-y-2">
           <Label htmlFor="public_domain">
-            Domaine public <span className="text-destructive">*</span>
+            {t.integration.store.metadata.fields.domain} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="public_domain"
-            placeholder="exemple: decora-home.fr"
+            placeholder={t.integration.store.metadata.placeholders.domain}
             value={metadata.public_domain}
             onChange={(e) => setMetadata({ ...metadata, public_domain: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            Votre domaine personnalisé (sans https://)
+            {t.integration.store.metadata.hints.domain}
           </p>
         </div>
 

@@ -2,9 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Store, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 export function NoStoreConnectedPrompt() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <Alert className="mb-6 border-warning bg-warning/10">
@@ -12,10 +14,10 @@ export function NoStoreConnectedPrompt() {
       <AlertDescription className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <p className="font-semibold text-foreground mb-1">
-            Aucune boutique Shopify connectée
+            {t.noStorePrompt.title}
           </p>
           <p className="text-sm text-muted-foreground">
-            Connectez votre boutique Shopify pour commencer à optimiser vos produits et améliorer votre SEO.
+            {t.noStorePrompt.description}
           </p>
         </div>
         <Button
@@ -24,7 +26,7 @@ export function NoStoreConnectedPrompt() {
           size="sm"
         >
           <Store className="w-4 h-4 mr-2" />
-          Connecter une boutique
+          {t.noStorePrompt.connectButton}
         </Button>
       </AlertDescription>
     </Alert>
