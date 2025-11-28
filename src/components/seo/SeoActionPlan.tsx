@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,7 +138,9 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
       }
     });
     
-    const score = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 100) : 0;
+    // Calculate base score and cap at 95 max (perfect SEO is never truly achievable)
+    const baseScore = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 100) : 0;
+    const score = Math.min(baseScore, 95);
     setSeoScore(score);
     onScoreUpdate?.(score);
   };
@@ -278,20 +279,23 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
         {actions.map((action) => {
           const Icon = action.icon;
           return (
-            <div
+            <button
               key={action.id}
-              className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all ${
+              onClick={() => !action.completed && !updating && handleToggleAction(action.id)}
+              disabled={updating || action.completed}
+              className={`w-full flex items-start gap-4 p-4 rounded-lg border-2 transition-all text-left ${
                 action.completed
-                  ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700'
-                  : 'bg-background border-border hover:border-primary/50'
-              }`}
+                  ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 cursor-default'
+                  : 'bg-background border-border hover:border-primary hover:bg-primary/5 cursor-pointer'
+              } ${updating ? 'opacity-50 cursor-wait' : ''}`}
             >
-              <Checkbox
-                checked={action.completed}
-                onCheckedChange={() => handleToggleAction(action.id)}
-                disabled={updating}
-                className="mt-1"
-              />
+              <div className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                action.completed 
+                  ? 'bg-green-500 border-green-500' 
+                  : 'border-muted-foreground/50'
+              }`}>
+                {action.completed && <CheckCircle className="w-4 h-4 text-white" />}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Icon className={`w-4 h-4 ${
@@ -310,11 +314,16 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{getActionDescription(action.descriptionKey)}</p>
+                {!action.completed && (
+                  <p className="text-xs text-primary mt-2 font-medium">
+                    {t.seo.actionPlan.clickToOptimize}
+                  </p>
+                )}
               </div>
               {action.completed && (
                 <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
               )}
-            </div>
+            </button>
           );
         })}
       </div>
