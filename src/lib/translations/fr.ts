@@ -4498,8 +4498,157 @@ export const translations = {
     domain: {
       selectPlaceholder: "Sélectionnez un domaine",
       verified: "Vérifié",
+      notVerified: "Non vérifié",
       add: "Ajouter un domaine",
     },
+    title: "Google Search Console",
+    description: "Analyse de performance SEO et évolution du trafic",
+    connectedWith: "Connecté avec :",
+    mySites: "Mes sites",
+    addDomain: "Ajouter domaine",
+    refresh: "Actualiser",
+    disconnect: "Déconnecter",
+    connectedDomains: "Domaines connectés",
+    analyzeAnomalies: "Analyser les anomalies",
+    settings: "Paramètres",
+    settingsTitle: "Paramètres de synchronisation automatique",
+    autoSync: "Synchronisation automatique",
+    autoSyncDesc: "Synchroniser automatiquement les données quotidiennement",
+    notifications: "Notifications",
+    notificationsDesc: "Recevoir des notifications pour les alertes et synchronisations",
+    loading: "Chargement des données de Google Search Console...",
+    noData: "Aucune donnée Search Console",
+    noDataDesc: "Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine.",
+    domainNotVerified: "Ce domaine n'est pas encore vérifié dans Google Search Console",
+    loadFromGSC: "Charger les données depuis Google Search Console",
+    loadFromGSCDesc: "Cette action récupère vos statistiques de recherche directement depuis Google",
+    howItWorks: "Comment ça marche ?",
+    howItWorksStep1: "Vérifiez que votre domaine est bien ajouté dans Google Search Console",
+    howItWorksStep2: "Cliquez sur \"Charger les données\" pour synchroniser les statistiques",
+    howItWorksStep3: "Les données seront mises à jour et affichées automatiquement",
+    analysisPeriod: "Période d'analyse",
+    metrics: {
+      totalClicks: "Clics totaux",
+      impressions: "Impressions",
+      avgCtr: "CTR moyen",
+      avgPosition: "Position moyenne",
+      clicks: "clics",
+      position: "position"
+    },
+    charts: {
+      clicksImpressions: "Évolution des clics et impressions",
+      ctrPosition: "CTR et Position moyenne"
+    },
+    topKeywords: "Mots-clés les plus performants",
+    noKeywords: "Aucun mot-clé trouvé",
+    topPages: "Pages les plus consultées",
+    noPages: "Aucune page trouvée",
+    alerts: {
+      title: "Alertes détectées",
+      critical: "Critique",
+      high: "Important",
+      medium: "Moyen",
+      low: "Faible",
+      markAsRead: "Marquer lu",
+      resolve: "Résoudre",
+      drop: "Baisse de"
+    },
+    dialogs: {
+      addDomain: {
+        title: "Ajouter un domaine",
+        description: "Entrez le domaine que vous souhaitez connecter à Google Search Console",
+        domainLabel: "Domaine",
+        placeholder: "exemple.com",
+        hint: "Entrez uniquement le domaine (sans http:// ou https://)",
+        cancel: "Annuler",
+        add: "Ajouter"
+      },
+      availableSites: {
+        title: "Sites disponibles dans Google Search Console",
+        description: "Voici les domaines auxquels votre compte Google a accès dans Search Console",
+        noSites: "Aucun site trouvé dans votre Google Search Console",
+        close: "Fermer"
+      }
+    },
+    toasts: {
+      authGranted: "Autorisation accordée, fermeture...",
+      enablePopups: "Veuillez autoriser les popups pour ce site",
+      connectionError: "Erreur lors de la connexion à Google",
+      connectionSuccess: "Connexion à Google Search Console réussie !",
+      alertsDetected: "{{count}} alerte(s) détectée(s)",
+      noAnomalies: "Aucune anomalie détectée",
+      analysisError: "Erreur lors de l'analyse des anomalies",
+      configUpdated: "Configuration mise à jour",
+      updateError: "Erreur lors de la mise à jour",
+      alertResolved: "Alerte résolue",
+      resolveError: "Erreur lors de la résolution",
+      dataLoaded: "Données chargées",
+      loadError: "Erreur de chargement",
+      enterDomain: "Veuillez saisir un domaine",
+      domainAdded: "Domaine ajouté",
+      addError: "Erreur ajout domaine",
+      disconnected: "Déconnecté",
+      disconnectError: "Erreur déconnexion",
+      noSitesFound: "Aucun site trouvé",
+      fetchSitesError: "Erreur récupération sites",
+      domainDeleted: "Domaine supprimé",
+      deleteError: "Erreur suppression"
+    },
+    connect: {
+      title: "Google Search Console",
+      description: "Connectez votre compte Google pour importer les données Search Console et suivre l'évolution de votre trafic et l'impact de vos optimisations SEO.",
+      connectWithGoogle: "Se connecter avec Google",
+      viewMySites: "Voir mes sites disponibles",
+      features: {
+        seoAnalysis: "Analyse de performance SEO",
+        trafficEvolution: "Évolution du trafic par période",
+        multiDomain: "Support multi-domaines",
+        optimizationImpact: "Mesure de l'impact des optimisations"
+      }
+    }
+  },
+
+  // Page Landing Produit
+  productLanding: {
+    loading: "Chargement du produit...",
+    notFound: "Produit non trouvé",
+    back: "Retour",
+    enrichedByAi: "Enrichi par IA",
+    rating: "({{rating}} sur 5 - {{reviews}} avis)",
+    selectOptions: "Sélectionnez vos options",
+    option: "Option",
+    outOfStock: "Rupture de stock",
+    inStock: "En stock",
+    available: "Disponible",
+    style: "Style",
+    color: "Couleur",
+    material: "Matériau",
+    dimensions: "Dimensions",
+    verifiedVisionAi: "Vérifié Vision AI",
+    verifiedSerp: "Vérifié SERP",
+    estimatedAi: "Estimé IA",
+    quantity: "Quantité :",
+    buyNow: "Acheter maintenant",
+    productUnavailable: "Produit indisponible",
+    detailedDescription: "Description détaillée",
+    aiEnrichedAnalysis: "Analyse IA enrichie",
+    aiGeneratedDescription: "Description générée par intelligence artificielle",
+    fastDelivery: "Livraison rapide",
+    fastDeliveryDesc: "Expédition sous 24-48h partout en France",
+    qualityGuarantee: "Garantie qualité",
+    qualityGuaranteeDesc: "Satisfait ou remboursé sous 30 jours",
+    customerService: "Service client",
+    customerServiceDesc: "Support disponible 7j/7 pour vous accompagner",
+    toasts: {
+      loadError: "Erreur lors du chargement du produit",
+      cantOpenLink: "Impossible d'ouvrir le lien du produit",
+      cantShare: "Impossible de partager ce produit",
+      linkCopied: "Lien copié dans le presse-papier",
+      cantCopyLink: "Impossible de copier le lien"
+    },
+    share: {
+      text: "Découvrez ce produit :"
+    }
   },
 
   // Legacy Dialogs (to be merged)
