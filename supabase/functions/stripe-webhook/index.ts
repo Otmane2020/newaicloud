@@ -28,7 +28,6 @@ serve(async (req) => {
   // Don't add healthCheck handler to webhook - signature validation required
 
   try {
-
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
       console.error('❌ No signature found');
@@ -40,7 +39,6 @@ serve(async (req) => {
       return new Response('No webhook secret', { status: 400 });
     }
 
-    const body = await req.text();
     let event: Stripe.Event;
 
     try {
