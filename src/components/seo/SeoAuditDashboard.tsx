@@ -759,10 +759,10 @@ export function SeoAuditDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-primary" />
-                    Synthèse et Actions Prioritaires
+                    {t.seoAuditDashboard.synthesis.title}
                   </CardTitle>
                   <CardDescription>
-                    Recommandations basées sur votre analyse SEO
+                    {t.seoAuditDashboard.synthesis.subtitle}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -770,16 +770,16 @@ export function SeoAuditDashboard() {
                   <div className="p-4 rounded-lg bg-success/10 border border-success/20">
                     <h4 className="font-semibold text-success mb-2 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
-                      Points Forts
+                      {t.seoAuditDashboard.synthesis.strengths}
                     </h4>
                     <ul className="text-sm space-y-1 text-muted-foreground">
                       {(() => {
                         const strengths = [];
-                        if ((stats?.products?.score || 0) >= 70) strengths.push(`Produits bien optimisés (${stats?.products?.optimized}/${stats?.products?.total})`);
-                        if ((stats?.collections?.score || 0) >= 70) strengths.push(`Collections performantes (${stats?.collections?.optimized}/${stats?.collections?.total})`);
-                        if ((stats?.images?.score || 0) >= 70) strengths.push(`Images correctement décrites (${stats?.images?.optimized}/${stats?.images?.total})`);
-                        if ((stats?.articles?.score || 0) >= 70) strengths.push(`Articles bien structurés (${stats?.articles?.optimized}/${stats?.articles?.total})`);
-                        return strengths.length > 0 ? strengths.map((s, i) => <li key={i}>✓ {s}</li>) : <li>Continuez vos efforts d'optimisation</li>;
+                        if ((stats?.products?.score || 0) >= 70) strengths.push(tf('seoAuditDashboard.synthesis.productsOptimized', { optimized: stats?.products?.optimized, total: stats?.products?.total }));
+                        if ((stats?.collections?.score || 0) >= 70) strengths.push(tf('seoAuditDashboard.synthesis.collectionsOptimized', { optimized: stats?.collections?.optimized, total: stats?.collections?.total }));
+                        if ((stats?.images?.score || 0) >= 70) strengths.push(tf('seoAuditDashboard.synthesis.imagesOptimized', { optimized: stats?.images?.optimized, total: stats?.images?.total }));
+                        if ((stats?.articles?.score || 0) >= 70) strengths.push(tf('seoAuditDashboard.synthesis.articlesOptimized', { optimized: stats?.articles?.optimized, total: stats?.articles?.total }));
+                        return strengths.length > 0 ? strengths.map((s, i) => <li key={i}>✓ {s}</li>) : <li>{t.seoAuditDashboard.synthesis.continueEfforts}</li>;
                       })()}
                     </ul>
                   </div>
@@ -788,35 +788,35 @@ export function SeoAuditDashboard() {
                   <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
                     <h4 className="font-semibold text-warning mb-2 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      Priorités d'Amélioration
+                      {t.seoAuditDashboard.synthesis.improvementPriorities}
                     </h4>
                     <div className="space-y-2">
                       {(() => {
                         const priorities = [];
                         if ((stats?.homepage?.score || 0) < 50) {
                           priorities.push({
-                            label: "Page d'accueil",
+                            label: t.seoAuditDashboard.synthesis.homepage,
                             score: stats?.homepage?.score || 0,
                             action: () => navigate('/seo?tab=audit-dashboard&subtab=homepage')
                           });
                         }
                         if ((stats?.products?.score || 0) < 50) {
                           priorities.push({
-                            label: "Fiches produits",
+                            label: t.seoAuditDashboard.synthesis.productSheets,
                             score: stats?.products?.score || 0,
                             action: () => navigate('/seo?tab=products')
                           });
                         }
                         if ((stats?.images?.score || 0) < 50) {
                           priorities.push({
-                            label: "Images (alt text)",
+                            label: t.seoAuditDashboard.synthesis.imagesAltText,
                             score: stats?.images?.score || 0,
                             action: () => navigate('/seo?tab=alt')
                           });
                         }
                         if ((stats?.collections?.score || 0) < 50) {
                           priorities.push({
-                            label: "Collections",
+                            label: t.seoAuditDashboard.synthesis.collections,
                             score: stats?.collections?.score || 0,
                             action: () => navigate('/seo?tab=collections')
                           });
@@ -832,13 +832,13 @@ export function SeoAuditDashboard() {
                               onClick={p.action}
                             >
                               <span className="text-left">
-                                {i + 1}. Optimiser {p.label} <span className="text-xs text-muted-foreground">({p.score}/100)</span>
+                                {i + 1}. {tf('seoAuditDashboard.synthesis.optimizeItem', { item: p.label })} <span className="text-xs text-muted-foreground">({p.score}/100)</span>
                               </span>
                               <ArrowRight className="w-4 h-4" />
                             </Button>
                           ))
                         ) : (
-                          <p className="text-sm text-muted-foreground">Aucune priorité urgente détectée ✓</p>
+                          <p className="text-sm text-muted-foreground">{t.seoAuditDashboard.synthesis.noPriorityDetected}</p>
                         );
                       })()}
                     </div>
@@ -853,7 +853,7 @@ export function SeoAuditDashboard() {
                       onClick={() => navigate('/seo?tab=audit-dashboard&subtab=quick-wins')}
                     >
                       <Zap className="w-4 h-4 mr-2" />
-                      Voir les Quick Wins
+                      {t.seoAuditDashboard.synthesis.viewQuickWins}
                     </Button>
                     <Button
                       variant="outline"
@@ -862,7 +862,7 @@ export function SeoAuditDashboard() {
                       onClick={() => navigate('/seo?tab=audit-dashboard&subtab=actions')}
                     >
                       <Target className="w-4 h-4 mr-2" />
-                      Plan d'Action Complet
+                      {t.seoAuditDashboard.synthesis.completeActionPlan}
                     </Button>
                   </div>
                 </CardContent>
@@ -880,53 +880,53 @@ export function SeoAuditDashboard() {
               {[
                 {
                   key: "homepage_score",
-                  label: "Page d'accueil",
+                  label: t.seoAuditDashboard.categoryLabels.homepage,
                   icon: Home,
                   tab: "audit-dashboard",
                   subtab: "homepage",
-                  desc: "Optimisation de votre page d'accueil",
+                  desc: t.seoAuditDashboard.categoryLabels.homepageDesc,
                 },
                 {
                   key: "products_score",
-                  label: "Produits",
+                  label: t.seoAuditDashboard.categoryLabels.products,
                   icon: ShoppingBag,
                   tab: "products",
-                  desc: "Optimisation de vos fiches produits",
+                  desc: t.seoAuditDashboard.categoryLabels.productsDesc,
                 },
                 {
                   key: "collections_score",
-                  label: "Collections",
+                  label: t.seoAuditDashboard.categoryLabels.collections,
                   icon: Layers,
                   tab: "collections",
-                  desc: "Optimisation de vos collections",
+                  desc: t.seoAuditDashboard.categoryLabels.collectionsDesc,
                 },
                 { 
                   key: "pages_score", 
-                  label: "Pages", 
+                  label: t.seoAuditDashboard.categoryLabels.pages, 
                   icon: FileText, 
                   tab: "pages", 
-                  desc: "Optimisation de vos pages" 
+                  desc: t.seoAuditDashboard.categoryLabels.pagesDesc 
                 },
                 { 
                   key: "articles_score", 
-                  label: "Articles", 
+                  label: t.seoAuditDashboard.categoryLabels.articles, 
                   icon: FileText, 
                   tab: "articles", 
-                  desc: "Optimisation de vos articles de blog" 
+                  desc: t.seoAuditDashboard.categoryLabels.articlesDesc 
                 },
                 { 
                   key: "images_score", 
-                  label: "Images", 
+                  label: t.seoAuditDashboard.categoryLabels.images, 
                   icon: ImageIcon, 
                   tab: "alt", 
-                  desc: "Optimisation des balises alt" 
+                  desc: t.seoAuditDashboard.categoryLabels.imagesDesc 
                 },
                 {
                   key: "tags_score",
-                  label: "Tags",
+                  label: t.seoAuditDashboard.categoryLabels.tags,
                   icon: Sparkles,
                   tab: "products",
-                  desc: "Score des tags de produits",
+                  desc: t.seoAuditDashboard.categoryLabels.tagsDesc,
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 // Fixed: Map directly by key instead of tab
@@ -1312,7 +1312,7 @@ export function SeoAuditDashboard() {
                               }}
                             >
                               <ArrowRight className="w-4 h-4 mr-1" />
-                              {count} élément{count > 1 ? "s" : ""}
+                              {count} {count > 1 ? t.seoAuditDashboard.issuesSection.elements : t.seoAuditDashboard.issuesSection.element}
                             </Button>
                           ) : null;
                         })()}
@@ -1322,14 +1322,14 @@ export function SeoAuditDashboard() {
                           <div className={`p-4 rounded-xl bg-[#f59e0b]/10 border-2 border-[#f59e0b]/20`}>
                             <div className="flex items-center gap-2 mb-2">
                               <AlertCircle className="w-4 h-4 text-[#f59e0b]" />
-                              <span className="text-sm font-bold text-[#f59e0b]">Impact SEO</span>
+                              <span className="text-sm font-bold text-[#f59e0b]">{t.seoAuditDashboard.issuesSection.seoImpact}</span>
                             </div>
                             <p className="text-sm font-medium leading-relaxed">{issue.impact}</p>
                           </div>
                           <div className="p-4 rounded-xl bg-[#22c55e]/10 border-2 border-[#22c55e]/20">
                             <div className="flex items-center gap-2 mb-2">
                               <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />
-                              <span className="text-sm font-bold text-[#22c55e]">Action recommandée</span>
+                              <span className="text-sm font-bold text-[#22c55e]">{t.seoAuditDashboard.issuesSection.recommendedAction}</span>
                             </div>
                             <p className="text-sm font-medium leading-relaxed">{issue.action}</p>
                           </div>
@@ -1352,15 +1352,14 @@ export function SeoAuditDashboard() {
                       <div className="p-3 rounded-xl bg-[#22c55e]/10">
                         <CheckCircle2 className="w-6 h-6 text-[#22c55e]" />
                       </div>
-                      Plan d'Action SEO
+                      {t.seoAuditDashboard.actionsSection.title}
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      Suivez ces {audit.recommendations.length} étapes prioritaires pour améliorer votre référencement
-                      naturel
+                      {tf('seoAuditDashboard.actionsSection.subtitle', { count: audit.recommendations.length })}
                     </CardDescription>
                   </div>
                   <Badge className="bg-primary text-white text-lg px-4 py-2">
-                    {audit.recommendations.length} étapes
+                    {tf('seoAuditDashboard.actionsSection.steps', { count: audit.recommendations.length })}
                   </Badge>
                 </div>
               </CardHeader>
@@ -1389,13 +1388,13 @@ export function SeoAuditDashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">
                               {rec.priority === "high" && (
-                                <Badge className="bg-[#b91c1c] text-white">🔥 Priorité Haute</Badge>
+                                <Badge className="bg-[#b91c1c] text-white">{t.seoAuditDashboard.actionsSection.priorityHigh}</Badge>
                               )}
                               {rec.priority === "medium" && (
-                                <Badge className="bg-[#f59e0b] text-white">⚡ Priorité Moyenne</Badge>
+                                <Badge className="bg-[#f59e0b] text-white">{t.seoAuditDashboard.actionsSection.priorityMedium}</Badge>
                               )}
                               {rec.priority === "low" && (
-                                <Badge className="bg-[#22c55e] text-white">✓ Priorité Basse</Badge>
+                                <Badge className="bg-[#22c55e] text-white">{t.seoAuditDashboard.actionsSection.priorityLow}</Badge>
                               )}
                             </div>
                             <h4 className="font-bold text-xl mb-2">{rec.title}</h4>
@@ -1413,7 +1412,7 @@ export function SeoAuditDashboard() {
                                 <div className="p-3 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20">
                                   <div className="flex items-center gap-2 mb-1">
                                     <TrendingUp className="w-4 h-4 text-[#22c55e]" />
-                                    <span className="text-xs font-bold text-[#22c55e]">Impact attendu</span>
+                                    <span className="text-xs font-bold text-[#22c55e]">{t.seoAuditDashboard.actionsSection.expectedImpact}</span>
                                   </div>
                                   <p className="text-sm font-semibold">{rec.estimatedImpact}</p>
                                 </div>
@@ -1422,7 +1421,7 @@ export function SeoAuditDashboard() {
                                 <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
                                   <div className="flex items-center gap-2 mb-1">
                                     <Target className="w-4 h-4 text-primary" />
-                                    <span className="text-xs font-bold text-primary">Temps requis</span>
+                                    <span className="text-xs font-bold text-primary">{t.seoAuditDashboard.actionsSection.timeRequired}</span>
                                   </div>
                                   <p className="text-sm font-semibold">{rec.timeEstimate}</p>
                                 </div>
@@ -1431,7 +1430,7 @@ export function SeoAuditDashboard() {
                                 <div className="p-3 rounded-xl bg-[#f59e0b]/10 border border-[#f59e0b]/20">
                                   <div className="flex items-center gap-2 mb-1">
                                     <BarChart3 className="w-4 h-4 text-[#f59e0b]" />
-                                    <span className="text-xs font-bold text-[#f59e0b]">Difficulté</span>
+                                    <span className="text-xs font-bold text-[#f59e0b]">{t.seoAuditDashboard.actionsSection.difficulty}</span>
                                   </div>
                                   <p className="text-sm font-semibold">{rec.difficulty}</p>
                                 </div>
@@ -1440,9 +1439,9 @@ export function SeoAuditDashboard() {
                                 <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
                                   <div className="flex items-center gap-2 mb-1">
                                     <Sparkles className="w-4 h-4 text-primary" />
-                                    <span className="text-xs font-bold text-primary">Gain de score</span>
+                                    <span className="text-xs font-bold text-primary">{t.seoAuditDashboard.actionsSection.scoreGain}</span>
                                   </div>
-                                  <p className="text-sm font-semibold">+{rec.expectedScoreGain} points</p>
+                                  <p className="text-sm font-semibold">+{rec.expectedScoreGain} {t.seoAuditDashboard.actionsSection.points}</p>
                                 </div>
                               )}
                             </div>
@@ -1451,7 +1450,7 @@ export function SeoAuditDashboard() {
                           {/* Actions with direct navigation buttons */}
                           {rec.actions && rec.actions.length > 0 && (
                             <>
-                              <div className="text-sm font-semibold text-muted-foreground mb-2">Actions à réaliser :</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-2">{t.seoAuditDashboard.actionsSection.actionsToPerform}</div>
                               <div className="space-y-2">
                                 {rec.actions.map((action: any, idx: number) => (
                                   <div
@@ -1468,7 +1467,7 @@ export function SeoAuditDashboard() {
                                         </p>
                                         {typeof action === 'object' && action.count && (
                                           <Badge variant="outline" className="mt-1 text-xs">
-                                            {action.count} élément{action.count > 1 ? 's' : ''}
+                                            {action.count} {action.count > 1 ? t.seoAuditDashboard.issuesSection.elements : t.seoAuditDashboard.issuesSection.element}
                                           </Badge>
                                         )}
                                       </div>
@@ -1497,12 +1496,12 @@ export function SeoAuditDashboard() {
                 {/* CTA final */}
                 <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 text-center">
                   <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h5 className="text-xl font-bold mb-2">Besoin d'aide pour optimiser ?</h5>
+                  <h5 className="text-xl font-bold mb-2">{t.seoAuditDashboard.actionsSection.needHelp}</h5>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Notre IA peut vous aider à appliquer ces recommandations automatiquement
+                    {t.seoAuditDashboard.actionsSection.aiCanHelp}
                   </p>
                   <Button size="lg" className="bg-gradient-to-r from-primary to-primary-dark text-white">
-                    Optimiser automatiquement
+                    {t.seoAuditDashboard.actionsSection.optimizeAuto}
                   </Button>
                 </div>
               </CardContent>
