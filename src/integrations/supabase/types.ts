@@ -2721,6 +2721,105 @@ export type Database = {
         }
         Relationships: []
       }
+      price_scan_results: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          image_url: string | null
+          merchants: Json | null
+          price_avg: number | null
+          price_max: number | null
+          price_median: number | null
+          price_min: number | null
+          processing_time_ms: number | null
+          product_id: string | null
+          products_found: number | null
+          search_query: string | null
+          sources_images: number | null
+          sources_organic: number | null
+          sources_shopping: number | null
+          store_id: string | null
+          user_id: string
+          variant_id: string | null
+          vision_brand: string | null
+          vision_category: string | null
+          vision_keywords: string[] | null
+          vision_segment: string | null
+          vision_title: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          image_url?: string | null
+          merchants?: Json | null
+          price_avg?: number | null
+          price_max?: number | null
+          price_median?: number | null
+          price_min?: number | null
+          processing_time_ms?: number | null
+          product_id?: string | null
+          products_found?: number | null
+          search_query?: string | null
+          sources_images?: number | null
+          sources_organic?: number | null
+          sources_shopping?: number | null
+          store_id?: string | null
+          user_id: string
+          variant_id?: string | null
+          vision_brand?: string | null
+          vision_category?: string | null
+          vision_keywords?: string[] | null
+          vision_segment?: string | null
+          vision_title?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          image_url?: string | null
+          merchants?: Json | null
+          price_avg?: number | null
+          price_max?: number | null
+          price_median?: number | null
+          price_min?: number | null
+          processing_time_ms?: number | null
+          product_id?: string | null
+          products_found?: number | null
+          search_query?: string | null
+          sources_images?: number | null
+          sources_organic?: number | null
+          sources_shopping?: number | null
+          store_id?: string | null
+          user_id?: string
+          variant_id?: string | null
+          vision_brand?: string | null
+          vision_category?: string | null
+          vision_keywords?: string[] | null
+          vision_segment?: string | null
+          vision_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_scan_results_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_scan_results_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_collections: {
         Row: {
           collection_id: string
