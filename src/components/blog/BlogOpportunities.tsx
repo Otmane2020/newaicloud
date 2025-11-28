@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -30,6 +30,7 @@ interface Opportunity {
   difficulty: "easy" | "medium" | "hard";
   productIds: string[];
   collectionIds?: string[];
+  status?: "pending" | "treated";
 }
 
 export function BlogOpportunities() {
@@ -168,10 +169,11 @@ export function BlogOpportunities() {
           seoScore: opp.seo_opportunity_score || 0,
           difficulty: opp.difficulty || 'medium',
           productIds: opp.product_ids || [],
-          collectionIds: [], // Will be populated if needed
+          collectionIds: [],
           angle: opp.type,
           targetAudience: '',
-          subCategory: ''
+          subCategory: '',
+          status: opp.status || 'pending'
         }));
         setOpportunities(formattedOps);
         setLoading(false);
@@ -281,6 +283,9 @@ export function BlogOpportunities() {
       const colorPalette = colorPaletteMap[opp.category?.toLowerCase()] || "ocean";
       const editorialAngle = editorialAngleMap[opp.type] || "guide";
 
+      // Limit products to 1-5 most relevant
+      const relevantProductIds = opp.productIds.slice(0, Math.min(5, Math.max(1, opp.productIds.length)));
+
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user.id,
@@ -291,9 +296,8 @@ export function BlogOpportunities() {
           articleLength: opp.estimatedWordCount <= 1000 ? "700" : 
                          opp.estimatedWordCount <= 3000 ? "2000" : "4000",
           language: "fr",
-          productIds: opp.productIds,
+          productIds: relevantProductIds,
           collectionTitle: opp.collectionIds?.[0] || "",
-          // ✨ NEW: Add ArticleWizard-quality parameters
           layout: layout,
           colorPalette: colorPalette,
           editorialAngle: editorialAngle,
@@ -313,6 +317,12 @@ export function BlogOpportunities() {
       if (error) throw error;
 
       if (data?.success && data?.article?.id) {
+        // Mark opportunity as treated
+        await supabase
+          .from('blog_opportunities')
+          .update({ status: 'treated' })
+          .eq('id', opp.id);
+        
         await refreshLimits();
         await loadOpportunities();
         
@@ -517,12 +527,18 @@ export function BlogOpportunities() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {opportunities.map((opp) => {
           const Icon = getIcon(opp.type);
+          const isTreated = opp.status === 'treated';
           return (
-            <Card key={opp.id} className="hover:shadow-lg transition-shadow">
+            <Card key={opp.id} className={`hover:shadow-lg transition-shadow ${isTreated ? 'opacity-70' : ''}`}>
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <Icon className="w-8 h-8 text-primary mb-2 flex-shrink-0" />
                   <div className="flex flex-col gap-1 items-end">
+                    {isTreated && (
+                      <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                        ✓ {t.blog.dialogs.opportunities.treated}
+                      </Badge>
+                    )}
                     <Badge variant="outline">
                       {opp.productsCount} {opp.productsCount > 1 ? t.blog.dialogs.opportunities.products : t.blog.dialogs.opportunities.product}
                     </Badge>
@@ -585,12 +601,17 @@ export function BlogOpportunities() {
                     <Button 
                       onClick={() => handleCreateArticle(opp)} 
                       className="w-full"
-                      disabled={generating === opp.id}
+                      disabled={generating === opp.id || isTreated}
                     >
                       {generating === opp.id ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           {t.blog.dialogs.opportunities.generatingBtn}
+                        </>
+                      ) : isTreated ? (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          {t.blog.dialogs.opportunities.treated}
                         </>
                       ) : (
                         <>

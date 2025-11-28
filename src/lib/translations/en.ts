@@ -3692,6 +3692,9 @@ export const translations = {
         easy: "Easy",
         medium: "Medium",
         hard: "Hard",
+        // Status badges
+        treated: "Treated",
+        pending: "Pending",
         // Buttons
         createAuto: "Create Auto",
         generatingBtn: "Generating...",
