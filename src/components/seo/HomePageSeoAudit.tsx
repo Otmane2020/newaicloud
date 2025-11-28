@@ -1093,7 +1093,7 @@ export function HomePageSeoAudit() {
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                     <Sparkles className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-sm">
-                      Les données sont automatiquement synchronisées depuis Shopify au chargement de la page
+                      {t.homepageAudit.autoSyncMessage}
                     </AlertDescription>
                   </Alert>
 
@@ -1135,12 +1135,12 @@ export function HomePageSeoAudit() {
                       {generating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Génération et synchronisation...
+                          {t.homepageAudit.buttons.generatingAndSyncing}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Optimiser avec l'IA et synchroniser
+                          {t.homepageAudit.buttons.optimizeWithAI}
                         </>
                       )}
                     </Button>
@@ -1159,13 +1159,13 @@ export function HomePageSeoAudit() {
                       ) : (
                         <>
                           <Upload className="w-4 h-4 mr-2" />
-                          Synchroniser manuellement
+                          {t.homepageAudit.buttons.syncManually}
                         </>
                       )}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify
+                    {t.homepageAudit.aiOptimizationNote}
                   </p>
                  </div>
               </CardContent>

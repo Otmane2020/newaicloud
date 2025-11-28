@@ -3071,6 +3071,7 @@ export const translations = {
         aiEnhanced: "AI Enhanced",
         seoScore: "SEO Score",
         optimizeBtn: "Optimize Pages",
+        optimizingLabel: "Optimizing pages",
       },
       articles: {
         title: "Articles SEO Management",
@@ -3081,6 +3082,7 @@ export const translations = {
         aiEnhanced: "AI Enhanced",
         seoScore: "SEO Score",
         optimizeBtn: "Optimize Articles",
+        optimizingLabel: "Optimizing articles",
       },
     },
     submenu: {
@@ -5262,8 +5264,13 @@ export const translations = {
     buttons: {
       analyzing: "Analyzing...",
       analyzeHomepage: "Analyze Homepage",
-      syncing: "Syncing..."
+      syncing: "Syncing...",
+      generatingAndSyncing: "Generating and syncing...",
+      optimizeWithAI: "Optimize with AI and sync",
+      syncManually: "Sync manually"
     },
+    autoSyncMessage: "Data is automatically synced from Shopify on page load",
+    aiOptimizationNote: "AI optimization automatically generates title and description, then saves and syncs them with Shopify",
     sections: {
       overallScore: "Overall SEO Score",
       structure: "Structure",
@@ -5305,7 +5312,10 @@ export const translations = {
       shopifyEditor: "Shopify Editor",
       configureMetadata: "Configure Metadata",
       importOrGenerate: "Import or Generate",
-      analyzedOn: "Analyzed on"
+      analyzedOn: "Analyzed on",
+      fixImages: "Fix {{count}} image(s)",
+      imagesToOptimize: "{{count}} image(s) to optimize",
+      optimizeLinks: "Optimize {{count}} link(s)"
     }
   },
 

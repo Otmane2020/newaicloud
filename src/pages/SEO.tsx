@@ -248,7 +248,7 @@ export default function SEO() {
                     <ProgressBanner
                       current={optimizationState.current}
                       total={optimizationState.total}
-                      label="Optimisation des pages"
+                      label={t.seo.banners.pages.optimizingLabel}
                       onCancel={cancelOptimization}
                     />
                   ) : (
@@ -317,7 +317,7 @@ export default function SEO() {
                     <ProgressBanner
                       current={optimizationState.current}
                       total={optimizationState.total}
-                      label="Optimisation des articles"
+                      label={t.seo.banners.articles.optimizingLabel}
                       onCancel={cancelOptimization}
                     />
                   ) : (
