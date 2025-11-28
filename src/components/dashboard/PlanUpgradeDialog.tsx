@@ -46,7 +46,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [prorationInfo, setProrationInfo] = useState<ProrationInfo | null>(null);
   const [loadingProration, setLoadingProration] = useState(false);
-  const { language, t } = useTranslation();
+  const { language, t, tf } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -64,7 +64,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
       .then(({ data, error }: any) => {
         if (error) {
           console.error('Error loading plans:', error);
-          toast.error('Erreur lors du chargement des plans');
+          toast.error(t.dialogs.planUpgrade.loadError);
           return;
         }
 
@@ -164,21 +164,18 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
       if (upgradeDetails?.proration_applied) {
         const amount = upgradeDetails.prorationAmount ? `$${upgradeDetails.prorationAmount.toFixed(2)}` : '';
         toast.success(
-          `✅ Plan mis à niveau ! Prorata de ${amount} facturé. Vos compteurs ont été réinitialisés.`,
+          tf('dialogs.upgrade.planUpgradedWithProration', { amount }),
           { duration: 6000 }
         );
       } else {
-        toast.success(
-          '✅ Plan mis à niveau ! Nouveau cycle démarré sans prorata.',
-          { duration: 5000 }
-        );
+        toast.success(t.dialogs.upgrade.planUpgradedNoProration, { duration: 5000 });
       }
       
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error updating subscription:', error);
-      const errorMessage = error?.message || error?.error?.message || error?.toString() || 'Erreur lors de la mise à jour';
+      const errorMessage = error?.message || error?.error?.message || error?.toString() || t.dialogs.upgrade.updateError;
       toast.error(errorMessage, { duration: 8000 });
     } finally {
       setLoading(false);
@@ -249,38 +246,38 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t.dialogs.planUpgrade.currentPrice}:</span>
                       <span className="font-semibold text-base">
-                        {currentPlan.name} à ${currentPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                        {currentPlan.name} - ${currentPrice.toFixed(2)}/{billingPeriod === 'monthly' ? t.dialogs.planUpgrade.perMonth : t.dialogs.planUpgrade.perYear}
                       </span>
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Nouveau prix:</span>
+                      <span className="text-muted-foreground">{t.dialogs.planUpgrade.newPrice}:</span>
                       <span className="font-semibold text-base text-primary">
-                        {selectedPlan.name} à ${newPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                        {selectedPlan.name} - ${newPrice.toFixed(2)}/{billingPeriod === 'monthly' ? t.dialogs.planUpgrade.perMonth : t.dialogs.planUpgrade.perYear}
                       </span>
                     </div>
 
                     {!isSamePlan && prorationInfo && (
                       <div className="pt-3 border-t space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Différence de prix:</span>
+                          <span className="text-muted-foreground">{t.dialogs.planUpgrade.priceDifference}:</span>
                           <span className="font-medium">
-                            ${Math.abs(priceChange).toFixed(2)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                            ${Math.abs(priceChange).toFixed(2)}/{billingPeriod === 'monthly' ? t.dialogs.planUpgrade.perMonth : t.dialogs.planUpgrade.perYear}
                           </span>
                         </div>
                         
                         {prorationInfo.willProrate && (
                           <>
                             <div className="flex justify-between items-start">
-                              <span className="text-muted-foreground">Formule de prorata:</span>
+                              <span className="text-muted-foreground">{t.dialogs.planUpgrade.prorationFormula}:</span>
                               <div className="text-right font-mono text-xs bg-background/50 px-2 py-1 rounded">
-                                ({newPrice.toFixed(2)} - {currentPrice.toFixed(2)}) × ({prorationInfo.daysRemaining}j / {prorationInfo.daysIntoCycle + prorationInfo.daysRemaining}j)
+                                ({newPrice.toFixed(2)} - {currentPrice.toFixed(2)}) × ({prorationInfo.daysRemaining}d / {prorationInfo.daysIntoCycle + prorationInfo.daysRemaining}d)
                               </div>
                             </div>
                             
                             <div className="flex justify-between items-center pt-2 border-t">
                               <span className="font-medium">
-                                {isUpgrade ? 'À payer aujourd\'hui' : 'Crédit appliqué'} (prorata):
+                                {isUpgrade ? t.dialogs.planUpgrade.payToday : t.dialogs.planUpgrade.creditApplied} {t.dialogs.planUpgrade.prorata}:
                               </span>
                               <span className={`font-bold text-lg ${isUpgrade ? 'text-orange-600' : 'text-green-600'}`}>
                                 {isUpgrade ? '' : '-'}${Math.abs(prorationInfo.prorationAmount).toFixed(2)}
@@ -291,7 +288,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                         
                         {!prorationInfo.willProrate && (
                           <div className="flex justify-between items-center pt-2 border-t">
-                            <span className="font-medium">À payer (prix complet):</span>
+                            <span className="font-medium">{t.dialogs.planUpgrade.fullPrice}:</span>
                             <span className="font-bold text-lg text-orange-600">
                               ${newPrice.toFixed(2)}
                             </span>
@@ -304,10 +301,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
               </div>
 
               <div className="mt-3 pt-3 border-t space-y-1 text-xs text-muted-foreground">
-                <p>✓ {selectedPlan.max_products} produits maximum</p>
-                <p>✓ {selectedPlan.max_optimizations_monthly} optimisations/mois</p>
-                <p>✓ {selectedPlan.max_articles_monthly} articles/mois</p>
-                <p>✓ {selectedPlan.max_chat_responses_monthly} réponses chat/mois</p>
+                <p>✓ {tf('dialogs.planUpgrade.maxProducts', { count: selectedPlan.max_products })}</p>
+                <p>✓ {tf('dialogs.planUpgrade.maxOptimizations', { count: selectedPlan.max_optimizations_monthly })}</p>
+                <p>✓ {tf('dialogs.planUpgrade.maxArticles', { count: selectedPlan.max_articles_monthly })}</p>
+                <p>✓ {tf('dialogs.planUpgrade.maxChatResponses', { count: selectedPlan.max_chat_responses_monthly })}</p>
               </div>
             </div>
           )}
@@ -316,41 +313,41 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
           {selectedPlan && !isSamePlan && (
             <div className="text-xs bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                ℹ️ Détails de la facturation
+                {t.dialogs.planUpgrade.billingDetails}
               </p>
               {loadingProration ? (
                 <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Calcul du prorata en cours...</span>
+                  <span>{t.dialogs.planUpgrade.calculatingProration}</span>
                 </div>
               ) : prorationInfo ? (
                 prorationInfo.willProrate ? (
                   <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>• Vous êtes au jour {prorationInfo.daysIntoCycle} de votre cycle</li>
-                    <li>• {prorationInfo.daysRemaining} jours restants jusqu'au renouvellement</li>
-                    <li>• Montant du prorata estimé : ${prorationInfo.prorationAmount.toFixed(2)}</li>
-                    <li>• Vos compteurs mensuels seront réinitialisés immédiatement</li>
+                    <li>• {tf('dialogs.planUpgrade.cycleDay', { day: prorationInfo.daysIntoCycle })}</li>
+                    <li>• {tf('dialogs.planUpgrade.daysRemaining', { days: prorationInfo.daysRemaining })}</li>
+                    <li>• {tf('dialogs.planUpgrade.estimatedProration', { amount: `$${prorationInfo.prorationAmount.toFixed(2)}` })}</li>
+                    <li>• {t.dialogs.planUpgrade.countersReset}</li>
                   </ul>
                 ) : (
                   <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>• Vous êtes au jour {prorationInfo.daysIntoCycle} de votre cycle</li>
-                    <li>• Pas de proration (début de cycle)</li>
-                    <li>• Vous paierez le prix complet du nouveau plan</li>
-                    <li>• Date de renouvellement : {new Date(prorationInfo.renewalDate).toLocaleDateString('fr-FR')}</li>
+                    <li>• {tf('dialogs.planUpgrade.cycleDay', { day: prorationInfo.daysIntoCycle })}</li>
+                    <li>• {t.dialogs.planUpgrade.noProration}</li>
+                    <li>• {t.dialogs.planUpgrade.fullPriceCharged}</li>
+                    <li>• {tf('dialogs.planUpgrade.renewalDate', { date: new Date(prorationInfo.renewalDate).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US') })}</li>
                   </ul>
                 )
               ) : (
                 isUpgrade ? (
                   <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>• Vous serez facturé au prorata selon votre position dans le cycle</li>
-                    <li>• Vos compteurs mensuels seront réinitialisés si applicable</li>
-                    <li>• Votre date de renouvellement reste inchangée</li>
+                    <li>• {t.dialogs.planUpgrade.prorationBilled}</li>
+                    <li>• {t.dialogs.planUpgrade.countersResetIfApplicable}</li>
+                    <li>• {t.dialogs.planUpgrade.renewalDateUnchanged}</li>
                   </ul>
                 ) : (
                   <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>• Le changement sera effectif immédiatement</li>
-                    <li>• Vous serez crédité pour le reste du cycle</li>
-                    <li>• Vos compteurs mensuels seront ajustés</li>
+                    <li>• {t.dialogs.planUpgrade.changeEffectiveImmediately}</li>
+                    <li>• {t.dialogs.planUpgrade.creditedForRemainingCycle}</li>
+                    <li>• {t.dialogs.planUpgrade.countersAdjusted}</li>
                   </ul>
                 )
               )}
@@ -360,7 +357,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Annuler
+            {t.dialogs.planUpgrade.cancel}
           </Button>
           <Button 
             onClick={handleConfirm} 
@@ -369,11 +366,11 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Mise à jour...
+                {t.dialogs.planUpgrade.updating}
               </>
             ) : (
               <>
-                Confirmer le changement
+                {t.dialogs.planUpgrade.confirmChange}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
             )}

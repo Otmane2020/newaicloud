@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, Clock, AlertCircle } from "lucide-react";
 import { format, subDays } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
+import { useTranslation } from "@/lib/language";
 
 export default function ApiAnalytics() {
+  const { t, language } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
@@ -77,31 +79,31 @@ export default function ApiAnalytics() {
   }
 
   if (loading) {
-    return <div className="container mx-auto py-6">Chargement...</div>;
+    return <div className="container mx-auto py-6">{t.apiAnalytics.loading}</div>;
   }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Analytics API</h1>
-        <p className="text-muted-foreground">Statistiques d'utilisation des 7 derniers jours</p>
+        <h1 className="text-3xl font-bold">{t.apiAnalytics.title}</h1>
+        <p className="text-muted-foreground">{t.apiAnalytics.description}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total d'appels</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.apiAnalytics.stats.totalCalls}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalCalls || 0}</div>
-            <p className="text-xs text-muted-foreground">7 derniers jours</p>
+            <p className="text-xs text-muted-foreground">{t.apiAnalytics.stats.last7days}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux de succès</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.apiAnalytics.stats.successRate}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -111,25 +113,25 @@ export default function ApiAnalytics() {
                 : 0}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.successCalls} succès / {stats?.errorCalls} erreurs
+              {stats?.successCalls} {t.apiAnalytics.endpoints.calls} / {stats?.errorCalls} {t.apiAnalytics.stats.errors}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Temps de réponse</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.apiAnalytics.stats.responseTime}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.avgResponseTime}ms</div>
-            <p className="text-xs text-muted-foreground">Moyenne</p>
+            <p className="text-xs text-muted-foreground">{t.apiAnalytics.stats.average}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Erreurs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.apiAnalytics.stats.errors}</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -137,7 +139,7 @@ export default function ApiAnalytics() {
             <p className="text-xs text-muted-foreground">
               {stats?.totalCalls > 0 
                 ? Math.round((stats.errorCalls / stats.totalCalls) * 100) 
-                : 0}% du total
+                : 0}% {t.apiAnalytics.stats.ofTotal}
             </p>
           </CardContent>
         </Card>
@@ -146,8 +148,8 @@ export default function ApiAnalytics() {
       {stats?.endpointStats && stats.endpointStats.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Statistiques par endpoint</CardTitle>
-            <CardDescription>Performance et utilisation de chaque endpoint</CardDescription>
+            <CardTitle>{t.apiAnalytics.endpoints.title}</CardTitle>
+            <CardDescription>{t.apiAnalytics.endpoints.description}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -156,12 +158,12 @@ export default function ApiAnalytics() {
                   <div className="flex-1">
                     <div className="font-mono text-sm font-semibold">{endpoint.endpoint}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {endpoint.count} appels • {endpoint.avgTime}ms moyen
+                      {endpoint.count} {t.apiAnalytics.endpoints.calls} • {endpoint.avgTime}ms {t.apiAnalytics.endpoints.avgTime}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {endpoint.errors > 0 && (
-                      <Badge variant="destructive">{endpoint.errors} erreurs</Badge>
+                      <Badge variant="destructive">{endpoint.errors} {t.apiAnalytics.endpoints.errors}</Badge>
                     )}
                     <Badge>{Math.round(((endpoint.count - endpoint.errors) / endpoint.count) * 100)}%</Badge>
                   </div>
@@ -174,14 +176,14 @@ export default function ApiAnalytics() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appels récents</CardTitle>
-          <CardDescription>20 dernières requêtes API</CardDescription>
+          <CardTitle>{t.apiAnalytics.recentCalls.title}</CardTitle>
+          <CardDescription>{t.apiAnalytics.recentCalls.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {recentCalls.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun appel API enregistré
+                {t.apiAnalytics.recentCalls.noData}
               </p>
             ) : (
               recentCalls.map((call) => (
@@ -194,7 +196,7 @@ export default function ApiAnalytics() {
                       <span className="font-mono text-sm">{call.endpoint}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(call.created_at), "PPpp", { locale: fr })}
+                      {format(new Date(call.created_at), "PPpp", { locale: language === 'fr' ? fr : enUS })}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
