@@ -1,4 +1,4 @@
-import { Store } from 'lucide-react';
+import { Store, Lock } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -7,9 +7,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useStore } from '@/contexts/StoreContext';
+import { useDemoMode } from '@/hooks/useDemoMode';
+import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 export function StoreSelector() {
   const { selectedStore, setSelectedStore, stores, loading } = useStore();
+  const { isDemoMode, canSwitchStore } = useDemoMode();
+  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -24,13 +29,17 @@ export function StoreSelector() {
     return null;
   }
 
-  // If only one store, show it in sidebar style
-  if (stores.length === 1) {
+  // If only one store OR demo mode, show it in sidebar style (no select)
+  if (stores.length === 1 || isDemoMode) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
-        <Store className="w-4 h-4 text-primary shrink-0" />
+        {isDemoMode ? (
+          <Lock className="w-4 h-4 text-warning shrink-0" />
+        ) : (
+          <Store className="w-4 h-4 text-primary shrink-0" />
+        )}
         <span className="text-sm text-foreground truncate">
-          {stores[0].store_label || stores[0].store_name || stores[0].store_url || 'Boutique'}
+          {selectedStore?.store_label || selectedStore?.store_name || stores[0]?.store_label || stores[0]?.store_name || stores[0]?.store_url || 'Boutique'}
         </span>
       </div>
     );

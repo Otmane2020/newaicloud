@@ -1,16 +1,20 @@
 import { useState, Suspense, lazy, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Plus, RefreshCw } from "lucide-react";
+import { ShoppingBag, Plus, RefreshCw, Lock } from "lucide-react";
 import { ShopifyConnectionWizard } from "./ShopifyConnectionWizard";
 import { SkeletonLoader } from "./SkeletonLoader";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useDemoMode } from "@/hooks/useDemoMode";
+import { useTranslation } from "@/lib/language";
 
 const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
 
 export function ShopifyIntegrationTabs() {
+  const { isDemoMode } = useDemoMode();
+  const { t } = useTranslation();
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,8 +96,19 @@ export function ShopifyIntegrationTabs() {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh Data
               </Button>
-              <Button onClick={() => setShowDialog(true)} size="lg" className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button 
+                onClick={() => {
+                  if (isDemoMode) {
+                    toast.error(t.demo.restrictions.cannotAddStore);
+                    return;
+                  }
+                  setShowDialog(true);
+                }} 
+                size="lg" 
+                className="w-full sm:w-auto"
+                variant={isDemoMode ? "outline" : "default"}
+              >
+                {isDemoMode ? <Lock className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                 Add Store
               </Button>
             </div>
