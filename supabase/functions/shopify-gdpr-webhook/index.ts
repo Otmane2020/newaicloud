@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { createHmac } from 'node:crypto';
 
 // ✅ Type declaration for Supabase EdgeRuntime
 declare const EdgeRuntime: {
@@ -12,6 +11,46 @@ const corsHeaders = {
 };
 
 /**
+ * ✅ SHOPIFY COMPLIANCE: Verify HMAC using Web Crypto API
+ */
+async function verifyHmac(rawBody: string, hmac: string, secret: string): Promise<boolean> {
+  try {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const data = encoder.encode(rawBody);
+
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', key, data);
+    const signatureArray = new Uint8Array(signature);
+    
+    // Convert to base64
+    const calculatedHmac = btoa(String.fromCharCode(...signatureArray));
+    
+    // Constant-time comparison to prevent timing attacks
+    if (calculatedHmac.length !== hmac.length) {
+      return false;
+    }
+    
+    let result = 0;
+    for (let i = 0; i < calculatedHmac.length; i++) {
+      result |= calculatedHmac.charCodeAt(i) ^ hmac.charCodeAt(i);
+    }
+    
+    return result === 0;
+  } catch (error) {
+    console.error('HMAC verification error:', error);
+    return false;
+  }
+}
+
+/**
  * ✅ SHOPIFY COMPLIANCE: GDPR Webhooks Handler
  * Handles mandatory Shopify GDPR webhooks:
  * - customers/data_request
@@ -19,13 +58,28 @@ const corsHeaders = {
  * - shop/redact
  */
 Deno.serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const url = new URL(req.url);
+  // ✅ Handle GET requests for endpoint availability check (Shopify verification)
+  if (req.method === 'GET') {
+    console.log(JSON.stringify({
+      event: 'gdpr_webhook_get_verification',
+      timestamp: new Date().toISOString()
+    }));
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'GDPR webhook endpoint is active',
+      supported_topics: ['customers/data_request', 'customers/redact', 'shop/redact']
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
+  try {
     // ✅ CRITICAL: Read body as text FIRST (can only be read once)
     const rawBody = await req.text();
 
@@ -34,7 +88,6 @@ Deno.serve(async (req) => {
     try {
       parsedBody = JSON.parse(rawBody);
     } catch {
-      // Not JSON, ignore for health check
       parsedBody = {};
     }
 
@@ -46,68 +99,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get webhook headers early to check for verification requests
+    // Get webhook headers
     const hmac = req.headers.get('x-shopify-hmac-sha256');
     const shopDomain = req.headers.get('x-shopify-shop-domain');
     const topic = req.headers.get('x-shopify-topic');
-    const userAgent = req.headers.get('user-agent') || '';
-
-    // ✅ SHOPIFY VERIFICATION: Accept ALL verification requests
-    // Shopify automated compliance checks may send requests:
-    // - Without HMAC signature
-    // - With empty or minimal body
-    // - With User-Agent containing "Shopify"
-    // - GET requests to check endpoint availability
-    // We MUST return 200 OK for these to pass verification
-    
-    const isVerificationRequest = 
-      !hmac ||  // No HMAC = verification request
-      rawBody === '' || 
-      rawBody === '{}' ||
-      rawBody.length < 20 ||
-      userAgent.toLowerCase().includes('shopify') && !topic;
-
-    // Also handle GET requests for endpoint availability check
-    if (req.method === 'GET') {
-      console.log(JSON.stringify({
-        event: 'gdpr_webhook_get_verification',
-        timestamp: new Date().toISOString()
-      }));
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'GDPR webhook endpoint is active',
-        supported_topics: ['customers/data_request', 'customers/redact', 'shop/redact']
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // If no HMAC and appears to be verification, accept it
-    if (isVerificationRequest && !hmac) {
-      console.log(JSON.stringify({
-        event: 'gdpr_webhook_shopify_verification',
-        user_agent: userAgent,
-        body_length: rawBody.length,
-        has_hmac: false,
-        has_topic: !!topic,
-        timestamp: new Date().toISOString()
-      }));
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'GDPR webhook endpoint is active and ready to receive webhooks',
-        verified: true
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     console.log(JSON.stringify({
       event: 'gdpr_webhook_received',
@@ -118,8 +113,20 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     }));
 
-    if (!hmac || !shopDomain || !topic) {
-      console.error('❌ Missing required headers:', { hmac: !!hmac, shopDomain: !!shopDomain, topic: !!topic });
+    // ✅ SHOPIFY COMPLIANCE: ALL POST requests MUST have HMAC
+    if (!hmac) {
+      console.error('❌ Missing HMAC signature - rejecting request');
+      return new Response(JSON.stringify({ 
+        error: 'Missing HMAC signature',
+        message: 'All webhook requests must include x-shopify-hmac-sha256 header'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!shopDomain || !topic) {
+      console.error('❌ Missing required headers:', { shopDomain: !!shopDomain, topic: !!topic });
       return new Response(JSON.stringify({ error: 'Missing required headers' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -136,49 +143,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const calculatedHmac = createHmac('sha256', apiSecret)
-      .update(rawBody, 'utf8')
-      .digest('base64');
-
-    if (calculatedHmac !== hmac) {
-      const debugMode = url.searchParams.get('debug') === '1';
-
-      const logPayload: Record<string, unknown> = {
+    // ✅ CRITICAL: Verify HMAC signature
+    const isValidHmac = await verifyHmac(rawBody, hmac, apiSecret);
+    
+    if (!isValidHmac) {
+      console.error(JSON.stringify({
         event: 'gdpr_webhook_hmac_failure',
         shop: shopDomain,
         topic: topic,
-        calculated_length: calculatedHmac.length,
-        received_length: hmac.length,
         body_length: rawBody.length,
-        debug_mode: debugMode,
         timestamp: new Date().toISOString(),
-      };
+      }));
 
-      if (debugMode) {
-        logPayload['calculated_hmac'] = calculatedHmac;
-        logPayload['received_hmac'] = hmac;
-      }
-
-      console.error(JSON.stringify(logPayload));
-
-      const responseBody: Record<string, unknown> = { error: 'Invalid HMAC' };
-      if (debugMode) {
-        responseBody['expected_hmac'] = calculatedHmac;
-        responseBody['received_hmac'] = hmac;
-        responseBody['note'] = 'Debug mode active: values returned for local testing only. Do not expose this URL publicly.';
-      }
-
-      return new Response(JSON.stringify(responseBody), {
+      return new Response(JSON.stringify({ error: 'Invalid HMAC signature' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     console.log(JSON.stringify({
-      event: 'gdpr_webhook_verification_success',
+      event: 'gdpr_webhook_hmac_verified',
       shop: shopDomain,
       topic: topic,
-      hmac_valid: true,
       timestamp: new Date().toISOString()
     }));
 
@@ -188,8 +174,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Parse payload for async processing
-    const payload = JSON.parse(rawBody);
+    const payload = parsedBody;
 
     // Process GDPR webhook asynchronously in background
     EdgeRuntime.waitUntil((async () => {
