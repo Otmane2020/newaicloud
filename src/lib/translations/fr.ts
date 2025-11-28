@@ -3027,6 +3027,21 @@ export const translations = {
         synced: "Synchronisé",
       },
     },
+    seoTasks: {
+      title: "Tâches SEO à effectuer",
+      description: "Complétez ces actions pour améliorer votre score de {{points}} points",
+      fixNow: "Corriger maintenant",
+      priority: {
+        critical: "Critique",
+        important: "Important",
+        optional: "Optionnel",
+      },
+      toasts: {
+        taskCompleted: "Tâche complétée ! +{{impact}} points SEO potentiels",
+        reanalyzeForNewScore: "Analysez à nouveau pour voir votre nouveau score",
+        updateError: "Erreur lors de la mise à jour",
+      },
+    },
     actionPlan: {
       title: "Plan d'Action SEO",
       actionsCompleted: "{{completed}} sur {{total}} actions complétées",

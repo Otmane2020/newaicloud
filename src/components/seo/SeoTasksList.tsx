@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Target, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 interface SeoTask {
   id: string;
@@ -20,6 +21,7 @@ interface SeoTask {
 }
 
 export function SeoTasksList() {
+  const { t, tf } = useTranslation();
   const [tasks, setTasks] = useState<SeoTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
@@ -60,15 +62,14 @@ export function SeoTasksList() {
 
       if (error) throw error;
 
-      toast.success(`Tâche complétée! +${impact} points SEO potentiels`, {
-        description: 'Analysez à nouveau pour voir votre nouveau score'
+      toast.success(tf('seo.seoTasks.toasts.taskCompleted', { impact }), {
+        description: t.seo.seoTasks.toasts.reanalyzeForNewScore
       });
 
-      // Refresh tasks
       await fetchTasks();
     } catch (error) {
       console.error('Error completing task:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t.seo.seoTasks.toasts.updateError);
     } finally {
       setCompletingTask(null);
     }
@@ -81,9 +82,9 @@ export function SeoTasksList() {
   };
 
   const getPriorityLabel = (priority: number) => {
-    if (priority === 1) return 'Critique';
-    if (priority === 2) return 'Important';
-    return 'Optionnel';
+    if (priority === 1) return t.seo.seoTasks.priority.critical;
+    if (priority === 2) return t.seo.seoTasks.priority.important;
+    return t.seo.seoTasks.priority.optional;
   };
 
   if (loading) {
@@ -109,10 +110,10 @@ export function SeoTasksList() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5 text-yellow-600" />
-              🎯 Tâches SEO à effectuer
+              🎯 {t.seo.seoTasks.title}
             </CardTitle>
             <CardDescription>
-              Complétez ces actions pour améliorer votre score de {totalImpact} points
+              {tf('seo.seoTasks.description', { points: totalImpact })}
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-lg font-bold">
@@ -165,7 +166,7 @@ export function SeoTasksList() {
                       }
                     }}
                   >
-                    Corriger maintenant
+                    {t.seo.seoTasks.fixNow}
                     <ArrowRight className="w-3 h-3" />
                   </Button>
                 )}
