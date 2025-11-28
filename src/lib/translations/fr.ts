@@ -3097,6 +3097,7 @@ export const translations = {
         aiEnhanced: "Amélioré par IA",
         seoScore: "Score SEO",
         optimizeBtn: "Optimiser Pages",
+        optimizingLabel: "Optimisation des pages",
       },
       articles: {
         title: "Gestion SEO des Articles",
@@ -3107,6 +3108,7 @@ export const translations = {
         aiEnhanced: "Amélioré par IA",
         seoScore: "Score SEO",
         optimizeBtn: "Optimiser Articles",
+        optimizingLabel: "Optimisation des articles",
       },
     },
     submenu: {
@@ -5397,7 +5399,12 @@ export const translations = {
       analyzing: "Analyse en cours...",
       analyzeHomepage: "Analyser la Homepage",
       syncing: "Synchronisation...",
+      generatingAndSyncing: "Génération et synchronisation...",
+      optimizeWithAI: "Optimiser avec l'IA et synchroniser",
+      syncManually: "Synchroniser manuellement",
     },
+    autoSyncMessage: "Les données sont automatiquement synchronisées depuis Shopify au chargement de la page",
+    aiOptimizationNote: "L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify",
     sections: {
       overallScore: "Score SEO Global",
       structure: "Structure",
@@ -5440,6 +5447,9 @@ export const translations = {
       configureMetadata: "Configurer les Métadonnées",
       importOrGenerate: "Importer ou Générer",
       analyzedOn: "Analysé le",
+      fixImages: "Corriger {{count}} image(s)",
+      imagesToOptimize: "{{count}} image(s) à optimiser",
+      optimizeLinks: "Optimiser {{count}} lien(s)",
     },
   },
 
