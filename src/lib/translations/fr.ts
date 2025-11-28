@@ -6563,6 +6563,12 @@ export const translations = {
       message: "Impossible de démarrer la session demo",
       redirect: "Redirection vers l'accueil...",
     },
+    restrictions: {
+      cannotAddStore: "Mode Demo - Impossible d'ajouter une boutique",
+      cannotModify: "Mode Demo - Modifications non autorisées",
+      cannotDelete: "Mode Demo - Suppression non autorisée",
+      cannotSync: "Mode Demo - Synchronisation non autorisée",
+    },
   },
 
   landing: {

@@ -6442,6 +6442,12 @@ export const translations = {
       message: "Could not start demo session",
       redirect: "Redirecting to homepage...",
     },
+    restrictions: {
+      cannotAddStore: "Demo Mode - Cannot add a store",
+      cannotModify: "Demo Mode - Modifications not allowed",
+      cannotDelete: "Demo Mode - Deletion not allowed",
+      cannotSync: "Demo Mode - Synchronization not allowed",
+    },
   },
 
   landing: {
