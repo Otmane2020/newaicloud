@@ -16,7 +16,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
+import { useTranslation } from '@/lib/language';
 
 interface CronJob {
   name: string;
@@ -30,6 +31,7 @@ interface CronJob {
 }
 
 export default function CronMonitoring() {
+  const { t, language } = useTranslation();
   const [cronJobs, setCronJobs] = useState<CronJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function CronMonitoring() {
       const jobs: CronJob[] = [
         {
           name: 'shopify-auto-sync',
-          displayName: 'Synchronisation Shopify',
+          displayName: t.cronMonitoring.jobs.shopifySync,
           frequency: shopifySettings?.import_frequency || 'manual',
           lastRun: shopifySettings?.last_import_at || null,
           nextRun: shopifySettings?.next_import_at || null,
@@ -74,12 +76,12 @@ export default function CronMonitoring() {
             shopifySettings?.next_import_at,
             shopifySettings?.import_frequency !== 'manual'
           ),
-          description: 'Import automatique des produits, collections, pages et articles depuis Shopify',
+          description: t.cronMonitoring.jobs.shopifySyncDesc,
           functionName: 'scheduled-sync',
         },
         {
           name: 'google-merchant-sync',
-          displayName: 'Synchronisation Google Merchant',
+          displayName: t.cronMonitoring.jobs.googleMerchant,
           frequency: merchantSettings?.sync_frequency || 'manual',
           lastRun: merchantSettings?.last_sync_at || null,
           nextRun: merchantSettings?.next_sync_at || null,
@@ -88,21 +90,21 @@ export default function CronMonitoring() {
             merchantSettings?.next_sync_at,
             merchantSettings?.auto_sync_enabled
           ),
-          description: 'Synchronisation automatique du flux produits vers Google Merchant Center',
+          description: t.cronMonitoring.jobs.googleMerchantDesc,
           functionName: 'scheduled-merchant-sync',
         },
         {
           name: 'blog-generation',
-          displayName: 'Génération d\'articles de blog',
+          displayName: t.cronMonitoring.jobs.blogGeneration,
           frequency: campaigns?.[0]?.frequency || 'none',
           lastRun: campaigns?.[0]?.last_generation_date || null,
-          nextRun: null, // Blog campaigns don't have next_generation_date
+          nextRun: null,
           status: getJobStatus(
             campaigns?.[0]?.last_generation_date,
             null,
             (campaigns?.length || 0) > 0
           ),
-          description: 'Génération automatique d\'articles de blog selon les campagnes actives',
+          description: t.cronMonitoring.jobs.blogGenerationDesc,
           functionName: 'generate-blog-article',
         },
       ];
@@ -110,7 +112,7 @@ export default function CronMonitoring() {
       setCronJobs(jobs);
     } catch (error) {
       console.error('Error loading cron status:', error);
-      toast.error('Erreur lors du chargement des statuts');
+      toast.error(t.cronMonitoring.toasts.loadError);
     } finally {
       setLoading(false);
     }
@@ -141,11 +143,11 @@ export default function CronMonitoring() {
 
       if (error) throw error;
 
-      toast.success('Synchronisation manuelle déclenchée avec succès');
+      toast.success(t.cronMonitoring.toasts.syncTriggered);
       setTimeout(loadCronStatus, 2000);
     } catch (error: any) {
       console.error('Error triggering sync:', error);
-      toast.error(error.message || 'Erreur lors du déclenchement');
+      toast.error(error.message || t.cronMonitoring.toasts.syncError);
     } finally {
       setTriggering(null);
     }
@@ -153,7 +155,6 @@ export default function CronMonitoring() {
 
   useEffect(() => {
     loadCronStatus();
-    // Refresh every 30 seconds
     const interval = setInterval(loadCronStatus, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -175,13 +176,13 @@ export default function CronMonitoring() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default">Actif</Badge>;
+        return <Badge variant="default">{t.cronMonitoring.status.active}</Badge>;
       case 'overdue':
-        return <Badge variant="destructive">En retard</Badge>;
+        return <Badge variant="destructive">{t.cronMonitoring.status.overdue}</Badge>;
       case 'never_run':
-        return <Badge variant="outline">Jamais exécuté</Badge>;
+        return <Badge variant="outline">{t.cronMonitoring.status.neverRun}</Badge>;
       default:
-        return <Badge variant="secondary">Inactif</Badge>;
+        return <Badge variant="secondary">{t.cronMonitoring.status.inactive}</Badge>;
     }
   };
 
@@ -191,7 +192,7 @@ export default function CronMonitoring() {
         <Card>
           <CardContent className="p-8 text-center">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p>Chargement du monitoring...</p>
+            <p>{t.cronMonitoring.loading}</p>
           </CardContent>
         </Card>
       </div>

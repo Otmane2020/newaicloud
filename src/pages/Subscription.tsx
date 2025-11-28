@@ -43,7 +43,7 @@ const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t, language } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const currency = getCurrencySymbol(language);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -287,13 +287,16 @@ const Subscription = () => {
           if (upgradeDetails?.proration) {
             const prorata = upgradeDetails.proration;
             toast.success(
-              `✅ Plan mis à niveau !\n` +
-              `💰 Montant prélevé: ${prorata.prorated_amount}${prorata.currency}\n` +
-              `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+              tf('dialogs.upgrade.planUpgradedProrationDetails', {
+                amount: prorata.prorated_amount,
+                currency: prorata.currency,
+                daysRemaining: prorata.days_remaining,
+                totalDays: prorata.total_cycle_days
+              }),
               { duration: 6000 }
             );
           } else {
-            toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
+            toast.success(t.dialogs.upgrade.planUpgradedNoProration, { duration: 5000 });
           }
 
           await loadPlansAndCurrentPlan();
@@ -322,13 +325,16 @@ const Subscription = () => {
         if (upgradeDetails?.proration) {
           const prorata = upgradeDetails.proration;
           toast.success(
-            `✅ Plan mis à niveau !\n` +
-            `💰 Montant prélevé: ${prorata.prorated_amount}${prorata.currency}\n` +
-            `📅 ${prorata.days_remaining}j restants / ${prorata.total_cycle_days}j`, 
+            tf('dialogs.upgrade.planUpgradedProrationDetails', {
+              amount: prorata.prorated_amount,
+              currency: prorata.currency,
+              daysRemaining: prorata.days_remaining,
+              totalDays: prorata.total_cycle_days
+            }),
             { duration: 6000 }
           );
         } else {
-          toast.success('✅ Plan mis à niveau ! Nouveau cycle démarré.', { duration: 5000 });
+          toast.success(t.dialogs.upgrade.planUpgradedNoProration, { duration: 5000 });
         }
 
         await loadPlansAndCurrentPlan();
