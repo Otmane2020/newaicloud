@@ -129,7 +129,7 @@ export function NetlinkingTable() {
       // Enrichir les données avec les infos produit/page
       const formattedData = await Promise.all(
         (netlinkingData || []).map(async (entry: any) => {
-          let productPageName = 'Page inconnue';
+          let productPageName = t.netlinking.empty.unknownPage;
           let seoScore = Math.floor(Math.random() * (100 - 50) + 50); // Score aléatoire entre 50-100
 
           // Extraire le nom du produit/page depuis l'URL
@@ -149,7 +149,7 @@ export function NetlinkingTable() {
             } 
             // Vérifier si c'est une collection
             else if (entry.target_url.includes('/collections/')) {
-              productPageName = `Collection "${lastPart.replace(/-/g, ' ')}"`;
+              productPageName = `${t.netlinking.empty.collection} "${lastPart.replace(/-/g, ' ')}"`;
             }
             // Vérifier si c'est une page
             else if (entry.target_url.includes('/pages/')) {
@@ -159,7 +159,7 @@ export function NetlinkingTable() {
                 .eq('handle', lastPart)
                 .maybeSingle();
               
-              productPageName = page?.title || `Page "${lastPart.replace(/-/g, ' ')}"`;
+              productPageName = page?.title || `${t.netlinking.empty.page} "${lastPart.replace(/-/g, ' ')}"`;
             }
           }
 
@@ -176,7 +176,7 @@ export function NetlinkingTable() {
 
           return {
             ...entry,
-            article_title: entry.article?.title || 'Article supprimé',
+            article_title: entry.article?.title || t.netlinking.empty.deletedArticle,
             product_page_name: productPageName,
             seo_score: seoScore,
           };
@@ -234,9 +234,9 @@ export function NetlinkingTable() {
       if (error) throw error;
 
       if (data.broken > 0) {
-        toast.warning(`${data.broken} lien(s) brisé(s) détecté(s)`);
+        toast.warning(tf('netlinking.toasts.brokenDetected', { count: data.broken }));
       } else {
-        toast.success('Tous les liens sont fonctionnels');
+        toast.success(t.netlinking.toasts.allWorking);
       }
 
       await loadNetlinking();
@@ -259,7 +259,7 @@ export function NetlinkingTable() {
 
       if (error) throw error;
 
-      toast.success('Lien supprimé');
+      toast.success(t.netlinking.toasts.linkDeleted);
       await loadNetlinking();
     } catch (error: any) {
       console.error('Error deleting link:', error);
@@ -272,16 +272,16 @@ export function NetlinkingTable() {
 
   const exportToCSV = () => {
     const csv = [
-      ['Article', 'URL cible', 'Texte d\'ancrage', 'Type', 'Statut', 'Code HTTP', 'Clics', 'Dernière vérification'],
+      [t.netlinking.csv.article, t.netlinking.csv.targetUrl, t.netlinking.csv.anchorText, t.netlinking.csv.type, t.netlinking.csv.status, t.netlinking.csv.httpCode, t.netlinking.csv.clicks, t.netlinking.csv.lastCheck],
       ...entries.map((entry) => [
         entry.article_title,
         entry.target_url,
         entry.anchor_text,
-        entry.link_type,
-        entry.is_broken ? 'Brisé' : entry.last_checked_at ? 'Actif' : 'Non vérifié',
+        entry.link_type === 'internal' ? t.netlinking.status.internal : t.netlinking.status.external,
+        entry.is_broken ? t.netlinking.status.broken : entry.last_checked_at ? t.netlinking.status.active : t.netlinking.status.unchecked,
         entry.http_status_code || '',
         entry.click_count,
-        entry.last_checked_at ? new Date(entry.last_checked_at).toLocaleDateString('fr-FR') : '',
+        entry.last_checked_at ? new Date(entry.last_checked_at).toLocaleDateString() : '',
       ]),
     ]
       .map((row) => row.join(','))
@@ -293,7 +293,7 @@ export function NetlinkingTable() {
     a.href = url;
     a.download = `netlinking-${Date.now()}.csv`;
     a.click();
-    toast.success(t.blog.dialogs.netlinking.csvExported);
+    toast.success(t.netlinking.toasts.csvExported);
   };
 
   const filteredEntries = entries.filter((entry) => {
@@ -316,7 +316,7 @@ export function NetlinkingTable() {
           ) : (
             <AlertCircle className="w-4 h-4 mr-2" />
           )}
-          Vérifier tous les liens
+          {t.netlinking.actions.checkAllLinks}
         </Button>
         <Button
           onClick={handleAnalyzeAllArticles}
@@ -327,12 +327,12 @@ export function NetlinkingTable() {
           {analyzing ? (
             <>
               <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-              {t.blog.dialogs.netlinking.analyzing}
+              {t.netlinking.actions.analyzing}
             </>
           ) : (
             <>
               <Link className="w-5 h-5 mr-2" />
-              {t.blog.dialogs.netlinking.analyzeAll}
+              {t.netlinking.actions.analyze}
             </>
           )}
         </Button>
@@ -342,7 +342,7 @@ export function NetlinkingTable() {
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Liens</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t.netlinking.stats.totalLinks}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -351,7 +351,7 @@ export function NetlinkingTable() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Liens Internes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t.netlinking.stats.internalLinks}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.internal}</div>
@@ -360,7 +360,7 @@ export function NetlinkingTable() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Liens Externes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t.netlinking.stats.externalLinks}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.external}</div>
@@ -371,7 +371,7 @@ export function NetlinkingTable() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
               {stats.broken > 0 && <AlertCircle className="w-4 h-4 text-destructive" />}
-              Liens Brisés
+              {t.netlinking.stats.brokenLinks}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -383,7 +383,7 @@ export function NetlinkingTable() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Clics</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t.netlinking.stats.totalClicks}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.totalClicks}</div>
@@ -398,13 +398,13 @@ export function NetlinkingTable() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Link className="w-5 h-5" />
-                Analyse Netlinking
+                {t.netlinking.title}
               </CardTitle>
-              <CardDescription>Tous vos liens créés dans les articles</CardDescription>
+              <CardDescription>{t.netlinking.description}</CardDescription>
             </div>
             <Button onClick={exportToCSV} variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
-              Exporter CSV
+              {t.netlinking.actions.exportCsv}
             </Button>
           </div>
         </CardHeader>
@@ -414,17 +414,17 @@ export function NetlinkingTable() {
           ) : entries.length === 0 ? (
             <div className="text-center py-12">
               <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-2">{t.blog.dialogs.netlinking.noLinks}</p>
-              <p className="text-sm text-muted-foreground">{t.blog.dialogs.netlinking.autoDetect}</p>
+              <p className="text-muted-foreground mb-2">{t.netlinking.empty.noLinks}</p>
+              <p className="text-sm text-muted-foreground">{t.netlinking.empty.autoDetect}</p>
             </div>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="all">Tous ({stats.total})</TabsTrigger>
+                <TabsTrigger value="all">{t.netlinking.tabs.all} ({stats.total})</TabsTrigger>
                 <TabsTrigger value="broken" className={stats.broken > 0 ? "text-destructive" : ""}>
-                  Brisés ({stats.broken})
+                  {t.netlinking.tabs.broken} ({stats.broken})
                 </TabsTrigger>
-                <TabsTrigger value="working">Actifs ({stats.working})</TabsTrigger>
+                <TabsTrigger value="working">{t.netlinking.tabs.working} ({stats.working})</TabsTrigger>
               </TabsList>
 
               <TabsContent value={activeTab}>
@@ -432,13 +432,13 @@ export function NetlinkingTable() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[300px]">Lien</TableHead>
-                        <TableHead className="w-[100px]">Statut</TableHead>
-                        <TableHead className="w-[180px]">Produit / Page</TableHead>
-                        <TableHead className="w-[200px]">Article lié</TableHead>
-                        <TableHead className="w-[100px]">Type</TableHead>
-                        <TableHead className="w-[120px]">Score SEO</TableHead>
-                        <TableHead className="w-[200px] text-right">Actions</TableHead>
+                        <TableHead className="w-[300px]">{t.netlinking.table.headers.link}</TableHead>
+                        <TableHead className="w-[100px]">{t.netlinking.table.headers.status}</TableHead>
+                        <TableHead className="w-[180px]">{t.netlinking.table.headers.productPage}</TableHead>
+                        <TableHead className="w-[200px]">{t.netlinking.table.headers.linkedArticle}</TableHead>
+                        <TableHead className="w-[100px]">{t.netlinking.table.headers.type}</TableHead>
+                        <TableHead className="w-[120px]">{t.netlinking.table.headers.seoScore}</TableHead>
+                        <TableHead className="w-[200px] text-right">{t.netlinking.table.headers.actions}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -471,38 +471,38 @@ export function NetlinkingTable() {
                                   {entry.is_broken ? (
                                     <Badge variant="destructive" className="gap-1">
                                       <AlertCircle className="w-3 h-3" />
-                                      Brisé
+                                      {t.netlinking.status.broken}
                                     </Badge>
                                   ) : entry.last_checked_at ? (
                                     <Badge variant="default" className="bg-green-600 gap-1">
                                       <span className="w-2 h-2 bg-white rounded-full" />
-                                      Actif
+                                      {t.netlinking.status.active}
                                     </Badge>
                                   ) : (
                                     <Badge variant="secondary">
-                                      Non vérifié
+                                      {t.netlinking.status.unchecked}
                                     </Badge>
                                   )}
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   {entry.is_broken ? (
                                     <div className="space-y-1">
-                                      <p className="font-semibold text-destructive">Lien brisé</p>
-                                      <p>Code: {entry.http_status_code || 'Timeout'}</p>
+                                      <p className="font-semibold text-destructive">{t.netlinking.tooltips.brokenLink}</p>
+                                      <p>{t.netlinking.tooltips.code}: {entry.http_status_code || 'Timeout'}</p>
                                       {entry.error_message && <p className="text-xs">{entry.error_message}</p>}
                                       {entry.broken_since && (
                                         <p className="text-xs">
-                                          Depuis: {new Date(entry.broken_since).toLocaleDateString('fr-FR')}
+                                          {t.netlinking.tooltips.since}: {new Date(entry.broken_since).toLocaleDateString()}
                                         </p>
                                       )}
                                     </div>
                                   ) : entry.last_checked_at ? (
                                     <div className="space-y-1">
-                                      <p>Vérifié: {new Date(entry.last_checked_at).toLocaleDateString('fr-FR')}</p>
-                                      <p>Code HTTP: {entry.http_status_code}</p>
+                                      <p>{t.netlinking.tooltips.verified}: {new Date(entry.last_checked_at).toLocaleDateString()}</p>
+                                      <p>{t.netlinking.tooltips.httpCode}: {entry.http_status_code}</p>
                                     </div>
                                   ) : (
-                                    <p>Ce lien n'a pas encore été vérifié</p>
+                                    <p>{t.netlinking.tooltips.notVerified}</p>
                                   )}
                                 </TooltipContent>
                               </Tooltip>
@@ -520,7 +520,7 @@ export function NetlinkingTable() {
                             </TableCell>
                             <TableCell>
                               <Badge variant={entry.link_type === 'internal' ? 'default' : 'outline'}>
-                                {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
+                                {entry.link_type === 'internal' ? t.netlinking.status.internal : t.netlinking.status.external}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -540,17 +540,17 @@ export function NetlinkingTable() {
                                         setSelectedLink(entry);
                                         setReplaceDialogOpen(true);
                                       }}
-                                      title="Remplacer"
+                                      title={t.netlinking.tooltips.replace}
                                     >
                                       <Edit className="w-4 h-4 mr-1" />
-                                      Remplacer
+                                      {t.netlinking.actions.replace}
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleCheckLinks([entry.id])}
                                       disabled={checking}
-                                      title="Re-vérifier"
+                                      title={t.netlinking.tooltips.recheck}
                                     >
                                       <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
                                     </Button>
@@ -561,7 +561,7 @@ export function NetlinkingTable() {
                                         setLinkToDelete(entry.id);
                                         setDeleteDialogOpen(true);
                                       }}
-                                      title="Supprimer"
+                                      title={t.netlinking.tooltips.delete}
                                       className="text-destructive hover:text-destructive"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -574,7 +574,7 @@ export function NetlinkingTable() {
                                       size="sm"
                                       onClick={() => handleCheckLinks([entry.id])}
                                       disabled={checking}
-                                      title="Vérifier"
+                                      title={t.netlinking.tooltips.check}
                                     >
                                       <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
                                     </Button>
@@ -582,7 +582,7 @@ export function NetlinkingTable() {
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => window.open(entry.target_url, '_blank')}
-                                      title="Voir le lien"
+                                      title={t.netlinking.tooltips.viewLink}
                                     >
                                       <Eye className="w-4 h-4" />
                                     </Button>
@@ -607,10 +607,10 @@ export function NetlinkingTable() {
   <CardHeader>
     <CardTitle className="flex items-center gap-2">
       <Sparkles className="w-5 h-5" />
-      Générer Articles avec Netlinking
+      {t.netlinking.generation.title}
     </CardTitle>
     <CardDescription>
-      Créez automatiquement des articles optimisés avec liens internes basés sur votre catalogue
+      {t.netlinking.generation.description}
     </CardDescription>
   </CardHeader>
   <CardContent>
@@ -619,41 +619,41 @@ export function NetlinkingTable() {
         <Button
           onClick={async () => {
             try {
-              toast.info('Analyse du catalogue en cours...');
+              toast.info(t.netlinking.generation.analyzingCatalog);
               const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
               if (error) throw error;
-              toast.success('Articles générés avec netlinking automatique !');
+              toast.success(t.netlinking.generation.articlesGenerated);
               loadNetlinking();
             } catch (error: any) {
-              toast.error(error.message || 'Erreur lors de la génération');
+              toast.error(error.message || t.netlinking.generation.errorGeneration);
             }
           }}
           className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          Générer article pour produits connexes
+          {t.netlinking.generation.generateForProducts}
         </Button>
         <Button
           onClick={async () => {
             try {
-              toast.info('Analyse des pages Shopify...');
+              toast.info(t.netlinking.generation.analyzingPages);
               const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
               if (error) throw error;
-              toast.success('Articles générés pour les pages !');
+              toast.success(t.netlinking.generation.articlesGeneratedPages);
               loadNetlinking();
             } catch (error: any) {
-              toast.error(error.message || 'Erreur');
+              toast.error(error.message || t.netlinking.generation.errorGeneration);
             }
           }}
           variant="outline"
           className="flex-1"
         >
           <FileText className="w-4 h-4 mr-2" />
-          Générer article pour pages Shopify
+          {t.netlinking.generation.generateForPages}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        L'IA analysera votre catalogue et créera des articles avec liens internes automatiques
+        {t.netlinking.generation.aiNote}
       </p>
     </div>
   </CardContent>
@@ -671,15 +671,15 @@ export function NetlinkingTable() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.dialogs.netlinking.deleteLink}</AlertDialogTitle>
+            <AlertDialogTitle>{t.netlinking.deleteConfirm.title}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t.dialogs.netlinking.deleteConfirm}
+              {t.netlinking.deleteConfirm.description}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t.dialogs.common.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{t.netlinking.deleteConfirm.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLink} className="bg-destructive">
-              {t.dialogs.common.delete}
+              {t.netlinking.deleteConfirm.confirm}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
