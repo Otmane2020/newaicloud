@@ -13,7 +13,10 @@ import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 import { useShopifySync } from "@/hooks/useShopifySync";
+import { useAuth } from "@/contexts/AuthContext";
 
+// Email autorisé à tester OAuth pendant la validation Shopify
+const OAUTH_TEST_EMAIL = 'sweet.deco.meubles@gmail.com';
 interface ShopifyConnectionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +28,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const { refreshStores } = useStore();
   const { t } = useTranslation();
   const { syncShopifyStore } = useShopifySync();
+  const { user } = useAuth();
+  
+  // Seul l'utilisateur test peut utiliser OAuth
+  const canUseOAuth = user?.email === OAUTH_TEST_EMAIL;
 
   const [view, setView] = useState<'initial' | 'oauth' | 'api'>('initial');
   const [shopName, setShopName] = useState("");
@@ -250,18 +257,20 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             </h2>
 
             <div className="w-full max-w-sm space-y-3">
-              <Button
-                onClick={() => setView('oauth')}
-                className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
-                size="lg"
-              >
-                {t.shopifyConnection.connectStore}
-              </Button>
+              {canUseOAuth && (
+                <Button
+                  onClick={() => setView('oauth')}
+                  className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
+                  size="lg"
+                >
+                  {t.shopifyConnection.connectStore}
+                </Button>
+              )}
 
               <Button
                 onClick={() => setView('api')}
-                variant="outline"
-                className="w-full h-14 text-lg border-2 rounded-lg"
+                variant={canUseOAuth ? "outline" : "default"}
+                className={`w-full h-14 text-lg ${canUseOAuth ? 'border-2' : ''} rounded-lg`}
                 size="lg"
               >
                 {t.shopifyConnection.apiKeysConnection}
