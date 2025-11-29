@@ -479,277 +479,319 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       )}
 
       {activeTab === 'users' && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Gestion des Utilisateurs</CardTitle>
-                <CardDescription>
-                  Liste complète des utilisateurs avec contrôle des abonnements et actions forcées
-                </CardDescription>
+        <div className="space-y-6">
+          {/* Stats Cards - Clickable Filters */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card 
+              className={`cursor-pointer transition-all hover:scale-105 ${statusFilter === 'all' ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`}
+              onClick={() => setStatusFilter('all')}
+            >
+              <CardContent className="p-4 text-center">
+                <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <div className="text-2xl font-bold">{users.length}</div>
+                <p className="text-xs text-muted-foreground">Total</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`cursor-pointer transition-all hover:scale-105 ${statusFilter === 'active' ? 'ring-2 ring-green-500 shadow-lg' : 'hover:shadow-md'}`}
+              onClick={() => setStatusFilter('active')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-600">{users.filter(u => u.subscription_status === 'active').length}</div>
+                <p className="text-xs text-muted-foreground">Actifs</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`cursor-pointer transition-all hover:scale-105 ${statusFilter === 'trialing' ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'}`}
+              onClick={() => setStatusFilter('trialing')}
+            >
+              <CardContent className="p-4 text-center">
+                <Clock className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                <div className="text-2xl font-bold text-blue-600">{users.filter(u => u.subscription_status === 'trialing').length}</div>
+                <p className="text-xs text-muted-foreground">Essai</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`cursor-pointer transition-all hover:scale-105 ${statusFilter === 'inactive' ? 'ring-2 ring-gray-500 shadow-lg' : 'hover:shadow-md'}`}
+              onClick={() => setStatusFilter('inactive')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="w-3 h-3 bg-gray-400 rounded-full mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-600">{users.filter(u => u.subscription_status === 'inactive').length}</div>
+                <p className="text-xs text-muted-foreground">Inactifs</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`cursor-pointer transition-all hover:scale-105 ${statusFilter === 'canceled' ? 'ring-2 ring-red-500 shadow-lg' : 'hover:shadow-md'}`}
+              onClick={() => setStatusFilter('canceled')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-2" />
+                <div className="text-2xl font-bold text-red-600">{users.filter(u => u.subscription_status === 'canceled').length}</div>
+                <p className="text-xs text-muted-foreground">Annulés</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Card */}
+          <Card>
+            <CardHeader className="border-b bg-muted/30">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Utilisateurs
+                    <Badge variant="secondary" className="ml-2">
+                      {users.filter(user => {
+                        if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
+                        if (billingFilter === 'all') return true;
+                        if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
+                        const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+                        if (!activeSub) return false;
+                        return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
+                      }).length} résultats
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Contrôle des abonnements et actions administratives
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
+                    <SelectTrigger className="w-[130px] bg-background">
+                      <SelectValue placeholder="Facturation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous</SelectItem>
+                      <SelectItem value="monthly">Mensuel</SelectItem>
+                      <SelectItem value="yearly">Annuel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={loadData}
+                    disabled={loading}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Rafraîchir
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="active">Actif</SelectItem>
-                    <SelectItem value="trialing">Essai</SelectItem>
-                    <SelectItem value="inactive">Inactif</SelectItem>
-                    <SelectItem value="canceled">Annulé</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Facturation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous</SelectItem>
-                    <SelectItem value="monthly">Mensuel</SelectItem>
-                    <SelectItem value="yearly">Annuel</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={loadData}
-                  disabled={loading}
-                  variant="outline"
-                  size="sm"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Rafraîchir
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Mobile view - Cards */}
-            <div className="block lg:hidden space-y-4">
-              {users
-                .filter(user => {
-                  if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
-                  if (billingFilter === 'all') return true;
-                  if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
-                  const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
-                  if (!activeSub) return false;
-                  return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
-                })
-                .map((user) => {
-                  const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
-                  return (
-                    <Card key={user.id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="break-all text-sm font-medium">{user.email}</div>
-                          {getStatusBadge(user.subscription_status)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                        </div>
-                        {/* Boutiques connectées */}
-                        {(() => {
-                          const userStores = stores.filter(s => s.user_id === user.id);
-                          if (userStores.length > 0) {
-                            return (
-                              <div className="flex flex-wrap gap-1">
-                                {userStores.map(store => (
-                                  <Badge key={store.id} variant="secondary" className="flex items-center gap-1 text-xs">
-                                    <Store className="w-3 h-3" />
-                                    {store.store_label || store.store_name || 'Sans nom'}
-                                  </Badge>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-                        {user.hasStripeData && activeSub && (
-                          <div className="flex items-center gap-2 text-xs">
-                            <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                              {activeSub.status}
-                            </Badge>
-                            <span>{Math.round(activeSub.amount / 100)} {activeSub.currency.toUpperCase()}/{activeSub.interval === 'month' ? 'mois' : 'an'}</span>
+            </CardHeader>
+            <CardContent className="p-0">
+              {/* Mobile view - Cards */}
+              <div className="block lg:hidden p-4 space-y-3">
+                {users
+                  .filter(user => {
+                    if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
+                    if (billingFilter === 'all') return true;
+                    if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
+                    const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+                    if (!activeSub) return false;
+                    return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
+                  })
+                  .map((user) => {
+                    const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
+                    const userStores = stores.filter(s => s.user_id === user.id);
+                    return (
+                      <Card key={user.id} className="p-4 hover:shadow-md transition-shadow">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="break-all text-sm font-medium truncate flex-1">{user.email}</div>
+                            {getStatusBadge(user.subscription_status)}
                           </div>
-                        )}
-                        <div className="flex flex-wrap gap-2 pt-2">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>{new Date(user.created_at).toLocaleDateString('fr-FR')}</span>
+                            {userStores.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Store className="w-3 h-3 mr-1" />
+                                {userStores.length} boutique{userStores.length > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                          </div>
+                          {activeSub && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="font-semibold">{Math.round(activeSub.amount / 100)} {activeSub.currency.toUpperCase()}</span>
+                              <span className="text-muted-foreground">/{activeSub.interval === 'month' ? 'mois' : 'an'}</span>
+                            </div>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => loginAsUser(user.id, user.email)}
                             disabled={loggingInAs === user.id}
+                            className="w-full"
                           >
-                            <LogIn className="w-3 h-3 mr-1" />
-                            Login
+                            <LogIn className="w-3 h-3 mr-2" />
+                            Se connecter
                           </Button>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-            </div>
+                      </Card>
+                    );
+                  })}
+              </div>
 
-            {/* Desktop view - Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4">Email</th>
-                    <th className="text-left p-4">Date création</th>
-                    <th className="text-left p-4">Boutique</th>
-                    <th className="text-left p-4">Statut</th>
-                    <th className="text-left p-4">Plan</th>
-                    <th className="text-left p-4">Stripe Info</th>
-                    <th className="text-left p-4">Actions</th>
-                    <th className="text-left p-4">Changer Plan</th>
-                    <th className="text-left p-4">Login As</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users
-                    .filter(user => {
-                      if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
-                      if (billingFilter === 'all') return true;
-                      if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
-                      const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
-                      if (!activeSub) return false;
-                      return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
-                    })
-                    .map((user) => {
-                      const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
-                      
-                      return (
-                        <tr key={user.id} className="border-b hover:bg-muted/50">
-                          <td className="p-4">{user.email}</td>
-                          <td className="p-4">
-                            {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                          </td>
-                          <td className="p-4">
-                            {(() => {
-                              const userStores = stores.filter(s => s.user_id === user.id);
-                              if (userStores.length === 0) {
-                                return <Badge variant="outline" className="text-muted-foreground">Aucune</Badge>;
-                              }
-                              return (
-                                <div className="space-y-1">
-                                  {userStores.map(store => (
-                                    <Badge key={store.id} variant="secondary" className="flex items-center gap-1 w-fit">
-                                      <Store className="w-3 h-3" />
-                                      {store.store_label || store.store_name || 'Sans nom'}
+              {/* Desktop view - Table with horizontal scroll */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full min-w-[1200px]">
+                  <thead>
+                    <tr className="bg-muted/50 border-b">
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider sticky left-0 bg-muted/50 z-10">Email</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Créé le</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Boutique</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Statut</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Stripe</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Plan actuel</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Changer statut</th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">Forcer plan</th>
+                      <th className="text-center p-3 font-semibold text-xs uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {users
+                      .filter(user => {
+                        if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
+                        if (billingFilter === 'all') return true;
+                        if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
+                        const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+                        if (!activeSub) return false;
+                        return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
+                      })
+                      .map((user) => {
+                        const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
+                        const userStores = stores.filter(s => s.user_id === user.id);
+                        
+                        return (
+                          <tr key={user.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="p-3 sticky left-0 bg-background z-10">
+                              <div className="font-medium text-sm max-w-[200px] truncate" title={user.email}>
+                                {user.email}
+                              </div>
+                            </td>
+                            <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
+                              {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td className="p-3">
+                              {userStores.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              ) : (
+                                <div className="flex flex-col gap-1 max-w-[180px]">
+                                  {userStores.slice(0, 2).map(store => (
+                                    <Badge key={store.id} variant="secondary" className="text-xs w-fit truncate max-w-full">
+                                      <Store className="w-3 h-3 mr-1 shrink-0" />
+                                      <span className="truncate">{store.store_label || store.store_name || 'Sans nom'}</span>
                                     </Badge>
                                   ))}
+                                  {userStores.length > 2 && (
+                                    <span className="text-xs text-muted-foreground">+{userStores.length - 2} autre(s)</span>
+                                  )}
                                 </div>
-                              );
-                            })()}
-                          </td>
-                          <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
-                          <td className="p-4">
-                            <Select
-                              value={user.current_plan_id || ''}
-                              onValueChange={(value) => updateUserPlan(user.id, value)}
-                              disabled={updating}
-                            >
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Choisir un plan" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {plans.map((plan) => (
-                                  <SelectItem key={plan.id} value={plan.id}>
-                                    {plan.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-4">
-                            {user.hasStripeData ? (
-                              activeSub ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'}>
+                              )}
+                            </td>
+                            <td className="p-3">{getStatusBadge(user.subscription_status)}</td>
+                            <td className="p-3">
+                              {user.hasStripeData && activeSub ? (
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'} className="text-xs">
                                       {activeSub.status}
                                     </Badge>
                                     <span className="text-sm font-semibold">
-                                      {Math.round(activeSub.amount / 100)} {activeSub.currency.toUpperCase()}
+                                      {Math.round(activeSub.amount / 100)}€
                                     </span>
                                   </div>
                                   <p className="text-xs text-muted-foreground">
-                                    Facturation {activeSub.interval === 'month' ? 'mensuelle' : 'annuelle'}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Expire le {new Date(activeSub.currentPeriodEnd * 1000).toLocaleDateString('fr-FR')}
+                                    {activeSub.interval === 'month' ? 'Mensuel' : 'Annuel'} • {new Date(activeSub.currentPeriodEnd * 1000).toLocaleDateString('fr-FR')}
                                   </p>
                                 </div>
                               ) : (
-                                <Badge variant="outline">Aucun abonnement actif</Badge>
-                              )
-                            ) : (
-                              <Badge variant="outline">Pas de données Stripe</Badge>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            <Select
-                              value={user.subscription_status}
-                              onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
-                              disabled={updating}
-                            >
-                              <SelectTrigger className="w-[150px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="trialing">Trialing</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                                <SelectItem value="canceled">Canceled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-4">
-                            <Select
-                              value={user.current_plan_id || ''}
-                              onValueChange={(value) => forceChangePlan(user.id, value)}
-                              disabled={updating}
-                            >
-                              <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Changer vers..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {plans.map((plan) => (
-                                  <SelectItem 
-                                    key={plan.id} 
-                                    value={plan.id}
-                                    disabled={plan.id === user.current_plan_id}
-                                  >
-                                    {plan.name} {plan.id === user.current_plan_id ? '(actuel)' : ''}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => loginAsUser(user.id, user.email)}
-                              disabled={loggingInAs === user.id}
-                              className="gap-2"
-                            >
-                              {loggingInAs === user.id ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <LogIn className="w-4 h-4" />
+                                <span className="text-xs text-muted-foreground">—</span>
                               )}
-                              Login As
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                            </td>
+                            <td className="p-3">
+                              <Select
+                                value={user.current_plan_id || ''}
+                                onValueChange={(value) => updateUserPlan(user.id, value)}
+                                disabled={updating}
+                              >
+                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                  <SelectValue placeholder="Sélectionner" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {plans.map((plan) => (
+                                    <SelectItem key={plan.id} value={plan.id} className="text-xs">
+                                      {plan.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="p-3">
+                              <Select
+                                value={user.subscription_status}
+                                onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
+                                disabled={updating}
+                              >
+                                <SelectTrigger className="w-[120px] h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="active" className="text-xs">Active</SelectItem>
+                                  <SelectItem value="trialing" className="text-xs">Trialing</SelectItem>
+                                  <SelectItem value="inactive" className="text-xs">Inactive</SelectItem>
+                                  <SelectItem value="canceled" className="text-xs">Canceled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="p-3">
+                              <Select
+                                value=""
+                                onValueChange={(value) => forceChangePlan(user.id, value)}
+                                disabled={updating}
+                              >
+                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                  <SelectValue placeholder="Forcer vers..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {plans.map((plan) => (
+                                    <SelectItem 
+                                      key={plan.id} 
+                                      value={plan.id}
+                                      disabled={plan.id === user.current_plan_id}
+                                      className="text-xs"
+                                    >
+                                      {plan.name} {plan.id === user.current_plan_id ? '✓' : ''}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="p-3 text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => loginAsUser(user.id, user.email)}
+                                disabled={loggingInAs === user.id}
+                                className="h-8 px-3"
+                              >
+                                {loggingInAs === user.id ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <LogIn className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {activeTab === 'emails' && (
