@@ -555,20 +555,20 @@ export const SmartBackgroundDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wand2 className="h-5 w-5 text-primary" />
-              Smart Background - Optimisation Photo
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl h-[90vh] sm:h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              Smart Background
             </DialogTitle>
-            <DialogDescription>
-              Générez des backgrounds professionnels avec SERP Google et bonnes pratiques Shopping
+            <DialogDescription className="text-xs sm:text-sm">
+              {getText('Générez des backgrounds professionnels avec SERP Google', 'Generate professional backgrounds with Google SERP')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-4">
             {/* Format & Mode Selectors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Square className="h-4 w-4" />
@@ -693,7 +693,7 @@ export const SmartBackgroundDialog = ({
                   </div>
                 )}
               </div>
-              <ScrollArea className="h-[450px] border rounded-lg p-3">
+              <ScrollArea className="h-[200px] sm:h-[280px] lg:h-[350px] border rounded-lg p-2 sm:p-3">
                 <div className="space-y-4">
                   {selectedProducts.map((product, index) => {
                     const hasGenerated = generatedPreviews.has(product.id);
@@ -705,29 +705,29 @@ export const SmartBackgroundDialog = ({
                     const productHistory = imageHistory.get(product.id) || [];
 
                     return (
-                      <Card key={product.id} className={`p-3 transition-all ${hasGenerated ? 'ring-2 ring-green-500' : ''} ${isCurrentlyGenerating ? 'ring-2 ring-primary animate-pulse' : ''}`}>
-                        <div className="flex items-start gap-3">
+                      <Card key={product.id} className={`p-2 sm:p-3 transition-all ${hasGenerated ? 'ring-2 ring-green-500' : ''} ${isCurrentlyGenerating ? 'ring-2 ring-primary animate-pulse' : ''}`}>
+                        <div className="flex items-start gap-2 sm:gap-3">
                           {/* Product info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <p className="font-medium truncate">{product.title}</p>
-                              <div className="flex gap-1">
-                                <Badge variant="outline" className="text-[10px]">{bgFormat}</Badge>
-                                <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[10px]">
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+                              <p className="font-medium text-sm sm:text-base truncate">{product.title}</p>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Badge variant="outline" className="text-[9px] sm:text-[10px]">{bgFormat}</Badge>
+                                <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[9px] sm:text-[10px]">
                                   {bgMode === 'smart_serp' ? 'Smart' : 'White'}
                                 </Badge>
+                                {productHistory.length > 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 sm:h-6 px-1.5 gap-1"
+                                    onClick={() => setShowHistory(showHistory === product.id ? null : product.id)}
+                                  >
+                                    <History className="h-3 w-3" />
+                                    <span className="text-[9px] sm:text-[10px]">{productHistory.length}</span>
+                                  </Button>
+                                )}
                               </div>
-                              {productHistory.length > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 px-2 gap-1"
-                                  onClick={() => setShowHistory(showHistory === product.id ? null : product.id)}
-                                >
-                                  <History className="h-3 w-3" />
-                                  <span className="text-[10px]">{productHistory.length}</span>
-                                </Button>
-                              )}
                             </div>
 
                             {/* Image selection grid - visual display */}
@@ -736,7 +736,7 @@ export const SmartBackgroundDialog = ({
                                 <p className="text-xs text-muted-foreground mb-2">
                                   {getText(`Sélectionner une image source (${productImages.length} disponibles):`, `Select source image (${productImages.length} available):`)}
                                 </p>
-                                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2">
                                   {productImages.map((img, idx) => {
                                     const isSelected = (selectedImages.get(product.id)?.url || productImages[0]?.url) === img.url;
                                     return (
@@ -795,7 +795,7 @@ export const SmartBackgroundDialog = ({
 
                           {/* Current/Generated image preview - LARGER SIZE */}
                           <div 
-                            className="w-36 h-36 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
+                            className="w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
                             onClick={() => hasGenerated && handlePreviewProduct(product)}
                           >
                             {/* Always show image using currentImage OR product.image_url fallback */}
@@ -893,39 +893,39 @@ export const SmartBackgroundDialog = ({
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+          <DialogFooter className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t bg-background gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating} className="w-full sm:w-auto">
               {appliedProducts.size > 0 ? getText('Fermer', 'Close') : getText('Annuler', 'Cancel')}
             </Button>
 
             {appliedProducts.size === 0 && (
-              <>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {generatedPreviews.size > 0 ? (
                   <>
-                    <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating} className="gap-2">
+                    <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating} className="gap-2 w-full sm:w-auto">
                       <RefreshCw className="h-4 w-4" />
                       {getText('Régénérer', 'Regenerate')}
                     </Button>
-                    <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
+                    <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2 w-full sm:w-auto">
                       {isGenerating ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <CheckCircle2 className="h-4 w-4" />
                       )}
-                      {getText(`Appliquer ${generatedPreviews.size} background(s)`, `Apply ${generatedPreviews.size} background(s)`)}
+                      {getText(`Appliquer (${generatedPreviews.size})`, `Apply (${generatedPreviews.size})`)}
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2">
+                  <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2 w-full sm:w-auto">
                     {isGenerating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Wand2 className="h-4 w-4" />
                     )}
-                    {getText('Générer les backgrounds', 'Generate backgrounds')}
+                    {getText('Générer', 'Generate')}
                   </Button>
                 )}
-              </>
+              </div>
             )}
           </DialogFooter>
         </DialogContent>
