@@ -555,6 +555,7 @@ Deno.serve(async (req) => {
         if (createResult.productCreateMedia?.media?.length > 0) {
           const newMedia = createResult.productCreateMedia.media[0];
           const newLegacyId = newMedia.id?.replace('gid://shopify/MediaImage/', '');
+          const newMediaUrl = newMedia.image?.url || newImageSrc;
           
           // Update shopify_image_id in database
           if (newLegacyId) {
@@ -562,6 +563,25 @@ Deno.serve(async (req) => {
               .from('product_images')
               .update({ shopify_image_id: parseInt(newLegacyId) })
               .eq('id', imgToReplace.id);
+          }
+          
+          // 🆕 FIX 2: Update shopify_products.image_url if this is position 1 (main image)
+          const imgPosition = imgToReplace.position || 1;
+          if (imgPosition === 1) {
+            console.log(`🔄 Updating shopify_products.image_url for main product image`);
+            const { error: updateProductError } = await supabaseClient
+              .from('shopify_products')
+              .update({ 
+                image_url: newImageSrc, // Use the Supabase storage URL
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', productId);
+            
+            if (updateProductError) {
+              console.error(`❌ Failed to update shopify_products.image_url:`, updateProductError);
+            } else {
+              console.log(`✅ Updated shopify_products.image_url to: ${newImageSrc.substring(0, 50)}...`);
+            }
           }
           
           updatedCount++;
