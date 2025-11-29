@@ -391,51 +391,119 @@ Deno.serve(async (req) => {
         })
     );
 
-    // Prepare images to update (those with shopify_image_id but src/alt changed)
+    // Prepare images to update (those with shopify_image_id but src changed - need to replace)
     // Note: GraphQL Media IDs are GIDs, REST image IDs are numeric - need conversion
-    const imagesToUpdate = (product.images || [])
+    const imagesToReplace = (product.images || [])
       .filter((img: any) => {
         if (!img.shopify_image_id) return false;
         // Convert numeric shopify_image_id to GID for comparison
         const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
         const existingImg = existingMedia.find((m: any) => m.id === imgGid);
-        return existingImg && existingImg.image?.url !== img.src;
+        // Check if src actually changed (base64 or different URL)
+        if (!existingImg) return false;
+        const existingUrl = existingImg.image?.url || '';
+        const newUrl = img.src || '';
+        // If new URL is base64, it needs replacement
+        if (newUrl.startsWith('data:image/')) return true;
+        // If URLs are different, needs replacement
+        return existingUrl !== newUrl && !newUrl.includes(existingUrl.split('?')[0]);
       });
 
     console.log(`➕ Adding ${newImages.length} new images to Shopify`);
-    console.log(`🔄 Updating ${imagesToUpdate.length} existing images in Shopify`);
+    console.log(`🔄 Replacing ${imagesToReplace.length} existing images in Shopify`);
 
-    // Update existing images using GraphQL
+    // Replace existing images: delete old + add new with uploaded URL
     let updatedCount = 0;
-    for (const imgToUpdate of imagesToUpdate) {
+    for (const imgToReplace of imagesToReplace) {
       try {
-        console.log(`🔄 Updating Shopify image ${imgToUpdate.shopify_image_id} via GraphQL`);
+        console.log(`🔄 Replacing Shopify image ${imgToReplace.shopify_image_id} via GraphQL`);
         
         // Convert to GID format
-        const mediaGid = restIdToGid(imgToUpdate.shopify_image_id, 'MediaImage');
+        const mediaGid = restIdToGid(imgToReplace.shopify_image_id, 'MediaImage');
         
-        const updateResult = await shopifyGraphQL(
+        // Step 1: Upload base64 to storage if needed
+        let newImageSrc = imgToReplace.src;
+        if (newImageSrc.startsWith('data:image/')) {
+          console.log(`📤 Uploading base64 replacement image to Storage`);
+          try {
+            const base64Data = newImageSrc.split(',')[1];
+            const mimeType = newImageSrc.split(';')[0].split(':')[1];
+            const extension = mimeType.split('/')[1];
+            const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const fileName = `${productId}_${imgToReplace.id}_replaced_${Date.now()}.${extension}`;
+            
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage
+              .from('generated-images')
+              .upload(fileName, binaryData, { contentType: mimeType, upsert: true });
+            
+            if (uploadError) throw uploadError;
+            
+            const { data: { publicUrl } } = supabaseClient.storage
+              .from('generated-images')
+              .getPublicUrl(fileName);
+            
+            newImageSrc = publicUrl;
+            console.log(`✅ Replacement image uploaded: ${publicUrl}`);
+            
+            // Update database with public URL
+            await supabaseClient
+              .from('product_images')
+              .update({ src: publicUrl })
+              .eq('id', imgToReplace.id);
+          } catch (uploadErr) {
+            console.error(`❌ Failed to upload replacement base64:`, uploadErr);
+            continue; // Skip this image if upload fails
+          }
+        }
+        
+        // Step 2: Delete old image from Shopify
+        console.log(`🗑️ Deleting old image ${mediaGid} from Shopify`);
+        const deleteResult = await shopifyGraphQL(
           connection.store_url,
           connection.access_token,
-          PRODUCT_UPDATE_MEDIA_MUTATION,
+          PRODUCT_DELETE_MEDIA_MUTATION,
+          { productId: productGid, mediaIds: [mediaGid] }
+        );
+        
+        if (deleteResult.productDeleteMedia?.mediaUserErrors?.length > 0) {
+          console.error(`❌ Error deleting old image:`, deleteResult.productDeleteMedia.mediaUserErrors);
+        }
+        
+        // Step 3: Add new image to Shopify
+        console.log(`➕ Adding replacement image: ${newImageSrc.substring(0, 60)}...`);
+        const createResult = await shopifyGraphQL(
+          connection.store_url,
+          connection.access_token,
+          PRODUCT_CREATE_MEDIA_MUTATION,
           {
             productId: productGid,
             media: [{
-              id: mediaGid,
-              alt: imgToUpdate.alt_text || ""
+              originalSource: newImageSrc,
+              alt: imgToReplace.alt_text || "",
+              mediaContentType: "IMAGE"
             }]
           }
         );
-
-        if (updateResult.productUpdateMedia?.mediaUserErrors?.length > 0) {
-          const errors = updateResult.productUpdateMedia.mediaUserErrors;
-          console.error(`❌ GraphQL errors updating image:`, errors);
-        } else {
+        
+        if (createResult.productCreateMedia?.media?.length > 0) {
+          const newMedia = createResult.productCreateMedia.media[0];
+          const newLegacyId = newMedia.id?.replace('gid://shopify/MediaImage/', '');
+          
+          // Update shopify_image_id in database
+          if (newLegacyId) {
+            await supabaseClient
+              .from('product_images')
+              .update({ shopify_image_id: parseInt(newLegacyId) })
+              .eq('id', imgToReplace.id);
+          }
+          
           updatedCount++;
-          console.log(`✅ Updated image ${imgToUpdate.shopify_image_id} via GraphQL`);
+          console.log(`✅ Replaced image successfully, new ID: ${newLegacyId}`);
+        } else if (createResult.productCreateMedia?.mediaUserErrors?.length > 0) {
+          console.error(`❌ Error creating replacement image:`, createResult.productCreateMedia.mediaUserErrors);
         }
       } catch (updateError) {
-        console.error(`Error updating image ${imgToUpdate.shopify_image_id}:`, updateError);
+        console.error(`Error replacing image ${imgToReplace.shopify_image_id}:`, updateError);
       }
     }
 
