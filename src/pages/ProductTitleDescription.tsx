@@ -60,6 +60,7 @@ import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackg
 import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
+import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -98,6 +99,10 @@ interface ProductVariant {
   option3?: string | null;
   image_id?: string | null;
   image_url?: string | null;
+  sku?: string | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  cost_price?: number | null;
 }
 
 interface ProductImage {
@@ -211,6 +216,9 @@ export default function ProductTitleDescription() {
   const [showBulkLandingDialog, setShowBulkLandingDialog] = useState(false);
   const [bulkLandingConfig, setBulkLandingConfig] = useState<LandingConfig | null>(null);
   const [generatingBulkLanding, setGeneratingBulkLanding] = useState(false);
+  // Product gallery dialog
+  const [showGalleryDialog, setShowGalleryDialog] = useState(false);
+  const [galleryProduct, setGalleryProduct] = useState<Product | null>(null);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -327,7 +335,7 @@ export default function ProductTitleDescription() {
           const batch = productIds.slice(i, i + batchSize);
           const { data: variantsData, error: variantsError } = await supabase
             .from("product_variants")
-            .select("id, product_id, title, option1, option2, option3, image_url, sku")
+            .select("id, product_id, title, option1, option2, option3, image_url, sku, price, compare_at_price, cost_price")
             .in("product_id", batch);
 
           if (variantsError) {
@@ -2233,26 +2241,84 @@ export default function ProductTitleDescription() {
                       {/* Image with action buttons */}
                       <div className="aspect-square bg-muted/50 relative overflow-hidden">
                         {product.image_url ? (
-                          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGalleryProduct(product);
+                              setShowGalleryDialog(true);
+                            }}
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div
+                            className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGalleryProduct(product);
+                              setShowGalleryDialog(true);
+                            }}
+                          >
                             <Package className="w-12 h-12 text-muted-foreground" />
                           </div>
                         )}
 
-                        {/* Status badge - top left */}
+                        {/* Status badge - top left - CLICKABLE */}
                         <div className="absolute top-2 left-2">
-                          {product.status === "active" ? (
-                            <Badge className="bg-green-600 text-white shadow-sm">
-                              <Power className="h-3 w-3 mr-1" />
-                              Actif
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="bg-gray-100 text-gray-600 shadow-sm">
-                              <PowerOff className="h-3 w-3 mr-1" />
-                              Draft
-                            </Badge>
-                          )}
+                          <Badge
+                            className={`cursor-pointer transition-all hover:scale-105 ${
+                              product.status === "active"
+                                ? "bg-green-600 text-white shadow-sm hover:bg-green-700"
+                                : "bg-gray-100 text-gray-600 shadow-sm hover:bg-gray-200"
+                            }`}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!product.shopify_id) {
+                                toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                                return;
+                              }
+                              if (!selectedStore) {
+                                toast.error("Aucun store sélectionné");
+                                return;
+                              }
+                              const newStatus = product.status === "active" ? "draft" : "active";
+                              const toastId = toast.loading("Mise à jour du statut...");
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) throw new Error("Session non trouvée");
+                                const { data, error } = await supabase.functions.invoke("update-product-status", {
+                                  body: {
+                                    productId: product.id,
+                                    shopifyId: product.shopify_id,
+                                    newStatus: newStatus,
+                                    storeId: selectedStore.id,
+                                  },
+                                });
+                                if (error) throw error;
+                                if (!data?.success) throw new Error("Échec de la mise à jour");
+                                setProducts((prev) =>
+                                  prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
+                                );
+                                toast.success(newStatus === "active" ? "Produit publié" : "Produit en brouillon", { id: toastId });
+                              } catch (error) {
+                                console.error("Error updating status:", error);
+                                toast.error("Erreur lors de la mise à jour du statut", { id: toastId });
+                              }
+                            }}
+                          >
+                            {product.status === "active" ? (
+                              <>
+                                <Power className="h-3 w-3 mr-1" />
+                                Actif
+                              </>
+                            ) : (
+                              <>
+                                <PowerOff className="h-3 w-3 mr-1" />
+                                Draft
+                              </>
+                            )}
+                          </Badge>
                         </div>
 
                         {/* Action buttons - always visible */}
@@ -2448,8 +2514,28 @@ export default function ProductTitleDescription() {
                         </div>
 
                         <p className="text-xs text-muted-foreground">
-                          {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                          SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
                         </p>
+                        
+                        {/* Price info */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Prix: </span>
+                            <span className="font-medium">
+                              {(product as any).variants?.[0]?.price 
+                                ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
+                                : '—'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Coût: </span>
+                            <span className="font-medium">
+                              {(product as any).variants?.[0]?.cost_price 
+                                ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
+                                : '—'}
+                            </span>
+                          </div>
+                        </div>
 
                         {/* Status badge */}
                         <div className="flex items-center justify-between gap-2">
@@ -3141,6 +3227,14 @@ export default function ProductTitleDescription() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Product Gallery Dialog */}
+      <ProductGalleryDialog
+        open={showGalleryDialog}
+        onOpenChange={setShowGalleryDialog}
+        product={galleryProduct}
+        storeId={selectedStore?.id || null}
+      />
     </div>
   );
 }
