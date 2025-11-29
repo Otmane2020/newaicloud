@@ -1021,15 +1021,19 @@ Deno.serve(async (req: Request) => {
       const productsNeedingImages = productsWithNoImages.filter(p => !productsWithImageSet.has(p.id));
       
       if (productsNeedingImages.length > 0) {
-        console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching from Shopify...`);
+        console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching ALL from Shopify...`);
         
-        // Fetch images in batches of 10 products using GraphQL
-        const FETCH_BATCH_SIZE = 10;
+        // Fetch images in batches of 50 products using GraphQL (no limit)
+        const FETCH_BATCH_SIZE = 50;
         let imagesFetched = 0;
+        const totalBatchCount = Math.ceil(productsNeedingImages.length / FETCH_BATCH_SIZE);
         
-        for (let i = 0; i < productsNeedingImages.length && i < 100; i += FETCH_BATCH_SIZE) { // Limit to 100 products per import
+        for (let i = 0; i < productsNeedingImages.length; i += FETCH_BATCH_SIZE) {
+          const batchNum = Math.floor(i / FETCH_BATCH_SIZE) + 1;
           const batch = productsNeedingImages.slice(i, i + FETCH_BATCH_SIZE);
           const shopifyIds = batch.map(p => `gid://shopify/Product/${p.shopify_id}`);
+          
+          console.log(`📸 Fetching images batch ${batchNum}/${totalBatchCount} (${batch.length} products)...`);
           
           const imageQuery = `
             query getProductImages($ids: [ID!]!) {
@@ -1095,18 +1099,20 @@ Deno.serve(async (req: Request) => {
                   imagesFetched += productImages.length;
                 }
               }
+            } else {
+              console.error(`⚠️ GraphQL error for batch ${batchNum}:`, await imgResponse.text());
             }
           } catch (fetchError) {
-            console.error(`⚠️ Error fetching images for batch:`, fetchError);
+            console.error(`⚠️ Error fetching images for batch ${batchNum}:`, fetchError);
           }
           
-          // Small delay between batches
+          // Small delay between batches to avoid rate limits
           if (i + FETCH_BATCH_SIZE < productsNeedingImages.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
         }
         
-        console.log(`✅ Fetched ${imagesFetched} images for existing products with 0 images`);
+        console.log(`✅ Fetched ${imagesFetched} images for ${productsNeedingImages.length} existing products with 0 images`);
       }
     }
 
