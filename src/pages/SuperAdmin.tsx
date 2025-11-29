@@ -547,6 +547,23 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                         <div className="text-xs text-muted-foreground">
                           Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
                         </div>
+                        {/* Boutiques connectées */}
+                        {(() => {
+                          const userStores = stores.filter(s => s.user_id === user.id);
+                          if (userStores.length > 0) {
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                {userStores.map(store => (
+                                  <Badge key={store.id} variant="secondary" className="flex items-center gap-1 text-xs">
+                                    <Store className="w-3 h-3" />
+                                    {store.store_label || store.store_name || 'Sans nom'}
+                                  </Badge>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         {user.hasStripeData && activeSub && (
                           <div className="flex items-center gap-2 text-xs">
                             <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'} className="text-xs">
@@ -579,6 +596,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                   <tr className="border-b">
                     <th className="text-left p-4">Email</th>
                     <th className="text-left p-4">Date création</th>
+                    <th className="text-left p-4">Boutique</th>
                     <th className="text-left p-4">Statut</th>
                     <th className="text-left p-4">Plan</th>
                     <th className="text-left p-4">Stripe Info</th>
@@ -605,6 +623,24 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                           <td className="p-4">{user.email}</td>
                           <td className="p-4">
                             {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="p-4">
+                            {(() => {
+                              const userStores = stores.filter(s => s.user_id === user.id);
+                              if (userStores.length === 0) {
+                                return <Badge variant="outline" className="text-muted-foreground">Aucune</Badge>;
+                              }
+                              return (
+                                <div className="space-y-1">
+                                  {userStores.map(store => (
+                                    <Badge key={store.id} variant="secondary" className="flex items-center gap-1 w-fit">
+                                      <Store className="w-3 h-3" />
+                                      {store.store_label || store.store_name || 'Sans nom'}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
                           <td className="p-4">
