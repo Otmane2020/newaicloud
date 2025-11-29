@@ -79,24 +79,6 @@ const TIMEZONES = [
   { value: "Australia/Sydney", label: "Sydney", utc: ["UTC+10"] },
 ];
 
-const IMPORT_TYPES = [
-  { id: "products", label: "Produits" },
-  { id: "collections", label: "Collections" },
-  { id: "pages", label: "Pages" },
-  { id: "articles", label: "Articles" },
-  { id: "images", label: "Images" },
-];
-
-const DAYS_OF_WEEK = [
-  { value: 1, label: "Lundi" },
-  { value: 2, label: "Mardi" },
-  { value: 3, label: "Mercredi" },
-  { value: 4, label: "Jeudi" },
-  { value: 5, label: "Vendredi" },
-  { value: 6, label: "Samedi" },
-  { value: 0, label: "Dimanche" },
-];
-
 const SCHEDULE_HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: i,
   label: `${i.toString().padStart(2, "0")}:00`,
@@ -157,7 +139,6 @@ const useSyncData = (storeId?: string) => {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      toast.error("Erreur lors du chargement des paramètres");
     } finally {
       setLoading(false);
     }
@@ -212,14 +193,16 @@ const useSyncData = (storeId?: string) => {
 const SyncModeSelector = ({
   syncMode,
   setSyncMode,
+  t,
 }: {
   syncMode: string;
   setSyncMode: (mode: "full" | "smart") => void;
+  t: any;
 }) => (
   <Card>
     <CardHeader>
-      <CardTitle>Mode de synchronisation</CardTitle>
-      <CardDescription>Choisissez comment gérer le contenu optimisé par l'IA</CardDescription>
+      <CardTitle>{t.integration.sync.mode.title}</CardTitle>
+      <CardDescription>{t.integration.sync.mode.description}</CardDescription>
     </CardHeader>
     <CardContent>
       <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as "full" | "smart")}>
@@ -228,13 +211,13 @@ const SyncModeSelector = ({
           <Label htmlFor="smart" className="flex-1 cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
               <Shield className="w-4 h-4 text-primary" />
-              <span className="font-semibold">Smart (Recommandé)</span>
+              <span className="font-semibold">{t.integration.sync.mode.smart.title}</span>
               <Badge variant="secondary" className="ml-auto">
-                Par défaut
+                {t.integration.sync.badges.default}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Protège le contenu optimisé par l'IA. Seuls les prix, stocks et nouveaux produits sont synchronisés.
+              {t.integration.sync.mode.smart.description}
             </p>
           </Label>
         </div>
@@ -243,13 +226,13 @@ const SyncModeSelector = ({
           <Label htmlFor="full" className="flex-1 cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-orange-500" />
-              <span className="font-semibold">Full</span>
+              <span className="font-semibold">{t.integration.sync.mode.full.title}</span>
               <Badge variant="outline" className="ml-auto">
-                Avancé
+                {t.integration.sync.badges.advanced}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Écrase TOUT le contenu avec les données Shopify. À utiliser avec précaution.
+              {t.integration.sync.mode.full.description}
             </p>
           </Label>
         </div>
@@ -261,52 +244,76 @@ const SyncModeSelector = ({
 const ContentTypeSelector = ({
   selectedTypes,
   setSelectedTypes,
+  t,
 }: {
   selectedTypes: string[];
   setSelectedTypes: (types: string[]) => void;
-}) => (
-  <div>
-    <Label className="mb-3 block">Types de contenu à synchroniser</Label>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-      {IMPORT_TYPES.map((type) => (
-        <div key={type.id} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/30">
-          <Checkbox
-            id={type.id}
-            checked={selectedTypes.includes(type.id)}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                setSelectedTypes([...selectedTypes, type.id]);
-              } else {
-                setSelectedTypes(selectedTypes.filter((t) => t !== type.id));
-              }
-            }}
-          />
-          <Label htmlFor={type.id} className="cursor-pointer flex-1">
-            {type.label}
-          </Label>
-        </div>
-      ))}
+  t: any;
+}) => {
+  const IMPORT_TYPES_I18N = [
+    { id: "products", label: t.integration.sync.contentTypes.products },
+    { id: "collections", label: t.integration.sync.contentTypes.collections },
+    { id: "pages", label: t.integration.sync.contentTypes.pages },
+    { id: "articles", label: t.integration.sync.contentTypes.articles },
+    { id: "images", label: t.integration.sync.contentTypes.images },
+  ];
+  
+  return (
+    <div>
+      <Label className="mb-3 block">{t.integration.sync.contentTypes.title}</Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {IMPORT_TYPES_I18N.map((type) => (
+          <div key={type.id} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/30">
+            <Checkbox
+              id={type.id}
+              checked={selectedTypes.includes(type.id)}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  setSelectedTypes([...selectedTypes, type.id]);
+                } else {
+                  setSelectedTypes(selectedTypes.filter((t) => t !== type.id));
+                }
+              }}
+            />
+            <Label htmlFor={type.id} className="cursor-pointer flex-1">
+              {type.label}
+            </Label>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ScheduleSettings = ({
   settings,
   setSettings,
+  t,
 }: {
   settings: SyncSettings | null;
   setSettings: (settings: SyncSettings) => void;
+  t: any;
 }) => {
   if (!settings || settings.import_frequency === "manual") return null;
 
+  const DAYS_OF_WEEK_I18N = [
+    { value: 1, label: t.integration.sync.daysOfWeek.monday },
+    { value: 2, label: t.integration.sync.daysOfWeek.tuesday },
+    { value: 3, label: t.integration.sync.daysOfWeek.wednesday },
+    { value: 4, label: t.integration.sync.daysOfWeek.thursday },
+    { value: 5, label: t.integration.sync.daysOfWeek.friday },
+    { value: 6, label: t.integration.sync.daysOfWeek.saturday },
+    { value: 0, label: t.integration.sync.daysOfWeek.sunday },
+  ];
+
   return (
     <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-      <Label className="text-sm font-semibold">Horaire de synchronisation</Label>
+      <Label className="text-sm font-semibold">{t.integration.sync.schedule.title}</Label>
 
       {["daily", "weekly", "monthly"].includes(settings.import_frequency) && (
         <div className="space-y-2">
           <Label htmlFor="schedule_hour" className="text-sm">
-            Heure de synchronisation
+            {t.integration.sync.schedule.hour}
           </Label>
           <Select
             value={settings.import_schedule_hour?.toString() || "2"}
@@ -329,7 +336,7 @@ const ScheduleSettings = ({
       {settings.import_frequency === "weekly" && (
         <div className="space-y-2">
           <Label htmlFor="schedule_day" className="text-sm">
-            Jour de la semaine
+            {t.integration.sync.schedule.day}
           </Label>
           <Select
             value={settings.import_schedule_day?.toString() || "1"}
@@ -339,7 +346,7 @@ const ScheduleSettings = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {DAYS_OF_WEEK.map((day) => (
+              {DAYS_OF_WEEK_I18N.map((day) => (
                 <SelectItem key={day.value} value={day.value.toString()}>
                   {day.label}
                 </SelectItem>
@@ -352,7 +359,7 @@ const ScheduleSettings = ({
       {settings.import_frequency === "monthly" && (
         <div className="space-y-2">
           <Label htmlFor="schedule_day" className="text-sm">
-            Jour du mois
+            {t.integration.sync.schedule.dayOfMonth}
           </Label>
           <Select
             value={settings.import_schedule_day?.toString() || "1"}
@@ -374,7 +381,7 @@ const ScheduleSettings = ({
 
       <div className="space-y-2">
         <Label htmlFor="timezone" className="text-sm">
-          Fuseau horaire
+          {t.integration.sync.schedule.timezone}
         </Label>
         <Select
           value={settings.timezone || "Europe/Paris"}
@@ -396,7 +403,7 @@ const ScheduleSettings = ({
   );
 };
 
-const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
+const NextSyncDisplay = ({ settings, t, dateLocale }: { settings: SyncSettings | null; t: any; dateLocale: any }) => {
   if (!settings || settings.import_frequency === "manual") {
     return null;
   }
@@ -404,11 +411,11 @@ const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
   if (!settings.next_import_at) {
     return (
       <div className="space-y-2">
-        <Label className="text-sm font-semibold">Prochaine synchronisation</Label>
+        <Label className="text-sm font-semibold">{t.integration.sync.nextSync.title}</Label>
         <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border">
           <Calendar className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            Sera calculée après la première synchronisation
+            {t.integration.sync.nextSync.notCalculated}
           </span>
         </div>
       </div>
@@ -418,28 +425,23 @@ const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
   const nextSync = new Date(settings.next_import_at);
   const now = new Date();
   const isPast = nextSync < now;
-  const frequencyLabel = {
-    hourly: "toutes les heures",
-    daily: "quotidienne",
-    weekly: "hebdomadaire",
-    monthly: "mensuelle",
-  }[settings.import_frequency] || settings.import_frequency;
+  const frequencyLabel = t.integration.sync.frequency.labels?.[settings.import_frequency as keyof typeof t.integration.sync.frequency.labels] || settings.import_frequency;
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-semibold">Prochaine synchronisation</Label>
+      <Label className="text-sm font-semibold">{t.integration.sync.nextSync.title}</Label>
       <div className={`flex items-center gap-2 p-3 rounded-lg ${isPast ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-blue-500/10 border border-blue-500/20'}`}>
         <Calendar className={`w-4 h-4 ${isPast ? 'text-orange-500' : 'text-blue-500'}`} />
         <div className="flex-1">
           <p className="text-sm font-medium">
-            {format(nextSync, "d MMM yyyy 'à' HH:mm", { locale: fr })}
+            {format(nextSync, "d MMM yyyy HH:mm", { locale: dateLocale })}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Fréquence : {frequencyLabel} • Fuseau : {settings.timezone || "Europe/Paris"}
+            {t.integration.sync.nextSync.frequency}: {frequencyLabel} • {t.integration.sync.nextSync.timezone}: {settings.timezone || "Europe/Paris"}
           </p>
         </div>
         <Badge variant={isPast ? "destructive" : "default"} className="ml-auto">
-          {isPast ? "En retard" : "Planifiée"}
+          {isPast ? t.integration.sync.badges.late : t.integration.sync.badges.planned}
         </Badge>
       </div>
     </div>
@@ -449,20 +451,22 @@ const NextSyncDisplay = ({ settings }: { settings: SyncSettings | null }) => {
 const AutoExportSettings = ({
   settings,
   setSettings,
+  t,
 }: {
   settings: SyncSettings | null;
   setSettings: (settings: SyncSettings) => void;
+  t: any;
 }) => (
   <div className="space-y-4 pt-6 border-t">
-    <Label className="text-base font-semibold">Export automatique</Label>
+    <Label className="text-base font-semibold">{t.integration.sync.autoExport.title}</Label>
 
     <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
       <div className="flex-1">
         <Label htmlFor="export_auto" className="cursor-pointer font-medium">
-          Activer l'export automatique
+          {t.integration.sync.autoExport.enable}
         </Label>
         <p className="text-xs text-muted-foreground mt-1">
-          Exporter automatiquement les données après chaque synchronisation
+          {t.integration.sync.autoExport.enableDesc}
         </p>
       </div>
       <Switch
@@ -475,10 +479,10 @@ const AutoExportSettings = ({
     <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
       <div className="flex-1">
         <Label htmlFor="export_after_opt" className="cursor-pointer font-medium">
-          Synchronisation automatique après optimisation
+          {t.integration.sync.autoExport.afterOptimization}
         </Label>
         <p className="text-xs text-muted-foreground mt-1">
-          Synchroniser automatiquement vers Shopify après optimisation IA sans confirmation (skip tous les pop-ups)
+          {t.integration.sync.autoExport.afterOptimizationDesc}
         </p>
       </div>
       <Switch
@@ -546,25 +550,6 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
     "articles",
     "images",
   ]);
-
-  // Translated content types
-  const IMPORT_TYPES_TRANSLATED = [
-    { id: "products", label: t.integration.sync.contentTypes.products },
-    { id: "collections", label: t.integration.sync.contentTypes.collections },
-    { id: "pages", label: t.integration.sync.contentTypes.pages },
-    { id: "articles", label: t.integration.sync.contentTypes.articles },
-    { id: "images", label: t.integration.sync.contentTypes.images },
-  ];
-
-  const DAYS_OF_WEEK_TRANSLATED = [
-    { value: 1, label: t.integration.sync.daysOfWeek.monday },
-    { value: 2, label: t.integration.sync.daysOfWeek.tuesday },
-    { value: 3, label: t.integration.sync.daysOfWeek.wednesday },
-    { value: 4, label: t.integration.sync.daysOfWeek.thursday },
-    { value: 5, label: t.integration.sync.daysOfWeek.friday },
-    { value: 6, label: t.integration.sync.daysOfWeek.saturday },
-    { value: 0, label: t.integration.sync.daysOfWeek.sunday },
-  ];
 
   const dateLocale = language === 'fr' ? fr : enUS;
 
@@ -871,23 +856,23 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
 
   return (
     <div className="space-y-6">
-      <SyncModeSelector syncMode={syncMode} setSyncMode={setSyncMode} />
+      <SyncModeSelector syncMode={syncMode} setSyncMode={setSyncMode} t={t} />
 
       {/* Paramètres d'importation */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
-            Paramètres d'importation
+            {t.integration.sync.syncManual}
           </CardTitle>
-          <CardDescription>Configurez comment importer vos données depuis Shopify</CardDescription>
+          <CardDescription>{t.integration.sync.syncManualDesc}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <ContentTypeSelector selectedTypes={selectedTypes} setSelectedTypes={setSelectedTypes} />
+          <ContentTypeSelector selectedTypes={selectedTypes} setSelectedTypes={setSelectedTypes} t={t} />
 
           {/* Fréquence d'importation */}
           <div className="space-y-3 pt-6 border-t">
-            <Label htmlFor="import_frequency">Fréquence d'importation</Label>
+            <Label htmlFor="import_frequency">{t.integration.sync.frequency.label}</Label>
             <Select
               value={settings?.import_frequency || "manual"}
               onValueChange={(value) => setSettings({ ...settings!, import_frequency: value as any })}
@@ -896,23 +881,23 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="manual">Manuel</SelectItem>
-                <SelectItem value="hourly">Toutes les heures</SelectItem>
-                <SelectItem value="daily">Quotidien</SelectItem>
-                <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                <SelectItem value="monthly">Mensuel</SelectItem>
+                <SelectItem value="manual">{t.integration.sync.frequency.manual}</SelectItem>
+                <SelectItem value="hourly">{t.integration.sync.frequency.hourly}</SelectItem>
+                <SelectItem value="daily">{t.integration.sync.frequency.daily}</SelectItem>
+                <SelectItem value="weekly">{t.integration.sync.frequency.weekly}</SelectItem>
+                <SelectItem value="monthly">{t.integration.sync.frequency.monthly}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <ScheduleSettings settings={settings} setSettings={setSettings} />
-          <NextSyncDisplay settings={settings} />
-          <AutoExportSettings settings={settings} setSettings={setSettings} />
+          <ScheduleSettings settings={settings} setSettings={setSettings} t={t} />
+          <NextSyncDisplay settings={settings} t={t} dateLocale={dateLocale} />
+          <AutoExportSettings settings={settings} setSettings={setSettings} t={t} />
 
           {/* Bouton d'enregistrement */}
           <div className="pt-6 border-t">
             <Button onClick={saveSettings} disabled={saving} variant="outline" className="w-full">
-              {saving ? "Enregistrement..." : "Enregistrer les paramètres"}
+              {saving ? t.integration.sync.saving : t.integration.sync.save}
             </Button>
           </div>
         </CardContent>

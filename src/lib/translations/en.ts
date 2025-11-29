@@ -5998,6 +5998,7 @@ export const translations = {
         saveError: "Error saving settings",
         loadError: "Error loading settings",
       },
+      lastSync: "Last sync",
     },
     store: {
       metadata: {
