@@ -445,3 +445,6 @@ verify_jwt = false
 [functions.process-scheduled-articles]
 verify_jwt = false
 
+[functions.generate-landing-bulk]
+verify_jwt = true
+

@@ -150,9 +150,9 @@ export function BulkLandingProgressDialog({
     for (let i = 0; i < products.length; i++) {
       if (isCancelled) break;
 
-      // Add delay between requests to avoid rate limiting (5 seconds)
+      // Add shorter delay between requests for bulk function (2 seconds)
       if (i > 0) {
-        await delay(5000);
+        await delay(2000);
       }
 
       const product = products[i];
@@ -188,28 +188,25 @@ export function BulkLandingProgressDialog({
           images.unshift(productData.image_url);
         }
 
-        // Generate landing page with retry on rate limit
+        // Generate landing page with BULK function (faster, lighter)
         const productTitle = productData.seo_title || productData.title;
         const result = await callWithRetry<{ html: string }>(
-          () => supabase.functions.invoke('generate-landing-ai', {
+          () => supabase.functions.invoke('generate-landing-bulk', {
             headers: { Authorization: `Bearer ${session.access_token}` },
             body: {
               product_id: product.id,
               productTitle: productTitle,
-              productDescription: productData.seo_description || productData.description,
-              productImages: images.slice(0, 5),
+              productDescription: productData.seo_description || productData.body_html,
+              productImages: images.slice(0, 4), // Max 4 for bulk
               vendor: productData.vendor,
               designStyle: config.designStyle,
-              layout: config.layout,
-              contentLength: config.contentLength,
-              theme: config.theme,
-              vendor_source: config.vendorSource,
               colorScheme: config.colorScheme,
-              customHighlights: config.customHighlights,
+              theme: config.theme,
+              language: 'fr',
             },
           }),
           3, // 3 retries
-          8000 // 8s base delay
+          5000 // 5s base delay (faster for bulk)
         );
 
         // Save to database
