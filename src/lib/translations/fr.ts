@@ -8163,6 +8163,8 @@ export const translations = {
     adminApiAccessToken: "Admin API Access Token",
     yourAdminToken: "Votre token d'accès API Admin",
     fullDomain: "Domaine complet",
+    advantage: "Avantage :",
+    fullAccessFeatures: "Accès complet à toutes les fonctionnalités (tags, scripts, contenus, etc.)",
   },
 
   // ============= Shopify Retry Claim =============
@@ -8756,5 +8758,88 @@ export const translations = {
     articleNowDraft: "L'article est maintenant un brouillon",
     articleNowLive: "L'article est maintenant en ligne",
     errorToggling: "Erreur lors du changement de statut",
+  },
+
+  // ============= Shopify API Guide =============
+  shopifyApiGuide: {
+    title: "📖 Guide : Créer vos clés API Shopify",
+    subtitle: "Suivez ces 6 étapes pour obtenir vos identifiants de connexion",
+    storeInfo: {
+      storeName: "Nom de votre boutique :",
+      findInUrl: "Trouvez le nom dans l'URL :",
+    },
+    steps: {
+      step1: {
+        title: "Étape 1 : Accédez à l'admin Shopify",
+        description: "Allez dans Paramètres → Apps et canaux de vente → Développer des applications",
+        link: "Ouvrir l'admin Shopify",
+      },
+      step2: {
+        title: "Étape 2 : Créez une application personnalisée",
+        items: [
+          'Cliquez sur "Créer une application"',
+          'Donnez un nom à votre application (ex: "NewAI SEO Integration")',
+          'Cliquez sur "Créer une application" pour confirmer',
+        ],
+      },
+      step3: {
+        title: "Étape 3 : Configurez les permissions (API scopes)",
+        description: 'Cliquez sur "Configurer les étendues de l\'API Admin" et activez les permissions nécessaires',
+        scopesTitle: "Liste complète des permissions nécessaires",
+      },
+      step4: {
+        title: "Étape 4 : Installez l'application",
+        items: [
+          'Cliquez sur "Enregistrer" pour sauvegarder les permissions',
+          'Cliquez sur "Installer l\'application"',
+          "Confirmez l'installation",
+        ],
+      },
+      step5: {
+        title: "Étape 5 : Récupérez vos 2 clés",
+        apiKey: {
+          label: "1️⃣ API Key",
+          description: "Cette clé publique identifie votre application",
+          format: "Format : 32 caractères hexadécimaux",
+          location: 'Localisation : Onglet "API credentials"',
+        },
+        accessToken: {
+          label: "2️⃣ Admin API Access Token",
+          description: "Ce token secret donne accès à votre boutique",
+          warning: "⚠️ Important : Ce token ne s'affiche qu'une seule fois ! Copiez-le immédiatement.",
+          format: "Format : Commence par",
+          location: 'Localisation : Onglet "API credentials" → Bouton "Reveal token once"',
+        },
+      },
+      step6: {
+        title: "Étape 6 : Collez vos clés dans le formulaire",
+        description: "Utilisez les deux clés ci-dessus dans le formulaire de connexion pour connecter votre boutique à NewAI.",
+      },
+    },
+    footer: {
+      help: "Besoin d'aide ?",
+      helpLink: "Consultez la documentation officielle Shopify",
+      security: "Sécurité :",
+      securityWarning: "Ces clés donnent un accès complet à votre boutique. Ne les partagez jamais et ne les exposez pas publiquement.",
+    },
+    scopes: {
+      products: "Gestion des produits",
+      content: "Pages et articles de blog",
+      scriptTags: "Balises de script JavaScript",
+      customerEvents: "Comportement de navigation des clients",
+      locations: "Emplacements géographiques",
+      shipping: "Services d'expédition",
+      productListings: "Fiches de produits",
+      files: "Fichiers de la boutique",
+      productFeeds: "Flux de produits",
+      pages: "Pages de la boutique",
+      reports: "Rapports analytiques",
+      inventory: "Stock et inventaire",
+      inventoryShipments: "Expéditions d'inventaire",
+      inventoryTransfers: "Transferts d'inventaire",
+    },
+    toasts: {
+      copied: "{{label}} copié !",
+    },
   },
 };

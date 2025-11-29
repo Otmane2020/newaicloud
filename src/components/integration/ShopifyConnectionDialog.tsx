@@ -292,7 +292,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     <Alert>
                       <Info className="h-4 w-4" />
                       <AlertDescription className="text-xs">
-                        Trouvez le nom dans l'URL :{" "}
+                        {t.shopifyConnection.findInUrl}{" "}
                         <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
                           admin.shopify.com/store/<strong>HBxv99-2F</strong>
                         </code>
@@ -303,12 +303,12 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       {oauthLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Connexion...
+                          {t.shopifyConnection.connecting}
                         </>
                       ) : (
                         <>
                           <Shield className="mr-2 h-4 w-4" />
-                          Connecter avec OAuth
+                          {t.shopifyConnection.connectWithOAuth}
                         </>
                       )}
                     </Button>
@@ -321,7 +321,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                 <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
                   <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   <AlertDescription className="text-xs text-blue-900 dark:text-blue-200">
-                    <strong>Nouveau sur Shopify ?</strong> Consultez le guide détaillé ci-dessous pour créer vos clés API en quelques minutes.
+                    {t.shopifyConnection.newToShopify}
                   </AlertDescription>
                 </Alert>
 
@@ -333,30 +333,30 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       <Key className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-foreground">Formulaire de connexion</h3>
-                      <p className="text-xs text-muted-foreground">Remplissez vos identifiants API</p>
+                      <h3 className="text-lg font-semibold text-foreground">{t.shopifyConnection.connectionForm}</h3>
+                      <p className="text-xs text-muted-foreground">{t.shopifyConnection.fillCredentials}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="manual-commercial-name" className="text-sm font-medium">
-                      Nom commercial de votre boutique
+                      {t.shopifyConnection.commercialName}
                     </Label>
                     <Input
                       id="manual-commercial-name"
-                      placeholder="Movala, Decora Home, etc."
+                      placeholder={t.shopifyConnection.commercialNamePlaceholder}
                       value={manualCommercialName}
                       onChange={(e) => setManualCommercialName(e.target.value)}
                       disabled={manualLoading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Le nom qui apparaîtra dans l'interface (ex: "Movala")
+                      {t.shopifyConnection.commercialNameHint}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="manual-shop-name" className="text-sm font-medium">
-                      Code technique de la boutique
+                      {t.shopifyConnection.technicalCode}
                     </Label>
                     <div className="flex gap-2">
                       <Input
@@ -374,7 +374,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     <Alert>
                       <Info className="h-4 w-4" />
                       <AlertDescription className="text-xs">
-                        Trouvez le nom dans l'URL :{" "}
+                        {t.shopifyConnection.findInUrl}{" "}
                         <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
                           admin.shopify.com/store/<strong>HBxv99-2F</strong>
                         </code>
@@ -385,7 +385,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                   <div className="space-y-2">
                     <Label htmlFor="manual-api-key" className="text-sm font-medium flex items-center gap-2">
                       <Key className="w-3.5 h-3.5" />
-                      API Key (32 caractères)
+                      {t.shopifyConnection.apiKeyLabel}
                     </Label>
                     <Input
                       id="manual-api-key"
@@ -396,14 +396,14 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       disabled={manualLoading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      32 caractères hexadécimaux trouvés dans l'onglet "API credentials"
+                      {t.shopifyConnection.apiKeyHint}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="manual-api-secret" className="text-sm font-medium flex items-center gap-2">
                       <Shield className="w-3.5 h-3.5" />
-                      Admin API Access Token (shpat_)
+                      {t.shopifyConnection.adminApiToken}
                     </Label>
                     <Input
                       id="manual-api-secret"
@@ -414,14 +414,14 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       disabled={manualLoading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Commence par <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">shpat_</code> - Token révélé une seule fois dans "API credentials"
+                      {t.shopifyConnection.adminApiTokenHint}
                     </p>
                   </div>
 
                   <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
                     <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
                     <AlertDescription className="text-xs text-green-900 dark:text-green-200">
-                      <strong>✓ Avantage :</strong> Accès complet à toutes les fonctionnalités (tags, scripts, contenus, etc.)
+                      <strong>✓ {t.shopifyConnection.advantage}</strong> {t.shopifyConnection.fullAccessFeatures}
                     </AlertDescription>
                   </Alert>
 
@@ -434,12 +434,12 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     {manualLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connexion en cours...
+                        {t.shopifyConnection.connectionInProgress}
                       </>
                     ) : (
                       <>
                         <Key className="mr-2 h-4 w-4" />
-                        Connecter avec les clés API
+                        {t.shopifyConnection.connectWithApiKeys}
                       </>
                     )}
                   </Button>
