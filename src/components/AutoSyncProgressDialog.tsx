@@ -6,11 +6,34 @@ import { useLocation } from 'react-router-dom';
 import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
+// Show close button after 30 seconds if stuck
+const SHOW_CLOSE_BUTTON_DELAY = 30 * 1000;
+
 export function AutoSyncProgressDialog() {
   const { isSyncing, isCompleted, currentType, storeName, itemsSynced, endSync } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
   const [progress, setProgress] = React.useState(20);
+  const [showCloseButton, setShowCloseButton] = React.useState(false);
+  const syncStartTimeRef = React.useRef<number | null>(null);
+
+  // Track when sync started and show close button after delay
+  React.useEffect(() => {
+    if (isSyncing && !isCompleted) {
+      if (!syncStartTimeRef.current) {
+        syncStartTimeRef.current = Date.now();
+      }
+      
+      const timer = setTimeout(() => {
+        setShowCloseButton(true);
+      }, SHOW_CLOSE_BUTTON_DELAY);
+      
+      return () => clearTimeout(timer);
+    } else {
+      syncStartTimeRef.current = null;
+      setShowCloseButton(false);
+    }
+  }, [isSyncing, isCompleted]);
   
   // Afficher le dialog partout sauf sur onboarding SANS shopify_pending
   // Si on est sur onboarding AVEC shopify_pending, on affiche le dialog pour montrer le claim en cours
@@ -160,9 +183,22 @@ export function AutoSyncProgressDialog() {
               {t.dialogs.autoSync.closeButton}
             </Button>
           ) : (
-            <div className="space-y-1 text-xs text-muted-foreground text-center max-w-xs">
-              <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
-              <p className="text-xs">{t.dialogs.autoSync.duration}</p>
+            <div className="space-y-3 text-center max-w-xs">
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
+                <p className="text-xs">{t.dialogs.autoSync.duration}</p>
+              </div>
+              {showCloseButton && (
+                <Button 
+                  onClick={handleClose} 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  {t.buttons?.close || 'Fermer'}
+                </Button>
+              )}
             </div>
           )}
         </div>
