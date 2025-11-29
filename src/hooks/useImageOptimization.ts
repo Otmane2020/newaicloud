@@ -87,17 +87,29 @@ export const useImageOptimization = () => {
     mutationFn: async ({ 
       imageUrl, 
       productTitle,
-      resolution = '2000x2000'
+      resolution = '2000x2000',
+      format = 'square',
+      mode = 'standard',
+      serpData,
+      visionAiData,
+      productDescription,
+      product_id
     }: { 
       imageUrl: string; 
       productTitle: string;
       resolution?: string;
+      format?: 'square' | 'portrait' | 'landscape';
+      mode?: 'standard' | 'google_shopping';
+      serpData?: any;
+      visionAiData?: any;
+      productDescription?: string;
+      product_id?: string;
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
       
       try {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { imageUrl, productTitle, resolution }
+          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id }
         });
 
         if (error) throw error;

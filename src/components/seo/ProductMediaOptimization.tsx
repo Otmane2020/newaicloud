@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -57,6 +58,9 @@ export const ProductMediaOptimization = () => {
   const [backgroundVariants, setBackgroundVariants] = useState<any[]>([]);
   const [showVariantsSelector, setShowVariantsSelector] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  // 🆕 Format selection state
+  const [selectedFormat, setSelectedFormat] = useState<'square' | 'portrait' | 'landscape'>('square');
+  const [selectedMode, setSelectedMode] = useState<'standard' | 'google_shopping'>('google_shopping');
 
   const { limits, loading: limitsLoading } = useUsageLimits();
 
@@ -134,7 +138,10 @@ export const ProductMediaOptimization = () => {
       const result = await generateWhiteBackground.mutateAsync({
         imageUrl: image.src,
         productTitle: product.title,
-        resolution: '2000x2000'
+        resolution: '2000x2000',
+        format: selectedFormat,
+        mode: selectedMode,
+        product_id: product.id
       });
 
       if (result.imageUrl) {
@@ -283,7 +290,7 @@ export const ProductMediaOptimization = () => {
         productTitle: product.title,
         basePrompt: aiPrompt,
         style: 'professional',
-        format: 'square'
+        format: selectedFormat // 🆕 Use selected format
       });
 
       if (result.variants && result.variants.length > 0) {
@@ -437,10 +444,38 @@ export const ProductMediaOptimization = () => {
         <TabsContent value="white-bg" className="space-y-4">
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Génération de Fond Blanc HD</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Générez des photos produits professionnelles sur fond blanc pur en résolution 2000x2000px. 
-              Parfait pour Google Shopping et marketplaces.
+            <p className="text-sm text-muted-foreground mb-4">
+              Générez des photos produits professionnelles sur fond blanc pur. Parfait pour Google Shopping et marketplaces.
             </p>
+            
+            {/* 🆕 Format and Mode Selection */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Format</label>
+                <Select value={selectedFormat} onValueChange={(v) => setSelectedFormat(v as any)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="square">Carré (1:1)</SelectItem>
+                    <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                    <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mode</label>
+                <Select value={selectedMode} onValueChange={(v) => setSelectedMode(v as any)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google_shopping">Google Shopping</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {products?.map(product => 
@@ -486,6 +521,21 @@ export const ProductMediaOptimization = () => {
               Générez 4 variantes d'arrière-plans créatifs pour vos produits. L'IA centre automatiquement le produit.
             </p>
 
+            {/* 🆕 Format Selection for AI Backgrounds */}
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-2 block">Format de sortie</label>
+              <Select value={selectedFormat} onValueChange={(v) => setSelectedFormat(v as any)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="square">Carré (1:1) - 2000x2000px</SelectItem>
+                  <SelectItem value="portrait">Portrait (3:4) - 1500x2000px</SelectItem>
+                  <SelectItem value="landscape">Paysage (4:3) - 2000x1500px</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="mb-6">
               <label className="text-sm font-medium mb-2 block">Prompt personnalisé (optionnel)</label>
               <Input
