@@ -2145,6 +2145,7 @@ export const translations = {
       emailStats: "Email Stats",
       analytics: "Analytics",
       googleAds: "Google Ads",
+      blogSeo: "Blog SEO",
       systemStatus: "System Status",
       insights: "User Intelligence",
       logs: "System Logs",
