@@ -985,8 +985,8 @@ Deno.serve(async (req: Request) => {
       if (product.images && product.images.length > 0) {
         const imagesToInsert = product.images.map((image, index) => ({
           product_id: productId,
-          // FIX: Extract numeric ID from GID string (e.g., "gid://shopify/ProductImage/123" → 123)
-          shopify_image_id: extractNumericId(String(image.id)) || 0,
+          // image.id is already numeric from GraphQL transformation (line 677)
+          shopify_image_id: image.id,
           src: image.src,
           position: index + 1,
           alt_text: (image as any).alt || "",
@@ -1012,8 +1012,8 @@ Deno.serve(async (req: Request) => {
               if (variantImage) {
                 allImages.push({
                   product_id: productId,
-                  // FIX: Extract numeric ID from GID string
-                  shopify_image_id: extractNumericId(String(variantImage.id)) || 0,
+                  // variantImage.id is already numeric from GraphQL transformation
+                  shopify_image_id: variantImage.id,
                   src: variantImage.src,
                   position: allImages.filter(i => i.product_id === productId).length + 1,
                   alt_text: (variantImage as any).alt || `${product.title} - ${variant.title}`,
@@ -1317,12 +1317,12 @@ Deno.serve(async (req: Request) => {
           const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
           const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
           
-          // Use upsert with onConflict on the actual unique constraint (product_id, src)
+          // Use upsert with onConflict on the actual unique constraint (shopify_image_id)
           const { error: imageError } = await supabaseServiceClient
             .from("product_images")
             .upsert(batch, { 
-              onConflict: 'product_id,src',
-              ignoreDuplicates: false // Update existing records
+              onConflict: 'shopify_image_id',
+              ignoreDuplicates: true // Skip duplicates instead of failing
             });
 
           if (imageError) {
