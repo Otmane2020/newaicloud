@@ -126,37 +126,34 @@ serve(async (req) => {
       }
       
       const stripeSub = stripeSubscriptions.data[0];
-      
-      // Validate period dates before syncing to DB
-      if (!stripeSub.current_period_start || !stripeSub.current_period_end) {
-        logStep("Subscription found but period dates not yet available", { 
-          subscriptionId: stripeSub.id,
-          status: stripeSub.status 
-        });
-        throw new Error("Subscription is still being set up. Please try again in a few moments.");
-      }
-      
       const stripeSubId = stripeSub.id;
-      logStep("Found subscription in Stripe with valid periods", { 
+      
+      logStep("Found subscription in Stripe", { 
         subscriptionId: stripeSubId,
+        status: stripeSub.status,
         periodStart: stripeSub.current_period_start,
         periodEnd: stripeSub.current_period_end
       });
       
-      // Sync it to our DB with validated data
+      // Sync to DB if we have period dates, otherwise just save the subscription ID
+      const upsertData: any = {
+        seller_id: userData.user.id,
+        stripe_subscription_id: stripeSubId,
+        status: stripeSub.status,
+      };
+      
+      if (stripeSub.current_period_start && stripeSub.current_period_end) {
+        upsertData.current_period_start = new Date(stripeSub.current_period_start * 1000).toISOString();
+        upsertData.current_period_end = new Date(stripeSub.current_period_end * 1000).toISOString();
+      }
+      
       await supabaseClient
         .from("subscriptions")
-        .upsert({
-          seller_id: userData.user.id,
-          stripe_subscription_id: stripeSubId,
-          status: stripeSub.status,
-          current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
-        });
+        .upsert(upsertData);
       
       subscriptionData = {
         stripe_subscription_id: stripeSubId,
-        status: stripeSubscriptions.data[0].status
+        status: stripeSub.status
       };
     }
     
@@ -204,11 +201,22 @@ serve(async (req) => {
         periodEnd = stripeSubscription.trial_end;
         logStep("Using trial dates as fallback", { periodStart, periodEnd });
       } else {
-        logStep("No valid period dates found anywhere", { 
+        // Final fallback: Calculate period based on subscription creation and interval
+        // For active subscriptions without period dates, assume cycle started now
+        const nowTimestamp = Math.floor(Date.now() / 1000);
+        const subPrice = stripeSubscription.items.data[0]?.price;
+        const interval = subPrice?.recurring?.interval || 'month';
+        const intervalSeconds = interval === 'year' ? 365 * 24 * 60 * 60 : 30 * 24 * 60 * 60;
+        
+        periodStart = stripeSubscription.created || nowTimestamp;
+        periodEnd = periodStart + intervalSeconds;
+        
+        logStep("Using calculated period dates as final fallback", { 
           status: stripeSubscription.status,
-          hasDbDates: !!dbSubscription
+          interval,
+          periodStart: new Date(periodStart * 1000).toISOString(),
+          periodEnd: new Date(periodEnd * 1000).toISOString()
         });
-        throw new Error("Votre abonnement est en cours de configuration. Veuillez réessayer dans quelques instants.");
       }
     }
 
