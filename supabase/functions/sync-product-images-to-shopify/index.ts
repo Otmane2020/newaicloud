@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
 
     console.log('[SYNC-IMAGES] ✅ User authorized for Shopify updates');
 
-    const { productId } = await req.json();
+    const { productId, images: requestImages } = await req.json();
 
     if (!productId) {
       throw new Error("Product ID is required");
@@ -155,6 +155,10 @@ Deno.serve(async (req) => {
 
     console.log(`🔄 Syncing images for product: ${productId}`);
     console.log(`👤 User ID: ${user.id}`);
+    console.log(`📦 Request images provided: ${requestImages ? requestImages.length : 'none'}`);
+    
+    // If request includes images with positions, this is a reorder request
+    const isReorderRequest = requestImages && Array.isArray(requestImages) && requestImages.length > 0;
 
     // Get product with images and store info
     const { data: product, error: productError } = await supabaseClient
@@ -503,19 +507,42 @@ Deno.serve(async (req) => {
 
     // 🆕 Reorder images if positions have changed
     let reorderedCount = 0;
-    const localImages = (product.images || []).sort((a: any, b: any) => a.position - b.position);
+    
+    // Use request images if provided (from gallery reorder), otherwise use database images
+    let imagesToReorder: Array<{ shopify_image_id: number | null; position: number }> = [];
+    
+    if (isReorderRequest && requestImages) {
+      // Use images from request body (with positions already set correctly)
+      imagesToReorder = requestImages
+        .filter((img: any) => img.id) // Only images with shopify_image_id
+        .map((img: any, idx: number) => ({
+          shopify_image_id: typeof img.id === 'string' ? parseInt(img.id) : img.id,
+          position: img.position || idx + 1
+        }));
+      console.log(`📋 Using ${imagesToReorder.length} images from request for reorder`);
+    } else {
+      // Fallback to database images
+      const localImages = (product.images || []).sort((a: any, b: any) => a.position - b.position);
+      imagesToReorder = localImages
+        .filter((img: any) => img.shopify_image_id)
+        .map((img: any) => ({
+          shopify_image_id: img.shopify_image_id,
+          position: img.position
+        }));
+      console.log(`📋 Using ${imagesToReorder.length} images from database for reorder`);
+    }
     
     // Build moves array for reordering - map local positions to Shopify media IDs
     const moves: Array<{ id: string; newPosition: string }> = [];
     
-    for (let i = 0; i < localImages.length; i++) {
-      const localImg = localImages[i];
-      if (localImg.shopify_image_id) {
-        const mediaGid = restIdToGid(localImg.shopify_image_id, 'MediaImage');
-        // Position in Shopify is 1-indexed
+    for (let i = 0; i < imagesToReorder.length; i++) {
+      const img = imagesToReorder[i];
+      if (img.shopify_image_id) {
+        const mediaGid = restIdToGid(img.shopify_image_id, 'MediaImage');
+        // Position in Shopify is 0-indexed for moves
         moves.push({
           id: mediaGid,
-          newPosition: String(i) // 0-indexed position becomes new order
+          newPosition: String(i)
         });
       }
     }
