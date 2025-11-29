@@ -10,7 +10,7 @@ const corsHeaders = {
 interface ShopifyVariant {
   id: number;
   title: string;
-  sku: string;
+  sku: string | null;
   option1: string | null;
   option2: string | null;
   option3: string | null;
@@ -21,6 +21,7 @@ interface ShopifyVariant {
   weight_unit: string;
   barcode: string | null;
   image_id: number | null;
+  cost_price: number | null;
 }
 
 interface ShopifyImage {
@@ -537,9 +538,20 @@ Deno.serve(async (req: Request) => {
                     node {
                       id
                       legacyResourceId
+                      title
+                      sku
                       price
                       compareAtPrice
                       inventoryQuantity
+                      selectedOptions {
+                        name
+                        value
+                      }
+                      inventoryItem {
+                        unitCost {
+                          amount
+                        }
+                      }
                     }
                   }
                 }
@@ -617,12 +629,21 @@ Deno.serve(async (req: Request) => {
           product_type: node.productType,
           status: node.status.toLowerCase(),
           tags: node.tags.join(','),
-          variants: node.variants.edges.map((v: any) => ({
-            id: parseInt(v.node.legacyResourceId),
-            price: v.node.price,
-            compare_at_price: v.node.compareAtPrice,
-            inventory_quantity: v.node.inventoryQuantity || 0
-          })),
+          variants: node.variants.edges.map((v: any) => {
+            const options = v.node.selectedOptions || [];
+            return {
+              id: parseInt(v.node.legacyResourceId),
+              title: v.node.title || 'Default',
+              sku: v.node.sku || null,
+              price: v.node.price,
+              compare_at_price: v.node.compareAtPrice,
+              inventory_quantity: v.node.inventoryQuantity || 0,
+              option1: options[0]?.value || null,
+              option2: options[1]?.value || null,
+              option3: options[2]?.value || null,
+              cost_price: v.node.inventoryItem?.unitCost?.amount ? parseFloat(v.node.inventoryItem.unitCost.amount) : null
+            };
+          }),
           images: node.images.edges.map((i: any) => ({
             src: i.node.url,
             alt: i.node.altText
@@ -906,6 +927,7 @@ Deno.serve(async (req: Request) => {
             compare_at_price: variant.compare_at_price
               ? parseFloat(variant.compare_at_price)
               : null,
+            cost_price: variant.cost_price || null,
             inventory_quantity: variant.inventory_quantity || 0,
             weight: variant.weight,
             weight_unit: variant.weight_unit || "kg",
