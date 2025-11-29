@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import {
   RefreshCw,
   History,
   Check,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
@@ -248,108 +250,126 @@ export const SmartBackgroundDialog = ({
     return null;
   };
 
+  // Ref to track cancellation
+  const cancelledRef = useRef(false);
+  const [errorCount, setErrorCount] = useState(0);
+  const [successCount, setSuccessCount] = useState(0);
+
   const handleGenerateAll = async () => {
     if (selectedProducts.length === 0) {
       toast.error(getText('Aucun produit sélectionné', 'No product selected'));
       return;
     }
 
+    cancelledRef.current = false;
     setIsGenerating(true);
     setCurrentProductIndex(0);
+    setErrorCount(0);
+    setSuccessCount(0);
     const newPreviews = new Map<string, string>();
 
-    for (let i = 0; i < selectedProducts.length; i++) {
-      const product = selectedProducts[i];
-      setCurrentProductIndex(i);
+    // Format map
+    const formatMap: Record<BackgroundFormat, 'square' | 'portrait' | 'landscape'> = {
+      '1:1': 'square',
+      '4:3': 'landscape',
+      '3:4': 'portrait',
+      '16:9': 'landscape',
+      '9:16': 'portrait',
+    };
 
-      const selectedImage = getSelectedImage(product);
-      if (!selectedImage?.url) {
-        toast.warning(`${product.title}: ${getText('Pas d\'image', 'No image')}`);
-        continue;
+    // Pre-fetch ALL product data in a single batch query for speed
+    console.log(`🚀 [SmartBg] Starting bulk generation for ${selectedProducts.length} products`);
+    const productIds = selectedProducts.map(p => p.id);
+    
+    const { data: allProductDetails } = await supabase
+      .from('shopify_products')
+      .select('id, body_html, seo_description, serp_data, vision_attributes')
+      .in('id', productIds);
+
+    const productDataMap = new Map(
+      (allProductDetails || []).map(p => [p.id, p])
+    );
+
+    // Process in parallel batches of 3 for speed
+    const BATCH_SIZE = 3;
+    
+    for (let batchStart = 0; batchStart < selectedProducts.length; batchStart += BATCH_SIZE) {
+      if (cancelledRef.current) {
+        console.log('🛑 [SmartBg] Generation cancelled by user');
+        break;
       }
 
-      try {
-        // Map format to edge function format
-        const formatMap: Record<BackgroundFormat, 'square' | 'portrait' | 'landscape'> = {
-          '1:1': 'square',
-          '4:3': 'landscape',
-          '3:4': 'portrait',
-          '16:9': 'landscape',
-          '9:16': 'portrait',
-        };
+      const batch = selectedProducts.slice(batchStart, batchStart + BATCH_SIZE);
+      
+      // Process batch in parallel
+      const batchResults = await Promise.allSettled(
+        batch.map(async (product, batchIndex) => {
+          const globalIndex = batchStart + batchIndex;
+          setCurrentProductIndex(globalIndex);
 
-        // Fetch SERP and Vision data if smart mode
-        let serpData = null;
-        let visionAiData = null;
-        let productDescription = null;
+          const selectedImage = getSelectedImage(product);
+          if (!selectedImage?.url) {
+            console.warn(`[SmartBg] No image for ${product.title}`);
+            return null;
+          }
 
-        // Get existing product data
-        const { data: productDetails } = await supabase
-          .from('shopify_products')
-          .select('body_html, seo_description, serp_data, vision_attributes')
-          .eq('id', product.id)
-          .single();
+          // Get pre-fetched data
+          const productDetails = productDataMap.get(product.id);
+          const serpData = productDetails?.serp_data || null;
+          const visionAiData = productDetails?.vision_attributes || null;
+          const productDescription = productDetails?.body_html || productDetails?.seo_description || null;
 
-        if (productDetails) {
-          serpData = productDetails.serp_data;
-          visionAiData = productDetails.vision_attributes;
-          productDescription = productDetails.body_html || productDetails.seo_description;
-        }
-
-        // Fetch SERP data if smart mode and no existing data
-        if (bgMode === 'smart_serp' && !serpData) {
-          console.log('🔍 [SmartBg] Fetching SERP data for:', product.title);
-          const { data: serpResult } = await supabase.functions.invoke('search-similar-products-specs', {
-            body: { productTitle: product.title, limit: 5 },
+          // Generate - skip SERP fetch in bulk mode for speed (use existing data only)
+          const result = await generateWhiteBackground.mutateAsync({
+            imageUrl: selectedImage.url,
+            productTitle: product.title,
+            resolution: '2000x2000',
+            format: formatMap[bgFormat],
+            mode: 'google_shopping',
+            product_id: product.id,
+            serpData,
+            visionAiData,
+            productDescription,
+            backgroundStyle: bgMode === 'smart_serp' ? bgStyle : 'shopping',
           });
 
-          if (serpResult?.similarProducts || serpResult?.averageWeight || serpResult?.averageDimensions) {
-            serpData = {
-              dimensions: serpResult.averageDimensions
-                ? `${serpResult.averageDimensions.length || ''} x ${serpResult.averageDimensions.width || ''} x ${serpResult.averageDimensions.height || ''}`
-                    .replace(/\s+x\s+x\s+/g, '')
-                    .trim()
-                : null,
-              weight: serpResult.averageWeight,
-              materials: serpResult.similarProducts?.flatMap((p: any) => p.materials || []).slice(0, 3) || [],
-              dominantStyles: serpResult.similarProducts?.flatMap((p: any) => (p.style ? [p.style] : [])).slice(0, 2) || [],
-              confidence: serpResult.confidence,
-            };
-            console.log('✅ [SmartBg] SERP data formatted:', serpData);
-          }
-        }
+          return { productId: product.id, imageUrl: result.imageUrl, title: product.title };
+        })
+      );
 
-        // 🎯 BOTH modes now use SERP/Vision data for 3D positioning
-        // white_shopping always uses 'shopping' style, smart_serp uses selected bgStyle
-        const result = await generateWhiteBackground.mutateAsync({
-          imageUrl: selectedImage.url,
-          productTitle: product.title,
-          resolution: '2000x2000',
-          format: formatMap[bgFormat],
-          mode: 'google_shopping',
-          product_id: product.id,
-          serpData: serpData, // Always pass SERP data for 3D positioning
-          visionAiData: visionAiData, // Always pass Vision data
-          productDescription: productDescription, // Always pass description
-          backgroundStyle: bgMode === 'smart_serp' ? bgStyle : 'shopping', // Shopping style for white mode
-        });
-
-        if (result.imageUrl) {
-          newPreviews.set(product.id, result.imageUrl);
-          toast.success(`${product.title}: ${getText('Background généré', 'Background generated')}`);
+      // Process results
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled' && result.value?.imageUrl) {
+          newPreviews.set(result.value.productId, result.value.imageUrl);
+          setSuccessCount(prev => prev + 1);
+          setGeneratedPreviews(new Map(newPreviews)); // Update UI progressively
+        } else if (result.status === 'rejected') {
+          console.error('[SmartBg] Generation error:', result.reason);
+          setErrorCount(prev => prev + 1);
         }
-      } catch (error: any) {
-        console.error('Error generating background for', product.title, error);
-        toast.error(`${product.title}: ${getText('Erreur de génération', 'Generation error')}`);
+      }
+
+      // Small delay between batches to avoid rate limits
+      if (batchStart + BATCH_SIZE < selectedProducts.length && !cancelledRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
     setGeneratedPreviews(newPreviews);
     setIsGenerating(false);
 
-    if (newPreviews.size > 0) {
-      toast.success(`${newPreviews.size} ${getText('background(s) généré(s)', 'background(s) generated')}`);
+    const finalSuccess = newPreviews.size;
+    if (finalSuccess > 0) {
+      toast.success(`${finalSuccess} ${getText('background(s) généré(s)', 'background(s) generated')}`);
     }
+    if (cancelledRef.current) {
+      toast.info(getText('Génération annulée', 'Generation cancelled'));
+    }
+  };
+
+  const handleCancelGeneration = () => {
+    cancelledRef.current = true;
+    toast.info(getText('Annulation en cours...', 'Cancelling...'));
   };
 
   const handleApplyAll = async () => {
@@ -770,13 +790,21 @@ export const SmartBackgroundDialog = ({
 
             {/* Progress */}
             {isGenerating && (
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <p className="text-sm font-medium">
-                  {getText('Génération en cours:', 'Generating:')} {currentProductIndex + 1}/{selectedProducts.length}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {selectedProducts[currentProductIndex]?.title}
-                </p>
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    {getText('Génération en cours:', 'Generating:')} {successCount + errorCount}/{selectedProducts.length}
+                  </p>
+                  <Button variant="ghost" size="sm" onClick={handleCancelGeneration} className="h-7 px-2 gap-1 text-destructive hover:text-destructive">
+                    <X className="h-3.5 w-3.5" />
+                    {getText('Annuler', 'Cancel')}
+                  </Button>
+                </div>
+                <Progress value={((successCount + errorCount) / selectedProducts.length) * 100} className="h-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{successCount} {getText('réussis', 'success')} {errorCount > 0 && `| ${errorCount} ${getText('erreurs', 'errors')}`}</span>
+                  <span>{Math.round(((successCount + errorCount) / selectedProducts.length) * 100)}%</span>
+                </div>
               </div>
             )}
 
