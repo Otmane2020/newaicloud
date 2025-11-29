@@ -1010,14 +1010,28 @@ Deno.serve(async (req: Request) => {
     if (noImgError) {
       console.error(`⚠️ Error fetching products:`, noImgError);
     } else if (productsWithNoImages && productsWithNoImages.length > 0) {
-      // Get image counts for these products
+      // Get image counts for these products - BATCHED to avoid "Bad Request" on large arrays
       const productIds = productsWithNoImages.map(p => p.id);
-      const { data: imageCounts } = await supabaseServiceClient
-        .from('product_images')
-        .select('product_id')
-        .in('product_id', productIds);
+      const QUERY_BATCH_SIZE = 500;
+      let allImageCounts: { product_id: string }[] = [];
       
-      const productsWithImageSet = new Set(imageCounts?.map(i => i.product_id) || []);
+      console.log(`📊 Checking image counts for ${productIds.length} products in batches of ${QUERY_BATCH_SIZE}`);
+      
+      for (let i = 0; i < productIds.length; i += QUERY_BATCH_SIZE) {
+        const batchIds = productIds.slice(i, i + QUERY_BATCH_SIZE);
+        const { data: imageCounts, error: imgCountError } = await supabaseServiceClient
+          .from('product_images')
+          .select('product_id')
+          .in('product_id', batchIds);
+        
+        if (imgCountError) {
+          console.error(`⚠️ Error fetching image counts batch ${Math.floor(i/QUERY_BATCH_SIZE)+1}:`, imgCountError);
+        } else if (imageCounts) {
+          allImageCounts.push(...imageCounts);
+        }
+      }
+      
+      const productsWithImageSet = new Set(allImageCounts.map(i => i.product_id));
       const productsNeedingImages = productsWithNoImages.filter(p => !productsWithImageSet.has(p.id));
       
       if (productsNeedingImages.length > 0) {
@@ -1164,14 +1178,31 @@ Deno.serve(async (req: Request) => {
       const normalizeUrl = (url: string) => url.split('?')[0].toLowerCase();
       
       // STEP 1: Fetch existing images to preserve ONLY truly generated/optimized ones
-      const { data: existingImages, error: fetchExistingError } = await supabaseServiceClient
-        .from("product_images")
-        .select("id, product_id, src, shopify_image_id, alt_text, optimization_count")
-        .in("product_id", productIdsWithImages);
+      // BATCHED to avoid "Bad Request" error on large arrays (>500 IDs)
+      const QUERY_BATCH_SIZE = 500;
+      let existingImages: any[] = [];
       
-      if (fetchExistingError) {
-        console.error(`⚠️ Error fetching existing images:`, fetchExistingError);
+      console.log(`📊 Fetching existing images for ${productIdsWithImages.length} products in batches of ${QUERY_BATCH_SIZE}`);
+      
+      for (let i = 0; i < productIdsWithImages.length; i += QUERY_BATCH_SIZE) {
+        const batchIds = productIdsWithImages.slice(i, i + QUERY_BATCH_SIZE);
+        const batchNum = Math.floor(i / QUERY_BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(productIdsWithImages.length / QUERY_BATCH_SIZE);
+        
+        const { data: batchImages, error: fetchBatchError } = await supabaseServiceClient
+          .from("product_images")
+          .select("id, product_id, src, shopify_image_id, alt_text, optimization_count")
+          .in("product_id", batchIds);
+        
+        if (fetchBatchError) {
+          console.error(`⚠️ Error fetching existing images batch ${batchNum}/${totalBatches}:`, fetchBatchError);
+        } else if (batchImages) {
+          existingImages.push(...batchImages);
+          console.log(`✅ Fetched batch ${batchNum}/${totalBatches}: ${batchImages.length} existing images`);
+        }
       }
+      
+      console.log(`📊 Total existing images found: ${existingImages.length}`)
       
       // STEP 2: Identify images to PRESERVE (truly generated, not Shopify CDN)
       // An image is "generated" if it's NOT from Shopify CDN (e.g., from our storage bucket)
@@ -1197,18 +1228,32 @@ Deno.serve(async (req: Request) => {
       console.log(`🔒 Preserving ${preservedImages.length} generated/optimized images`);
       console.log(`🗑️ Will delete ${imagesToDelete.length} Shopify CDN images for fresh import`);
       
-      // STEP 3: Delete Shopify CDN images
+      // STEP 3: Delete Shopify CDN images - BATCHED to avoid "Bad Request" on large arrays
       if (imagesToDelete.length > 0) {
-        const { error: deleteError } = await supabaseServiceClient
-          .from("product_images")
-          .delete()
-          .in("id", imagesToDelete);
+        const DELETE_BATCH_SIZE = 500;
+        const deleteBatches = Math.ceil(imagesToDelete.length / DELETE_BATCH_SIZE);
+        let deletedCount = 0;
         
-        if (deleteError) {
-          console.error(`⚠️ Error deleting old images:`, deleteError);
-        } else {
-          console.log(`✅ Deleted ${imagesToDelete.length} old Shopify images`);
+        console.log(`🗑️ Deleting ${imagesToDelete.length} Shopify CDN images in ${deleteBatches} batches`);
+        
+        for (let i = 0; i < imagesToDelete.length; i += DELETE_BATCH_SIZE) {
+          const batchIds = imagesToDelete.slice(i, i + DELETE_BATCH_SIZE);
+          const batchNum = Math.floor(i / DELETE_BATCH_SIZE) + 1;
+          
+          const { error: deleteError } = await supabaseServiceClient
+            .from("product_images")
+            .delete()
+            .in("id", batchIds);
+          
+          if (deleteError) {
+            console.error(`⚠️ Error deleting images batch ${batchNum}/${deleteBatches}:`, deleteError);
+          } else {
+            deletedCount += batchIds.length;
+            console.log(`✅ Deleted batch ${batchNum}/${deleteBatches}: ${batchIds.length} images`);
+          }
         }
+        
+        console.log(`✅ Total deleted: ${deletedCount} old Shopify images`);
       }
       
       // STEP 4: Build set of preserved image URLs to avoid duplicates
