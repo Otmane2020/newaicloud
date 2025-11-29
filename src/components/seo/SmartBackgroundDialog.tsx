@@ -24,12 +24,19 @@ import {
   CheckCircle2,
   ExternalLink,
   Image as ImageIcon,
+  ShoppingBag,
+  Sofa,
+  Sparkle,
+  Home,
+  Camera,
+  TreePine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 type BackgroundMode = 'white_shopping' | 'smart_serp';
+type BackgroundStyle = 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature';
 
 interface ProductVariant {
   id: string;
@@ -63,6 +70,7 @@ export const SmartBackgroundDialog = ({
 }: SmartBackgroundDialogProps) => {
   const [bgFormat, setBgFormat] = useState<BackgroundFormat>('1:1');
   const [bgMode, setBgMode] = useState<BackgroundMode>('smart_serp');
+  const [bgStyle, setBgStyle] = useState<BackgroundStyle>('shopping');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const [generatedPreviews, setGeneratedPreviews] = useState<Map<string, string>>(new Map());
@@ -176,6 +184,7 @@ export const SmartBackgroundDialog = ({
           serpData: bgMode === 'smart_serp' ? serpData : null,
           visionAiData: bgMode === 'smart_serp' ? visionAiData : null,
           productDescription: bgMode === 'smart_serp' ? productDescription : null,
+          backgroundStyle: bgMode === 'smart_serp' ? bgStyle : undefined,
         });
 
         if (result.imageUrl) {
@@ -349,6 +358,43 @@ export const SmartBackgroundDialog = ({
                 </p>
               </div>
             </div>
+
+            {/* Style Buttons - Only for smart_serp mode */}
+            {bgMode === 'smart_serp' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Style de background</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'shopping' as BackgroundStyle, label: 'Shopping', icon: ShoppingBag, desc: 'E-commerce professionnel' },
+                    { value: 'lifestyle' as BackgroundStyle, label: 'Lifestyle', icon: Sparkle, desc: 'Ambiance naturelle' },
+                    { value: 'moderne' as BackgroundStyle, label: 'Moderne', icon: Camera, desc: 'Design épuré' },
+                    { value: 'living_room' as BackgroundStyle, label: 'Living Room', icon: Sofa, desc: 'Intérieur cosy' },
+                    { value: 'studio' as BackgroundStyle, label: 'Studio', icon: Home, desc: 'Éclairage studio' },
+                    { value: 'nature' as BackgroundStyle, label: 'Nature', icon: TreePine, desc: 'Extérieur naturel' },
+                  ].map(({ value, label, icon: Icon, desc }) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={bgStyle === value ? 'default' : 'outline'}
+                      size="sm"
+                      className={`flex items-center gap-1.5 h-9 ${bgStyle === value ? '' : 'hover:bg-accent'}`}
+                      onClick={() => setBgStyle(value)}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{label}</span>
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {bgStyle === 'shopping' && 'Fond neutre optimisé e-commerce, mise en valeur produit'}
+                  {bgStyle === 'lifestyle' && 'Contexte de vie réaliste, ambiance chaleureuse'}
+                  {bgStyle === 'moderne' && 'Lignes épurées, design contemporain minimaliste'}
+                  {bgStyle === 'living_room' && 'Décor intérieur salon/maison, contexte habitat'}
+                  {bgStyle === 'studio' && 'Éclairage professionnel studio photo'}
+                  {bgStyle === 'nature' && 'Environnement naturel, plantes et lumière douce'}
+                </p>
+              </div>
+            )}
 
             {/* Products Grid */}
             <div className="space-y-2">
