@@ -114,26 +114,25 @@ export function BulkLandingProgressDialog({
           images.unshift(productData.image_url);
         }
 
-        // Generate landing page
+        // Generate landing page - pass params at root level as expected by edge function
         const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
           headers: { Authorization: `Bearer ${session.access_token}` },
           body: {
-            productId: product.id,
-            productTitle: productData.seo_title || productData.title,
-            productDescription: productData.seo_description || productData.description,
-            productImages: images.slice(0, 5),
-            vendor: productData.vendor,
-            price: null,
-            storeId: storeId,
-            config: {
-              layout: config.layout,
-              colorScheme: config.colorScheme,
-              contentLength: config.contentLength,
-              vendorSource: config.vendorSource,
-              designStyle: config.designStyle,
-              theme: config.theme,
-              regenerateTitle: config.regenerateTitle,
+            product_id: product.id,
+            product: {
+              title: productData.seo_title || productData.title,
+              description: productData.seo_description || productData.description,
+              vendor: productData.vendor,
+              image_url: productData.image_url,
+              images: images.slice(0, 5),
             },
+            designStyle: config.designStyle,
+            layout: config.layout,
+            contentLength: config.contentLength,
+            theme: config.theme,
+            vendor_source: config.vendorSource,
+            colorScheme: config.colorScheme,
+            customHighlights: config.customHighlights,
           },
         });
 
