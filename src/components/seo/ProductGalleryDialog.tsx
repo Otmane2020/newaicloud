@@ -247,6 +247,17 @@ export function ProductGalleryDialog({
                           alt={image.alt_text || `Image ${index + 1}`}
                           className="w-full h-full object-cover pointer-events-none"
                           loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.img-error-fallback')) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'img-error-fallback w-full h-full flex items-center justify-center bg-muted text-muted-foreground';
+                              fallback.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                              parent.appendChild(fallback);
+                            }
+                          }}
                         />
                         <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
                           {index + 1}
