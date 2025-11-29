@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store, RefreshCw } from 'lucide-react';
+import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store, RefreshCw, LogIn } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
@@ -86,6 +86,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
   const [hasNewEmail, setHasNewEmail] = useState(false);
   const [billingFilter, setBillingFilter] = useState<'all' | 'monthly' | 'yearly'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trialing' | 'inactive' | 'canceled'>('all');
+  const [loggingInAs, setLoggingInAs] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -300,6 +301,37 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     }
   };
 
+  const loginAsUser = async (userId: string, email: string) => {
+    setLoggingInAs(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-login-as', {
+        body: { targetUserId: userId, targetEmail: email }
+      });
+
+      if (error) throw error;
+
+      if (data?.loginUrl) {
+        // Open login link in new tab
+        window.open(data.loginUrl, '_blank');
+        toast({
+          title: 'Lien de connexion généré',
+          description: `Connexion en tant que ${email} dans un nouvel onglet`,
+        });
+      } else {
+        throw new Error('Lien de connexion non reçu');
+      }
+    } catch (error) {
+      console.error('Error logging in as user:', error);
+      toast({
+        title: t.common.error,
+        description: 'Impossible de générer le lien de connexion',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoggingInAs(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: "default",
@@ -503,7 +535,8 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     <th className="text-left p-4">Stripe Info</th>
                     <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Actions</th>
-                    <th className="text-left p-4">Changer Plan (Stripe)</th>
+                    <th className="text-left p-4">Changer Plan</th>
+                    <th className="text-left p-4">Login As</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -615,6 +648,22 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                                 ))}
                               </SelectContent>
                             </Select>
+                          </td>
+                          <td className="p-4">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => loginAsUser(user.id, user.email)}
+                              disabled={loggingInAs === user.id}
+                              className="gap-2"
+                            >
+                              {loggingInAs === user.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <LogIn className="w-4 h-4" />
+                              )}
+                              Login As
+                            </Button>
                           </td>
                         </tr>
                       );
