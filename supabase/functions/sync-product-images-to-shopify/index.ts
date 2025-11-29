@@ -555,6 +555,7 @@ Deno.serve(async (req) => {
         if (createResult.productCreateMedia?.media?.length > 0) {
           const newMedia = createResult.productCreateMedia.media[0];
           const newLegacyId = newMedia.id?.replace('gid://shopify/MediaImage/', '');
+          const newMediaGid = newMedia.id;
           const newMediaUrl = newMedia.image?.url || newImageSrc;
           
           // Update shopify_image_id in database
@@ -565,9 +566,50 @@ Deno.serve(async (req) => {
               .eq('id', imgToReplace.id);
           }
           
-          // 🆕 FIX 2: Update shopify_products.image_url if this is position 1 (main image)
-          const imgPosition = imgToReplace.position || 1;
-          if (imgPosition === 1) {
+          // 🔄 CRITICAL FIX: Restore the image to its ORIGINAL position using reorder mutation
+          const originalPosition = imgToReplace.position || 1;
+          console.log(`🔄 Repositioning new image to original position ${originalPosition}`);
+          
+          try {
+            // Re-fetch current media to get accurate positions
+            const currentMediaResult = await shopifyGraphQL(
+              connection.store_url,
+              connection.access_token,
+              PRODUCT_MEDIA_QUERY,
+              { id: productGid }
+            );
+            const currentMedia = extractNodes(currentMediaResult.product?.media || { edges: [] });
+            const currentMediaCount = currentMedia.length;
+            
+            // The new image is always added at the end, so move it to originalPosition
+            if (currentMediaCount > 1 && originalPosition < currentMediaCount) {
+              // newPosition is 0-indexed for moves, but originalPosition is 1-indexed
+              const reorderResult = await shopifyGraphQL(
+                connection.store_url,
+                connection.access_token,
+                PRODUCT_REORDER_MEDIA_MUTATION,
+                {
+                  id: productGid,
+                  moves: [{
+                    id: newMediaGid,
+                    newPosition: (originalPosition - 1).toString() // Convert to 0-indexed string
+                  }]
+                }
+              );
+              
+              if (reorderResult.productReorderMedia?.mediaUserErrors?.length > 0) {
+                console.error(`⚠️ Reorder failed:`, reorderResult.productReorderMedia.mediaUserErrors);
+              } else {
+                console.log(`✅ Image repositioned to position ${originalPosition}`);
+              }
+            }
+          } catch (reorderErr) {
+            console.error(`⚠️ Failed to reorder image:`, reorderErr);
+            // Non-blocking - image is still added, just at the end
+          }
+          
+          // Update shopify_products.image_url if this is position 1 (main image)
+          if (originalPosition === 1) {
             console.log(`🔄 Updating shopify_products.image_url for main product image`);
             const { error: updateProductError } = await supabaseClient
               .from('shopify_products')
@@ -585,7 +627,7 @@ Deno.serve(async (req) => {
           }
           
           updatedCount++;
-          console.log(`✅ Replaced image successfully, new ID: ${newLegacyId}`);
+          console.log(`✅ Replaced image successfully, new ID: ${newLegacyId}, position: ${originalPosition}`);
         } else if (createResult.productCreateMedia?.mediaUserErrors?.length > 0) {
           console.error(`❌ Error creating replacement image:`, createResult.productCreateMedia.mediaUserErrors);
         }
