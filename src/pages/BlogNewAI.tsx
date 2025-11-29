@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "@/components/Navigation";
+import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
-import { Calendar, Clock, ArrowRight, Search } from "lucide-react";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
+import { Calendar, Clock, ArrowRight, Search, User, Share2, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -169,50 +170,122 @@ const BlogNewAI = () => {
   if (selectedArticle) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
+        <AnnouncementBar />
+        <PublicHeader />
         <main className="flex-1">
-          <article className="container mx-auto px-4 py-12 max-w-4xl">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/blog-newai')}
-              className="mb-6"
-            >
-              ← {t.blogPage.backToArticles}
-            </Button>
-            
-            <img 
-              src={selectedArticle.image} 
-              alt={selectedArticle.title}
-              className="w-full h-96 object-cover rounded-lg mb-8"
-            />
-            
-            <div className="flex items-center gap-4 mb-6 text-muted-foreground">
-              <Badge variant="secondary">{selectedArticle.category}</Badge>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(selectedArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>{selectedArticle.readTime} {t.blogPage.minRead}</span>
-              </div>
-            </div>
-
-            <h1 className="text-4xl font-bold mb-6">{selectedArticle.title}</h1>
-            
-            <div className="prose prose-lg max-w-none text-foreground">
-              <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
-            </div>
-
-            <div className="mt-12 p-8 bg-primary/5 rounded-lg border border-primary/20">
-              <h3 className="text-2xl font-bold mb-4">{t.blogPage.ctaTitle}</h3>
-              <p className="text-muted-foreground mb-6">
-                {t.blogPage.ctaDescription}
-              </p>
-              <Button size="lg" className="w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup')}>
-                {t.blogPage.startTrial}
-                <ArrowRight className="ml-2 w-4 h-4" />
+          {/* Hero Header */}
+          <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
+            <div className="container mx-auto px-4 py-16 relative z-10">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/blog-newai')}
+                className="mb-8 text-white/80 hover:text-white hover:bg-white/10"
+              >
+                ← {t.blogPage.backToArticles}
               </Button>
+              
+              <div className="max-w-4xl mx-auto text-center">
+                <Badge className="mb-6 bg-primary/20 text-primary-foreground border-primary/30">
+                  {selectedArticle.category}
+                </Badge>
+                
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                  {selectedArticle.title}
+                </h1>
+                
+                <p className="text-lg md:text-xl text-white/70 mb-8 max-w-2xl mx-auto">
+                  {selectedArticle.excerpt}
+                </p>
+                
+                <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span>NewAI Team</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{new Date(selectedArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span>{selectedArticle.readTime} {t.blogPage.minRead}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    <span>{selectedArticle.views} views</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Featured Image */}
+          <div className="container mx-auto px-4 -mt-8 relative z-20">
+            <div className="max-w-5xl mx-auto">
+              <img 
+                src={selectedArticle.image} 
+                alt={selectedArticle.title}
+                className="w-full h-[400px] md:h-[500px] object-cover rounded-2xl shadow-2xl"
+              />
+            </div>
+          </div>
+          
+          {/* Article Content */}
+          <article className="container mx-auto px-4 py-12 md:py-16">
+            <div className="max-w-3xl mx-auto">
+              {/* Article Body with Magazine Styling */}
+              <div 
+                className="article-content prose prose-lg md:prose-xl max-w-none
+                  prose-headings:font-bold prose-headings:text-foreground
+                  prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:mt-12 prose-h1:mb-6
+                  prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-l-4 prose-h2:border-primary prose-h2:pl-4
+                  prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                  prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6
+                  prose-strong:text-foreground prose-strong:font-semibold
+                  prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                  prose-ul:my-6 prose-ul:pl-6 prose-li:text-muted-foreground prose-li:mb-2
+                  prose-ol:my-6 prose-ol:pl-6
+                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-foreground/80
+                  prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
+                  prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm
+                  prose-pre:bg-slate-900 prose-pre:rounded-xl prose-pre:shadow-lg
+                "
+                dangerouslySetInnerHTML={{ __html: selectedArticle.content }} 
+              />
+              
+              {/* Share Section */}
+              <div className="mt-12 pt-8 border-t border-border">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Share2 className="w-5 h-5" />
+                    <span className="font-medium">Share this article</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(selectedArticle.title)}`, '_blank')}>
+                      Twitter
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}>
+                      LinkedIn
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                      Copy Link
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Section */}
+              <div className="mt-12 p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20">
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">{t.blogPage.ctaTitle}</h3>
+                <p className="text-muted-foreground mb-6 text-lg">
+                  {t.blogPage.ctaDescription}
+                </p>
+                <Button size="lg" className="w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup')}>
+                  {t.blogPage.startTrial}
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </article>
         </main>
@@ -223,7 +296,8 @@ const BlogNewAI = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navigation />
+      <AnnouncementBar />
+      <PublicHeader />
       
       <main className="flex-1">
         {/* Hero Section */}
