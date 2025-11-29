@@ -211,32 +211,45 @@ export const SmartBackgroundDialog = ({
     setIsGenerating(true);
     const newApplied = new Set<string>();
 
-    for (const [productId, imageUrl] of generatedPreviews) {
+    for (const [productId, generatedImageUrl] of generatedPreviews) {
       const product = selectedProducts.find((p) => p.id === productId);
       if (!product) continue;
 
       try {
-        // Get image ID for this product
-        const { data: imageData } = await supabase
+        // Get the selected source image URL for this product
+        const selectedImageUrl = getSelectedImage(product);
+        
+        // Find the position of the selected image in product_images
+        const { data: allImages } = await supabase
           .from('product_images')
-          .select('id')
+          .select('id, src, position')
           .eq('product_id', productId)
-          .order('position')
-          .limit(1)
-          .single();
+          .order('position');
+        
+        // Find the image that matches the selected source image
+        let targetImage = allImages?.find(img => img.src === selectedImageUrl);
+        
+        // Fallback to first image if no match found
+        if (!targetImage && allImages?.length) {
+          targetImage = allImages[0];
+        }
 
-        if (imageData?.id) {
+        if (targetImage?.id) {
+          console.log(`[SmartBg] Applying to image at position ${targetImage.position} for ${product.title}`);
+          
           await applyOptimizedImage.mutateAsync({
-            imageId: imageData.id,
+            imageId: targetImage.id,
             productId: productId,
-            optimizedUrl: imageUrl,
-            originalUrl: product.image_url || '',
+            optimizedUrl: generatedImageUrl,
+            originalUrl: selectedImageUrl || product.image_url || '',
             optimizationType: 'white_background',
             aiModel: 'gemini-2.5-flash-image-preview',
             resolution: '2000x2000',
             qualityScore: 95,
           });
           newApplied.add(productId);
+        } else {
+          console.warn(`[SmartBg] No image found for product ${product.title}`);
         }
       } catch (error) {
         console.error('Error applying background for', product.title, error);
