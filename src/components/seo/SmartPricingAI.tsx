@@ -1833,74 +1833,265 @@ export function SmartPricingAI() {
 
       {/* Products Table or Grid */}
       {viewMode === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {paginatedItems.map((product) => {
             const discount = calculateDiscount(product.price || 0, product.compare_at_price);
             const netMargin = calculateNetMargin(product.price, product.cost_price, product.shipping_cost);
+            const grossMarginValue = calculateMarginValue(product.price, product.cost_price, product.shipping_cost);
             
             return (
               <Card 
                 key={product.id} 
-                className={`overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${product.selected ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => toggleProductSelection(product.id)}
+                className={`overflow-hidden hover:shadow-lg transition-all ${product.selected ? 'ring-2 ring-primary' : ''}`}
               >
-                <div className="relative aspect-square bg-muted">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-8 h-8 text-muted-foreground" />
+                {/* Header with image and selection */}
+                <div className="relative">
+                  <div className="flex items-start gap-3 p-4 bg-muted/30">
+                    <div 
+                      className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted cursor-pointer"
+                      onClick={() => toggleProductSelection(product.id)}
+                    >
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      {discount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -left-1 text-[10px] px-1">
+                          -{discount}%
+                        </Badge>
+                      )}
                     </div>
-                  )}
-                  {discount > 0 && (
-                    <Badge variant="destructive" className="absolute top-2 left-2 text-xs">
-                      -{discount}%
-                    </Badge>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <Checkbox 
-                      checked={product.selected} 
-                      onCheckedChange={() => toggleProductSelection(product.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-medium text-sm line-clamp-2 flex-1">{product.title}</h4>
+                        <Checkbox 
+                          checked={product.selected} 
+                          onCheckedChange={() => toggleProductSelection(product.id)}
+                        />
+                      </div>
+                      {product.vendor && (
+                        <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                      )}
+                      {product.sku && (
+                        <p className="text-xs text-muted-foreground font-mono mt-1">{product.sku}</p>
+                      )}
+                      {product.hasMultipleVariants && (
+                        <Badge variant="outline" className="text-[10px] mt-1">
+                          {product.variants.length} variantes
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="p-3 space-y-2">
-                  <h4 className="font-medium text-sm line-clamp-2">{product.title}</h4>
-                  {product.vendor && (
-                    <p className="text-xs text-muted-foreground">{product.vendor}</p>
+                
+                {/* Editable price fields */}
+                {!product.hasMultipleVariants && (
+                  <div className="p-4 space-y-3 border-t">
+                    {/* Prix de vente */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 w-24 text-xs text-muted-foreground">
+                        <DollarSign className="w-3 h-3" />
+                        <span>{t.smartPricing.table.price}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.price || ""}
+                          onChange={(e) => updateProductPrice(product.id, "price", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-8 text-xs text-right"
+                        />
+                        <span className="text-xs text-muted-foreground w-4">{currencySymbol}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Prix barré */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 w-24 text-xs text-orange-600">
+                        <Percent className="w-3 h-3" />
+                        <span>{t.smartPricing.table.comparePrice}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.compare_at_price || ""}
+                          onChange={(e) => updateProductPrice(product.id, "compare_at_price", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-8 text-xs text-right"
+                        />
+                        <span className="text-xs text-muted-foreground w-4">{currencySymbol}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Prix de revient */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 w-24 text-xs text-muted-foreground">
+                        <Calculator className="w-3 h-3" />
+                        <span>{t.smartPricing.table.costPrice}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.cost_price || ""}
+                          onChange={(e) => updateProductPrice(product.id, "cost_price", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-8 text-xs text-right"
+                        />
+                        <span className="text-xs text-muted-foreground w-4">{currencySymbol}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Frais de livraison */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 w-24 text-xs text-muted-foreground">
+                        <Truck className="w-3 h-3" />
+                        <span>{t.smartPricing.table.shippingCost}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.shipping_cost || ""}
+                          onChange={(e) => updateProductPrice(product.id, "shipping_cost", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-8 text-xs text-right"
+                        />
+                        <span className="text-xs text-muted-foreground w-4">{currencySymbol}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Margins and Smart Price */}
+                <div className="p-4 bg-muted/20 border-t space-y-2">
+                  {!product.hasMultipleVariants && (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <TrendingUp className="w-3 h-3 text-green-600" />
+                          {t.smartPricing.table.grossMargin}
+                        </span>
+                        <span className={grossMarginValue >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {grossMarginValue.toFixed(2)} {currencySymbol}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <TrendingUp className="w-3 h-3" />
+                          {t.smartPricing.table.netMargin}
+                        </span>
+                        <span className={netMargin.value >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {netMargin.value.toFixed(2)} {currencySymbol} ({netMargin.percentage.toFixed(0)}%)
+                        </span>
+                      </div>
+                    </>
                   )}
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg">{formatPrice(product.price)}</span>
-                    {product.compare_at_price && product.compare_at_price > (product.price || 0) && (
-                      <span className="text-xs text-muted-foreground line-through">
-                        {formatPrice(product.compare_at_price)}
+                  
+                  {product.market_price && (
+                    <div className="flex items-center justify-between text-xs pt-1 border-t">
+                      <span className="flex items-center gap-1 text-blue-600">
+                        <TrendingUp className="w-3 h-3" />
+                        {t.smartPricing.table.marketPrice}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{t.smartPricing.table.netMargin}:</span>
-                    <span className={netMargin.value >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {netMargin.value.toFixed(2)} {currencySymbol}
-                    </span>
-                  </div>
-                  {product.smart_price && (
-                    <div className="flex items-center gap-1 pt-1 border-t">
-                      <Sparkles className="w-3 h-3 text-purple-500" />
-                      <span className="text-xs text-purple-600 font-medium">
-                        Smart: {formatPrice(product.smart_price)}
-                      </span>
+                      <span className="text-blue-600 font-medium">{formatPrice(product.market_price)}</span>
                     </div>
                   )}
-                  {product.hasMultipleVariants && (
-                    <Badge variant="outline" className="text-xs w-full justify-center">
-                      {product.variants.length} variantes
-                    </Badge>
+                  
+                  {product.smart_price && (
+                    <div className="flex items-center justify-between text-xs pt-1 border-t">
+                      <span className="flex items-center gap-1 text-purple-600">
+                        <Sparkles className="w-3 h-3" />
+                        {t.smartPricing.table.smartPrice}
+                      </span>
+                      <span className="text-purple-600 font-bold">{formatPrice(product.smart_price)}</span>
+                    </div>
                   )}
+                </div>
+                
+                {/* Action buttons */}
+                <div className="p-3 border-t flex flex-wrap gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            analyzeVariantPricing(product.id, product.variants[0]?.id || product.id);
+                          }}
+                          disabled={analyzingPrices || analyzingVariant === (product.variants[0]?.id || product.id)}
+                        >
+                          {analyzingVariant === (product.variants[0]?.id || product.id) ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Calculator className="w-3 h-3 text-purple-600" />
+                          )}
+                          Analyser
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Analyser le prix avec l'IA</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {product.smart_price && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateProductPrice(product.id, "price", product.smart_price!.toString());
+                              toast.success(`Prix mis à jour: ${formatPrice(product.smart_price)}`);
+                            }}
+                          >
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                            Appliquer
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Appliquer le Smart Price</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            syncSingleProduct(product.id);
+                          }}
+                          disabled={syncing}
+                        >
+                          <RefreshCw className="w-3 h-3 text-blue-600" />
+                          Sync
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Synchroniser avec Shopify</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </Card>
             );
