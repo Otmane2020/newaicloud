@@ -182,138 +182,99 @@ serve(async (req) => {
     const startTime = Date.now();
     const isMainImage = imageType === "primary";
     
-    // Google Shopping optimized prompt for maximum CTR and Merchant Center compliance
-    const googleShoppingPrompt = `
-🎯 GOOGLE SHOPPING COMPLIANT PRODUCT IMAGE - MAXIMUM CTR OPTIMIZATION
+    // 🆕 CRITICAL: Format dimensions mapping for image generation
+    const formatInstructions: Record<string, string> = {
+      "square": "MANDATORY OUTPUT: Square format 1:1 ratio. The final image MUST be perfectly SQUARE (same width and height). Example: 2000x2000 pixels.",
+      "portrait": "MANDATORY OUTPUT: Portrait format 3:4 ratio (vertical). The final image MUST be taller than wide. Example: 1500x2000 pixels.",
+      "landscape": "MANDATORY OUTPUT: Landscape format 4:3 ratio (horizontal). The final image MUST be wider than tall. Example: 2000x1500 pixels."
+    };
+    const formatKey = (format as string) || "square";
+    const formatInstruction = formatInstructions[formatKey] || formatInstructions["square"];
 
-Generate a Google Shopping compliant product photo that maximizes click-through rate and meets all Google Merchant Center requirements.
+    // Google Shopping optimized prompt for maximum CTR and Merchant Center compliance
+    // Now includes 3D effect, SERP enrichment, and STRICT format enforcement
+    const googleShoppingPrompt = `
+🎯 GOOGLE SHOPPING PROFESSIONAL PRODUCT IMAGE - MAXIMUM CTR & 3D EFFECT
+
+📐 **CRITICAL FORMAT REQUIREMENT - READ FIRST**:
+${formatInstruction}
+Aspect ratio: ${aspectRatio}
+Target resolution: ${dimensions}
+⚠️ DO NOT OUTPUT AN IMAGE WITH A DIFFERENT ASPECT RATIO. THE FORMAT MUST BE ${format.toUpperCase()} (${aspectRatio}).
+
+PRODUCT CONTEXT: ${enrichedContext}
+
+🎨 STUDIO PHOTOGRAPHY REQUIREMENTS:
+
+1️⃣ **PURE WHITE BACKGROUND** (#FFFFFF / RGB 255,255,255):
+   - Remove ALL existing background completely
+   - Replace with perfectly uniform pure white
+   - No gradients, no shadows on background, no textures
+
+2️⃣ **PROFESSIONAL 3D DEPTH EFFECT**:
+   - Add a soft, realistic DROP SHADOW under the product
+   - Shadow should be: subtle, diffused, natural-looking
+   - Shadow direction: slightly below and behind the product
+   - Shadow opacity: 15-25% black, soft edges
+   - This creates a professional "floating" 3D effect
+   - The shadow makes the product look premium and tactile
+
+3️⃣ **STUDIO LIGHTING**:
+   - Soft, even lighting from above-front (key light)
+   - Gentle fill light to reduce harsh shadows ON the product
+   - Subtle rim/edge lighting to separate product from background
+   - Highlight product textures (wood grain, fabric weave, metal shine)
+
+4️⃣ **PRODUCT PRESERVATION** (CRITICAL):
+   - DO NOT regenerate, redraw, or recreate the product
+   - Keep EXACT same colors, textures, materials, details
+   - Only perform background removal and studio lighting enhancement
+   - Product must look IDENTICAL to original, just with better lighting
+
+5️⃣ **GOOGLE MERCHANT CENTER COMPLIANCE**:
+   - Product occupies 75-85% of frame (not cropped, not too small)
+   - Product perfectly centered
+   - No text, watermarks, logos, or promotional elements
+   - High resolution with sharp details
+   - Professional e-commerce quality
+
+6️⃣ **ASPECT RATIO ENFORCEMENT**:
+   - OUTPUT MUST BE ${format.toUpperCase()} FORMAT
+   - ${aspectRatio} aspect ratio is MANDATORY
+   - ${dimensions} target resolution
+   - If product is not this ratio, add white padding to achieve ${aspectRatio}
+
+✅ SUCCESS = Original product + Pure white background + Soft 3D drop shadow + Studio lighting + ${aspectRatio} format
+❌ FAILURE = Wrong aspect ratio, changed product, no shadow, colored background
+
+OUTPUT: Professional ${format} (${aspectRatio}) product photo on pure white with subtle 3D drop shadow at ${dimensions}.
+    `.trim();
+
+    // Standard white background prompt (simplified)
+    const standardPrompt = `
+🎯 BACKGROUND REMOVAL & WHITE REPLACEMENT
+
+📐 **MANDATORY FORMAT**: ${formatInstruction}
+Aspect ratio: ${aspectRatio} | Resolution: ${dimensions}
 
 PRODUCT: ${enrichedContext}
 
-📐 OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution
+TASK: Extract product from current background and place on PURE WHITE (#FFFFFF).
 
-📋 GOOGLE MERCHANT CENTER REQUIREMENTS (MANDATORY):
-1. Pure white background (#FFFFFF / RGB 255,255,255)
-2. Clean studio look with professional lighting
-3. Add a soft, realistic shadow under the product (very light, natural, not too dark)
-4. Keep edges sharp with high resolution
-5. No reflections, noise, or artifacts
-6. No text, logo, watermark, or props
-7. Center the product perfectly with balanced lighting
-8. Make the product look premium and realistic
-9. Product must be fully visible (no cropping)
+REQUIREMENTS:
+1. Remove ALL background elements (walls, floors, furniture, props)
+2. Keep product EXACTLY as it appears (same colors, textures, details)
+3. Place on pure white background (#FFFFFF)
+4. Add subtle drop shadow underneath for 3D depth
+5. Center product, occupying 75-85% of frame
+6. OUTPUT MUST BE ${format.toUpperCase()} (${aspectRatio}) format
 
-🎨 PROFESSIONAL STUDIO REQUIREMENTS:
-- Highlight product texture (velvet, fabric, metal, wood, etc.) with soft studio lighting
-- Ensure perfect centering and crisp edges
-- Premium photorealistic look
-- Accurate proportions without distortion
-- For furniture: full white background, subtle studio shadow beneath, no environment/decor/floor/wall
+⚠️ CRITICAL: 
+- DO NOT change the product appearance
+- DO NOT output wrong aspect ratio
+- The format MUST be ${aspectRatio}
 
-⚠️ CRITICAL - DO NOT:
-- Regenerate, redraw, or recreate the product
-- Change product colors, materials, or textures
-- Add background objects, gradients, or decor
-- Add any text, logos, or watermarks
-- Crop the product or distort proportions
-
-✅ SUCCESS CRITERIA:
-- Product preserved 100% (same colors, textures, details as original)
-- Pure white background (#FFFFFF) everywhere except product
-- Subtle natural shadow for depth and realism
-- Professional e-commerce quality ready for Google Shopping
-- High resolution ${dimensions} with sharp details
-- ${aspectRatio} aspect ratio maintained
-
-OUTPUT: The EXACT product cleanly extracted on pure white background with subtle professional shadow, optimized for Google Shopping CTR at ${dimensions}.
-    `.trim();
-
-    // Standard white background prompt
-    const standardPrompt = `
-🎯 CRITICAL TASK: BACKGROUND SEGMENTATION & REPLACEMENT
-
-You are an AI background removal specialist. Your ONLY job is to:
-1. **SEGMENT** and extract the product (${enrichedContext}) from the current image
-2. **DELETE** everything that is NOT the product (walls, floors, furniture, decorations, lighting fixtures, shadows on background)
-3. **PLACE** the extracted product on a PURE WHITE (#FFFFFF) background
-
-📐 OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution
-
-⚠️ CRITICAL RULES:
-- DO NOT regenerate, redraw, or recreate the product
-- DO NOT change the product's appearance, colors, textures, or details
-- ONLY perform background removal: product IN, everything else OUT
-- The product must look EXACTLY as it does in the original image
-- Think of this as "Photoshop Magic Wand + Delete Background + White Fill"
-
-📐 TECHNICAL WORKFLOW:
-${isMainImage ? `
-STEP 1 - PRODUCT DETECTION:
-- Identify the main product: ${enrichedContext}
-- Product should occupy 70-80% of the frame
-- Detect product edges with precision (smooth anti-aliasing)
-
-STEP 2 - BACKGROUND SEGMENTATION:
-- Classify EVERY pixel as "product" or "background"
-- Background = walls, floors, other objects, lighting, decorations, shadows on surfaces
-- Create a clean alpha mask around the product
-
-STEP 3 - BACKGROUND REMOVAL:
-- DELETE all background pixels completely
-- Keep ONLY the product pixels (with original colors, textures, details)
-
-STEP 4 - WHITE BACKGROUND APPLICATION:
-- Fill the deleted background area with pure white (#FFFFFF)
-- Product MUST be centered in the frame
-- Maintain product's original lighting and shadows (only those ON the product, not behind it)
-
-STEP 5 - QUALITY CONTROL:
-- Product edges must be clean (no halos, no background remnants)
-- Product colors/textures unchanged from original
-- White background must be uniform (#FFFFFF everywhere except product)
-- No artifacts, no blurring on product edges
-- Output must be ${aspectRatio} aspect ratio at ${dimensions}
-` : `
-STEP 1 - PRODUCT DETECTION:
-- Identify the product: ${enrichedContext}
-- Detect precise product boundaries
-
-STEP 2 - BACKGROUND SEGMENTATION:
-- Classify pixels: product vs. background
-- Background = everything that is NOT the product
-
-STEP 3 - BACKGROUND REMOVAL:
-- DELETE all background pixels
-- Keep ONLY product pixels with original appearance
-
-STEP 4 - WHITE BACKGROUND:
-- Replace deleted area with pure white (#FFFFFF)
-- Product can be positioned artistically (not necessarily centered)
-- Output format: ${aspectRatio} at ${dimensions}
-
-STEP 5 - QUALITY CHECK:
-- Clean edges, no background traces
-- Product unchanged from original
-`}
-
-🚫 FORBIDDEN ACTIONS:
-- DO NOT regenerate the product from scratch
-- DO NOT change product colors, materials, or textures
-- DO NOT add or remove product features
-- DO NOT keep any part of the original background (furniture, walls, decor)
-- DO NOT add new shadows behind the product (only keep shadows ON the product)
-
-✅ SUCCESS CRITERIA:
-- Original product preserved 100% (same colors, textures, details)
-- Background is PURE white (#FFFFFF) everywhere except where product is
-- Clean product cutout with smooth edges
-- Professional e-commerce ready result
-- Resolution: ${dimensions}
-- Aspect ratio: ${aspectRatio}
-
-🎨 THINK: "I am a background eraser tool, not a product recreator"
-
-EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and placed on a new pure white background at ${dimensions} (${aspectRatio}), as if you used professional image editing software to remove the background.
+OUTPUT: Product on white background with soft shadow, ${aspectRatio} aspect ratio, ${dimensions} resolution.
     `.trim();
 
     // Select prompt based on mode
