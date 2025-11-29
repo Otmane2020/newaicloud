@@ -816,6 +816,7 @@ export default function ProductTitleDescription() {
             productTitle: preview.productTitle,
             imageType: selectedImageType,
             product_id: preview.productId,
+            format: selectedImageFormat,
           },
         });
 
@@ -1413,6 +1414,7 @@ export default function ProductTitleDescription() {
           productTitle: product.title,
           imageType: selectedImageType,
           product_id: productId,
+          format: selectedImageFormat,
         },
       });
 
@@ -2679,6 +2681,21 @@ export default function ProductTitleDescription() {
             <DialogDescription>{t.contentOptimization.dialogs.whiteBg.description}</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
+            {/* Format Selection */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Format d'image</Label>
+              <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="square">Carré (1:1)</SelectItem>
+                  <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                  <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Gallery Image Selection */}
             {Array.from(selectedProducts).length > 0 && (
               <div className="space-y-3">

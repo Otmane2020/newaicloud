@@ -378,6 +378,9 @@ Qualité = OBLIGATOIRE.
               },
             ],
             modalities: ["image", "text"],
+            generationConfig: {
+              aspectRatio: format === "portrait" ? "3:4" : format === "landscape" ? "4:3" : "1:1"
+            },
           }),
         });
 
