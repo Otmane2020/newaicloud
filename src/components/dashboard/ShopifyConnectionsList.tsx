@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit, Infinity, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -50,7 +49,7 @@ export default function ShopifyConnectionsList() {
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
   const [storeToDelete, setStoreToDelete] = useState<ShopifyConnection | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteStoreData, setDeleteStoreData] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Sync settings dialog state
   const [showSyncSettings, setShowSyncSettings] = useState(false);
@@ -173,52 +172,41 @@ export default function ShopifyConnectionsList() {
   const handleDeleteStore = async () => {
     if (!storeToDelete || isDemoMode) return;
     
+    setIsDeleting(true);
+    
     try {
-      const storeId = storeToDelete.id;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
       
-      // If user chose to delete data, delete all related data first
-      if (deleteStoreData) {
-        console.log('[DeleteStore] Deleting all data for store:', storeId);
-        
-        // Delete in order to respect foreign key constraints - use explicit table names to avoid TS issues
-        const tables = [
-          'product_images',
-          'product_variants', 
-          'shopify_products',
-          'shopify_collections',
-          'shopify_pages',
-          'blog_articles',
-          'content_images',
-          'sync_history'
-        ] as const;
-        
-        for (const table of tables) {
-          // @ts-ignore - Supabase type inference issue with delete chains
-          await supabase.from(table).delete().eq('store_id', storeId);
+      console.log('[DeleteStore] Calling edge function to delete store and all data:', storeToDelete.id);
+      
+      // Call edge function that handles complete deletion
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-shopify-connection`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ storeId: storeToDelete.id })
         }
-        
-        console.log('[DeleteStore] All data deleted for store');
-      }
-      
-      // Delete the connection
-      const { error } = await supabase
-        .from('shopify_connections')
-        .delete()
-        .eq('id', storeId);
-      
-      if (error) throw error;
-      
-      toast.success(deleteStoreData 
-        ? 'Boutique déconnectée et données supprimées' 
-        : 'Boutique déconnectée avec succès'
       );
+      
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erreur lors de la suppression');
+      
+      console.log('[DeleteStore] Edge function response:', result);
+      
+      toast.success('Boutique et données supprimées avec succès');
       loadConnections();
       setShowDeleteDialog(false);
       setStoreToDelete(null);
-      setDeleteStoreData(false);
     } catch (error) {
       console.error('Error deleting store:', error);
-      toast.error(t.common.error);
+      toast.error(error instanceof Error ? error.message : t.common.error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -890,55 +878,51 @@ export default function ShopifyConnectionsList() {
         totalImported={totalSyncImported}
       />
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
-        setShowDeleteDialog(open);
-        if (!open) setDeleteStoreData(false);
-      }}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Déconnecter la boutique ?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Déconnecter la boutique ?
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
                 <p>
                   Êtes-vous sûr de vouloir déconnecter "{storeToDelete?.store_name || storeToDelete?.store_url}" ?
                 </p>
-                <div className="flex items-start space-x-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                  <Checkbox
-                    id="deleteData"
-                    checked={deleteStoreData}
-                    onCheckedChange={(checked) => setDeleteStoreData(checked === true)}
-                    className="mt-0.5"
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="deleteData"
-                      className="text-sm font-medium text-destructive cursor-pointer"
-                    >
-                      Supprimer également toutes les données
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Produits, collections, pages, articles et images importés seront définitivement supprimés.
-                    </p>
-                  </div>
-                </div>
-                {!deleteStoreData && (
-                  <p className="text-xs text-muted-foreground">
-                    Par défaut, seule la connexion sera supprimée. Les données importées seront conservées.
+                <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <p className="text-sm font-medium text-destructive mb-1">
+                    ⚠️ Toutes les données seront supprimées :
                   </p>
-                )}
+                  <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5">
+                    <li>Produits et variantes</li>
+                    <li>Collections</li>
+                    <li>Pages et articles</li>
+                    <li>Images importées</li>
+                    <li>Historique de synchronisation</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cette action est irréversible.
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteStore}
-              className={deleteStoreData 
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
-                : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              }
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteStoreData ? "Supprimer tout" : "Déconnecter"}
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer tout'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
