@@ -135,13 +135,55 @@ export const ProductMediaOptimization = () => {
     if (!product) return;
 
     try {
+      // 🆕 Fetch SERP and Vision AI data for enrichment
+      let serpData = null;
+      let visionAiData = null;
+      let productDescription = null;
+      
+      // Fetch product details including SERP data and vision attributes
+      const { data: productDetails } = await supabase
+        .from('shopify_products')
+        .select('body_html, seo_description, serp_data, vision_attributes')
+        .eq('id', product.id)
+        .single();
+      
+      if (productDetails) {
+        serpData = productDetails.serp_data;
+        visionAiData = productDetails.vision_attributes;
+        productDescription = productDetails.body_html || productDetails.seo_description;
+        console.log('🔍 [WhiteBg] Enrichment data loaded:', {
+          hasSerpData: !!serpData,
+          hasVisionData: !!visionAiData,
+          hasDescription: !!productDescription
+        });
+      }
+      
+      // If no SERP data, try to fetch it
+      if (!serpData) {
+        try {
+          console.log('🔍 [WhiteBg] Fetching SERP data for product:', product.title);
+          const { data: serpResult } = await supabase.functions.invoke('search-similar-products-specs', {
+            body: { productTitle: product.title, limit: 5 }
+          });
+          if (serpResult?.success && serpResult?.data) {
+            serpData = serpResult.data;
+            console.log('✅ [WhiteBg] SERP data fetched successfully');
+          }
+        } catch (serpError) {
+          console.log('⚠️ [WhiteBg] SERP fetch failed, continuing without:', serpError);
+        }
+      }
+
       const result = await generateWhiteBackground.mutateAsync({
         imageUrl: image.src,
         productTitle: product.title,
         resolution: '2000x2000',
         format: selectedFormat,
         mode: selectedMode,
-        product_id: product.id
+        product_id: product.id,
+        serpData,
+        visionAiData,
+        productDescription
       });
 
       if (result.imageUrl) {
