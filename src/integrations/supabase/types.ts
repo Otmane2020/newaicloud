@@ -3707,6 +3707,72 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_blog_articles: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          error_message: string | null
+          excerpt: string | null
+          featured_image: string | null
+          generated_at: string | null
+          id: string
+          keywords: string[] | null
+          language: string
+          meta_description: string | null
+          published_at: string | null
+          read_time: number | null
+          scheduled_for: string
+          slug: string
+          status: string
+          title: string
+          topic_theme: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          generated_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          language?: string
+          meta_description?: string | null
+          published_at?: string | null
+          read_time?: number | null
+          scheduled_for: string
+          slug: string
+          status?: string
+          title: string
+          topic_theme?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          generated_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          language?: string
+          meta_description?: string | null
+          published_at?: string | null
+          read_time?: number | null
+          scheduled_for?: string
+          slug?: string
+          status?: string
+          title?: string
+          topic_theme?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seo_audit_history: {
         Row: {
           analyzed_url: string | null
