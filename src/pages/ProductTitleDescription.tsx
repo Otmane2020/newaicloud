@@ -1807,6 +1807,10 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
+                  // Auto-détecter si les produits ont des variantes
+                  const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+                  const hasVariants = selectedProductsList.some((p) => p.variants && p.variants.length > 0);
+                  setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                   setShowWhiteBgConfigDialog(true);
                   loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
                 }}
@@ -2061,6 +2065,9 @@ export default function ProductTitleDescription() {
                                       return;
                                     }
                                     setSelectedProducts(new Set([product.id]));
+                                    // Auto-détecter si le produit a des variantes
+                                    const hasVariants = product.variants && product.variants.length > 0;
+                                    setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                     setShowWhiteBgConfigDialog(true);
                                     loadGalleryImages([product.id]); // Chargement en arrière-plan
                                   }}
@@ -2264,6 +2271,9 @@ export default function ProductTitleDescription() {
                                     return;
                                   }
                                   setSelectedProducts(new Set([product.id]));
+                                  // Auto-détecter si le produit a des variantes
+                                  const hasVariants = product.variants && product.variants.length > 0;
+                                  setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                   setShowWhiteBgConfigDialog(true);
                                   loadGalleryImages([product.id]);
                                 }}
@@ -2659,87 +2669,26 @@ export default function ProductTitleDescription() {
               </div>
             )}
 
-            {/* Détection automatique: Variantes ou Simple */}
+            {/* Sélection des variantes pour produits avec variantes */}
             {(() => {
               const selectedProductsList = Array.from(selectedProducts)
                 .map((id) => products.find((p) => p.id === id))
                 .filter(Boolean);
 
-              console.log(
-                "🔍 [WHITE_BG] Checking products for variants:",
-                selectedProductsList.map((p) => ({
-                  id: p?.id,
-                  title: p?.title,
-                  hasVariants: p?.variants && p.variants.length > 0,
-                  variantsCount: p?.variants?.length || 0,
-                })),
-              );
-
-              const hasVariants = selectedProductsList.some(
+              // Ne montrer la section variantes que si au moins un produit a des variantes
+              const productsWithVariants = selectedProductsList.filter(
                 (product) => product?.variants && product.variants.length > 0,
               );
 
-              console.log("🔍 [WHITE_BG] Has variants:", hasVariants);
+              if (productsWithVariants.length === 0) return null;
 
-              // Pour produits simples: afficher la galerie, pour produits à variantes: afficher les variantes
               return (
                 <div className="space-y-4">
-                  {selectedProductsList.map((product) => {
+                  <Label className="text-base font-semibold">
+                    Sélection des variantes
+                  </Label>
+                  {productsWithVariants.map((product) => {
                     if (!product) return null;
-
-                    // Pour produits simples (sans variantes), afficher directement la galerie
-                    if (!product.variants || product.variants.length === 0) {
-                      const images = galleryImages.get(product.id) || [];
-                      if (images.length === 0) return null;
-
-                      return (
-                        <Card
-                          key={product.id}
-                          className="p-5 bg-gradient-to-br from-primary/5 to-transparent border-primary/20"
-                        >
-                          <div className="flex items-start gap-4 mb-4 pb-4 border-b">
-                            {product.image_url && (
-                              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0 ring-2 ring-primary/20">
-                                <img
-                                  src={product.image_url}
-                                  alt={product.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Package className="h-4 w-4 text-primary" />
-                                <h3 className="font-semibold text-base line-clamp-2">{product.title}</h3>
-                              </div>
-                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                {images.length} image{images.length > 1 ? "s" : ""} galerie
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-3">
-                            {images.map((image) => (
-                              <div
-                                key={image.id}
-                                className="relative aspect-square rounded-md overflow-hidden bg-secondary ring-1 ring-border hover:ring-primary transition-all cursor-pointer group"
-                              >
-                                <img
-                                  src={image.src}
-                                  alt={image.alt_text || product.title}
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <Badge variant="secondary" className="text-xs">
-                                    #{image.position + 1}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </Card>
-                      );
-                    }
 
                     // Pour produits avec variantes, afficher les variantes
 
@@ -2879,7 +2828,7 @@ export default function ProductTitleDescription() {
             </Button>
             <Button
               onClick={handleWhiteBackground}
-              disabled={whiteBgApplyTo === "variants" && whiteBgSelectedVariants.size === 0}
+              disabled={whiteBgApplyTo === "variants" && Array.from(whiteBgSelectedVariants.values()).every(arr => arr.length === 0)}
               className="gap-2"
             >
               <Square className="h-4 w-4" />
