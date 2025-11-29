@@ -985,7 +985,8 @@ Deno.serve(async (req: Request) => {
       if (product.images && product.images.length > 0) {
         const imagesToInsert = product.images.map((image, index) => ({
           product_id: productId,
-          shopify_image_id: image.id,
+          // FIX: Extract numeric ID from GID string (e.g., "gid://shopify/ProductImage/123" → 123)
+          shopify_image_id: extractNumericId(String(image.id)) || 0,
           src: image.src,
           position: index + 1,
           alt_text: (image as any).alt || "",
@@ -1011,7 +1012,8 @@ Deno.serve(async (req: Request) => {
               if (variantImage) {
                 allImages.push({
                   product_id: productId,
-                  shopify_image_id: variantImage.id,
+                  // FIX: Extract numeric ID from GID string
+                  shopify_image_id: extractNumericId(String(variantImage.id)) || 0,
                   src: variantImage.src,
                   position: allImages.filter(i => i.product_id === productId).length + 1,
                   alt_text: (variantImage as any).alt || `${product.title} - ${variant.title}`,
