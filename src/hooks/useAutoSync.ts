@@ -53,20 +53,24 @@ export const useAutoSync = (userId: string | undefined) => {
         }
       }
       
-      // Fallback: Check most recent sync if no tracked ID or not found
+      // Fallback: Check most recent sync (extend window to 10 minutes for large imports)
       if (!latestSync) {
-        const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString();
+        const tenMinutesAgo = new Date(Date.now() - 600000).toISOString();
         const { data, error } = await supabase
           .from('sync_history')
           .select('id, status, items_synced, started_at, sync_type, completed_at')
           .eq('user_id', userId)
-          .gte('started_at', fiveMinutesAgo)
+          .gte('started_at', tenMinutesAgo)
           .order('started_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         
         if (!error && data) {
           latestSync = data;
+          // Track this sync ID for future checks
+          if (!currentSyncIdRef.current) {
+            currentSyncIdRef.current = data.id;
+          }
           console.log('📊 [AutoSync] Found recent sync:', latestSync.id, 'status:', latestSync.status);
         }
       }
@@ -84,15 +88,14 @@ export const useAutoSync = (userId: string | undefined) => {
         completed_at: latestSync.completed_at,
       });
       
-      // Check completion: status is success/failed OR sync_type is completed OR completed_at is set
+      // Check completion: status is success/failed OR completed_at is set
       const isCompleted = 
         latestSync.status === 'success' || 
         latestSync.status === 'failed' ||
-        latestSync.sync_type === 'completed' ||
         !!latestSync.completed_at;
       
       if (isCompleted) {
-        console.log('✅ [AutoSync] Import terminé! Status:', latestSync.status, 'Type:', latestSync.sync_type);
+        console.log('✅ [AutoSync] Import terminé! Status:', latestSync.status, 'Items:', latestSync.items_synced);
         
         // Clear the tracking ref
         currentSyncIdRef.current = null;
@@ -113,7 +116,7 @@ export const useAutoSync = (userId: string | undefined) => {
         }
         
         if (isMounted) {
-          const isSuccess = latestSync.status === 'success' || latestSync.sync_type === 'completed';
+          const isSuccess = latestSync.status === 'success';
           
           if (isSuccess) {
             completeSync(latestSync.items_synced || 0);
@@ -130,7 +133,7 @@ export const useAutoSync = (userId: string | undefined) => {
         return true;
       }
       
-      // Update type for progress display
+      // Update type for progress display based on sync_type
       if (latestSync.sync_type && latestSync.status === 'running') {
         updateType(latestSync.sync_type);
       }
@@ -225,13 +228,17 @@ export const useAutoSync = (userId: string | undefined) => {
           }
           
           // Ne déclencher que si c'est une vraie nouvelle connexion (INSERT) 
-          // ou un UPDATE qui vient juste d'être connecté
+          // ou un UPDATE qui vient juste d'être connecté (OAuth flow)
+          // ou un UPDATE avec last_sync_at null (API keys first connection)
           const isNewConnection = payload.eventType === 'INSERT';
           const isJustConnected = payload.eventType === 'UPDATE' && 
                                  connection.connected_at && 
                                  new Date(connection.connected_at).getTime() > Date.now() - 5000;
+          const isApiKeysFirstSync = payload.eventType === 'UPDATE' && 
+                                    connection.connection_type === 'api_keys' &&
+                                    !connection.last_sync_at;
           
-          if (!isNewConnection && !isJustConnected) {
+          if (!isNewConnection && !isJustConnected && !isApiKeysFirstSync) {
             console.log('⏭️ [AutoSync] Skipping - not a new connection');
             return;
           }
