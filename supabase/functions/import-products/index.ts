@@ -1040,64 +1040,65 @@ Deno.serve(async (req: Request) => {
       const productIdsWithImages = [...new Set(allImages.map(img => img.product_id))];
       console.log(`📊 Products with images to sync: ${productIdsWithImages.length}`);
       
-      // STEP 1: Fetch existing images to preserve generated/optimized ones
+      // Helper to check if URL is from Shopify CDN (not a generated image)
+      const isShopifyCdnUrl = (url: string) => url.includes('cdn.shopify.com');
+      const normalizeUrl = (url: string) => url.split('?')[0].toLowerCase();
+      
+      // STEP 1: Fetch existing images to preserve ONLY truly generated/optimized ones
       const { data: existingImages, error: fetchExistingError } = await supabaseServiceClient
         .from("product_images")
-        .select("id, product_id, src, shopify_image_id, shopify_media_id, alt_text, optimization_count")
+        .select("id, product_id, src, shopify_image_id, alt_text, optimization_count")
         .in("product_id", productIdsWithImages);
       
       if (fetchExistingError) {
         console.error(`⚠️ Error fetching existing images:`, fetchExistingError);
       }
       
-      // Build map of existing generated images (no shopify_image_id = generated locally)
-      const generatedImagesMap = new Map<string, any[]>();
+      // STEP 2: Identify images to PRESERVE (truly generated, not Shopify CDN)
+      // An image is "generated" if it's NOT from Shopify CDN (e.g., from our storage bucket)
+      const preservedImages: any[] = [];
+      const imagesToDelete: string[] = [];
+      
       if (existingImages) {
         for (const img of existingImages) {
-          // Keep images that were generated locally (no shopify_image_id) OR have been optimized
-          if (!img.shopify_image_id || img.optimization_count > 0 || img.shopify_media_id) {
-            if (!generatedImagesMap.has(img.product_id)) {
-              generatedImagesMap.set(img.product_id, []);
-            }
-            generatedImagesMap.get(img.product_id)!.push(img);
+          const isFromShopify = isShopifyCdnUrl(img.src);
+          
+          // Preserve ONLY if:
+          // 1. NOT from Shopify CDN (truly generated/local image)
+          // 2. OR has optimization_count > 0 (was optimized, even if from Shopify)
+          if (!isFromShopify || img.optimization_count > 0) {
+            preservedImages.push(img);
+          } else {
+            // Delete Shopify CDN images (will be re-imported fresh)
+            imagesToDelete.push(img.id);
           }
         }
       }
-      console.log(`🔒 Preserving ${[...generatedImagesMap.values()].flat().length} generated/optimized images`);
       
-      // STEP 2: Delete only Shopify-imported images (those with shopify_image_id and no optimization)
-      const imagesToDelete = existingImages?.filter(img => 
-        img.shopify_image_id && !img.optimization_count && !img.shopify_media_id
-      ) || [];
+      console.log(`🔒 Preserving ${preservedImages.length} generated/optimized images`);
+      console.log(`🗑️ Will delete ${imagesToDelete.length} Shopify CDN images for fresh import`);
       
+      // STEP 3: Delete Shopify CDN images
       if (imagesToDelete.length > 0) {
-        const deleteIds = imagesToDelete.map(img => img.id);
-        console.log(`🗑️ Deleting ${deleteIds.length} old Shopify images to replace with fresh data`);
-        
         const { error: deleteError } = await supabaseServiceClient
           .from("product_images")
           .delete()
-          .in("id", deleteIds);
+          .in("id", imagesToDelete);
         
         if (deleteError) {
           console.error(`⚠️ Error deleting old images:`, deleteError);
+        } else {
+          console.log(`✅ Deleted ${imagesToDelete.length} old Shopify images`);
         }
       }
       
-      // STEP 3: Filter out images that already exist (by normalized URL)
-      const normalizeUrl = (url: string) => url.split('?')[0].toLowerCase();
-      
+      // STEP 4: Build set of preserved image URLs to avoid duplicates
       const existingUrlsByProduct = new Map<string, Set<string>>();
-      if (existingImages) {
-        for (const img of existingImages) {
-          // Only track URLs for preserved images (generated/optimized)
-          if (!img.shopify_image_id || img.optimization_count > 0 || img.shopify_media_id) {
-            if (!existingUrlsByProduct.has(img.product_id)) {
-              existingUrlsByProduct.set(img.product_id, new Set());
-            }
-            existingUrlsByProduct.get(img.product_id)!.add(normalizeUrl(img.src));
-          }
+      for (const img of preservedImages) {
+        if (!existingUrlsByProduct.has(img.product_id)) {
+          existingUrlsByProduct.set(img.product_id, new Set());
         }
+        existingUrlsByProduct.get(img.product_id)!.add(normalizeUrl(img.src));
       }
       
       // Filter images to insert - exclude those with matching URLs in preserved images
