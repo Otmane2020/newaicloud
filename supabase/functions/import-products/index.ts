@@ -21,6 +21,7 @@ interface ShopifyVariant {
   weight_unit: string;
   barcode: string | null;
   image_id: number | null;
+  image_url: string | null;  // NEW: Direct image URL from GraphQL variant.image
   cost_price: number | null;
 }
 
@@ -552,10 +553,15 @@ Deno.serve(async (req: Request) => {
                           amount
                         }
                       }
+                      image {
+                        id
+                        url
+                        altText
+                      }
                     }
                   }
                 }
-                images(first: 20) {
+                images(first: 50) {
                   edges {
                     node {
                       id
@@ -634,6 +640,11 @@ Deno.serve(async (req: Request) => {
           tags: node.tags.join(','),
           variants: node.variants.edges.map((v: any) => {
             const options = v.node.selectedOptions || [];
+            // Extract image_id from GraphQL GID (gid://shopify/ProductImage/123456)
+            const variantImageGid = v.node.image?.id || '';
+            const variantImageId = variantImageGid.includes('/') 
+              ? parseInt(variantImageGid.split('/').pop() || '0') 
+              : null;
             return {
               id: parseInt(v.node.legacyResourceId),
               title: v.node.title || 'Default',
@@ -644,7 +655,10 @@ Deno.serve(async (req: Request) => {
               option1: options[0]?.value || null,
               option2: options[1]?.value || null,
               option3: options[2]?.value || null,
-              cost_price: v.node.inventoryItem?.unitCost?.amount ? parseFloat(v.node.inventoryItem.unitCost.amount) : null
+              cost_price: v.node.inventoryItem?.unitCost?.amount ? parseFloat(v.node.inventoryItem.unitCost.amount) : null,
+              // NEW: Extract variant image directly from GraphQL
+              image_id: variantImageId,
+              image_url: v.node.image?.url || null
             };
           }),
           images: node.images.edges.map((i: any) => {
@@ -944,9 +958,10 @@ Deno.serve(async (req: Request) => {
             weight_unit: variant.weight_unit || "kg",
             barcode: variant.barcode || "",
             currency: shopCurrency,
-            image_url: variant.image_id
+            // Prioritize direct image_url from GraphQL, fallback to image_id matching
+            image_url: variant.image_url || (variant.image_id
               ? product.images.find((img) => img.id === variant.image_id)?.src || ""
-              : "",
+              : ""),
             raw_data: variant,
           };
         });
@@ -1055,7 +1070,7 @@ Deno.serve(async (req: Request) => {
                 ... on Product {
                   id
                   legacyResourceId
-                  images(first: 20) {
+                  images(first: 50) {
                     edges {
                       node {
                         id
@@ -1330,9 +1345,14 @@ Deno.serve(async (req: Request) => {
     
     console.log(`✅ Product-collection relationships will be established via collection_ids array field`);
     
+    // Count variants with image_url for diagnostics
+    const variantsWithImageUrl = allVariants.filter((v: any) => v.image_url).length;
+    
     console.log(`📊 Import Summary:`);
     console.log(`   - Products inserted: ${productsToInsert.length}`);
     console.log(`   - Variants inserted: ${totalVariants}`);
+    console.log(`   - Variants with image_url: ${variantsWithImageUrl}`);
+    console.log(`   - Images collected: ${allImages.length}`);
     console.log(`   - Images inserted: ${totalImages}`);
     console.log(`   - Total batches: ${totalBatches} (products) + ${Math.ceil(allVariants.length / 500)} (variants) + ${Math.ceil(allImages.length / 500)} (images)`);
     
