@@ -86,7 +86,7 @@ serve(async (req) => {
       }
     }
     
-    const { imageUrl, productTitle, product_id, imageType = "secondary", format = "square" } = body;
+    const { imageUrl, productTitle, product_id, imageType = "secondary", format = "square", mode = "standard" } = body;
 
     // Map format to aspect ratio
     const formatToAspectRatio: Record<string, string> = {
@@ -95,7 +95,7 @@ serve(async (req) => {
       "landscape": "4:3",
     };
     const aspectRatio = formatToAspectRatio[format] || "1:1";
-    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}`);
+    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}, Mode: ${mode}`);
 
     if (!imageUrl) {
       return new Response(
@@ -104,7 +104,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("🎨 Generating white background:", { imageType, productTitle });
+    console.log("🎨 Generating white background:", { imageType, productTitle, mode });
 
     // Initialize Supabase client for usage tracking (reuse authHeader from above)
     const supabaseClient = createClient(
@@ -128,7 +128,51 @@ serve(async (req) => {
     const startTime = Date.now();
     const isMainImage = imageType === "primary";
     
-    const photographyPrompt = `
+    // Google Shopping optimized prompt for maximum CTR and Merchant Center compliance
+    const googleShoppingPrompt = `
+🎯 GOOGLE SHOPPING COMPLIANT PRODUCT IMAGE - MAXIMUM CTR OPTIMIZATION
+
+Generate a Google Shopping compliant product photo that maximizes click-through rate and meets all Google Merchant Center requirements.
+
+PRODUCT: ${productTitle || "product"}
+
+📋 GOOGLE MERCHANT CENTER REQUIREMENTS (MANDATORY):
+1. Pure white background (#FFFFFF / RGB 255,255,255)
+2. Clean studio look with professional lighting
+3. Add a soft, realistic shadow under the product (very light, natural, not too dark)
+4. Keep edges sharp with high resolution
+5. No reflections, noise, or artifacts
+6. No text, logo, watermark, or props
+7. Center the product perfectly with balanced lighting
+8. Make the product look premium and realistic
+9. Product must be fully visible (no cropping)
+
+🎨 PROFESSIONAL STUDIO REQUIREMENTS:
+- Highlight product texture (velvet, fabric, metal, wood, etc.) with soft studio lighting
+- Ensure perfect centering and crisp edges
+- Premium photorealistic look
+- Accurate proportions without distortion
+- For furniture: full white background, subtle studio shadow beneath, no environment/decor/floor/wall
+
+⚠️ CRITICAL - DO NOT:
+- Regenerate, redraw, or recreate the product
+- Change product colors, materials, or textures
+- Add background objects, gradients, or decor
+- Add any text, logos, or watermarks
+- Crop the product or distort proportions
+
+✅ SUCCESS CRITERIA:
+- Product preserved 100% (same colors, textures, details as original)
+- Pure white background (#FFFFFF) everywhere except product
+- Subtle natural shadow for depth and realism
+- Professional e-commerce quality ready for Google Shopping
+- High resolution with sharp details
+
+OUTPUT: The EXACT product cleanly extracted on pure white background with subtle professional shadow, optimized for Google Shopping CTR.
+    `.trim();
+
+    // Standard white background prompt
+    const standardPrompt = `
 🎯 CRITICAL TASK: BACKGROUND SEGMENTATION & REPLACEMENT
 
 You are an AI background removal specialist. Your ONLY job is to:
@@ -209,6 +253,9 @@ STEP 5 - QUALITY CHECK:
 
 EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and placed on a new pure white background, as if you used professional image editing software to remove the background.
     `.trim();
+
+    // Select prompt based on mode
+    const photographyPrompt = mode === "google_shopping" ? googleShoppingPrompt : standardPrompt;
 
     console.log(`[white-bg] 📝 Prompt generated (${photographyPrompt.length} chars)`);
 

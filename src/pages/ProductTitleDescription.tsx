@@ -198,6 +198,7 @@ export default function ProductTitleDescription() {
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
   const [selectedImageFormat, setSelectedImageFormat] = useState<string>("square");
+  const [whiteBgMode, setWhiteBgMode] = useState<"standard" | "google_shopping">("standard");
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
   const [statusFilter, setStatusFilter] = useState<"all" | "optimized" | "notOptimized" | "toSync">("all");
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
@@ -817,6 +818,7 @@ export default function ProductTitleDescription() {
             imageType: selectedImageType,
             product_id: preview.productId,
             format: selectedImageFormat,
+            mode: whiteBgMode,
           },
         });
 
@@ -1415,6 +1417,7 @@ export default function ProductTitleDescription() {
           imageType: selectedImageType,
           product_id: productId,
           format: selectedImageFormat,
+          mode: whiteBgMode,
         },
       });
 
@@ -2681,6 +2684,60 @@ export default function ProductTitleDescription() {
             <DialogDescription>{t.contentOptimization.dialogs.whiteBg.description}</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
+            {/* Mode Selection: Standard vs Google Shopping */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Mode de génération</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                    whiteBgMode === "standard"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setWhiteBgMode("standard")}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      whiteBgMode === "standard" ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}>
+                      {whiteBgMode === "standard" && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm">Standard</h4>
+                      <p className="text-xs text-muted-foreground">Fond blanc simple</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                    whiteBgMode === "google_shopping"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setWhiteBgMode("google_shopping")}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      whiteBgMode === "google_shopping" ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}>
+                      {whiteBgMode === "google_shopping" && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm">Google Shopping</h4>
+                      <p className="text-xs text-muted-foreground">Optimisé SERP & CTR</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {whiteBgMode === "google_shopping" && (
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <strong>Mode Google Shopping :</strong> Fond blanc pur (#FFFFFF), ombre légère naturelle, bords nets, centrage parfait, sans texte ni logo. Optimisé pour un CTR maximal sur Google Merchant Center.
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Format Selection */}
             <div className="space-y-2">
               <Label className="text-base font-semibold">Format d'image</Label>
