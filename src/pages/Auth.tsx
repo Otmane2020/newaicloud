@@ -32,30 +32,49 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      console.log('✅ User authenticated, redirecting...');
-      
-      // Vérifier s'il y a un pending_token Shopify à associer
-      const shopifyPending = searchParams.get('shopify_pending');
-      const checkoutSuccess = searchParams.get('checkout') === 'success';
-      
-      if (shopifyPending) {
-        console.log('🔗 Shopify pending token detected, redirecting to onboarding');
+    const checkUserAndRedirect = async () => {
+      if (user) {
+        console.log('✅ User authenticated, checking admin status...');
         
-        // ✅ Si retour de checkout, préserver le paramètre
-        if (checkoutSuccess) {
-          console.log('💳 Checkout success detected, redirecting with checkout flag');
-          navigate(`/onboarding?checkout=success&shopify_pending=${shopifyPending}`);
-        } else {
-          // Cas normal : pas encore de plan sélectionné
-          navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+        // Check if user is admin - block them from /auth
+        const { data: roleData } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
+
+        if (roleData) {
+          // Admin detected - sign out and redirect to superadmin login
+          console.log('🔒 Admin detected on /auth, redirecting to /superadmin-login');
+          await supabase.auth.signOut();
+          toast.error("Administrateurs : connectez-vous via /superadmin-login");
+          navigate('/superadmin-login');
+          return;
         }
-      } else {
-        // Redirection normale sans Shopify pending
-        const destination = redirectPath || '/dashboard';
-        navigate(destination);
+        
+        // Vérifier s'il y a un pending_token Shopify à associer
+        const shopifyPending = searchParams.get('shopify_pending');
+        const checkoutSuccess = searchParams.get('checkout') === 'success';
+        
+        if (shopifyPending) {
+          console.log('🔗 Shopify pending token detected, redirecting to onboarding');
+          
+          // ✅ Si retour de checkout, préserver le paramètre
+          if (checkoutSuccess) {
+            console.log('💳 Checkout success detected, redirecting with checkout flag');
+            navigate(`/onboarding?checkout=success&shopify_pending=${shopifyPending}`);
+          } else {
+            // Cas normal : pas encore de plan sélectionné
+            navigate(`/onboarding?shopify_pending=${shopifyPending}`);
+          }
+        } else {
+          // Redirection normale sans Shopify pending
+          const destination = redirectPath || '/dashboard';
+          navigate(destination);
+        }
       }
-    }
+    };
+    
+    checkUserAndRedirect();
   }, [user, navigate, redirectPath, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
