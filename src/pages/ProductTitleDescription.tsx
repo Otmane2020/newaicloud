@@ -3336,11 +3336,12 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowSmartBgDialog}
         selectedProducts={products
           .filter(p => selectedProducts.has(p.id))
-          .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
+          .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor, handle: p.handle }))}
         onComplete={() => {
           fetchProducts();
           refreshLimits();
         }}
+        storeUrl={selectedStore?.store_url || null}
       />
     </div>
   );

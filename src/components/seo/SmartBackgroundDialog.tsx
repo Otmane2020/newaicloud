@@ -22,6 +22,7 @@ import {
   RectangleVertical,
   Wand2,
   CheckCircle2,
+  ExternalLink,
   Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ interface Product {
   title: string;
   image_url: string | null;
   vendor?: string | null;
+  handle?: string | null;
 }
 
 interface SmartBackgroundDialogProps {
@@ -42,6 +44,7 @@ interface SmartBackgroundDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedProducts: Product[];
   onComplete?: () => void;
+  storeUrl?: string | null;
 }
 
 export const SmartBackgroundDialog = ({
@@ -49,6 +52,7 @@ export const SmartBackgroundDialog = ({
   onOpenChange,
   selectedProducts,
   onComplete,
+  storeUrl,
 }: SmartBackgroundDialogProps) => {
   const [bgFormat, setBgFormat] = useState<BackgroundFormat>('1:1');
   const [bgMode, setBgMode] = useState<BackgroundMode>('smart_serp');
@@ -57,6 +61,7 @@ export const SmartBackgroundDialog = ({
   const [generatedPreviews, setGeneratedPreviews] = useState<Map<string, string>>(new Map());
   const [showPreview, setShowPreview] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [appliedProducts, setAppliedProducts] = useState<Set<string>>(new Set());
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -164,6 +169,7 @@ export const SmartBackgroundDialog = ({
     if (generatedPreviews.size === 0) return;
 
     setIsGenerating(true);
+    const newApplied = new Set<string>();
 
     for (const [productId, imageUrl] of generatedPreviews) {
       const product = selectedProducts.find((p) => p.id === productId);
@@ -190,17 +196,29 @@ export const SmartBackgroundDialog = ({
             resolution: '2000x2000',
             qualityScore: 95,
           });
+          newApplied.add(productId);
         }
       } catch (error) {
         console.error('Error applying background for', product.title, error);
       }
     }
 
+    setAppliedProducts(newApplied);
     setIsGenerating(false);
-    toast.success('Backgrounds appliqués et synchronisés');
-    setGeneratedPreviews(new Map());
-    onOpenChange(false);
+    
+    // Show success with view online option
+    toast.success(`${newApplied.size} background(s) appliqué(s) et synchronisé(s)`, {
+      description: 'Les images ont été mises à jour sur votre boutique.',
+      duration: 8000,
+    });
+    
     onComplete?.();
+  };
+
+  const handleViewOnline = (product: Product) => {
+    if (storeUrl && product.handle) {
+      window.open(`${storeUrl}/products/${product.handle}`, '_blank');
+    }
   };
 
   const handlePreviewProduct = (product: Product) => {
@@ -370,31 +388,62 @@ export const SmartBackgroundDialog = ({
                 </p>
               </div>
             )}
+
+            {/* Applied Products Preview */}
+            {appliedProducts.size > 0 && (
+              <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <p className="text-sm font-medium text-green-600">
+                    {appliedProducts.size} image(s) appliquée(s) avec succès
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProducts
+                    .filter(p => appliedProducts.has(p.id))
+                    .map(product => (
+                      <Button
+                        key={product.id}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => handleViewOnline(product)}
+                        disabled={!storeUrl || !product.handle}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {product.title.slice(0, 20)}...
+                      </Button>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
-              Annuler
+              {appliedProducts.size > 0 ? 'Fermer' : 'Annuler'}
             </Button>
 
-            {generatedPreviews.size > 0 ? (
-              <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                Appliquer {generatedPreviews.size} background(s)
-              </Button>
-            ) : (
-              <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2">
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="h-4 w-4" />
-                )}
-                Générer les backgrounds
-              </Button>
+            {appliedProducts.size === 0 && (
+              generatedPreviews.size > 0 ? (
+                <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Appliquer {generatedPreviews.size} background(s)
+                </Button>
+              ) : (
+                <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2">
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-4 w-4" />
+                  )}
+                  Générer les backgrounds
+                </Button>
+              )
             )}
           </DialogFooter>
         </DialogContent>
