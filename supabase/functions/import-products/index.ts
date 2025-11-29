@@ -1032,101 +1032,119 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Insert images in batches - USING shopify_image_id AS PRIMARY KEY
+    // Insert images in batches - NEW STRATEGY: Delete existing then insert fresh
     if (allImages.length > 0) {
-      // Separate images WITH and WITHOUT shopify_image_id
-      const imagesWithShopifyId = allImages.filter(img => img.shopify_image_id);
-      const imagesWithoutShopifyId = allImages.filter(img => !img.shopify_image_id);
+      console.log(`📦 Processing ${allImages.length} images for import`);
       
-      console.log(`📊 Images breakdown: ${imagesWithShopifyId.length} with Shopify ID, ${imagesWithoutShopifyId.length} without`);
+      // Get unique product IDs that have images to import
+      const productIdsWithImages = [...new Set(allImages.map(img => img.product_id))];
+      console.log(`📊 Products with images to sync: ${productIdsWithImages.length}`);
       
-      // ✅ PART 1: Upsert images WITH shopify_image_id (uses unique constraint)
-      if (imagesWithShopifyId.length > 0) {
+      // STEP 1: Fetch existing images to preserve generated/optimized ones
+      const { data: existingImages, error: fetchExistingError } = await supabaseServiceClient
+        .from("product_images")
+        .select("id, product_id, src, shopify_image_id, shopify_media_id, alt_text, optimization_count")
+        .in("product_id", productIdsWithImages);
+      
+      if (fetchExistingError) {
+        console.error(`⚠️ Error fetching existing images:`, fetchExistingError);
+      }
+      
+      // Build map of existing generated images (no shopify_image_id = generated locally)
+      const generatedImagesMap = new Map<string, any[]>();
+      if (existingImages) {
+        for (const img of existingImages) {
+          // Keep images that were generated locally (no shopify_image_id) OR have been optimized
+          if (!img.shopify_image_id || img.optimization_count > 0 || img.shopify_media_id) {
+            if (!generatedImagesMap.has(img.product_id)) {
+              generatedImagesMap.set(img.product_id, []);
+            }
+            generatedImagesMap.get(img.product_id)!.push(img);
+          }
+        }
+      }
+      console.log(`🔒 Preserving ${[...generatedImagesMap.values()].flat().length} generated/optimized images`);
+      
+      // STEP 2: Delete only Shopify-imported images (those with shopify_image_id and no optimization)
+      const imagesToDelete = existingImages?.filter(img => 
+        img.shopify_image_id && !img.optimization_count && !img.shopify_media_id
+      ) || [];
+      
+      if (imagesToDelete.length > 0) {
+        const deleteIds = imagesToDelete.map(img => img.id);
+        console.log(`🗑️ Deleting ${deleteIds.length} old Shopify images to replace with fresh data`);
+        
+        const { error: deleteError } = await supabaseServiceClient
+          .from("product_images")
+          .delete()
+          .in("id", deleteIds);
+        
+        if (deleteError) {
+          console.error(`⚠️ Error deleting old images:`, deleteError);
+        }
+      }
+      
+      // STEP 3: Filter out images that already exist (by normalized URL)
+      const normalizeUrl = (url: string) => url.split('?')[0].toLowerCase();
+      
+      const existingUrlsByProduct = new Map<string, Set<string>>();
+      if (existingImages) {
+        for (const img of existingImages) {
+          // Only track URLs for preserved images (generated/optimized)
+          if (!img.shopify_image_id || img.optimization_count > 0 || img.shopify_media_id) {
+            if (!existingUrlsByProduct.has(img.product_id)) {
+              existingUrlsByProduct.set(img.product_id, new Set());
+            }
+            existingUrlsByProduct.get(img.product_id)!.add(normalizeUrl(img.src));
+          }
+        }
+      }
+      
+      // Filter images to insert - exclude those with matching URLs in preserved images
+      const imagesToInsert = allImages.filter(img => {
+        const existingUrls = existingUrlsByProduct.get(img.product_id);
+        const normalizedSrc = normalizeUrl(img.src);
+        return !existingUrls || !existingUrls.has(normalizedSrc);
+      });
+      
+      const skippedImages = allImages.length - imagesToInsert.length;
+      if (skippedImages > 0) {
+        console.log(`⏭️ Skipped ${skippedImages} images (already exist as generated/optimized)`);
+      }
+      
+      // STEP 4: Insert fresh images from Shopify
+      if (imagesToInsert.length > 0) {
         const IMAGE_BATCH_SIZE = 500;
-        const imageBatches = Math.ceil(imagesWithShopifyId.length / IMAGE_BATCH_SIZE);
+        const imageBatches = Math.ceil(imagesToInsert.length / IMAGE_BATCH_SIZE);
         
-        console.log(`📦 Upserting ${imagesWithShopifyId.length} Shopify images in ${imageBatches} batches`);
+        console.log(`📦 Inserting ${imagesToInsert.length} fresh Shopify images in ${imageBatches} batches`);
         
-        for (let i = 0; i < imagesWithShopifyId.length; i += IMAGE_BATCH_SIZE) {
-          const batch = imagesWithShopifyId.slice(i, i + IMAGE_BATCH_SIZE);
+        for (let i = 0; i < imagesToInsert.length; i += IMAGE_BATCH_SIZE) {
+          const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
           const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
           
-          // Use shopify_image_id as conflict key (has unique constraint)
           const { error: imageError } = await supabaseServiceClient
             .from("product_images")
-            .upsert(batch, {
-              onConflict: "shopify_image_id",
-              ignoreDuplicates: false, // Update if exists
-            });
+            .insert(batch);
 
           if (imageError) {
-            console.error(`❌ Shopify image upsert error in batch ${batchNumber}:`, imageError);
+            console.error(`❌ Image insert error in batch ${batchNumber}:`, imageError);
+            // Log the first failing image for debugging
+            if (batch.length > 0) {
+              console.error(`First image in batch: product_id=${batch[0].product_id}, shopify_image_id=${batch[0].shopify_image_id}`);
+            }
           } else {
             totalImages += batch.length;
-            console.log(`✅ Shopify image batch ${batchNumber}/${imageBatches} completed`);
+            console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${batch.length} images)`);
           }
           
-          if (i + IMAGE_BATCH_SIZE < imagesWithShopifyId.length) {
+          if (i + IMAGE_BATCH_SIZE < imagesToInsert.length) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
       }
       
-      // ✅ PART 2: Handle images WITHOUT shopify_image_id (generated images)
-      // These need to be checked by product_id + normalized URL to avoid duplicates
-      if (imagesWithoutShopifyId.length > 0) {
-        const productIds = [...new Set(imagesWithoutShopifyId.map(img => img.product_id))];
-        
-        // Fetch existing images without shopify_image_id for these products
-        const { data: existingGenerated, error: existingError } = await supabaseServiceClient
-          .from("product_images")
-          .select("id, product_id, src")
-          .in("product_id", productIds)
-          .is("shopify_image_id", null);
-        
-        if (existingError) {
-          console.error(`⚠️ Error fetching existing generated images:`, existingError);
-        }
-        
-        // Build a map of existing URLs by product_id
-        const existingUrlMap = new Map<string, Set<string>>();
-        if (existingGenerated && existingGenerated.length > 0) {
-          for (const img of existingGenerated) {
-            const normalizedUrl = img.src.split('?')[0]; // Remove query params
-            if (!existingUrlMap.has(img.product_id)) {
-              existingUrlMap.set(img.product_id, new Set());
-            }
-            existingUrlMap.get(img.product_id)!.add(normalizedUrl);
-          }
-        }
-        
-        // Filter out images that already exist
-        const newGeneratedImages = imagesWithoutShopifyId.filter(img => {
-          const normalizedUrl = img.src.split('?')[0];
-          const existingUrls = existingUrlMap.get(img.product_id);
-          return !existingUrls || !existingUrls.has(normalizedUrl);
-        });
-        
-        const skippedCount = imagesWithoutShopifyId.length - newGeneratedImages.length;
-        if (skippedCount > 0) {
-          console.log(`🚫 Skipped ${skippedCount} generated images that already exist`);
-        }
-        
-        if (newGeneratedImages.length > 0) {
-          console.log(`📦 Inserting ${newGeneratedImages.length} new generated images`);
-          
-          const { error: insertError } = await supabaseServiceClient
-            .from("product_images")
-            .insert(newGeneratedImages);
-          
-          if (insertError) {
-            console.error(`❌ Generated image insert error:`, insertError);
-          } else {
-            totalImages += newGeneratedImages.length;
-            console.log(`✅ Generated images inserted`);
-          }
-        }
-      }
+      console.log(`📊 Image import complete: ${totalImages} inserted, ${skippedImages} skipped (preserved)`);
     }
 
     // Insert product-collection relationships
