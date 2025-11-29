@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   FileText, 
   Sparkles, 
@@ -17,7 +18,12 @@ import {
   Monitor,
   Info,
   CheckCircle2,
-  Upload
+  Upload,
+  Image as ImageIcon,
+  Wand2,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
@@ -29,14 +35,18 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 
 interface Product {
   id: string;
   title: string;
   description: string | null;
-  images: Array<{ src: string }>;
+  images: Array<{ id?: string; src: string }>;
 }
+
+type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
+type BackgroundMode = 'white_shopping' | 'smart_serp';
 
 export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -50,10 +60,20 @@ export const ProductContentOptimization = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<'ecommerce' | 'luxury' | 'technical'>('ecommerce');
   const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  
+  // 🆕 Smart Background states
+  const [bgFormat, setBgFormat] = useState<BackgroundFormat>('1:1');
+  const [bgMode, setBgMode] = useState<BackgroundMode>('smart_serp');
+  const [isGeneratingBg, setIsGeneratingBg] = useState(false);
+  const [showBgPreview, setShowBgPreview] = useState(false);
+  const [generatedBgUrl, setGeneratedBgUrl] = useState<string | null>(null);
+  const [selectedBgProduct, setSelectedBgProduct] = useState<Product | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
   const queryClient = useQueryClient();
 
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { generateProductDescription } = useImageOptimization();
+  const { generateProductDescription, generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
   // Calculate quality score based on HTML content
   const calculateQualityScore = (html: string): number => {
@@ -127,17 +147,17 @@ export const ProductContentOptimization = () => {
         // Load images
         const imagesResponse: any = await (supabase as any)
           .from('product_images')
-          .select('product_id, src')
+          .select('id, product_id, src')
           .in('product_id', productsData.map((p: any) => p.id))
           .order('position');
 
-        const imagesData = (imagesResponse.data || []) as Array<{ product_id: string; src: string }>;
+        const imagesData = (imagesResponse.data || []) as Array<{ id: string; product_id: string; src: string }>;
 
         return productsData.map((p: any) => ({
           id: p.id,
           title: p.title,
           description: p.description,
-          images: imagesData.filter((img: any) => img.product_id === p.id).map((img: any) => ({ src: img.src }))
+          images: imagesData.filter((img: any) => img.product_id === p.id).map((img: any) => ({ id: img.id, src: img.src }))
         }));
       } catch (error) {
         console.error('Error loading products:', error);
@@ -145,6 +165,132 @@ export const ProductContentOptimization = () => {
       }
     }
   });
+
+  // 🆕 Smart Background generation handler
+  const handleGenerateSmartBackground = async (product: Product, imageIndex: number = 0) => {
+    if (!limits?.canUseOptimizations) {
+      setShowUpgradeDialog(true);
+      toast.error('Limite d\'optimisations atteinte');
+      return;
+    }
+
+    const image = product.images[imageIndex];
+    if (!image) {
+      toast.error('Aucune image trouvée');
+      return;
+    }
+
+    setSelectedBgProduct(product);
+    setSelectedImageIndex(imageIndex);
+    setIsGeneratingBg(true);
+    setShowBgPreview(true);
+
+    try {
+      // Map format to edge function format
+      const formatMap: Record<BackgroundFormat, 'square' | 'portrait' | 'landscape'> = {
+        '1:1': 'square',
+        '4:3': 'landscape',
+        '3:4': 'portrait',
+        '16:9': 'landscape',
+        '9:16': 'portrait'
+      };
+
+      // Fetch SERP data if in smart mode
+      let serpData = null;
+      let visionAiData = null;
+      let productDescription = null;
+
+      // Get existing product data
+      const { data: productDetails } = await supabase
+        .from('shopify_products')
+        .select('body_html, seo_description, serp_data, vision_attributes')
+        .eq('id', product.id)
+        .single();
+
+      if (productDetails) {
+        serpData = productDetails.serp_data;
+        visionAiData = productDetails.vision_attributes;
+        productDescription = productDetails.body_html || productDetails.seo_description;
+      }
+
+      // Fetch SERP data if smart mode and no existing data
+      if (bgMode === 'smart_serp' && !serpData) {
+        console.log('🔍 [SmartBg] Fetching SERP data for:', product.title);
+        const { data: serpResult } = await supabase.functions.invoke('search-similar-products-specs', {
+          body: { productTitle: product.title, limit: 5 }
+        });
+        
+        if (serpResult?.similarProducts || serpResult?.averageWeight || serpResult?.averageDimensions) {
+          serpData = {
+            dimensions: serpResult.averageDimensions 
+              ? `${serpResult.averageDimensions.length || ''} x ${serpResult.averageDimensions.width || ''} x ${serpResult.averageDimensions.height || ''}`.replace(/\s+x\s+x\s+/g, '').trim()
+              : null,
+            weight: serpResult.averageWeight,
+            materials: serpResult.similarProducts?.flatMap((p: any) => p.materials || []).slice(0, 3) || [],
+            dominantStyles: serpResult.similarProducts?.flatMap((p: any) => p.style ? [p.style] : []).slice(0, 2) || [],
+            confidence: serpResult.confidence
+          };
+          console.log('✅ [SmartBg] SERP data formatted:', serpData);
+        }
+      }
+
+      const result = await generateWhiteBackground.mutateAsync({
+        imageUrl: image.src,
+        productTitle: product.title,
+        resolution: '2000x2000',
+        format: formatMap[bgFormat],
+        mode: bgMode === 'white_shopping' ? 'google_shopping' : 'google_shopping', // Both use google_shopping
+        product_id: product.id,
+        serpData: bgMode === 'smart_serp' ? serpData : null,
+        visionAiData: bgMode === 'smart_serp' ? visionAiData : null,
+        productDescription: bgMode === 'smart_serp' ? productDescription : null
+      });
+
+      if (result.imageUrl) {
+        setGeneratedBgUrl(result.imageUrl);
+        toast.success('Background généré avec succès');
+      }
+    } catch (error) {
+      console.error('Error generating background:', error);
+      toast.error('Erreur lors de la génération du background');
+      setShowBgPreview(false);
+    } finally {
+      setIsGeneratingBg(false);
+    }
+  };
+
+  // Apply background to image
+  const handleApplyBackground = async () => {
+    if (!selectedBgProduct || !generatedBgUrl) return;
+
+    const image = selectedBgProduct.images[selectedImageIndex];
+    if (!image?.id) {
+      toast.error('ID image manquant');
+      return;
+    }
+
+    try {
+      await applyOptimizedImage.mutateAsync({
+        imageId: image.id,
+        productId: selectedBgProduct.id,
+        optimizedUrl: generatedBgUrl,
+        originalUrl: image.src,
+        optimizationType: 'white_background', // Always use white_background type
+        aiModel: 'gemini-2.5-flash-image-preview',
+        resolution: '2000x2000',
+        qualityScore: 95
+      });
+
+      toast.success('Background appliqué et synchronisé');
+      setShowBgPreview(false);
+      setGeneratedBgUrl(null);
+      queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
+      refreshLimits();
+    } catch (error) {
+      console.error('Error applying background:', error);
+      toast.error('Erreur lors de l\'application');
+    }
+  };
 
   const generateMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -424,6 +570,275 @@ export const ProductContentOptimization = () => {
           </div>
         )}
       </Card>
+
+      {/* 🆕 Smart Background Card */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ImageIcon className="h-5 w-5" />
+          Smart Background - Optimisation Photo Produit
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Générez des backgrounds professionnels pour vos photos produits avec enrichissement SERP et bonnes pratiques Google Shopping.
+        </p>
+
+        {/* Format & Mode Selectors */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Square className="h-4 w-4" />
+              Format de sortie
+            </label>
+            <Select value={bgFormat} onValueChange={(v) => setBgFormat(v as BackgroundFormat)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir le format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1:1">
+                  <div className="flex items-center gap-2">
+                    <Square className="h-4 w-4" />
+                    Carré (1:1) - Google Shopping
+                  </div>
+                </SelectItem>
+                <SelectItem value="4:3">
+                  <div className="flex items-center gap-2">
+                    <RectangleHorizontal className="h-4 w-4" />
+                    Paysage (4:3)
+                  </div>
+                </SelectItem>
+                <SelectItem value="3:4">
+                  <div className="flex items-center gap-2">
+                    <RectangleVertical className="h-4 w-4" />
+                    Portrait (3:4)
+                  </div>
+                </SelectItem>
+                <SelectItem value="16:9">
+                  <div className="flex items-center gap-2">
+                    <RectangleHorizontal className="h-4 w-4" />
+                    Cinéma (16:9) - Bannières
+                  </div>
+                </SelectItem>
+                <SelectItem value="9:16">
+                  <div className="flex items-center gap-2">
+                    <RectangleVertical className="h-4 w-4" />
+                    Story (9:16) - Instagram/TikTok
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Wand2 className="h-4 w-4" />
+              Mode de génération
+            </label>
+            <Select value={bgMode} onValueChange={(v) => setBgMode(v as BackgroundMode)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir le mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="white_shopping">
+                  <div className="flex items-center gap-2">
+                    <Square className="h-4 w-4 text-gray-300" />
+                    White Background - Google Shopping
+                  </div>
+                </SelectItem>
+                <SelectItem value="smart_serp">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Smart Background - SERP + Vision AI
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {bgMode === 'white_shopping' 
+                ? 'Fond blanc pur, éclairage studio, conforme Google Merchant Center'
+                : 'Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel'}
+            </p>
+          </div>
+        </div>
+
+        {/* Products Grid for Background */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {products?.slice(0, 12).map(product => (
+            <Card key={`bg-${product.id}`} className="p-3 hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                {product.images[0] && (
+                  <div className="aspect-square rounded-md overflow-hidden bg-muted relative group">
+                    <img 
+                      src={product.images[0].src} 
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                )}
+                
+                <h4 className="font-medium text-xs line-clamp-2">{product.title}</h4>
+                
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-[10px]">
+                    {bgFormat}
+                  </Badge>
+                  <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[10px]">
+                    {bgMode === 'smart_serp' ? 'Smart' : 'White'}
+                  </Badge>
+                </div>
+
+                <Button
+                  size="sm"
+                  className="w-full"
+                  variant={bgMode === 'smart_serp' ? 'default' : 'secondary'}
+                  onClick={() => handleGenerateSmartBackground(product, 0)}
+                  disabled={isGeneratingBg || !product.images[0]}
+                >
+                  {isGeneratingBg && selectedBgProduct?.id === product.id ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-3 w-3 mr-1" />
+                      Optimiser Photo
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {products && products.length === 0 && (
+          <div className="text-center py-8">
+            <ImageIcon className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Aucun produit avec images disponible</p>
+          </div>
+        )}
+      </Card>
+
+      {/* 🆕 Smart Background Preview Dialog */}
+      <Dialog open={showBgPreview} onOpenChange={setShowBgPreview}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {isGeneratingBg ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Génération en cours...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Background généré - {selectedBgProduct?.title}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {isGeneratingBg 
+                ? `Mode: ${bgMode === 'smart_serp' ? 'Smart SERP + Vision AI' : 'White Background'} | Format: ${bgFormat}`
+                : 'Aperçu du background optimisé - Cliquez sur Appliquer pour synchroniser'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Original */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Original</label>
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted border">
+                {selectedBgProduct?.images[selectedImageIndex] && (
+                  <img 
+                    src={selectedBgProduct.images[selectedImageIndex].src}
+                    alt="Original"
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Generated */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {bgMode === 'smart_serp' ? 'Smart Background' : 'White Background'}
+              </label>
+              <div className="aspect-square rounded-lg overflow-hidden bg-white border-2 border-primary/20">
+                {isGeneratingBg ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+                    <div className="text-center space-y-3">
+                      <Wand2 className="h-12 w-12 mx-auto text-primary animate-pulse" />
+                      <p className="text-sm text-muted-foreground">
+                        {bgMode === 'smart_serp' ? 'Enrichissement SERP...' : 'Génération fond blanc...'}
+                      </p>
+                    </div>
+                  </div>
+                ) : generatedBgUrl ? (
+                  <img 
+                    src={generatedBgUrl}
+                    alt="Generated"
+                    className="w-full h-full object-contain"
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Info badges */}
+          {!isGeneratingBg && generatedBgUrl && (
+            <div className="flex flex-wrap gap-2 pb-4">
+              <Badge variant="outline">
+                <Square className="h-3 w-3 mr-1" />
+                Format: {bgFormat}
+              </Badge>
+              <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'}>
+                {bgMode === 'smart_serp' ? (
+                  <>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    SERP + Vision AI
+                  </>
+                ) : (
+                  <>
+                    <Square className="h-3 w-3 mr-1 text-gray-300" />
+                    White Background
+                  </>
+                )}
+              </Badge>
+              <Badge variant="outline">
+                <CheckCircle2 className="h-3 w-3 mr-1 text-green-600" />
+                Effet 3D inclus
+              </Badge>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowBgPreview(false);
+              setGeneratedBgUrl(null);
+            }}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleApplyBackground}
+              disabled={isGeneratingBg || !generatedBgUrl || applyOptimizedImage.isPending}
+            >
+              {applyOptimizedImage.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Synchronisation...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Appliquer & Synchroniser
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Preview Dialog with Generation */}
