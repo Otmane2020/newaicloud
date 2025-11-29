@@ -8116,6 +8116,8 @@ export const translations = {
     adminApiAccessToken: "Admin API Access Token",
     yourAdminToken: "Your Admin API access token",
     fullDomain: "Full domain",
+    advantage: "Advantage:",
+    fullAccessFeatures: "Full access to all features (tags, scripts, content, etc.)",
   },
 
   // ============= Shopify Retry Claim =============
@@ -8707,6 +8709,89 @@ export const translations = {
     articleNowDraft: "Article is now a draft",
     articleNowLive: "Article is now live",
     errorToggling: "Error toggling publish status",
+  },
+
+  // ============= Shopify API Guide =============
+  shopifyApiGuide: {
+    title: "📖 Guide: Create your Shopify API Keys",
+    subtitle: "Follow these 6 steps to get your connection credentials",
+    storeInfo: {
+      storeName: "Your store name:",
+      findInUrl: "Find the name in the URL:",
+    },
+    steps: {
+      step1: {
+        title: "Step 1: Access Shopify Admin",
+        description: "Go to Settings → Apps and sales channels → Develop apps",
+        link: "Open Shopify Admin",
+      },
+      step2: {
+        title: "Step 2: Create a custom app",
+        items: [
+          'Click on "Create an app"',
+          'Name your application (e.g., "NewAI SEO Integration")',
+          'Click "Create an app" to confirm',
+        ],
+      },
+      step3: {
+        title: "Step 3: Configure permissions (API scopes)",
+        description: 'Click "Configure Admin API scopes" and enable the required permissions',
+        scopesTitle: "Complete list of required permissions",
+      },
+      step4: {
+        title: "Step 4: Install the app",
+        items: [
+          'Click "Save" to save permissions',
+          'Click "Install app"',
+          "Confirm the installation",
+        ],
+      },
+      step5: {
+        title: "Step 5: Retrieve your 2 keys",
+        apiKey: {
+          label: "1️⃣ API Key",
+          description: "This public key identifies your application",
+          format: "Format: 32 hexadecimal characters",
+          location: 'Location: "API credentials" tab',
+        },
+        accessToken: {
+          label: "2️⃣ Admin API Access Token",
+          description: "This secret token gives access to your store",
+          warning: "⚠️ Important: This token is only shown once! Copy it immediately.",
+          format: "Format: Starts with",
+          location: 'Location: "API credentials" tab → "Reveal token once" button',
+        },
+      },
+      step6: {
+        title: "Step 6: Paste your keys in the form",
+        description: "Use the two keys above in the connection form to connect your store to NewAI.",
+      },
+    },
+    footer: {
+      help: "Need help?",
+      helpLink: "Check the official Shopify documentation",
+      security: "Security:",
+      securityWarning: "These keys give full access to your store. Never share them and never expose them publicly.",
+    },
+    scopes: {
+      products: "Product management",
+      content: "Pages and blog articles",
+      scriptTags: "JavaScript script tags",
+      customerEvents: "Customer browsing behavior",
+      locations: "Geographic locations",
+      shipping: "Shipping services",
+      productListings: "Product listings",
+      files: "Store files",
+      productFeeds: "Product feeds",
+      pages: "Store pages",
+      reports: "Analytics reports",
+      inventory: "Stock and inventory",
+      inventoryShipments: "Inventory shipments",
+      inventoryTransfers: "Inventory transfers",
+    },
+    toasts: {
+      copied: "{{label}} copied!",
+    },
   },
 };
 
