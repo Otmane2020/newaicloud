@@ -25,13 +25,38 @@ export function GoogleAdsIntegration() {
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       
-      if (code && state === 'google_ads' && window.opener) {
-        window.opener.postMessage({
-          type: 'GOOGLE_ADS_OAUTH_CODE',
-          code: code,
-        }, window.location.origin);
+      if (code && state === 'google_ads') {
+        // CAS 1: Popup avec window.opener fonctionnel
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_ADS_OAUTH_CODE',
+            code: code,
+          }, window.location.origin);
+          setTimeout(() => window.close(), 1000);
+          return;
+        }
         
-        setTimeout(() => window.close(), 1000);
+        // CAS 2: FALLBACK - Traiter directement le code OAuth ici
+        console.log('🔑 [GOOGLE-ADS] window.opener is null, processing OAuth directly');
+        const redirectUri = `${window.location.origin}/google-ads?tab=integration`;
+        
+        const { data, error } = await supabase.functions.invoke('google-ads-oauth-token', {
+          body: { code, redirectUri },
+        });
+        
+        if (error || !data?.success) {
+          console.error('❌ [GOOGLE-ADS] Error exchanging code:', error, data);
+          toast.error('Échec de connexion Google Ads');
+          // Nettoyer l'URL
+          window.history.replaceState({}, '', '/google-ads?tab=integration');
+          return;
+        }
+        
+        console.log('✅ [GOOGLE-ADS] Successfully connected via fallback');
+        // Nettoyer l'URL et rafraîchir l'état
+        window.history.replaceState({}, '', '/google-ads?tab=integration');
+        toast.success(t.googleAds.integration.success.connected);
+        checkGoogleAdsConnection();
       }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
