@@ -84,13 +84,14 @@ export function ProductGalleryDialog({
         .from("product_images")
         .select("id, src, alt_text, position, shopify_image_id")
         .eq("product_id", product.id)
-        .order("position", { ascending: true });
+        .order("position", { ascending: true })
+        .limit(50); // Limit to 50 images for performance
 
       if (error) throw error;
       
-      // Deduplicate images by id
+      // Deduplicate images by src to avoid visual duplicates
       const uniqueImages = data ? 
-        Array.from(new Map(data.map(img => [img.id, img])).values()) : [];
+        Array.from(new Map(data.map(img => [img.src, img])).values()) : [];
       
       setImages(uniqueImages);
       setHasChanges(false);
