@@ -157,7 +157,7 @@ export default function MediaHistory() {
 
       return { syncData, syncError };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       const { syncData } = result;
       
       if (syncData?.skipped) {
@@ -166,7 +166,14 @@ export default function MediaHistory() {
           duration: 8000,
         });
       } else {
-        toast.success('✅ Image appliquée et synchronisée avec Shopify');
+        toast.success('✅ Image appliquée et synchronisée avec Shopify', {
+          description: 'L\'image a été mise à jour sur votre boutique.',
+          action: syncData?.shopifyUrl ? {
+            label: 'Voir en ligne',
+            onClick: () => window.open(syncData.shopifyUrl, '_blank'),
+          } : undefined,
+          duration: 8000,
+        });
       }
       
       queryClient.invalidateQueries({ queryKey: ['product-image-history'] });
@@ -216,7 +223,14 @@ export default function MediaHistory() {
           duration: 8000,
         });
       } else {
-        toast.success('Image appliquée et synchronisée avec Shopify ✅');
+        toast.success('✅ Image appliquée et synchronisée avec Shopify', {
+          description: 'L\'image de la collection a été mise à jour.',
+          action: syncData?.shopifyUrl ? {
+            label: 'Voir en ligne',
+            onClick: () => window.open(syncData.shopifyUrl, '_blank'),
+          } : undefined,
+          duration: 8000,
+        });
       }
       
       queryClient.invalidateQueries({ queryKey: ['collection-image-history'] });
@@ -254,8 +268,15 @@ export default function MediaHistory() {
 
       return syncResult;
     },
-    onSuccess: () => {
-      toast.success('Image appliquée et synchronisée avec Shopify ✅');
+    onSuccess: (syncResult) => {
+      toast.success('✅ Image appliquée et synchronisée avec Shopify', {
+        description: 'L\'image de l\'article a été mise à jour.',
+        action: syncResult?.shopifyUrl ? {
+          label: 'Voir en ligne',
+          onClick: () => window.open(syncResult.shopifyUrl, '_blank'),
+        } : undefined,
+        duration: 8000,
+      });
       queryClient.invalidateQueries({ queryKey: ['article-image-history'] });
       queryClient.invalidateQueries({ queryKey: ['blog-articles'] });
     },
