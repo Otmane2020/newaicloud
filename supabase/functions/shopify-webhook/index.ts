@@ -218,14 +218,15 @@ async function handleProductWebhook(supabase: any, connection: any, payload: any
     if (product) {
       const images = payload.images.map((img: any, index: number) => ({
         product_id: product.id,
-        shopify_image_id: String(img.id),
-        url: img.src,
+        shopify_image_id: img.id ? Number(img.id) : null,
+        src: img.src,
         alt_text: img.alt || '',
         position: index,
       }));
 
+      // Use (product_id, src) as conflict key to prevent duplicates
       await supabase.from('product_images').upsert(images, {
-        onConflict: 'shopify_image_id',
+        onConflict: 'product_id,src',
         ignoreDuplicates: false
       });
     }
