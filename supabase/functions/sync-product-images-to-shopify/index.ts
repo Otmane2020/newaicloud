@@ -323,11 +323,85 @@ Deno.serve(async (req) => {
     }
 
 
-    // Prepare new images to add (only those without shopify_image_id)
+    // Helper to detect if URL is from Supabase Storage (generated image)
+    const isGeneratedImage = (url: string): boolean => {
+      if (!url) return false;
+      return url.includes('supabase.co/storage/') || 
+             url.includes('generated-images') ||
+             url.includes('/storage/v1/object/public/');
+    };
+
+    // Helper to check if URL is base64
+    const isBase64Image = (url: string): boolean => {
+      return url?.startsWith('data:image/') || false;
+    };
+
+    // Separate images into categories:
+    // 1. New images (no shopify_image_id AND no corresponding Shopify image)
+    // 2. Images to replace (have corresponding Shopify image but URL changed - generated or base64)
+    // 3. Truly new images (no shopify_image_id and no position match)
+    
+    const localImages = product.images || [];
+    const imagesToReplace: any[] = [];
+    const newImagesToAdd: any[] = [];
+
+    console.log(`📊 Analyzing ${localImages.length} local images vs ${existingMedia.length} Shopify images`);
+
+    for (const img of localImages) {
+      const localUrl = img.src || '';
+      const hasShopifyId = !!img.shopify_image_id;
+      const isGenerated = isGeneratedImage(localUrl);
+      const isBase64 = isBase64Image(localUrl);
+      
+      console.log(`📸 Image ${img.id}: shopify_image_id=${img.shopify_image_id}, position=${img.position}, isGenerated=${isGenerated}, isBase64=${isBase64}`);
+
+      if (hasShopifyId) {
+        // Has Shopify ID - check if URL changed
+        const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
+        const existingImg = existingMedia.find((m: any) => m.id === imgGid);
+        
+        if (existingImg) {
+          const existingUrl = existingImg.image?.url || '';
+          const urlChanged = existingUrl !== localUrl && !localUrl.includes(existingUrl.split('?')[0]);
+          
+          if (isBase64 || isGenerated || urlChanged) {
+            console.log(`🔄 Image ${img.id} marked for REPLACE: existingUrl differs from localUrl (generated: ${isGenerated})`);
+            imagesToReplace.push(img);
+          }
+        } else {
+          // Shopify image ID exists but image not found in Shopify - treat as new
+          console.log(`⚠️ Image ${img.id} has shopify_image_id but not found in Shopify - will add as new`);
+          newImagesToAdd.push(img);
+        }
+      } else {
+        // No Shopify ID - check if it's a generated image that should replace by position
+        if (isGenerated || isBase64) {
+          // Find matching Shopify image by position
+          const position = img.position || 1;
+          const matchingShopifyImage = existingMedia[position - 1]; // 0-indexed array, 1-indexed position
+          
+          if (matchingShopifyImage) {
+            // This generated image should REPLACE the Shopify image at this position
+            console.log(`🔄 Generated image ${img.id} at position ${position} will REPLACE existing Shopify image`);
+            // Temporarily assign the Shopify image ID for replacement
+            img._replaceShopifyGid = matchingShopifyImage.id;
+            imagesToReplace.push(img);
+          } else {
+            // No matching Shopify image - add as new
+            console.log(`➕ Generated image ${img.id} at position ${position} will be ADDED (no matching Shopify image)`);
+            newImagesToAdd.push(img);
+          }
+        } else {
+          // Regular new image without Shopify ID
+          console.log(`➕ Image ${img.id} marked as NEW (no shopify_image_id)`);
+          newImagesToAdd.push(img);
+        }
+      }
+    }
+
+    // Process images to add - upload base64/check URLs
     const newImages = await Promise.all(
-      (product.images || [])
-        .filter((img: any) => !img.shopify_image_id) // Only new images
-        .map(async (img: any) => {
+      newImagesToAdd.map(async (img: any) => {
           let imageSrc = img.src;
           
           // If image is base64, upload to Supabase Storage first
@@ -381,6 +455,7 @@ Deno.serve(async (req) => {
           const imageData: any = {
             src: imageSrc,
             alt: img.alt_text || "",
+            localImageId: img.id, // Track local ID for linking later
           };
           // Ajouter variant_ids seulement s'il y en a
           if (variantIds && variantIds.length > 0) {
@@ -391,24 +466,6 @@ Deno.serve(async (req) => {
         })
     );
 
-    // Prepare images to update (those with shopify_image_id but src changed - need to replace)
-    // Note: GraphQL Media IDs are GIDs, REST image IDs are numeric - need conversion
-    const imagesToReplace = (product.images || [])
-      .filter((img: any) => {
-        if (!img.shopify_image_id) return false;
-        // Convert numeric shopify_image_id to GID for comparison
-        const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
-        const existingImg = existingMedia.find((m: any) => m.id === imgGid);
-        // Check if src actually changed (base64 or different URL)
-        if (!existingImg) return false;
-        const existingUrl = existingImg.image?.url || '';
-        const newUrl = img.src || '';
-        // If new URL is base64, it needs replacement
-        if (newUrl.startsWith('data:image/')) return true;
-        // If URLs are different, needs replacement
-        return existingUrl !== newUrl && !newUrl.includes(existingUrl.split('?')[0]);
-      });
-
     console.log(`➕ Adding ${newImages.length} new images to Shopify`);
     console.log(`🔄 Replacing ${imagesToReplace.length} existing images in Shopify`);
 
@@ -416,10 +473,20 @@ Deno.serve(async (req) => {
     let updatedCount = 0;
     for (const imgToReplace of imagesToReplace) {
       try {
-        console.log(`🔄 Replacing Shopify image ${imgToReplace.shopify_image_id} via GraphQL`);
+        // Use _replaceShopifyGid if set (for generated images without shopify_image_id)
+        // Otherwise convert the existing shopify_image_id to GID format
+        let mediaGid: string;
         
-        // Convert to GID format
-        const mediaGid = restIdToGid(imgToReplace.shopify_image_id, 'MediaImage');
+        if (imgToReplace._replaceShopifyGid) {
+          mediaGid = imgToReplace._replaceShopifyGid;
+          console.log(`🔄 Replacing Shopify image by position (GID: ${mediaGid}) via GraphQL`);
+        } else if (imgToReplace.shopify_image_id) {
+          mediaGid = restIdToGid(imgToReplace.shopify_image_id, 'MediaImage');
+          console.log(`🔄 Replacing Shopify image ${imgToReplace.shopify_image_id} (GID: ${mediaGid}) via GraphQL`);
+        } else {
+          console.warn(`⚠️ Image ${imgToReplace.id} has no shopify_image_id or _replaceShopifyGid, skipping`);
+          continue;
+        }
         
         // Step 1: Upload base64 to storage if needed
         let newImageSrc = imgToReplace.src;
@@ -503,7 +570,7 @@ Deno.serve(async (req) => {
           console.error(`❌ Error creating replacement image:`, createResult.productCreateMedia.mediaUserErrors);
         }
       } catch (updateError) {
-        console.error(`Error replacing image ${imgToReplace.shopify_image_id}:`, updateError);
+        console.error(`Error replacing image ${imgToReplace.id}:`, updateError);
       }
     }
 
@@ -543,7 +610,8 @@ Deno.serve(async (req) => {
           addedImages.push({
             id: legacyId ? parseInt(legacyId) : null,
             src: newImage.src,
-            alt: newImage.alt
+            alt: newImage.alt,
+            localImageId: newImage.localImageId, // Keep track of local ID
           });
           console.log(`✅ Added image via GraphQL: ${legacyId}`);
         }
@@ -558,18 +626,26 @@ Deno.serve(async (req) => {
 
     // Update shopify_image_id for newly added images
     for (const addedImage of addedImages) {
-      // Find the local image by matching the src URL
-      const localImg = product.images.find((img: any) => 
-        !img.shopify_image_id && img.src === addedImage.src
-      );
+      // Use localImageId if available (more reliable), otherwise fallback to URL matching
+      let localImgId = addedImage.localImageId;
       
-      if (localImg) {
+      if (!localImgId) {
+        // Fallback: Find the local image by matching the src URL
+        const localImg = product.images.find((img: any) => 
+          !img.shopify_image_id && img.src === addedImage.src
+        );
+        localImgId = localImg?.id;
+      }
+      
+      if (localImgId) {
         await supabaseClient
           .from("product_images")
           .update({ shopify_image_id: addedImage.id })
-          .eq("id", localImg.id);
+          .eq("id", localImgId);
         
-        console.log(`🔗 Linked local image ${localImg.id} to Shopify image ${addedImage.id}`);
+        console.log(`🔗 Linked local image ${localImgId} to Shopify image ${addedImage.id}`);
+      } else {
+        console.warn(`⚠️ Could not find local image to link for Shopify image ${addedImage.id}`);
       }
     }
 
