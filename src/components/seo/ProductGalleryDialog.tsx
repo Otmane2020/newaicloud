@@ -149,19 +149,31 @@ export function ProductGalleryDialog({
       if (product.shopify_id) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          const { error } = await supabase.functions.invoke("sync-product-images-to-shopify", {
+          // Only include images that have a shopify_image_id for reordering
+          const shopifyImages = images
+            .filter(img => img.shopify_image_id)
+            .map((img, idx) => ({
+              id: img.shopify_image_id,
+              shopify_image_id: img.shopify_image_id,
+              position: idx + 1,
+              src: img.src,
+              alt: img.alt_text,
+            }));
+          
+          console.log('[Gallery] Sending reorder request with', shopifyImages.length, 'images');
+          
+          const { error, data } = await supabase.functions.invoke("sync-product-images-to-shopify", {
             body: {
               productId: product.id,
               shopifyProductId: product.shopify_id,
               storeId,
-              images: images.map((img, idx) => ({
-                id: img.shopify_image_id,
-                position: idx + 1,
-                src: img.src,
-                alt: img.alt_text,
-              })),
+              images: shopifyImages,
+              isReorderOnly: true,
             },
           });
+          
+          console.log('[Gallery] Sync response:', data);
+          
           if (error) {
             console.error("Shopify sync error:", error);
             toast.warning("Ordre sauvegardé localement, erreur de sync Shopify");

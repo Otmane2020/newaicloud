@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
 
     console.log('[SYNC-IMAGES] ✅ User authorized for Shopify updates');
 
-    const { productId, images: requestImages } = await req.json();
+    const { productId, images: requestImages, isReorderOnly } = await req.json();
 
     if (!productId) {
       throw new Error("Product ID is required");
@@ -156,9 +156,11 @@ Deno.serve(async (req) => {
     console.log(`🔄 Syncing images for product: ${productId}`);
     console.log(`👤 User ID: ${user.id}`);
     console.log(`📦 Request images provided: ${requestImages ? requestImages.length : 'none'}`);
+    console.log(`📦 Request images details:`, JSON.stringify(requestImages?.slice(0, 3)));
+    console.log(`🔄 Is reorder only: ${isReorderOnly}`);
     
     // If request includes images with positions, this is a reorder request
-    const isReorderRequest = requestImages && Array.isArray(requestImages) && requestImages.length > 0;
+    const isReorderRequest = (requestImages && Array.isArray(requestImages) && requestImages.length > 0) || isReorderOnly;
 
     // Get product with images and store info
     const { data: product, error: productError } = await supabaseClient
@@ -511,15 +513,20 @@ Deno.serve(async (req) => {
     // Use request images if provided (from gallery reorder), otherwise use database images
     let imagesToReorder: Array<{ shopify_image_id: number | null; position: number }> = [];
     
-    if (isReorderRequest && requestImages) {
+    if (isReorderRequest && requestImages && requestImages.length > 0) {
       // Use images from request body (with positions already set correctly)
+      // Support both 'id' and 'shopify_image_id' fields
       imagesToReorder = requestImages
-        .filter((img: any) => img.id) // Only images with shopify_image_id
-        .map((img: any, idx: number) => ({
-          shopify_image_id: typeof img.id === 'string' ? parseInt(img.id) : img.id,
-          position: img.position || idx + 1
-        }));
+        .filter((img: any) => img.id || img.shopify_image_id) // Accept either field
+        .map((img: any, idx: number) => {
+          const shopifyId = img.shopify_image_id || img.id;
+          return {
+            shopify_image_id: typeof shopifyId === 'string' ? parseInt(shopifyId) : shopifyId,
+            position: img.position || idx + 1
+          };
+        });
       console.log(`📋 Using ${imagesToReorder.length} images from request for reorder`);
+      console.log(`📋 First images to reorder:`, JSON.stringify(imagesToReorder.slice(0, 3)));
     } else {
       // Fallback to database images
       const localImages = (product.images || []).sort((a: any, b: any) => a.position - b.position);
