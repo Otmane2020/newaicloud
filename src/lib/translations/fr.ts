@@ -149,7 +149,8 @@ export const translations = {
       upgradeSuccess: "Abonnement mis à niveau avec succès !",
       redirectingPayment: "Redirection vers le paiement...",
       plansLoadError: "Erreur lors du chargement des plans",
-      planUpgradeProration: "✅ Plan mis à niveau ! Prorata de {{amount}} facturé. Vos compteurs ont été réinitialisés.",
+      planUpgradeProration:
+        "✅ Plan mis à niveau ! Prorata de {{amount}} facturé. Vos compteurs ont été réinitialisés.",
       planUpgradeNoProration: "✅ Plan mis à niveau ! Nouveau cycle démarré sans prorata.",
     },
     // SEO toasts
@@ -638,7 +639,8 @@ export const translations = {
       pleaseWait: "Veuillez patienter quelques instants.",
       viewOnline: "Visualiser en ligne",
       configRequired: "Configuration requise :",
-      configRequiredDesc: "Pour que vos landing pages s'affichent correctement sur Shopify, vous devez ajouter un CSS personnalisé à votre thème.",
+      configRequiredDesc:
+        "Pour que vos landing pages s'affichent correctement sur Shopify, vous devez ajouter un CSS personnalisé à votre thème.",
       seeGuide: "Voir le guide",
       mobileOptimized: "Optimisé mobile",
     },
@@ -1209,17 +1211,17 @@ export const translations = {
     titleWithProduct: "Générer un Background IA - {{product}}",
     description: "Personnalisez les paramètres de génération pour",
     products: "produit(s)",
-    
+
     // Dialog descriptions
     dialogDesc: {
       gallery: "Sélectionnez les images à traiter",
       variants: "Sélectionnez une variante",
       simple: "{{count}} produit(s) sélectionné(s)",
     },
-    
+
     // Loading
     loading: "Chargement de la galerie d'images...",
-    
+
     // Image section
     imageSection: {
       chooseVariant: "Choisissez une variante",
@@ -1229,7 +1231,7 @@ export const translations = {
       mainBadge: "Principale",
       variantLabel: "Variante {{id}}",
     },
-    
+
     // Configuration section
     configuration: "Configuration",
     backgroundDescription: "Description du background",
@@ -2208,7 +2210,7 @@ export const translations = {
         searchTerms: "Termes de recherche",
         negatives: "Mots négatifs",
         keywords: "Mots-clés",
-        strategy: "Stratégie IA"
+        strategy: "Stratégie IA",
       },
       roasEvolution: "Évolution du ROAS",
       last30Days: "30 derniers jours",
@@ -2249,7 +2251,7 @@ export const translations = {
       negativesGenerated: "Mots négatifs générés",
       reviewSuggestions: "Consultez les suggestions ci-dessous",
       strategyGenerated: "Stratégie générée",
-      aiAnalysisComplete: "Analyse IA terminée"
+      aiAnalysisComplete: "Analyse IA terminée",
     },
     toasts: {
       logoutSuccess: {
@@ -3150,44 +3152,44 @@ export const translations = {
       tasks: {
         addH1: {
           title: "Ajouter une balise H1 principale",
-          description: "Votre page d'accueil n'a pas de titre principal H1. Cela impacte fortement le référencement."
+          description: "Votre page d'accueil n'a pas de titre principal H1. Cela impacte fortement le référencement.",
         },
         createMetaDescription: {
           title: "Créer une meta description",
-          description: "La meta description de votre page d'accueil est manquante ou trop courte."
+          description: "La meta description de votre page d'accueil est manquante ou trop courte.",
         },
         addSchema: {
           title: "Ajouter des données structurées Schema.org",
-          description: "Les balises schema.org permettent d'obtenir des rich snippets dans Google."
+          description: "Les balises schema.org permettent d'obtenir des rich snippets dans Google.",
         },
         optimizeTitle: {
           title: "Optimiser le titre de la page",
-          description: "Le titre de votre page est trop court ou manque de mots-clés importants."
+          description: "Le titre de votre page est trop court ou manque de mots-clés importants.",
         },
         addAltTexts: {
           title: "Ajouter des textes ALT aux images",
-          description: "Les images sans texte ALT nuisent au SEO et à l'accessibilité."
+          description: "Les images sans texte ALT nuisent au SEO et à l'accessibilité.",
         },
         addCanonical: {
           title: "Ajouter une balise canonical",
-          description: "Une balise canonical empêche les problèmes de contenu dupliqué."
+          description: "Une balise canonical empêche les problèmes de contenu dupliqué.",
         },
         addOpenGraph: {
           title: "Ajouter des balises Open Graph",
-          description: "Les balises Open Graph améliorent l'affichage lors du partage sur les réseaux sociaux."
+          description: "Les balises Open Graph améliorent l'affichage lors du partage sur les réseaux sociaux.",
         },
         addTwitterCard: {
           title: "Ajouter des balises Twitter Card",
-          description: "Les balises Twitter Card améliorent l'affichage lors du partage sur Twitter."
+          description: "Les balises Twitter Card améliorent l'affichage lors du partage sur Twitter.",
         },
         addMoreContent: {
           title: "Ajouter plus de contenu",
-          description: "Votre page d'accueil a trop peu de contenu. Ajoutez au moins 300 mots pour un meilleur SEO."
+          description: "Votre page d'accueil a trop peu de contenu. Ajoutez au moins 300 mots pour un meilleur SEO.",
         },
         addMoreLinks: {
           title: "Ajouter des liens internes",
-          description: "Le maillage interne aide les moteurs de recherche à découvrir et indexer vos pages."
-        }
+          description: "Le maillage interne aide les moteurs de recherche à découvrir et indexer vos pages.",
+        },
       },
     },
     actionPlan: {
@@ -3198,7 +3200,7 @@ export const translations = {
         title: "Comment mettre à jour le SEO sur Shopify",
         step1: "Cochez les actions ci-dessous pour les optimiser automatiquement",
         step2: "Une fois terminé, les données seront prêtes pour la synchronisation",
-        step3: "Utilisez le bouton \"Synchroniser avec Shopify\" pour appliquer les changements",
+        step3: 'Utilisez le bouton "Synchroniser avec Shopify" pour appliquer les changements',
       },
       actions: {
         seoTitle: {
@@ -4781,7 +4783,7 @@ export const translations = {
     exportPdf: "Exporter en PDF",
     analyzing: "Analyse...",
     exporting: "Export...",
-    
+
     // Tabs
     tabs: {
       overview: "Vue d'ensemble",
@@ -4792,7 +4794,7 @@ export const translations = {
       blog: "Blog",
       global: "Vue globale",
     },
-    
+
     // Loading state
     loading: {
       title: "Nous préparons votre audit SEO",
@@ -4807,14 +4809,15 @@ export const translations = {
         finalizing: "Finalisation de votre audit SEO...",
       },
     },
-    
+
     // Empty state
     empty: {
       title: "Aucune donnée d'audit",
-      description: "Lancez votre premier audit SEO pour obtenir des insights détaillés sur les performances de votre boutique",
+      description:
+        "Lancez votre premier audit SEO pour obtenir des insights détaillés sur les performances de votre boutique",
       startButton: "Démarrer l'audit SEO",
     },
-    
+
     // Overview tab
     overview: {
       title: "Audit SEO Professionnel",
@@ -4826,7 +4829,7 @@ export const translations = {
       noData: "Aucune donnée disponible",
       importProducts: "Importez vos produits pour voir l'analyse détaillée",
     },
-    
+
     // Score labels
     scores: {
       excellent: "Excellent",
@@ -4838,7 +4841,7 @@ export const translations = {
       improvementsNeeded: "Améliorations nécessaires",
       urgentOptimization: "Optimisation urgente requise",
     },
-    
+
     // Categories
     categories: {
       titleQuality: "Qualité des titres SEO",
@@ -4854,7 +4857,7 @@ export const translations = {
       technicalSeo: "SEO technique",
       technicalSeoDesc: "Synchronisation Shopify et optimisations techniques",
     },
-    
+
     // Priority recommendations
     priorityRecommendations: "Recommandations prioritaires",
     actionsToImprove: "Actions à prendre pour améliorer votre SEO",
@@ -4871,7 +4874,7 @@ export const translations = {
     enrichAltTexts: "Enrichir {{count}} ALT texts",
     excellentWork: "Excellent travail ! 🎉",
     topOptimization: "Votre optimisation SEO est au top. Continuez à maintenir ce niveau d'excellence.",
-    
+
     // Detailed issues
     detailedIssues: "Détails des problèmes détectés",
     clickToSeeIssues: "Cliquez pour voir les problèmes spécifiques par catégorie",
@@ -4883,28 +4886,28 @@ export const translations = {
     currentAlt: "ALT actuel",
     chars: "car.",
     andMoreIssues: "... et {{count}} autres problèmes",
-    
+
     // AI Analysis tab
     aiAnalysis: {
       noData: "Aucune analyse IA disponible",
       noDataDesc: "Lancez un nouvel audit pour obtenir une analyse détaillée",
       startAnalysis: "Démarrer l'analyse",
     },
-    
+
     // Actions
     automatedActions: "Actions Automatisées NewAI",
     automatedActionsDesc: "Actions rapides optimisées par l'IA",
     elementsToOptimize: "{{count}} éléments à optimiser",
     optimize: "Optimiser",
     recommendations: "Recommandations",
-    
+
     // Sections
     technicalAnalysis: "🔍 Analyse Technique",
     contentSemantic: "💡 Contenu & Sémantique",
     productElements: "🛍️ Éléments SEO Produit",
     collectionElements: "📁 Éléments SEO Collection",
     blogElements: "📝 Éléments SEO Blog",
-    
+
     // Quality analysis issues (from functions)
     issues: {
       titleMissing: "Titre SEO manquant",
@@ -4917,14 +4920,15 @@ export const translations = {
       looksLikeFilename: "Ressemble à un nom de fichier",
       tooGeneric: "Trop générique",
     },
-    
+
     // Toast messages
     toasts: {
       auditSuccess: "Audit SEO complété avec succès !",
       auditSuccessDesc: "Score global: {{score}}/100",
       auditError: "Erreur lors de l'audit SEO",
       exportSuccess: "Rapport généré",
-      exportSuccessDesc: "Le rapport s'ouvre dans une nouvelle fenêtre. Vous pouvez l'imprimer ou l'enregistrer en PDF.",
+      exportSuccessDesc:
+        "Le rapport s'ouvre dans une nouvelle fenêtre. Vous pouvez l'imprimer ou l'enregistrer en PDF.",
       exportError: "Impossible d'exporter le rapport PDF",
       loginRequired: "Vous devez être connecté pour exporter le rapport",
       enablePopups: "Veuillez autoriser les pop-ups pour exporter le rapport",
@@ -5006,7 +5010,7 @@ export const translations = {
     domain: {
       selectPlaceholder: "Sélectionnez un domaine",
       verified: "Vérifié",
-      notVerified: "Non vérifié",
+      notVerified: "Vérifié",
       add: "Ajouter un domaine",
     },
     title: "Google Search Console",
@@ -5032,7 +5036,7 @@ export const translations = {
     loadFromGSCDesc: "Cette action récupère vos statistiques de recherche directement depuis Google",
     howItWorks: "Comment ça marche ?",
     howItWorksStep1: "Vérifiez que votre domaine est bien ajouté dans Google Search Console",
-    howItWorksStep2: "Cliquez sur \"Charger les données\" pour synchroniser les statistiques",
+    howItWorksStep2: 'Cliquez sur "Charger les données" pour synchroniser les statistiques',
     howItWorksStep3: "Les données seront mises à jour et affichées automatiquement",
     analysisPeriod: "Période d'analyse",
     metrics: {
@@ -5041,11 +5045,11 @@ export const translations = {
       avgCtr: "CTR moyen",
       avgPosition: "Position moyenne",
       clicks: "clics",
-      position: "position"
+      position: "position",
     },
     charts: {
       clicksImpressions: "Évolution des clics et impressions",
-      ctrPosition: "CTR et Position moyenne"
+      ctrPosition: "CTR et Position moyenne",
     },
     topKeywords: "Mots-clés les plus performants",
     noKeywords: "Aucun mot-clé trouvé",
@@ -5059,7 +5063,7 @@ export const translations = {
       low: "Faible",
       markAsRead: "Marquer lu",
       resolve: "Résoudre",
-      drop: "Baisse de"
+      drop: "Baisse de",
     },
     dialogs: {
       addDomain: {
@@ -5069,14 +5073,14 @@ export const translations = {
         placeholder: "exemple.com",
         hint: "Entrez uniquement le domaine (sans http:// ou https://)",
         cancel: "Annuler",
-        add: "Ajouter"
+        add: "Ajouter",
       },
       availableSites: {
         title: "Sites disponibles dans Google Search Console",
         description: "Voici les domaines auxquels votre compte Google a accès dans Search Console",
         noSites: "Aucun site trouvé dans votre Google Search Console",
-        close: "Fermer"
-      }
+        close: "Fermer",
+      },
     },
     toasts: {
       authGranted: "Autorisation accordée, fermeture...",
@@ -5100,20 +5104,21 @@ export const translations = {
       noSitesFound: "Aucun site trouvé",
       fetchSitesError: "Erreur récupération sites",
       domainDeleted: "Domaine supprimé",
-      deleteError: "Erreur suppression"
+      deleteError: "Erreur suppression",
     },
     connect: {
       title: "Google Search Console",
-      description: "Connectez votre compte Google pour importer les données Search Console et suivre l'évolution de votre trafic et l'impact de vos optimisations SEO.",
+      description:
+        "Connectez votre compte Google pour importer les données Search Console et suivre l'évolution de votre trafic et l'impact de vos optimisations SEO.",
       connectWithGoogle: "Se connecter avec Google",
       viewMySites: "Voir mes sites disponibles",
       features: {
         seoAnalysis: "Analyse de performance SEO",
         trafficEvolution: "Évolution du trafic par période",
         multiDomain: "Support multi-domaines",
-        optimizationImpact: "Mesure de l'impact des optimisations"
-      }
-    }
+        optimizationImpact: "Mesure de l'impact des optimisations",
+      },
+    },
   },
 
   // Page Landing Produit
@@ -5152,11 +5157,11 @@ export const translations = {
       cantOpenLink: "Impossible d'ouvrir le lien du produit",
       cantShare: "Impossible de partager ce produit",
       linkCopied: "Lien copié dans le presse-papier",
-      cantCopyLink: "Impossible de copier le lien"
+      cantCopyLink: "Impossible de copier le lien",
     },
     share: {
-      text: "Découvrez ce produit :"
-    }
+      text: "Découvrez ce produit :",
+    },
   },
 
   // Legacy Dialogs (to be merged)
@@ -5207,7 +5212,8 @@ export const translations = {
       },
       disconnect: {
         title: "Déconnecter Google Search Console",
-        description: "Êtes-vous sûr de vouloir déconnecter votre compte Google Search Console ? Vous perdrez l'accès aux données de performance SEO.",
+        description:
+          "Êtes-vous sûr de vouloir déconnecter votre compte Google Search Console ? Vous perdrez l'accès aux données de performance SEO.",
         cancel: "Annuler",
         confirm: "Déconnecter",
       },
@@ -5219,7 +5225,7 @@ export const translations = {
       cancel: "Annuler",
       delete: "Supprimer",
     },
-    // Page Sync Dialog  
+    // Page Sync Dialog
     pageSync: {
       title: "Synchroniser avec Shopify",
       description: "{{count}} page(s) prête(s) à être synchronisée(s)",
@@ -5260,7 +5266,8 @@ export const translations = {
     // Product Media Dialog
     productMedia: {
       title: "4 Variantes d'Arrière-plans IA - Résolution HD",
-      description: "Sélectionnez votre variante préférée. Chaque image est générée en 2000x2000px avec le produit parfaitement centré.",
+      description:
+        "Sélectionnez votre variante préférée. Chaque image est générée en 2000x2000px avec le produit parfaitement centré.",
     },
     // Sync Results Dialog
     syncResults: {
@@ -5333,7 +5340,7 @@ export const translations = {
         pages: "Pages",
         articles: "Articles",
         images: "Images",
-        completed: "Terminé"
+        completed: "Terminé",
       },
     },
     shopifySync: {
@@ -5825,8 +5832,8 @@ export const translations = {
       elementNames: {
         title: "Titre SEO",
         metaDescription: "Meta Description",
-        h1: "H1"
-      }
+        h1: "H1",
+      },
     },
     scoreLabels: {
       excellent: "Excellent",
@@ -5853,7 +5860,8 @@ export const translations = {
       generateWithAI: "Générer avec l'IA",
     },
     autoSyncMessage: "Les données sont automatiquement synchronisées depuis Shopify au chargement de la page",
-    aiOptimizationNote: "L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify",
+    aiOptimizationNote:
+      "L'optimisation IA génère automatiquement le titre et la description, puis les sauvegarde et les synchronise avec Shopify",
     sections: {
       overallScore: "Score SEO Global",
       structure: "Structure",
@@ -5902,9 +5910,12 @@ export const translations = {
     },
     // Traductions des recommandations IA
     recommendations: {
-      addH1Shopify: "Intégrez une balise H1 principale sur votre page d'accueil via l'éditeur Shopify avec votre offre principale",
-      enrichContent: "Enrichissez votre page d'accueil avec au moins 300 mots de contenu unique décrivant vos produits et valeurs",
-      installSchemaApp: "Installez une application Shopify de structured data pour ajouter automatiquement les balises schema.org à vos pages",
+      addH1Shopify:
+        "Intégrez une balise H1 principale sur votre page d'accueil via l'éditeur Shopify avec votre offre principale",
+      enrichContent:
+        "Enrichissez votre page d'accueil avec au moins 300 mots de contenu unique décrivant vos produits et valeurs",
+      installSchemaApp:
+        "Installez une application Shopify de structured data pour ajouter automatiquement les balises schema.org à vos pages",
       optimizeMetaDescription: "Optimisez votre meta description avec des mots-clés et un appel à l'action clair",
       addAltTexts: "Ajoutez des textes ALT descriptifs à toutes vos images pour une meilleure accessibilité et SEO",
       addCanonical: "Ajoutez une balise canonical pour éviter les problèmes de contenu dupliqué",
@@ -6301,7 +6312,8 @@ export const translations = {
         enable: "Activer l'export automatique",
         enableDesc: "Exporter automatiquement les données après chaque synchronisation",
         afterOptimization: "Synchronisation automatique après optimisation",
-        afterOptimizationDesc: "Synchroniser automatiquement vers Shopify après optimisation IA sans confirmation (skip tous les pop-ups)",
+        afterOptimizationDesc:
+          "Synchroniser automatiquement vers Shopify après optimisation IA sans confirmation (skip tous les pop-ups)",
       },
       badges: {
         default: "Par défaut",
@@ -7674,8 +7686,10 @@ export const translations = {
       finalizePayment: "Veuillez finaliser le paiement pour activer votre nouveau plan.",
       planUpgradedNewCycle: "✅ Plan mis à niveau ! Nouveau cycle commence maintenant.",
       planUpgradedNoProration: "✅ Plan mis à niveau ! Nouveau cycle démarré sans prorata.",
-      planUpgradedWithProration: "✅ Plan mis à niveau ! {{amount}} facturé au prorata. Vos compteurs ont été réinitialisés.",
-      planUpgradedProrationDetails: "✅ Plan mis à niveau !\n💰 Montant prélevé: {{amount}}{{currency}}\n📅 {{daysRemaining}}j restants / {{totalDays}}j",
+      planUpgradedWithProration:
+        "✅ Plan mis à niveau ! {{amount}} facturé au prorata. Vos compteurs ont été réinitialisés.",
+      planUpgradedProrationDetails:
+        "✅ Plan mis à niveau !\n💰 Montant prélevé: {{amount}}{{currency}}\n📅 {{daysRemaining}}j restants / {{totalDays}}j",
       updateError: "Erreur lors de la mise à jour de l'abonnement",
     },
     limit: {
@@ -8104,18 +8118,19 @@ export const translations = {
     oauthDescription: "Méthode recommandée : connexion rapide et sécurisée via OAuth",
     commercialName: "Nom commercial de votre boutique",
     commercialNamePlaceholder: "Movala, Decora Home, etc.",
-    commercialNameHint: "Le nom qui apparaîtra dans l'interface (ex: \"Movala\")",
+    commercialNameHint: 'Le nom qui apparaîtra dans l\'interface (ex: "Movala")',
     technicalCode: "Code technique de votre boutique",
     findInUrl: "Trouvez le nom dans l'URL :",
     connectWithOAuth: "Connecter avec OAuth",
     connecting: "Connexion...",
-    newToShopify: "Nouveau sur Shopify ? Consultez le guide détaillé ci-dessous pour créer vos clés API en quelques minutes.",
+    newToShopify:
+      "Nouveau sur Shopify ? Consultez le guide détaillé ci-dessous pour créer vos clés API en quelques minutes.",
     connectionForm: "Formulaire de connexion",
     fillCredentials: "Remplissez vos identifiants API",
     apiKeyLabel: "API Key (32 caractères)",
-    apiKeyHint: "32 caractères hexadécimaux trouvés dans l'onglet \"API credentials\"",
+    apiKeyHint: '32 caractères hexadécimaux trouvés dans l\'onglet "API credentials"',
     adminApiToken: "Admin API Access Token (shpat_)",
-    adminApiTokenHint: "Commence par shpat_ - Token révélé une seule fois dans \"API credentials\"",
+    adminApiTokenHint: 'Commence par shpat_ - Token révélé une seule fois dans "API credentials"',
     connectWithApiKeys: "Connecter avec les clés API",
     enterStoreName: "Veuillez entrer le nom de votre boutique",
     pleaseLogin: "Veuillez vous connecter d'abord",
@@ -8128,9 +8143,11 @@ export const translations = {
     autoSyncStarted: "Synchronisation automatique en cours...",
     oauthError: "Erreur lors de la connexion OAuth",
     storeLimitReached: "Limite de boutiques atteinte",
-    storeLimitDesc: "Vous avez atteint le nombre maximum de boutiques ({{current}}/{{max}}). Passez à un plan supérieur pour en ajouter.",
+    storeLimitDesc:
+      "Vous avez atteint le nombre maximum de boutiques ({{current}}/{{max}}). Passez à un plan supérieur pour en ajouter.",
     limitedPermissions: "Permissions limitées détectées",
-    missingAccess: "Accès manquant : {{permissions}}. Certaines fonctionnalités seront désactivées. Vérifiez les permissions API dans Shopify Admin.",
+    missingAccess:
+      "Accès manquant : {{permissions}}. Certaines fonctionnalités seront désactivées. Vérifiez les permissions API dans Shopify Admin.",
     connectYourStore: "Connectez votre boutique Shopify",
     connectStore: "Connecter votre boutique",
     apiKeysConnection: "Connexion avec clés API",
@@ -8255,7 +8272,8 @@ export const translations = {
   smartTitle: {
     title: "Générateur de Titre Intelligent",
     productsWithImages: "{{count}} produits avec images",
-    description: "Génération intelligente de titres optimisés combinant l'analyse visuelle (Gemini Vision) et textuelle (DeepSeek)",
+    description:
+      "Génération intelligente de titres optimisés combinant l'analyse visuelle (Gemini Vision) et textuelle (DeepSeek)",
     previewGenerated: "Aperçu du titre optimisé généré !",
     generationError: "Erreur lors de la génération de l'aperçu",
     titleApplied: "Titre optimisé appliqué avec succès !",
@@ -8324,7 +8342,7 @@ export const translations = {
     status: {
       active: "Actif",
       broken: "Brisé",
-      unchecked: "Non vérifié",
+      unchecked: "Vérifié",
       internal: "Interne",
       external: "Externe",
     },
@@ -8411,7 +8429,7 @@ export const translations = {
     auth: {
       title: "Authentification",
       obtainKey: "1. Obtenir une clé API",
-      obtainKeyDesc: "Rendez-vous dans la section \"Accès API\" pour générer votre clé.",
+      obtainKeyDesc: 'Rendez-vous dans la section "Accès API" pour générer votre clé.',
       useKey: "2. Utiliser la clé",
       useKeyDesc: "Ajoutez le header à chaque requête :",
       errorManagement: "3. Gestion des erreurs",
@@ -8688,8 +8706,10 @@ export const translations = {
     noArticles: "Aucun article trouvé",
     createFirstArticle: "Créez votre premier article pour améliorer le SEO",
     aiCampaigns: "Campagnes de contenu IA",
-    campaignsDescription: "Planifiez la génération automatique d'articles pour les différentes fonctionnalités de NewAI",
-    campaignsComingSoon: "Campagnes IA bientôt disponibles. Utilisez 'Suggérer des sujets' pour générer des idées d'articles maintenant.",
+    campaignsDescription:
+      "Planifiez la génération automatique d'articles pour les différentes fonctionnalités de NewAI",
+    campaignsComingSoon:
+      "Campagnes IA bientôt disponibles. Utilisez 'Suggérer des sujets' pour générer des idées d'articles maintenant.",
     generateIdeas: "Générer des idées",
     suggestedTopics: "Sujets suggérés",
     selectTopic: "Sélectionnez un sujet pour créer un article",
