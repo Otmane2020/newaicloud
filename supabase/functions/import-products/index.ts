@@ -862,7 +862,7 @@ Deno.serve(async (req: Request) => {
 
     // Insert products in batches to avoid timeout
     const BATCH_SIZE = 50; // Reduced from 100 to 50 for better reliability
-    const productIdMap = new Map<number, string>();
+    const productIdMap = new Map<string, string>();
     const totalBatches = Math.ceil(productsToInsert.length / BATCH_SIZE);
     
     console.log(`📦 Inserting ${productsToInsert.length} products in ${totalBatches} batches of ${BATCH_SIZE}`);
@@ -910,7 +910,7 @@ Deno.serve(async (req: Request) => {
       // Map product IDs from this batch
       if (upsertedProducts) {
         upsertedProducts.forEach((p: any) => {
-          productIdMap.set(p.shopify_id, p.id);
+          productIdMap.set(String(p.shopify_id), String(p.id));
         });
       }
       
@@ -938,8 +938,11 @@ Deno.serve(async (req: Request) => {
     const allImages: any[] = [];
 
     for (const product of products) {
-      const productId = productIdMap.get(product.id);
-      if (!productId) continue;
+      const productId = productIdMap.get(String(product.id));
+      if (!productId) {
+        console.warn(`⚠️ No mapping found for product ID ${product.id} (type: ${typeof product.id})`);
+        continue;
+      }
 
       if (product.variants && product.variants.length > 0) {
         const variantsToInsert = product.variants.map((variant) => {
@@ -1352,7 +1355,7 @@ Deno.serve(async (req: Request) => {
     // We need to get collection_ids from the original Shopify products
     // and map them to our internal product IDs
     for (const product of products) {
-      const productId = productIdMap.get(product.id);
+      const productId = productIdMap.get(String(product.id));
       if (!productId) continue;
       
       // Get collection associations from Shopify product data
