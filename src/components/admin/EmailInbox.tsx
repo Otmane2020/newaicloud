@@ -453,41 +453,140 @@ export function EmailInbox() {
     );
   }
 
+  const deleteEmail = async (emailId: string) => {
+    try {
+      const { error } = await supabase.from("admin_emails").delete().eq("id", emailId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Email supprimé",
+        description: "L'email a été supprimé avec succès",
+      });
+
+      if (selectedEmail?.id === emailId) {
+        setSelectedEmail(null);
+      }
+      loadEmails();
+      loadEmailStats();
+    } catch (error) {
+      console.error("Error deleting email:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteAllEmails = async () => {
+    try {
+      let query = supabase.from("admin_emails").delete();
+      
+      if (activeFolder === "inbox") {
+        query = query.eq("direction", "incoming");
+      } else if (activeFolder === "sent") {
+        query = query.eq("direction", "outgoing");
+      } else {
+        query = query.eq("folder", activeFolder);
+      }
+
+      const { error } = await query;
+
+      if (error) throw error;
+
+      toast({
+        title: "Emails supprimés",
+        description: "Tous les emails du dossier ont été supprimés",
+      });
+
+      setSelectedEmail(null);
+      loadEmails();
+      loadEmailStats();
+    } catch (error) {
+      console.error("Error deleting all emails:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer les emails",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="grid grid-cols-[280px_1fr] gap-6">
-      {/* Sidebar */}
-      <EmailSidebar
-        activeFolder={activeFolder}
-        onFolderChange={setActiveFolder}
-        stats={emailStats}
-        onRefresh={() => {
-          loadEmails();
-          loadEmailStats();
-        }}
-        loading={loading}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 lg:gap-6">
+      {/* Sidebar - Hidden on mobile, visible on desktop */}
+      <div className="hidden lg:block">
+        <EmailSidebar
+          activeFolder={activeFolder}
+          onFolderChange={setActiveFolder}
+          stats={emailStats}
+          onRefresh={() => {
+            loadEmails();
+            loadEmailStats();
+          }}
+          loading={loading}
+        />
+      </div>
+
+      {/* Mobile folder tabs */}
+      <div className="flex lg:hidden overflow-x-auto gap-2 pb-2">
+        {["inbox", "sent", "drafts", "trash", "spam"].map((folder) => (
+          <Button
+            key={folder}
+            variant={activeFolder === folder ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveFolder(folder)}
+            className="whitespace-nowrap"
+          >
+            {folder === "inbox" && "Reçus"}
+            {folder === "sent" && "Envoyés"}
+            {folder === "drafts" && "Brouillons"}
+            {folder === "trash" && "Corbeille"}
+            {folder === "spam" && "Spam"}
+            {getUnreadCount(folder) > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {getUnreadCount(folder)}
+              </Badge>
+            )}
+          </Button>
+        ))}
+      </div>
 
       {/* Main Content */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Mail className="w-6 h-6" />
-              {activeFolder === "inbox" && "Boîte de réception"}
-              {activeFolder === "sent" && "Emails envoyés"}
-              {activeFolder === "drafts" && "Brouillons"}
-              {activeFolder === "trash" && "Corbeille"}
-              {activeFolder === "spam" && "Spam"}
+        <CardContent className="p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
+              <Mail className="w-5 h-5 lg:w-6 lg:h-6" />
+              <span className="hidden sm:inline">
+                {activeFolder === "inbox" && "Boîte de réception"}
+                {activeFolder === "sent" && "Emails envoyés"}
+                {activeFolder === "drafts" && "Brouillons"}
+                {activeFolder === "trash" && "Corbeille"}
+                {activeFolder === "spam" && "Spam"}
+              </span>
               {getUnreadCount(activeFolder) > 0 && (
                 <Badge variant="default" className="ml-2">
                   {getUnreadCount(activeFolder)} non lu{getUnreadCount(activeFolder) > 1 ? "s" : ""}
                 </Badge>
               )}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {filteredEmails.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={deleteAllEmails} 
+                  className="gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Supprimer tout</span>
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={simulateIncomingEmail} className="gap-2">
                 <TestTube className="w-4 h-4" />
-                Email Test
+                <span className="hidden sm:inline">Email Test</span>
               </Button>
               <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
                 <DialogTrigger asChild>
@@ -627,7 +726,20 @@ export function EmailInbox() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                    {getStatusBadge(email.status)}
+                                    <div className="flex items-center gap-2">
+                                      {getStatusBadge(email.status)}
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteEmail(email.id);
+                                        }}
+                                      >
+                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                      </Button>
+                                    </div>
                                     <p className="text-xs text-muted-foreground whitespace-nowrap">
                                       {format(new Date(email.created_at), 'HH:mm', { locale: fr })}
                                     </p>
@@ -691,7 +803,20 @@ export function EmailInbox() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                    {getStatusBadge(email.status)}
+                                    <div className="flex items-center gap-2">
+                                      {getStatusBadge(email.status)}
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteEmail(email.id);
+                                        }}
+                                      >
+                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                      </Button>
+                                    </div>
                                     <p className="text-xs text-muted-foreground whitespace-nowrap">
                                       {format(new Date(email.created_at), 'HH:mm', { locale: fr })}
                                     </p>
@@ -755,7 +880,20 @@ export function EmailInbox() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                    {getStatusBadge(email.status)}
+                                    <div className="flex items-center gap-2">
+                                      {getStatusBadge(email.status)}
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteEmail(email.id);
+                                        }}
+                                      >
+                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                      </Button>
+                                    </div>
                                     <p className="text-xs text-muted-foreground whitespace-nowrap">
                                       {format(new Date(email.created_at), 'dd MMM', { locale: fr })}
                                     </p>
@@ -819,7 +957,20 @@ export function EmailInbox() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                    {getStatusBadge(email.status)}
+                                    <div className="flex items-center gap-2">
+                                      {getStatusBadge(email.status)}
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteEmail(email.id);
+                                        }}
+                                      >
+                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                      </Button>
+                                    </div>
                                     <p className="text-xs text-muted-foreground whitespace-nowrap">
                                       {format(new Date(email.created_at), 'dd/MM/yy', { locale: fr })}
                                     </p>
@@ -889,7 +1040,7 @@ export function EmailInbox() {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {selectedEmail.direction === "incoming" && (
                       <Button size="sm" variant="outline" onClick={() => handleReply(selectedEmail)}>
                         <Reply className="w-4 h-4 mr-2" />
@@ -899,7 +1050,7 @@ export function EmailInbox() {
                     {selectedEmail.folder !== "trash" && (
                       <Button size="sm" variant="outline" onClick={() => moveToFolder(selectedEmail.id, "trash")}>
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Supprimer
+                        Corbeille
                       </Button>
                     )}
                     {selectedEmail.folder === "trash" && (
@@ -908,6 +1059,17 @@ export function EmailInbox() {
                         Restaurer
                       </Button>
                     )}
+                    <Button 
+                      size="sm" 
+                      variant="destructive" 
+                      onClick={() => {
+                        deleteEmail(selectedEmail.id);
+                        setSelectedEmail(null);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer définitivement
+                    </Button>
                   </div>
 
                   <div className="border-t pt-4">

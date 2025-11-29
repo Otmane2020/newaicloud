@@ -524,16 +524,64 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile view - Cards */}
+            <div className="block lg:hidden space-y-4">
+              {users
+                .filter(user => {
+                  if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
+                  if (billingFilter === 'all') return true;
+                  if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
+                  const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+                  if (!activeSub) return false;
+                  return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
+                })
+                .map((user) => {
+                  const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
+                  return (
+                    <Card key={user.id} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="break-all text-sm font-medium">{user.email}</div>
+                          {getStatusBadge(user.subscription_status)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                        {user.hasStripeData && activeSub && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                              {activeSub.status}
+                            </Badge>
+                            <span>{Math.round(activeSub.amount / 100)} {activeSub.currency.toUpperCase()}/{activeSub.interval === 'month' ? 'mois' : 'an'}</span>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => loginAsUser(user.id, user.email)}
+                            disabled={loggingInAs === user.id}
+                          >
+                            <LogIn className="w-3 h-3 mr-1" />
+                            Login
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+            </div>
+
+            {/* Desktop view - Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-4">Email</th>
-                    <th className="text-left p-4">Nom</th>
+                    <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Statut</th>
                     <th className="text-left p-4">Plan</th>
                     <th className="text-left p-4">Stripe Info</th>
-                    <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Actions</th>
                     <th className="text-left p-4">Changer Plan</th>
                     <th className="text-left p-4">Login As</th>
@@ -542,12 +590,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <tbody>
                   {users
                     .filter(user => {
-                      // Filtre par statut
-                      if (statusFilter !== 'all' && user.subscription_status !== statusFilter) {
-                        return false;
-                      }
-                      
-                      // Filtre par facturation
+                      if (statusFilter !== 'all' && user.subscription_status !== statusFilter) return false;
                       if (billingFilter === 'all') return true;
                       if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
                       const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
@@ -556,12 +599,13 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     })
                     .map((user) => {
                       const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
-                      const planDetails = plans.find(p => p.id === user.current_plan_id);
                       
                       return (
                         <tr key={user.id} className="border-b hover:bg-muted/50">
                           <td className="p-4">{user.email}</td>
-                          <td className="p-4">{user.full_name || '-'}</td>
+                          <td className="p-4">
+                            {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                          </td>
                           <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
                           <td className="p-4">
                             <Select
@@ -606,9 +650,6 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                             ) : (
                               <Badge variant="outline">Pas de données Stripe</Badge>
                             )}
-                          </td>
-                          <td className="p-4">
-                            {new Date(user.created_at).toLocaleDateString('fr-FR')}
                           </td>
                           <td className="p-4">
                             <Select
