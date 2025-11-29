@@ -23,6 +23,7 @@ import { SystemEventLogs } from '@/components/admin/SystemEventLogs';
 import { AdminToolbox } from '@/components/admin/AdminToolbox';
 import { AdminSmartSearch } from '@/components/admin/AdminSmartSearch';
 import { GoogleAdsAdmin } from '@/components/admin/GoogleAdsAdmin';
+import { BlogSeoManagementAdmin } from '@/components/admin/BlogSeoManagementAdmin';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -666,6 +667,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'google-ads' && (
         <GoogleAdsAdmin />
+      )}
+
+      {activeTab === 'blog-seo' && (
+        <BlogSeoManagementAdmin />
       )}
     </div>
   );

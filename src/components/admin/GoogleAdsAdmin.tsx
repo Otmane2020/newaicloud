@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   TrendingUp, 
@@ -18,7 +20,11 @@ import {
   CheckCircle2,
   Clock,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  LogOut,
+  Loader2,
+  Megaphone,
+  Link2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -83,6 +89,12 @@ export function GoogleAdsAdmin() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   
+  // Connection states
+  const [isConnected, setIsConnected] = useState(false);
+  const [googleAdsEmail, setGoogleAdsEmail] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  
   // Data states
   const [searchTerms, setSearchTerms] = useState<SearchTerm[]>([]);
   const [roasData, setRoasData] = useState<ROASData[]>([]);
@@ -98,8 +110,173 @@ export function GoogleAdsAdmin() {
   const [totalConversions, setTotalConversions] = useState(0);
 
   useEffect(() => {
-    loadData();
+    checkConnection();
+    handleOAuthCallback();
   }, []);
+
+  useEffect(() => {
+    if (isConnected) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [isConnected]);
+
+  const handleOAuthCallback = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state === 'google_ads_admin' && window.opener) {
+      window.opener.postMessage({
+        type: 'GOOGLE_ADS_ADMIN_OAUTH_CODE',
+        code: code,
+      }, window.location.origin);
+      setTimeout(() => window.close(), 1000);
+    }
+  };
+
+  const checkConnection = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('google_ads_oauth_token, google_ads_email, google_ads_customer_id')
+        .eq('id', user.id)
+        .single();
+
+      setIsConnected(!!profile?.google_ads_oauth_token);
+      setGoogleAdsEmail(profile?.google_ads_email || null);
+      setCustomerId(profile?.google_ads_customer_id || '');
+    } catch (error) {
+      console.error('Error checking connection:', error);
+    }
+  };
+
+  const connectWithGoogle = async () => {
+    try {
+      setIsConnecting(true);
+      const redirectUri = `${window.location.origin}/superadmin`;
+      
+      const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-url', {
+        body: { 
+          redirectUri,
+          scopes: 'https://www.googleapis.com/auth/adwords',
+          state: 'google_ads_admin'
+        },
+      });
+      
+      if (urlError || !urlData?.url) {
+        throw new Error('Failed to generate OAuth URL');
+      }
+      
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        urlData.url,
+        'Google Ads Authorization',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      if (!popup || popup.closed) {
+        toast({
+          title: "Popup bloquée",
+          description: "Autorisez les popups pour ce site",
+          variant: "destructive"
+        });
+        setIsConnecting(false);
+        return;
+      }
+      
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data.type === 'GOOGLE_ADS_ADMIN_OAUTH_CODE' && event.data.code) {
+          window.removeEventListener('message', handleMessage);
+          
+          const { data, error } = await supabase.functions.invoke('google-ads-oauth-token', {
+            body: {
+              code: event.data.code,
+              redirectUri,
+            },
+          });
+          
+          if (error || !data?.success) {
+            toast({
+              title: "Erreur de connexion",
+              description: error?.message || "Échec de l'authentification",
+              variant: "destructive"
+            });
+            setIsConnecting(false);
+            return;
+          }
+          
+          toast({
+            title: "Connexion réussie",
+            description: "Compte Google Ads connecté"
+          });
+          checkConnection();
+          setIsConnecting(false);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        setIsConnecting(false);
+      }, 5 * 60 * 1000);
+      
+    } catch (error) {
+      console.error('Error connecting:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de se connecter à Google Ads",
+        variant: "destructive"
+      });
+      setIsConnecting(false);
+    }
+  };
+
+  const disconnectGoogle = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          google_ads_oauth_token: null,
+          google_ads_refresh_token: null,
+          google_ads_token_expires_at: null,
+          google_ads_email: null,
+          google_ads_customer_id: null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Déconnecté",
+        description: "Compte Google Ads déconnecté"
+      });
+      setIsConnected(false);
+      setGoogleAdsEmail(null);
+      setCustomerId('');
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de déconnecter",
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -245,6 +422,73 @@ export function GoogleAdsAdmin() {
     );
   }
 
+  // Show connection UI if not connected
+  if (!isConnected) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">
+            {t.superAdmin.googleAds?.title || "Google Ads Optimizer"}
+          </h1>
+          <p className="text-muted-foreground">
+            {t.superAdmin.googleAds?.description || "AI-powered campaign optimization for NewAI"}
+          </p>
+        </div>
+        
+        <Card className="p-8">
+          <div className="text-center space-y-6">
+            <div className="flex justify-center">
+              <div className="p-4 bg-primary/10 rounded-full">
+                <Megaphone className="h-12 w-12 text-primary" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Connecter Google Ads</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Connectez votre compte Google Ads pour importer les campagnes, analyser les performances et optimiser avec l'IA.
+              </p>
+            </div>
+            
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-left max-w-md mx-auto">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="font-medium text-foreground">Configuration requise</p>
+                  <p className="text-muted-foreground">
+                    Les credentials Google OAuth sont déjà configurés (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+                    Cliquez ci-dessous pour autoriser l'accès à votre compte Google Ads.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button
+                onClick={connectWithGoogle}
+                size="lg"
+                className="gap-2"
+                disabled={isConnecting}
+              >
+                {isConnecting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Link2 className="h-5 w-5" />
+                )}
+                {isConnecting ? "Connexion en cours..." : "Connecter Google Ads"}
+              </Button>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>✓ Importer les campagnes et termes de recherche</p>
+                <p>✓ Analyser ROAS et performances</p>
+                <p>✓ Suggestions de mots-clés négatifs IA</p>
+                <p>✓ Stratégies d'optimisation IA</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -268,6 +512,32 @@ export function GoogleAdsAdmin() {
           </Button>
         </div>
       </div>
+
+      {/* Connection Status Card */}
+      <Card className="border-green-500/50 bg-green-500/5">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="font-medium">Google Ads connecté</p>
+                {googleAdsEmail && (
+                  <p className="text-sm text-muted-foreground">{googleAdsEmail}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {customerId && (
+                <Badge variant="outline">ID: {customerId}</Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={disconnectGoogle}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnecter
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

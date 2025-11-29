@@ -1,4 +1,4 @@
-import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target } from "lucide-react";
+import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +68,11 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
       icon: Target,
       label: t.superAdmin.navigation.googleAds || "Google Ads",
       id: "google-ads"
+    },
+    {
+      icon: Globe,
+      label: t.superAdmin.navigation.blogSeo || "Blog SEO",
+      id: "blog-seo"
     },
     {
       icon: Activity,
