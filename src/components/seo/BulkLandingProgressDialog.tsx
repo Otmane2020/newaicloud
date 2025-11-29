@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,43 @@ interface BulkLandingProgressDialogProps {
   onComplete: () => void;
 }
 
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to call API with retry on rate limit
+async function callWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 5000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Check if it's a rate limit error (429)
+      const isRateLimit = error?.message?.includes('429') || 
+                          error?.message?.includes('rate') ||
+                          error?.status === 429;
+      
+      if (isRateLimit && attempt < maxRetries - 1) {
+        // Exponential backoff: 5s, 10s, 20s
+        const waitTime = baseDelay * Math.pow(2, attempt);
+        console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
+        await delay(waitTime);
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+  
+  throw lastError;
+}
+
 export function BulkLandingProgressDialog({
   open,
   onOpenChange,
@@ -60,10 +97,12 @@ export function BulkLandingProgressDialog({
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewProductTitle, setPreviewProductTitle] = useState<string>('');
+  const generationStartedRef = useRef(false);
 
   // Initialize previews when dialog opens
   useEffect(() => {
-    if (open && products.length > 0) {
+    if (open && products.length > 0 && !generationStartedRef.current) {
+      generationStartedRef.current = true;
       setPreviews(products.map(p => ({
         productId: p.id,
         productTitle: p.title,
@@ -73,6 +112,11 @@ export function BulkLandingProgressDialog({
       setIsCancelled(false);
       startGeneration();
     }
+    
+    // Reset ref when dialog closes
+    if (!open) {
+      generationStartedRef.current = false;
+    }
   }, [open, products]);
 
   const startGeneration = async () => {
@@ -81,9 +125,9 @@ export function BulkLandingProgressDialog({
     for (let i = 0; i < products.length; i++) {
       if (isCancelled) break;
 
-      // Add delay between requests to avoid rate limiting (3 seconds)
+      // Add delay between requests to avoid rate limiting (5 seconds)
       if (i > 0) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await delay(5000);
       }
 
       const product = products[i];
@@ -119,33 +163,41 @@ export function BulkLandingProgressDialog({
           images.unshift(productData.image_url);
         }
 
-        // Generate landing page - pass params at root level as expected by edge function
+        // Generate landing page with retry on rate limit
         const productTitle = productData.seo_title || productData.title;
-        const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          body: {
-            product_id: product.id,
-            productTitle: productTitle,
-            productDescription: productData.seo_description || productData.description,
-            productImages: images.slice(0, 5),
-            vendor: productData.vendor,
-            designStyle: config.designStyle,
-            layout: config.layout,
-            contentLength: config.contentLength,
-            theme: config.theme,
-            vendor_source: config.vendorSource,
-            colorScheme: config.colorScheme,
-            customHighlights: config.customHighlights,
-          },
-        });
+        const result = await callWithRetry(async () => {
+          const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: {
+              product_id: product.id,
+              productTitle: productTitle,
+              productDescription: productData.seo_description || productData.description,
+              productImages: images.slice(0, 5),
+              vendor: productData.vendor,
+              designStyle: config.designStyle,
+              layout: config.layout,
+              contentLength: config.contentLength,
+              theme: config.theme,
+              vendor_source: config.vendorSource,
+              colorScheme: config.colorScheme,
+              customHighlights: config.customHighlights,
+            },
+          });
 
-        if (error) throw error;
+          if (error) {
+            // Re-throw with status info for retry logic
+            const err = new Error(error.message || 'Erreur de génération');
+            (err as any).status = error.status;
+            throw err;
+          }
+          return data;
+        }, 3, 5000); // 3 retries, 5s base delay
 
         // Save to database
         const { error: updateError } = await supabase
           .from('shopify_products')
           .update({
-            landing_page_html: data.html,
+            landing_page_html: result.html,
             has_landing_page: true,
             last_landing_generation_at: new Date().toISOString(),
           })
@@ -156,7 +208,7 @@ export function BulkLandingProgressDialog({
         // Update status to success
         setPreviews(prev => prev.map(p => 
           p.productId === product.id 
-            ? { ...p, status: 'success', landingHtml: data.html } 
+            ? { ...p, status: 'success', landingHtml: result.html } 
             : p
         ));
 
