@@ -18,6 +18,11 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     let isMounted = true;
 
     const checkAdminRole = async () => {
+      // Ne pas vérifier si l'auth est encore en cours de chargement
+      if (loading) {
+        return;
+      }
+
       if (!user) {
         if (!isMounted) return;
         setIsAdmin(false);
@@ -71,7 +76,7 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, user?.email]);
+  }, [user?.id, user?.email, loading]);
 
   if (loading || checking) {
     return (
