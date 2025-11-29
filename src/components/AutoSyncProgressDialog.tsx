@@ -1,5 +1,6 @@
 import React from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
@@ -109,8 +110,12 @@ export function AutoSyncProgressDialog() {
   };
 
   return (
-    <Dialog open={shouldShow} onOpenChange={isCompleted ? handleClose : undefined}>
+    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className={`sm:max-w-md ${isCompleted ? '' : '[&>button]:hidden'}`}>
+        <VisuallyHidden>
+          <DialogTitle>{t.dialogs.autoSync.title}</DialogTitle>
+          <DialogDescription>{t.dialogs.autoSync.pleaseWait}</DialogDescription>
+        </VisuallyHidden>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           {/* Icon with animation */}
           <div className="relative">
