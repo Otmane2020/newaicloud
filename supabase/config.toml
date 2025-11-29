@@ -448,3 +448,6 @@ verify_jwt = false
 [functions.generate-landing-bulk]
 verify_jwt = true
 
+[functions.analyze-translation-issues]
+verify_jwt = true
+
