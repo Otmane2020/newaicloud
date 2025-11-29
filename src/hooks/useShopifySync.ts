@@ -156,6 +156,15 @@ export const useShopifySync = () => {
       
       for (const type of types) {
         setCurrentSyncType(type);
+        
+        // Update sync_history sync_type for progress tracking
+        if (historyId) {
+          await supabase
+            .from('sync_history')
+            .update({ sync_type: type })
+            .eq('id', historyId);
+        }
+        
         console.log(`📦 [SYNC ${type.toUpperCase()}] Starting import...`);
         
         try {
@@ -281,20 +290,22 @@ export const useShopifySync = () => {
 
       console.log('📊 [SYNC STATS] Total imported:', totalImported, 'Duration:', duration, 'ms');
 
-      // Update history entry
+      // Update history entry with completed status
       if (historyId) {
-        console.log('📝 [SYNC HISTORY] Updating history entry:', historyId);
+        console.log('📝 [SYNC HISTORY] Updating history entry:', historyId, 'status:', errorMessages.length > 0 ? 'failed' : 'success');
         try {
           await supabase
             .from('sync_history')
             .update({
               status: errorMessages.length > 0 ? 'failed' : 'success',
+              sync_type: 'completed',
               items_synced: totalImported,
               duration_ms: duration,
               completed_at: new Date().toISOString(),
               error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
             })
             .eq('id', historyId);
+          console.log('✅ [SYNC HISTORY] History entry updated successfully');
         } catch (historyUpdateError) {
           console.error('❌ [SYNC HISTORY UPDATE EXCEPTION]', historyUpdateError);
         }
