@@ -2405,15 +2405,41 @@ export default function ProductTitleDescription() {
                             <h3 className="font-semibold text-sm line-clamp-2 mb-1">
                               {product.seo_title || product.title}
                             </h3>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {product.vendor && (
-                                <Badge variant="outline" className="text-xs">
-                                  {product.vendor}
-                                </Badge>
-                              )}
+                            <div className="flex flex-col gap-1">
                               <span className="text-xs text-muted-foreground">
-                                SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                                {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
                               </span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  defaultValue={product.vendor || ''}
+                                  placeholder="Marque..."
+                                  className="text-xs border rounded px-1.5 py-0.5 w-24 bg-background"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onBlur={async (e) => {
+                                    const newVendor = e.target.value.trim();
+                                    if (newVendor !== (product.vendor || '')) {
+                                      try {
+                                        await supabase
+                                          .from('shopify_products')
+                                          .update({ vendor: newVendor })
+                                          .eq('id', product.id);
+                                        setProducts(prev => prev.map(p => 
+                                          p.id === product.id ? { ...p, vendor: newVendor } : p
+                                        ));
+                                        toast.success('Marque mise à jour');
+                                      } catch (error) {
+                                        toast.error('Erreur lors de la mise à jour');
+                                      }
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      (e.target as HTMLInputElement).blur();
+                                    }
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
