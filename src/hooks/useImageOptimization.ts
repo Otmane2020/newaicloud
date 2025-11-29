@@ -262,12 +262,60 @@ export const useImageOptimization = () => {
       setIsOptimizing(true);
       
       try {
+        let finalUrl = optimizedUrl;
+        
+        // 🔥 CRITICAL FIX: Upload base64 to Storage FIRST before saving to database
+        if (optimizedUrl.startsWith('data:image/')) {
+          console.log('📤 [ImageOptimization] Uploading base64 image to Storage...');
+          try {
+            // Extract base64 data
+            const base64Data = optimizedUrl.split(',')[1];
+            const mimeType = optimizedUrl.split(';')[0].split(':')[1];
+            const extension = mimeType.split('/')[1] || 'png';
+            
+            // Convert base64 to binary
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Generate filename with optimization type
+            const typePrefix = optimizationType === 'ai_background' ? 'ai-bg' : 'optimized';
+            const fileName = `${typePrefix}-${productId}-${imageId}-${Date.now()}.${extension}`;
+            
+            // Upload to Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('generated-images')
+              .upload(fileName, bytes, {
+                contentType: mimeType,
+                upsert: true
+              });
+            
+            if (uploadError) {
+              console.error('❌ [ImageOptimization] Failed to upload to Storage:', uploadError);
+              throw new Error(`Storage upload failed: ${uploadError.message}`);
+            }
+            
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('generated-images')
+              .getPublicUrl(fileName);
+            
+            finalUrl = publicUrl;
+            console.log('✅ [ImageOptimization] Image uploaded to Storage:', publicUrl);
+          } catch (uploadErr) {
+            console.error('❌ [ImageOptimization] Base64 upload error:', uploadErr);
+            throw new Error(`Failed to upload image: ${uploadErr instanceof Error ? uploadErr.message : 'Unknown error'}`);
+          }
+        }
+
         // Check if another image with this URL already exists for this product
         const { data: existingImage } = await supabase
           .from('product_images')
           .select('id')
           .eq('product_id', productId)
-          .eq('src', optimizedUrl)
+          .eq('src', finalUrl)
           .neq('id', imageId)
           .maybeSingle();
         
@@ -280,11 +328,11 @@ export const useImageOptimization = () => {
             .eq('id', existingImage.id);
         }
 
-        // Update product image locally
+        // Update product image locally with public URL (not base64!)
         const { error: updateError } = await supabase
           .from('product_images')
           .update({ 
-            src: optimizedUrl,
+            src: finalUrl,
             updated_at: new Date().toISOString()
           })
           .eq('id', imageId);
@@ -299,13 +347,13 @@ export const useImageOptimization = () => {
           }
         }
 
-        // Save to history
+        // Save to history with public URL (not base64!)
         await saveToHistory({
           productId,
           imageId,
           optimizationType,
           originalUrl,
-          optimizedUrl,
+          optimizedUrl: finalUrl,
           aiModel,
           aiPrompt,
           resolution,
