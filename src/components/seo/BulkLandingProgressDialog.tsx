@@ -60,32 +60,58 @@ async function callWithRetry<T>(
     try {
       const { data, error } = await fn();
       
+      // Check for error from Supabase invoke
       if (error) {
-        // Check if it's a rate limit error (429)
-        const errorStr = JSON.stringify(error).toLowerCase();
+        const errorMsg = typeof error === 'string' ? error : 
+                         error?.message || 
+                         JSON.stringify(error);
+        const errorStr = errorMsg.toLowerCase();
         const isRateLimit = errorStr.includes('429') || 
                             errorStr.includes('rate') ||
                             errorStr.includes('limite de taux') ||
                             errorStr.includes('rate_limited');
         
         if (isRateLimit && attempt < maxRetries - 1) {
-          // Exponential backoff: 8s, 16s, 32s
           const waitTime = baseDelay * Math.pow(2, attempt);
           console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
           await delay(waitTime);
           continue;
         }
         
-        throw new Error(error.message || 'Erreur de génération');
+        throw new Error(errorMsg);
+      }
+      
+      // Check for error IN the data response (edge function returned error JSON)
+      if (data && typeof data === 'object' && 'error' in data && !('html' in data)) {
+        const errorData = data as { error: string };
+        const errorStr = (errorData.error || '').toLowerCase();
+        const isRateLimit = errorStr.includes('429') || 
+                            errorStr.includes('rate') ||
+                            errorStr.includes('limite de taux');
+        
+        if (isRateLimit && attempt < maxRetries - 1) {
+          const waitTime = baseDelay * Math.pow(2, attempt);
+          console.log(`Rate limited (in data), waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
+          await delay(waitTime);
+          continue;
+        }
+        
+        throw new Error(errorData.error || 'Erreur de génération');
       }
       
       if (!data) {
-        throw new Error('No data returned');
+        throw new Error('Aucune réponse du serveur');
+      }
+      
+      // Verify we have html in response
+      if (typeof data === 'object' && !('html' in data)) {
+        console.error('Invalid response data:', data);
+        throw new Error('Réponse invalide: pas de HTML généré');
       }
       
       return data;
     } catch (error: any) {
-      lastError = error;
+      lastError = error instanceof Error ? error : new Error(String(error));
       
       // Also check thrown errors for rate limit
       const errorStr = String(error?.message || '').toLowerCase();
@@ -100,11 +126,12 @@ async function callWithRetry<T>(
         continue;
       }
       
-      throw error;
+      // Don't retry for non-rate-limit errors
+      break;
     }
   }
   
-  throw lastError || new Error('Max retries exceeded');
+  throw lastError || new Error('Échec après plusieurs tentatives');
 }
 
 export function BulkLandingProgressDialog({
@@ -228,11 +255,16 @@ export function BulkLandingProgressDialog({
             : p
         ));
 
-      } catch (error) {
-        console.error(`Error generating landing for ${product.title}:`, error);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : typeof error === 'string' 
+            ? error 
+            : 'Erreur lors de la génération';
+        console.error(`Error generating landing for ${product.title}:`, errorMessage, error);
         setPreviews(prev => prev.map(p => 
           p.productId === product.id 
-            ? { ...p, status: 'error', error: error instanceof Error ? error.message : 'Erreur inconnue' } 
+            ? { ...p, status: 'error', error: errorMessage } 
             : p
         ));
       }
