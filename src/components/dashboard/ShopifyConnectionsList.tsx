@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit, Infinity } from "lucide-react";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit, Infinity, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
@@ -15,6 +15,7 @@ import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSetting
 import { SimpleSyncProgress } from '@/components/integration/SyncProgressDialog';
 import { SyncResultDialog } from '@/components/integration/SyncResultDialog';
 import { useTranslation } from '@/lib/language';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 import {
   AlertDialog,
@@ -40,11 +41,14 @@ interface ShopifyConnection {
 export default function ShopifyConnectionsList() {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
+  const { isDemoMode } = useDemoMode();
   const dateLocale = language === 'fr' ? fr : enUS;
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
+  const [storeToDelete, setStoreToDelete] = useState<ShopifyConnection | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   // Sync settings dialog state
   const [showSyncSettings, setShowSyncSettings] = useState(false);
@@ -163,7 +167,27 @@ export default function ShopifyConnectionsList() {
     }
   };
 
-  // Removed delete functions - not needed in connections list
+  // Delete store function - only available for non-demo users
+  const handleDeleteStore = async () => {
+    if (!storeToDelete || isDemoMode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('shopify_connections')
+        .delete()
+        .eq('id', storeToDelete.id);
+      
+      if (error) throw error;
+      
+      toast.success('Boutique déconnectée avec succès');
+      loadConnections();
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      toast.error(t.common.error);
+    }
+  };
 
   const openEditNameDialog = (store: ShopifyConnection) => {
     setStoreToEdit(store);
@@ -707,7 +731,22 @@ export default function ShopifyConnectionsList() {
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
-                  {/* Delete button removed */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (isDemoMode) {
+                        toast.error(t.demo?.restrictions?.cannotModify || "Mode démo : action non autorisée");
+                        return;
+                      }
+                      setStoreToDelete(store);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="gap-2 text-destructive hover:text-destructive"
+                    title={isDemoMode ? "Mode démo" : "Déconnecter la boutique"}
+                  >
+                    {isDemoMode ? <Lock className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -818,7 +857,26 @@ export default function ShopifyConnectionsList() {
         totalImported={totalSyncImported}
       />
 
-      {/* Delete dialog removed - managed in settings */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Déconnecter la boutique ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir déconnecter "{storeToDelete?.store_name || storeToDelete?.store_url}" ? 
+              Cette action supprimera la connexion mais pas les données importées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteStore}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Déconnecter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
