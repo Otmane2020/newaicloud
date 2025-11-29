@@ -414,13 +414,18 @@ export const SmartBackgroundDialog = ({
     setAppliedProducts(newApplied);
     setIsGenerating(false);
     
-    // Show success with view online option
-    toast.success(`${newApplied.size} background(s) appliqué(s) et synchronisé(s)`, {
-      description: 'Les images ont été mises à jour sur votre boutique.',
-      duration: 8000,
-    });
-    
-    onComplete?.();
+    // Close dialog after successful apply so user can see sync toasts clearly
+    if (newApplied.size > 0) {
+      // Small delay to allow Shopify sync toasts to be visible
+      setTimeout(() => {
+        onOpenChange(false);
+        onComplete?.();
+      }, 500);
+    } else {
+      toast.warning('Aucune image n\'a pu être appliquée', {
+        description: 'Vérifiez que les images ont bien été générées.'
+      });
+    }
   };
 
   const handleViewOnline = (product: Product) => {
