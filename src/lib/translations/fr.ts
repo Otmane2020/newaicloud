@@ -6344,6 +6344,7 @@ export const translations = {
         saveError: "Erreur lors de l'enregistrement",
         loadError: "Erreur lors du chargement des paramètres",
       },
+      lastSync: "Dernière synchronisation",
     },
     store: {
       metadata: {
