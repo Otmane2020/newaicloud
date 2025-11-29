@@ -1205,9 +1205,35 @@ export const translations = {
 
   // ============= AI Background Config =============
   aiBackgroundConfig: {
-    title: "Configuration de l'arrière-plan IA",
+    title: "Générer un Background IA",
+    titleWithProduct: "Générer un Background IA - {{product}}",
     description: "Personnalisez les paramètres de génération pour",
     products: "produit(s)",
+    
+    // Dialog descriptions
+    dialogDesc: {
+      gallery: "Sélectionnez les images à traiter",
+      variants: "Sélectionnez une variante",
+      simple: "{{count}} produit(s) sélectionné(s)",
+    },
+    
+    // Loading
+    loading: "Chargement de la galerie d'images...",
+    
+    // Image section
+    imageSection: {
+      chooseVariant: "Choisissez une variante",
+      imagesToProcess: "Images qui seront traitées",
+      selectAll: "Sélectionner tout",
+      deselectAll: "Tout désélectionner",
+      mainBadge: "Principale",
+      variantLabel: "Variante {{id}}",
+    },
+    
+    // Configuration section
+    configuration: "Configuration",
+    backgroundDescription: "Description du background",
+    backgroundPlaceholder: "Ex: studio blanc minimaliste avec éclairage doux",
 
     parameters: {
       title: "Paramètres de génération",
@@ -1247,10 +1273,10 @@ export const translations = {
     presets: {
       label: "Style prédéfini",
       placeholder: "Choisir un style...",
-      studio: "🎬 Studio professionnel",
+      cozyLifestyle: "🛋️ Cozy Lifestyle – Salon moderne",
+      studio: "📸 Studio professionnel",
       luxuryNature: "🌿 Nature luxueuse",
-      minimal: "⚪ Minimaliste moderne",
-      lifestyle: "🏠 Lifestyle chaleureux",
+      minimal: "🧼 Minimaliste moderne",
       urban: "🏙️ Urbain contemporain",
       elegant: "✨ Élégance classique",
     },
@@ -1263,7 +1289,7 @@ export const translations = {
 
     buttons: {
       cancel: "Annuler",
-      generate: "Générer les arrière-plans",
+      generate: "Générer {{count}} image(s)",
     },
   },
 

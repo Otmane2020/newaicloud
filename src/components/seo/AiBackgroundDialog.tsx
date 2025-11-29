@@ -71,7 +71,7 @@ export function AiBackgroundDialog({
   productImages,
   onConfirm,
 }: AiBackgroundDialogProps) {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [config, setConfig] = useState<AiBackgroundConfig>({
     prompt: "",
     format: "square",
@@ -325,38 +325,33 @@ export function AiBackgroundDialog({
 
   const getVariantLabel = (variant: ProductVariant): string => {
     const options = [variant.option1, variant.option2, variant.option3].filter(Boolean).join(" - ");
-    return options || variant.title || `Variante ${variant.id.slice(-4)}`;
+    return options || variant.title || t.aiBackgroundConfig.imageSection.variantLabel.replace('{{id}}', variant.id.slice(-4));
   };
 
   const presetStyles = [
     {
-      name: language === 'fr' ? "Cozy Lifestyle – Salon moderne" : "Cozy Lifestyle – Modern Living Room",
+      name: t.aiBackgroundConfig.presets.cozyLifestyle,
       prompt: "A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.",
       icon: "🛋️",
     },
     {
-      name: language === 'fr' ? "Studio professionnel" : "Professional Studio",
+      name: t.aiBackgroundConfig.presets.studio,
       prompt: "Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.",
       icon: "📸",
     },
     {
-      name: language === 'fr' ? "Nature luxueuse" : "Luxurious Nature",
+      name: t.aiBackgroundConfig.presets.luxuryNature,
       prompt: "Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.",
       icon: "🌿",
     },
     {
-      name: language === 'fr' ? "Minimaliste moderne" : "Modern Minimalist",
+      name: t.aiBackgroundConfig.presets.minimal,
       prompt: "Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.",
       icon: "🧼",
     },
     {
-      name: language === 'fr' ? "Urbain contemporain" : "Urban Contemporary",
+      name: t.aiBackgroundConfig.presets.urban,
       prompt: "Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.",
-      icon: "🏙️",
-    },
-    {
-      name: "Urbain contemporain",
-      prompt: "contemporary urban background with industrial elements and modern architecture",
       icon: "🏙️",
     },
   ];
@@ -367,13 +362,13 @@ export function AiBackgroundDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-primary" />
-            Générer un Background IA
+            {t.aiBackgroundConfig.title}
             {singleProduct && ` - ${singleProduct.title}`}
           </DialogTitle>
           <DialogDescription>
-            {config.applyTo === 'gallery' && "Sélectionnez les images à traiter"}
-            {config.applyTo === 'variants' && "Sélectionnez une variante"}
-            {config.applyTo === 'simple' && `${selectedProducts.length} produit(s) sélectionné(s)`}
+            {config.applyTo === 'gallery' && t.aiBackgroundConfig.dialogDesc.gallery}
+            {config.applyTo === 'variants' && t.aiBackgroundConfig.dialogDesc.variants}
+            {config.applyTo === 'simple' && t.aiBackgroundConfig.dialogDesc.simple.replace('{{count}}', String(selectedProducts.length))}
           </DialogDescription>
         </DialogHeader>
 
@@ -381,7 +376,7 @@ export function AiBackgroundDialog({
           <Alert className="mb-4">
             <Loader2 className="h-4 w-4 animate-spin" />
             <AlertDescription>
-              Chargement de la galerie d'images...
+              {t.aiBackgroundConfig.loading}
             </AlertDescription>
           </Alert>
         )}
@@ -391,7 +386,7 @@ export function AiBackgroundDialog({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-base font-semibold">
-                {config.applyTo === 'variants' ? 'Choisissez une variante' : 'Images qui seront traitées'}
+                {config.applyTo === 'variants' ? t.aiBackgroundConfig.imageSection.chooseVariant : t.aiBackgroundConfig.imageSection.imagesToProcess}
               </Label>
               {config.applyTo !== 'variants' && (
                 <div className="flex gap-2">
@@ -403,7 +398,7 @@ export function AiBackgroundDialog({
                     disabled={loadingImages}
                   >
                     <CheckSquare className="h-4 w-4 mr-2" />
-                    Sélectionner tout
+                    {t.aiBackgroundConfig.imageSection.selectAll}
                   </Button>
                   <Button
                     type="button"
@@ -413,7 +408,7 @@ export function AiBackgroundDialog({
                     disabled={loadingImages}
                   >
                     <Square className="h-4 w-4 mr-2" />
-                    Tout désélectionner
+                    {t.aiBackgroundConfig.imageSection.deselectAll}
                   </Button>
                 </div>
               )}
@@ -445,7 +440,7 @@ export function AiBackgroundDialog({
                           />
                           {idx === 0 && (
                             <Badge variant="secondary" className="absolute top-2 left-2 text-xs">
-                              Principale
+                              {t.aiBackgroundConfig.imageSection.mainBadge}
                             </Badge>
                           )}
                           {isSelected && (
@@ -552,15 +547,15 @@ export function AiBackgroundDialog({
 
           {/* Section Configuration */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Configuration</Label>
+            <Label className="text-base font-semibold">{t.aiBackgroundConfig.configuration}</Label>
             
             {/* Description du background */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">Description du background</Label>
+              <Label className="text-sm font-medium mb-2 block">{t.aiBackgroundConfig.backgroundDescription}</Label>
               <Textarea
                 value={config.prompt}
                 onChange={(e) => setConfig(prev => ({ ...prev, prompt: e.target.value }))}
-                placeholder="Ex: studio blanc minimaliste avec éclairage doux"
+                placeholder={t.aiBackgroundConfig.backgroundPlaceholder}
                 className="min-h-[100px]"
               />
               
@@ -584,15 +579,15 @@ export function AiBackgroundDialog({
 
             {/* Format */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">Format d'image</Label>
+              <Label className="text-sm font-medium mb-2 block">{t.aiBackgroundConfig.parameters.format.label}</Label>
               <Select value={config.format} onValueChange={(value) => setConfig(prev => ({ ...prev, format: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="square">Carré (1:1)</SelectItem>
-                  <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                  <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                  <SelectItem value="square">{t.aiBackgroundConfig.parameters.format.square}</SelectItem>
+                  <SelectItem value="portrait">{t.aiBackgroundConfig.parameters.format.portrait}</SelectItem>
+                  <SelectItem value="landscape">{t.aiBackgroundConfig.parameters.format.landscape}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -601,14 +596,14 @@ export function AiBackgroundDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t.aiBackgroundConfig.buttons.cancel}
           </Button>
           <Button 
             onClick={handleConfirm} 
             disabled={!config.prompt || getSelectedImagesCount() === 0}
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Générer {getSelectedImagesCount()} image(s)
+            {t.aiBackgroundConfig.buttons.generate.replace('{{count}}', String(getSelectedImagesCount()))}
           </Button>
         </DialogFooter>
       </DialogContent>
