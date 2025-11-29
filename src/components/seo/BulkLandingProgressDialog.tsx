@@ -81,6 +81,11 @@ export function BulkLandingProgressDialog({
     for (let i = 0; i < products.length; i++) {
       if (isCancelled) break;
 
+      // Add delay between requests to avoid rate limiting (3 seconds)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+
       const product = products[i];
       
       // Update status to generating
