@@ -223,29 +223,47 @@ ${formatKey === "landscape" ? "WIDTH > HEIGHT. The image must be WIDER than it i
 Ratio: ${targetDims.ratio}
     `.trim();
 
-    // Google Shopping optimized prompt - ULTRA STRICT FORMAT
+    // Google Shopping optimized prompt - ULTRA STRICT FORMAT + PRODUCT PRESERVATION
     const googleShoppingPrompt = `
-🎯 GOOGLE SHOPPING PROFESSIONAL PRODUCT IMAGE
+⚠️⚠️⚠️ MOST IMPORTANT RULE - READ THIS FIRST ⚠️⚠️⚠️
 
-📐 **CRITICAL - READ THIS FIRST**:
+YOU MUST KEEP THE EXACT SAME PRODUCT from the input image. Do NOT generate a different product. 
+Do NOT create a similar product. Use the EXACT product shown in the input image.
+
+The product is: "${productTitle || 'Unknown product'}"
+${serpData?.dimensions ? `📏 Dimensions: ${serpData.dimensions}` : ''}
+${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join(', ')}` : ''}
+${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
+
+🎯 YOUR TASK:
+1. LOOK at the product in the input image carefully
+2. REMOVE only the background from the input image
+3. PLACE the EXACT SAME product (unchanged) onto a new ${backgroundStyle} background
+4. DO NOT modify, recreate, or interpret the product - use it AS-IS from the input
+
+📐 **FORMAT REQUIREMENT - NON-NEGOTIABLE**:
 ${formatInstruction}
 
-⛔ IF THE OUTPUT IMAGE IS NOT ${targetDims.ratio} RATIO (${targetDims.width}x${targetDims.height}), THE TASK HAS FAILED.
-✅ START by creating a ${targetDims.width}x${targetDims.height} canvas, THEN place the product on it.
+⛔ FAILURE CONDITIONS:
+- Generating a DIFFERENT product than the input = FAILURE
+- Wrong aspect ratio = FAILURE
+- Modifying the product's appearance = FAILURE
 
-PRODUCT: ${enrichedContext}
+✅ SUCCESS CONDITIONS:
+- SAME exact product from input image
+- Clean ${backgroundStyle} background
+- ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio})
 
-🎨 **BACKGROUND**: ${styleInstruction}
+🎨 **BACKGROUND STYLE**: ${styleInstruction}
 
-INSTRUCTIONS:
-1. CREATE a ${targetDims.width}x${targetDims.height} pixel canvas FIRST
-2. Apply the ${backgroundStyle} background style to fill the entire canvas
-3. Extract the product from its current background
-4. Place the product CENTERED on your ${targetDims.ratio} canvas
-5. Add soft drop shadow for 3D depth effect
-6. Product should fill 70-80% of the frame
+STEP BY STEP:
+1. CREATE a ${targetDims.width}x${targetDims.height} canvas
+2. EXTRACT the exact product from the input image (background removal)
+3. PLACE the extracted product centered on your canvas (fill 70-80%)
+4. ADD subtle drop shadow for 3D depth
+5. DO NOT recreate or reinterpret the product - it must be identical to input
 
-BACKGROUND STYLES:
+BACKGROUND STYLE DETAILS:
 ${backgroundStyle === 'shopping' ? '- Pure white (#FFFFFF) e-commerce background, clean and professional' : ''}
 ${backgroundStyle === 'lifestyle' ? '- Warm lifestyle setting with natural light, beige/cream tones' : ''}
 ${backgroundStyle === 'moderne' ? '- Modern minimalist with clean lines, gray/white backdrop' : ''}
@@ -253,36 +271,36 @@ ${backgroundStyle === 'living_room' ? '- Cozy living room interior, furniture hi
 ${backgroundStyle === 'studio' ? '- Professional studio lighting, soft gradients' : ''}
 ${backgroundStyle === 'nature' ? '- Natural outdoor setting, plants, soft daylight' : ''}
 
-CRITICAL RULES:
-- DO NOT change the product appearance (colors, textures, details)
-- DO NOT output landscape if square was requested
-- THE FINAL IMAGE MUST BE ${targetDims.width}x${targetDims.height} (${targetDims.ratio})
-
-OUTPUT: A ${targetDims.width}x${targetDims.height} pixel image (${targetDims.ratio} ratio) with the product on ${backgroundStyle} background.
+FINAL CHECK: The output must show THE EXACT SAME "${productTitle || 'product'}" from the input, just with a new background.
     `.trim();
 
-    // Standard white background prompt (simplified but with strict format)
+    // Standard white background prompt (simplified but with strict format + product preservation)
     const standardPrompt = `
+⚠️ MOST IMPORTANT: KEEP THE EXACT SAME PRODUCT from the input image. Do NOT generate a different product.
+
+The product is: "${productTitle || 'Unknown product'}"
+
 🎯 BACKGROUND REMOVAL & WHITE REPLACEMENT
 
 📐 **MANDATORY FORMAT - NON-NEGOTIABLE**:
 ${formatInstruction}
 
-CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place the product.
-
-PRODUCT: ${enrichedContext}
-
-TASK: Extract product and place on PURE WHITE (#FFFFFF) background.
+YOUR TASK:
+1. LOOK at the exact product in the input image
+2. REMOVE only the background
+3. PLACE the EXACT SAME product (unchanged) on a pure white (#FFFFFF) background
 
 STEPS:
 1. Create ${targetDims.width}x${targetDims.height} white canvas
-2. Remove ALL background from product
-3. Center product on canvas (70-80% of frame)
+2. EXTRACT the exact product from input (do not recreate it)
+3. Center extracted product on canvas (70-80% of frame)
 4. Add subtle drop shadow for 3D depth
 
-⚠️ CRITICAL: Output MUST be ${targetDims.ratio} ratio (${targetDims.width}x${targetDims.height} pixels)
+⚠️ CRITICAL: 
+- Keep the EXACT product from input (same colors, shape, details)
+- Output MUST be ${targetDims.ratio} ratio (${targetDims.width}x${targetDims.height} pixels)
 
-OUTPUT: ${targetDims.width}x${targetDims.height} image with product on white background.
+OUTPUT: ${targetDims.width}x${targetDims.height} image with THE SAME product on white background.
     `.trim();
 
     // Select prompt based on mode
