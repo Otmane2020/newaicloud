@@ -2430,6 +2430,31 @@ export default function ProductTitleDescription() {
                             </TooltipContent>
                           </Tooltip>
 
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  setShowSmartBgDialog(true);
+                                }}
+                              >
+                                <Wand2 className="h-4 w-4 text-emerald-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Smart Background</p>
+                            </TooltipContent>
+                          </Tooltip>
+
                           {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -3336,7 +3361,14 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowSmartBgDialog}
         selectedProducts={products
           .filter(p => selectedProducts.has(p.id))
-          .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor, handle: p.handle }))}
+          .map(p => ({ 
+            id: p.id, 
+            title: p.title, 
+            image_url: p.image_url, 
+            vendor: p.vendor, 
+            handle: p.handle,
+            variants: p.variants?.map(v => ({ id: v.id, title: v.title, image_url: v.image_url }))
+          }))}
         onComplete={() => {
           fetchProducts();
           refreshLimits();
