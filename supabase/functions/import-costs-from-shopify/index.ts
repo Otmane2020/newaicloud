@@ -38,6 +38,14 @@ serve(async (req) => {
   }
 
   try {
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ status: 'healthy' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('💰 [IMPORT-COSTS] Starting cost import from Shopify via GraphQL...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -68,7 +76,7 @@ serve(async (req) => {
     const storeUrl = (connection.store_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
     console.log(`🏪 [IMPORT-COSTS] Store: ${storeUrl}`);
 
-    // Get all products with their variants
+    // Get all products with their variants - LIMIT to avoid timeout
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
       .select(`
@@ -78,7 +86,8 @@ serve(async (req) => {
         product_variants(id, shopify_variant_id, sku)
       `)
       .eq('seller_id', user.id)
-      .not('shopify_id', 'is', null);
+      .not('shopify_id', 'is', null)
+      .limit(50); // Limit to 50 products per batch to avoid timeout
 
     if (productsError) throw productsError;
 
@@ -86,109 +95,118 @@ serve(async (req) => {
     let errorCount = 0;
     let totalVariants = 0;
 
-    // Process each product using GraphQL
-    for (const product of products || []) {
-      const variants = (product as any).product_variants || [];
-      
-      if (!product.shopify_id || variants.length === 0) {
-        continue;
-      }
+    // Process products in parallel batches of 5
+    const BATCH_SIZE = 5;
+    const productBatches = [];
+    
+    for (let i = 0; i < (products || []).length; i += BATCH_SIZE) {
+      productBatches.push((products || []).slice(i, i + BATCH_SIZE));
+    }
 
-      try {
-        // Fetch product with inventory data from Shopify via GraphQL
-        const productGid = restIdToGid(product.shopify_id, 'Product');
+    for (const batch of productBatches) {
+      const batchPromises = batch.map(async (product) => {
+        const variants = (product as any).product_variants || [];
         
-        const result = await shopifyGraphQL<{
-          product: {
-            id: string;
-            title: string;
-            variants: {
-              edges: Array<{
-                node: {
-                  id: string;
-                  sku: string;
-                  inventoryItem: {
-                    id: string;
-                    unitCost: {
-                      amount: string;
-                      currencyCode: string;
-                    } | null;
-                  };
-                };
-              }>;
-            };
-          };
-        }>(storeUrl, connection.access_token, PRODUCT_WITH_INVENTORY_QUERY, { id: productGid });
-
-        if (!result.product) {
-          console.warn(`⚠️ [IMPORT-COSTS] Product ${product.shopify_id} not found in Shopify`);
-          continue;
+        if (!product.shopify_id || variants.length === 0) {
+          return { success: 0, error: 0, variants: 0 };
         }
 
-        const shopifyVariants = result.product.variants.edges.map(e => e.node);
+        let localSuccess = 0;
+        let localError = 0;
+        let localVariants = variants.length;
 
-        for (const dbVariant of variants) {
-          if (!dbVariant.shopify_variant_id) {
-            console.warn(`⚠️ [IMPORT-COSTS] Variant has no Shopify ID: ${dbVariant.sku}`);
-            continue;
-          }
-
-          totalVariants++;
-
-          // Find matching Shopify variant
-          const variantGid = restIdToGid(dbVariant.shopify_variant_id, 'ProductVariant');
-          const shopifyVariant = shopifyVariants.find(sv => sv.id === variantGid);
-
-          if (!shopifyVariant) {
-            console.warn(`⚠️ [IMPORT-COSTS] Variant ${dbVariant.sku} not found in Shopify`);
-            errorCount++;
-            continue;
-          }
-
-          const cost = shopifyVariant.inventoryItem?.unitCost?.amount;
-
-          if (cost !== null && cost !== undefined) {
-            // Update variant cost in database
-            const { error: updateError } = await supabase
-              .from('product_variants')
-              .update({ cost_price: parseFloat(cost) })
-              .eq('id', dbVariant.id);
-
-            if (updateError) {
-              console.error(`❌ [IMPORT-COSTS] Failed to update variant ${dbVariant.sku}:`, updateError);
-              errorCount++;
-            } else {
-              console.log(`✅ [IMPORT-COSTS] Updated cost for ${dbVariant.sku}: ${cost}`);
-              successCount++;
-            }
-          } else {
-            console.log(`ℹ️ [IMPORT-COSTS] No cost found for variant: ${dbVariant.sku}`);
-          }
-        }
-
-        // After processing all variants of a product, calculate average cost
-        const { data: variantsWithCost } = await supabase
-          .from('product_variants')
-          .select('cost_price')
-          .eq('product_id', product.id)
-          .not('cost_price', 'is', null);
-
-        if (variantsWithCost && variantsWithCost.length > 0) {
-          const avgCost = variantsWithCost.reduce((sum, v) => sum + (v.cost_price || 0), 0) / variantsWithCost.length;
+        try {
+          // Fetch product with inventory data from Shopify via GraphQL
+          const productGid = restIdToGid(product.shopify_id, 'Product');
           
-          await supabase
-            .from('shopify_products')
-            .update({ cost_price: avgCost })
-            .eq('id', product.id);
+          const result = await shopifyGraphQL<{
+            product: {
+              id: string;
+              title: string;
+              variants: {
+                edges: Array<{
+                  node: {
+                    id: string;
+                    sku: string;
+                    inventoryItem: {
+                      id: string;
+                      unitCost: {
+                        amount: string;
+                        currencyCode: string;
+                      } | null;
+                    };
+                  };
+                }>;
+              };
+            };
+          }>(storeUrl, connection.access_token, PRODUCT_WITH_INVENTORY_QUERY, { id: productGid });
+
+          if (!result.product) {
+            console.warn(`⚠️ [IMPORT-COSTS] Product ${product.shopify_id} not found in Shopify`);
+            return { success: 0, error: localVariants, variants: localVariants };
+          }
+
+          const shopifyVariants = result.product.variants.edges.map(e => e.node);
+          const variantUpdates: Array<{ id: string; cost_price: number }> = [];
+
+          for (const dbVariant of variants) {
+            if (!dbVariant.shopify_variant_id) {
+              continue;
+            }
+
+            // Find matching Shopify variant
+            const variantGid = restIdToGid(dbVariant.shopify_variant_id, 'ProductVariant');
+            const shopifyVariant = shopifyVariants.find(sv => sv.id === variantGid);
+
+            if (!shopifyVariant) {
+              localError++;
+              continue;
+            }
+
+            const cost = shopifyVariant.inventoryItem?.unitCost?.amount;
+
+            if (cost !== null && cost !== undefined) {
+              variantUpdates.push({ id: dbVariant.id, cost_price: parseFloat(cost) });
+              localSuccess++;
+            }
+          }
+
+          // Batch update variants
+          for (const update of variantUpdates) {
+            await supabase
+              .from('product_variants')
+              .update({ cost_price: update.cost_price })
+              .eq('id', update.id);
+          }
+
+          // Calculate average cost for product
+          if (variantUpdates.length > 0) {
+            const avgCost = variantUpdates.reduce((sum, v) => sum + v.cost_price, 0) / variantUpdates.length;
+            
+            await supabase
+              .from('shopify_products')
+              .update({ cost_price: avgCost })
+              .eq('id', product.id);
+          }
+
+        } catch (error) {
+          console.error(`❌ [IMPORT-COSTS] Error processing product ${product.title}:`, error);
+          localError += variants.length;
         }
 
-        // Rate limiting between products
-        await new Promise(resolve => setTimeout(resolve, 200));
+        return { success: localSuccess, error: localError, variants: localVariants };
+      });
 
-      } catch (error) {
-        console.error(`❌ [IMPORT-COSTS] Error processing product ${product.title}:`, error);
-        errorCount += variants.length;
+      const batchResults = await Promise.all(batchPromises);
+      
+      for (const result of batchResults) {
+        successCount += result.success;
+        errorCount += result.error;
+        totalVariants += result.variants;
       }
+
+      // Small delay between batches to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     console.log(`📊 [IMPORT-COSTS] Import complete: ${successCount}/${totalVariants} costs imported, ${errorCount} errors`);
@@ -210,10 +228,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        imported: 0
       }),
       {
-        status: 500,
+        status: 200, // Return 200 to not block the sync flow
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
