@@ -51,13 +51,36 @@ export function GoogleMerchantIntegration() {
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       
-      if (code && state === 'google_merchant' && window.opener) {
-        window.opener.postMessage({
-          type: 'GOOGLE_MERCHANT_OAUTH_CODE',
-          code: code,
-        }, window.location.origin);
+      if (code && state === 'google_merchant') {
+        // CAS 1: Popup avec window.opener fonctionnel
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_MERCHANT_OAUTH_CODE',
+            code: code,
+          }, window.location.origin);
+          setTimeout(() => window.close(), 1000);
+          return;
+        }
         
-        setTimeout(() => window.close(), 1000);
+        // CAS 2: FALLBACK - Traiter directement le code OAuth ici
+        console.log('🔑 [GOOGLE-MERCHANT] window.opener is null, processing OAuth directly');
+        const redirectUri = `${window.location.origin}/merchant?tab=integration`;
+        
+        const { data, error } = await supabase.functions.invoke('google-merchant-oauth-token', {
+          body: { code, redirectUri },
+        });
+        
+        if (error || !data?.success) {
+          console.error('❌ [GOOGLE-MERCHANT] Error exchanging code:', error, data);
+          toast.error('Échec de connexion Google Merchant');
+          window.history.replaceState({}, '', '/merchant?tab=integration');
+          return;
+        }
+        
+        console.log('✅ [GOOGLE-MERCHANT] Successfully connected via fallback');
+        window.history.replaceState({}, '', '/merchant?tab=integration');
+        toast.success(t.googleMerchant.integration.success.connected);
+        checkGoogleConnection();
       }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);

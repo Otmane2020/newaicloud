@@ -51,13 +51,36 @@ export function GoogleSearchConsoleIntegration({ onConnectionChange }: GoogleSea
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       
-      if (code && state === 'google_search_console' && window.opener) {
-        window.opener.postMessage({
-          type: 'GOOGLE_SEARCH_CONSOLE_OAUTH_CODE',
-          code: code,
-        }, window.location.origin);
+      if (code && state === 'google_search_console') {
+        // CAS 1: Popup avec window.opener fonctionnel
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_SEARCH_CONSOLE_OAUTH_CODE',
+            code: code,
+          }, window.location.origin);
+          setTimeout(() => window.close(), 1000);
+          return;
+        }
         
-        setTimeout(() => window.close(), 1000);
+        // CAS 2: FALLBACK - Traiter directement le code OAuth ici
+        console.log('🔑 [SEARCH-CONSOLE] window.opener is null, processing OAuth directly');
+        const redirectUri = `${window.location.origin}/seo?tab=google-console&subtab=integration`;
+        
+        const { data, error } = await supabase.functions.invoke('google-oauth-token', {
+          body: { code, state: redirectUri },
+        });
+        
+        if (error || data?.error) {
+          console.error('❌ [SEARCH-CONSOLE] Error exchanging code:', error, data);
+          toast.error('Échec de connexion Google Search Console');
+          window.history.replaceState({}, '', '/seo?tab=google-console&subtab=integration');
+          return;
+        }
+        
+        console.log('✅ [SEARCH-CONSOLE] Successfully connected via fallback');
+        window.history.replaceState({}, '', '/seo?tab=google-console&subtab=integration');
+        toast.success('Connexion à Google Search Console réussie !');
+        checkGoogleConnection();
       }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
