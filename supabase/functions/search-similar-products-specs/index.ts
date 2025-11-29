@@ -91,7 +91,16 @@ serve(async (req) => {
     const searchResponse = await fetch(searchUrl.toString());
     
     if (!searchResponse.ok) {
-      throw new Error(`Google API error: ${searchResponse.statusText}`);
+      // Handle quota/permission errors gracefully - return empty result instead of failing
+      console.warn(`⚠️ Google API error: ${searchResponse.status} ${searchResponse.statusText}`);
+      return new Response(
+        JSON.stringify({ 
+          similarProducts: [], 
+          confidence: 0,
+          warning: `Google API error: ${searchResponse.statusText} (likely quota exceeded)`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const searchData = await searchResponse.json();
