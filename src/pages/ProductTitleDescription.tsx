@@ -327,7 +327,7 @@ export default function ProductTitleDescription() {
           const batch = productIds.slice(i, i + batchSize);
           const { data: variantsData, error: variantsError } = await supabase
             .from("product_variants")
-            .select("id, product_id, title, option1, option2, option3, image_url")
+            .select("id, product_id, title, option1, option2, option3, image_url, sku")
             .in("product_id", batch);
 
           if (variantsError) {
@@ -2481,8 +2481,8 @@ export default function ProductTitleDescription() {
                                 const { data, error } = await supabase.functions.invoke("update-product-status", {
                                   body: {
                                     productId: product.id,
-                                    shopifyProductId: product.shopify_id,
-                                    status: newStatus,
+                                    shopifyId: product.shopify_id,
+                                    newStatus: newStatus,
                                     storeId: selectedStore.id,
                                   },
                                 });
