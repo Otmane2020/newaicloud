@@ -385,15 +385,18 @@ export const useImageOptimization = () => {
       }
     },
     onSuccess: async (result) => {
+      // Invalidate ALL product-related queries to refresh SEO tabs
       await queryClient.invalidateQueries({ queryKey: ['product-images'] });
       await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       await queryClient.invalidateQueries({ queryKey: ['image-history'] });
+      await queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
       
       // ✅ CRITICAL: Do NOT show success toast here anymore
       // Toast is already shown conditionally during mutationFn based on Shopify sync result
       // This prevents duplicate/misleading success messages
       
-      console.log('✅ [ImageOptimization] Image applied, sync handled in mutationFn');
+      console.log('✅ [ImageOptimization] Image applied, queries invalidated');
       
       // Send optimization notification
       const notificationResult = await sendOptimizationNotification(1);

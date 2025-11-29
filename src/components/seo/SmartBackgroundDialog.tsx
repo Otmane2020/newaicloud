@@ -319,6 +319,8 @@ export const SmartBackgroundDialog = ({
           }
         }
 
+        // 🎯 BOTH modes now use SERP/Vision data for 3D positioning
+        // white_shopping always uses 'shopping' style, smart_serp uses selected bgStyle
         const result = await generateWhiteBackground.mutateAsync({
           imageUrl: selectedImage.url,
           productTitle: product.title,
@@ -326,10 +328,10 @@ export const SmartBackgroundDialog = ({
           format: formatMap[bgFormat],
           mode: 'google_shopping',
           product_id: product.id,
-          serpData: bgMode === 'smart_serp' ? serpData : null,
-          visionAiData: bgMode === 'smart_serp' ? visionAiData : null,
-          productDescription: bgMode === 'smart_serp' ? productDescription : null,
-          backgroundStyle: bgMode === 'smart_serp' ? bgStyle : undefined,
+          serpData: serpData, // Always pass SERP data for 3D positioning
+          visionAiData: visionAiData, // Always pass Vision data
+          productDescription: productDescription, // Always pass description
+          backgroundStyle: bgMode === 'smart_serp' ? bgStyle : 'shopping', // Shopping style for white mode
         });
 
         if (result.imageUrl) {
@@ -565,8 +567,8 @@ export const SmartBackgroundDialog = ({
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {bgMode === 'white_shopping'
-                    ? 'Fond blanc pur, éclairage studio, conforme Google Merchant Center'
-                    : 'Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel'}
+                    ? getText('Fond blanc pur avec SERP + Vision AI, éclairage studio, effet 3D, conforme Google Merchant Center', 'Pure white background with SERP + Vision AI, studio lighting, 3D effect, Google Merchant Center compliant')
+                    : getText('Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel', 'SERP enrichment (dimensions, materials), Vision AI, professional 3D effect')}
                 </p>
               </div>
             </div>
@@ -665,7 +667,7 @@ export const SmartBackgroundDialog = ({
                                           imageId: img.imageId,
                                           position: img.position
                                         }))}
-                                        className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
+                                        className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
                                       >
                                         <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
                                         {isSelected && (
@@ -692,7 +694,7 @@ export const SmartBackgroundDialog = ({
                                       key={item.id}
                                       onClick={() => handleApplyFromHistory(product, item)}
                                       disabled={isGenerating}
-                                      className="relative w-18 h-18 min-w-[4.5rem] min-h-[4.5rem] rounded-lg overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
+                                      className="relative w-20 h-20 rounded-lg overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
                                     >
                                       <img src={item.optimized_url} alt="Historique" className="w-full h-full object-cover" />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -708,9 +710,9 @@ export const SmartBackgroundDialog = ({
                             )}
                           </div>
 
-                          {/* Current/Generated image preview */}
+                          {/* Current/Generated image preview - LARGER SIZE */}
                           <div 
-                            className="w-28 h-28 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
+                            className="w-36 h-36 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
                             onClick={() => hasGenerated && handlePreviewProduct(product)}
                           >
                             {currentImage ? (
@@ -721,25 +723,25 @@ export const SmartBackgroundDialog = ({
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                <ImageIcon className="h-10 w-10 text-muted-foreground" />
                               </div>
                             )}
 
                             {isCurrentlyGenerating && (
                               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                                <Loader2 className="h-8 w-8 text-white animate-spin" />
                               </div>
                             )}
 
                             {hasGenerated && (
-                              <div className="absolute top-1 right-1">
-                                <CheckCircle2 className="h-5 w-5 text-green-500 bg-white rounded-full" />
+                              <div className="absolute top-1.5 right-1.5">
+                                <CheckCircle2 className="h-6 w-6 text-green-500 bg-white rounded-full" />
                               </div>
                             )}
 
                             {hasMultipleImages && !hasGenerated && (
-                              <div className="absolute top-1 left-1">
-                                <Badge variant="secondary" className="text-[9px] px-1">
+                              <div className="absolute top-1.5 left-1.5">
+                                <Badge variant="secondary" className="text-[10px] px-1.5">
                                   {productImages.length} photos
                                 </Badge>
                               </div>
