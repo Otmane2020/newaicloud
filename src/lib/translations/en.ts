@@ -1193,9 +1193,35 @@ export const translations = {
 
   // ============= AI Background Config =============
   aiBackgroundConfig: {
-    title: "AI Background Configuration",
+    title: "Generate AI Background",
+    titleWithProduct: "Generate AI Background - {{product}}",
     description: "Customize generation settings for",
     products: "product(s)",
+    
+    // Dialog descriptions
+    dialogDesc: {
+      gallery: "Select images to process",
+      variants: "Select a variant",
+      simple: "{{count}} product(s) selected",
+    },
+    
+    // Loading
+    loading: "Loading image gallery...",
+    
+    // Image section
+    imageSection: {
+      chooseVariant: "Choose a variant",
+      imagesToProcess: "Images to be processed",
+      selectAll: "Select all",
+      deselectAll: "Deselect all",
+      mainBadge: "Main",
+      variantLabel: "Variant {{id}}",
+    },
+    
+    // Configuration section
+    configuration: "Configuration",
+    backgroundDescription: "Background description",
+    backgroundPlaceholder: "Ex: minimalist white studio with soft lighting",
 
     parameters: {
       title: "Generation parameters",
@@ -1235,12 +1261,12 @@ export const translations = {
     presets: {
       label: "Preset style",
       placeholder: "Choose a style...",
-      studio: "🎬 Professional studio",
-      luxuryNature: "🌿 Luxurious nature",
-      minimal: "⚪ Modern minimalist",
-      lifestyle: "🏠 Warm lifestyle",
-      urban: "🏙️ Contemporary urban",
-      elegant: "✨ Classic elegance",
+      cozyLifestyle: "🛋️ Cozy Lifestyle – Modern Living Room",
+      studio: "📸 Professional Studio",
+      luxuryNature: "🌿 Luxurious Nature",
+      minimal: "🧼 Modern Minimalist",
+      urban: "🏙️ Urban Contemporary",
+      elegant: "✨ Classic Elegance",
     },
 
     customPrompt: {
@@ -1251,7 +1277,7 @@ export const translations = {
 
     buttons: {
       cancel: "Cancel",
-      generate: "Generate backgrounds",
+      generate: "Generate {{count}} image(s)",
     },
   },
 
