@@ -30,6 +30,9 @@ import {
   Home,
   Camera,
   TreePine,
+  RefreshCw,
+  History,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
@@ -61,6 +64,14 @@ interface Product {
   variants?: ProductVariant[];
 }
 
+interface ImageHistoryItem {
+  id: string;
+  optimized_url: string;
+  original_url: string | null;
+  created_at: string;
+  optimization_type: string;
+}
+
 interface SmartBackgroundDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -90,6 +101,9 @@ export const SmartBackgroundDialog = ({
   // Store loaded gallery images per product
   const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
   const [loadingGallery, setLoadingGallery] = useState(false);
+  // Image history per product
+  const [imageHistory, setImageHistory] = useState<Map<string, ImageHistoryItem[]>>(new Map());
+  const [showHistory, setShowHistory] = useState<string | null>(null);
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -97,6 +111,7 @@ export const SmartBackgroundDialog = ({
   useEffect(() => {
     if (open && selectedProducts.length > 0) {
       loadAllGalleryImages();
+      loadImageHistory();
     }
   }, [open, selectedProducts]);
 
@@ -135,6 +150,42 @@ export const SmartBackgroundDialog = ({
       console.error('[SmartBg] Error loading gallery images:', error);
     } finally {
       setLoadingGallery(false);
+    }
+  };
+
+  const loadImageHistory = async () => {
+    const productIds = selectedProducts.map(p => p.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_image_history')
+        .select('id, product_id, optimized_url, original_url, created_at, optimization_type')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      
+      // Group by product_id
+      const historyByProduct = new Map<string, ImageHistoryItem[]>();
+      data?.forEach(item => {
+        const productId = (item as any).product_id;
+        if (!historyByProduct.has(productId)) {
+          historyByProduct.set(productId, []);
+        }
+        historyByProduct.get(productId)!.push({
+          id: item.id,
+          optimized_url: item.optimized_url,
+          original_url: item.original_url,
+          created_at: item.created_at,
+          optimization_type: item.optimization_type
+        });
+      });
+      
+      setImageHistory(historyByProduct);
+      console.log('[SmartBg] Loaded history for', historyByProduct.size, 'products');
+    } catch (error) {
+      console.error('[SmartBg] Error loading image history:', error);
     }
   };
 
@@ -376,10 +427,56 @@ export const SmartBackgroundDialog = ({
     setShowPreview(true);
   };
 
+  // Reset previews to regenerate
+  const handleRegenerate = () => {
+    setGeneratedPreviews(new Map());
+    setAppliedProducts(new Set());
+  };
+
+  // Apply from history
+  const handleApplyFromHistory = async (product: Product, historyItem: ImageHistoryItem) => {
+    setIsGenerating(true);
+    try {
+      const selectedImageData = getSelectedImage(product);
+      let targetImageId = selectedImageData?.imageId;
+      
+      if (!targetImageId) {
+        const { data: allImages } = await supabase
+          .from('product_images')
+          .select('id, src')
+          .eq('product_id', product.id)
+          .order('position')
+          .limit(1);
+        targetImageId = allImages?.[0]?.id;
+      }
+
+      if (targetImageId) {
+        await applyOptimizedImage.mutateAsync({
+          imageId: targetImageId,
+          productId: product.id,
+          optimizedUrl: historyItem.optimized_url,
+          originalUrl: historyItem.original_url || '',
+          optimizationType: 'white_background',
+          aiModel: 'gemini-2.5-flash-image-preview',
+          resolution: '2000x2000',
+          qualityScore: 95,
+        });
+        toast.success('Image historique appliquée');
+        setShowHistory(null);
+        onComplete?.();
+      }
+    } catch (error) {
+      console.error('Error applying history image:', error);
+      toast.error('Erreur lors de l\'application');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5 text-primary" />
@@ -509,97 +606,134 @@ export const SmartBackgroundDialog = ({
             {/* Products Grid */}
             <div className="space-y-2">
               <Label>{selectedProducts.length} produit(s) sélectionné(s)</Label>
-              <ScrollArea className="h-[300px] border rounded-lg p-2">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ScrollArea className="h-[350px] border rounded-lg p-3">
+                <div className="space-y-4">
                   {selectedProducts.map((product, index) => {
                     const hasGenerated = generatedPreviews.has(product.id);
                     const isCurrentlyGenerating = isGenerating && currentProductIndex === index;
                     const productImages = getProductImages(product);
                     const currentImageData = getSelectedImage(product);
                     const currentImage = currentImageData?.url;
-                    const hasVariantImages = productImages.length > 1;
+                    const hasMultipleImages = productImages.length > 1;
+                    const productHistory = imageHistory.get(product.id) || [];
 
                     return (
-                      <Card
-                        key={product.id}
-                        className={`p-2 transition-all hover:shadow-md ${
-                          hasGenerated ? 'ring-2 ring-green-500' : ''
-                        } ${isCurrentlyGenerating ? 'ring-2 ring-primary animate-pulse' : ''}`}
-                      >
-                        <div 
-                          className="aspect-square rounded overflow-hidden bg-muted relative cursor-pointer"
-                          onClick={() => hasGenerated && handlePreviewProduct(product)}
-                        >
-                          {currentImage ? (
-                            <img
-                              src={hasGenerated ? generatedPreviews.get(product.id) : currentImage}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <Card key={product.id} className={`p-3 transition-all ${hasGenerated ? 'ring-2 ring-green-500' : ''} ${isCurrentlyGenerating ? 'ring-2 ring-primary animate-pulse' : ''}`}>
+                        <div className="flex items-start gap-3">
+                          {/* Product info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <p className="font-medium truncate">{product.title}</p>
+                              <div className="flex gap-1">
+                                <Badge variant="outline" className="text-[10px]">{bgFormat}</Badge>
+                                <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[10px]">
+                                  {bgMode === 'smart_serp' ? 'Smart' : 'White'}
+                                </Badge>
+                              </div>
+                              {productHistory.length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 gap-1"
+                                  onClick={() => setShowHistory(showHistory === product.id ? null : product.id)}
+                                >
+                                  <History className="h-3 w-3" />
+                                  <span className="text-[10px]">{productHistory.length}</span>
+                                </Button>
+                              )}
                             </div>
-                          )}
 
-                          {isCurrentlyGenerating && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <Loader2 className="h-8 w-8 text-white animate-spin" />
-                            </div>
-                          )}
+                            {/* Image selection grid - visual display */}
+                            {hasMultipleImages && !hasGenerated && (
+                              <div className="mb-2">
+                                <p className="text-xs text-muted-foreground mb-1.5">Sélectionner une image source:</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {productImages.map((img, idx) => {
+                                    const isSelected = (selectedImages.get(product.id)?.url || productImages[0]?.url) === img.url;
+                                    return (
+                                      <button
+                                        key={idx}
+                                        onClick={() => setSelectedImages(prev => new Map(prev).set(product.id, {
+                                          url: img.url,
+                                          imageId: img.imageId,
+                                          position: img.position
+                                        }))}
+                                        className={`relative w-12 h-12 rounded overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
+                                      >
+                                        <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                                        {isSelected && (
+                                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                            <Check className="h-4 w-4 text-primary" />
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
-                          {hasGenerated && (
-                            <div className="absolute top-1 right-1">
-                              <CheckCircle2 className="h-5 w-5 text-green-500 bg-white rounded-full" />
-                            </div>
-                          )}
+                            {/* History panel */}
+                            {showHistory === product.id && productHistory.length > 0 && (
+                              <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                                <p className="text-xs font-medium mb-2">Historique des générations:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {productHistory.slice(0, 6).map((item) => (
+                                    <button
+                                      key={item.id}
+                                      onClick={() => handleApplyFromHistory(product, item)}
+                                      disabled={isGenerating}
+                                      className="relative w-14 h-14 rounded overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
+                                    >
+                                      <img src={item.optimized_url} alt="Historique" className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <CheckCircle2 className="h-4 w-4 text-white" />
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-1">Cliquez pour appliquer</p>
+                              </div>
+                            )}
+                          </div>
 
-                          {hasVariantImages && !hasGenerated && (
-                            <div className="absolute top-1 left-1">
-                              <Badge variant="secondary" className="text-[9px] px-1">
-                                {productImages.length} photos
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs font-medium mt-1 line-clamp-1">{product.title}</p>
-                        
-                        {/* Image selector for products with multiple images */}
-                        {hasVariantImages && !hasGenerated && (
-                          <Select
-                            value={selectedImages.get(product.id)?.url || productImages[0]?.url || ''}
-                            onValueChange={(url) => {
-                              const imgData = productImages.find(i => i.url === url);
-                              setSelectedImages(prev => new Map(prev).set(product.id, {
-                                url,
-                                imageId: imgData?.imageId,
-                                position: imgData?.position
-                              }));
-                            }}
+                          {/* Current/Generated image preview */}
+                          <div 
+                            className="w-24 h-24 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
+                            onClick={() => hasGenerated && handlePreviewProduct(product)}
                           >
-                            <SelectTrigger className="h-7 text-[10px] mt-1">
-                              <SelectValue placeholder="Choisir image" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {productImages.map((img, idx) => (
-                                <SelectItem key={idx} value={img.url} className="text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <img src={img.url} alt="" className="w-6 h-6 object-cover rounded" />
-                                    <span className="truncate max-w-[100px]">{img.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                        
-                        <div className="flex gap-1 mt-1">
-                          <Badge variant="outline" className="text-[10px]">
-                            {bgFormat}
-                          </Badge>
-                          <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[10px]">
-                            {bgMode === 'smart_serp' ? 'Smart' : 'White'}
-                          </Badge>
+                            {currentImage ? (
+                              <img
+                                src={hasGenerated ? generatedPreviews.get(product.id) : currentImage}
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+
+                            {isCurrentlyGenerating && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                              </div>
+                            )}
+
+                            {hasGenerated && (
+                              <div className="absolute top-1 right-1">
+                                <CheckCircle2 className="h-5 w-5 text-green-500 bg-white rounded-full" />
+                              </div>
+                            )}
+
+                            {hasMultipleImages && !hasGenerated && (
+                              <div className="absolute top-1 left-1">
+                                <Badge variant="secondary" className="text-[9px] px-1">
+                                  {productImages.length} photos
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </Card>
                     );
@@ -656,25 +790,33 @@ export const SmartBackgroundDialog = ({
             </Button>
 
             {appliedProducts.size === 0 && (
-              generatedPreviews.size > 0 ? (
-                <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4" />
-                  )}
-                  Appliquer {generatedPreviews.size} background(s)
-                </Button>
-              ) : (
-                <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2">
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Wand2 className="h-4 w-4" />
-                  )}
-                  Générer les backgrounds
-                </Button>
-              )
+              <>
+                {generatedPreviews.size > 0 ? (
+                  <>
+                    <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating} className="gap-2">
+                      <RefreshCw className="h-4 w-4" />
+                      Régénérer
+                    </Button>
+                    <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
+                      {isGenerating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Appliquer {generatedPreviews.size} background(s)
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={handleGenerateAll} disabled={isGenerating} className="gap-2">
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-4 w-4" />
+                    )}
+                    Générer les backgrounds
+                  </Button>
+                )}
+              </>
             )}
           </DialogFooter>
         </DialogContent>

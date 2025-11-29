@@ -510,6 +510,19 @@ const Subscription = () => {
         </Card>
       )}
 
+      {/* Manual Promo Code Switch */}
+      <div className="flex items-center justify-center gap-2 mb-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+        <Tag className="w-4 h-4 text-muted-foreground" />
+        <Label htmlFor="subscription-manual-promo" className="text-sm cursor-pointer flex-1">
+          {t.subscription.useManualPromo || "J'ai un code promo"}
+        </Label>
+        <Switch
+          id="subscription-manual-promo"
+          checked={useManualPromo}
+          onCheckedChange={setUseManualPromo}
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
         {starterPlan && (
           <PricingCard
