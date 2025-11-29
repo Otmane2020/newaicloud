@@ -396,71 +396,10 @@ serve(async (req) => {
       latestInvoice: updatedSubscription.latest_invoice,
     });
 
-    // Update profile with new plan AND subscription status
-    const { error: updateError } = await supabaseClient
-      .from("profiles")
-      .update({ 
-        current_plan_id: new_plan_id,
-        subscription_status: 'active',
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userData.user.id);
-
-    if (updateError) {
-      logStep("❌ CRITICAL: Failed to update profile", { error: updateError });
-      throw new Error(`Failed to update profile: ${updateError.message}`);
-    } else {
-      logStep("✅ Profile updated with new plan", { planId: new_plan_id, status: 'active' });
-    }
-
-    // Reset monthly usage counters for mid-cycle upgrades
-    if (isMidCycleUpgrade) {
-      const currentMonth = new Date();
-      currentMonth.setDate(1);
-      currentMonth.setHours(0, 0, 0, 0);
-      const monthKey = currentMonth.toISOString().split('T')[0];
-
-      // Get current usage to preserve product/store counts
-      const { data: currentUsage } = await supabaseClient
-        .from('usage_tracking')
-        .select('products_count, shopify_stores_count')
-        .eq('seller_id', userData.user.id)
-        .eq('month', monthKey)
-        .single();
-
-      // Reset monthly counters, keep total counters
-      const { error: usageError } = await supabaseClient
-        .from('usage_tracking')
-        .upsert({
-          seller_id: userData.user.id,
-          month: monthKey,
-          optimizations_count: 0,
-          articles_count: 0,
-          chat_responses_count: 0,
-          shopify_requests_count: 0,
-          products_count: currentUsage?.products_count || 0,
-          shopify_stores_count: currentUsage?.shopify_stores_count || 0,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'seller_id,month'
-        });
-
-      if (usageError) {
-        logStep("Warning: Failed to reset usage counters", { error: usageError });
-      } else {
-        logStep("Usage counters reset for mid-cycle upgrade", {
-          preservedProducts: currentUsage?.products_count || 0,
-          preservedStores: currentUsage?.shopify_stores_count || 0
-        });
-      }
-    } else {
-      logStep("Renewal upgrade - usage counters not reset (cycle just started)");
-    }
-
-    // Retrieve the automatically generated proration invoice from Stripe
+    // ⚠️ CRITICAL: Retrieve and check invoice BEFORE updating profile
+    // Only upgrade user after payment is confirmed
     let prorationDetails: any = null;
-
-    // Always retrieve invoice for the new billing cycle
+    let paymentConfirmed = false;
     const latestInvoiceId = updatedSubscription.latest_invoice;
     
     if (latestInvoiceId) {
@@ -486,53 +425,118 @@ serve(async (req) => {
           daysIntoCycle,
         };
         
-        logStep("Proration invoice details", prorationDetails);
+        // ✅ Check if payment is confirmed
+        paymentConfirmed = invoice.status === 'paid' || invoice.amount_due === 0;
+        
+        logStep("Invoice status check", { 
+          invoiceId: invoice.id,
+          status: invoice.status,
+          amountDue: invoice.amount_due,
+          paymentConfirmed 
+        });
+        
       } catch (error: any) {
         logStep("⚠️ Could not retrieve proration invoice", { 
           error: error.message,
           latestInvoiceId 
         });
-        
-        prorationDetails = {
-          info: "Proration applied but invoice details unavailable",
-          explanation: "L'upgrade a été appliqué avec prorata automatique par Stripe."
-        };
+      }
+    }
+
+    // ⚠️ CRITICAL: Only update profile if payment is confirmed
+    if (paymentConfirmed) {
+      const { error: updateError } = await supabaseClient
+        .from("profiles")
+        .update({ 
+          current_plan_id: new_plan_id,
+          subscription_status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userData.user.id);
+
+      if (updateError) {
+        logStep("❌ CRITICAL: Failed to update profile", { error: updateError });
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      } else {
+        logStep("✅ Profile updated with new plan (payment confirmed)", { planId: new_plan_id, status: 'active' });
+      }
+
+      // Reset monthly usage counters for mid-cycle upgrades (only if payment confirmed)
+      if (isMidCycleUpgrade) {
+        const currentMonth = new Date();
+        currentMonth.setDate(1);
+        currentMonth.setHours(0, 0, 0, 0);
+        const monthKey = currentMonth.toISOString().split('T')[0];
+
+        const { data: currentUsage } = await supabaseClient
+          .from('usage_tracking')
+          .select('products_count, shopify_stores_count')
+          .eq('seller_id', userData.user.id)
+          .eq('month', monthKey)
+          .single();
+
+        const { error: usageError } = await supabaseClient
+          .from('usage_tracking')
+          .upsert({
+            seller_id: userData.user.id,
+            month: monthKey,
+            optimizations_count: 0,
+            articles_count: 0,
+            chat_responses_count: 0,
+            shopify_requests_count: 0,
+            products_count: currentUsage?.products_count || 0,
+            shopify_stores_count: currentUsage?.shopify_stores_count || 0,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'seller_id,month'
+          });
+
+        if (usageError) {
+          logStep("Warning: Failed to reset usage counters", { error: usageError });
+        } else {
+          logStep("Usage counters reset for mid-cycle upgrade", {
+            preservedProducts: currentUsage?.products_count || 0,
+            preservedStores: currentUsage?.shopify_stores_count || 0
+          });
+        }
       }
     } else {
-      logStep("⚠️ No latest_invoice in updatedSubscription", {
-        latestInvoice: latestInvoiceId,
-        subscriptionStatus: updatedSubscription.status
+      logStep("⚠️ Payment NOT confirmed - profile NOT updated", {
+        invoiceStatus: prorationDetails?.status,
+        amountDue: prorationDetails?.amountDue,
+        invoiceUrl: prorationDetails?.hostedInvoiceUrl
       });
-      
-      prorationDetails = {
-        info: "Mid-cycle upgrade applied",
-        explanation: "L'upgrade a été appliqué. Le prorata sera calculé par Stripe au prochain cycle."
-      };
     }
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: paymentConfirmed,
+        paymentPending: !paymentConfirmed && prorationDetails?.amountDue > 0,
         subscription: {
           id: updatedSubscription.id,
           status: updatedSubscription.status,
-          planId: new_plan_id,
+          planId: paymentConfirmed ? new_plan_id : null,
         },
         upgrade: {
-          type: 'immediate',
+          type: paymentConfirmed ? 'immediate' : 'pending_payment',
+          applied: paymentConfirmed,
           newCycleStart: prorationDetails?.newCycleStart,
           newCycleEnd: prorationDetails?.newCycleEnd,
           daysIntoCycle,
           totalCycleDays,
         },
         payment: {
-          required: prorationDetails ? prorationDetails.amountDue > 0 : false,
+          required: !paymentConfirmed && prorationDetails?.amountDue > 0,
+          confirmed: paymentConfirmed,
           amount: prorationDetails?.amountDue,
           currency: prorationDetails?.currency,
           status: prorationDetails?.status,
           invoiceUrl: prorationDetails?.hostedInvoiceUrl,
           invoiceId: prorationDetails?.invoiceId,
         },
+        message: paymentConfirmed 
+          ? "Upgrade appliqué avec succès !" 
+          : "Paiement requis pour finaliser l'upgrade. Veuillez compléter le paiement.",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
