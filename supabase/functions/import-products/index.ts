@@ -1122,8 +1122,8 @@ Deno.serve(async (req: Request) => {
                   if (!productRecord) continue;
                   
                   const productImages = node.images.edges.map((edge: any, index: number) => {
-                    const gid = edge.node.id || '';
-                    const numericId = gid.includes('/') ? parseInt(gid.split('/').pop() || '0') : 0;
+                    // FIX: Use extractNumericId for proper GID parsing
+                    const numericId = extractNumericId(edge.node.id) || 0;
                     return {
                       product_id: productRecord.id,
                       shopify_image_id: numericId,
