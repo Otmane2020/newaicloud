@@ -86,7 +86,16 @@ serve(async (req) => {
       }
     }
     
-    const { imageUrl, productTitle, product_id, imageType = "secondary" } = body;
+    const { imageUrl, productTitle, product_id, imageType = "secondary", format = "square" } = body;
+
+    // Map format to aspect ratio
+    const formatToAspectRatio: Record<string, string> = {
+      "square": "1:1",
+      "portrait": "3:4",
+      "landscape": "4:3",
+    };
+    const aspectRatio = formatToAspectRatio[format] || "1:1";
+    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}`);
 
     if (!imageUrl) {
       return new Response(
@@ -226,7 +235,7 @@ EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and p
             ],
             modalities: ["image", "text"],
             generationConfig: {
-              aspectRatio: "1:1"
+              aspectRatio: aspectRatio
             }
           }),
         });
