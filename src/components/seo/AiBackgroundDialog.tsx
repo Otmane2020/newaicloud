@@ -188,16 +188,35 @@ export function AiBackgroundDialog({
     return () => clearTimeout(timeoutId);
   }, [open, selectedProducts, productImages]);
 
-  // Helper pour obtenir toutes les images d'un produit
+  // Helper pour obtenir toutes les images d'un produit (dédupliquées par URL)
   const getAllProductImages = (product: Product): ProductImage[] => {
     const images = productImages.get(product.id) || [];
-    const mainImage = product.image_url ? [{
-      id: 'main',
-      src: product.image_url,
-      alt_text: product.seo_title || product.title,
-      position: -1
-    }] : [];
-    return [...mainImage, ...images].sort((a, b) => a.position - b.position);
+    const seenUrls = new Set<string>();
+    const uniqueImages: ProductImage[] = [];
+    
+    // Ajouter l'image principale en premier si elle existe
+    if (product.image_url) {
+      seenUrls.add(product.image_url);
+      uniqueImages.push({
+        id: `main-${product.id}`,
+        src: product.image_url,
+        alt_text: product.seo_title || product.title,
+        position: -1
+      });
+    }
+    
+    // Ajouter les autres images en évitant les doublons
+    images.forEach((img, idx) => {
+      if (!seenUrls.has(img.src)) {
+        seenUrls.add(img.src);
+        uniqueImages.push({
+          ...img,
+          id: img.id || `img-${product.id}-${idx}` // Assurer un ID unique
+        });
+      }
+    });
+    
+    return uniqueImages.sort((a, b) => a.position - b.position);
   };
 
   // Helper functions for image selection
