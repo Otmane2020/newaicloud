@@ -996,6 +996,119 @@ Deno.serve(async (req: Request) => {
         }
       }
     }
+    
+    // 🆕 CRITICAL FIX: Also fetch images for existing products with 0 images
+    // This handles products that were imported before but had their images deleted during cleanup
+    console.log(`🔍 Checking for existing products with 0 images...`);
+    
+    const { data: productsWithNoImages, error: noImgError } = await supabaseServiceClient
+      .from('shopify_products')
+      .select('id, shopify_id, title')
+      .eq('store_id', storeId)
+      .not('shopify_id', 'is', null);
+    
+    if (noImgError) {
+      console.error(`⚠️ Error fetching products:`, noImgError);
+    } else if (productsWithNoImages && productsWithNoImages.length > 0) {
+      // Get image counts for these products
+      const productIds = productsWithNoImages.map(p => p.id);
+      const { data: imageCounts } = await supabaseServiceClient
+        .from('product_images')
+        .select('product_id')
+        .in('product_id', productIds);
+      
+      const productsWithImageSet = new Set(imageCounts?.map(i => i.product_id) || []);
+      const productsNeedingImages = productsWithNoImages.filter(p => !productsWithImageSet.has(p.id));
+      
+      if (productsNeedingImages.length > 0) {
+        console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching from Shopify...`);
+        
+        // Fetch images in batches of 10 products using GraphQL
+        const FETCH_BATCH_SIZE = 10;
+        let imagesFetched = 0;
+        
+        for (let i = 0; i < productsNeedingImages.length && i < 100; i += FETCH_BATCH_SIZE) { // Limit to 100 products per import
+          const batch = productsNeedingImages.slice(i, i + FETCH_BATCH_SIZE);
+          const shopifyIds = batch.map(p => `gid://shopify/Product/${p.shopify_id}`);
+          
+          const imageQuery = `
+            query getProductImages($ids: [ID!]!) {
+              nodes(ids: $ids) {
+                ... on Product {
+                  id
+                  legacyResourceId
+                  images(first: 20) {
+                    edges {
+                      node {
+                        id
+                        url
+                        altText
+                        width
+                        height
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          `;
+          
+          try {
+            const imgResponse = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`, {
+              method: 'POST',
+              headers: {
+                "X-Shopify-Access-Token": authToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                query: imageQuery,
+                variables: { ids: shopifyIds }
+              })
+            });
+            
+            if (imgResponse.ok) {
+              const imgData: any = await imgResponse.json();
+              
+              if (imgData.data?.nodes) {
+                for (const node of imgData.data.nodes) {
+                  if (!node || !node.images?.edges?.length) continue;
+                  
+                  const shopifyId = parseInt(node.legacyResourceId);
+                  const productRecord = batch.find(p => p.shopify_id === shopifyId);
+                  if (!productRecord) continue;
+                  
+                  const productImages = node.images.edges.map((edge: any, index: number) => {
+                    const gid = edge.node.id || '';
+                    const numericId = gid.includes('/') ? parseInt(gid.split('/').pop() || '0') : 0;
+                    return {
+                      product_id: productRecord.id,
+                      shopify_image_id: numericId,
+                      src: edge.node.url,
+                      position: index + 1,
+                      alt_text: edge.node.altText || "",
+                      width: edge.node.width || null,
+                      height: edge.node.height || null,
+                    };
+                  });
+                  
+                  allImages.push(...productImages);
+                  imagesFetched += productImages.length;
+                }
+              }
+            }
+          } catch (fetchError) {
+            console.error(`⚠️ Error fetching images for batch:`, fetchError);
+          }
+          
+          // Small delay between batches
+          if (i + FETCH_BATCH_SIZE < productsNeedingImages.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        
+        console.log(`✅ Fetched ${imagesFetched} images for existing products with 0 images`);
+      }
+    }
 
     // Images are now handled properly with shopify_image_id as the primary key
     // for Shopify images, and URL comparison for generated images
