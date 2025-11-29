@@ -69,13 +69,15 @@ export function ProductGalleryDialog({
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    if (open && product) {
+    if (open && product?.id) {
       loadImages();
+    } else if (!open) {
+      setImages([]);
     }
   }, [open, product?.id]);
 
   const loadImages = async () => {
-    if (!product) return;
+    if (!product?.id) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -85,7 +87,12 @@ export function ProductGalleryDialog({
         .order("position", { ascending: true });
 
       if (error) throw error;
-      setImages(data || []);
+      
+      // Deduplicate images by id
+      const uniqueImages = data ? 
+        Array.from(new Map(data.map(img => [img.id, img])).values()) : [];
+      
+      setImages(uniqueImages);
       setHasChanges(false);
     } catch (error) {
       console.error("Error loading images:", error);
