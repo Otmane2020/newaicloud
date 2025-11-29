@@ -1846,44 +1846,46 @@ export function SmartPricingAI() {
               >
                 {/* Header with image and selection */}
                 <div className="relative">
-                  <div className="flex items-start gap-3 p-4 bg-muted/30">
-                    <div 
-                      className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted cursor-pointer"
-                      onClick={() => toggleProductSelection(product.id)}
-                    >
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      {discount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -left-1 text-[10px] px-1">
-                          -{discount}%
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-medium text-sm line-clamp-2 flex-1">{product.title}</h4>
-                        <Checkbox 
-                          checked={product.selected} 
-                          onCheckedChange={() => toggleProductSelection(product.id)}
-                        />
+                  {/* Large product image */}
+                  <div 
+                    className="relative aspect-square w-full overflow-hidden bg-muted cursor-pointer"
+                    onClick={() => toggleProductSelection(product.id)}
+                  >
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-12 h-12 text-muted-foreground" />
                       </div>
+                    )}
+                    {discount > 0 && (
+                      <Badge variant="destructive" className="absolute top-2 left-2 text-xs px-2">
+                        -{discount}%
+                      </Badge>
+                    )}
+                    <Checkbox 
+                      checked={product.selected} 
+                      onCheckedChange={() => toggleProductSelection(product.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
+                    />
+                  </div>
+                  {/* Product info */}
+                  <div className="p-4">
+                    <h4 className="font-medium text-sm line-clamp-2">{product.title}</h4>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {product.vendor && (
-                        <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                        <span className="text-xs text-muted-foreground">{product.vendor}</span>
                       )}
                       {product.sku && (
-                        <p className="text-xs text-muted-foreground font-mono mt-1">{product.sku}</p>
+                        <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{product.sku}</span>
                       )}
                       {product.hasMultipleVariants && (
-                        <Badge variant="outline" className="text-[10px] mt-1">
+                        <Badge variant="outline" className="text-[10px]">
                           {product.variants.length} variantes
                         </Badge>
                       )}
