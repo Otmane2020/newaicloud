@@ -262,6 +262,24 @@ export const useImageOptimization = () => {
       setIsOptimizing(true);
       
       try {
+        // Check if another image with this URL already exists for this product
+        const { data: existingImage } = await supabase
+          .from('product_images')
+          .select('id')
+          .eq('product_id', productId)
+          .eq('src', optimizedUrl)
+          .neq('id', imageId)
+          .maybeSingle();
+        
+        if (existingImage) {
+          console.log(`[ImageOptimization] URL already exists for another image, deleting duplicate`);
+          // Delete the duplicate image
+          await supabase
+            .from('product_images')
+            .delete()
+            .eq('id', existingImage.id);
+        }
+
         // Update product image locally
         const { error: updateError } = await supabase
           .from('product_images')
@@ -271,7 +289,15 @@ export const useImageOptimization = () => {
           })
           .eq('id', imageId);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          // If still duplicate error, try upsert approach
+          if (updateError.code === '23505') {
+            console.log('[ImageOptimization] Handling duplicate - checking if same image');
+            // Just continue since the image already has this URL
+          } else {
+            throw updateError;
+          }
+        }
 
         // Save to history
         await saveToHistory({

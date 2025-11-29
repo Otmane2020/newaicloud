@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
+import { useTranslation } from '@/lib/language';
 
 interface ProductGalleryImage {
   id: string;
@@ -87,6 +88,7 @@ export const SmartBackgroundDialog = ({
   onComplete,
   storeUrl,
 }: SmartBackgroundDialogProps) => {
+  const { t, language } = useTranslation();
   const [bgFormat, setBgFormat] = useState<BackgroundFormat>('1:1');
   const [bgMode, setBgMode] = useState<BackgroundMode>('smart_serp');
   const [bgStyle, setBgStyle] = useState<BackgroundStyle>('shopping');
@@ -106,6 +108,9 @@ export const SmartBackgroundDialog = ({
   const [showHistory, setShowHistory] = useState<string | null>(null);
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
+
+  // Translation helpers
+  const getText = (fr: string, en: string) => language === 'fr' ? fr : en;
 
   // Load gallery images for all selected products
   useEffect(() => {
@@ -245,7 +250,7 @@ export const SmartBackgroundDialog = ({
 
   const handleGenerateAll = async () => {
     if (selectedProducts.length === 0) {
-      toast.error('Aucun produit sélectionné');
+      toast.error(getText('Aucun produit sélectionné', 'No product selected'));
       return;
     }
 
@@ -259,7 +264,7 @@ export const SmartBackgroundDialog = ({
 
       const selectedImage = getSelectedImage(product);
       if (!selectedImage?.url) {
-        toast.warning(`${product.title}: Pas d'image`);
+        toast.warning(`${product.title}: ${getText('Pas d\'image', 'No image')}`);
         continue;
       }
 
@@ -329,11 +334,11 @@ export const SmartBackgroundDialog = ({
 
         if (result.imageUrl) {
           newPreviews.set(product.id, result.imageUrl);
-          toast.success(`${product.title}: Background généré`);
+          toast.success(`${product.title}: ${getText('Background généré', 'Background generated')}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error generating background for', product.title, error);
-        toast.error(`${product.title}: Erreur de génération`);
+        toast.error(`${product.title}: ${getText('Erreur de génération', 'Generation error')}`);
       }
     }
 
@@ -341,7 +346,7 @@ export const SmartBackgroundDialog = ({
     setIsGenerating(false);
 
     if (newPreviews.size > 0) {
-      toast.success(`${newPreviews.size} background(s) généré(s)`);
+      toast.success(`${newPreviews.size} ${getText('background(s) généré(s)', 'background(s) generated')}`);
     }
   };
 
@@ -646,8 +651,10 @@ export const SmartBackgroundDialog = ({
                             {/* Image selection grid - visual display */}
                             {hasMultipleImages && !hasGenerated && (
                               <div className="mb-2">
-                                <p className="text-xs text-muted-foreground mb-1.5">Sélectionner une image source:</p>
-                                <div className="flex flex-wrap gap-1.5">
+                                <p className="text-xs text-muted-foreground mb-1.5">
+                                  {getText('Sélectionner une image source:', 'Select source image:')}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
                                   {productImages.map((img, idx) => {
                                     const isSelected = (selectedImages.get(product.id)?.url || productImages[0]?.url) === img.url;
                                     return (
@@ -658,12 +665,12 @@ export const SmartBackgroundDialog = ({
                                           imageId: img.imageId,
                                           position: img.position
                                         }))}
-                                        className={`relative w-12 h-12 rounded overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
+                                        className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
                                       >
                                         <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
                                         {isSelected && (
                                           <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                            <Check className="h-4 w-4 text-primary" />
+                                            <Check className="h-5 w-5 text-primary" />
                                           </div>
                                         )}
                                       </button>
@@ -676,30 +683,34 @@ export const SmartBackgroundDialog = ({
                             {/* History panel */}
                             {showHistory === product.id && productHistory.length > 0 && (
                               <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                                <p className="text-xs font-medium mb-2">Historique des générations:</p>
+                                <p className="text-xs font-medium mb-2">
+                                  {getText('Historique des générations:', 'Generation history:')}
+                                </p>
                                 <div className="flex flex-wrap gap-2">
                                   {productHistory.slice(0, 6).map((item) => (
                                     <button
                                       key={item.id}
                                       onClick={() => handleApplyFromHistory(product, item)}
                                       disabled={isGenerating}
-                                      className="relative w-14 h-14 rounded overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
+                                      className="relative w-18 h-18 min-w-[4.5rem] min-h-[4.5rem] rounded-lg overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
                                     >
                                       <img src={item.optimized_url} alt="Historique" className="w-full h-full object-cover" />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <CheckCircle2 className="h-4 w-4 text-white" />
+                                        <CheckCircle2 className="h-5 w-5 text-white" />
                                       </div>
                                     </button>
                                   ))}
                                 </div>
-                                <p className="text-[10px] text-muted-foreground mt-1">Cliquez pour appliquer</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {getText('Cliquez pour appliquer', 'Click to apply')}
+                                </p>
                               </div>
                             )}
                           </div>
 
                           {/* Current/Generated image preview */}
                           <div 
-                            className="w-24 h-24 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
+                            className="w-28 h-28 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
                             onClick={() => hasGenerated && handlePreviewProduct(product)}
                           >
                             {currentImage ? (
@@ -746,7 +757,7 @@ export const SmartBackgroundDialog = ({
             {isGenerating && (
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
                 <p className="text-sm font-medium">
-                  Génération en cours: {currentProductIndex + 1}/{selectedProducts.length}
+                  {getText('Génération en cours:', 'Generating:')} {currentProductIndex + 1}/{selectedProducts.length}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {selectedProducts[currentProductIndex]?.title}
@@ -760,7 +771,7 @@ export const SmartBackgroundDialog = ({
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                   <p className="text-sm font-medium text-green-600">
-                    {appliedProducts.size} image(s) appliquée(s) avec succès
+                    {appliedProducts.size} {getText('image(s) appliquée(s) avec succès', 'image(s) applied successfully')}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -786,7 +797,7 @@ export const SmartBackgroundDialog = ({
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
-              {appliedProducts.size > 0 ? 'Fermer' : 'Annuler'}
+              {appliedProducts.size > 0 ? getText('Fermer', 'Close') : getText('Annuler', 'Cancel')}
             </Button>
 
             {appliedProducts.size === 0 && (
@@ -795,7 +806,7 @@ export const SmartBackgroundDialog = ({
                   <>
                     <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating} className="gap-2">
                       <RefreshCw className="h-4 w-4" />
-                      Régénérer
+                      {getText('Régénérer', 'Regenerate')}
                     </Button>
                     <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2">
                       {isGenerating ? (
@@ -803,7 +814,7 @@ export const SmartBackgroundDialog = ({
                       ) : (
                         <CheckCircle2 className="h-4 w-4" />
                       )}
-                      Appliquer {generatedPreviews.size} background(s)
+                      {getText(`Appliquer ${generatedPreviews.size} background(s)`, `Apply ${generatedPreviews.size} background(s)`)}
                     </Button>
                   </>
                 ) : (
@@ -813,7 +824,7 @@ export const SmartBackgroundDialog = ({
                     ) : (
                       <Wand2 className="h-4 w-4" />
                     )}
-                    Générer les backgrounds
+                    {getText('Générer les backgrounds', 'Generate backgrounds')}
                   </Button>
                 )}
               </>
@@ -827,7 +838,7 @@ export const SmartBackgroundDialog = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{previewProduct?.title}</DialogTitle>
-            <DialogDescription>Comparaison avant/après</DialogDescription>
+            <DialogDescription>{getText('Comparaison avant/après', 'Before/after comparison')}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
@@ -863,7 +874,7 @@ export const SmartBackgroundDialog = ({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(false)}>
-              Fermer
+              {getText('Fermer', 'Close')}
             </Button>
           </DialogFooter>
         </DialogContent>
