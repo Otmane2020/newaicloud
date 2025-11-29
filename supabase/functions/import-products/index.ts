@@ -58,6 +58,18 @@ interface ShopifyResponse {
   products: ShopifyProduct[];
 }
 
+// --- FIX: Extraction correcte ID Shopify (GID -> numeric) ---
+function extractNumericId(gid: string | null): number | null {
+  if (!gid) return null;
+  const match = gid.match(/ProductImage\/(\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
+
+// --- FIX: Normaliseur d'URL Shopify (évite faux doublons) ---
+function cleanUrl(url: string): string {
+  return url.split("?")[0].trim().toLowerCase();
+}
+
 function parseLinkHeader(linkHeader: string | null): string | null {
   if (!linkHeader) return null;
 
@@ -640,11 +652,8 @@ Deno.serve(async (req: Request) => {
           tags: node.tags.join(','),
           variants: node.variants.edges.map((v: any) => {
             const options = v.node.selectedOptions || [];
-            // Extract image_id from GraphQL GID (gid://shopify/ProductImage/123456)
-            const variantImageGid = v.node.image?.id || '';
-            const variantImageId = variantImageGid.includes('/') 
-              ? parseInt(variantImageGid.split('/').pop() || '0') 
-              : null;
+            // FIX: Use extractNumericId for proper GID parsing
+            const variantImageId = extractNumericId(v.node.image?.id || null);
             return {
               id: parseInt(v.node.legacyResourceId),
               title: v.node.title || 'Default',
@@ -656,15 +665,14 @@ Deno.serve(async (req: Request) => {
               option2: options[1]?.value || null,
               option3: options[2]?.value || null,
               cost_price: v.node.inventoryItem?.unitCost?.amount ? parseFloat(v.node.inventoryItem.unitCost.amount) : null,
-              // NEW: Extract variant image directly from GraphQL
+              // Direct variant image from GraphQL
               image_id: variantImageId,
               image_url: v.node.image?.url || null
             };
           }),
           images: node.images.edges.map((i: any) => {
-            // Extract numeric ID from GraphQL global ID (gid://shopify/ProductImage/123456789)
-            const gid = i.node.id || '';
-            const numericId = gid.includes('/') ? parseInt(gid.split('/').pop() || '0') : 0;
+            // FIX: Use extractNumericId for proper GID parsing
+            const numericId = extractNumericId(i.node.id) || 0;
             return {
               id: numericId,
               src: i.node.url,
@@ -958,10 +966,13 @@ Deno.serve(async (req: Request) => {
             weight_unit: variant.weight_unit || "kg",
             barcode: variant.barcode || "",
             currency: shopCurrency,
-            // Prioritize direct image_url from GraphQL, fallback to image_id matching
-            image_url: variant.image_url || (variant.image_id
-              ? product.images.find((img) => img.id === variant.image_id)?.src || ""
-              : ""),
+            // FIX: Use nullish coalescing for proper fallback chain
+            image_url:
+              variant.image_url ??
+              (variant.image_id
+                ? product.images.find(img => img.id === variant.image_id)?.src
+                : "") ??
+              "",
             raw_data: variant,
           };
         });
@@ -1190,7 +1201,6 @@ Deno.serve(async (req: Request) => {
       
       // Helper to check if URL is from Shopify CDN (not a generated image)
       const isShopifyCdnUrl = (url: string) => url.includes('cdn.shopify.com');
-      const normalizeUrl = (url: string) => url.split('?')[0].toLowerCase();
       
       // STEP 1: Fetch existing images to preserve ONLY truly generated/optimized ones
       // BATCHED to avoid "Bad Request" error on large arrays (>500 IDs)
@@ -1277,13 +1287,13 @@ Deno.serve(async (req: Request) => {
         if (!existingUrlsByProduct.has(img.product_id)) {
           existingUrlsByProduct.set(img.product_id, new Set());
         }
-        existingUrlsByProduct.get(img.product_id)!.add(normalizeUrl(img.src));
+        existingUrlsByProduct.get(img.product_id)!.add(cleanUrl(img.src));
       }
       
       // Filter images to insert - exclude those with matching URLs in preserved images
       const imagesToInsert = allImages.filter(img => {
         const existingUrls = existingUrlsByProduct.get(img.product_id);
-        const normalizedSrc = normalizeUrl(img.src);
+        const normalizedSrc = cleanUrl(img.src);
         return !existingUrls || !existingUrls.has(normalizedSrc);
       });
       
