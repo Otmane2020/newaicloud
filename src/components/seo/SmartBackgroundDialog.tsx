@@ -623,7 +623,7 @@ export const SmartBackgroundDialog = ({
             {/* Products Grid */}
             <div className="space-y-2">
               <Label>{selectedProducts.length} produit(s) sélectionné(s)</Label>
-              <ScrollArea className="h-[350px] border rounded-lg p-3">
+              <ScrollArea className="h-[450px] border rounded-lg p-3">
                 <div className="space-y-4">
                   {selectedProducts.map((product, index) => {
                     const hasGenerated = generatedPreviews.has(product.id);
@@ -662,11 +662,11 @@ export const SmartBackgroundDialog = ({
 
                             {/* Image selection grid - visual display */}
                             {hasMultipleImages && !hasGenerated && (
-                              <div className="mb-2">
-                                <p className="text-xs text-muted-foreground mb-1.5">
-                                  {getText('Sélectionner une image source:', 'Select source image:')}
+                              <div className="mb-3">
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  {getText(`Sélectionner une image source (${productImages.length} disponibles):`, `Select source image (${productImages.length} available):`)}
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
                                   {productImages.map((img, idx) => {
                                     const isSelected = (selectedImages.get(product.id)?.url || productImages[0]?.url) === img.url;
                                     return (
@@ -677,14 +677,17 @@ export const SmartBackgroundDialog = ({
                                           imageId: img.imageId,
                                           position: img.position
                                         }))}
-                                        className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
+                                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
                                       >
                                         <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
                                         {isSelected && (
                                           <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                            <Check className="h-5 w-5 text-primary" />
+                                            <Check className="h-6 w-6 text-primary drop-shadow-md" />
                                           </div>
                                         )}
+                                        <span className="absolute bottom-0.5 right-0.5 text-[9px] bg-background/80 px-1 rounded">
+                                          {idx + 1}
+                                        </span>
                                       </button>
                                     );
                                   })}
