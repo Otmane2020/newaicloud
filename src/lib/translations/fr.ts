@@ -2192,6 +2192,7 @@ export const translations = {
       toolbox: "Boîte à Outils",
       search: "Recherche Intelligente",
       translationAnalyzer: "Analyseur Traductions",
+      autoTranslationScanner: "Scanner Auto",
       logout: "Déconnexion",
     },
     googleAds: {

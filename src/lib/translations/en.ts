@@ -2180,6 +2180,7 @@ export const translations = {
       toolbox: "Toolbox",
       search: "Smart Search",
       translationAnalyzer: "Translation Analyzer",
+      autoTranslationScanner: "Auto Scanner",
       logout: "Logout",
     },
     googleAds: {
