@@ -92,7 +92,7 @@ serve(async (req) => {
       product_id, 
       imageType = "secondary", 
       format = "square", 
-      mode = "standard",
+      mode = "google_shopping", // 🆕 Default to google_shopping mode
       // 🆕 SERP enrichment data
       serpData,
       visionAiData,
@@ -100,6 +100,11 @@ serve(async (req) => {
       seoTitle,
       seoDescription
     } = body;
+
+    // 📝 DETAILED LOGGING for debugging SERP/Vision data
+    console.log(`[white-bg] 📦 Received serpData:`, serpData ? JSON.stringify(serpData).slice(0, 300) : 'null');
+    console.log(`[white-bg] 📦 Received visionAiData:`, visionAiData ? JSON.stringify(visionAiData).slice(0, 300) : 'null');
+    console.log(`[white-bg] 📦 Received productDescription:`, productDescription ? productDescription.slice(0, 100) : 'null');
 
     // Map format to aspect ratio and dimensions
     const formatToAspectRatio: Record<string, string> = {
@@ -303,10 +308,9 @@ OUTPUT: Product on white background with soft shadow, ${aspectRatio} aspect rati
                 ]
               }
             ],
-            modalities: ["image", "text"],
-            generationConfig: {
-              aspectRatio: aspectRatio
-            }
+            modalities: ["image", "text"]
+            // ❌ REMOVED: generationConfig.aspectRatio is NOT supported by Gemini
+            // The aspect ratio is enforced via prompt instructions instead
           }),
         });
 

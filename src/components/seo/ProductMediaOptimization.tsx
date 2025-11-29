@@ -165,9 +165,21 @@ export const ProductMediaOptimization = () => {
           const { data: serpResult } = await supabase.functions.invoke('search-similar-products-specs', {
             body: { productTitle: product.title, limit: 5 }
           });
-          if (serpResult?.success && serpResult?.data) {
-            serpData = serpResult.data;
-            console.log('✅ [WhiteBg] SERP data fetched successfully');
+          
+          // ✅ FIX: serpResult returns data directly, NOT wrapped in {success, data}
+          if (serpResult?.similarProducts || serpResult?.averageWeight || serpResult?.averageDimensions) {
+            serpData = {
+              dimensions: serpResult.averageDimensions 
+                ? `${serpResult.averageDimensions.length || ''} x ${serpResult.averageDimensions.width || ''} x ${serpResult.averageDimensions.height || ''}`.replace(/\s+x\s+x\s+/g, '').trim()
+                : null,
+              weight: serpResult.averageWeight,
+              materials: serpResult.similarProducts?.flatMap((p: any) => p.materials || []).slice(0, 3) || [],
+              dominantStyles: serpResult.similarProducts?.flatMap((p: any) => p.style ? [p.style] : []).slice(0, 2) || [],
+              confidence: serpResult.confidence
+            };
+            console.log('✅ [WhiteBg] SERP data formatted:', JSON.stringify(serpData).slice(0, 200));
+          } else {
+            console.log('⚠️ [WhiteBg] SERP returned but no usable data:', JSON.stringify(serpResult || {}).slice(0, 200));
           }
         } catch (serpError) {
           console.log('⚠️ [WhiteBg] SERP fetch failed, continuing without:', serpError);
