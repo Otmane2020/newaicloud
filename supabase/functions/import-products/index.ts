@@ -986,6 +986,62 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 🆕 FIX 1: Intelligent deduplication based on base filename
+    // Shopify renames images with UUID suffixes, causing duplicates on re-import
+    const getBaseFileName = (url: string): string => {
+      if (!url) return '';
+      const urlPath = url.split('?')[0]; // Remove query params
+      const fileName = urlPath.split('/').pop() || '';
+      // Remove UUID suffix patterns: _UUID.ext or UUID-UUID-UUID-UUID.ext
+      return fileName
+        .replace(/_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(\.[^.]+)$/i, '$1')
+        .replace(/_[a-f0-9]{32,}(\.[^.]+)$/i, '$1');
+    };
+
+    // Group images by product and deduplicate by base filename (keep the one with highest position or latest shopify_id)
+    const imagesByProduct = new Map<string, typeof allImages>();
+    for (const img of allImages) {
+      const key = img.product_id;
+      if (!imagesByProduct.has(key)) {
+        imagesByProduct.set(key, []);
+      }
+      imagesByProduct.get(key)!.push(img);
+    }
+
+    const deduplicatedImages: typeof allImages = [];
+    for (const [productId, productImages] of imagesByProduct) {
+      const seenBaseNames = new Map<string, typeof allImages[0]>();
+      
+      for (const img of productImages) {
+        const baseName = getBaseFileName(img.src);
+        const existing = seenBaseNames.get(baseName);
+        
+        if (!existing) {
+          seenBaseNames.set(baseName, img);
+        } else {
+          // Keep the one with a shopify_image_id if the other doesn't have one
+          // Or keep the one with the lower position (earlier image)
+          const keepNew = !existing.shopify_image_id && img.shopify_image_id;
+          const keepByPosition = existing.position > img.position;
+          
+          if (keepNew || keepByPosition) {
+            seenBaseNames.set(baseName, img);
+          }
+        }
+      }
+      
+      deduplicatedImages.push(...Array.from(seenBaseNames.values()));
+    }
+
+    const duplicatesRemoved = allImages.length - deduplicatedImages.length;
+    if (duplicatesRemoved > 0) {
+      console.log(`🧹 Deduplicated ${duplicatesRemoved} images based on base filename`);
+    }
+
+    // Replace allImages with deduplicated version
+    allImages.length = 0;
+    allImages.push(...deduplicatedImages);
+
     // Insert variants in batches
     if (allVariants.length > 0) {
       const VARIANT_BATCH_SIZE = 500;

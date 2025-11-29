@@ -328,6 +328,15 @@ export const useImageOptimization = () => {
             .eq('id', existingImage.id);
         }
 
+        // Get image position BEFORE updating
+        const { data: imageData } = await supabase
+          .from('product_images')
+          .select('position')
+          .eq('id', imageId)
+          .single();
+        
+        const imagePosition = imageData?.position || 1;
+
         // Update product image locally with public URL (not base64!)
         const { error: updateError } = await supabase
           .from('product_images')
@@ -344,6 +353,24 @@ export const useImageOptimization = () => {
             // Just continue since the image already has this URL
           } else {
             throw updateError;
+          }
+        }
+
+        // 🆕 FIX 3: Update shopify_products.image_url if this is the main image (position 1)
+        if (imagePosition === 1) {
+          console.log('🔄 [ImageOptimization] Updating shopify_products.image_url for main image');
+          const { error: productUpdateError } = await supabase
+            .from('shopify_products')
+            .update({ 
+              image_url: finalUrl,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', productId);
+          
+          if (productUpdateError) {
+            console.error('❌ [ImageOptimization] Failed to update shopify_products.image_url:', productUpdateError);
+          } else {
+            console.log('✅ [ImageOptimization] Updated shopify_products.image_url');
           }
         }
 
