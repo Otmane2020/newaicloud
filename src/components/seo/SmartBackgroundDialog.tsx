@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,21 +114,40 @@ export const SmartBackgroundDialog = ({
   // Translation helpers
   const getText = (fr: string, en: string) => language === 'fr' ? fr : en;
 
-  // Load gallery images for all selected products
+  // Memoize product IDs to prevent unnecessary re-renders
+  const productIds = useMemo(() => selectedProducts.map(p => p.id).filter(Boolean), [selectedProducts]);
+
+  // Initialize with fallback images immediately, then load gallery async
   useEffect(() => {
-    if (open && selectedProducts.length > 0) {
+    if (open && productIds.length > 0) {
+      // Step 1: Initialize immediately with product.image_url fallbacks
+      const initialImages = new Map<string, ProductGalleryImage[]>();
+      selectedProducts.forEach(p => {
+        if (p.image_url) {
+          initialImages.set(p.id, [{
+            id: `fallback-${p.id}`,
+            src: p.image_url,
+            alt_text: p.title,
+            position: 1,
+            shopify_image_id: null
+          }]);
+        }
+      });
+      setProductGalleryImages(initialImages);
+      console.log('[SmartBg] Initialized with', initialImages.size, 'fallback images');
+
+      // Step 2: Load actual gallery images (will merge/override)
       loadAllGalleryImages();
       loadImageHistory();
     }
-  }, [open, selectedProducts]);
+  }, [open, productIds.join(',')]);
 
   const loadAllGalleryImages = async () => {
-    const productIds = selectedProducts.map(p => p.id).filter(Boolean);
+    const ids = selectedProducts.map(p => p.id).filter(Boolean);
     
     // Guard: skip query if no valid product IDs
-    if (productIds.length === 0) {
+    if (ids.length === 0) {
       console.log('[SmartBg] No product IDs, skipping gallery load');
-      setProductGalleryImages(new Map());
       return;
     }
     
@@ -138,7 +157,7 @@ export const SmartBackgroundDialog = ({
       const { data, error } = await supabase
         .from('product_images')
         .select('id, src, alt_text, position, shopify_image_id, product_id')
-        .in('product_id', productIds)
+        .in('product_id', ids)
         .order('position', { ascending: true });
       
       if (error) throw error;
@@ -159,7 +178,15 @@ export const SmartBackgroundDialog = ({
         });
       });
       
-      setProductGalleryImages(imagesByProduct);
+      // Merge with existing fallbacks - keep fallbacks for products without gallery images
+      setProductGalleryImages(prev => {
+        const merged = new Map(prev);
+        imagesByProduct.forEach((images, productId) => {
+          merged.set(productId, images); // Override with actual gallery images
+        });
+        return merged;
+      });
+      
       console.log('[SmartBg] Loaded gallery images for', imagesByProduct.size, 'products');
     } catch (error) {
       console.error('[SmartBg] Error loading gallery images:', error);
@@ -657,7 +684,15 @@ export const SmartBackgroundDialog = ({
 
             {/* Products Grid */}
             <div className="space-y-2">
-              <Label>{selectedProducts.length} produit(s) sélectionné(s)</Label>
+              <div className="flex items-center justify-between">
+                <Label>{selectedProducts.length} produit(s) sélectionné(s)</Label>
+                {loadingGallery && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {getText('Chargement des images...', 'Loading images...')}
+                  </div>
+                )}
+              </div>
               <ScrollArea className="h-[450px] border rounded-lg p-3">
                 <div className="space-y-4">
                   {selectedProducts.map((product, index) => {
@@ -763,12 +798,17 @@ export const SmartBackgroundDialog = ({
                             className="w-36 h-36 rounded-lg overflow-hidden bg-muted relative cursor-pointer flex-shrink-0"
                             onClick={() => hasGenerated && handlePreviewProduct(product)}
                           >
-                            {currentImage ? (
+                            {/* Always show image using currentImage OR product.image_url fallback */}
+                            {(currentImage || product.image_url) ? (
                               <img
-                                src={hasGenerated ? generatedPreviews.get(product.id) : currentImage}
+                                src={hasGenerated ? generatedPreviews.get(product.id) : (currentImage || product.image_url || '')}
                                 alt={product.title}
                                 className="w-full h-full object-cover"
                               />
+                            ) : loadingGallery ? (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              </div>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <ImageIcon className="h-10 w-10 text-muted-foreground" />
