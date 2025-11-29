@@ -79,6 +79,7 @@ export function BlogSeoManagementAdmin() {
   const [scheduledArticles, setScheduledArticles] = useState<ScheduledArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterLanguage, setFilterLanguage] = useState<string | null>(null);
@@ -170,6 +171,40 @@ const loadArticles = async () => {
       });
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  const processScheduledArticles = async () => {
+    try {
+      setIsProcessing(true);
+      
+      toast({
+        title: "Traitement en cours",
+        description: "Génération et publication des articles planifiés..."
+      });
+
+      const { data, error } = await supabase.functions.invoke('process-scheduled-articles', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Traitement terminé",
+        description: `${data.generated} générés, ${data.published} publiés${data.failed > 0 ? `, ${data.failed} échecs` : ''}`
+      });
+
+      loadScheduledArticles();
+      loadArticles();
+    } catch (error: unknown) {
+      console.error('Error processing scheduled articles:', error);
+      toast({
+        title: "Erreur lors du traitement",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -876,6 +911,19 @@ const filteredArticles = articles.filter(article => {
                       <CalendarClock className="h-4 w-4 mr-2" />
                     )}
                     +30 jours
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={processScheduledArticles}
+                    disabled={isProcessing}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Traiter & Publier
                   </Button>
                 </div>
               </div>

@@ -141,14 +141,15 @@ export function GoogleAdsAdmin() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Use standard OAuth columns (same as user normal flow)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('google_ads_oauth_token, google_ads_email, google_ads_customer_id')
+        .select('google_oauth_token, google_console_email, google_ads_customer_id')
         .eq('id', user.id)
         .single();
 
-      setIsConnected(!!profile?.google_ads_oauth_token);
-      setGoogleAdsEmail(profile?.google_ads_email || null);
+      setIsConnected(!!profile?.google_oauth_token);
+      setGoogleAdsEmail(profile?.google_console_email || null);
       setCustomerId(profile?.google_ads_customer_id || '');
     } catch (error) {
       console.error('Error checking connection:', error);
@@ -160,11 +161,12 @@ export function GoogleAdsAdmin() {
       setIsConnecting(true);
       const redirectUri = `${window.location.origin}/superadmin`;
       
+      // Use the SAME google-oauth-url function as normal users
       const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-url', {
         body: { 
           redirectUri,
-          scopes: 'https://www.googleapis.com/auth/adwords',
-          state: 'google_ads_admin'
+          scopes: 'https://www.googleapis.com/auth/adwords https://www.googleapis.com/auth/userinfo.email',
+          state: redirectUri // Use redirectUri as state for token exchange
         },
       });
       
@@ -199,10 +201,11 @@ export function GoogleAdsAdmin() {
         if (event.data.type === 'GOOGLE_ADS_ADMIN_OAUTH_CODE' && event.data.code) {
           window.removeEventListener('message', handleMessage);
           
-          const { data, error } = await supabase.functions.invoke('google-ads-oauth-token', {
+          // Use the SAME google-oauth-token function as normal users
+          const { data, error } = await supabase.functions.invoke('google-oauth-token', {
             body: {
               code: event.data.code,
-              redirectUri,
+              state: redirectUri // Pass redirectUri as state for token exchange
             },
           });
           
@@ -248,13 +251,14 @@ export function GoogleAdsAdmin() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Clear standard OAuth columns
       const { error } = await supabase
         .from('profiles')
         .update({
-          google_ads_oauth_token: null,
-          google_ads_refresh_token: null,
-          google_ads_token_expires_at: null,
-          google_ads_email: null,
+          google_oauth_token: null,
+          google_refresh_token: null,
+          google_token_expires_at: null,
+          google_console_email: null,
           google_ads_customer_id: null,
         })
         .eq('id', user.id);
