@@ -414,13 +414,18 @@ export const SmartBackgroundDialog = ({
     setAppliedProducts(newApplied);
     setIsGenerating(false);
     
-    // Close dialog after successful apply so user can see sync toasts clearly
+    // Show success and close dialog
     if (newApplied.size > 0) {
-      // Small delay to allow Shopify sync toasts to be visible
+      toast.success(`${newApplied.size} background(s) appliqué(s)`, {
+        description: 'Les images ont été mises à jour et synchronisées avec Shopify.',
+        duration: 5000,
+      });
+      
+      // Small delay to allow user to see the toast before closing
       setTimeout(() => {
         onOpenChange(false);
         onComplete?.();
-      }, 500);
+      }, 800);
     } else {
       toast.warning('Aucune image n\'a pu être appliquée', {
         description: 'Vérifiez que les images ont bien été générées.'
