@@ -93,6 +93,28 @@ export default function Auth() {
     } else {
       const result = await signIn(email, password);
       
+      if (!result?.error) {
+        // Get current user to check if admin
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
+        if (currentUser) {
+          // Check if user is admin - block them from /auth
+          const { data: roleData } = await supabase.rpc('has_role', {
+            _user_id: currentUser.id,
+            _role: 'admin'
+          });
+
+          if (roleData) {
+            // Admin detected - sign out and redirect to superadmin login
+            await supabase.auth.signOut();
+            toast.error("Administrateurs : connectez-vous via /superadmin-login");
+            navigate('/superadmin-login');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
       // Si échec de connexion avec shopify_pending, suggérer de créer un compte
       if (result?.error && searchParams.get('shopify_pending')) {
         const errorMsg = result.error.message || '';

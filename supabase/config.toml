@@ -8,6 +8,10 @@ function = "trigger-cleanup-sync"
 schedule = "0 * * * *"
 function = "trigger-hourly-sync"
 
+[cron.process-scheduled-articles]
+schedule = "0 9,14 * * *"
+function = "process-scheduled-articles"
+
 [functions.trigger-hourly-sync]
 verify_jwt = false
 
@@ -204,9 +208,6 @@ verify_jwt = true
 [functions.generate-promotional-articles]
 verify_jwt = false
 
-[functions.scheduled-sync]
-verify_jwt = false
-
 [functions.import-costs-from-shopify]
 verify_jwt = true
 
@@ -308,9 +309,6 @@ verify_jwt = false
 [functions.shopify-oauth]
 verify_jwt = false
 
-[functions.trigger-hourly-sync]
-verify_jwt = false
-
 [functions.sync-deleted-resources]
 verify_jwt = false
 
@@ -332,18 +330,9 @@ verify_jwt = true
 [functions.optimize-product-title-serp]
 verify_jwt = true
 
-[functions.search-similar-products-specs]
-verify_jwt = true
-memory_limit_mb = 512
-
 [functions.trigger-auto-sync]
 verify_jwt = true
 memory_limit_mb = 512
-
-[functions.import-costs-from-shopify]
-verify_jwt = true
-memory_limit_mb = 512
-
 
 [functions.update-subscription]
 verify_jwt = true
@@ -443,4 +432,16 @@ verify_jwt = true
 
 [functions.generate-promotional-article]
 verify_jwt = true
+
+[functions.schedule-blog-articles]
+verify_jwt = false
+
+[functions.generate-scheduled-article]
+verify_jwt = false
+
+[functions.publish-scheduled-article]
+verify_jwt = false
+
+[functions.process-scheduled-articles]
+verify_jwt = false
 
