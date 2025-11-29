@@ -50,27 +50,52 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper function to call API with retry on rate limit
 async function callWithRetry<T>(
-  fn: () => Promise<T>,
+  fn: () => Promise<{ data: T | null; error: any }>,
   maxRetries = 3,
-  baseDelay = 5000
+  baseDelay = 8000
 ): Promise<T> {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await fn();
+      const { data, error } = await fn();
+      
+      if (error) {
+        // Check if it's a rate limit error (429)
+        const errorStr = JSON.stringify(error).toLowerCase();
+        const isRateLimit = errorStr.includes('429') || 
+                            errorStr.includes('rate') ||
+                            errorStr.includes('limite de taux') ||
+                            errorStr.includes('rate_limited');
+        
+        if (isRateLimit && attempt < maxRetries - 1) {
+          // Exponential backoff: 8s, 16s, 32s
+          const waitTime = baseDelay * Math.pow(2, attempt);
+          console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
+          await delay(waitTime);
+          continue;
+        }
+        
+        throw new Error(error.message || 'Erreur de génération');
+      }
+      
+      if (!data) {
+        throw new Error('No data returned');
+      }
+      
+      return data;
     } catch (error: any) {
       lastError = error;
       
-      // Check if it's a rate limit error (429)
-      const isRateLimit = error?.message?.includes('429') || 
-                          error?.message?.includes('rate') ||
-                          error?.status === 429;
+      // Also check thrown errors for rate limit
+      const errorStr = String(error?.message || '').toLowerCase();
+      const isRateLimit = errorStr.includes('429') || 
+                          errorStr.includes('rate') ||
+                          errorStr.includes('limite de taux');
       
       if (isRateLimit && attempt < maxRetries - 1) {
-        // Exponential backoff: 5s, 10s, 20s
         const waitTime = baseDelay * Math.pow(2, attempt);
-        console.log(`Rate limited, waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
+        console.log(`Rate limited (thrown), waiting ${waitTime / 1000}s before retry ${attempt + 1}/${maxRetries}`);
         await delay(waitTime);
         continue;
       }
@@ -79,7 +104,7 @@ async function callWithRetry<T>(
     }
   }
   
-  throw lastError;
+  throw lastError || new Error('Max retries exceeded');
 }
 
 export function BulkLandingProgressDialog({
@@ -165,8 +190,8 @@ export function BulkLandingProgressDialog({
 
         // Generate landing page with retry on rate limit
         const productTitle = productData.seo_title || productData.title;
-        const result = await callWithRetry(async () => {
-          const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
+        const result = await callWithRetry<{ html: string }>(
+          () => supabase.functions.invoke('generate-landing-ai', {
             headers: { Authorization: `Bearer ${session.access_token}` },
             body: {
               product_id: product.id,
@@ -182,16 +207,10 @@ export function BulkLandingProgressDialog({
               colorScheme: config.colorScheme,
               customHighlights: config.customHighlights,
             },
-          });
-
-          if (error) {
-            // Re-throw with status info for retry logic
-            const err = new Error(error.message || 'Erreur de génération');
-            (err as any).status = error.status;
-            throw err;
-          }
-          return data;
-        }, 3, 5000); // 3 retries, 5s base delay
+          }),
+          3, // 3 retries
+          8000 // 8s base delay
+        );
 
         // Save to database
         const { error: updateError } = await supabase
