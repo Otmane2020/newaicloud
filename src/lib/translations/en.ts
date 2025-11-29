@@ -2179,6 +2179,7 @@ export const translations = {
       logs: "System Logs",
       toolbox: "Toolbox",
       search: "Smart Search",
+      translationAnalyzer: "Translation Analyzer",
       logout: "Logout",
     },
     googleAds: {
