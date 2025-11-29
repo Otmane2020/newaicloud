@@ -2191,6 +2191,7 @@ export const translations = {
       logs: "Logs Système",
       toolbox: "Boîte à Outils",
       search: "Recherche Intelligente",
+      translationAnalyzer: "Analyseur Traductions",
       logout: "Déconnexion",
     },
     googleAds: {

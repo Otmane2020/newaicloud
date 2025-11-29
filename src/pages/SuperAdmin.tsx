@@ -24,6 +24,7 @@ import { AdminToolbox } from '@/components/admin/AdminToolbox';
 import { AdminSmartSearch } from '@/components/admin/AdminSmartSearch';
 import { GoogleAdsAdmin } from '@/components/admin/GoogleAdsAdmin';
 import { BlogSeoManagementAdmin } from '@/components/admin/BlogSeoManagementAdmin';
+import CodeTranslationAnalyzer from '@/components/admin/CodeTranslationAnalyzer';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -839,6 +840,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'blog-seo' && (
         <BlogSeoManagementAdmin />
+      )}
+
+      {activeTab === 'translation-analyzer' && (
+        <CodeTranslationAnalyzer />
       )}
     </div>
   );
