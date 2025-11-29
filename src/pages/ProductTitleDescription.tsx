@@ -61,6 +61,7 @@ import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressD
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
+import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -220,6 +221,7 @@ export default function ProductTitleDescription() {
   // Product gallery dialog
   const [showGalleryDialog, setShowGalleryDialog] = useState(false);
   const [galleryProduct, setGalleryProduct] = useState<Product | null>(null);
+  const [showSmartBgDialog, setShowSmartBgDialog] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -1870,6 +1872,24 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
+                  setShowSmartBgDialog(true);
+                }}
+                disabled={selectedProducts.size === 0}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Smart Background ({selectedProducts.size})
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (!canDoAction("optimizations")) {
+                    toast.error(t.contentOptimization.toasts.limitReached);
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
                   setShowBulkLandingConfigDialog(true);
                 }}
                 disabled={generatingBulkLanding || selectedProducts.size === 0}
@@ -3308,6 +3328,19 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowGalleryDialog}
         product={galleryProduct}
         storeId={selectedStore?.id || null}
+      />
+
+      {/* Smart Background Dialog */}
+      <SmartBackgroundDialog
+        open={showSmartBgDialog}
+        onOpenChange={setShowSmartBgDialog}
+        selectedProducts={products
+          .filter(p => selectedProducts.has(p.id))
+          .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
+        onComplete={() => {
+          fetchProducts();
+          refreshLimits();
+        }}
       />
     </div>
   );
