@@ -51,7 +51,8 @@ export function EmailSidebar({ activeFolder, onFolderChange, stats, onRefresh, l
         const Icon = folder.icon;
         const isActive = activeFolder === folder.id;
         const unreadKey = `unread${folder.id.charAt(0).toUpperCase() + folder.id.slice(1)}` as keyof EmailStats;
-        const unreadCount = stats[unreadKey] || 0;
+        // Les emails envoyés n'ont pas de statut "non lu"
+        const unreadCount = folder.id === "sent" ? 0 : (stats[unreadKey] || 0);
         const totalCount = folder.count;
 
         return (
