@@ -1075,37 +1075,87 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Insert images in batches
+    // Insert images in batches - WITH EXISTING IMAGE CHECK TO PREVENT DUPLICATES
     if (allImages.length > 0) {
-      const IMAGE_BATCH_SIZE = 500;
-      const imageBatches = Math.ceil(allImages.length / IMAGE_BATCH_SIZE);
+      // 🆕 CRITICAL FIX: Fetch existing images to prevent duplicates across syncs
+      const productIds = [...new Set(allImages.map(img => img.product_id))];
+      console.log(`🔍 Checking existing images for ${productIds.length} products...`);
       
-      console.log(`📦 Inserting ${allImages.length} images in ${imageBatches} batches`);
+      const { data: existingImages, error: existingError } = await supabaseServiceClient
+        .from("product_images")
+        .select("id, product_id, src, shopify_image_id")
+        .in("product_id", productIds);
       
-      for (let i = 0; i < allImages.length; i += IMAGE_BATCH_SIZE) {
-        const batch = allImages.slice(i, i + IMAGE_BATCH_SIZE);
-        const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
+      if (existingError) {
+        console.error(`⚠️ Error fetching existing images:`, existingError);
+      }
+      
+      // Build a map of existing images by product_id -> base filename
+      const existingImageMap = new Map<string, Set<string>>();
+      if (existingImages && existingImages.length > 0) {
+        console.log(`📊 Found ${existingImages.length} existing images in database`);
         
-        console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches}`);
+        for (const img of existingImages) {
+          const baseName = getBaseFileName(img.src);
+          const key = img.product_id;
+          
+          if (!existingImageMap.has(key)) {
+            existingImageMap.set(key, new Set());
+          }
+          existingImageMap.get(key)!.add(baseName);
+        }
+      }
+      
+      // Filter out images that already exist (by base filename)
+      const imagesToInsert = allImages.filter(img => {
+        const baseName = getBaseFileName(img.src);
+        const existingBaseNames = existingImageMap.get(img.product_id);
         
-        // Use (product_id, src) as conflict key to prevent duplicates
-        const { error: imageError } = await supabaseServiceClient
-          .from("product_images")
-          .upsert(batch, {
-            onConflict: "product_id,src",
-            ignoreDuplicates: false,
-          });
+        if (existingBaseNames && existingBaseNames.has(baseName)) {
+          // Image already exists, skip it
+          return false;
+        }
+        return true;
+      });
+      
+      const skippedCount = allImages.length - imagesToInsert.length;
+      if (skippedCount > 0) {
+        console.log(`🚫 Skipped ${skippedCount} images that already exist in database`);
+      }
+      
+      if (imagesToInsert.length > 0) {
+        const IMAGE_BATCH_SIZE = 500;
+        const imageBatches = Math.ceil(imagesToInsert.length / IMAGE_BATCH_SIZE);
+        
+        console.log(`📦 Inserting ${imagesToInsert.length} NEW images in ${imageBatches} batches`);
+        
+        for (let i = 0; i < imagesToInsert.length; i += IMAGE_BATCH_SIZE) {
+          const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
+          const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
+          
+          console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches}`);
+          
+          // Use (product_id, src) as conflict key as fallback
+          const { error: imageError } = await supabaseServiceClient
+            .from("product_images")
+            .upsert(batch, {
+              onConflict: "product_id,src",
+              ignoreDuplicates: true, // Skip exact duplicates
+            });
 
-        if (imageError) {
-          console.error(`❌ Image insert error in batch ${batchNumber}:`, imageError);
-        } else {
-          totalImages += batch.length;
-          console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed`);
+          if (imageError) {
+            console.error(`❌ Image insert error in batch ${batchNumber}:`, imageError);
+          } else {
+            totalImages += batch.length;
+            console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed`);
+          }
+          
+          if (i + IMAGE_BATCH_SIZE < imagesToInsert.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         }
-        
-        if (i + IMAGE_BATCH_SIZE < allImages.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+      } else {
+        console.log(`✅ All images already exist, no new images to insert`);
       }
     }
 
