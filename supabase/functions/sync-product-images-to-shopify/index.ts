@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
         .from("shopify_connections")
         .select("id")
         .eq("id", product.store_id)
-        .eq("seller_id", user.id)
+        .eq("user_id", user.id)
         .single();
       
       hasAccess = !!storeAccess;
