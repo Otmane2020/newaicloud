@@ -14,6 +14,8 @@ interface PreviewImage {
   generatedUrl: string | null;
   status: 'pending' | 'generating' | 'success' | 'error';
   error?: string;
+  variantId?: string;
+  variantTitle?: string;
 }
 
 interface WhiteBgPreviewDialogProps {
@@ -35,23 +37,26 @@ export function WhiteBgPreviewDialog({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [format, setFormat] = useState<string>('square');
 
+  // Helper to get unique key for a preview
+  const getUniqueKey = (p: PreviewImage) => p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
+
   useEffect(() => {
     // Auto-select all successful generations
     const successIds = previews
       .filter(p => p.status === 'success' && p.generatedUrl)
-      .map(p => p.productId);
+      .map(p => getUniqueKey(p));
     
     if (successIds.length > 0) {
       setSelectedIds(new Set(successIds));
     }
   }, [previews]);
 
-  const handleToggle = (productId: string) => {
+  const handleToggle = (uniqueKey: string) => {
     const newSelection = new Set(selectedIds);
-    if (newSelection.has(productId)) {
-      newSelection.delete(productId);
+    if (newSelection.has(uniqueKey)) {
+      newSelection.delete(uniqueKey);
     } else {
-      newSelection.add(productId);
+      newSelection.add(uniqueKey);
     }
     setSelectedIds(newSelection);
   };
@@ -59,7 +64,7 @@ export function WhiteBgPreviewDialog({
   const handleSelectAll = () => {
     const successIds = previews
       .filter(p => p.status === 'success' && p.generatedUrl)
-      .map(p => p.productId);
+      .map(p => getUniqueKey(p));
     setSelectedIds(new Set(successIds));
   };
 
@@ -133,20 +138,22 @@ export function WhiteBgPreviewDialog({
 
           {/* Preview Grid */}
           <div className="grid grid-cols-1 gap-4">
-            {previews.map((preview) => (
+            {previews.map((preview) => {
+              const uniqueKey = preview.variantId ? `${preview.productId}-${preview.variantId}` : preview.productId;
+              return (
               <div
-                key={preview.productId}
+                key={uniqueKey}
                 className="border rounded-lg p-4 flex items-start gap-4"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     {preview.status === 'success' && preview.generatedUrl && (
                       <Checkbox
-                        checked={selectedIds.has(preview.productId)}
-                        onCheckedChange={() => handleToggle(preview.productId)}
+                        checked={selectedIds.has(uniqueKey)}
+                        onCheckedChange={() => handleToggle(uniqueKey)}
                       />
                     )}
-                    <h4 className="font-medium text-sm">{preview.productTitle}</h4>
+                    <h4 className="font-medium text-sm">{preview.productTitle}{preview.variantTitle ? ` - ${preview.variantTitle}` : ''}</h4>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -201,7 +208,8 @@ export function WhiteBgPreviewDialog({
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -21,6 +21,8 @@ interface PreviewImage {
   generatedUrl: string | null;
   status: 'pending' | 'generating' | 'success' | 'error';
   error?: string;
+  variantId?: string;
+  variantTitle?: string;
 }
 
 interface WhiteBackgroundPreviewDialogProps {
@@ -43,6 +45,9 @@ export function WhiteBackgroundPreviewDialog({
   const [format, setFormat] = useState<string>('square');
   const [imageType, setImageType] = useState<'primary' | 'secondary'>('primary');
 
+  // Helper to get unique key for a preview
+  const getUniqueKey = (p: PreviewImage) => p.variantId ? `${p.productId}-${p.variantId}` : p.productId;
+
   const successfulPreviews = previews.filter(p => p.status === 'success');
   const isGenerating = previews.some(p => p.status === 'generating');
   const isSingleImage = previews.length === 1;
@@ -53,6 +58,7 @@ export function WhiteBackgroundPreviewDialog({
       console.log(`🖼️ [WhiteBgPreviewDialog] Dialog opened with ${previews.length} preview(s):`, previews.map(p => ({
         productId: p.productId,
         productTitle: p.productTitle,
+        variantId: p.variantId,
         status: p.status,
         hasGeneratedUrl: !!p.generatedUrl,
         generatedUrl: p.generatedUrl,
@@ -64,16 +70,16 @@ export function WhiteBackgroundPreviewDialog({
   // Sélectionner automatiquement si une seule image avec succès
   useEffect(() => {
     if (isSingleImage && successfulPreviews.length === 1) {
-      setSelectedIds(new Set([successfulPreviews[0].productId]));
+      setSelectedIds(new Set([getUniqueKey(successfulPreviews[0])]));
     }
   }, [isSingleImage, successfulPreviews]);
 
-  const handleToggleSelect = (productId: string) => {
+  const handleToggleSelect = (uniqueKey: string) => {
     const newSelected = new Set(selectedIds);
-    if (newSelected.has(productId)) {
-      newSelected.delete(productId);
+    if (newSelected.has(uniqueKey)) {
+      newSelected.delete(uniqueKey);
     } else {
-      newSelected.add(productId);
+      newSelected.add(uniqueKey);
     }
     setSelectedIds(newSelected);
   };
@@ -82,7 +88,7 @@ export function WhiteBackgroundPreviewDialog({
     if (selectedIds.size === successfulPreviews.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(successfulPreviews.map(p => p.productId)));
+      setSelectedIds(new Set(successfulPreviews.map(p => getUniqueKey(p))));
     }
   };
 
@@ -192,9 +198,11 @@ export function WhiteBackgroundPreviewDialog({
 
         <ScrollArea className="flex-1 min-h-0 px-4 sm:px-2">
           <div className="space-y-3 sm:space-y-4 md:space-y-6 pr-2 sm:pr-4">
-            {previews.map((preview) => (
+            {previews.map((preview) => {
+              const uniqueKey = preview.variantId ? `${preview.productId}-${preview.variantId}` : preview.productId;
+              return (
               <div
-                key={preview.productId}
+                key={uniqueKey}
                 className="border rounded-lg p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-3"
               >
                 {/* Header */}
@@ -203,14 +211,16 @@ export function WhiteBackgroundPreviewDialog({
                     {!isSingleImage && (
                       <input
                         type="checkbox"
-                        checked={selectedIds.has(preview.productId)}
-                        onChange={() => handleToggleSelect(preview.productId)}
+                        checked={selectedIds.has(uniqueKey)}
+                        onChange={() => handleToggleSelect(uniqueKey)}
                         disabled={preview.status !== 'success'}
                         className="w-4 h-4 flex-shrink-0"
                       />
                     )}
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-xs sm:text-sm md:text-base truncate">{preview.productTitle}</h4>
+                      <h4 className="font-medium text-xs sm:text-sm md:text-base truncate">
+                        {preview.productTitle}{preview.variantTitle ? ` - ${preview.variantTitle}` : ''}
+                      </h4>
                       {preview.status === 'generating' && (
                         <Badge variant="outline" className="gap-1 text-[10px] sm:text-xs mt-1">
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -312,7 +322,8 @@ export function WhiteBackgroundPreviewDialog({
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
 
