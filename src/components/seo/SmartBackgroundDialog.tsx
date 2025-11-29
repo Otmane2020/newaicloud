@@ -31,12 +31,19 @@ import { useImageOptimization } from '@/hooks/useImageOptimization';
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 type BackgroundMode = 'white_shopping' | 'smart_serp';
 
+interface ProductVariant {
+  id: string;
+  title: string;
+  image_url?: string | null;
+}
+
 interface Product {
   id: string;
   title: string;
   image_url: string | null;
   vendor?: string | null;
   handle?: string | null;
+  variants?: ProductVariant[];
 }
 
 interface SmartBackgroundDialogProps {
@@ -62,8 +69,31 @@ export const SmartBackgroundDialog = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [appliedProducts, setAppliedProducts] = useState<Set<string>>(new Set());
+  // Track selected image per product (product_id -> image_url)
+  const [selectedImages, setSelectedImages] = useState<Map<string, string>>(new Map());
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
+
+  // Get all available images for a product (main + variants)
+  const getProductImages = (product: Product): { url: string; label: string }[] => {
+    const images: { url: string; label: string }[] = [];
+    if (product.image_url) {
+      images.push({ url: product.image_url, label: 'Image principale' });
+    }
+    if (product.variants) {
+      product.variants.forEach((v, idx) => {
+        if (v.image_url && !images.find(img => img.url === v.image_url)) {
+          images.push({ url: v.image_url, label: v.title || `Variante ${idx + 1}` });
+        }
+      });
+    }
+    return images;
+  };
+
+  // Get the selected image for a product (or default to main image)
+  const getSelectedImage = (product: Product): string | null => {
+    return selectedImages.get(product.id) || product.image_url;
+  };
 
   const handleGenerateAll = async () => {
     if (selectedProducts.length === 0) {
@@ -79,7 +109,8 @@ export const SmartBackgroundDialog = ({
       const product = selectedProducts[i];
       setCurrentProductIndex(i);
 
-      if (!product.image_url) {
+      const imageUrl = getSelectedImage(product);
+      if (!imageUrl) {
         toast.warning(`${product.title}: Pas d'image`);
         continue;
       }
@@ -136,7 +167,7 @@ export const SmartBackgroundDialog = ({
         }
 
         const result = await generateWhiteBackground.mutateAsync({
-          imageUrl: product.image_url,
+          imageUrl: imageUrl,
           productTitle: product.title,
           resolution: '2000x2000',
           format: formatMap[bgFormat],
@@ -327,19 +358,24 @@ export const SmartBackgroundDialog = ({
                   {selectedProducts.map((product, index) => {
                     const hasGenerated = generatedPreviews.has(product.id);
                     const isCurrentlyGenerating = isGenerating && currentProductIndex === index;
+                    const productImages = getProductImages(product);
+                    const currentImage = getSelectedImage(product);
+                    const hasVariantImages = productImages.length > 1;
 
                     return (
                       <Card
                         key={product.id}
-                        className={`p-2 cursor-pointer transition-all hover:shadow-md ${
+                        className={`p-2 transition-all hover:shadow-md ${
                           hasGenerated ? 'ring-2 ring-green-500' : ''
                         } ${isCurrentlyGenerating ? 'ring-2 ring-primary animate-pulse' : ''}`}
-                        onClick={() => hasGenerated && handlePreviewProduct(product)}
                       >
-                        <div className="aspect-square rounded overflow-hidden bg-muted relative">
-                          {product.image_url ? (
+                        <div 
+                          className="aspect-square rounded overflow-hidden bg-muted relative cursor-pointer"
+                          onClick={() => hasGenerated && handlePreviewProduct(product)}
+                        >
+                          {currentImage ? (
                             <img
-                              src={hasGenerated ? generatedPreviews.get(product.id) : product.image_url}
+                              src={hasGenerated ? generatedPreviews.get(product.id) : currentImage}
                               alt={product.title}
                               className="w-full h-full object-cover"
                             />
@@ -360,8 +396,41 @@ export const SmartBackgroundDialog = ({
                               <CheckCircle2 className="h-5 w-5 text-green-500 bg-white rounded-full" />
                             </div>
                           )}
+
+                          {hasVariantImages && !hasGenerated && (
+                            <div className="absolute top-1 left-1">
+                              <Badge variant="secondary" className="text-[9px] px-1">
+                                {productImages.length} photos
+                              </Badge>
+                            </div>
+                          )}
                         </div>
                         <p className="text-xs font-medium mt-1 line-clamp-1">{product.title}</p>
+                        
+                        {/* Image selector for products with variants */}
+                        {hasVariantImages && !hasGenerated && (
+                          <Select
+                            value={selectedImages.get(product.id) || product.image_url || ''}
+                            onValueChange={(url) => {
+                              setSelectedImages(prev => new Map(prev).set(product.id, url));
+                            }}
+                          >
+                            <SelectTrigger className="h-7 text-[10px] mt-1">
+                              <SelectValue placeholder="Choisir image" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {productImages.map((img, idx) => (
+                                <SelectItem key={idx} value={img.url} className="text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <img src={img.url} alt="" className="w-6 h-6 object-cover rounded" />
+                                    <span className="truncate max-w-[100px]">{img.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        
                         <div className="flex gap-1 mt-1">
                           <Badge variant="outline" className="text-[10px]">
                             {bgFormat}
