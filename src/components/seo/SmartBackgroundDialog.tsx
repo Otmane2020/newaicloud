@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
+
+interface ProductGalleryImage {
+  id: string;
+  src: string;
+  alt_text: string | null;
+  position: number | null;
+  shopify_image_id: number | null;
+}
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 type BackgroundMode = 'white_shopping' | 'smart_serp';
@@ -77,30 +85,111 @@ export const SmartBackgroundDialog = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [appliedProducts, setAppliedProducts] = useState<Set<string>>(new Set());
-  // Track selected image per product (product_id -> image_url)
-  const [selectedImages, setSelectedImages] = useState<Map<string, string>>(new Map());
+  // Track selected image per product (product_id -> { url, imageId, position })
+  const [selectedImages, setSelectedImages] = useState<Map<string, { url: string; imageId?: string; position?: number }>>(new Map());
+  // Store loaded gallery images per product
+  const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
+  const [loadingGallery, setLoadingGallery] = useState(false);
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
-  // Get all available images for a product (main + variants)
-  const getProductImages = (product: Product): { url: string; label: string }[] => {
-    const images: { url: string; label: string }[] = [];
-    if (product.image_url) {
+  // Load gallery images for all selected products
+  useEffect(() => {
+    if (open && selectedProducts.length > 0) {
+      loadAllGalleryImages();
+    }
+  }, [open, selectedProducts]);
+
+  const loadAllGalleryImages = async () => {
+    setLoadingGallery(true);
+    const productIds = selectedProducts.map(p => p.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('id, src, alt_text, position, shopify_image_id, product_id')
+        .in('product_id', productIds)
+        .order('position', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Group images by product_id
+      const imagesByProduct = new Map<string, ProductGalleryImage[]>();
+      data?.forEach(img => {
+        const productId = (img as any).product_id;
+        if (!imagesByProduct.has(productId)) {
+          imagesByProduct.set(productId, []);
+        }
+        imagesByProduct.get(productId)!.push({
+          id: img.id,
+          src: img.src,
+          alt_text: img.alt_text,
+          position: img.position,
+          shopify_image_id: img.shopify_image_id
+        });
+      });
+      
+      setProductGalleryImages(imagesByProduct);
+      console.log('[SmartBg] Loaded gallery images for', imagesByProduct.size, 'products');
+    } catch (error) {
+      console.error('[SmartBg] Error loading gallery images:', error);
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
+
+  // Get all available images for a product (gallery + variants)
+  const getProductImages = (product: Product): { url: string; label: string; imageId?: string; position?: number }[] => {
+    const images: { url: string; label: string; imageId?: string; position?: number }[] = [];
+    const seenUrls = new Set<string>();
+    
+    // First, add gallery images from database
+    const galleryImages = productGalleryImages.get(product.id) || [];
+    galleryImages.forEach((img, idx) => {
+      if (!seenUrls.has(img.src)) {
+        seenUrls.add(img.src);
+        images.push({
+          url: img.src,
+          label: idx === 0 ? 'Image principale' : `Photo ${idx + 1}`,
+          imageId: img.id,
+          position: img.position || idx + 1
+        });
+      }
+    });
+    
+    // If no gallery images, fallback to product.image_url
+    if (images.length === 0 && product.image_url) {
       images.push({ url: product.image_url, label: 'Image principale' });
     }
+    
+    // Add variant images if different
     if (product.variants) {
       product.variants.forEach((v, idx) => {
-        if (v.image_url && !images.find(img => img.url === v.image_url)) {
+        if (v.image_url && !seenUrls.has(v.image_url)) {
+          seenUrls.add(v.image_url);
           images.push({ url: v.image_url, label: v.title || `Variante ${idx + 1}` });
         }
       });
     }
+    
     return images;
   };
 
-  // Get the selected image for a product (or default to main image)
-  const getSelectedImage = (product: Product): string | null => {
-    return selectedImages.get(product.id) || product.image_url;
+  // Get the selected image for a product (or default to first image)
+  const getSelectedImage = (product: Product): { url: string; imageId?: string; position?: number } | null => {
+    const selected = selectedImages.get(product.id);
+    if (selected) return selected;
+    
+    const images = getProductImages(product);
+    if (images.length > 0) {
+      return { url: images[0].url, imageId: images[0].imageId, position: images[0].position };
+    }
+    
+    if (product.image_url) {
+      return { url: product.image_url };
+    }
+    
+    return null;
   };
 
   const handleGenerateAll = async () => {
@@ -117,8 +206,8 @@ export const SmartBackgroundDialog = ({
       const product = selectedProducts[i];
       setCurrentProductIndex(i);
 
-      const imageUrl = getSelectedImage(product);
-      if (!imageUrl) {
+      const selectedImage = getSelectedImage(product);
+      if (!selectedImage?.url) {
         toast.warning(`${product.title}: Pas d'image`);
         continue;
       }
@@ -175,7 +264,7 @@ export const SmartBackgroundDialog = ({
         }
 
         const result = await generateWhiteBackground.mutateAsync({
-          imageUrl: imageUrl,
+          imageUrl: selectedImage.url,
           productTitle: product.title,
           resolution: '2000x2000',
           format: formatMap[bgFormat],
@@ -216,32 +305,40 @@ export const SmartBackgroundDialog = ({
       if (!product) continue;
 
       try {
-        // Get the selected source image URL for this product
-        const selectedImageUrl = getSelectedImage(product);
+        // Get the selected source image for this product
+        const selectedImageData = getSelectedImage(product);
         
-        // Find the position of the selected image in product_images
-        const { data: allImages } = await supabase
-          .from('product_images')
-          .select('id, src, position')
-          .eq('product_id', productId)
-          .order('position');
+        // If we have imageId from selection, use it directly
+        let targetImageId = selectedImageData?.imageId;
+        let originalUrl = selectedImageData?.url || product.image_url || '';
         
-        // Find the image that matches the selected source image
-        let targetImage = allImages?.find(img => img.src === selectedImageUrl);
-        
-        // Fallback to first image if no match found
-        if (!targetImage && allImages?.length) {
-          targetImage = allImages[0];
+        // If no imageId, find it from database
+        if (!targetImageId) {
+          const { data: allImages } = await supabase
+            .from('product_images')
+            .select('id, src, position')
+            .eq('product_id', productId)
+            .order('position');
+          
+          // Find the image that matches the selected source image
+          let targetImage = allImages?.find(img => img.src === selectedImageData?.url);
+          
+          // Fallback to first image if no match found
+          if (!targetImage && allImages?.length) {
+            targetImage = allImages[0];
+          }
+          
+          targetImageId = targetImage?.id;
         }
 
-        if (targetImage?.id) {
-          console.log(`[SmartBg] Applying to image at position ${targetImage.position} for ${product.title}`);
+        if (targetImageId) {
+          console.log(`[SmartBg] Applying to image ${targetImageId} for ${product.title}`);
           
           await applyOptimizedImage.mutateAsync({
-            imageId: targetImage.id,
+            imageId: targetImageId,
             productId: productId,
             optimizedUrl: generatedImageUrl,
-            originalUrl: selectedImageUrl || product.image_url || '',
+            originalUrl: originalUrl,
             optimizationType: 'white_background',
             aiModel: 'gemini-2.5-flash-image-preview',
             resolution: '2000x2000',
@@ -418,7 +515,8 @@ export const SmartBackgroundDialog = ({
                     const hasGenerated = generatedPreviews.has(product.id);
                     const isCurrentlyGenerating = isGenerating && currentProductIndex === index;
                     const productImages = getProductImages(product);
-                    const currentImage = getSelectedImage(product);
+                    const currentImageData = getSelectedImage(product);
+                    const currentImage = currentImageData?.url;
                     const hasVariantImages = productImages.length > 1;
 
                     return (
@@ -466,12 +564,17 @@ export const SmartBackgroundDialog = ({
                         </div>
                         <p className="text-xs font-medium mt-1 line-clamp-1">{product.title}</p>
                         
-                        {/* Image selector for products with variants */}
+                        {/* Image selector for products with multiple images */}
                         {hasVariantImages && !hasGenerated && (
                           <Select
-                            value={selectedImages.get(product.id) || product.image_url || ''}
+                            value={selectedImages.get(product.id)?.url || productImages[0]?.url || ''}
                             onValueChange={(url) => {
-                              setSelectedImages(prev => new Map(prev).set(product.id, url));
+                              const imgData = productImages.find(i => i.url === url);
+                              setSelectedImages(prev => new Map(prev).set(product.id, {
+                                url,
+                                imageId: imgData?.imageId,
+                                position: imgData?.position
+                              }));
                             }}
                           >
                             <SelectTrigger className="h-7 text-[10px] mt-1">
