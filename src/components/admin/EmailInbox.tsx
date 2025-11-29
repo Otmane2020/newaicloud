@@ -152,7 +152,7 @@ export function EmailInbox() {
         trash: data?.filter((e) => e.folder === "trash").length || 0,
         spam: data?.filter((e) => e.folder === "spam").length || 0,
         unreadInbox: data?.filter((e) => e.direction === "incoming" && !e.is_read).length || 0,
-        unreadSent: data?.filter((e) => e.direction === "outgoing" && !e.is_read).length || 0,
+        unreadSent: 0, // Les emails envoyés n'ont pas de statut "non lu"
         unreadDrafts: data?.filter((e) => e.folder === "drafts" && !e.is_read).length || 0,
         unreadTrash: data?.filter((e) => e.folder === "trash" && !e.is_read).length || 0,
         unreadSpam: data?.filter((e) => e.folder === "spam" && !e.is_read).length || 0,
@@ -165,12 +165,13 @@ export function EmailInbox() {
   };
 
   const getUnreadCount = (folder: string) => {
+    // Les emails envoyés n'ont pas de statut "non lu"
+    if (folder === "sent") return 0;
+    
     return emails.filter((e) => {
       let inFolder = false;
       if (folder === "inbox") {
         inFolder = e.direction === "incoming";
-      } else if (folder === "sent") {
-        inFolder = e.direction === "outgoing";
       } else {
         inFolder = e.folder === folder;
       }
@@ -528,26 +529,29 @@ export function EmailInbox() {
 
       {/* Mobile folder tabs */}
       <div className="flex lg:hidden overflow-x-auto gap-2 pb-2">
-        {["inbox", "sent", "drafts", "trash", "spam"].map((folder) => (
-          <Button
-            key={folder}
-            variant={activeFolder === folder ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveFolder(folder)}
-            className="whitespace-nowrap"
-          >
-            {folder === "inbox" && "Reçus"}
-            {folder === "sent" && "Envoyés"}
-            {folder === "drafts" && "Brouillons"}
-            {folder === "trash" && "Corbeille"}
-            {folder === "spam" && "Spam"}
-            {getUnreadCount(folder) > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {getUnreadCount(folder)}
-              </Badge>
-            )}
-          </Button>
-        ))}
+        {["inbox", "sent", "drafts", "trash", "spam"].map((folder) => {
+          const unreadCount = getUnreadCount(folder);
+          return (
+            <Button
+              key={folder}
+              variant={activeFolder === folder ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveFolder(folder)}
+              className="whitespace-nowrap"
+            >
+              {folder === "inbox" && "Reçus"}
+              {folder === "sent" && "Envoyés"}
+              {folder === "drafts" && "Brouillons"}
+              {folder === "trash" && "Corbeille"}
+              {folder === "spam" && "Spam"}
+              {unreadCount > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
+          );
+        })}
       </div>
 
       {/* Main Content */}
