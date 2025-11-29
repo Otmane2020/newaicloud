@@ -203,95 +203,86 @@ serve(async (req) => {
     const isMainImage = imageType === "primary";
     
     // 🆕 CRITICAL: Format dimensions mapping for image generation
-    const formatInstructions: Record<string, string> = {
-      "square": "MANDATORY OUTPUT: Square format 1:1 ratio. The final image MUST be perfectly SQUARE (same width and height). Example: 2000x2000 pixels.",
-      "portrait": "MANDATORY OUTPUT: Portrait format 3:4 ratio (vertical). The final image MUST be taller than wide. Example: 1500x2000 pixels.",
-      "landscape": "MANDATORY OUTPUT: Landscape format 4:3 ratio (horizontal). The final image MUST be wider than tall. Example: 2000x1500 pixels."
+    // Using explicit pixel dimensions to force Gemini to output correct format
+    const formatDimensions: Record<string, { width: number; height: number; ratio: string }> = {
+      "square": { width: 1024, height: 1024, ratio: "1:1" },
+      "portrait": { width: 768, height: 1024, ratio: "3:4" },
+      "landscape": { width: 1024, height: 768, ratio: "4:3" },
     };
     const formatKey = (format as string) || "square";
-    const formatInstruction = formatInstructions[formatKey] || formatInstructions["square"];
-
-    // Google Shopping optimized prompt for maximum CTR and Merchant Center compliance
-    // Now includes 3D effect, SERP enrichment, style selection, and STRICT format enforcement
-    const googleShoppingPrompt = `
-🎯 GOOGLE SHOPPING PROFESSIONAL PRODUCT IMAGE - MAXIMUM CTR & 3D EFFECT
-
-📐 **CRITICAL FORMAT REQUIREMENT - READ FIRST**:
-${formatInstruction}
-Aspect ratio: ${aspectRatio}
-Target resolution: ${dimensions}
-⚠️ DO NOT OUTPUT AN IMAGE WITH A DIFFERENT ASPECT RATIO. THE FORMAT MUST BE ${format.toUpperCase()} (${aspectRatio}).
-
-PRODUCT CONTEXT: ${enrichedContext}
-
-🎨 **BACKGROUND STYLE**: ${styleInstruction}
-
-🎨 STUDIO PHOTOGRAPHY REQUIREMENTS:
-
-1️⃣ **BACKGROUND STYLE APPLICATION**:
-   - ${backgroundStyle === 'shopping' ? 'Pure white e-commerce background (#FFFFFF). Remove ALL existing background completely.' : ''}
-   - ${backgroundStyle === 'lifestyle' ? 'Create warm lifestyle context with natural lighting and soft ambient tones. Product in daily use setting.' : ''}
-   - ${backgroundStyle === 'moderne' ? 'Modern minimalist backdrop with clean lines. Contemporary aesthetic with geometric subtle elements.' : ''}
-   - ${backgroundStyle === 'living_room' ? 'Cozy interior setting with furniture hints. Product placed naturally in home environment.' : ''}
-   - ${backgroundStyle === 'studio' ? 'Professional studio setup with controlled lighting. High-key photography with soft background gradients.' : ''}
-   - ${backgroundStyle === 'nature' ? 'Natural outdoor setting with plants and organic textures. Soft daylight ambiance.' : ''}
-
-2️⃣ **PROFESSIONAL 3D DEPTH EFFECT**:
-   - Add a soft, realistic DROP SHADOW under the product
-   - Shadow should be: subtle, diffused, natural-looking
-   - Shadow direction: slightly below and behind the product
-   - Shadow opacity: 15-25% black, soft edges
-   - This creates a professional "floating" 3D effect
-
-3️⃣ **STUDIO LIGHTING**:
-   - Soft, even lighting from above-front (key light)
-   - Gentle fill light to reduce harsh shadows ON the product
-   - Subtle rim/edge lighting to separate product from background
-   - Highlight product textures (wood grain, fabric weave, metal shine)
-
-4️⃣ **PRODUCT PRESERVATION** (CRITICAL):
-   - DO NOT regenerate, redraw, or recreate the product
-   - Keep EXACT same colors, textures, materials, details
-   - Only perform background removal and enhancement
-   - Product must look IDENTICAL to original, just with better context
-
-5️⃣ **ASPECT RATIO ENFORCEMENT**:
-   - OUTPUT MUST BE ${format.toUpperCase()} FORMAT
-   - ${aspectRatio} aspect ratio is MANDATORY
-   - ${dimensions} target resolution
-   - If product is not this ratio, add padding to achieve ${aspectRatio}
-
-✅ SUCCESS = Original product + ${backgroundStyle} style background + 3D depth + ${aspectRatio} format
-❌ FAILURE = Wrong aspect ratio, changed product, wrong background style
-
-OUTPUT: Professional ${format} (${aspectRatio}) product photo with ${backgroundStyle} background style at ${dimensions}.
+    const targetDims = formatDimensions[formatKey] || formatDimensions["square"];
+    
+    // Ultra-strict format instruction with canvas metaphor
+    const formatInstruction = `
+⚠️⚠️⚠️ ABSOLUTE FORMAT REQUIREMENT - THIS IS NON-NEGOTIABLE ⚠️⚠️⚠️
+You MUST output an image that is EXACTLY ${targetDims.width}x${targetDims.height} pixels.
+The canvas size is ${targetDims.width} pixels WIDE and ${targetDims.height} pixels TALL.
+${formatKey === "square" ? "WIDTH = HEIGHT. The image must be a PERFECT SQUARE. Same width and height." : ""}
+${formatKey === "portrait" ? "HEIGHT > WIDTH. The image must be TALLER than it is wide (vertical orientation)." : ""}
+${formatKey === "landscape" ? "WIDTH > HEIGHT. The image must be WIDER than it is tall (horizontal orientation)." : ""}
+Ratio: ${targetDims.ratio}
     `.trim();
 
-    // Standard white background prompt (simplified)
-    const standardPrompt = `
-🎯 BACKGROUND REMOVAL & WHITE REPLACEMENT
+    // Google Shopping optimized prompt - ULTRA STRICT FORMAT
+    const googleShoppingPrompt = `
+🎯 GOOGLE SHOPPING PROFESSIONAL PRODUCT IMAGE
 
-📐 **MANDATORY FORMAT**: ${formatInstruction}
-Aspect ratio: ${aspectRatio} | Resolution: ${dimensions}
+📐 **CRITICAL - READ THIS FIRST**:
+${formatInstruction}
+
+⛔ IF THE OUTPUT IMAGE IS NOT ${targetDims.ratio} RATIO (${targetDims.width}x${targetDims.height}), THE TASK HAS FAILED.
+✅ START by creating a ${targetDims.width}x${targetDims.height} canvas, THEN place the product on it.
 
 PRODUCT: ${enrichedContext}
 
-TASK: Extract product from current background and place on PURE WHITE (#FFFFFF).
+🎨 **BACKGROUND**: ${styleInstruction}
 
-REQUIREMENTS:
-1. Remove ALL background elements (walls, floors, furniture, props)
-2. Keep product EXACTLY as it appears (same colors, textures, details)
-3. Place on pure white background (#FFFFFF)
-4. Add subtle drop shadow underneath for 3D depth
-5. Center product, occupying 75-85% of frame
-6. OUTPUT MUST BE ${format.toUpperCase()} (${aspectRatio}) format
+INSTRUCTIONS:
+1. CREATE a ${targetDims.width}x${targetDims.height} pixel canvas FIRST
+2. Apply the ${backgroundStyle} background style to fill the entire canvas
+3. Extract the product from its current background
+4. Place the product CENTERED on your ${targetDims.ratio} canvas
+5. Add soft drop shadow for 3D depth effect
+6. Product should fill 70-80% of the frame
 
-⚠️ CRITICAL: 
-- DO NOT change the product appearance
-- DO NOT output wrong aspect ratio
-- The format MUST be ${aspectRatio}
+BACKGROUND STYLES:
+${backgroundStyle === 'shopping' ? '- Pure white (#FFFFFF) e-commerce background, clean and professional' : ''}
+${backgroundStyle === 'lifestyle' ? '- Warm lifestyle setting with natural light, beige/cream tones' : ''}
+${backgroundStyle === 'moderne' ? '- Modern minimalist with clean lines, gray/white backdrop' : ''}
+${backgroundStyle === 'living_room' ? '- Cozy living room interior, furniture hints, warm lighting' : ''}
+${backgroundStyle === 'studio' ? '- Professional studio lighting, soft gradients' : ''}
+${backgroundStyle === 'nature' ? '- Natural outdoor setting, plants, soft daylight' : ''}
 
-OUTPUT: Product on white background with soft shadow, ${aspectRatio} aspect ratio, ${dimensions} resolution.
+CRITICAL RULES:
+- DO NOT change the product appearance (colors, textures, details)
+- DO NOT output landscape if square was requested
+- THE FINAL IMAGE MUST BE ${targetDims.width}x${targetDims.height} (${targetDims.ratio})
+
+OUTPUT: A ${targetDims.width}x${targetDims.height} pixel image (${targetDims.ratio} ratio) with the product on ${backgroundStyle} background.
+    `.trim();
+
+    // Standard white background prompt (simplified but with strict format)
+    const standardPrompt = `
+🎯 BACKGROUND REMOVAL & WHITE REPLACEMENT
+
+📐 **MANDATORY FORMAT - NON-NEGOTIABLE**:
+${formatInstruction}
+
+CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place the product.
+
+PRODUCT: ${enrichedContext}
+
+TASK: Extract product and place on PURE WHITE (#FFFFFF) background.
+
+STEPS:
+1. Create ${targetDims.width}x${targetDims.height} white canvas
+2. Remove ALL background from product
+3. Center product on canvas (70-80% of frame)
+4. Add subtle drop shadow for 3D depth
+
+⚠️ CRITICAL: Output MUST be ${targetDims.ratio} ratio (${targetDims.width}x${targetDims.height} pixels)
+
+OUTPUT: ${targetDims.width}x${targetDims.height} image with product on white background.
     `.trim();
 
     // Select prompt based on mode
