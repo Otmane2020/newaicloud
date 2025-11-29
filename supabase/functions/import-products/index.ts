@@ -59,10 +59,12 @@ interface ShopifyResponse {
 }
 
 // --- FIX: Extraction correcte ID Shopify (GID -> numeric) ---
+// Supports all Shopify GID formats: ProductImage, Image, MediaImage, Product, ProductVariant
 function extractNumericId(gid: string | null): number | null {
   if (!gid) return null;
-  const match = gid.match(/ProductImage\/(\d+)/);
-  return match ? parseInt(match[1]) : null;
+  // Match any Shopify GID format: gid://shopify/Type/12345
+  const match = gid.match(/(ProductImage|Image|MediaImage|Product|ProductVariant)\/(\d+)/);
+  return match ? parseInt(match[2]) : null;
 }
 
 // --- FIX: Normaliseur d'URL Shopify (évite faux doublons) ---
