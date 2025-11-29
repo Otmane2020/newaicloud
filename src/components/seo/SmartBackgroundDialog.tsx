@@ -123,8 +123,16 @@ export const SmartBackgroundDialog = ({
   }, [open, selectedProducts]);
 
   const loadAllGalleryImages = async () => {
+    const productIds = selectedProducts.map(p => p.id).filter(Boolean);
+    
+    // Guard: skip query if no valid product IDs
+    if (productIds.length === 0) {
+      console.log('[SmartBg] No product IDs, skipping gallery load');
+      setProductGalleryImages(new Map());
+      return;
+    }
+    
     setLoadingGallery(true);
-    const productIds = selectedProducts.map(p => p.id);
     
     try {
       const { data, error } = await supabase
@@ -161,7 +169,14 @@ export const SmartBackgroundDialog = ({
   };
 
   const loadImageHistory = async () => {
-    const productIds = selectedProducts.map(p => p.id);
+    const productIds = selectedProducts.map(p => p.id).filter(Boolean);
+    
+    // Guard: skip query if no valid product IDs
+    if (productIds.length === 0) {
+      console.log('[SmartBg] No product IDs, skipping history load');
+      setImageHistory(new Map());
+      return;
+    }
     
     try {
       const { data, error } = await supabase
