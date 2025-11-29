@@ -86,16 +86,70 @@ serve(async (req) => {
       }
     }
     
-    const { imageUrl, productTitle, product_id, imageType = "secondary", format = "square", mode = "standard" } = body;
+    const { 
+      imageUrl, 
+      productTitle, 
+      product_id, 
+      imageType = "secondary", 
+      format = "square", 
+      mode = "standard",
+      // 🆕 SERP enrichment data
+      serpData,
+      visionAiData,
+      productDescription,
+      seoTitle,
+      seoDescription
+    } = body;
 
-    // Map format to aspect ratio
+    // Map format to aspect ratio and dimensions
     const formatToAspectRatio: Record<string, string> = {
       "square": "1:1",
       "portrait": "3:4",
       "landscape": "4:3",
     };
+    const formatToDimensions: Record<string, string> = {
+      "square": "2000x2000px",
+      "portrait": "1500x2000px",
+      "landscape": "2000x1500px",
+    };
     const aspectRatio = formatToAspectRatio[format] || "1:1";
-    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}, Mode: ${mode}`);
+    const dimensions = formatToDimensions[format] || "2000x2000px";
+    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}, Dimensions: ${dimensions}, Mode: ${mode}`);
+
+    // 🆕 Build enriched context from SERP and Vision data
+    let enrichedContext = productTitle || "product";
+    
+    if (seoTitle && seoTitle !== productTitle) {
+      enrichedContext += `. ${seoTitle}`;
+    }
+    
+    if (productDescription) {
+      enrichedContext += `. ${productDescription.slice(0, 150)}`;
+    } else if (seoDescription) {
+      enrichedContext += `. ${seoDescription.slice(0, 150)}`;
+    }
+    
+    // Add SERP data if available
+    if (serpData) {
+      if (serpData.dimensions) {
+        enrichedContext += `. Dimensions: ${serpData.dimensions}`;
+      }
+      if (serpData.materials?.length > 0) {
+        enrichedContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
+      }
+      if (serpData.dominantStyles?.length > 0) {
+        enrichedContext += `. Styles: ${serpData.dominantStyles.slice(0, 2).join(", ")}`;
+      }
+      console.log(`[white-bg] 🔍 SERP data enrichment applied`);
+    }
+    
+    // Add Vision AI data if available
+    if (visionAiData?.description) {
+      enrichedContext += `. Visual: ${visionAiData.description.slice(0, 100)}`;
+      console.log(`[white-bg] 👁️ Vision AI data enrichment applied`);
+    }
+    
+    console.log(`[white-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
 
     if (!imageUrl) {
       return new Response(
@@ -104,7 +158,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("🎨 Generating white background:", { imageType, productTitle, mode });
+    console.log("🎨 Generating white background:", { imageType, productTitle, mode, format });
 
     // Initialize Supabase client for usage tracking (reuse authHeader from above)
     const supabaseClient = createClient(
@@ -134,7 +188,9 @@ serve(async (req) => {
 
 Generate a Google Shopping compliant product photo that maximizes click-through rate and meets all Google Merchant Center requirements.
 
-PRODUCT: ${productTitle || "product"}
+PRODUCT: ${enrichedContext}
+
+📐 OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution
 
 📋 GOOGLE MERCHANT CENTER REQUIREMENTS (MANDATORY):
 1. Pure white background (#FFFFFF / RGB 255,255,255)
@@ -166,9 +222,10 @@ PRODUCT: ${productTitle || "product"}
 - Pure white background (#FFFFFF) everywhere except product
 - Subtle natural shadow for depth and realism
 - Professional e-commerce quality ready for Google Shopping
-- High resolution with sharp details
+- High resolution ${dimensions} with sharp details
+- ${aspectRatio} aspect ratio maintained
 
-OUTPUT: The EXACT product cleanly extracted on pure white background with subtle professional shadow, optimized for Google Shopping CTR.
+OUTPUT: The EXACT product cleanly extracted on pure white background with subtle professional shadow, optimized for Google Shopping CTR at ${dimensions}.
     `.trim();
 
     // Standard white background prompt
@@ -176,9 +233,11 @@ OUTPUT: The EXACT product cleanly extracted on pure white background with subtle
 🎯 CRITICAL TASK: BACKGROUND SEGMENTATION & REPLACEMENT
 
 You are an AI background removal specialist. Your ONLY job is to:
-1. **SEGMENT** and extract the product (${productTitle || "product"}) from the current image
+1. **SEGMENT** and extract the product (${enrichedContext}) from the current image
 2. **DELETE** everything that is NOT the product (walls, floors, furniture, decorations, lighting fixtures, shadows on background)
 3. **PLACE** the extracted product on a PURE WHITE (#FFFFFF) background
+
+📐 OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution
 
 ⚠️ CRITICAL RULES:
 - DO NOT regenerate, redraw, or recreate the product
@@ -190,7 +249,7 @@ You are an AI background removal specialist. Your ONLY job is to:
 📐 TECHNICAL WORKFLOW:
 ${isMainImage ? `
 STEP 1 - PRODUCT DETECTION:
-- Identify the main product: ${productTitle || "the item"}
+- Identify the main product: ${enrichedContext}
 - Product should occupy 70-80% of the frame
 - Detect product edges with precision (smooth anti-aliasing)
 
@@ -213,9 +272,10 @@ STEP 5 - QUALITY CONTROL:
 - Product colors/textures unchanged from original
 - White background must be uniform (#FFFFFF everywhere except product)
 - No artifacts, no blurring on product edges
+- Output must be ${aspectRatio} aspect ratio at ${dimensions}
 ` : `
 STEP 1 - PRODUCT DETECTION:
-- Identify the product: ${productTitle || "the item"}
+- Identify the product: ${enrichedContext}
 - Detect precise product boundaries
 
 STEP 2 - BACKGROUND SEGMENTATION:
@@ -229,6 +289,7 @@ STEP 3 - BACKGROUND REMOVAL:
 STEP 4 - WHITE BACKGROUND:
 - Replace deleted area with pure white (#FFFFFF)
 - Product can be positioned artistically (not necessarily centered)
+- Output format: ${aspectRatio} at ${dimensions}
 
 STEP 5 - QUALITY CHECK:
 - Clean edges, no background traces
@@ -247,11 +308,12 @@ STEP 5 - QUALITY CHECK:
 - Background is PURE white (#FFFFFF) everywhere except where product is
 - Clean product cutout with smooth edges
 - Professional e-commerce ready result
-- Resolution: 1024x1024px
+- Resolution: ${dimensions}
+- Aspect ratio: ${aspectRatio}
 
 🎨 THINK: "I am a background eraser tool, not a product recreator"
 
-EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and placed on a new pure white background, as if you used professional image editing software to remove the background.
+EXPECTED OUTPUT: The EXACT product from the input image, cleanly extracted and placed on a new pure white background at ${dimensions} (${aspectRatio}), as if you used professional image editing software to remove the background.
     `.trim();
 
     // Select prompt based on mode

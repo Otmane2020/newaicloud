@@ -63,7 +63,22 @@ const PRODUCT_DELETE_MEDIA_MUTATION = `
   }
 `;
 
-// GraphQL query to get product media
+// GraphQL mutation to reorder product media
+const PRODUCT_REORDER_MEDIA_MUTATION = `
+  mutation productReorderMedia($id: ID!, $moves: [MoveInput!]!) {
+    productReorderMedia(id: $id, moves: $moves) {
+      job {
+        id
+      }
+      mediaUserErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+// GraphQL query to get product media with positions
 const PRODUCT_MEDIA_QUERY = `
   query getProductMedia($id: ID!) {
     product(id: $id) {
@@ -486,13 +501,57 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Successfully synced images: ${updatedCount} updated, ${addedImages.length} added`);
 
+    // 🆕 Reorder images if positions have changed
+    let reorderedCount = 0;
+    const localImages = (product.images || []).sort((a: any, b: any) => a.position - b.position);
+    
+    // Build moves array for reordering - map local positions to Shopify media IDs
+    const moves: Array<{ id: string; newPosition: string }> = [];
+    
+    for (let i = 0; i < localImages.length; i++) {
+      const localImg = localImages[i];
+      if (localImg.shopify_image_id) {
+        const mediaGid = restIdToGid(localImg.shopify_image_id, 'MediaImage');
+        // Position in Shopify is 1-indexed
+        moves.push({
+          id: mediaGid,
+          newPosition: String(i) // 0-indexed position becomes new order
+        });
+      }
+    }
+
+    if (moves.length > 1) {
+      try {
+        console.log(`🔄 Reordering ${moves.length} images...`);
+        const reorderResult = await shopifyGraphQL(
+          connection.store_url,
+          connection.access_token,
+          PRODUCT_REORDER_MEDIA_MUTATION,
+          {
+            id: productGid,
+            moves: moves
+          }
+        );
+
+        if (reorderResult.productReorderMedia?.mediaUserErrors?.length > 0) {
+          console.error(`❌ Reorder errors:`, reorderResult.productReorderMedia.mediaUserErrors);
+        } else {
+          reorderedCount = moves.length;
+          console.log(`✅ Reordered ${reorderedCount} images successfully`);
+        }
+      } catch (reorderError) {
+        console.error(`⚠️ Failed to reorder images:`, reorderError);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synchronisation terminée: ${addedImages.length} images ajoutées, ${updatedCount} images mises à jour`,
+        message: `Synchronisation terminée: ${addedImages.length} images ajoutées, ${updatedCount} images mises à jour, ${reorderedCount} images réordonnées`,
         addedCount: addedImages.length,
         updatedCount,
-        totalProcessed: addedImages.length + updatedCount,
+        reorderedCount,
+        totalProcessed: addedImages.length + updatedCount + reorderedCount,
       }),
       {
         status: 200,
