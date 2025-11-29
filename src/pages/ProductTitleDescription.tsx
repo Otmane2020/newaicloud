@@ -2405,11 +2405,16 @@ export default function ProductTitleDescription() {
                             <h3 className="font-semibold text-sm line-clamp-2 mb-1">
                               {product.seo_title || product.title}
                             </h3>
-                            {product.vendor && (
-                              <Badge variant="outline" className="text-xs">
-                                {product.vendor}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {product.vendor && (
+                                <Badge variant="outline" className="text-xs">
+                                  {product.vendor}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
