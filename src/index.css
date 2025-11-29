@@ -449,3 +449,131 @@ label {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Magazine Article Styles */
+.article-content {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.8;
+  color: hsl(var(--foreground));
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  color: hsl(var(--foreground));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.article-content h2 {
+  position: relative;
+  padding-left: 1rem;
+  border-left: 4px solid hsl(var(--primary));
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.article-content p {
+  margin-bottom: 1.5rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 1.125rem;
+  line-height: 1.9;
+}
+
+.article-content p:first-of-type {
+  font-size: 1.25rem;
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+.article-content strong,
+.article-content b {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.article-content a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.article-content a:hover {
+  border-bottom-color: hsl(var(--primary));
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-content li {
+  margin-bottom: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  padding-left: 0.5rem;
+}
+
+.article-content li::marker {
+  color: hsl(var(--primary));
+}
+
+.article-content blockquote {
+  border-left: 4px solid hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+  padding: 1.5rem 2rem;
+  border-radius: 0 0.75rem 0.75rem 0;
+  margin: 2rem 0;
+  font-style: italic;
+}
+
+.article-content blockquote p {
+  color: hsl(var(--foreground) / 0.9);
+  margin-bottom: 0;
+}
+
+.article-content img {
+  border-radius: 1rem;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+  margin: 2rem 0;
+}
+
+.article-content pre {
+  background: hsl(222 47% 11%);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  overflow-x: auto;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+}
+
+.article-content code {
+  background: hsl(var(--muted));
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.article-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.article-content hr {
+  border: none;
+  height: 1px;
+  background: hsl(var(--border));
+  margin: 3rem 0;
+}
+
+/* Drop cap for first paragraph */
+.article-content > p:first-of-type::first-letter {
+  float: left;
+  font-size: 4rem;
+  line-height: 0.8;
+  padding-right: 0.75rem;
+  padding-top: 0.25rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+}
