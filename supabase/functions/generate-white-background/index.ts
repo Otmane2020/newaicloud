@@ -164,7 +164,7 @@ serve(async (req) => {
       "lifestyle": "Warm, inviting lifestyle context. Natural light, soft tones. Product in realistic home/daily use setting. Beige/cream ambient tones.",
       "moderne": "Modern minimalist design. Clean lines, contemporary aesthetic. Geometric elements, neutral gray or off-white backdrop. Sleek and sophisticated.",
       "living_room": "Cozy living room interior. Product placed in realistic home setting with furniture hints. Warm ambient lighting, wooden accents.",
-      "studio": "Professional studio lighting setup. High-key photography. Product isolated with controlled lighting. Soft gradients on background.",
+      "studio": "HIGH-END STUDIO PHOTOGRAPHY: Product placed on a clean, visible surface/table/pedestal with SOFT SHADOWS. Background is warm neutral cream/beige/off-white gradient (NOT pure white). Professional softbox lighting from front-left creating elegant soft shadows on the surface. The surface must be visible - product sits ON a table/platform. Think luxury product catalog: Gentle ambient light, smooth surface reflections, 3D depth from shadow. Art gallery or museum display aesthetic.",
       "nature": "Natural outdoor setting. Soft daylight, plants, greenery. Organic textures. Product harmonized with natural elements."
     };
     
@@ -268,7 +268,7 @@ ${backgroundStyle === 'shopping' ? '- Pure white (#FFFFFF) e-commerce background
 ${backgroundStyle === 'lifestyle' ? '- Warm lifestyle setting with natural light, beige/cream tones' : ''}
 ${backgroundStyle === 'moderne' ? '- Modern minimalist with clean lines, gray/white backdrop' : ''}
 ${backgroundStyle === 'living_room' ? '- Cozy living room interior, furniture hints, warm lighting' : ''}
-${backgroundStyle === 'studio' ? '- Professional studio lighting, soft gradients' : ''}
+${backgroundStyle === 'studio' ? '- STUDIO PHOTOGRAPHY: Place product ON a visible clean surface/table. Soft shadow cast on surface. Warm neutral cream/beige background gradient. Professional softbox lighting. Think luxury catalog or art gallery display. NOT floating - product must sit on a surface with visible shadow.' : ''}
 ${backgroundStyle === 'nature' ? '- Natural outdoor setting, plants, soft daylight' : ''}
 
 FINAL CHECK: The output must show THE EXACT SAME "${productTitle || 'product'}" from the input, just with a new background.
