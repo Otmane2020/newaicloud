@@ -93,7 +93,8 @@ export const useImageOptimization = () => {
       serpData,
       visionAiData,
       productDescription,
-      product_id
+      product_id,
+      backgroundStyle
     }: { 
       imageUrl: string; 
       productTitle: string;
@@ -104,12 +105,13 @@ export const useImageOptimization = () => {
       visionAiData?: any;
       productDescription?: string;
       product_id?: string;
+      backgroundStyle?: 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature';
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
       
       try {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id }
+          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id, backgroundStyle }
         });
 
         if (error) throw error;

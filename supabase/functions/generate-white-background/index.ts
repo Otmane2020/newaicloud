@@ -98,7 +98,9 @@ serve(async (req) => {
       visionAiData,
       productDescription,
       seoTitle,
-      seoDescription
+      seoDescription,
+      // 🆕 Background style for smart background
+      backgroundStyle = "shopping"
     } = body;
 
     // 📝 DETAILED LOGGING for debugging SERP/Vision data
@@ -119,7 +121,7 @@ serve(async (req) => {
     };
     const aspectRatio = formatToAspectRatio[format] || "1:1";
     const dimensions = formatToDimensions[format] || "2000x2000px";
-    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}, Dimensions: ${dimensions}, Mode: ${mode}`);
+    console.log(`[white-bg] 📐 Format: ${format} -> Aspect Ratio: ${aspectRatio}, Dimensions: ${dimensions}, Mode: ${mode}, Style: ${backgroundStyle}`);
 
     // 🆕 Build enriched context from SERP and Vision data
     let enrichedContext = productTitle || "product";
@@ -155,6 +157,19 @@ serve(async (req) => {
     }
     
     console.log(`[white-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
+
+    // 🆕 Background style instructions
+    const backgroundStyleInstructions: Record<string, string> = {
+      "shopping": "Pure white e-commerce background (#FFFFFF). Clean, professional, product-focused. Subtle drop shadow for 3D depth.",
+      "lifestyle": "Warm, inviting lifestyle context. Natural light, soft tones. Product in realistic home/daily use setting. Beige/cream ambient tones.",
+      "moderne": "Modern minimalist design. Clean lines, contemporary aesthetic. Geometric elements, neutral gray or off-white backdrop. Sleek and sophisticated.",
+      "living_room": "Cozy living room interior. Product placed in realistic home setting with furniture hints. Warm ambient lighting, wooden accents.",
+      "studio": "Professional studio lighting setup. High-key photography. Product isolated with controlled lighting. Soft gradients on background.",
+      "nature": "Natural outdoor setting. Soft daylight, plants, greenery. Organic textures. Product harmonized with natural elements."
+    };
+    
+    const styleInstruction = backgroundStyleInstructions[backgroundStyle] || backgroundStyleInstructions["shopping"];
+    console.log(`[white-bg] 🎨 Style instruction: ${styleInstruction.slice(0, 80)}...`);
 
     if (!imageUrl) {
       return new Response(
@@ -197,7 +212,7 @@ serve(async (req) => {
     const formatInstruction = formatInstructions[formatKey] || formatInstructions["square"];
 
     // Google Shopping optimized prompt for maximum CTR and Merchant Center compliance
-    // Now includes 3D effect, SERP enrichment, and STRICT format enforcement
+    // Now includes 3D effect, SERP enrichment, style selection, and STRICT format enforcement
     const googleShoppingPrompt = `
 🎯 GOOGLE SHOPPING PROFESSIONAL PRODUCT IMAGE - MAXIMUM CTR & 3D EFFECT
 
@@ -209,12 +224,17 @@ Target resolution: ${dimensions}
 
 PRODUCT CONTEXT: ${enrichedContext}
 
+🎨 **BACKGROUND STYLE**: ${styleInstruction}
+
 🎨 STUDIO PHOTOGRAPHY REQUIREMENTS:
 
-1️⃣ **PURE WHITE BACKGROUND** (#FFFFFF / RGB 255,255,255):
-   - Remove ALL existing background completely
-   - Replace with perfectly uniform pure white
-   - No gradients, no shadows on background, no textures
+1️⃣ **BACKGROUND STYLE APPLICATION**:
+   - ${backgroundStyle === 'shopping' ? 'Pure white e-commerce background (#FFFFFF). Remove ALL existing background completely.' : ''}
+   - ${backgroundStyle === 'lifestyle' ? 'Create warm lifestyle context with natural lighting and soft ambient tones. Product in daily use setting.' : ''}
+   - ${backgroundStyle === 'moderne' ? 'Modern minimalist backdrop with clean lines. Contemporary aesthetic with geometric subtle elements.' : ''}
+   - ${backgroundStyle === 'living_room' ? 'Cozy interior setting with furniture hints. Product placed naturally in home environment.' : ''}
+   - ${backgroundStyle === 'studio' ? 'Professional studio setup with controlled lighting. High-key photography with soft background gradients.' : ''}
+   - ${backgroundStyle === 'nature' ? 'Natural outdoor setting with plants and organic textures. Soft daylight ambiance.' : ''}
 
 2️⃣ **PROFESSIONAL 3D DEPTH EFFECT**:
    - Add a soft, realistic DROP SHADOW under the product
@@ -222,7 +242,6 @@ PRODUCT CONTEXT: ${enrichedContext}
    - Shadow direction: slightly below and behind the product
    - Shadow opacity: 15-25% black, soft edges
    - This creates a professional "floating" 3D effect
-   - The shadow makes the product look premium and tactile
 
 3️⃣ **STUDIO LIGHTING**:
    - Soft, even lighting from above-front (key light)
@@ -233,26 +252,19 @@ PRODUCT CONTEXT: ${enrichedContext}
 4️⃣ **PRODUCT PRESERVATION** (CRITICAL):
    - DO NOT regenerate, redraw, or recreate the product
    - Keep EXACT same colors, textures, materials, details
-   - Only perform background removal and studio lighting enhancement
-   - Product must look IDENTICAL to original, just with better lighting
+   - Only perform background removal and enhancement
+   - Product must look IDENTICAL to original, just with better context
 
-5️⃣ **GOOGLE MERCHANT CENTER COMPLIANCE**:
-   - Product occupies 75-85% of frame (not cropped, not too small)
-   - Product perfectly centered
-   - No text, watermarks, logos, or promotional elements
-   - High resolution with sharp details
-   - Professional e-commerce quality
-
-6️⃣ **ASPECT RATIO ENFORCEMENT**:
+5️⃣ **ASPECT RATIO ENFORCEMENT**:
    - OUTPUT MUST BE ${format.toUpperCase()} FORMAT
    - ${aspectRatio} aspect ratio is MANDATORY
    - ${dimensions} target resolution
-   - If product is not this ratio, add white padding to achieve ${aspectRatio}
+   - If product is not this ratio, add padding to achieve ${aspectRatio}
 
-✅ SUCCESS = Original product + Pure white background + Soft 3D drop shadow + Studio lighting + ${aspectRatio} format
-❌ FAILURE = Wrong aspect ratio, changed product, no shadow, colored background
+✅ SUCCESS = Original product + ${backgroundStyle} style background + 3D depth + ${aspectRatio} format
+❌ FAILURE = Wrong aspect ratio, changed product, wrong background style
 
-OUTPUT: Professional ${format} (${aspectRatio}) product photo on pure white with subtle 3D drop shadow at ${dimensions}.
+OUTPUT: Professional ${format} (${aspectRatio}) product photo with ${backgroundStyle} background style at ${dimensions}.
     `.trim();
 
     // Standard white background prompt (simplified)
