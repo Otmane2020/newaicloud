@@ -182,10 +182,7 @@ export function EmailInbox() {
     try {
       const { error } = await supabase
         .from("admin_emails")
-        .update({
-          is_read: true,
-          status: "read",
-        })
+        .update({ is_read: true })
         .eq("id", emailId);
 
       if (error) {
@@ -195,7 +192,7 @@ export function EmailInbox() {
 
       // Mettre à jour localement immédiatement
       setEmails((prev) =>
-        prev.map((email) => (email.id === emailId ? { ...email, is_read: true, status: "read" } : email)),
+        prev.map((email) => (email.id === emailId ? { ...email, is_read: true } : email)),
       );
 
       loadEmailStats();
