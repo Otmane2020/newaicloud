@@ -23,6 +23,8 @@ import {
   Image,
   AlertCircle,
   Sparkles,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -164,6 +166,7 @@ export function SmartPricingAI() {
       error?: string;
     } | null;
   }>({ open: false, data: null });
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   useEffect(() => {
     fetchData();
@@ -1699,6 +1702,24 @@ export function SmartPricingAI() {
           </Button>
           <Badge variant="outline" className="w-fit">{filteredProducts.length} produits</Badge>
           {selectedCount > 0 && <Badge variant="default" className="w-fit">{selectedCount} sélectionné(s)</Badge>}
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="rounded-none h-8 px-3"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="rounded-none h-8 px-3"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           <Button
@@ -1810,7 +1831,82 @@ export function SmartPricingAI() {
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Products Table or Grid */}
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {paginatedItems.map((product) => {
+            const discount = calculateDiscount(product.price || 0, product.compare_at_price);
+            const netMargin = calculateNetMargin(product.price, product.cost_price, product.shipping_cost);
+            
+            return (
+              <Card 
+                key={product.id} 
+                className={`overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${product.selected ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => toggleProductSelection(product.id)}
+              >
+                <div className="relative aspect-square bg-muted">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  {discount > 0 && (
+                    <Badge variant="destructive" className="absolute top-2 left-2 text-xs">
+                      -{discount}%
+                    </Badge>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <Checkbox 
+                      checked={product.selected} 
+                      onCheckedChange={() => toggleProductSelection(product.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+                <div className="p-3 space-y-2">
+                  <h4 className="font-medium text-sm line-clamp-2">{product.title}</h4>
+                  {product.vendor && (
+                    <p className="text-xs text-muted-foreground">{product.vendor}</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+                    {product.compare_at_price && product.compare_at_price > (product.price || 0) && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatPrice(product.compare_at_price)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{t.smartPricing.table.netMargin}:</span>
+                    <span className={netMargin.value >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {netMargin.value.toFixed(2)} {currencySymbol}
+                    </span>
+                  </div>
+                  {product.smart_price && (
+                    <div className="flex items-center gap-1 pt-1 border-t">
+                      <Sparkles className="w-3 h-3 text-purple-500" />
+                      <span className="text-xs text-purple-600 font-medium">
+                        Smart: {formatPrice(product.smart_price)}
+                      </span>
+                    </div>
+                  )}
+                  {product.hasMultipleVariants && (
+                    <Badge variant="outline" className="text-xs w-full justify-center">
+                      {product.variants.length} variantes
+                    </Badge>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
       <Card className="overflow-hidden border-0 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -2620,6 +2716,7 @@ export function SmartPricingAI() {
           </table>
         </div>
       </Card>
+      )}
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
