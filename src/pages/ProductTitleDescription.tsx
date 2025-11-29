@@ -2406,40 +2406,38 @@ export default function ProductTitleDescription() {
                               {product.seo_title || product.title}
                             </h3>
                             <div className="flex flex-col gap-1">
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground truncate">
                                 {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
                               </span>
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  defaultValue={product.vendor || ''}
-                                  placeholder="Marque..."
-                                  className="text-xs border rounded px-1.5 py-0.5 w-24 bg-background"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onBlur={async (e) => {
-                                    const newVendor = e.target.value.trim();
-                                    if (newVendor !== (product.vendor || '')) {
-                                      try {
-                                        await supabase
-                                          .from('shopify_products')
-                                          .update({ vendor: newVendor })
-                                          .eq('id', product.id);
-                                        setProducts(prev => prev.map(p => 
-                                          p.id === product.id ? { ...p, vendor: newVendor } : p
-                                        ));
-                                        toast.success('Marque mise à jour');
-                                      } catch (error) {
-                                        toast.error('Erreur lors de la mise à jour');
-                                      }
+                              <input
+                                type="text"
+                                defaultValue={product.vendor || ''}
+                                placeholder="Marque..."
+                                className="text-xs border rounded px-1.5 py-0.5 w-full max-w-[140px] bg-background"
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={async (e) => {
+                                  const newVendor = e.target.value.trim();
+                                  if (newVendor !== (product.vendor || '')) {
+                                    try {
+                                      await supabase
+                                        .from('shopify_products')
+                                        .update({ vendor: newVendor })
+                                        .eq('id', product.id);
+                                      setProducts(prev => prev.map(p => 
+                                        p.id === product.id ? { ...p, vendor: newVendor } : p
+                                      ));
+                                      toast.success('Marque mise à jour');
+                                    } catch (error) {
+                                      toast.error('Erreur lors de la mise à jour');
                                     }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      (e.target as HTMLInputElement).blur();
-                                    }
-                                  }}
-                                />
-                              </div>
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    (e.target as HTMLInputElement).blur();
+                                  }
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
@@ -2449,21 +2447,65 @@ export default function ProductTitleDescription() {
                         )}
 
                         {/* Status badge */}
-                        <div className="flex items-center gap-2">
-                          {hasRichHtmlDescription(product) ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                              <FileText className="h-3 w-3 mr-1" />
-                              Landing
-                            </Badge>
-                          ) : product.seo_title || product.seo_description ? (
-                            <Badge variant="secondary" className="text-xs">
-                              {t.contentOptimization.table.status.basicContent} ✓
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {t.contentOptimization.table.status.toOptimize}
-                            </Badge>
-                          )}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {hasRichHtmlDescription(product) ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                <FileText className="h-3 w-3 mr-1" />
+                                Landing
+                              </Badge>
+                            ) : product.seo_title || product.seo_description ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {t.contentOptimization.table.status.basicContent} ✓
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                {t.contentOptimization.table.status.toOptimize}
+                              </Badge>
+                            )}
+                          </div>
+                          {/* Status toggle button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!product.shopify_id) {
+                                toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                                return;
+                              }
+                              if (!selectedStore) {
+                                toast.error("Aucun store sélectionné");
+                                return;
+                              }
+                              const newStatus = product.status === "active" ? "draft" : "active";
+                              const toastId = toast.loading("Mise à jour du statut...");
+                              try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (!session) throw new Error("Session non trouvée");
+                                const { data, error } = await supabase.functions.invoke("update-product-status", {
+                                  body: {
+                                    productId: product.id,
+                                    shopifyProductId: product.shopify_id,
+                                    status: newStatus,
+                                    storeId: selectedStore.id,
+                                  },
+                                });
+                                if (error) throw error;
+                                if (!data?.success) throw new Error("Échec de la mise à jour");
+                                setProducts((prev) =>
+                                  prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
+                                );
+                                toast.success(newStatus === "active" ? "Produit publié" : "Produit en brouillon", { id: toastId });
+                              } catch (error) {
+                                console.error("Error updating status:", error);
+                                toast.error("Erreur lors de la mise à jour du statut", { id: toastId });
+                              }
+                            }}
+                            className={`h-6 px-2 text-xs ${product.status === "active" ? "text-green-600" : "text-muted-foreground"}`}
+                          >
+                            {product.status === "active" ? "Actif" : "Draft"}
+                          </Button>
                         </div>
                       </div>
                     </Card>
