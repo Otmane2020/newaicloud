@@ -555,11 +555,14 @@ Deno.serve(async (req: Request) => {
                     }
                   }
                 }
-                images(first: 10) {
+                images(first: 20) {
                   edges {
                     node {
+                      id
                       url
                       altText
+                      width
+                      height
                     }
                   }
                 }
@@ -644,10 +647,18 @@ Deno.serve(async (req: Request) => {
               cost_price: v.node.inventoryItem?.unitCost?.amount ? parseFloat(v.node.inventoryItem.unitCost.amount) : null
             };
           }),
-          images: node.images.edges.map((i: any) => ({
-            src: i.node.url,
-            alt: i.node.altText
-          })),
+          images: node.images.edges.map((i: any) => {
+            // Extract numeric ID from GraphQL global ID (gid://shopify/ProductImage/123456789)
+            const gid = i.node.id || '';
+            const numericId = gid.includes('/') ? parseInt(gid.split('/').pop() || '0') : 0;
+            return {
+              id: numericId,
+              src: i.node.url,
+              alt: i.node.altText,
+              width: i.node.width,
+              height: i.node.height
+            };
+          }),
           metafields_global_title_tag: node.seo?.title,
           metafields_global_description_tag: node.seo?.description
         };
