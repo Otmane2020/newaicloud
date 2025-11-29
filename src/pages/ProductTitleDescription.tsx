@@ -57,6 +57,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
+import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
@@ -205,6 +206,11 @@ export default function ProductTitleDescription() {
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
+  // Bulk landing page generation
+  const [showBulkLandingConfigDialog, setShowBulkLandingConfigDialog] = useState(false);
+  const [showBulkLandingDialog, setShowBulkLandingDialog] = useState(false);
+  const [bulkLandingConfig, setBulkLandingConfig] = useState<LandingConfig | null>(null);
+  const [generatingBulkLanding, setGeneratingBulkLanding] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
 
   useEffect(() => {
@@ -1837,6 +1843,28 @@ export default function ProductTitleDescription() {
                 )}
                 {t.contentOptimization.buttons.aiBg} ({selectedProducts.size})
               </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (!canDoAction("optimizations")) {
+                    toast.error(t.contentOptimization.toasts.limitReached);
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
+                  setShowBulkLandingConfigDialog(true);
+                }}
+                disabled={generatingBulkLanding || selectedProducts.size === 0}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+              >
+                {generatingBulkLanding ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                Landing Pages ({selectedProducts.size})
+              </Button>
             </div>
           </div>
         </Card>
@@ -2871,6 +2899,35 @@ export default function ProductTitleDescription() {
         onConfirm={handleLandingConfigConfirm}
         productTitle={selectedLandingProduct?.title}
       />
+
+      {/* Bulk Landing Config Dialog */}
+      <LandingConfigDialog
+        open={showBulkLandingConfigDialog}
+        onOpenChange={setShowBulkLandingConfigDialog}
+        onConfirm={(config) => {
+          setBulkLandingConfig(config);
+          setShowBulkLandingConfigDialog(false);
+          setShowBulkLandingDialog(true);
+        }}
+        productTitle={`${selectedProducts.size} produit(s) sélectionné(s)`}
+      />
+
+      {/* Bulk Landing Progress Dialog */}
+      {showBulkLandingDialog && bulkLandingConfig && selectedStore && (
+        <BulkLandingProgressDialog
+          open={showBulkLandingDialog}
+          onOpenChange={setShowBulkLandingDialog}
+          products={products
+            .filter(p => selectedProducts.has(p.id))
+            .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
+          config={bulkLandingConfig}
+          storeId={selectedStore.id}
+          onComplete={() => {
+            fetchProducts();
+            setSelectedProducts(new Set());
+          }}
+        />
+      )}
 
       {/* Landing Page Generator Dialog */}
       <Dialog open={showLandingDialog} onOpenChange={setShowLandingDialog}>
