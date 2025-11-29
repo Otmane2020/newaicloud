@@ -69,10 +69,14 @@ export function WhiteBackgroundPreviewDialog({
 
   // Sélectionner automatiquement si une seule image avec succès
   useEffect(() => {
-    if (isSingleImage && successfulPreviews.length === 1) {
-      setSelectedIds(new Set([getUniqueKey(successfulPreviews[0])]));
+    if (isSingleImage && previews.length === 1 && previews[0].status === 'success') {
+      const key = getUniqueKey(previews[0]);
+      setSelectedIds((prev) => {
+        if (prev.has(key) && prev.size === 1) return prev; // Éviter la boucle infinie
+        return new Set([key]);
+      });
     }
-  }, [isSingleImage, successfulPreviews]);
+  }, [isSingleImage, previews.length, previews[0]?.status, previews[0]?.productId, previews[0]?.variantId]);
 
   const handleToggleSelect = (uniqueKey: string) => {
     const newSelected = new Set(selectedIds);

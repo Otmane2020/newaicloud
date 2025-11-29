@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
       const result = await supabaseClient
         .from("shopify_connections")
         .select("shop_domain, access_token")
-        .eq("seller_id", user.id)
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
