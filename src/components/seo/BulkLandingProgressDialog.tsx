@@ -115,17 +115,15 @@ export function BulkLandingProgressDialog({
         }
 
         // Generate landing page - pass params at root level as expected by edge function
+        const productTitle = productData.seo_title || productData.title;
         const { data, error } = await supabase.functions.invoke('generate-landing-ai', {
           headers: { Authorization: `Bearer ${session.access_token}` },
           body: {
             product_id: product.id,
-            product: {
-              title: productData.seo_title || productData.title,
-              description: productData.seo_description || productData.description,
-              vendor: productData.vendor,
-              image_url: productData.image_url,
-              images: images.slice(0, 5),
-            },
+            productTitle: productTitle,
+            productDescription: productData.seo_description || productData.description,
+            productImages: images.slice(0, 5),
+            vendor: productData.vendor,
             designStyle: config.designStyle,
             layout: config.layout,
             contentLength: config.contentLength,
