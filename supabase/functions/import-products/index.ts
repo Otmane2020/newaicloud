@@ -1032,10 +1032,11 @@ Deno.serve(async (req: Request) => {
         
         console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches}`);
         
+        // Use (product_id, src) as conflict key to prevent duplicates
         const { error: imageError } = await supabaseServiceClient
           .from("product_images")
           .upsert(batch, {
-            onConflict: "shopify_image_id",
+            onConflict: "product_id,src",
             ignoreDuplicates: false,
           });
 
