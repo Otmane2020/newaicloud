@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
     if (product.store_id) {
       const result = await supabaseClient
         .from("shopify_connections")
-        .select("shop_domain, access_token")
+        .select("store_url, access_token")
         .eq("id", product.store_id)
         .eq("is_active", true)
         .single();
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
       console.log("No store_id on product or connection not found, fetching user's active connection");
       const result = await supabaseClient
         .from("shopify_connections")
-        .select("shop_domain, access_token")
+        .select("store_url, access_token")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
@@ -288,7 +288,7 @@ Deno.serve(async (req) => {
     let existingMedia: any[] = [];
     try {
       const mediaResult = await shopifyGraphQL(
-        connection.shop_domain,
+        connection.store_url,
         connection.access_token,
         PRODUCT_MEDIA_QUERY,
         { id: productGid }
@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
         const mediaGid = restIdToGid(imgToUpdate.shopify_image_id, 'MediaImage');
         
         const updateResult = await shopifyGraphQL(
-          connection.shop_domain,
+          connection.store_url,
           connection.access_token,
           PRODUCT_UPDATE_MEDIA_MUTATION,
           {
@@ -425,7 +425,7 @@ Deno.serve(async (req) => {
         console.log(`➕ Adding new image via GraphQL: ${newImage.src.substring(0, 50)}...`);
         
         const createResult = await shopifyGraphQL(
-          connection.shop_domain,
+          connection.store_url,
           connection.access_token,
           PRODUCT_CREATE_MEDIA_MUTATION,
           {
