@@ -127,12 +127,57 @@ export function GoogleAdsAdmin() {
     const code = urlParams.get('code');
     const state = urlParams.get('state');
     
+    // Si c'est une popup, envoyer le code au parent
     if (code && state === 'google_ads_admin' && window.opener) {
       window.opener.postMessage({
         type: 'GOOGLE_ADS_ADMIN_OAUTH_CODE',
         code: code,
       }, window.location.origin);
       setTimeout(() => window.close(), 1000);
+      return;
+    }
+    
+    // Si c'est la fenêtre principale (pas de popup), traiter directement le callback
+    if (code && (state === 'google_ads_admin' || state?.includes('/superadmin'))) {
+      console.log('🔑 [GOOGLE-ADS-ADMIN] Processing OAuth callback directly');
+      
+      try {
+        const redirectUri = `${window.location.origin}/superadmin`;
+        
+        const { data, error } = await supabase.functions.invoke('google-oauth-token', {
+          body: {
+            code: code,
+            state: redirectUri
+          },
+        });
+        
+        if (error || !data?.success) {
+          console.error('❌ [GOOGLE-ADS-ADMIN] Token exchange failed:', error, data);
+          toast({
+            title: "Erreur de connexion",
+            description: error?.message || data?.error || "Échec de l'authentification Google Ads",
+            variant: "destructive"
+          });
+        } else {
+          console.log('✅ [GOOGLE-ADS-ADMIN] Token exchange successful');
+          toast({
+            title: "Connexion réussie",
+            description: "Compte Google Ads connecté avec succès"
+          });
+          checkConnection();
+        }
+        
+        // Nettoyer l'URL des paramètres OAuth
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+      } catch (err) {
+        console.error('❌ [GOOGLE-ADS-ADMIN] OAuth callback error:', err);
+        toast({
+          title: "Erreur",
+          description: "Impossible de finaliser la connexion",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -166,7 +211,7 @@ export function GoogleAdsAdmin() {
         body: { 
           redirectUri,
           scopes: 'https://www.googleapis.com/auth/adwords https://www.googleapis.com/auth/userinfo.email',
-          state: redirectUri // Use redirectUri as state for token exchange
+          state: 'google_ads_admin' // Use fixed state for callback recognition
         },
       });
       
