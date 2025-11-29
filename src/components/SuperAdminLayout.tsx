@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SuperAdminNavigation } from "@/components/SuperAdminNavigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface SuperAdminLayoutProps {
   children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
@@ -13,6 +14,64 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isOAuthPopup, setIsOAuthPopup] = useState(false);
+  const [oauthProcessing, setOauthProcessing] = useState(false);
+
+  // Détecter immédiatement si c'est une popup OAuth Google Ads
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    // Si c'est une popup avec un code OAuth
+    if (code && window.opener) {
+      setIsOAuthPopup(true);
+      setOauthProcessing(true);
+      
+      // Envoyer le code à la fenêtre parente
+      window.opener.postMessage({
+        type: 'GOOGLE_ADS_ADMIN_OAUTH_CODE',
+        code: code,
+      }, window.location.origin);
+      
+      // Fermer la popup après un court délai
+      setTimeout(() => window.close(), 500);
+      return;
+    }
+    
+    // Si c'est la fenêtre principale avec un code OAuth (pas de popup)
+    if (code && !window.opener && (state === 'google_ads_admin' || state?.includes('/superadmin'))) {
+      setOauthProcessing(true);
+      
+      const processOAuthCallback = async () => {
+        try {
+          console.log('🔑 [SUPERADMIN] Processing OAuth callback directly');
+          const redirectUri = `${window.location.origin}/superadmin`;
+          
+          const { data, error } = await supabase.functions.invoke('google-oauth-token', {
+            body: {
+              code: code,
+              state: redirectUri
+            },
+          });
+          
+          if (error || !data?.success) {
+            console.error('❌ [SUPERADMIN] Token exchange failed:', error, data);
+          } else {
+            console.log('✅ [SUPERADMIN] Token exchange successful');
+          }
+        } catch (err) {
+          console.error('❌ [SUPERADMIN] OAuth callback error:', err);
+        } finally {
+          // Nettoyer l'URL et continuer le chargement normal
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setOauthProcessing(false);
+        }
+      };
+      
+      processOAuthCallback();
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -78,7 +137,18 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     };
   }, [user?.id, user?.email, loading]);
 
-  if (loading || checking) {
+  // Afficher un écran de chargement minimal pour la popup OAuth
+  if (isOAuthPopup) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Connexion en cours...</p>
+        <p className="text-sm text-muted-foreground mt-2">Cette fenêtre va se fermer automatiquement</p>
+      </div>
+    );
+  }
+
+  if (loading || checking || oauthProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
