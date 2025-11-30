@@ -744,8 +744,8 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', importJob.id);
       
-      // 🔥 FIX: Update sync_history during FETCH phase (every 2 pages)
-      if (syncHistoryId && pageCount % 2 === 0) {
+      // 🔥 FIX: Update sync_history during EVERY page fetch (not every 2 pages)
+      if (syncHistoryId) {
         await supabaseServiceClient
           .from('sync_history')
           .update({
