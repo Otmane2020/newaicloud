@@ -88,7 +88,9 @@ export function GoogleAdsIntegration() {
       const redirectUri = `${window.location.origin}/google-ads?tab=integration`;
       
       const scopes = [
-        'https://www.googleapis.com/auth/adwords'
+        'https://www.googleapis.com/auth/adwords',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
       ];
       
       const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-url', {
