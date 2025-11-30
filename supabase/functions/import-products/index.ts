@@ -371,7 +371,7 @@ Deno.serve(async (req: Request) => {
       `;
 
       const shopResponse = await fetch(
-        `https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`,
+        `https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`,
         {
           method: 'POST',
           headers: {
@@ -487,7 +487,7 @@ Deno.serve(async (req: Request) => {
       `;
 
       const countResponse = await fetch(
-        `https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`,
+        `https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`,
         {
           method: 'POST',
           headers: {
@@ -596,7 +596,7 @@ Deno.serve(async (req: Request) => {
         }
       `;
 
-      const shopifyResponse: Response = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`, {
+      const shopifyResponse: Response = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`, {
         method: 'POST',
         headers: {
           "X-Shopify-Access-Token": authToken,
@@ -1107,7 +1107,7 @@ Deno.serve(async (req: Request) => {
           `;
           
           try {
-            const imgResponse = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-07/graphql.json`, {
+            const imgResponse = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`, {
               method: 'POST',
               headers: {
                 "X-Shopify-Access-Token": authToken,
