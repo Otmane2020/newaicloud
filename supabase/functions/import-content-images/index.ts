@@ -425,6 +425,19 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[IMPORT-CONTENT-IMAGES] ✅ Import complete: ${totalImported} images`);
     console.log(`[IMPORT-CONTENT-IMAGES] Breakdown:`, breakdown);
+    
+    // 🔥 NEW: Update sync_history for live progress (final update for images)
+    const syncHistoryId = body.syncHistoryId;
+    if (syncHistoryId) {
+      await supabaseClient
+        .from('sync_history')
+        .update({
+          items_synced: totalImported,
+          sync_type: 'images'
+        })
+        .eq('id', syncHistoryId);
+      console.log(`📊 [LIVE PROGRESS] Images: ${totalImported} total`);
+    }
 
     // Count total images including product images
     const { count: contentImagesCount } = await supabaseClient

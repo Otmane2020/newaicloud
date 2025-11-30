@@ -440,6 +440,19 @@ Deno.serve(async (req: Request) => {
       }
 
       importedCount++;
+      
+      // 🔥 NEW: Update sync_history for live progress (every 5 articles)
+      const syncHistoryId = requestBody.syncHistoryId;
+      if (syncHistoryId && importedCount % 5 === 0) {
+        await supabaseServiceClient
+          .from('sync_history')
+          .update({
+            items_synced: importedCount,
+            sync_type: 'articles'
+          })
+          .eq('id', syncHistoryId);
+        console.log(`📊 [LIVE PROGRESS] Articles: ${importedCount}/${allArticles.length}`);
+      }
     }
 
     console.log(`✅ Successfully imported ${importedCount} articles and ${totalImagesImported} images`);

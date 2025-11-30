@@ -212,11 +212,13 @@ serve(async (req) => {
           .eq("id", historyEntry.id);
         console.log(`📊 Starting ${type} import...`);
 
+        // 🔥 FIX: Pass syncHistoryId to all import functions for live progress updates
         const baseBody = {
           storeId: connection.id,
           shopName: cleanShopName,
           serviceMode: true,
           userId: user_id,
+          syncHistoryId: historyEntry.id,  // 🔥 NEW: Enable live progress updates
         };
 
         let result;
@@ -253,6 +255,7 @@ serve(async (req) => {
                 storeId: connection.id,
                 serviceMode: true,
                 userId: user_id,
+                syncHistoryId: historyEntry.id,  // 🔥 NEW: Enable live progress updates
                 types: ["collections", "pages", "articles", "homepage"],
               },
             });

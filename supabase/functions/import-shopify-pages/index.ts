@@ -189,6 +189,19 @@ Deno.serve(async (req: Request) => {
         }
 
         upsertedCount++;
+        
+        // 🔥 NEW: Update sync_history for live progress (every 5 pages)
+        const syncHistoryId = body.syncHistoryId;
+        if (syncHistoryId && upsertedCount % 5 === 0) {
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: upsertedCount,
+              sync_type: 'pages'
+            })
+            .eq('id', syncHistoryId);
+          console.log(`📊 [LIVE PROGRESS] Pages: ${upsertedCount}/${allPages.length}`);
+        }
 
         // Insert images if any
         if (images.length > 0 && upsertedPage) {

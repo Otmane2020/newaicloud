@@ -52,6 +52,7 @@ interface RequestBody {
   storeId?: string;
   autoImport?: boolean;  // 🆕 Flag pour mode auto-import
   maxProducts?: number;  // 🆕 Limite explicite
+  syncHistoryId?: string;  // 🔥 NEW: For live progress updates
 }
 
 interface ShopifyResponse {
@@ -923,6 +924,20 @@ Deno.serve(async (req: Request) => {
           products_processed: Math.min(i + BATCH_SIZE, productsToInsert.length)
         })
         .eq('id', importJob.id);
+      
+      // 🔥 NEW: Update sync_history for live progress (if syncHistoryId provided)
+      const syncHistoryId = body.syncHistoryId;
+      if (syncHistoryId) {
+        const processedCount = Math.min(i + BATCH_SIZE, productsToInsert.length);
+        await supabaseServiceClient
+          .from('sync_history')
+          .update({
+            items_synced: processedCount,
+            sync_type: 'products'
+          })
+          .eq('id', syncHistoryId);
+        console.log(`📊 [LIVE PROGRESS] Products: ${processedCount}/${productsToInsert.length}`);
+      }
       
       console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
       
