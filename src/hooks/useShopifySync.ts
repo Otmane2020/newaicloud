@@ -159,10 +159,16 @@ export const useShopifySync = () => {
         
         // Update sync_history sync_type for progress tracking
         if (historyId) {
-          await supabase
+          const { error: syncTypeError } = await supabase
             .from('sync_history')
             .update({ sync_type: type })
             .eq('id', historyId);
+          
+          if (syncTypeError) {
+            console.error('⚠️ [SYNC HISTORY] Failed to update sync_type:', syncTypeError);
+          } else {
+            console.log(`📝 [SYNC HISTORY] Updated sync_type to: ${type}`);
+          }
         }
         
         console.log(`📦 [SYNC ${type.toUpperCase()}] Starting import...`);
