@@ -856,7 +856,7 @@ export default function AutoTranslationScanner() {
 
       {/* File Analysis Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -867,89 +867,199 @@ export default function AutoTranslationScanner() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          <div className="flex-1 overflow-y-auto space-y-4">
             <div className="bg-muted/50 p-3 rounded-lg text-sm">
               <p className="text-muted-foreground">
                 📋 <strong>Fichier:</strong> <code className="bg-background px-2 py-1 rounded">{selectedFile}</code>
               </p>
             </div>
             
-            <textarea
-              placeholder="Collez le contenu du fichier ici..."
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="flex-1 min-h-[200px] p-3 font-mono text-sm bg-muted rounded-lg border border-border resize-none"
-            />
-            
-            <div className="flex gap-2">
-              <Button onClick={analyzeCode} disabled={isAnalyzing || !code.trim()} className="flex-1">
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyse en cours...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Analyser avec l'IA
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Fermer
-              </Button>
-            </div>
+            {!result && (
+              <>
+                <textarea
+                  placeholder="Collez le contenu du fichier ici..."
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="min-h-[200px] w-full p-3 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
+                />
+                
+                <div className="flex gap-2">
+                  <Button onClick={analyzeCode} disabled={isAnalyzing || !code.trim()} className="flex-1">
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyse en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Analyser avec l'IA
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Fermer
+                  </Button>
+                </div>
+              </>
+            )}
 
-            {/* Results in dialog */}
+            {/* Full Results Display - Same as Analyse tab */}
             {result && (
-              <ScrollArea className="flex-1 max-h-[300px]">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      {result.summary.total === 0 ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                      )}
-                      <span className="font-medium">
-                        {result.summary.total} problème(s) détecté(s)
-                      </span>
-                    </div>
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    {result.summary.total === 0 ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                    )}
+                    <span className="font-medium">
+                      {result.summary.total} problème(s) détecté(s)
+                    </span>
                   </div>
-                  
-                  {result.correctedCode && (
-                    <div className="space-y-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500">🇫🇷 {result.summary.fr}</Badge>
+                    <Badge variant="outline" className="bg-red-500/10 text-red-500">🇬🇧 {result.summary.en}</Badge>
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-500">🔄 {result.summary.mixed}</Badge>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setResult(null)}
+                    className="ml-auto"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Nouvelle analyse
+                  </Button>
+                </div>
+
+                {/* Issues List */}
+                {result.issues.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                        Problèmes détectés ({result.issues.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[250px]">
+                        <div className="space-y-3">
+                          {result.issues.map((issue, idx) => (
+                            <div key={idx} className="p-3 rounded-lg bg-muted/30 border border-border space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getTypeBadge(issue.type)}
+                                {getLanguageBadge(issue.detectedLanguage)}
+                                <span className="text-xs text-muted-foreground">
+                                  Ligne {issue.line}
+                                </span>
+                              </div>
+                              <p className="font-medium text-destructive">"{issue.text}"</p>
+                              <div className="text-xs space-y-1 pt-2 border-t border-border">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Sparkles className="h-4 w-4 text-primary" />
+                                  <span className="text-muted-foreground">Clé:</span>
+                                  <code className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs">t.{issue.suggestedKey}</code>
+                                  <Button size="sm" variant="ghost" onClick={() => copyToClipboard(`{t.${issue.suggestedKey}}`, `dialog-key-${idx}`)} className="h-6 px-2">
+                                    {copiedField === `dialog-key-${idx}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div className="bg-blue-500/10 p-2 rounded text-xs">
+                                    <span className="font-medium text-blue-600">🇫🇷 FR:</span> {issue.suggestedFr}
+                                  </div>
+                                  <div className="bg-red-500/10 p-2 rounded text-xs">
+                                    <span className="font-medium text-red-600">🇬🇧 EN:</span> {issue.suggestedEn}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Corrected Code */}
+                {result.correctedCode && (
+                  <Card>
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Code corrigé</span>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Wand2 className="h-5 w-5 text-green-500" />
+                          Code Corrigé
+                        </CardTitle>
                         <div className="flex gap-2">
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => {
-                              setCode(result.correctedCode);
-                              toast.success("Code remplacé ! Copiez-le dans votre IDE.");
-                            }}
+                            onClick={() => copyToClipboard(result.correctedCode, "dialog-fixed-code")}
                           >
-                            <Check className="h-4 w-4 mr-2" />
-                            Appliquer Fix
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyToClipboard(result.correctedCode, "dialog-code")}
-                          >
-                            {copiedField === "dialog-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                            Copier
+                            {copiedField === "dialog-fixed-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                            Copier le code corrigé
                           </Button>
                         </div>
                       </div>
-                      <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre-wrap max-h-[200px] overflow-auto">
-                        {result.correctedCode}
-                      </pre>
-                    </div>
-                  )}
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[200px]">
+                        <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre-wrap">{result.correctedCode}</pre>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Translations JSON */}
+                {(Object.keys(result.translationsFr).length > 0 || Object.keys(result.translationsEn).length > 0) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Languages className="h-5 w-5 text-purple-500" />
+                          Traductions à Ajouter
+                        </CardTitle>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(
+                            `// FR:\n${JSON.stringify(result.translationsFr, null, 2)}\n\n// EN:\n${JSON.stringify(result.translationsEn, null, 2)}`,
+                            "dialog-translations"
+                          )}
+                        >
+                          {copiedField === "dialog-translations" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                          Copier tout
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-sm font-medium mb-2 text-blue-600">🇫🇷 Français</h4>
+                          <ScrollArea className="h-[120px]">
+                            <pre className="text-xs font-mono bg-blue-500/10 p-3 rounded-lg">{JSON.stringify(result.translationsFr, null, 2)}</pre>
+                          </ScrollArea>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium mb-2 text-red-600">🇬🇧 English</h4>
+                          <ScrollArea className="h-[120px]">
+                            <pre className="text-xs font-mono bg-red-500/10 p-3 rounded-lg">{JSON.stringify(result.translationsEn, null, 2)}</pre>
+                          </ScrollArea>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Close button */}
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => { setIsDialogOpen(false); setResult(null); }}>
+                    Fermer
+                  </Button>
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </div>
         </DialogContent>
