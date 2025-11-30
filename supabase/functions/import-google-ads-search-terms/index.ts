@@ -146,6 +146,12 @@ serve(async (req) => {
       LIMIT 500
     `;
 
+    // Debug logs
+    console.log('[import-google-ads-search-terms] User:', user.id);
+    console.log('[import-google-ads-search-terms] Customer ID:', customerId);
+    console.log('[import-google-ads-search-terms] Has access token:', !!accessToken);
+    console.log('[import-google-ads-search-terms] Developer token present:', !!developerToken);
+
     const googleAdsResponse = await fetch(
       `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`,
       {
@@ -153,6 +159,7 @@ serve(async (req) => {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'developer-token': developerToken!,
+          'login-customer-id': customerId,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query }),
