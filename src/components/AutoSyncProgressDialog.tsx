@@ -146,11 +146,16 @@ export function AutoSyncProgressDialog() {
             </p>
             
             {isCompleted ? (
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-sm font-medium text-green-600">
-                  {tf('dialogs.autoSync.itemsImported', { count: itemsSynced })}
-                </span>
+              <div className="flex flex-col items-center justify-center gap-3 pt-4">
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-950/30 rounded-full">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                    {tf('dialogs.autoSync.itemsImported', { count: itemsSynced })}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t.dialogs.autoSync.successMessage}
+                </p>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 pt-2">
