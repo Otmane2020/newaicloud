@@ -1405,23 +1405,128 @@ Deno.serve(async (req: Request) => {
       console.log(`📊 Image import complete: ${totalImages} inserted, ${skippedImages} skipped (preserved)`);
     }
 
-    // Insert product-collection relationships
-    console.log('🔗 Creating product-collection relationships...');
-    const productCollectionRelations = [];
+    // 🔗 FETCH PRODUCT-COLLECTION RELATIONSHIPS FROM SHOPIFY
+    console.log('🔗 Fetching product-collection relationships from Shopify...');
     
-    // We need to get collection_ids from the original Shopify products
-    // and map them to our internal product IDs
-    for (const product of products) {
-      const productId = productIdMap.get(String(product.id));
-      if (!productId) continue;
+    try {
+      // Step 1: Fetch all collects (product-collection links) from Shopify
+      const allCollects: Array<{ product_id: number; collection_id: number }> = [];
+      let collectsUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2025-01/collects.json?limit=250`;
+      let collectPageCount = 0;
       
-      // Get collection associations from Shopify product data
-      // Note: In Shopify API, collections are not directly in product data
-      // They would need to be fetched separately or included in the product query
-      // For now, we'll skip this since collection_ids is stored in the array field
+      while (collectsUrl && collectPageCount < 50) { // Max 50 pages = 12,500 collects
+        collectPageCount++;
+        console.log(`📦 Fetching collects page ${collectPageCount}...`);
+        
+        const collectsResponse = await fetch(collectsUrl, {
+          headers: {
+            "X-Shopify-Access-Token": authToken,
+            "Content-Type": "application/json",
+          },
+        });
+        
+        if (!collectsResponse.ok) {
+          console.error(`❌ Failed to fetch collects: ${collectsResponse.status}`);
+          break;
+        }
+        
+        const collectsData = await collectsResponse.json();
+        const collects = collectsData.collects || [];
+        
+        allCollects.push(...collects.map((c: any) => ({
+          product_id: c.product_id,
+          collection_id: c.collection_id,
+        })));
+        
+        // Check for next page
+        const linkHeader = collectsResponse.headers.get("Link");
+        collectsUrl = parseLinkHeader(linkHeader);
+        
+        // Rate limit protection
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      console.log(`✅ Fetched ${allCollects.length} product-collection relationships`);
+      
+      // Step 2: Get our internal collection IDs from shopify_collections
+      const shopifyCollectionIds = [...new Set(allCollects.map(c => c.collection_id))];
+      
+      if (shopifyCollectionIds.length > 0) {
+        // Fetch collection mapping in batches
+        const collectionIdMap = new Map<number, string>();
+        const COLLECTION_BATCH_SIZE = 100;
+        
+        for (let i = 0; i < shopifyCollectionIds.length; i += COLLECTION_BATCH_SIZE) {
+          const batch = shopifyCollectionIds.slice(i, i + COLLECTION_BATCH_SIZE);
+          
+          const { data: collections, error: collError } = await supabaseServiceClient
+            .from('shopify_collections')
+            .select('id, shopify_collection_id')
+            .in('shopify_collection_id', batch)
+            .eq('user_id', user.id);
+          
+          if (collError) {
+            console.error(`❌ Error fetching collections batch:`, collError);
+          } else if (collections) {
+            collections.forEach((c: any) => {
+              collectionIdMap.set(c.shopify_collection_id, c.id);
+            });
+          }
+        }
+        
+        console.log(`📊 Mapped ${collectionIdMap.size} collections to internal IDs`);
+        
+        // Step 3: Group collects by product_id
+        const productCollections = new Map<number, string[]>();
+        
+        for (const collect of allCollects) {
+          const internalCollectionId = collectionIdMap.get(collect.collection_id);
+          if (!internalCollectionId) continue;
+          
+          if (!productCollections.has(collect.product_id)) {
+            productCollections.set(collect.product_id, []);
+          }
+          productCollections.get(collect.product_id)!.push(internalCollectionId);
+        }
+        
+        console.log(`📊 ${productCollections.size} products have collection associations`);
+        
+        // Step 4: Update products with collection_ids in batches
+        const UPDATE_BATCH_SIZE = 50;
+        const productEntries = Array.from(productCollections.entries());
+        let updatedCount = 0;
+        
+        for (let i = 0; i < productEntries.length; i += UPDATE_BATCH_SIZE) {
+          const batch = productEntries.slice(i, i + UPDATE_BATCH_SIZE);
+          
+          for (const [shopifyProductId, collectionIds] of batch) {
+            const { error: updateError } = await supabaseServiceClient
+              .from('shopify_products')
+              .update({ collection_ids: collectionIds })
+              .eq('shopify_id', shopifyProductId)
+              .eq('seller_id', user.id);
+            
+            if (!updateError) {
+              updatedCount++;
+            }
+          }
+          
+          // Small delay between batches
+          if (i + UPDATE_BATCH_SIZE < productEntries.length) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        }
+        
+        console.log(`✅ Updated ${updatedCount} products with collection_ids`);
+      } else {
+        console.log(`ℹ️ No collections found to link`);
+      }
+    } catch (collectError) {
+      console.error('⚠️ Error fetching product-collection relationships:', collectError);
+      // Non-blocking - continue with the rest of the import
     }
     
-    console.log(`✅ Product-collection relationships will be established via collection_ids array field`);
+    console.log(`✅ Product-collection relationships import complete`);
     
     // Count variants with image_url for diagnostics
     const variantsWithImageUrl = allVariants.filter((v: any) => v.image_url).length;
