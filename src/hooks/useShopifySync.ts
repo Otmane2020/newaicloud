@@ -78,10 +78,11 @@ export const useShopifySync = () => {
           .insert({
             user_id: user.id,
             store_id: storeToSync.id,
-            sync_type: 'import',
+            sync_type: 'products',
             content_types: ['products', 'collections', 'pages', 'articles', 'images'],
             status: 'running',
             started_at: new Date().toISOString(),
+            items_synced: 0,
           })
           .select()
           .single();
@@ -192,7 +193,8 @@ export const useShopifySync = () => {
                     shopName, 
                     apiSecret: storeData.access_token, 
                     storeId: storeToSync.id,
-                    syncMode: 'smart'
+                    syncMode: 'smart',
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -214,7 +216,8 @@ export const useShopifySync = () => {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: storeToSync.id 
+                    storeId: storeToSync.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -225,7 +228,8 @@ export const useShopifySync = () => {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: storeToSync.id 
+                    storeId: storeToSync.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -237,7 +241,8 @@ export const useShopifySync = () => {
                   body: { 
                     shopName, 
                     authToken: storeData.access_token, 
-                    storeId: storeToSync.id 
+                    storeId: storeToSync.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -248,7 +253,8 @@ export const useShopifySync = () => {
                 supabase.functions.invoke('import-content-images', {
                   body: { 
                     storeId: storeToSync.id,
-                    types: ['collections', 'pages', 'articles', 'homepage'] 
+                    types: ['collections', 'pages', 'articles', 'homepage'],
+                    syncHistoryId: historyId
                   }
                 })
               );
