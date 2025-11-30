@@ -252,9 +252,12 @@ export function GoogleAdsIntegration() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Normalize customer ID - remove hyphens and spaces before saving
+      const normalizedId = customerId.replace(/[^0-9]/g, '');
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ google_ads_customer_id: customerId })
+        .update({ google_ads_customer_id: normalizedId })
         .eq('id', user.id);
 
       if (error) throw error;

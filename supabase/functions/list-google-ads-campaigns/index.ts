@@ -5,6 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Normalize customer ID - remove all non-numeric characters (hyphens, spaces)
+function normalizeCustomerId(customerId: string): string {
+  return customerId.replace(/[^0-9]/g, '');
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -152,13 +157,14 @@ Deno.serve(async (req) => {
         // Extract customer ID from resource name (format: customers/{customer_id})
         customerId = customersData.resourceNames[0].split('/')[1];
         
-        // Save to profile
+        // Save to profile (store normalized ID without hyphens)
+        const normalizedId = normalizeCustomerId(customerId);
         await supabase
           .from('profiles')
-          .update({ google_ads_customer_id: customerId })
+          .update({ google_ads_customer_id: normalizedId })
           .eq('id', user.id);
         
-        console.log('[list-google-ads-campaigns] Saved customer ID:', customerId);
+        console.log('[list-google-ads-campaigns] Saved customer ID:', normalizedId);
       } else {
         return new Response(
           JSON.stringify({ 
@@ -171,7 +177,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('[list-google-ads-campaigns] Using customer ID:', customerId);
+    // Normalize customer ID for API calls (remove hyphens)
+    const normalizedCustomerId = normalizeCustomerId(customerId);
+    console.log('[list-google-ads-campaigns] Using customer ID:', normalizedCustomerId);
 
     // Fetch campaigns using Google Ads API
     const query = `
@@ -188,12 +196,12 @@ Deno.serve(async (req) => {
       ORDER BY campaign.name
     `;
 
-    const adsResponse = await fetch(`https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`, {
+    const adsResponse = await fetch(`https://googleads.googleapis.com/v17/customers/${normalizedCustomerId}/googleAds:searchStream`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'developer-token': developerToken,
-        'login-customer-id': customerId,
+        'login-customer-id': normalizedCustomerId,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ query }),
