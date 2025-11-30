@@ -181,6 +181,31 @@ export const translations = {
       syncStarted: "Synchronization started...",
       importSuccess: "{{count}} product(s) imported successfully",
       importError: "Error during import",
+      // OAuth callback messages
+      connectedTo: "Connected to {{shop}}",
+      connectionFailed: "Failed to connect store",
+      storeAlreadyConnectedDesc: "This store is already connected to your account",
+      storeLimitReachedDesc: "You have reached the maximum number of stores for your plan. Upgrade to add more stores.",
+      authFailed: "Authentication failed",
+      authFailedDesc: "Failed to authenticate with Shopify",
+      connectionFailedDesc: "Failed to save store connection",
+      sessionError: "Session error",
+      sessionExpiredDesc: "Your session has expired. Please try again.",
+      // Sync messages
+      syncComplete: "Synchronization complete: {{count}} items imported",
+      syncError: "Error: {{message}}",
+      // Token validation
+      tokenValid: "✅ Shopify token is valid",
+      tokenInvalid: "❌ Invalid Shopify token",
+      tokenReconnect: "Please reconnect your store",
+      tokenValidationError: "Error during validation",
+      validationError: "Validation error",
+      pleaseRetry: "Please try again",
+      connectionSuccess: "✅ Connection successful",
+      connectionFailedTitle: "❌ Connection failed",
+      store: "Store",
+      domain: "Domain",
+      currency: "Currency",
     },
     // Google Search Console toasts
     gsc: {
@@ -5854,6 +5879,17 @@ export const translations = {
       sync: "Synchronization",
       metadata: "Metadata",
     },
+    shopify: {
+      title: "Shopify Connections",
+      description: "Connect and manage your Shopify stores",
+      addStore: "Add Store",
+    },
+    tokenValidator: {
+      title: "Shopify Connection Test",
+      description: "Verify if your Shopify access token is still valid",
+      validating: "Validating...",
+      testConnection: "Test Connection",
+    },
     installGuide: {
       title: "Connect your Shopify store",
       subtitle: "One last step before enjoying NewAI to optimize your SEO",
@@ -5876,6 +5912,7 @@ export const translations = {
       secureConnection: "🔒 Secure connection • ⚡ 2-minute setup • 🎯 Store automatically detected",
     },
     sync: {
+      refresh: "Refresh",
       mode: {
         title: "Sync mode",
         description: "Choose how to manage AI-optimized content",

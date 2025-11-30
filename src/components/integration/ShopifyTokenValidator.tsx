@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 interface TokenValidationResult {
   valid: boolean;
@@ -18,6 +19,7 @@ interface TokenValidationResult {
 }
 
 export const ShopifyTokenValidator = ({ storeId }: { storeId: string }) => {
+  const { t } = useTranslation();
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<TokenValidationResult | null>(null);
 
@@ -35,19 +37,19 @@ export const ShopifyTokenValidator = ({ storeId }: { storeId: string }) => {
       setResult(data);
 
       if (data.valid) {
-        toast.success('✅ Token Shopify valide');
+        toast.success(t.toasts.shopify.tokenValid);
       } else {
-        toast.error('❌ Token Shopify invalide', {
-          description: data.suggestion || 'Veuillez reconnecter votre boutique'
+        toast.error(t.toasts.shopify.tokenInvalid, {
+          description: data.suggestion || t.toasts.shopify.tokenReconnect
         });
       }
     } catch (error) {
       console.error('Error validating token:', error);
-      toast.error('Erreur lors de la validation');
+      toast.error(t.toasts.shopify.tokenValidationError);
       setResult({
         valid: false,
-        message: 'Erreur de validation',
-        suggestion: 'Veuillez réessayer'
+        message: t.toasts.shopify.validationError,
+        suggestion: t.toasts.shopify.pleaseRetry
       });
     } finally {
       setValidating(false);
@@ -59,10 +61,10 @@ export const ShopifyTokenValidator = ({ storeId }: { storeId: string }) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <RefreshCw className="h-5 w-5" />
-          Test de connexion Shopify
+          {t.integration?.tokenValidator?.title || 'Shopify Connection Test'}
         </CardTitle>
         <CardDescription>
-          Vérifiez si votre token d'accès Shopify est toujours valide
+          {t.integration?.tokenValidator?.description || 'Verify if your Shopify access token is still valid'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -74,12 +76,12 @@ export const ShopifyTokenValidator = ({ storeId }: { storeId: string }) => {
           {validating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Validation en cours...
+              {t.integration?.tokenValidator?.validating || 'Validating...'}
             </>
           ) : (
             <>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Tester la connexion
+              {t.integration?.tokenValidator?.testConnection || 'Test Connection'}
             </>
           )}
         </Button>
@@ -94,14 +96,14 @@ export const ShopifyTokenValidator = ({ storeId }: { storeId: string }) => {
             <AlertDescription>
               {result.valid ? (
                 <div className="space-y-2">
-                  <p className="font-semibold">✅ Connexion réussie</p>
-                  {result.shopName && <p>Boutique: {result.shopName}</p>}
-                  {result.domain && <p>Domaine: {result.domain}</p>}
-                  {result.currency && <p>Devise: {result.currency}</p>}
+                  <p className="font-semibold">{t.toasts.shopify.connectionSuccess}</p>
+                  {result.shopName && <p>{t.toasts.shopify.store}: {result.shopName}</p>}
+                  {result.domain && <p>{t.toasts.shopify.domain}: {result.domain}</p>}
+                  {result.currency && <p>{t.toasts.shopify.currency}: {result.currency}</p>}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="font-semibold">❌ Échec de la connexion</p>
+                  <p className="font-semibold">{t.toasts.shopify.connectionFailedTitle}</p>
                   {result.message && <p className="text-sm">{result.message}</p>}
                   {result.suggestion && (
                     <div className="mt-2 flex items-start gap-2">

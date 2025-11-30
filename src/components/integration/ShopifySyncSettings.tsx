@@ -537,7 +537,7 @@ const SyncHistoryList = ({ history, t, dateLocale }: { history: SyncHistory[]; t
 
 export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncing: boolean) => void }) {
   const { selectedStore } = useStore();
-  const { t, language } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const storeId = selectedStore?.id;
   const { settings, history, loading, setSettings, loadSettings, loadHistory } = useSyncData(storeId);
   const [saving, setSaving] = useState(false);
@@ -841,7 +841,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
 
       setTotalImported(totalImported);
       setShowResultDialog(true);
-      toast.success(`Synchronisation terminée : ${totalImported} éléments importés`);
+      toast.success(tf('toasts.shopify.syncComplete', { count: totalImported }));
 
     } catch (error) {
       console.error("❌ Erreur de synchronisation:", error);
@@ -857,7 +857,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
           .eq("id", historyEntry.id);
       }
 
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(tf('toasts.shopify.syncError', { message: error.message }));
     } finally {
       setIsSyncing(false);
       setCurrentType("");
