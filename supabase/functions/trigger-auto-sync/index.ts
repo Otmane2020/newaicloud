@@ -201,8 +201,16 @@ serve(async (req) => {
       try {
         console.log(`📥 Importing ${type}...`);
 
-        // 🔥 REMOVED: Don't update progress BEFORE import (was sending 0 items)
-        // Progress is now updated ONLY AFTER each successful import (line ~269)
+        // 🔥 FIX: Update sync_type BEFORE import so frontend knows current step
+        // This allows progress bar to advance (products=20%, collections=50%, etc.)
+        await supabase
+          .from("sync_history")
+          .update({ 
+            sync_type: type,
+            duration_ms: Date.now() - startTime
+          })
+          .eq("id", historyEntry.id);
+        console.log(`📊 Starting ${type} import...`);
 
         const baseBody = {
           storeId: connection.id,
