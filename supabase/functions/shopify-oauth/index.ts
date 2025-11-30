@@ -67,12 +67,17 @@ const SCOPES = [
 ];
 
 // 🔐 Fonction pour créer les webhooks GDPR obligatoires (conformité Shopify 2025)
-async function createGDPRWebhooks(shop: string, accessToken: string): Promise<void> {
-  // ✅ Construct base URL - use direct Supabase URL format
-  const supabaseProjectId = SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-  const GDPR_WEBHOOK_URL = supabaseProjectId 
-    ? `https://${supabaseProjectId}.supabase.co/functions/v1/shopify-gdpr-webhook`
-    : `${SUPABASE_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '')}/functions/v1/shopify-gdpr-webhook`;
+async function registerGDPRWebhooks(shop: string, accessToken: string): Promise<void> {
+  // ✅ Construct base URL - MUST use direct Supabase project URL
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || SUPABASE_URL;
+  const supabaseProjectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+  
+  if (!supabaseProjectId) {
+    console.error("[SHOPIFY-OAUTH] ❌ Could not extract Supabase project ID from:", supabaseUrl);
+    return;
+  }
+  
+  const GDPR_WEBHOOK_URL = `https://${supabaseProjectId}.supabase.co/functions/v1/shopify-gdpr-webhook`;
   
   console.log("[SHOPIFY-OAUTH] 🔐 GDPR Webhook URL:", GDPR_WEBHOOK_URL);
   
@@ -82,50 +87,77 @@ async function createGDPRWebhooks(shop: string, accessToken: string): Promise<vo
     "shop/redact"
   ];
   
-  console.log("[SHOPIFY-OAUTH] 🔐 Création des webhooks GDPR obligatoires...");
+  console.log("[SHOPIFY-OAUTH] 🔐 Enregistrement webhooks GDPR obligatoires (conformité Shopify 2025)...");
   
-  // First, list existing webhooks to check what we have
   try {
+    // 1️⃣ TOUJOURS lister les webhooks existants
     const listResponse = await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
       method: "GET",
       headers: {
         "X-Shopify-Access-Token": accessToken,
+        "Content-Type": "application/json",
       },
     });
     
+    let existingWebhooks: any[] = [];
     if (listResponse.ok) {
-      const existingWebhooks = await listResponse.json();
-      const existingTopics = (existingWebhooks.webhooks || []).map((w: any) => w.topic);
-      console.log("[SHOPIFY-OAUTH] 📋 Existing webhooks:", existingTopics);
-      
-      // Only create webhooks that don't exist
-      for (const topic of gdprTopics) {
-        if (existingTopics.includes(topic)) {
-          console.log(`[SHOPIFY-OAUTH] ℹ️ Webhook GDPR déjà existant: ${topic}`);
-          continue;
-        }
-        
-        await createSingleWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
-      }
+      const webhooksData = await listResponse.json();
+      existingWebhooks = webhooksData.webhooks || [];
+      console.log(`[SHOPIFY-OAUTH] 📋 ${existingWebhooks.length} webhooks existants trouvés`);
     } else {
-      // If we can't list, try to create all
-      for (const topic of gdprTopics) {
-        await createSingleWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
+      console.warn("[SHOPIFY-OAUTH] ⚠️ Impossible de lister les webhooks:", listResponse.status);
+    }
+    
+    // 2️⃣ Pour chaque topic GDPR obligatoire
+    for (const topic of gdprTopics) {
+      const existingWebhook = existingWebhooks.find((w: any) => w.topic === topic);
+      
+      // 3️⃣ Si webhook existe avec mauvaise URL → supprimer d'abord
+      if (existingWebhook && existingWebhook.address !== GDPR_WEBHOOK_URL) {
+        console.log(`[SHOPIFY-OAUTH] 🗑️ Suppression webhook obsolète ${topic} (URL: ${existingWebhook.address})`);
+        try {
+          const deleteResponse = await fetch(
+            `https://${shop}/admin/api/2025-01/webhooks/${existingWebhook.id}.json`,
+            {
+              method: "DELETE",
+              headers: { "X-Shopify-Access-Token": accessToken },
+            }
+          );
+          if (deleteResponse.ok || deleteResponse.status === 404) {
+            console.log(`[SHOPIFY-OAUTH] ✅ Webhook ${topic} supprimé`);
+          }
+        } catch (delErr) {
+          console.warn(`[SHOPIFY-OAUTH] ⚠️ Erreur suppression ${topic}:`, delErr);
+        }
+        // Créer le nouveau webhook après suppression
+        await createGDPRWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
+      }
+      // 4️⃣ Si webhook existe avec bonne URL → OK
+      else if (existingWebhook && existingWebhook.address === GDPR_WEBHOOK_URL) {
+        console.log(`[SHOPIFY-OAUTH] ✅ Webhook GDPR OK: ${topic}`);
+      }
+      // 5️⃣ Si webhook n'existe pas → créer
+      else {
+        await createGDPRWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
       }
     }
+    
   } catch (err) {
-    console.error("[SHOPIFY-OAUTH] ❌ Error listing webhooks:", err);
-    // Fallback: try to create all
+    console.error("[SHOPIFY-OAUTH] ❌ Erreur listing webhooks:", err);
+    // Fallback: essayer de créer tous les webhooks
+    console.log("[SHOPIFY-OAUTH] 🔄 Fallback: création forcée de tous les webhooks GDPR...");
     for (const topic of gdprTopics) {
-      await createSingleWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
+      await createGDPRWebhook(shop, accessToken, topic, GDPR_WEBHOOK_URL);
     }
   }
   
-  console.log("[SHOPIFY-OAUTH] 🔐 Webhooks GDPR traités");
+  console.log("[SHOPIFY-OAUTH] 🔐 Webhooks GDPR traités avec succès");
 }
 
-async function createSingleWebhook(shop: string, accessToken: string, topic: string, address: string): Promise<void> {
+async function createGDPRWebhook(shop: string, accessToken: string, topic: string, address: string): Promise<boolean> {
   try {
+    console.log(`[SHOPIFY-OAUTH] 📝 Création webhook GDPR: ${topic} → ${address}`);
+    
     const response = await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
       method: "POST",
       headers: {
@@ -141,20 +173,29 @@ async function createSingleWebhook(shop: string, accessToken: string, topic: str
       }),
     });
     
+    const responseText = await response.text();
+    
     if (response.ok) {
-      const data = await response.json();
-      console.log(`[SHOPIFY-OAUTH] ✅ Webhook GDPR créé: ${topic}, id: ${data.webhook?.id}`);
-    } else {
-      const errorText = await response.text();
-      // Ignorer l'erreur si le webhook existe déjà (code 422)
-      if (response.status === 422 && (errorText.includes("already exists") || errorText.includes("already_exists"))) {
-        console.log(`[SHOPIFY-OAUTH] ℹ️ Webhook GDPR déjà existant: ${topic}`);
-      } else {
-        console.error(`[SHOPIFY-OAUTH] ⚠️ Erreur création webhook ${topic}: ${response.status}`, errorText);
+      try {
+        const data = JSON.parse(responseText);
+        console.log(`[SHOPIFY-OAUTH] ✅ Webhook GDPR créé: ${topic}, id: ${data.webhook?.id}`);
+        return true;
+      } catch {
+        console.log(`[SHOPIFY-OAUTH] ✅ Webhook GDPR créé: ${topic}`);
+        return true;
       }
+    } else {
+      // 422 = déjà existant (acceptable)
+      if (response.status === 422 && (responseText.includes("already exists") || responseText.includes("already_exists") || responseText.includes("for this topic has already been taken"))) {
+        console.log(`[SHOPIFY-OAUTH] ℹ️ Webhook GDPR déjà existant: ${topic}`);
+        return true;
+      }
+      console.error(`[SHOPIFY-OAUTH] ⚠️ Erreur création webhook ${topic}: ${response.status}`, responseText);
+      return false;
     }
   } catch (err) {
     console.error(`[SHOPIFY-OAUTH] ❌ Exception webhook ${topic}:`, err);
+    return false;
   }
 }
 
@@ -223,8 +264,8 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // 🔐 Créer les webhooks GDPR obligatoires (conformité Shopify 2025)
-      await createGDPRWebhooks(shop, accessToken);
+      // 🔐 Enregistrer les webhooks GDPR obligatoires (conformité Shopify 2025)
+      await registerGDPRWebhooks(shop, accessToken);
 
       // 🔍 Fetch real commercial name from Shopify API
       let realCommercialName = shop;
