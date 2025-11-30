@@ -1211,7 +1211,7 @@ Deno.serve(async (req: Request) => {
       
       // STEP 1: Fetch existing images to preserve ONLY truly generated/optimized ones
       // BATCHED to avoid "Bad Request" error on large arrays (>500 IDs)
-      const QUERY_BATCH_SIZE = 500;
+      const QUERY_BATCH_SIZE = 100; // Reduced from 500 to avoid HTTP URL length limits with UUIDs
       let existingImages: any[] = [];
       
       console.log(`📊 Fetching existing images for ${productIdsWithImages.length} products in batches of ${QUERY_BATCH_SIZE}`);
@@ -1262,7 +1262,7 @@ Deno.serve(async (req: Request) => {
       
       // STEP 3: Delete Shopify CDN images - BATCHED to avoid "Bad Request" on large arrays
       if (imagesToDelete.length > 0) {
-        const DELETE_BATCH_SIZE = 500;
+        const DELETE_BATCH_SIZE = 100; // Reduced from 500 to avoid HTTP URL length limits with UUIDs
         const deleteBatches = Math.ceil(imagesToDelete.length / DELETE_BATCH_SIZE);
         let deletedCount = 0;
         
