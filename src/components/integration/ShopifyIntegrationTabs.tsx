@@ -14,7 +14,7 @@ const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/Shopify
 
 export function ShopifyIntegrationTabs() {
   const { isDemoMode } = useDemoMode();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,8 +26,8 @@ export function ShopifyIntegrationTabs() {
     const shop = searchParams.get('shop');
 
     if (success === 'true') {
-      toast.success(`Store connected successfully! 🎉`, {
-        description: shop ? `Connected to ${shop}` : undefined
+      toast.success(t.toasts.shopify.storeConnected, {
+        description: shop ? tf('toasts.shopify.connectedTo', { shop }) : undefined
       });
       // Refresh the list
       setRefreshKey(prev => prev + 1);
@@ -36,31 +36,31 @@ export function ShopifyIntegrationTabs() {
       searchParams.delete('shop');
       setSearchParams(searchParams, { replace: true });
     } else if (error) {
-      let errorMessage = 'Failed to connect store';
+      let errorMessage = t.toasts.shopify.connectionFailed;
       let errorDescription = '';
 
       switch (error) {
         case 'store_already_connected':
-          errorMessage = 'Store already connected';
-          errorDescription = 'This store is already connected to your account';
+          errorMessage = t.toasts.shopify.alreadyConnected;
+          errorDescription = t.toasts.shopify.storeAlreadyConnectedDesc;
           break;
         case 'store_limit_reached':
-          errorMessage = 'Store limit reached';
-          errorDescription = 'You have reached the maximum number of stores for your plan. Upgrade to add more stores.';
+          errorMessage = t.toasts.shopify.storeLimitReached;
+          errorDescription = t.toasts.shopify.storeLimitReachedDesc;
           break;
         case 'auth_failed':
-          errorMessage = 'Authentication failed';
-          errorDescription = 'Failed to authenticate with Shopify';
+          errorMessage = t.toasts.shopify.authFailed;
+          errorDescription = t.toasts.shopify.authFailedDesc;
           break;
         case 'connection_failed':
-          errorMessage = 'Connection failed';
-          errorDescription = 'Failed to save store connection';
+          errorMessage = t.toasts.shopify.connectionFailed;
+          errorDescription = t.toasts.shopify.connectionFailedDesc;
           break;
         case 'missing_state':
         case 'invalid_state':
         case 'expired_session':
-          errorMessage = 'Session error';
-          errorDescription = 'Your session has expired. Please try again.';
+          errorMessage = t.toasts.shopify.sessionError;
+          errorDescription = t.toasts.shopify.sessionExpiredDesc;
           break;
         default:
           errorDescription = error;
@@ -75,7 +75,7 @@ export function ShopifyIntegrationTabs() {
       searchParams.delete('shop');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, t, tf]);
 
   return (
     <div className="space-y-6">
@@ -85,16 +85,16 @@ export function ShopifyIntegrationTabs() {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <ShoppingBag className="w-5 h-5" />
-                Shopify Connections
+                {t.integration?.shopify?.title || 'Shopify Connections'}
               </CardTitle>
               <CardDescription className="text-sm">
-                Connect and manage your Shopify stores
+                {t.integration?.shopify?.description || 'Connect and manage your Shopify stores'}
               </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setRefreshKey(prev => prev + 1)} variant="outline" size="lg">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh Data
+                {t.integration.sync.refresh || 'Refresh'}
               </Button>
               <Button 
                 onClick={() => {
@@ -109,7 +109,7 @@ export function ShopifyIntegrationTabs() {
                 variant={isDemoMode ? "outline" : "default"}
               >
                 {isDemoMode ? <Lock className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                Add Store
+                {t.integration?.shopify?.addStore || 'Add Store'}
               </Button>
             </div>
           </div>

@@ -182,6 +182,31 @@ export const translations = {
       syncStarted: "Synchronisation démarrée...",
       importSuccess: "{{count}} produit(s) importé(s) avec succès",
       importError: "Erreur lors de l'importation",
+      // OAuth callback messages
+      connectedTo: "Connecté à {{shop}}",
+      connectionFailed: "Échec de la connexion à la boutique",
+      storeAlreadyConnectedDesc: "Cette boutique est déjà connectée à votre compte",
+      storeLimitReachedDesc: "Vous avez atteint le nombre maximum de boutiques pour votre plan. Passez à un plan supérieur pour ajouter plus de boutiques.",
+      authFailed: "Échec de l'authentification",
+      authFailedDesc: "Impossible de s'authentifier avec Shopify",
+      connectionFailedDesc: "Échec de la sauvegarde de la connexion",
+      sessionError: "Erreur de session",
+      sessionExpiredDesc: "Votre session a expiré. Veuillez réessayer.",
+      // Sync messages
+      syncComplete: "Synchronisation terminée : {{count}} éléments importés",
+      syncError: "Erreur : {{message}}",
+      // Token validation
+      tokenValid: "✅ Token Shopify valide",
+      tokenInvalid: "❌ Token Shopify invalide",
+      tokenReconnect: "Veuillez reconnecter votre boutique",
+      tokenValidationError: "Erreur lors de la validation",
+      validationError: "Erreur de validation",
+      pleaseRetry: "Veuillez réessayer",
+      connectionSuccess: "✅ Connexion réussie",
+      connectionFailedTitle: "❌ Échec de la connexion",
+      store: "Boutique",
+      domain: "Domaine",
+      currency: "Devise",
     },
     // Google Search Console toasts
     gsc: {
@@ -6200,6 +6225,17 @@ export const translations = {
       sync: "Synchronisation",
       metadata: "Métadonnées",
     },
+    shopify: {
+      title: "Connexions Shopify",
+      description: "Connectez et gérez vos boutiques Shopify",
+      addStore: "Ajouter une boutique",
+    },
+    tokenValidator: {
+      title: "Test de connexion Shopify",
+      description: "Vérifiez si votre token d'accès Shopify est toujours valide",
+      validating: "Validation en cours...",
+      testConnection: "Tester la connexion",
+    },
     installGuide: {
       title: "Connectez votre boutique Shopify",
       subtitle: "Une dernière étape avant de profiter de NewAI pour optimiser votre SEO",
@@ -6222,6 +6258,7 @@ export const translations = {
       secureConnection: "🔒 Connexion sécurisée • ⚡ Configuration en 2 minutes • 🎯 Boutique automatiquement détectée",
     },
     sync: {
+      refresh: "Actualiser",
       mode: {
         title: "Mode de synchronisation",
         description: "Choisissez comment gérer le contenu optimisé par l'IA",
