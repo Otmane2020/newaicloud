@@ -147,7 +147,8 @@ export default function Collections() {
       const { data, error: syncError } = await supabase.functions.invoke('sync-product-collections', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
-        }
+        },
+        body: { storeId: selectedStore.id }
       });
       
       if (syncError) throw syncError;
@@ -201,7 +202,9 @@ export default function Collections() {
 
       // Synchronize products with collections
       toast.loading(t.sync.syncingProductCollections, { id: toastId });
-      const { error: syncError } = await supabase.functions.invoke('sync-product-collections');
+      const { error: syncError } = await supabase.functions.invoke('sync-product-collections', {
+        body: { storeId: selectedStore.id }
+      });
       
       if (syncError) {
         console.error("Erreur sync:", syncError);
