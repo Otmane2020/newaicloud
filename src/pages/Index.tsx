@@ -15,6 +15,7 @@ import { useTranslation } from "@/lib/language";
 import { getCurrencySymbol } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
 import { AIAssistant } from "@/components/AIAssistant";
+import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
 import { 
   Zap, 
   ShoppingBag, 
@@ -165,6 +166,9 @@ const Index = () => {
 
       {/* Demo SEO Comparison Section */}
       <DemoSeoComparison />
+
+      {/* Landing Page Vision AI Showcase */}
+      <LandingPageVisionShowcase />
 
       {/* Key Features Section */}
       <section id="features" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">
