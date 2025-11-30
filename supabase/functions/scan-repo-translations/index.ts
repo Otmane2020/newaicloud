@@ -270,6 +270,25 @@ const PRIORITY_PATTERNS = [
   'src/hooks/',
 ];
 
+// Fallback file list when GitHub API fails
+const FALLBACK_FILES = [
+  'src/pages/Dashboard.tsx',
+  'src/pages/Products.tsx',
+  'src/pages/Collections.tsx',
+  'src/pages/Settings.tsx',
+  'src/pages/GoogleAds.tsx',
+  'src/components/admin/AutoTranslationScanner.tsx',
+  'src/components/admin/EmailInbox.tsx',
+  'src/components/admin/GoogleAdsAdmin.tsx',
+  'src/components/ads/GoogleAdsCampaigns.tsx',
+  'src/components/ads/GoogleAdsOptimization.tsx',
+  'src/components/ads/GoogleAdsTracking.tsx',
+  'src/components/seo/SeoOptimization.tsx',
+  'src/components/seo/GoogleMerchantIntegration.tsx',
+  'src/components/blog/ArticleWizard.tsx',
+  'src/components/blog/BlogOpportunities.tsx',
+];
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -288,40 +307,38 @@ serve(async (req) => {
 
     console.log('[scan-repo-translations] Starting automatic scan...');
 
-    // Get GitHub credentials
+    // Get credentials
     const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
     const GITHUB_OWNER = Deno.env.get('GITHUB_OWNER');
     const GITHUB_REPO = Deno.env.get('GITHUB_REPO');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
-      throw new Error('GitHub credentials not configured (GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO)');
-    }
-
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log(`[GitHub] Owner: ${GITHUB_OWNER}, Repo: ${GITHUB_REPO}`);
+    let allRepoFiles: string[] = [];
+    let useFallback = false;
 
-    // ALWAYS list files from repo first
-    console.log('[GitHub] Listing all files from repository...');
-    const allRepoFiles = await listRepoFiles(GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
-    
-    if (allRepoFiles.length === 0) {
-      console.error('[GitHub] No files found in repository - check GITHUB_OWNER and GITHUB_REPO settings');
-      return new Response(JSON.stringify({ 
-        error: 'No files found in repository. Please verify GITHUB_OWNER and GITHUB_REPO secrets are correct.',
-        totalFiles: 0,
-        filesScanned: 0,
-        filesWithIssues: 0,
-        totalIssues: 0,
-        issuesByType: {},
-        issues: [],
-        aggregatedTranslations: { fr: {}, en: {} }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Try GitHub API first
+    if (GITHUB_TOKEN && GITHUB_OWNER && GITHUB_REPO) {
+      console.log(`[GitHub] Owner: ${GITHUB_OWNER}, Repo: ${GITHUB_REPO}`);
+      console.log('[GitHub] Listing all files from repository...');
+      allRepoFiles = await listRepoFiles(GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
+      
+      if (allRepoFiles.length === 0) {
+        console.warn('[GitHub] No files found - falling back to static file list');
+        useFallback = true;
+      }
+    } else {
+      console.warn('[GitHub] Credentials not configured - using fallback file list');
+      useFallback = true;
+    }
+
+    // Use fallback if GitHub failed
+    if (useFallback) {
+      allRepoFiles = FALLBACK_FILES;
+      console.log(`[Fallback] Using ${allRepoFiles.length} predefined files`);
     }
 
     // Sort files: priority patterns first
@@ -355,11 +372,21 @@ serve(async (req) => {
 
     // Process files in batches of 3 for better performance
     const batchSize = 3;
+    const githubToken = GITHUB_TOKEN || '';
+    const githubOwner = GITHUB_OWNER || '';
+    const githubRepo = GITHUB_REPO || '';
+    
     for (let i = 0; i < limitedFiles.length; i += batchSize) {
       const batch = limitedFiles.slice(i, i + batchSize);
       
       const batchPromises = batch.map(async (filePath: string) => {
-        const content = await fetchFileFromGitHub(filePath, GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
+        // Skip fetching if using fallback (no GitHub credentials)
+        if (useFallback) {
+          console.log(`[Fallback] Skipping fetch for ${filePath} - using static list only`);
+          return { filePath, issues: [] };
+        }
+        
+        const content = await fetchFileFromGitHub(filePath, githubToken, githubOwner, githubRepo);
         if (!content) {
           console.log(`[GitHub] Skipping ${filePath} - could not fetch`);
           return { filePath, issues: [] };

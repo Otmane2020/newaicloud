@@ -48,14 +48,14 @@ serve(async (req) => {
       });
     }
 
-    // Get user's Google Ads credentials
+    // Get user's Google Ads credentials (use google_ads_oauth_token for consistency)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('google_ads_access_token, google_ads_refresh_token, google_ads_customer_id, google_ads_token_expires_at')
+      .select('google_ads_oauth_token, google_ads_refresh_token, google_ads_customer_id, google_ads_token_expires_at')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.google_ads_access_token || !profile?.google_ads_customer_id) {
+    if (!profile?.google_ads_oauth_token || !profile?.google_ads_customer_id) {
       return new Response(JSON.stringify({ 
         error: 'Google Ads not connected',
         message: 'Please connect your Google Ads account first'
@@ -65,7 +65,7 @@ serve(async (req) => {
       });
     }
 
-    let accessToken = profile.google_ads_access_token;
+    let accessToken = profile.google_ads_oauth_token;
 
     // Check if token needs refresh
     if (profile.google_ads_token_expires_at) {
@@ -95,7 +95,7 @@ serve(async (req) => {
           await supabase
             .from('profiles')
             .update({
-              google_ads_access_token: accessToken,
+              google_ads_oauth_token: accessToken,
               google_ads_token_expires_at: newExpiresAt.toISOString(),
             })
             .eq('id', user.id);

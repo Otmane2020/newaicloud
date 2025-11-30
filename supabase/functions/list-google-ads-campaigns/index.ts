@@ -12,9 +12,36 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Health check
+    const body = await req.text();
+    if (body) {
+      try {
+        const parsed = JSON.parse(body);
+        if (parsed.healthCheck === true) {
+          return new Response(JSON.stringify({ status: 'healthy' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch { /* Not JSON or not health check */ }
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check developer token early
+    const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
+    if (!developerToken) {
+      console.error('[list-google-ads-campaigns] Missing GOOGLE_ADS_DEVELOPER_TOKEN');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Google Ads Developer Token not configured',
+          message: 'Please add the GOOGLE_ADS_DEVELOPER_TOKEN secret in Lovable Cloud settings'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
 
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
@@ -95,11 +122,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get developer token from environment
-    const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
-    if (!developerToken) {
-      throw new Error('Google Ads Developer Token not configured');
-    }
+    // Developer token already validated at the start
 
     // Get customer ID (if not in profile, try to fetch it)
     let customerId = profile.google_ads_customer_id;
