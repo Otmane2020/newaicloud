@@ -238,6 +238,25 @@ export const useAutoSync = (userId: string | undefined) => {
             return;
           }
           
+          // 🔥 FIX: Ignore events if store is being disconnected (is_active = false)
+          if (connection.is_active === false) {
+            console.log('⏭️ [AutoSync] Store is being disconnected (is_active=false), skipping');
+            return;
+          }
+          
+          // 🔥 FIX: Wait 500ms and verify connection still exists (prevents false triggers during deletion)
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: stillExists } = await supabase
+            .from('shopify_connections')
+            .select('id')
+            .eq('id', connection.id)
+            .maybeSingle();
+          
+          if (!stillExists) {
+            console.log('⏭️ [AutoSync] Connection deleted during check, skipping');
+            return;
+          }
+          
           // Debounce: prevent multiple triggers within 8 seconds
           const now = Date.now();
           if (now - lastConnectionEventRef.current < 8000) {
