@@ -173,33 +173,52 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion Shopify claimed");
 
-    // 7.5 Vérifier si l'utilisateur a déjà des produits importés
+    // 7.5 Vérifier si l'utilisateur a des produits ET des collections
     const { count: existingProductsCount, error: countError } = await supabase
       .from("shopify_products")
       .select("*", { count: "exact", head: true })
       .eq("seller_id", userId);
 
+    // 🔥 CRITICAL FIX: Also check for collections
+    const { count: existingCollectionsCount, error: collectionsCountError } = await supabase
+      .from("shopify_collections")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
     // Log détaillé pour debug
-    console.log("[SHOPIFY-AUTO-AUTH] 📊 Vérification produits existants:", {
+    console.log("[SHOPIFY-AUTO-AUTH] 📊 Vérification données existantes:", {
       userId,
       existingProductsCount,
+      existingCollectionsCount,
       countError: countError?.message || null,
+      collectionsCountError: collectionsCountError?.message || null,
       isNewUser: !existingUser,
     });
 
-    // Ne déclencher l'import que pour les NOUVEAUX utilisateurs OU ceux sans produits
+    // Déclencher l'import si:
+    // - Nouvel utilisateur
+    // - OU pas de produits
+    // - OU pas de collections (même si produits existent!)
     const isNewUser = !existingUser;
-    // Gérer correctement le count: null, undefined, ou erreur = pas de produits connus
     const hasNoProducts = countError || existingProductsCount === null || existingProductsCount === 0;
+    const hasNoCollections = collectionsCountError || existingCollectionsCount === null || existingCollectionsCount === 0;
     let importTriggered = false;
 
-    if (isNewUser || hasNoProducts) {
+    if (isNewUser || hasNoProducts || hasNoCollections) {
       try {
+        const reason = isNewUser 
+          ? "nouvel utilisateur" 
+          : hasNoProducts 
+            ? "aucun produit existant"
+            : "aucune collection existante";
+            
         console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet:", {
-          reason: isNewUser ? "nouvel utilisateur" : "aucun produit existant",
+          reason,
           isNewUser,
           hasNoProducts,
+          hasNoCollections,
           productCount: existingProductsCount,
+          collectionCount: existingCollectionsCount,
         });
         
         // Appeler trigger-auto-sync pour importer tous les types de contenu
@@ -226,7 +245,7 @@ serve(async (req) => {
         console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (non-bloquant):", importError);
       }
     } else {
-      console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Utilisateur existant avec", existingProductsCount, "produits - Skip import automatique");
+      console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Utilisateur existant avec", existingProductsCount, "produits et", existingCollectionsCount, "collections - Skip import automatique");
     }
 
     // 8. Créer un client Supabase pour générer une session utilisateur

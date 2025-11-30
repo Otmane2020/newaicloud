@@ -809,6 +809,26 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
       // Lancer avec timeout
       await Promise.race([performSync(), timeoutPromise]);
 
+      // 🔥 CRITICAL: Sync product-collection relationships after import
+      if (selectedTypes.includes('products') || selectedTypes.includes('collections')) {
+        setCurrentType('linking');
+        console.log('🔗 Syncing product-collection relationships...');
+        
+        try {
+          const syncResult = await supabase.functions.invoke('sync-product-collections', {
+            body: { storeId, userId: user.id }
+          });
+          
+          if (syncResult.error) {
+            console.error('❌ Error syncing product-collections:', syncResult.error);
+          } else {
+            console.log('✅ Product-collection sync complete:', syncResult.data);
+          }
+        } catch (linkError) {
+          console.error('❌ Exception in sync-product-collections:', linkError);
+        }
+      }
+
       // Succès
       await supabase
         .from("sync_history")
