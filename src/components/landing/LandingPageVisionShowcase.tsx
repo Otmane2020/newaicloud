@@ -12,6 +12,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import sofaImage from "@/assets/sofa-product.jpg";
+import sofaWithBgImage from "@/assets/sofa-with-background.jpg";
 
 export const LandingPageVisionShowcase = () => {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ export const LandingPageVisionShowcase = () => {
                   </div>
                 </div>
                 
-                {/* Raw Text Content */}
+                {/* Content */}
                 <div className="p-4 sm:p-6 space-y-4">
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-foreground">
@@ -101,19 +102,20 @@ export const LandingPageVisionShowcase = () => {
                     </p>
                   </div>
                   
-                  {/* Raw description - plain text */}
-                  <div className="pt-2 border-t border-border">
-                    <p className="text-muted-foreground text-sm font-mono bg-muted/50 p-3 rounded-lg leading-relaxed">
-                      {labels.rawDesc}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-2">
+                  {/* Price + Button FIRST */}
+                  <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-foreground">1 299 €</span>
                     <Button size="sm" variant="secondary" className="shadow-sm">
                       {labels.buyNow}
                       <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
+                  </div>
+                  
+                  {/* Raw description - plain text AFTER */}
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-muted-foreground text-sm font-mono bg-muted/50 p-3 rounded-lg leading-relaxed">
+                      {labels.rawDesc}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -132,8 +134,8 @@ export const LandingPageVisionShowcase = () => {
                 <div className="aspect-[16/10] overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
                   <img 
-                    src={sofaImage} 
-                    alt="Premium Velvet Sofa" 
+                    src={sofaWithBgImage} 
+                    alt="Premium Velvet Sofa with AI generated background" 
                     className="w-full h-full object-cover"
                   />
                   {/* Generated Background Label */}
@@ -144,7 +146,7 @@ export const LandingPageVisionShowcase = () => {
                   </div>
                 </div>
                 
-                {/* Styled HTML Content */}
+                {/* Content */}
                 <div className="p-4 sm:p-6 space-y-4">
                   <div>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-xs mb-2">
@@ -158,7 +160,16 @@ export const LandingPageVisionShowcase = () => {
                     </p>
                   </div>
                   
-                  {/* Styled HTML Description */}
+                  {/* Price + Button FIRST */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-foreground">1 299 €</span>
+                    <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow">
+                      {labels.buyNow}
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                  
+                  {/* Styled HTML Description AFTER */}
                   <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 border border-primary/10">
                     <p className="text-foreground text-sm leading-relaxed">
                       {labels.descHtml}
@@ -176,14 +187,6 @@ export const LandingPageVisionShowcase = () => {
                         <Star className="w-3 h-3" /> {labels.feature3}
                       </span>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-2xl font-bold text-foreground">1 299 €</span>
-                    <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow">
-                      {labels.buyNow}
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
                   </div>
                 </div>
               </div>
