@@ -419,6 +419,16 @@ export default function AutoTranslationScanner() {
     filesWithIssues: number;
     filesSummary: { file: string; toasts: number; dialogs: number; total: number }[];
   } | null>(null);
+  
+  // Auto-fix all states
+  const [isFixingAll, setIsFixingAll] = useState(false);
+  const [showFixAllDialog, setShowFixAllDialog] = useState(false);
+  const [aggregatedTranslations, setAggregatedTranslations] = useState<{
+    fr: Record<string, unknown>;
+    en: Record<string, unknown>;
+    totalKeys: number;
+    issueCount: number;
+  } | null>(null);
 
   // Load history
   const loadHistory = useCallback(async () => {
@@ -549,6 +559,136 @@ export default function AutoTranslationScanner() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Deep merge utility for translation objects
+  const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
+    const result = { ...target };
+    for (const key of Object.keys(source)) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        result[key] = deepMerge(
+          (result[key] as Record<string, unknown>) || {},
+          source[key] as Record<string, unknown>
+        );
+      } else if (source[key] !== undefined && source[key] !== null) {
+        result[key] = source[key];
+      }
+    }
+    return result;
+  };
+
+  // Aggregate all translations from history and prepare for auto-fix
+  const aggregateAllTranslations = async () => {
+    setIsFixingAll(true);
+    
+    try {
+      let mergedFr: Record<string, unknown> = {};
+      let mergedEn: Record<string, unknown> = {};
+      let totalIssues = 0;
+      
+      // Aggregate from all history records
+      for (const record of history) {
+        if (record.translations_fr && typeof record.translations_fr === 'object') {
+          mergedFr = deepMerge(mergedFr, record.translations_fr);
+        }
+        if (record.translations_en && typeof record.translations_en === 'object') {
+          mergedEn = deepMerge(mergedEn, record.translations_en);
+        }
+        totalIssues += record.total_issues || 0;
+      }
+      
+      // Count total keys
+      const countKeys = (obj: Record<string, unknown>): number => {
+        let count = 0;
+        for (const value of Object.values(obj)) {
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            count += countKeys(value as Record<string, unknown>);
+          } else {
+            count++;
+          }
+        }
+        return count;
+      };
+      
+      const totalKeys = countKeys(mergedFr) + countKeys(mergedEn);
+      
+      setAggregatedTranslations({
+        fr: mergedFr,
+        en: mergedEn,
+        totalKeys,
+        issueCount: totalIssues,
+      });
+      
+      setShowFixAllDialog(true);
+      toast.success(`${totalKeys} clés de traduction agrégées`);
+    } catch (error) {
+      console.error("Aggregation error:", error);
+      toast.error("Erreur lors de l'agrégation");
+    } finally {
+      setIsFixingAll(false);
+    }
+  };
+
+  // Generate full translation file content for download
+  const generateFullTranslationFile = (translations: Record<string, unknown>, lang: 'fr' | 'en'): string => {
+    const formatObject = (obj: Record<string, unknown>, indent: number = 1): string => {
+      const spaces = '  '.repeat(indent);
+      const entries = Object.entries(obj);
+      
+      return entries.map(([key, value]) => {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          return `${spaces}${key}: {\n${formatObject(value as Record<string, unknown>, indent + 1)}\n${spaces}}`;
+        } else if (typeof value === 'string') {
+          const escapedValue = value.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          return `${spaces}${key}: "${escapedValue}"`;
+        } else {
+          return `${spaces}${key}: ${JSON.stringify(value)}`;
+        }
+      }).join(',\n');
+    };
+    
+    return `// ============================================
+// TRADUCTIONS À AJOUTER dans src/lib/translations/${lang}.ts
+// Fusionnez ces clés dans les sections existantes
+// ============================================
+
+// Ajoutez ces clés dans l'objet 'translations':
+
+${formatObject(translations)}
+
+// ============================================
+// FIN DES TRADUCTIONS À AJOUTER
+// ============================================`;
+  };
+
+  // Download translation file
+  const downloadTranslationFile = (lang: 'fr' | 'en') => {
+    if (!aggregatedTranslations) return;
+    
+    const translations = lang === 'fr' ? aggregatedTranslations.fr : aggregatedTranslations.en;
+    const content = generateFullTranslationFile(translations, lang);
+    
+    const blob = new Blob([content], { type: 'text/typescript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `translations_to_add_${lang}.ts`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Fichier ${lang}.ts téléchargé`);
+  };
+
+  // Copy all translations for a language
+  const copyAllTranslations = async (lang: 'fr' | 'en') => {
+    if (!aggregatedTranslations) return;
+    
+    const translations = lang === 'fr' ? aggregatedTranslations.fr : aggregatedTranslations.en;
+    const content = generateFullTranslationFile(translations, lang);
+    
+    await copyToClipboard(content, `all_${lang}`);
   };
 
   // Bulk scan all files in the project
@@ -849,6 +989,46 @@ export default function AutoTranslationScanner() {
                       </ScrollArea>
                     )}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Fix All Button - Main Action */}
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <Wand2 className="h-5 w-5" />
+                      🚀 Corriger Toutes les Traductions
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Agrège toutes les traductions détectées et génère les fichiers complets à télécharger
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={aggregateAllTranslations} 
+                    disabled={isFixingAll || history.length === 0}
+                    size="lg"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isFixingAll ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Agrégation...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        Générer les Traductions ({history.length} scans)
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {history.length === 0 && (
+                  <p className="mt-2 text-sm text-amber-600">
+                    ⚠️ Scannez d'abord quelques fichiers pour générer des traductions
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -1483,6 +1663,108 @@ export default function AutoTranslationScanner() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fix All Dialog */}
+      <Dialog open={showFixAllDialog} onOpenChange={setShowFixAllDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="h-6 w-6 text-green-500" />
+              🎉 Traductions Agrégées - Prêtes à Télécharger
+            </DialogTitle>
+            <DialogDescription>
+              {aggregatedTranslations && (
+                <span>
+                  {aggregatedTranslations.totalKeys} clés de traduction générées à partir de {aggregatedTranslations.issueCount} problèmes détectés
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {aggregatedTranslations && (
+            <div className="space-y-6">
+              {/* Download Actions */}
+              <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
+                <Button 
+                  onClick={() => downloadTranslationFile('fr')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  📥 Télécharger fr.ts
+                </Button>
+                <Button 
+                  onClick={() => downloadTranslationFile('en')}
+                  className="bg-red-600 hover:bg-red-700"
+                  size="lg"
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  📥 Télécharger en.ts
+                </Button>
+                <div className="flex-1" />
+                <Button 
+                  onClick={() => copyAllTranslations('fr')}
+                  variant="outline"
+                >
+                  {copiedField === "all_fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  Copier FR
+                </Button>
+                <Button 
+                  onClick={() => copyAllTranslations('en')}
+                  variant="outline"
+                >
+                  {copiedField === "all_en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  Copier EN
+                </Button>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">📋 Instructions</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Téléchargez les fichiers de traduction</li>
+                  <li>Ouvrez <code className="bg-muted px-1 rounded">src/lib/translations/fr.ts</code> et <code className="bg-muted px-1 rounded">en.ts</code></li>
+                  <li>Fusionnez les nouvelles clés dans les sections appropriées de chaque fichier</li>
+                  <li>Sauvegardez et vérifiez que l'application compile correctement</li>
+                </ol>
+              </div>
+
+              {/* Preview */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    🇫🇷 Traductions Françaises
+                    <Badge variant="secondary">{Object.keys(aggregatedTranslations.fr).length} sections</Badge>
+                  </h4>
+                  <ScrollArea className="h-[300px]">
+                    <pre className="text-xs font-mono bg-blue-500/10 p-3 rounded-lg whitespace-pre-wrap">
+                      {generateFullTranslationFile(aggregatedTranslations.fr, 'fr')}
+                    </pre>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    🇬🇧 Traductions Anglaises
+                    <Badge variant="secondary">{Object.keys(aggregatedTranslations.en).length} sections</Badge>
+                  </h4>
+                  <ScrollArea className="h-[300px]">
+                    <pre className="text-xs font-mono bg-red-500/10 p-3 rounded-lg whitespace-pre-wrap">
+                      {generateFullTranslationFile(aggregatedTranslations.en, 'en')}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              </div>
+
+              {/* Close */}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowFixAllDialog(false)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Card>
