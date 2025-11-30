@@ -51,7 +51,7 @@ interface FileCategory {
   files: { path: string; name: string }[];
 }
 
-// Comprehensive file registry organized by category
+// Comprehensive file registry organized by category - VERIFIED EXISTING FILES ONLY
 const FILE_REGISTRY: FileCategory[] = [
   {
     name: "📄 Pages",
@@ -61,136 +61,109 @@ const FILE_REGISTRY: FileCategory[] = [
       { path: "src/pages/Dashboard.tsx", name: "Dashboard" },
       { path: "src/pages/Products.tsx", name: "Products" },
       { path: "src/pages/Collections.tsx", name: "Collections" },
-      { path: "src/pages/Articles.tsx", name: "Articles" },
       { path: "src/pages/ArticleManagement.tsx", name: "Article Management" },
       { path: "src/pages/Blog.tsx", name: "Blog" },
       { path: "src/pages/BlogCampaignMonitoring.tsx", name: "Blog Campaign" },
-      { path: "src/pages/BlogOpportunities.tsx", name: "Blog Opportunities" },
       { path: "src/pages/Pricing.tsx", name: "Pricing" },
-      { path: "src/pages/Settings.tsx", name: "Settings" },
       { path: "src/pages/SuperAdmin.tsx", name: "Super Admin" },
       { path: "src/pages/Auth.tsx", name: "Auth" },
       { path: "src/pages/Onboarding.tsx", name: "Onboarding" },
-      { path: "src/pages/LandingPageEditor.tsx", name: "Landing Page Editor" },
-      { path: "src/pages/SeoAudit.tsx", name: "SEO Audit" },
-      { path: "src/pages/GoogleShoppingFeed.tsx", name: "Google Shopping Feed" },
-      { path: "src/pages/SmartPricing.tsx", name: "Smart Pricing" },
-      { path: "src/pages/AltTextGenerator.tsx", name: "Alt Text Generator" },
+      { path: "src/pages/SEO.tsx", name: "SEO" },
+      { path: "src/pages/Shopping.tsx", name: "Google Shopping" },
       { path: "src/pages/ShopifyApp.tsx", name: "Shopify App" },
-    ]
-  },
-  {
-    name: "🍞 Toast Messages",
-    icon: <MessageSquare className="h-4 w-4" />,
-    files: [
-      { path: "src/components/shopify/ShopifyConnectionWizard.tsx", name: "Shopify Connection Wizard" },
-      { path: "src/components/shopify/ShopifyInstallGuide.tsx", name: "Shopify Install Guide" },
-      { path: "src/components/shopify/sync/useSyncToShopify.ts", name: "Sync to Shopify Hook" },
-      { path: "src/components/shopify/sync/useShopifySync.ts", name: "Shopify Sync Hook" },
-      { path: "src/components/blog/BlogWizard.tsx", name: "Blog Wizard" },
-      { path: "src/components/blog/BlogOpportunityCard.tsx", name: "Blog Opportunity Card" },
-      { path: "src/components/seo/ProductSeoTab.tsx", name: "Product SEO Tab" },
-      { path: "src/components/seo/CollectionSeoOptimizer.tsx", name: "Collection SEO Optimizer" },
-      { path: "src/components/landing/LandingPageGenerator.tsx", name: "Landing Page Generator" },
-      { path: "src/components/alt-text/AltTextBulkActions.tsx", name: "Alt Text Bulk Actions" },
-      { path: "src/components/pricing/PricingCheckout.tsx", name: "Pricing Checkout" },
-      { path: "src/components/pricing/SubscriptionStatus.tsx", name: "Subscription Status" },
-      { path: "src/components/integration/StoreSelector.tsx", name: "Store Selector" },
-    ]
-  },
-  {
-    name: "💬 Dialogs & Modals",
-    icon: <Bell className="h-4 w-4" />,
-    files: [
-      { path: "src/components/dialogs/ConfirmDialog.tsx", name: "Confirm Dialog" },
-      { path: "src/components/dialogs/DeleteConfirmDialog.tsx", name: "Delete Confirm Dialog" },
-      { path: "src/components/shopify/DisconnectStoreDialog.tsx", name: "Disconnect Store Dialog" },
-      { path: "src/components/blog/ArticlePreviewDialog.tsx", name: "Article Preview Dialog" },
-      { path: "src/components/seo/SeoPreviewDialog.tsx", name: "SEO Preview Dialog" },
-      { path: "src/components/products/ProductDetailDialog.tsx", name: "Product Detail Dialog" },
-      { path: "src/components/settings/ApiKeyDialog.tsx", name: "API Key Dialog" },
-    ]
-  },
-  {
-    name: "🛒 E-commerce Components",
-    icon: <ShoppingCart className="h-4 w-4" />,
-    files: [
-      { path: "src/components/products/ProductCard.tsx", name: "Product Card" },
-      { path: "src/components/products/ProductTable.tsx", name: "Product Table" },
-      { path: "src/components/products/ProductFilters.tsx", name: "Product Filters" },
-      { path: "src/components/products/ProductBulkActions.tsx", name: "Product Bulk Actions" },
-      { path: "src/components/collections/CollectionCard.tsx", name: "Collection Card" },
-      { path: "src/components/collections/CollectionTable.tsx", name: "Collection Table" },
-      { path: "src/components/pricing/PricingCard.tsx", name: "Pricing Card" },
-      { path: "src/components/pricing/PricingTable.tsx", name: "Pricing Table" },
-      { path: "src/components/smart-pricing/SmartPricingCard.tsx", name: "Smart Pricing Card" },
+      { path: "src/pages/Integration.tsx", name: "Integration" },
+      { path: "src/pages/ProductDetail.tsx", name: "Product Detail" },
+      { path: "src/pages/Chat.tsx", name: "Chat" },
     ]
   },
   {
     name: "✍️ Blog & Content",
     icon: <PenTool className="h-4 w-4" />,
     files: [
-      { path: "src/components/blog/ArticleCard.tsx", name: "Article Card" },
-      { path: "src/components/blog/ArticleEditor.tsx", name: "Article Editor" },
-      { path: "src/components/blog/ArticleTable.tsx", name: "Article Table" },
+      { path: "src/components/blog/BlogWizard.tsx", name: "Blog Wizard" },
+      { path: "src/components/blog/ArticleWizard.tsx", name: "Article Wizard" },
+      { path: "src/components/blog/ArticleManagement.tsx", name: "Article Management" },
+      { path: "src/components/blog/ArticlePreviewDialog.tsx", name: "Article Preview Dialog" },
       { path: "src/components/blog/CampaignWizard.tsx", name: "Campaign Wizard" },
-      { path: "src/components/blog/BlogCampaignCard.tsx", name: "Blog Campaign Card" },
-      { path: "src/components/blog/KeywordSelector.tsx", name: "Keyword Selector" },
-      { path: "src/components/landing/LandingPagePreview.tsx", name: "Landing Page Preview" },
-      { path: "src/components/landing/LandingPageActions.tsx", name: "Landing Page Actions" },
+      { path: "src/components/blog/BlogOpportunities.tsx", name: "Blog Opportunities" },
+      { path: "src/components/blog/QuickPress.tsx", name: "Quick Press" },
+      { path: "src/components/blog/NetlinkingTable.tsx", name: "Netlinking Table" },
     ]
   },
   {
     name: "🔍 SEO Components",
     icon: <Globe className="h-4 w-4" />,
     files: [
-      { path: "src/components/seo/SeoScoreCard.tsx", name: "SEO Score Card" },
-      { path: "src/components/seo/SeoOptimizer.tsx", name: "SEO Optimizer" },
-      { path: "src/components/seo/SeoAuditCard.tsx", name: "SEO Audit Card" },
-      { path: "src/components/seo/MetaTagEditor.tsx", name: "Meta Tag Editor" },
-      { path: "src/components/seo/GooglePreview.tsx", name: "Google Preview" },
-      { path: "src/components/seo/HomepageSeoAudit.tsx", name: "Homepage SEO Audit" },
-      { path: "src/components/alt-text/AltTextCard.tsx", name: "Alt Text Card" },
-      { path: "src/components/alt-text/AltTextEditor.tsx", name: "Alt Text Editor" },
+      { path: "src/components/seo/SeoOptimization.tsx", name: "SEO Optimization" },
+      { path: "src/components/seo/SeoAuditDashboard.tsx", name: "SEO Audit Dashboard" },
+      { path: "src/components/seo/SeoAuditReports.tsx", name: "SEO Audit Reports" },
+      { path: "src/components/seo/HomePageSeo.tsx", name: "Homepage SEO" },
+      { path: "src/components/seo/HomePageSeoAudit.tsx", name: "Homepage SEO Audit" },
+      { path: "src/components/seo/GoogleSearchPreview.tsx", name: "Google Search Preview" },
+      { path: "src/components/seo/GoogleShopping.tsx", name: "Google Shopping" },
+      { path: "src/components/seo/GoogleMerchant.tsx", name: "Google Merchant" },
+      { path: "src/components/seo/SmartPricingAI.tsx", name: "Smart Pricing AI" },
+      { path: "src/components/seo/TagOptimization.tsx", name: "Tag Optimization" },
+      { path: "src/components/seo/CollectionOptimization.tsx", name: "Collection Optimization" },
+      { path: "src/components/seo/PageOptimization.tsx", name: "Page Optimization" },
+      { path: "src/components/seo/SeoAltImage.tsx", name: "SEO Alt Image" },
+      { path: "src/components/seo/SeoAltImageList.tsx", name: "SEO Alt Image List" },
     ]
   },
   {
-    name: "⚙️ Settings & Admin",
-    icon: <Settings className="h-4 w-4" />,
-    files: [
-      { path: "src/components/settings/SettingsForm.tsx", name: "Settings Form" },
-      { path: "src/components/settings/NotificationSettings.tsx", name: "Notification Settings" },
-      { path: "src/components/settings/AutomationSettings.tsx", name: "Automation Settings" },
-      { path: "src/components/admin/UserManagement.tsx", name: "User Management" },
-      { path: "src/components/admin/SystemHealthCheck.tsx", name: "System Health Check" },
-      { path: "src/components/admin/EmailInbox.tsx", name: "Email Inbox" },
-      { path: "src/components/admin/AdminDashboard.tsx", name: "Admin Dashboard" },
-    ]
-  },
-  {
-    name: "🎨 UI Components",
+    name: "🎨 Dashboard Components",
     icon: <Sparkles className="h-4 w-4" />,
     files: [
-      { path: "src/components/dashboard/DashboardHeader.tsx", name: "Dashboard Header" },
-      { path: "src/components/dashboard/DashboardStats.tsx", name: "Dashboard Stats" },
-      { path: "src/components/dashboard/QuickActions.tsx", name: "Quick Actions" },
-      { path: "src/components/layout/Sidebar.tsx", name: "Sidebar" },
-      { path: "src/components/layout/Header.tsx", name: "Header" },
-      { path: "src/components/layout/Footer.tsx", name: "Footer" },
-      { path: "src/components/common/EmptyState.tsx", name: "Empty State" },
-      { path: "src/components/common/LoadingState.tsx", name: "Loading State" },
-      { path: "src/components/common/ErrorState.tsx", name: "Error State" },
+      { path: "src/components/dashboard/MetricCard.tsx", name: "Metric Card" },
+      { path: "src/components/dashboard/QuickActionCard.tsx", name: "Quick Action Card" },
+      { path: "src/components/dashboard/UsageWidget.tsx", name: "Usage Widget" },
+      { path: "src/components/dashboard/UsageLimits.tsx", name: "Usage Limits" },
+      { path: "src/components/dashboard/SubscriptionManagement.tsx", name: "Subscription Management" },
+      { path: "src/components/dashboard/ShopifyConnection.tsx", name: "Shopify Connection" },
+      { path: "src/components/dashboard/AIRecommendations.tsx", name: "AI Recommendations" },
+      { path: "src/components/dashboard/SeoScoreGauge.tsx", name: "SEO Score Gauge" },
+      { path: "src/components/dashboard/AccountSettings.tsx", name: "Account Settings" },
     ]
   },
   {
-    name: "🔗 Integrations",
+    name: "🔗 Integration Components",
     icon: <FolderOpen className="h-4 w-4" />,
     files: [
-      { path: "src/components/integration/GoogleAdsIntegration.tsx", name: "Google Ads Integration" },
-      { path: "src/components/integration/GoogleMerchantIntegration.tsx", name: "Google Merchant" },
-      { path: "src/components/integration/GoogleSearchConsoleIntegration.tsx", name: "Google Search Console" },
-      { path: "src/components/chat/ChatInterface.tsx", name: "Chat Interface" },
-      { path: "src/components/chat/ChatSettings.tsx", name: "Chat Settings" },
+      { path: "src/components/integration/ShopifyConnectionWizard.tsx", name: "Shopify Connection Wizard" },
+      { path: "src/components/integration/ShopifyConnectionDialog.tsx", name: "Shopify Connection Dialog" },
+      { path: "src/components/integration/ShopifyIntegrationTabs.tsx", name: "Shopify Integration Tabs" },
+      { path: "src/components/integration/ShopifySyncSettings.tsx", name: "Shopify Sync Settings" },
+      { path: "src/components/integration/SyncProgressDialog.tsx", name: "Sync Progress Dialog" },
+      { path: "src/components/integration/SyncResultDialog.tsx", name: "Sync Result Dialog" },
+    ]
+  },
+  {
+    name: "🎬 Landing Pages",
+    icon: <Layout className="h-4 w-4" />,
+    files: [
+      { path: "src/components/landing/LandingPagePreview.tsx", name: "Landing Page Preview" },
+      { path: "src/components/landing/LandingPageVisionShowcase.tsx", name: "Landing Vision Showcase" },
+      { path: "src/components/landing/PreferencesConfigurator.tsx", name: "Preferences Configurator" },
+    ]
+  },
+  {
+    name: "💳 Pricing Components",
+    icon: <ShoppingCart className="h-4 w-4" />,
+    files: [
+      { path: "src/components/pricing/PricingCard.tsx", name: "Pricing Card" },
+    ]
+  },
+  {
+    name: "⚙️ Admin Components",
+    icon: <Settings className="h-4 w-4" />,
+    files: [
+      { path: "src/components/admin/EmailInbox.tsx", name: "Email Inbox" },
+      { path: "src/components/admin/SystemStatusDashboard.tsx", name: "System Status Dashboard" },
+      { path: "src/components/admin/SystemEventLogs.tsx", name: "System Event Logs" },
+      { path: "src/components/admin/AdminToolbox.tsx", name: "Admin Toolbox" },
+      { path: "src/components/admin/GoogleAdsAdmin.tsx", name: "Google Ads Admin" },
+      { path: "src/components/admin/EmailTemplates.tsx", name: "Email Templates" },
+      { path: "src/components/admin/UserInsightPanel.tsx", name: "User Insight Panel" },
     ]
   }
 ];
