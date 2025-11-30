@@ -201,16 +201,17 @@ serve(async (req) => {
       try {
         console.log(`📥 Importing ${type}...`);
 
-        // 🔥 FIX: Update sync_type BEFORE import so frontend knows current step
+        // 🔥 FIX: Update sync_type AND items_synced BEFORE import so frontend knows current step
         // This allows progress bar to advance (products=20%, collections=50%, etc.)
         await supabase
           .from("sync_history")
           .update({ 
             sync_type: type,
+            items_synced: totalImported,  // 🔥 CRITICAL: Include current count so frontend shows progress
             duration_ms: Date.now() - startTime
           })
           .eq("id", historyEntry.id);
-        console.log(`📊 Starting ${type} import...`);
+        console.log(`📊 Starting ${type} import... (${totalImported} items so far)`);
 
         // 🔥 FIX: Pass syncHistoryId to all import functions for live progress updates
         const baseBody = {
