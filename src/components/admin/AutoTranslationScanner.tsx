@@ -262,12 +262,32 @@ export default function AutoTranslationScanner() {
     loadHistory();
   }, [loadHistory]);
 
-  const handleFileClick = (file: { path: string; name: string }) => {
+  const handleFileClick = async (file: { path: string; name: string }) => {
     setSelectedFile(file);
     setFileName(file.path);
     setCode("");
     setResult(null);
     setIsDialogOpen(true);
+    
+    // Auto-fetch file content from GitHub
+    try {
+      toast.info(`Chargement de ${file.name}...`);
+      const { data, error } = await supabase.functions.invoke("fetch-file-content", {
+        body: { filePath: file.path }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.content) {
+        setCode(data.content);
+        toast.success(`${file.name} chargé ! Cliquez sur Analyser.`);
+      } else {
+        toast.error("Fichier vide ou non trouvé");
+      }
+    } catch (error) {
+      console.error("Error fetching file:", error);
+      toast.error("Impossible de charger le fichier automatiquement. Collez le code manuellement.");
+    }
   };
 
   const toggleCategory = (categoryName: string) => {
