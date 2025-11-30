@@ -139,7 +139,7 @@ serve(async (req) => {
       LIMIT 500
     `;
 
-    const finalUrl = `https://googleads.googleapis.com/v17/customers/${customerId}:searchStream`;
+    const finalUrl = `https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:searchStream`;
     console.log('[import-google-ads-search-terms] FINAL URL:', finalUrl);
 
     const googleAdsResponse = await fetch(finalUrl,
