@@ -444,6 +444,12 @@ export default function AutoTranslationScanner() {
   // NEW: Auto GitHub scan states
   const [isAutoScanning, setIsAutoScanning] = useState(false);
   const [autoScanProgress, setAutoScanProgress] = useState("");
+  const [autoScanError, setAutoScanError] = useState<{
+    error: string;
+    errorDetails?: string;
+    suggestion?: string;
+    diagnostics?: Record<string, unknown>;
+  } | null>(null);
   const [autoScanResults, setAutoScanResults] = useState<{
     totalFiles: number;
     filesScanned: number;
@@ -895,6 +901,7 @@ ${formatObject(translations)}
     setIsAutoScanning(true);
     setAutoScanProgress("Connexion à GitHub...");
     setAutoScanResults(null);
+    setAutoScanError(null);
 
     try {
       toast.info("🔍 Scanner automatique démarré - lecture des fichiers depuis GitHub...");
@@ -906,8 +913,28 @@ ${formatObject(translations)}
 
       if (error) throw error;
 
+      // Check for error in response
       if (data.error) {
-        throw new Error(data.error);
+        setAutoScanError({
+          error: data.error,
+          errorDetails: data.errorDetails,
+          suggestion: data.suggestion,
+          diagnostics: data.diagnostics,
+        });
+        toast.error(`GitHub: ${data.error}`);
+        return;
+      }
+
+      // Check if no files were scanned
+      if (data.filesScanned === 0) {
+        setAutoScanError({
+          error: "Aucun fichier scanné",
+          errorDetails: "Le scan GitHub n'a trouvé aucun fichier à analyser.",
+          suggestion: "Utilisez le mode manuel (copier-coller) ci-dessous.",
+          diagnostics: data.diagnostics,
+        });
+        toast.warning("Aucun fichier scanné - utilisez le mode manuel");
+        return;
       }
 
       setAutoScanResults({
@@ -946,6 +973,10 @@ ${formatObject(translations)}
     } catch (error) {
       console.error("Auto GitHub scan error:", error);
       setAutoScanProgress("");
+      setAutoScanError({
+        error: error instanceof Error ? error.message : "Erreur inconnue",
+        suggestion: "Utilisez le mode manuel (copier-coller) ci-dessous.",
+      });
       toast.error(`Erreur: ${error instanceof Error ? error.message : "Erreur de scan"}`);
     } finally {
       setIsAutoScanning(false);
@@ -1165,6 +1196,41 @@ ${formatObject(translations)}
                     </div>
                   )}
                 </div>
+
+                {/* Error Display */}
+                {autoScanError && (
+                  <Card className="border-destructive/50 bg-destructive/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        ❌ Erreur de scan GitHub
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-sm">
+                        <strong>Erreur:</strong> {autoScanError.error}
+                      </div>
+                      {autoScanError.errorDetails && (
+                        <div className="text-sm text-muted-foreground">
+                          <strong>Détails:</strong> {autoScanError.errorDetails}
+                        </div>
+                      )}
+                      {autoScanError.diagnostics && (
+                        <div className="text-xs font-mono bg-muted rounded p-2">
+                          <strong>Diagnostics:</strong>
+                          <pre>{JSON.stringify(autoScanError.diagnostics, null, 2)}</pre>
+                        </div>
+                      )}
+                      {autoScanError.suggestion && (
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3">
+                          <span className="font-medium text-amber-700 dark:text-amber-400">
+                            💡 {autoScanError.suggestion}
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Auto Scan Results */}
                 {autoScanResults && (
