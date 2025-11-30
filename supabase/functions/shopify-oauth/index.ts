@@ -190,7 +190,7 @@ serve(async (req) => {
       // 🔍 Fetch real commercial name from Shopify API
       let realCommercialName = shop;
       try {
-        const shopInfoResponse = await fetch(`https://${shop}/admin/api/2025-07/shop.json`, {
+        const shopInfoResponse = await fetch(`https://${shop}/admin/api/2025-01/shop.json`, {
           headers: { 'X-Shopify-Access-Token': accessToken }
         });
         if (shopInfoResponse.ok) {

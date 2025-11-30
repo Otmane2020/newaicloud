@@ -21,7 +21,7 @@ serve(async (req) => {
     // Validate credentials by calling Shopify API
     console.log(`[VALIDATE-SHOPIFY] Validating credentials for store: ${storeUrl}`);
     
-    const shopInfoResponse = await fetch(`https://${storeUrl}/admin/api/2025-07/shop.json`, {
+    const shopInfoResponse = await fetch(`https://${storeUrl}/admin/api/2025-01/shop.json`, {
       headers: {
         "X-Shopify-Access-Token": accessToken,
         "Content-Type": "application/json",
