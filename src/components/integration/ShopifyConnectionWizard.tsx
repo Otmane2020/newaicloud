@@ -96,22 +96,41 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       return;
     }
 
-    setManualLoading(true);
+    // Fermer le dialog immédiatement et afficher un toast de chargement
+    const savedShopName = shopName.trim();
+    const savedApiKey = apiKey.trim();
+    const savedApiSecret = apiSecret.trim();
+    
+    onOpenChange(false);
+    setShopName("");
+    setApiKey("");
+    setApiSecret("");
+    setView('initial');
+
+    // Afficher le toast de connexion en cours
+    const loadingToastId = toast.loading(t.shopifyConnection.connecting);
+
     try {
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error(t.wizards.shopify.mustBeConnected);
+      if (!currentUser) {
+        toast.dismiss(loadingToastId);
+        toast.error(t.wizards.shopify.mustBeConnected);
+        return;
+      }
 
       // Vérification directe du nombre réel de boutiques dans la base
       const { data: currentStores, error: countError } = await supabase
         .from("shopify_connections")
         .select("id", { count: 'exact' })
-        .eq("user_id", user.id);
+        .eq("user_id", currentUser.id);
 
       if (countError) {
         console.error('Error counting stores:', countError);
-        throw new Error(t.wizards.shopify.manualConnectionError);
+        toast.dismiss(loadingToastId);
+        toast.error(t.wizards.shopify.manualConnectionError);
+        return;
       }
 
       const currentStoreCount = currentStores?.length || 0;
@@ -119,10 +138,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
       // Vérifier la limite du plan
       if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
+        toast.dismiss(loadingToastId);
         toast.error(t.wizards.shopify.storeLimit, {
           description: `${t.wizards.shopify.storeLimitDescription} (${currentStoreCount}/${maxStores})`,
         });
-        setManualLoading(false);
         return;
       }
 
@@ -130,17 +149,17 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const { data: existingStore } = await supabase
         .from("shopify_connections")
         .select("id")
-        .eq("api_key", apiKey)
+        .eq("api_key", savedApiKey)
         .maybeSingle();
 
       if (existingStore) {
+        toast.dismiss(loadingToastId);
         toast.error(t.wizards.shopify.storeAlreadyConnected);
-        setManualLoading(false);
         return;
       }
 
       // 2. Tester les credentials via edge function (pour éviter CORS)
-      const cleanShopName = shopName.trim().replace('.myshopify.com', '');
+      const cleanShopName = savedShopName.replace('.myshopify.com', '');
       const shopDomain = `${cleanShopName}.myshopify.com`;
       
       console.log('📞 Testing credentials for:', shopDomain);
@@ -148,19 +167,21 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const { data: testData, error: testError } = await supabase.functions.invoke('test-shopify-credentials', {
         body: {
           shopDomain,
-          apiKey,
-          accessToken: apiSecret
+          apiKey: savedApiKey,
+          accessToken: savedApiSecret
         }
       });
       
       if (testError || !testData?.success) {
         console.error('❌ Credential test failed:', testError || testData?.error);
-        throw new Error(testData?.error || t.wizards.shopify.invalidCredentials);
+        toast.dismiss(loadingToastId);
+        toast.error(testData?.error || t.wizards.shopify.invalidCredentials);
+        return;
       }
 
       console.log('✅ Credentials valid for shop:', testData.shop?.name);
       const verifiedShopDomain = testData.shop?.domain || shopDomain;
-      const commercialShopName = testData.shop?.name || shopName;
+      const commercialShopName = testData.shop?.name || savedShopName;
 
       // Check permissions
       const permissions = testData.permissions || {};
@@ -175,18 +196,25 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const { data: newConnection, error: insertError } = await supabase
         .from("shopify_connections")
         .insert({
-          user_id: user.id,
+          user_id: currentUser.id,
           store_url: verifiedShopDomain,
           store_name: commercialShopName,
-          api_key: apiKey,
-          access_token: apiSecret,
+          api_key: savedApiKey,
+          access_token: savedApiSecret,
           connection_type: "api_keys",
           available_scopes: permissions,
         })
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        toast.dismiss(loadingToastId);
+        toast.error(t.shopifyConnection.connectionFailed);
+        return;
+      }
+
+      // Dismiss loading toast et afficher succès
+      toast.dismiss(loadingToastId);
 
       // Show warning if permissions are missing
       if (missingPermissions.length > 0) {
@@ -218,18 +246,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       }
 
       onSuccess?.();
-      onOpenChange(false);
-      
-      // Réinitialiser le formulaire
-      setShopName("");
-      setApiKey("");
-      setApiSecret("");
-      setView('initial');
     } catch (error: any) {
       console.error("Error during manual connection:", error);
+      toast.dismiss(loadingToastId);
       toast.error(error.message || t.shopifyConnection.connectionFailed);
-    } finally {
-      setManualLoading(false);
     }
   };
 
@@ -430,20 +450,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
             <Button
               onClick={handleManualConnect}
-              disabled={manualLoading}
               className="w-full"
             >
-              {manualLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t.shopifyConnection.connecting}
-                </>
-              ) : (
-                <>
-                  <Key className="mr-2 h-4 w-4" />
-                  {t.shopifyConnection.connectWithApiKeys}
-                </>
-              )}
+              <Key className="mr-2 h-4 w-4" />
+              {t.shopifyConnection.connectWithApiKeys}
             </Button>
           </div>
         )}
