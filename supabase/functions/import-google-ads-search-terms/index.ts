@@ -139,8 +139,10 @@ serve(async (req) => {
       LIMIT 500
     `;
 
-    const googleAdsResponse = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`,
+    const finalUrl = `https://googleads.googleapis.com/v17/customers/${customerId}:searchStream`;
+    console.log('[import-google-ads-search-terms] FINAL URL:', finalUrl);
+
+    const googleAdsResponse = await fetch(finalUrl,
       {
         method: "POST",
         headers: {
@@ -236,9 +238,10 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

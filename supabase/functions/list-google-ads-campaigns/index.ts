@@ -196,7 +196,10 @@ Deno.serve(async (req) => {
       ORDER BY campaign.name
     `;
 
-    const adsResponse = await fetch(`https://googleads.googleapis.com/v17/customers/${normalizedCustomerId}/googleAds:searchStream`, {
+    const adsUrl = `https://googleads.googleapis.com/v17/customers/${normalizedCustomerId}:searchStream`;
+    console.log('[list-google-ads-campaigns] FINAL URL:', adsUrl);
+
+    const adsResponse = await fetch(adsUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
