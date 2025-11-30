@@ -13,12 +13,13 @@ interface SyncData {
 }
 
 const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; progress: number }> = {
-  products: { icon: Package, label: 'Produits', progress: 25 },
-  collections: { icon: FileText, label: 'Collections', progress: 50 },
-  pages: { icon: FileText, label: 'Pages', progress: 65 },
-  articles: { icon: Newspaper, label: 'Articles', progress: 80 },
+  products: { icon: Package, label: 'Produits', progress: 40 },
+  collections: { icon: FileText, label: 'Collections', progress: 55 },
+  pages: { icon: FileText, label: 'Pages', progress: 70 },
+  articles: { icon: Newspaper, label: 'Articles', progress: 85 },
   images: { icon: Image, label: 'Images', progress: 95 },
   full: { icon: Package, label: 'Import complet', progress: 50 },
+  completed: { icon: CheckCircle2, label: 'Terminé', progress: 100 },
 };
 
 export function AutoSyncProgressDialog() {
@@ -71,12 +72,12 @@ export function AutoSyncProgressDialog() {
 
       if (error || !data) return null;
 
-      // Auto-complete syncs stuck for more than 5 minutes
+      // Auto-complete syncs stuck for more than 2 minutes - show 95% then close
       if (data.status === 'running' && data.started_at) {
         const startedAt = new Date(data.started_at).getTime();
-        const fiveMinutesAgo = Date.now() - 300000;
-        if (startedAt < fiveMinutesAgo) {
-          console.log('⚠️ Sync stuck for >5min, auto-completing:', data.id);
+        const twoMinutesAgo = Date.now() - 120000; // 2 minutes
+        if (startedAt < twoMinutesAgo) {
+          console.log('⚠️ Sync running >2min, auto-completing:', data.id);
           // Mark as completed in DB
           await supabase
             .from('sync_history')
@@ -86,6 +87,7 @@ export function AutoSyncProgressDialog() {
               completed_at: new Date().toISOString()
             })
             .eq('id', data.id);
+          // Return completed status - dialog will show 95% then close
           return { ...data, status: 'success', sync_type: 'completed' } as SyncData;
         }
       }
