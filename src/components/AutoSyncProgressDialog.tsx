@@ -1,10 +1,7 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { Button } from '@/components/ui/button';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
-import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2 } from 'lucide-react';
+import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
 // Map sync types to progress percentages
@@ -23,30 +20,21 @@ export function AutoSyncProgressDialog() {
   const location = useLocation();
   const { t, tf } = useTranslation();
   const [forceClosed, setForceClosed] = React.useState(false);
-  const [showCloseButton, setShowCloseButton] = React.useState(false);
 
   // Reset states when a new sync starts
   React.useEffect(() => {
     if (isSyncing && !isCompleted) {
       setForceClosed(false);
-      setShowCloseButton(false);
-      
-      // Show close button after 30 seconds if still syncing
-      const closeButtonTimer = setTimeout(() => {
-        setShowCloseButton(true);
-      }, 30000);
-      
-      return () => clearTimeout(closeButtonTimer);
     }
   }, [isSyncing, isCompleted]);
 
-  // Auto-close 2 seconds after completion
+  // Auto-close 3 seconds after completion
   React.useEffect(() => {
     if (isCompleted) {
       const autoCloseTimer = setTimeout(() => {
         setForceClosed(true);
         endSync();
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(autoCloseTimer);
     }
   }, [isCompleted, endSync]);
@@ -63,7 +51,6 @@ export function AutoSyncProgressDialog() {
 
   const handleClose = () => {
     setForceClosed(true);
-    endSync();
   };
 
   // Progress based on sync_type (real-time from backend)
@@ -71,22 +58,22 @@ export function AutoSyncProgressDialog() {
 
   const getIcon = (type: string) => {
     if (isCompleted) {
-      return <CheckCircle2 className="w-6 h-6 text-primary-foreground" />;
+      return <CheckCircle2 className="w-5 h-5 text-green-500" />;
     }
     switch (type) {
       case 'products':
       case 'costs':
-        return <Package className="w-6 h-6" />;
+        return <Package className="w-5 h-5 text-primary" />;
       case 'collections':
-        return <FolderOpen className="w-6 h-6" />;
+        return <FolderOpen className="w-5 h-5 text-primary" />;
       case 'pages':
-        return <FileText className="w-6 h-6" />;
+        return <FileText className="w-5 h-5 text-primary" />;
       case 'articles':
-        return <Newspaper className="w-6 h-6" />;
+        return <Newspaper className="w-5 h-5 text-primary" />;
       case 'images':
-        return <Image className="w-6 h-6" />;
+        return <Image className="w-5 h-5 text-primary" />;
       default:
-        return <Package className="w-6 h-6" />;
+        return <Package className="w-5 h-5 text-primary" />;
     }
   };
 
@@ -96,106 +83,70 @@ export function AutoSyncProgressDialog() {
     return types[type] || type;
   };
 
+  if (!shouldShow) return null;
+
   return (
-    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => { if (!isCompleted) e.preventDefault(); }}>
-        <VisuallyHidden>
-          <DialogTitle>{t.dialogs.autoSync.title}</DialogTitle>
-          <DialogDescription>{t.dialogs.autoSync.pleaseWait}</DialogDescription>
-        </VisuallyHidden>
-        <div className="flex flex-col items-center justify-center py-8 space-y-6">
-          {/* Icon with animation */}
-          <div className="relative">
-            {!isCompleted && (
-              <div className="absolute inset-0 animate-ping">
-                <div className="w-20 h-20 rounded-full bg-primary/20" />
-              </div>
-            )}
-            <div className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-glow transition-all duration-500 ${
+    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="bg-card border border-border rounded-xl shadow-lg p-4 min-w-[280px] max-w-[320px]">
+        {/* Header with close button */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
               isCompleted 
-                ? 'bg-gradient-to-br from-green-500 to-green-600 scale-110' 
-                : 'bg-gradient-to-br from-primary to-primary-dark'
+                ? 'bg-green-100 dark:bg-green-950/50' 
+                : 'bg-primary/10'
             }`}>
-              {getIcon(currentType)}
-            </div>
-          </div>
-
-          {/* Title and status */}
-          <div className="text-center space-y-2">
-            <h3 className="text-xl font-semibold">
-              {isCompleted 
-                ? t.dialogs.autoSync.syncComplete
-                : t.dialogs.autoSync.title
-              }
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {storeName || t.dialogs.autoSync.storeName}
-            </p>
-            
-            {isCompleted ? (
-              <div className="flex flex-col items-center justify-center gap-3 pt-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-950/30 rounded-full">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                    {tf('dialogs.autoSync.itemsImported', { count: itemsSynced })}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t.dialogs.autoSync.successMessage}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span className="text-sm font-medium">
-                  {tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full max-w-xs space-y-2">
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-700 ease-out ${
-                  isCompleted 
-                    ? 'bg-gradient-to-r from-green-500 to-green-600' 
-                    : 'bg-gradient-to-r from-primary to-primary-dark'
-                }`}
-                style={{ width: `${progress}%` }} 
-              />
-            </div>
-            <p className="text-xs text-center text-muted-foreground">
-              {isCompleted 
-                ? t.dialogs.autoSync.successMessage
-                : `${getTypeLabel(currentType)} • ${progress}%`
-              }
-            </p>
-          </div>
-
-          {/* Footer message */}
-          {isCompleted ? (
-            <Button onClick={handleClose} className="mt-2">
-              {t.dialogs.autoSync.closeButton}
-            </Button>
-          ) : (
-            <div className="text-center max-w-xs space-y-3">
-              <p className="text-xs text-muted-foreground">{t.dialogs.autoSync.pleaseWait}</p>
-              {showCloseButton && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleClose}
-                  className="text-xs"
-                >
-                  {t.dialogs.autoSync.closeButton || 'Close'}
-                </Button>
+              {isCompleted ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              ) : (
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
               )}
             </div>
-          )}
+            <div>
+              <p className="font-medium text-sm text-foreground">
+                {isCompleted ? t.dialogs.autoSync.syncComplete : t.dialogs.autoSync.title}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {storeName || t.dialogs.autoSync.storeName}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Progress section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5">
+              {getIcon(currentType)}
+              <span className="text-muted-foreground">
+                {isCompleted 
+                  ? tf('dialogs.autoSync.itemsImported', { count: itemsSynced })
+                  : tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })
+                }
+              </span>
+            </div>
+            <span className="font-medium text-foreground">{progress}%</span>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-700 ease-out ${
+                isCompleted 
+                  ? 'bg-green-500' 
+                  : 'bg-primary'
+              }`}
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
