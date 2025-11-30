@@ -153,13 +153,14 @@ serve(async (req) => {
       .replace(/\.myshopify\.com.*$/, "")
       .replace(/\/$/, "");
 
-    // Create sync history entry
+    // Create sync history entry - 🔥 FIX: Use "products" instead of "import" so frontend recognizes the type
     const { data: historyEntry, error: historyError } = (await supabase
       .from("sync_history")
       .insert({
         user_id: user_id,
         store_id: connection.id,
-        sync_type: "import",
+        sync_type: "products",    // ✅ Frontend recognizes this type (not "import")
+        items_synced: 0,          // ✅ Explicit initial value
         content_types: importTypes,
         status: "running",
       })
