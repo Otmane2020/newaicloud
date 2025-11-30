@@ -451,3 +451,6 @@ verify_jwt = true
 [functions.analyze-translation-issues]
 verify_jwt = true
 
+[functions.generate-video-script]
+verify_jwt = true
+

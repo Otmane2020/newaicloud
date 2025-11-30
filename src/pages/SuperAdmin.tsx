@@ -26,6 +26,7 @@ import { GoogleAdsAdmin } from '@/components/admin/GoogleAdsAdmin';
 import { BlogSeoManagementAdmin } from '@/components/admin/BlogSeoManagementAdmin';
 import CodeTranslationAnalyzer from '@/components/admin/CodeTranslationAnalyzer';
 import AutoTranslationScanner from '@/components/admin/AutoTranslationScanner';
+import VideoAdsStudio from '@/components/admin/VideoAdsStudio';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -849,6 +850,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'auto-translation-scanner' && (
         <AutoTranslationScanner />
+      )}
+
+      {activeTab === 'video-ads' && (
+        <VideoAdsStudio />
       )}
     </div>
   );
