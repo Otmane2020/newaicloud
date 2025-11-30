@@ -55,10 +55,10 @@ interface FileCategory {
   files: string[];
 }
 
-// Registry of important files to scan
+// Registry of important files to scan - COMPREHENSIVE LIST
 const FILE_REGISTRY: FileCategory[] = [
   {
-    name: "Pages",
+    name: "Pages Principales",
     icon: <Layout className="h-4 w-4" />,
     files: [
       "src/pages/Index.tsx",
@@ -71,6 +71,12 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/pages/Pricing.tsx",
       "src/pages/Auth.tsx",
       "src/pages/Onboarding.tsx",
+      "src/pages/SuperAdmin.tsx",
+      "src/pages/LandingPages.tsx",
+      "src/pages/Blog.tsx",
+      "src/pages/Demo.tsx",
+      "src/pages/ShopifyApp.tsx",
+      "src/pages/NotFound.tsx",
     ],
   },
   {
@@ -81,6 +87,9 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/components/blog/BlogOpportunities.tsx",
       "src/components/blog/BlogCampaignMonitoring.tsx",
       "src/components/blog/OpportunitiesSettings.tsx",
+      "src/components/blog/ArticleEditor.tsx",
+      "src/components/blog/ArticlePreview.tsx",
+      "src/components/blog/CampaignWizard.tsx",
     ],
   },
   {
@@ -91,6 +100,10 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/components/seo/ProductSeoTab.tsx",
       "src/components/seo/CollectionSeoTab.tsx",
       "src/components/seo/HomePageSeo.tsx",
+      "src/components/seo/SeoAuditAI.tsx",
+      "src/components/seo/PageSeoTab.tsx",
+      "src/components/seo/ArticleSeoTab.tsx",
+      "src/components/seo/SeoScoreDisplay.tsx",
     ],
   },
   {
@@ -100,6 +113,8 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/components/shopify/ShopifyConnectionWizard.tsx",
       "src/components/shopify/ShopifyInstallGuide.tsx",
       "src/components/shopify/StoreSelector.tsx",
+      "src/components/shopify/ShopifySync.tsx",
+      "src/components/shopify/AutoSyncProgressDialog.tsx",
     ],
   },
   {
@@ -109,6 +124,8 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/components/dashboard/DashboardStats.tsx",
       "src/components/dashboard/QuickActions.tsx",
       "src/components/dashboard/SyncStatus.tsx",
+      "src/components/dashboard/RecentActivity.tsx",
+      "src/components/dashboard/QuotaMonitoring.tsx",
     ],
   },
   {
@@ -118,6 +135,105 @@ const FILE_REGISTRY: FileCategory[] = [
       "src/components/settings/GeneralSettings.tsx",
       "src/components/settings/AutomationSettings.tsx",
       "src/components/settings/NotificationSettings.tsx",
+      "src/components/settings/SubscriptionSettings.tsx",
+      "src/components/settings/ApiSettings.tsx",
+    ],
+  },
+  {
+    name: "Dialogs & Modals",
+    icon: <AlertTriangle className="h-4 w-4" />,
+    files: [
+      "src/components/ui/dialog.tsx",
+      "src/components/ui/alert-dialog.tsx",
+      "src/components/dialogs/ConfirmDialog.tsx",
+      "src/components/dialogs/ExportDialog.tsx",
+      "src/components/dialogs/ImportDialog.tsx",
+    ],
+  },
+  {
+    name: "Admin Components",
+    icon: <Settings className="h-4 w-4" />,
+    files: [
+      "src/components/admin/AdminDashboard.tsx",
+      "src/components/admin/UserManagement.tsx",
+      "src/components/admin/SystemHealthCheck.tsx",
+      "src/components/admin/EmailInbox.tsx",
+      "src/components/admin/SubscriptionManager.tsx",
+      "src/components/admin/AutoTranslationScanner.tsx",
+    ],
+  },
+  {
+    name: "Landing Components",
+    icon: <Sparkles className="h-4 w-4" />,
+    files: [
+      "src/components/landing/HeroSection.tsx",
+      "src/components/landing/FeaturesSection.tsx",
+      "src/components/landing/PricingSection.tsx",
+      "src/components/landing/TestimonialsSection.tsx",
+      "src/components/landing/FooterSection.tsx",
+      "src/components/landing/CTASection.tsx",
+    ],
+  },
+  {
+    name: "Pricing Components",
+    icon: <BarChart3 className="h-4 w-4" />,
+    files: [
+      "src/components/pricing/PricingCard.tsx",
+      "src/components/pricing/PricingComparison.tsx",
+      "src/components/pricing/UpgradeDialog.tsx",
+      "src/components/pricing/CheckoutButton.tsx",
+    ],
+  },
+  {
+    name: "Chat Components",
+    icon: <PenTool className="h-4 w-4" />,
+    files: [
+      "src/components/chat/ChatWidget.tsx",
+      "src/components/chat/ChatMessages.tsx",
+      "src/components/chat/ChatInput.tsx",
+      "src/components/chat/ChatSettings.tsx",
+    ],
+  },
+  {
+    name: "Integration Components",
+    icon: <Globe className="h-4 w-4" />,
+    files: [
+      "src/components/integration/GoogleAdsIntegration.tsx",
+      "src/components/integration/GoogleMerchantIntegration.tsx",
+      "src/components/integration/GoogleSearchConsoleIntegration.tsx",
+      "src/components/integration/StripeIntegration.tsx",
+    ],
+  },
+  {
+    name: "Product Components",
+    icon: <ShoppingCart className="h-4 w-4" />,
+    files: [
+      "src/components/products/ProductCard.tsx",
+      "src/components/products/ProductList.tsx",
+      "src/components/products/ProductFilters.tsx",
+      "src/components/products/BulkActions.tsx",
+      "src/components/products/SmartBackgroundGenerator.tsx",
+    ],
+  },
+  {
+    name: "Toasts & Notifications",
+    icon: <AlertTriangle className="h-4 w-4" />,
+    files: [
+      "src/hooks/use-toast.ts",
+      "src/components/ui/toast.tsx",
+      "src/components/ui/toaster.tsx",
+      "src/components/notifications/NotificationCenter.tsx",
+    ],
+  },
+  {
+    name: "Forms & Inputs",
+    icon: <PenTool className="h-4 w-4" />,
+    files: [
+      "src/components/ui/input.tsx",
+      "src/components/ui/textarea.tsx",
+      "src/components/ui/select.tsx",
+      "src/components/forms/LoginForm.tsx",
+      "src/components/forms/SignupForm.tsx",
     ],
   },
 ];
