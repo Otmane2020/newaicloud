@@ -2218,7 +2218,67 @@ export const translations = {
       search: "Recherche Intelligente",
       translationAnalyzer: "Analyseur Traductions",
       autoTranslationScanner: "Scanner Auto",
+      videoAds: "🎬 Video Ads",
       logout: "Déconnexion",
+    },
+    videoAds: {
+      title: "Video Ads Studio",
+      description: "Créer des vidéos publicitaires professionnelles pour NEWAI",
+      clipLibrary: {
+        title: "Enregistrements écran",
+        upload: "Uploader une vidéo",
+        noClips: "Aucun clip",
+        uploadFirst: "Uploadez vos enregistrements de démo pour commencer",
+      },
+      storyboard: {
+        title: "Storyboard",
+        addSection: "Ajouter une section",
+        sections: {
+          hook: "Accroche",
+          problem: "Problème",
+          solution: "Solution",
+          result: "Résultat",
+          cta: "CTA",
+        },
+      },
+      effects: {
+        title: "Effets",
+        glowNeon: "Lueur Néon",
+        particles: "Particules",
+        dynamicZoom: "Zoom Dynamique",
+        hologram: "Hologramme",
+        text3D: "Texte 3D",
+        transitions: "Transitions Tech",
+      },
+      preview: {
+        title: "Aperçu",
+        noClipSelected: "Aucun clip sélectionné",
+      },
+      format: {
+        title: "Format d'export",
+        portrait: "📱 TikTok/Reels (9:16)",
+        square: "⬜ Instagram (1:1)",
+        landscape: "🖥️ YouTube (16:9)",
+      },
+      templates: {
+        title: "Templates",
+        useTemplate: "Utiliser ce template",
+      },
+      scriptGenerator: {
+        title: "Générateur de Script IA",
+        generate: "Générer le script",
+        generating: "Génération...",
+        applyToStoryboard: "Appliquer au Storyboard",
+      },
+      export: {
+        button: "Exporter la vidéo",
+        exporting: "Export en cours...",
+      },
+      toasts: {
+        clipUploaded: "Clip uploadé avec succès",
+        clipDeleted: "Clip supprimé",
+        scriptGenerated: "Script généré par l'IA",
+      },
     },
     googleAds: {
       title: "Google Ads Optimizer",

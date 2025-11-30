@@ -1,4 +1,4 @@
-import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch } from "lucide-react";
+import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch, Video } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +108,11 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
       icon: ScanSearch,
       label: t.superAdmin.navigation.autoTranslationScanner,
       id: "auto-translation-scanner"
+    },
+    {
+      icon: Video,
+      label: t.superAdmin.navigation.videoAds || "🎬 Video Ads",
+      id: "video-ads"
     },
   ];
   return (

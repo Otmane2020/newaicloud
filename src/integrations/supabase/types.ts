@@ -5552,6 +5552,87 @@ export type Database = {
         }
         Relationships: []
       }
+      video_ad_projects: {
+        Row: {
+          created_at: string | null
+          effects_config: Json | null
+          exported_url: string | null
+          format: string | null
+          id: string
+          status: string | null
+          storyboard: Json | null
+          template_type: string | null
+          texts: Json | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          effects_config?: Json | null
+          exported_url?: string | null
+          format?: string | null
+          id?: string
+          status?: string | null
+          storyboard?: Json | null
+          template_type?: string | null
+          texts?: Json | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          effects_config?: Json | null
+          exported_url?: string | null
+          format?: string | null
+          id?: string
+          status?: string | null
+          storyboard?: Json | null
+          template_type?: string | null
+          texts?: Json | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      video_clips: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          file_url: string
+          id: string
+          thumbnail_url: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          file_url: string
+          id?: string
+          thumbnail_url?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          file_url?: string
+          id?: string
+          thumbnail_url?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vision_ai_cache: {
         Row: {
           analysis_result: string
