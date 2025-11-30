@@ -460,3 +460,7 @@ verify_jwt = true
 [functions.scan-translation-issues]
 verify_jwt = true
 
+[functions.auto-fix-translations]
+verify_jwt = true
+memory_limit_mb = 512
+
