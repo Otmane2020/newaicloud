@@ -11,11 +11,7 @@ export function AutoSyncProgressDialog() {
   const { isSyncing, isCompleted, currentType, storeName, itemsSynced, endSync } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
-  const [progress, setProgress] = React.useState(5);
-  const [displayType, setDisplayType] = React.useState('import');
   const [forceClosed, setForceClosed] = React.useState(false);
-  const syncStartTimeRef = React.useRef<number | null>(null);
-  const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Reset forceClosed when a new sync starts
   React.useEffect(() => {
@@ -24,66 +20,22 @@ export function AutoSyncProgressDialog() {
     }
   }, [isSyncing, isCompleted]);
 
-  // Simulate incremental progress over time
-  // Auto-close after completion
+  // Auto-close 2 seconds after completion
   React.useEffect(() => {
     if (isCompleted) {
-      setProgress(100);
-      setDisplayType('completed');
-      // Auto-close after 2.5 seconds
       const autoCloseTimer = setTimeout(() => {
+        setForceClosed(true);
         endSync();
-      }, 2500);
+      }, 2000);
       return () => clearTimeout(autoCloseTimer);
     }
   }, [isCompleted, endSync]);
-
-  // Simulate progress while syncing
-  React.useEffect(() => {
-    if (isSyncing && !isCompleted) {
-      if (!syncStartTimeRef.current) {
-        syncStartTimeRef.current = Date.now();
-        setProgress(5);
-        setDisplayType('import');
-      }
-      
-      progressIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - (syncStartTimeRef.current || Date.now());
-        const seconds = elapsed / 1000;
-        
-        let newProgress = Math.min(95, 5 + (seconds * 0.5));
-        
-        let newType = 'import';
-        if (newProgress >= 85) newType = 'images';
-        else if (newProgress >= 70) newType = 'articles';
-        else if (newProgress >= 55) newType = 'pages';
-        else if (newProgress >= 40) newType = 'collections';
-        else if (newProgress >= 20) newType = 'products';
-        
-        setProgress(Math.round(newProgress));
-        setDisplayType(newType);
-      }, 2000);
-      
-      return () => {
-        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-      };
-    } else if (!isSyncing) {
-      syncStartTimeRef.current = null;
-      setProgress(5);
-      setDisplayType('import');
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    }
-  }, [isSyncing, isCompleted]);
   
-  // Afficher le dialog partout sauf sur onboarding SANS shopify_pending
   const isOnboardingWithoutShopify = location.pathname.startsWith('/onboarding') && 
                                       !location.search.includes('shopify_pending');
-  // Ne jamais afficher sur les pages d'authentification ou Shopify
   const isAuthPage = location.pathname === '/auth' || 
                      location.pathname === '/reset-password' ||
                      location.pathname.startsWith('/shopify/');
-  
-  // Détecte si l'utilisateur vient de Shopify "Open app" (host= sans pending_token)
   const comingFromShopifyOpenApp = location.search.includes('host=') && 
                                     !location.search.includes('pending_token');
   
@@ -93,6 +45,9 @@ export function AutoSyncProgressDialog() {
     setForceClosed(true);
     endSync();
   };
+
+  // Real progress: use itemsSynced, cap at 95% until completed
+  const progress = isCompleted ? 100 : Math.min(95, Math.max(1, itemsSynced));
 
   const getIcon = (type: string) => {
     if (isCompleted) {
@@ -116,8 +71,7 @@ export function AutoSyncProgressDialog() {
 
   const getTypeLabel = (type: string) => {
     const types = t.dialogs.autoSync.types as Record<string, string>;
-    // Skip "import" type to avoid "Importing Import..." - use products label instead
-    if (type === 'import') return types['products'] || 'Products';
+    if (!type || type === 'import' || type === 'products') return types['products'] || 'Products';
     return types[type] || type;
   };
 
@@ -141,7 +95,7 @@ export function AutoSyncProgressDialog() {
                 ? 'bg-gradient-to-br from-green-500 to-green-600 scale-110' 
                 : 'bg-gradient-to-br from-primary to-primary-dark'
             }`}>
-              {getIcon(displayType)}
+              {getIcon(currentType)}
             </div>
           </div>
 
@@ -173,7 +127,7 @@ export function AutoSyncProgressDialog() {
               <div className="flex items-center justify-center gap-2 pt-2">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 <span className="text-sm font-medium">
-                  {tf('dialogs.autoSync.importing', { type: getTypeLabel(displayType) })}
+                  {tf('dialogs.autoSync.importing', { type: getTypeLabel(currentType) })}
                 </span>
               </div>
             )}
@@ -194,22 +148,19 @@ export function AutoSyncProgressDialog() {
             <p className="text-xs text-center text-muted-foreground">
               {isCompleted 
                 ? t.dialogs.autoSync.successMessage
-                : `${getTypeLabel(displayType)} • ${progress}%`
+                : `${getTypeLabel(currentType)} • ${itemsSynced} items`
               }
             </p>
           </div>
 
-          {/* Footer message or close button */}
+          {/* Footer message */}
           {isCompleted ? (
             <Button onClick={handleClose} className="mt-2">
               {t.dialogs.autoSync.closeButton}
             </Button>
           ) : (
             <div className="text-center max-w-xs">
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
-                <p className="text-xs">{t.dialogs.autoSync.duration}</p>
-              </div>
+              <p className="text-xs text-muted-foreground">{t.dialogs.autoSync.pleaseWait}</p>
             </div>
           )}
         </div>

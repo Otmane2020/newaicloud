@@ -15,7 +15,7 @@ const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
  * la synchronisation pour TOUS les flux (OAuth et API)
  */
 export const useAutoSync = (userId: string | undefined) => {
-  const { startSync, completeSync, endSync, updateType, isSyncing } = useAutoSyncProgress();
+  const { startSync, completeSync, endSync, updateProgress, isSyncing } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -133,9 +133,9 @@ export const useAutoSync = (userId: string | undefined) => {
         return true;
       }
       
-      // Update type for progress display based on sync_type
+      // Update progress for real-time display
       if (latestSync.sync_type && latestSync.status === 'running') {
-        updateType(latestSync.sync_type);
+        updateProgress(latestSync.sync_type, latestSync.items_synced || 0);
       }
       
       return false;
