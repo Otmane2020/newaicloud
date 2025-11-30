@@ -385,19 +385,52 @@ export default function AutoTranslationScanner() {
 
   // Copy to clipboard
   const copyToClipboard = async (text: string, field: string) => {
+    console.log("[AutoTranslationScanner] copyToClipboard called:", { field, textLength: text?.length });
+    if (!text) {
+      console.error("[AutoTranslationScanner] No text to copy");
+      toast.error("Aucun texte à copier");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
-      toast.success("Copié !");
-    } catch {
-      toast.error("Erreur de copie");
+      toast.success("Copié dans le presse-papiers !");
+      console.log("[AutoTranslationScanner] Successfully copied to clipboard");
+    } catch (error) {
+      console.error("[AutoTranslationScanner] Clipboard error:", error);
+      // Fallback: create textarea and copy
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+        toast.success("Copié (méthode alternative) !");
+      } catch (fallbackError) {
+        console.error("[AutoTranslationScanner] Fallback copy failed:", fallbackError);
+        toast.error("Erreur de copie - Copiez manuellement");
+      }
     }
   };
 
   // Generate translation code formatted for fr.ts or en.ts
   const generateTranslationCode = (translations: Record<string, unknown>, lang: 'fr' | 'en'): string => {
-    if (!translations || Object.keys(translations).length === 0) {
+    console.log("[AutoTranslationScanner] generateTranslationCode called:", { lang, translations });
+    
+    if (!translations || typeof translations !== 'object') {
+      console.warn("[AutoTranslationScanner] Invalid translations object");
+      return `// Aucune traduction ${lang === 'fr' ? 'française' : 'anglaise'} à ajouter`;
+    }
+    
+    const keys = Object.keys(translations);
+    if (keys.length === 0) {
+      console.warn("[AutoTranslationScanner] Empty translations object");
       return `// Aucune traduction ${lang === 'fr' ? 'française' : 'anglaise'} à ajouter`;
     }
     
@@ -427,7 +460,9 @@ export default function AutoTranslationScanner() {
     
     lines.push(...formatObject(translations));
     
-    return lines.join('\n');
+    const output = lines.join('\n');
+    console.log("[AutoTranslationScanner] Generated translation code:", output.substring(0, 200) + "...");
+    return output;
   };
 
   // Delete history item
