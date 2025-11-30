@@ -2128,6 +2128,22 @@ export const translations = {
     seoChallenges: "Daily SEO Challenges",
     noChallenges: "No challenges available",
     noChallengesDesc: "New challenges coming soon!",
+    // Section labels
+    sections: {
+      heroSectionWithWelcomeBanner: "Hero Section with Welcome Banner",
+      seoScoreCardMainSection: "SEO Score Card - Main Section",
+      quickActionsBelowScore: "Quick Actions below score",
+      keyMetricsOptimizationFocus: "Key Metrics - Optimization Focus",
+      googleShopping: "Google Shopping",
+      referralSystem: "Referral System",
+      quickActionsEightActions: "Quick Actions - 8 actions",
+      smartRecommendationsBanner: "Smart Recommendations Banner",
+      onboardingTour: "Onboarding Tour",
+      aiRecommendations: "AI Recommendations",
+      quotaAlerts: "Quota Alerts",
+      advancedAnalytics: "Advanced Analytics",
+      recentActivityTimeline: "Recent Activity Timeline",
+    },
     cards: {
       aiOptimized: "AI Optimized Products",
       toOptimize: "To Optimize",
