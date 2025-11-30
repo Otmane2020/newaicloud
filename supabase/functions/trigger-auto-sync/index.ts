@@ -201,8 +201,8 @@ serve(async (req) => {
       try {
         console.log(`📥 Importing ${type}...`);
 
-        // Update sync_type to reflect current import step (with current total)
-        await updateSyncProgress(type, totalImported);
+        // 🔥 REMOVED: Don't update progress BEFORE import (was sending 0 items)
+        // Progress is now updated ONLY AFTER each successful import (line ~269)
 
         const baseBody = {
           storeId: connection.id,
