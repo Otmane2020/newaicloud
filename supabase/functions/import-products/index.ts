@@ -1583,20 +1583,26 @@ Deno.serve(async (req: Request) => {
     }
 
     // 🔗 Sync product-collection relationships after import (async, don't block)
-    // Only if we have a token (not in service mode)
-    if (token) {
-      console.log(`🔗 Starting async product-collection sync for storeId: ${storeId}...`);
-      supabaseClient.functions.invoke('sync-product-collections', {
-        headers: { Authorization: authHeader },
-        body: { storeId: storeId }
-      }).then((syncResult: any) => {
+    console.log(`🔗 Starting async product-collection sync for storeId: ${storeId}...`);
+    
+    const syncInvokeOptions: any = {
+      body: { storeId: storeId, userId: user.id }
+    };
+    
+    // Add auth header if we have a token (normal mode)
+    if (token && authHeader) {
+      syncInvokeOptions.headers = { Authorization: authHeader };
+    }
+    
+    // Use service client for the invoke (works in both modes)
+    supabaseServiceClient.functions.invoke('sync-product-collections', syncInvokeOptions)
+      .then((syncResult: any) => {
         if (syncResult.error) {
           console.error('⚠️ Product-collection sync failed:', syncResult.error);
         } else {
           console.log('✅ Product-collection relationships synced:', syncResult.data);
         }
       }).catch((err: any) => console.error('⚠️ Sync error:', err));
-    }
 
     return new Response(
       JSON.stringify({
