@@ -193,17 +193,15 @@ export function AutoSyncProgressDialog() {
                 <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
                 <p className="text-xs">{t.dialogs.autoSync.duration}</p>
               </div>
-              {showCloseButton && (
-                <Button 
-                  onClick={handleClose} 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  {t.buttons?.close || 'Fermer'}
-                </Button>
-              )}
+              <Button 
+                onClick={handleClose} 
+                variant="ghost" 
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4 mr-1" />
+                {t.buttons?.close || 'Fermer'}
+              </Button>
             </div>
           )}
         </div>
