@@ -430,7 +430,7 @@ export default function AutoTranslationScanner() {
     issueCount: number;
   } | null>(null);
 
-  // Batch import states
+  // Batch import states (legacy)
   const [batchInput, setBatchInput] = useState("");
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [batchAnalysisResults, setBatchAnalysisResults] = useState<{
@@ -439,6 +439,31 @@ export default function AutoTranslationScanner() {
     issuesByType: Record<string, number>;
     aggregatedFr: Record<string, unknown>;
     aggregatedEn: Record<string, unknown>;
+  } | null>(null);
+
+  // NEW: Auto GitHub scan states
+  const [isAutoScanning, setIsAutoScanning] = useState(false);
+  const [autoScanProgress, setAutoScanProgress] = useState("");
+  const [autoScanResults, setAutoScanResults] = useState<{
+    totalFiles: number;
+    filesScanned: number;
+    filesWithIssues: number;
+    totalIssues: number;
+    issuesByType: Record<string, number>;
+    issues: Array<{
+      filePath: string;
+      line: number;
+      type: string;
+      original: string;
+      suggestedKey: string;
+      suggestedFr: string;
+      suggestedEn: string;
+      context: string;
+    }>;
+    aggregatedTranslations: {
+      fr: Record<string, unknown>;
+      en: Record<string, unknown>;
+    };
   } | null>(null);
 
   // Load history
@@ -865,6 +890,68 @@ ${formatObject(translations)}
     }
   };
 
+  // NEW: Auto scan from GitHub - AUTOMATIC without copy-paste
+  const runAutoGitHubScan = async () => {
+    setIsAutoScanning(true);
+    setAutoScanProgress("Connexion à GitHub...");
+    setAutoScanResults(null);
+
+    try {
+      toast.info("🔍 Scanner automatique démarré - lecture des fichiers depuis GitHub...");
+      setAutoScanProgress("Lecture des fichiers depuis GitHub et analyse IA...");
+
+      const { data, error } = await supabase.functions.invoke("scan-repo-translations", {
+        body: { maxFiles: 50 }, // Limit to avoid timeout
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setAutoScanResults({
+        totalFiles: data.totalFiles,
+        filesScanned: data.filesScanned,
+        filesWithIssues: data.filesWithIssues,
+        totalIssues: data.totalIssues,
+        issuesByType: data.issuesByType || {},
+        issues: data.issues || [],
+        aggregatedTranslations: data.aggregatedTranslations || { fr: {}, en: {} },
+      });
+
+      // Also update the aggregated translations for download
+      const countKeys = (obj: Record<string, unknown>): number => {
+        let count = 0;
+        for (const value of Object.values(obj)) {
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            count += countKeys(value as Record<string, unknown>);
+          } else {
+            count++;
+          }
+        }
+        return count;
+      };
+
+      setAggregatedTranslations({
+        fr: data.aggregatedTranslations?.fr || {},
+        en: data.aggregatedTranslations?.en || {},
+        totalKeys: countKeys(data.aggregatedTranslations?.fr || {}),
+        issueCount: data.totalIssues,
+      });
+
+      setAutoScanProgress("");
+      toast.success(`✅ Scan terminé: ${data.totalIssues} problèmes dans ${data.filesWithIssues} fichiers`);
+
+    } catch (error) {
+      console.error("Auto GitHub scan error:", error);
+      setAutoScanProgress("");
+      toast.error(`Erreur: ${error instanceof Error ? error.message : "Erreur de scan"}`);
+    } finally {
+      setIsAutoScanning(false);
+    }
+  };
+
   // Copy to clipboard
   const copyToClipboard = async (text: string, field: string) => {
     console.log("[AutoTranslationScanner] copyToClipboard called:", { field, textLength: text?.length });
@@ -1022,7 +1109,7 @@ ${formatObject(translations)}
             </TabsTrigger>
           </TabsList>
 
-          {/* BATCH TAB - Main Feature */}
+          {/* BATCH TAB - AUTOMATIC GitHub Scanner */}
           <TabsContent value="batch" className="space-y-4">
             <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardHeader>
@@ -1031,112 +1118,119 @@ ${formatObject(translations)}
                   🚀 Scanner Automatique de Traductions
                 </CardTitle>
                 <CardDescription>
-                  Collez le contenu de plusieurs fichiers pour détecter et corriger TOUS les problèmes de traduction (toasts, dialogs, textes hardcodés)
+                  Scanner automatique qui lit DIRECTEMENT les fichiers depuis GitHub - aucun copier-coller nécessaire !
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Instructions */}
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-                  <h4 className="font-semibold text-amber-700 dark:text-amber-300 mb-2">📋 Comment utiliser</h4>
-                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Copiez le contenu des fichiers depuis votre IDE (VS Code, etc.)</li>
-                    <li>Utilisez le format: <code className="bg-muted px-1 rounded">=== FILE: chemin/fichier.tsx ===</code> pour séparer les fichiers</li>
-                    <li>Ou collez simplement un seul fichier</li>
-                    <li>Cliquez sur "Analyser & Corriger" pour générer toutes les traductions</li>
-                  </ol>
+                {/* Info Box */}
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <h4 className="font-semibold text-green-700 dark:text-green-300 mb-2 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    ✨ Scan 100% Automatique
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>✅ Lit directement les fichiers depuis votre repo GitHub</li>
+                    <li>✅ Analyse automatique avec IA (Gemini)</li>
+                    <li>✅ Détecte: toasts, dialogs, alerts, props, textes JSX</li>
+                    <li>✅ Génère les traductions FR et EN automatiquement</li>
+                    <li>✅ Téléchargez les fichiers fr.ts et en.ts en un clic</li>
+                  </ul>
                 </div>
 
-                {/* Input Area */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Contenu des fichiers à analyser</label>
-                  <textarea
-                    placeholder={`=== FILE: src/pages/Dashboard.tsx ===
-// Collez le code ici...
-toast.success("Données sauvegardées");
-
-=== FILE: src/components/MyDialog.tsx ===
-// Collez un autre fichier...
-<DialogTitle>Confirmation</DialogTitle>
-
-Ou collez simplement un seul fichier...`}
-                    value={batchInput}
-                    onChange={(e) => setBatchInput(e.target.value)}
-                    className="w-full min-h-[300px] p-4 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{batchInput.length} caractères</span>
-                    <span>Format JSON ou marqueurs === FILE: === supportés</span>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <div className="flex gap-3">
+                {/* Main Action Button */}
+                <div className="flex flex-col gap-4">
                   <Button 
-                    onClick={processBatchInput} 
-                    disabled={isBatchProcessing || !batchInput.trim()}
+                    onClick={runAutoGitHubScan} 
+                    disabled={isAutoScanning}
                     size="lg"
-                    className="flex-1 bg-primary hover:bg-primary/90 text-lg py-6"
+                    className="w-full bg-primary hover:bg-primary/90 text-lg py-8"
                   >
-                    {isBatchProcessing ? (
+                    {isAutoScanning ? (
                       <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Analyse IA en cours...
+                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                        {autoScanProgress || "Scan en cours..."}
                       </>
                     ) : (
                       <>
-                        <Wand2 className="mr-2 h-5 w-5" />
-                        🔍 Analyser & Corriger TOUT
+                        <Globe className="mr-3 h-6 w-6" />
+                        🔍 Scanner Tout le Projet (GitHub)
                       </>
                     )}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => { setBatchInput(""); setBatchAnalysisResults(null); }}
-                    disabled={isBatchProcessing}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reset
-                  </Button>
+                  
+                  {isAutoScanning && (
+                    <div className="text-center text-sm text-muted-foreground">
+                      <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
+                      Lecture des fichiers depuis GitHub et analyse IA... Cela peut prendre 1-2 minutes.
+                    </div>
+                  )}
                 </div>
 
-                {/* Results */}
-                {batchAnalysisResults && (
+                {/* Auto Scan Results */}
+                {autoScanResults && (
                   <Card className="border-green-500/50 bg-green-500/5">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
                         <CheckCircle className="h-5 w-5" />
-                        ✅ Analyse terminée !
+                        ✅ Scan GitHub terminé !
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* Stats */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="p-3 bg-blue-500/10 rounded-lg text-center">
-                          <div className="text-2xl font-bold text-blue-500">{batchAnalysisResults.filesAnalyzed}</div>
-                          <div className="text-xs text-muted-foreground">Fichiers analysés</div>
+                          <div className="text-2xl font-bold text-blue-500">{autoScanResults.filesScanned}</div>
+                          <div className="text-xs text-muted-foreground">Fichiers scannés</div>
+                        </div>
+                        <div className="p-3 bg-orange-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-orange-500">{autoScanResults.filesWithIssues}</div>
+                          <div className="text-xs text-muted-foreground">Fichiers avec erreurs</div>
                         </div>
                         <div className="p-3 bg-red-500/10 rounded-lg text-center">
-                          <div className="text-2xl font-bold text-red-500">{batchAnalysisResults.totalIssues}</div>
+                          <div className="text-2xl font-bold text-red-500">{autoScanResults.totalIssues}</div>
                           <div className="text-xs text-muted-foreground">Problèmes détectés</div>
                         </div>
                         <div className="p-3 bg-green-500/10 rounded-lg text-center">
-                          <div className="text-2xl font-bold text-green-500">{batchAnalysisResults.issuesByType?.toast || 0}</div>
+                          <div className="text-2xl font-bold text-green-500">
+                            {autoScanResults.issuesByType?.toast || 0}
+                          </div>
                           <div className="text-xs text-muted-foreground">Toasts</div>
-                        </div>
-                        <div className="p-3 bg-purple-500/10 rounded-lg text-center">
-                          <div className="text-2xl font-bold text-purple-500">{batchAnalysisResults.issuesByType?.dialog || 0}</div>
-                          <div className="text-xs text-muted-foreground">Dialogs</div>
                         </div>
                       </div>
 
                       {/* Issue Type Details */}
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(batchAnalysisResults.issuesByType || {}).map(([type, count]) => (
+                        {Object.entries(autoScanResults.issuesByType || {}).map(([type, count]) => (
                           <Badge key={type} variant="outline" className="text-sm">
                             {type}: {count}
                           </Badge>
                         ))}
                       </div>
+
+                      {/* Issues List */}
+                      {autoScanResults.issues.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold mb-2">📋 Problèmes détectés ({autoScanResults.issues.length})</h4>
+                          <ScrollArea className="h-[200px] border rounded-lg">
+                            <div className="p-2 space-y-1">
+                              {autoScanResults.issues.slice(0, 50).map((issue, idx) => (
+                                <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded text-xs">
+                                  {getTypeBadge(issue.type)}
+                                  <span className="font-mono text-muted-foreground truncate max-w-[150px]">
+                                    {issue.filePath.split('/').pop()}:{issue.line}
+                                  </span>
+                                  <span className="flex-1 truncate">"{issue.original}"</span>
+                                </div>
+                              ))}
+                              {autoScanResults.issues.length > 50 && (
+                                <div className="text-center text-muted-foreground py-2">
+                                  ... et {autoScanResults.issues.length - 50} autres
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
 
                       {/* Download Buttons */}
                       <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
@@ -1151,27 +1245,59 @@ Ou collez simplement un seul fichier...`}
                         <Button 
                           variant="outline"
                           onClick={() => {
-                            const frCode = generateFullTranslationFile(batchAnalysisResults.aggregatedFr, 'fr');
-                            copyToClipboard(frCode, "batch-fr");
+                            const frCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.fr, 'fr');
+                            copyToClipboard(frCode, "auto-fr");
                           }}
                         >
-                          {copiedField === "batch-fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          {copiedField === "auto-fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                           Copier fr.ts
                         </Button>
                         <Button 
                           variant="outline"
                           onClick={() => {
-                            const enCode = generateFullTranslationFile(batchAnalysisResults.aggregatedEn, 'en');
-                            copyToClipboard(enCode, "batch-en");
+                            const enCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.en, 'en');
+                            copyToClipboard(enCode, "auto-en");
                           }}
                         >
-                          {copiedField === "batch-en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          {copiedField === "auto-en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                           Copier en.ts
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Fallback Manual Input - Collapsible */}
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                    <ChevronRight className="h-4 w-4" />
+                    Mode manuel (copier-coller) - si GitHub ne fonctionne pas
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Collez le code manuellement</label>
+                      <textarea
+                        placeholder={`=== FILE: src/pages/Dashboard.tsx ===
+// Collez le code ici...
+toast.success("Données sauvegardées");`}
+                        value={batchInput}
+                        onChange={(e) => setBatchInput(e.target.value)}
+                        className="w-full min-h-[150px] p-4 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
+                      />
+                    </div>
+                    <Button 
+                      onClick={processBatchInput} 
+                      disabled={isBatchProcessing || !batchInput.trim()}
+                      variant="outline"
+                    >
+                      {isBatchProcessing ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyse...</>
+                      ) : (
+                        <><Wand2 className="mr-2 h-4 w-4" />Analyser manuellement</>
+                      )}
+                    </Button>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           </TabsContent>
