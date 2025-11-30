@@ -48,29 +48,36 @@ serve(async (req) => {
       });
     }
 
-    // Get user's Google Ads credentials (use google_ads_oauth_token for consistency)
+    // Get user's Google Ads credentials - support BOTH column patterns
+    // SuperAdmin uses: google_oauth_token, google_refresh_token
+    // User flow uses: google_ads_oauth_token, google_ads_refresh_token
     const { data: profile } = await supabase
       .from('profiles')
-      .select('google_ads_oauth_token, google_ads_refresh_token, google_ads_customer_id, google_ads_token_expires_at')
+      .select('google_ads_oauth_token, google_ads_refresh_token, google_ads_customer_id, google_ads_token_expires_at, google_oauth_token, google_refresh_token, google_token_expires_at')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.google_ads_oauth_token || !profile?.google_ads_customer_id) {
+    // Use google_ads_* columns first, fall back to google_* columns (SuperAdmin)
+    const oauthToken = profile?.google_ads_oauth_token || profile?.google_oauth_token;
+    const refreshToken = profile?.google_ads_refresh_token || profile?.google_refresh_token;
+    const tokenExpiresAt = profile?.google_ads_token_expires_at || profile?.google_token_expires_at;
+
+    if (!oauthToken || !profile?.google_ads_customer_id) {
       return new Response(JSON.stringify({ 
         error: 'Google Ads not connected',
-        message: 'Please connect your Google Ads account first'
+        message: 'Please connect your Google Ads account first and enter your Customer ID'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    let accessToken = profile.google_ads_oauth_token;
+    let accessToken = oauthToken;
 
     // Check if token needs refresh
-    if (profile.google_ads_token_expires_at) {
-      const expiresAt = new Date(profile.google_ads_token_expires_at);
-      if (expiresAt <= new Date()) {
+    if (tokenExpiresAt) {
+      const expiresAt = new Date(tokenExpiresAt);
+      if (expiresAt <= new Date() && refreshToken) {
         // Refresh the token
         const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
         const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
@@ -81,7 +88,7 @@ serve(async (req) => {
           body: new URLSearchParams({
             client_id: clientId!,
             client_secret: clientSecret!,
-            refresh_token: profile.google_ads_refresh_token,
+            refresh_token: refreshToken,
             grant_type: 'refresh_token',
           }),
         });
@@ -92,12 +99,14 @@ serve(async (req) => {
           const expiresIn = refreshData.expires_in || 3600;
           const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
+          // Update the appropriate token column based on which one was used
+          const updateData = profile?.google_ads_oauth_token 
+            ? { google_ads_oauth_token: accessToken, google_ads_token_expires_at: newExpiresAt.toISOString() }
+            : { google_oauth_token: accessToken, google_token_expires_at: newExpiresAt.toISOString() };
+
           await supabase
             .from('profiles')
-            .update({
-              google_ads_oauth_token: accessToken,
-              google_ads_token_expires_at: newExpiresAt.toISOString(),
-            })
+            .update(updateData)
             .eq('id', user.id);
         }
       }
