@@ -5160,6 +5160,60 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_audit_results: {
+        Row: {
+          code_snippet: string | null
+          corrected_code: string | null
+          created_at: string | null
+          en_count: number | null
+          file_path: string | null
+          fr_count: number | null
+          id: string
+          issues: Json
+          mixed_count: number | null
+          status: string | null
+          total_issues: number | null
+          translations_en: Json | null
+          translations_fr: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          code_snippet?: string | null
+          corrected_code?: string | null
+          created_at?: string | null
+          en_count?: number | null
+          file_path?: string | null
+          fr_count?: number | null
+          id?: string
+          issues?: Json
+          mixed_count?: number | null
+          status?: string | null
+          total_issues?: number | null
+          translations_en?: Json | null
+          translations_fr?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          code_snippet?: string | null
+          corrected_code?: string | null
+          created_at?: string | null
+          en_count?: number | null
+          file_path?: string | null
+          fr_count?: number | null
+          id?: string
+          issues?: Json
+          mixed_count?: number | null
+          status?: string | null
+          total_issues?: number | null
+          translations_en?: Json | null
+          translations_fr?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       translations: {
         Row: {
           ai_generated: boolean | null
