@@ -251,13 +251,13 @@ serve(async (req) => {
               },
             });
             break;
-          case "images":
+        case "images":
             result = await supabase.functions.invoke<FunctionResultData>("import-content-images", {
               body: {
                 storeId: connection.id,
                 serviceMode: true,
                 userId: user_id,
-                syncHistoryId: historyEntry.id,  // 🔥 NEW: Enable live progress updates
+                syncHistoryId: historyEntry.id,
                 types: ["collections", "pages", "articles", "homepage"],
               },
             });
@@ -267,26 +267,84 @@ serve(async (req) => {
             continue;
         }
 
+        // Process result from import function
         if (result.error) {
-          const errorMsg = `Error importing ${type}: ${result.error.message || JSON.stringify(result.error)}`;
+          const errorMsg = `${type}: ${result.error.message || JSON.stringify(result.error)}`;
           console.error(`❌ ${errorMsg}`);
           errorMessages.push(errorMsg);
           hasErrors = true;
         } else if (result.data) {
-          // Safely count imported items
           const importedCount = result.data.totalImported || result.data.imported || result.data.count || 0;
           totalImported += importedCount;
           console.log(`✅ ${type} import completed: ${importedCount} items`);
-          
-          // 🔥 Update progress AFTER each successful import
           await updateSyncProgress(type, totalImported);
         }
       } catch (error) {
-        const errorMsg = `Error importing ${type}: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `${type}: ${error instanceof Error ? error.message : String(error)}`;
         console.error(`❌ ${errorMsg}`);
         errorMessages.push(errorMsg);
         hasErrors = true;
       }
+    }
+
+    // 🔥 CRITICAL: After all imports, sync product-collection relationships
+    console.log("🔗 [AUTO-SYNC] Syncing product-collection relationships...");
+    try {
+      await supabase
+        .from("sync_history")
+        .update({ 
+          sync_type: "linking",
+          items_synced: totalImported,
+          duration_ms: Date.now() - startTime
+        })
+        .eq("id", historyEntry.id);
+
+      const syncResult = await supabase.functions.invoke("sync-product-collections", {
+        body: {
+          storeId: connection.id,
+          userId: user_id,
+        },
+      });
+
+      if (syncResult.error) {
+        console.error("❌ Error syncing product-collections:", syncResult.error);
+        errorMessages.push(`sync-product-collections: ${syncResult.error.message}`);
+      } else {
+        console.log("✅ Product-collection sync complete:", syncResult.data);
+      }
+    } catch (syncError) {
+      console.error("❌ Exception in sync-product-collections:", syncError);
+      errorMessages.push(`sync-product-collections: ${syncError instanceof Error ? syncError.message : String(syncError)}`);
+    }
+
+    // 🔥 Update products_count for all collections after sync
+    console.log("📊 [AUTO-SYNC] Updating collection products_count...");
+    try {
+      const { data: allCollections } = await supabase
+        .from("shopify_collections")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("store_id", connection.id);
+
+      if (allCollections && allCollections.length > 0) {
+        for (const col of allCollections) {
+          const { count } = await supabase
+            .from("shopify_products")
+            .select("id", { count: "exact", head: true })
+            .contains("collection_ids", [col.id])
+            .eq("seller_id", user_id);
+
+          if (count !== null) {
+            await supabase
+              .from("shopify_collections")
+              .update({ products_count: count, updated_at: new Date().toISOString() })
+              .eq("id", col.id);
+          }
+        }
+        console.log(`✅ Updated products_count for ${allCollections.length} collections`);
+      }
+    } catch (countError) {
+      console.error("❌ Exception updating products_count:", countError);
     }
 
     const duration = Date.now() - startTime;
