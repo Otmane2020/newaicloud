@@ -13,8 +13,16 @@ export function AutoSyncProgressDialog() {
   const { t, tf } = useTranslation();
   const [progress, setProgress] = React.useState(5);
   const [displayType, setDisplayType] = React.useState('import');
+  const [forceClosed, setForceClosed] = React.useState(false);
   const syncStartTimeRef = React.useRef<number | null>(null);
   const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Reset forceClosed when a new sync starts
+  React.useEffect(() => {
+    if (isSyncing && !isCompleted) {
+      setForceClosed(false);
+    }
+  }, [isSyncing, isCompleted]);
 
   // Simulate incremental progress over time
   // Auto-close after completion
@@ -79,9 +87,10 @@ export function AutoSyncProgressDialog() {
   const comingFromShopifyOpenApp = location.search.includes('host=') && 
                                     !location.search.includes('pending_token');
   
-  const shouldShow = isSyncing && !isOnboardingWithoutShopify && !isAuthPage && !comingFromShopifyOpenApp;
+  const shouldShow = !forceClosed && isSyncing && !isOnboardingWithoutShopify && !isAuthPage && !comingFromShopifyOpenApp;
 
   const handleClose = () => {
+    setForceClosed(true);
     endSync();
   };
 
@@ -113,7 +122,7 @@ export function AutoSyncProgressDialog() {
   };
 
   return (
-    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open && isCompleted) handleClose(); }}>
+    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => { if (!isCompleted) e.preventDefault(); }}>
         <VisuallyHidden>
           <DialogTitle>{t.dialogs.autoSync.title}</DialogTitle>
