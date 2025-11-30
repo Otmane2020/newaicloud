@@ -11,7 +11,7 @@ import {
   Star,
   CheckCircle2
 } from "lucide-react";
-import sofaImage from "@/assets/sofa-product.jpg";
+import sofaWhiteBgImage from "@/assets/sofa-white-background.jpg";
 import sofaWithBgImage from "@/assets/sofa-with-background.jpg";
 
 export const LandingPageVisionShowcase = () => {
@@ -77,11 +77,11 @@ export const LandingPageVisionShowcase = () => {
               </div>
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-full">
                 {/* Product Image - White/Studio Background */}
-                <div className="aspect-[16/10] bg-muted overflow-hidden relative">
+                <div className="aspect-[16/10] bg-white overflow-hidden relative">
                   <img 
-                    src={sofaImage} 
-                    alt="Product" 
-                    className="w-full h-full object-cover grayscale opacity-80"
+                    src={sofaWhiteBgImage} 
+                    alt="Product on white background" 
+                    className="w-full h-full object-cover"
                   />
                   {/* White Background Label */}
                   <div className="absolute bottom-2 right-2 z-20">
