@@ -1197,7 +1197,7 @@ ${formatObject(translations)}
                   )}
                 </div>
 
-                {/* Error Display */}
+                {/* Error Display with Manual Mode Alternative */}
                 {autoScanError && (
                   <Card className="border-destructive/50 bg-destructive/5">
                     <CardHeader className="pb-2">
@@ -1206,7 +1206,7 @@ ${formatObject(translations)}
                         ❌ Erreur de scan GitHub
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-4">
                       <div className="text-sm">
                         <strong>Erreur:</strong> {autoScanError.error}
                       </div>
@@ -1215,19 +1215,75 @@ ${formatObject(translations)}
                           <strong>Détails:</strong> {autoScanError.errorDetails}
                         </div>
                       )}
+                      
+                      {/* GitHub 404 Specific Help */}
+                      {autoScanError.error?.includes("404") || autoScanError.error?.includes("no files") || autoScanError.error?.includes("returned no files") ? (
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 space-y-3">
+                          <h4 className="font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            🔧 Comment corriger les credentials GitHub
+                          </h4>
+                          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                            <li>Allez dans <strong>Settings → Secrets</strong> de ce projet Lovable</li>
+                            <li>Mettez à jour <code className="bg-muted px-1 rounded">GITHUB_TOKEN</code> avec un token ayant accès au repo</li>
+                            <li>Vérifiez <code className="bg-muted px-1 rounded">GITHUB_OWNER</code> (ex: "votreorganisation")</li>
+                            <li>Vérifiez <code className="bg-muted px-1 rounded">GITHUB_REPO</code> (ex: "votre-projet")</li>
+                          </ol>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            Le token doit avoir les permissions <strong>repo (read)</strong> sur le repository cible.
+                          </div>
+                        </div>
+                      ) : null}
+                      
                       {autoScanError.diagnostics && (
-                        <div className="text-xs font-mono bg-muted rounded p-2">
-                          <strong>Diagnostics:</strong>
-                          <pre>{JSON.stringify(autoScanError.diagnostics, null, 2)}</pre>
-                        </div>
+                        <Collapsible>
+                          <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                            <ChevronRight className="h-4 w-4" />
+                            Voir les diagnostics
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="text-xs font-mono bg-muted rounded p-2 mt-2">
+                              <pre>{JSON.stringify(autoScanError.diagnostics, null, 2)}</pre>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       )}
-                      {autoScanError.suggestion && (
-                        <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3">
-                          <span className="font-medium text-amber-700 dark:text-amber-400">
-                            💡 {autoScanError.suggestion}
-                          </span>
+                      
+                      {/* Alternative: Manual Mode */}
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-green-700 dark:text-green-300 mb-3 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          ✅ Alternative: Mode Manuel (fonctionne toujours)
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Collez le code directement ci-dessous pour l'analyser sans GitHub.
+                        </p>
+                        <div className="space-y-3">
+                          <textarea
+                            className="w-full h-32 p-3 text-sm font-mono rounded-md border bg-background resize-none"
+                            placeholder="Collez ici le code d'un fichier TSX/TS à analyser...&#10;&#10;Exemple:&#10;toast.success('Message hardcodé');&#10;<Button>Cliquez ici</Button>"
+                            value={batchInput}
+                            onChange={(e) => setBatchInput(e.target.value)}
+                          />
+                          <Button 
+                            onClick={processBatchInput} 
+                            disabled={isBatchProcessing || !batchInput.trim()}
+                            className="w-full"
+                          >
+                            {isBatchProcessing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Analyse en cours...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                🔍 Analyser ce code
+                              </>
+                            )}
+                          </Button>
                         </div>
-                      )}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -1394,37 +1450,138 @@ ${formatObject(translations)}
                   </Card>
                 )}
 
-                {/* Fallback Manual Input - Collapsible */}
-                <Collapsible>
-                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                    <ChevronRight className="h-4 w-4" />
-                    Mode manuel (copier-coller) - si GitHub ne fonctionne pas
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Collez le code manuellement</label>
-                      <textarea
-                        placeholder={`=== FILE: src/pages/Dashboard.tsx ===
-// Collez le code ici...
-toast.success("Données sauvegardées");`}
-                        value={batchInput}
-                        onChange={(e) => setBatchInput(e.target.value)}
-                        className="w-full min-h-[150px] p-4 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
-                      />
-                    </div>
-                    <Button 
-                      onClick={processBatchInput} 
-                      disabled={isBatchProcessing || !batchInput.trim()}
-                      variant="outline"
-                    >
-                      {isBatchProcessing ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyse...</>
-                      ) : (
-                        <><Wand2 className="mr-2 h-4 w-4" />Analyser manuellement</>
-                      )}
-                    </Button>
-                  </CollapsibleContent>
-                </Collapsible>
+                {/* Manual Input Section - Always visible */}
+                {!autoScanError && (
+                  <Card className="border-border bg-muted/30">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Wand2 className="h-5 w-5 text-primary" />
+                        📝 Mode Manuel (copier-coller)
+                      </CardTitle>
+                      <CardDescription>
+                        Alternative si GitHub ne fonctionne pas - collez directement le code à analyser
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <textarea
+                          placeholder={`Collez ici le code d'un ou plusieurs fichiers TSX/TS...
+
+Format simple:
+toast.success("Message hardcodé");
+<Button>Cliquez ici</Button>
+
+Ou format multi-fichiers:
+=== FILE: src/pages/Dashboard.tsx ===
+// Code du fichier 1...
+
+=== FILE: src/pages/Products.tsx ===
+// Code du fichier 2...`}
+                          value={batchInput}
+                          onChange={(e) => setBatchInput(e.target.value)}
+                          className="w-full min-h-[150px] p-4 font-mono text-sm bg-background rounded-lg border border-border resize-y"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={processBatchInput} 
+                          disabled={isBatchProcessing || !batchInput.trim()}
+                          className="flex-1"
+                        >
+                          {isBatchProcessing ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyse en cours...</>
+                          ) : (
+                            <><Wand2 className="mr-2 h-4 w-4" />🔍 Analyser ce code</>
+                          )}
+                        </Button>
+                        {batchInput.trim() && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setBatchInput("")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Batch Analysis Results */}
+                {batchAnalysisResults && (
+                  <Card className="border-green-500/50 bg-green-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <CheckCircle className="h-5 w-5" />
+                        ✅ Analyse manuelle terminée !
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 bg-blue-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-blue-500">{batchAnalysisResults.filesAnalyzed}</div>
+                          <div className="text-xs text-muted-foreground">Fichiers analysés</div>
+                        </div>
+                        <div className="p-3 bg-red-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-red-500">{batchAnalysisResults.totalIssues}</div>
+                          <div className="text-xs text-muted-foreground">Problèmes détectés</div>
+                        </div>
+                        <div className="p-3 bg-green-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-green-500">
+                            {batchAnalysisResults.issuesByType?.toast || 0}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Toasts</div>
+                        </div>
+                        <div className="p-3 bg-purple-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-purple-500">
+                            {batchAnalysisResults.issuesByType?.dialog || 0}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Dialogs</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(batchAnalysisResults.issuesByType || {}).map(([type, count]) => (
+                          <Badge key={type} variant="outline" className="text-sm">
+                            {type}: {count}
+                          </Badge>
+                        ))}
+                      </div>
+                      
+                      {/* Download/Copy Buttons */}
+                      <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+                        <Button 
+                          onClick={() => setShowFixAllDialog(true)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          📥 Télécharger les traductions
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            const frCode = generateFullTranslationFile(batchAnalysisResults.aggregatedFr, 'fr');
+                            copyToClipboard(frCode, "batch-fr");
+                          }}
+                        >
+                          {copiedField === "batch-fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier fr.ts
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            const enCode = generateFullTranslationFile(batchAnalysisResults.aggregatedEn, 'en');
+                            copyToClipboard(enCode, "batch-en");
+                          }}
+                        >
+                          {copiedField === "batch-en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier en.ts
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
