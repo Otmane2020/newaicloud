@@ -113,33 +113,20 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     }));
 
-    // ✅ SHOPIFY 2025 COMPLIANCE: Detect verification requests from Shopify
-    // Shopify's automated compliance verification sends requests without full headers
-    // These must return 200 OK immediately to pass app review
-    const isVerificationRequest = !hmac || !shopDomain || !topic || rawBody.length < 10;
-    
-    if (isVerificationRequest) {
-      console.log(JSON.stringify({
-        event: 'gdpr_webhook_verification_request',
+    // ✅ SHOPIFY COMPLIANCE: All GDPR webhooks MUST have required headers
+    if (!hmac || !shopDomain || !topic) {
+      console.error(JSON.stringify({
+        event: 'gdpr_webhook_missing_headers',
         has_hmac: !!hmac,
         has_shop: !!shopDomain,
         has_topic: !!topic,
-        body_length: rawBody.length,
         timestamp: new Date().toISOString()
       }));
-      
-      // ✅ Return 200 OK for Shopify's verification ping
-      return new Response(JSON.stringify({ 
-        success: true,
-        message: 'GDPR webhook endpoint verified',
-        supported_topics: ['customers/data_request', 'customers/redact', 'shop/redact']
-      }), {
-        status: 200,
+      return new Response(JSON.stringify({ error: 'Missing required Shopify headers' }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // From here, we have a real webhook with all required headers
 
     // ✅ SHOPIFY COMPLIANCE: Verify HMAC using app secret
     const apiSecret = Deno.env.get('SHOPIFY_API_SECRET');
