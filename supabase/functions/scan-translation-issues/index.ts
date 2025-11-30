@@ -47,7 +47,7 @@ serve(async (req) => {
     }
 
     const systemPrompt = `You are an expert translation analyzer for React/TypeScript applications.
-Your task is to find ALL hardcoded text strings in UI components that should be translated.
+Your task is to find ALL hardcoded text strings in UI components that should be translated AND provide the CORRECTED CODE.
 
 DETECT these patterns:
 1. toast.success("text"), toast.error("text"), toast.info("text"), toast.warning("text")
@@ -86,7 +86,8 @@ OUTPUT FORMAT (JSON):
       "suggestedKey": "toasts.success.operationComplete",
       "suggestedFr": "French translation",
       "suggestedEn": "English translation",
-      "fix": "toast.success(t.toasts.success.operationComplete)",
+      "originalCode": "toast.success(\"Opération réussie\")",
+      "fixedCode": "toast.success(t.toasts.success.operationComplete)",
       "context": "brief context of where it was found"
     }
   ],
@@ -95,7 +96,8 @@ OUTPUT FORMAT (JSON):
     "fr": 3,
     "en": 1,
     "mixed": 1
-  }
+  },
+  "correctedFullCode": "// The ENTIRE input code with ALL hardcoded strings replaced by t.xxx keys"
 }
 
 KEY NAMING CONVENTIONS:
@@ -105,6 +107,8 @@ KEY NAMING CONVENTIONS:
 - forms.labels.xxx, forms.placeholders.xxx for form props
 - common.xxx for general UI text
 - errors.xxx for error messages
+
+CRITICAL: You MUST provide "correctedFullCode" containing the COMPLETE input code with ALL translations applied. This is essential.
 
 Be thorough but accurate. Only flag actual hardcoded user-facing strings.`;
 
@@ -120,10 +124,10 @@ Be thorough but accurate. Only flag actual hardcoded user-facing strings.`;
           { role: "system", content: systemPrompt },
           { 
             role: "user", 
-            content: `Analyze this code for hardcoded text that needs translation:\n\nFile: ${fileName || "unknown"}\n\n\`\`\`tsx\n${code}\n\`\`\`` 
+            content: `Analyze this code for hardcoded text that needs translation. Return the COMPLETE corrected code in "correctedFullCode":\n\nFile: ${fileName || "unknown"}\n\n\`\`\`tsx\n${code}\n\`\`\`` 
           }
         ],
-        temperature: 0.1,
+        temperature: 0, // Deterministic results
       }),
     });
 
@@ -155,19 +159,21 @@ Be thorough but accurate. Only flag actual hardcoded user-facing strings.`;
       result = { issues: [], summary: { total: 0, fr: 0, en: 0, mixed: 0 } };
     }
 
-    // Generate corrected code
-    let correctedCode = code;
+    // Use AI-generated corrected code directly (much more reliable)
     const issues = result.issues || [];
+    let correctedCode = result.correctedFullCode || code;
     
-    // Sort by line number descending to avoid position shifts when replacing
-    const sortedIssues = [...issues].sort((a, b) => (b.line || 0) - (a.line || 0));
-    
-    for (const issue of sortedIssues) {
-      if (issue.text && issue.fix) {
-        // Simple replacement - in real scenario, would need more sophisticated approach
-        const escapedText = issue.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`["'\`]${escapedText}["'\`]`, 'g');
-        correctedCode = correctedCode.replace(regex, issue.fix.includes('(') ? issue.fix.split('(')[1]?.replace(')', '') || `t.${issue.suggestedKey}` : `{t.${issue.suggestedKey}}`);
+    // If AI didn't provide correctedFullCode, fallback to manual replacement
+    if (!result.correctedFullCode && issues.length > 0) {
+      correctedCode = code;
+      // Sort by line number descending to avoid position shifts when replacing
+      const sortedIssues = [...issues].sort((a, b) => (b.line || 0) - (a.line || 0));
+      
+      for (const issue of sortedIssues) {
+        if (issue.originalCode && issue.fixedCode) {
+          // Use exact original/fixed code provided by AI
+          correctedCode = correctedCode.replace(issue.originalCode, issue.fixedCode);
+        }
       }
     }
 
