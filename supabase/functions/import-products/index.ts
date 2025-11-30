@@ -359,6 +359,19 @@ Deno.serve(async (req: Request) => {
 
     const cleanShopName = shopName.replace(".myshopify.com", "");
     const startTime = new Date().toISOString();
+    
+    // 🔥 FIX: Initial sync_history update to show progress has started
+    const syncHistoryId = body.syncHistoryId;
+    if (syncHistoryId) {
+      await supabaseServiceClient
+        .from('sync_history')
+        .update({
+          items_synced: 0,
+          sync_type: 'products'
+        })
+        .eq('id', syncHistoryId);
+      console.log(`📊 [LIVE PROGRESS] Products: Starting import...`);
+    }
 
     // Fetch shop details to get currency using GraphQL
     let shopCurrency = 'USD';
@@ -730,6 +743,18 @@ Deno.serve(async (req: Request) => {
           products_processed: allProducts.length
         })
         .eq('id', importJob.id);
+      
+      // 🔥 FIX: Update sync_history during FETCH phase (every 2 pages)
+      if (syncHistoryId && pageCount % 2 === 0) {
+        await supabaseServiceClient
+          .from('sync_history')
+          .update({
+            items_synced: allProducts.length,
+            sync_type: 'products'
+          })
+          .eq('id', syncHistoryId);
+        console.log(`📊 [LIVE PROGRESS] Products fetched: ${allProducts.length}`);
+      }
 
       if (hasNextPage && !quotaReached) {
         console.log(`Next page available, continuing with cursor...`);
@@ -925,8 +950,7 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', importJob.id);
       
-      // 🔥 NEW: Update sync_history for live progress (if syncHistoryId provided)
-      const syncHistoryId = body.syncHistoryId;
+      // 🔥 Update sync_history for live progress (syncHistoryId declared at top)
       if (syncHistoryId) {
         const processedCount = Math.min(i + BATCH_SIZE, productsToInsert.length);
         await supabaseServiceClient
