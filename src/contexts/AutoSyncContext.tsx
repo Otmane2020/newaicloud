@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 
 interface AutoSyncContextType {
   isSyncing: boolean;
@@ -22,7 +22,8 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
   const [itemsSynced, setItemsSynced] = useState(0);
   const autoCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startSync = (name: string) => {
+  const startSync = useCallback((name: string) => {
+    console.log('🚀 [AutoSyncContext] startSync called:', name);
     if (autoCloseTimeoutRef.current) {
       clearTimeout(autoCloseTimeoutRef.current);
       autoCloseTimeoutRef.current = null;
@@ -32,20 +33,23 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
     setIsCompleted(false);
     setCurrentType('products');
     setItemsSynced(0);
-  };
+  }, []);
 
-  const updateProgress = (type: string, items: number) => {
+  const updateProgress = useCallback((type: string, items: number) => {
+    console.log('📊 [AutoSyncContext] updateProgress:', type, items);
     setCurrentType(type);
     setItemsSynced(items);
-  };
+  }, []);
 
-  const completeSync = (items: number) => {
+  const completeSync = useCallback((items: number) => {
+    console.log('✅ [AutoSyncContext] completeSync:', items);
     setIsCompleted(true);
     setItemsSynced(items);
     setCurrentType('completed');
-  };
+  }, []);
 
-  const endSync = () => {
+  const endSync = useCallback(() => {
+    console.log('🛑 [AutoSyncContext] endSync called - setting isSyncing=false');
     if (autoCloseTimeoutRef.current) {
       clearTimeout(autoCloseTimeoutRef.current);
       autoCloseTimeoutRef.current = null;
@@ -55,7 +59,7 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
     setCurrentType('products');
     setStoreName('');
     setItemsSynced(0);
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
