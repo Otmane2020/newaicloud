@@ -94,6 +94,7 @@ export function GoogleAdsAdmin() {
   const [googleAdsEmail, setGoogleAdsEmail] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSavingCustomerId, setIsSavingCustomerId] = useState(false);
   
   // Data states
   const [searchTerms, setSearchTerms] = useState<SearchTerm[]>([]);
@@ -264,6 +265,48 @@ export function GoogleAdsAdmin() {
         description: "Impossible de déconnecter",
         variant: "destructive"
       });
+    }
+  };
+
+  const saveCustomerId = async () => {
+    if (!customerId.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un Customer ID",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSavingCustomerId(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Normalize - remove hyphens and spaces
+      const normalizedId = customerId.replace(/[^0-9]/g, '');
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ google_ads_customer_id: normalizedId })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setCustomerId(normalizedId);
+      toast({
+        title: "Customer ID sauvegardé",
+        description: `ID: ${normalizedId}`
+      });
+    } catch (error) {
+      console.error('Error saving customer ID:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder le Customer ID",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingCustomerId(false);
     }
   };
 
@@ -505,7 +548,7 @@ export function GoogleAdsAdmin() {
       {/* Connection Status Card */}
       <Card className="border-green-500/50 bg-green-500/5">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
@@ -515,10 +558,28 @@ export function GoogleAdsAdmin() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {customerId && (
-                <Badge variant="outline">ID: {customerId}</Badge>
-              )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="customerId" className="text-sm whitespace-nowrap">Customer ID:</Label>
+                <Input
+                  id="customerId"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  placeholder="XXX-XXX-XXXX"
+                  className="w-36"
+                />
+                <Button 
+                  size="sm" 
+                  onClick={saveCustomerId}
+                  disabled={isSavingCustomerId}
+                >
+                  {isSavingCustomerId ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Sauver"
+                  )}
+                </Button>
+              </div>
               <Button variant="ghost" size="sm" onClick={disconnectGoogle}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Déconnecter
