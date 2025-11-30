@@ -380,6 +380,18 @@ const FILE_REGISTRY: FileCategory[] = [
   },
 ];
 
+// Get all files from registry
+const getAllFiles = (): string[] => {
+  const allFiles: string[] = [];
+  FILE_REGISTRY.forEach(category => {
+    allFiles.push(...category.files);
+  });
+  return allFiles;
+};
+
+// Total files count
+const TOTAL_FILES_COUNT = getAllFiles().length;
+
 export default function AutoTranslationScanner() {
   const [activeTab, setActiveTab] = useState("files");
   const [code, setCode] = useState("");
@@ -393,6 +405,20 @@ export default function AutoTranslationScanner() {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["Pages"]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Bulk scan states
+  const [isBulkScanning, setIsBulkScanning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, currentFile: "" });
+  const [bulkResults, setBulkResults] = useState<{
+    totalToasts: number;
+    totalDialogs: number;
+    totalProps: number;
+    totalJsxText: number;
+    totalButtons: number;
+    totalAlerts: number;
+    filesWithIssues: number;
+    filesSummary: { file: string; toasts: number; dialogs: number; total: number }[];
+  } | null>(null);
 
   // Load history
   const loadHistory = useCallback(async () => {
@@ -522,6 +548,70 @@ export default function AutoTranslationScanner() {
       toast.error("Erreur lors de l'analyse");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Bulk scan all files in the project
+  const scanAllProject = async () => {
+    const allFiles = getAllFiles();
+    setIsBulkScanning(true);
+    setBulkProgress({ current: 0, total: allFiles.length, currentFile: "" });
+    setBulkResults(null);
+
+    const results = {
+      totalToasts: 0,
+      totalDialogs: 0,
+      totalProps: 0,
+      totalJsxText: 0,
+      totalButtons: 0,
+      totalAlerts: 0,
+      filesWithIssues: 0,
+      filesSummary: [] as { file: string; toasts: number; dialogs: number; total: number }[],
+    };
+
+    try {
+      // Analyze from history - faster approach using existing scans
+      for (const record of history) {
+        if (!record.file_path) continue;
+        
+        const issues = record.issues as DetectedIssue[];
+        if (!Array.isArray(issues)) continue;
+
+        const toasts = issues.filter(i => i.type === 'toast').length;
+        const dialogs = issues.filter(i => i.type === 'dialog').length;
+        const props = issues.filter(i => i.type === 'prop').length;
+        const jsxText = issues.filter(i => i.type === 'jsx_text').length;
+        const buttons = issues.filter(i => i.type === 'button').length;
+        const alerts = issues.filter(i => i.type === 'alert').length;
+
+        results.totalToasts += toasts;
+        results.totalDialogs += dialogs;
+        results.totalProps += props;
+        results.totalJsxText += jsxText;
+        results.totalButtons += buttons;
+        results.totalAlerts += alerts;
+
+        if (record.total_issues > 0) {
+          results.filesWithIssues++;
+          results.filesSummary.push({
+            file: record.file_path,
+            toasts,
+            dialogs,
+            total: record.total_issues,
+          });
+        }
+      }
+
+      // Sort by total issues descending
+      results.filesSummary.sort((a, b) => b.total - a.total);
+
+      setBulkResults(results);
+      toast.success(`Analyse terminée: ${results.totalToasts} toasts, ${results.totalDialogs} dialogs trouvés`);
+    } catch (error) {
+      console.error("Bulk scan error:", error);
+      toast.error("Erreur lors du scan global");
+    } finally {
+      setIsBulkScanning(false);
     }
   };
 
@@ -679,8 +769,91 @@ export default function AutoTranslationScanner() {
           </TabsList>
 
           {/* Files Tab */}
-          <TabsContent value="files" className="space-y-2">
-            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground mb-4">
+          <TabsContent value="files" className="space-y-4">
+            {/* Bulk Scan Section */}
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Scanner Global du Projet
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {TOTAL_FILES_COUNT} fichiers enregistrés • Analyse basée sur l'historique des scans
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={scanAllProject} 
+                    disabled={isBulkScanning}
+                    variant="default"
+                  >
+                    {isBulkScanning ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Scan en cours...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Calculer le Total
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Bulk Results */}
+                {bulkResults && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <div className="p-3 bg-red-500/10 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-red-500">{bulkResults.totalToasts}</div>
+                        <div className="text-xs text-muted-foreground">Toasts</div>
+                      </div>
+                      <div className="p-3 bg-purple-500/10 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-purple-500">{bulkResults.totalDialogs}</div>
+                        <div className="text-xs text-muted-foreground">Dialogs</div>
+                      </div>
+                      <div className="p-3 bg-blue-500/10 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-blue-500">{bulkResults.totalButtons}</div>
+                        <div className="text-xs text-muted-foreground">Buttons</div>
+                      </div>
+                      <div className="p-3 bg-yellow-500/10 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-yellow-500">{bulkResults.totalProps}</div>
+                        <div className="text-xs text-muted-foreground">Props</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">
+                        {bulkResults.filesWithIssues} fichier(s) avec problèmes (sur {history.length} scannés)
+                      </span>
+                      <Badge variant="destructive">
+                        Total: {bulkResults.totalToasts + bulkResults.totalDialogs + bulkResults.totalButtons + bulkResults.totalProps + bulkResults.totalJsxText + bulkResults.totalAlerts}
+                      </Badge>
+                    </div>
+
+                    {bulkResults.filesSummary.length > 0 && (
+                      <ScrollArea className="h-[150px] mt-2">
+                        <div className="space-y-1">
+                          {bulkResults.filesSummary.slice(0, 15).map((f, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded text-xs">
+                              <span className="truncate flex-1">{f.file}</span>
+                              <div className="flex gap-2 ml-2">
+                                {f.toasts > 0 && <Badge variant="outline" className="bg-red-500/10 text-red-500">{f.toasts} toasts</Badge>}
+                                {f.dialogs > 0 && <Badge variant="outline" className="bg-purple-500/10 text-purple-500">{f.dialogs} dialogs</Badge>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
               <p>📁 Cliquez sur un fichier pour l'analyser. Vous devrez coller son contenu depuis votre IDE.</p>
             </div>
             <ScrollArea className="h-[400px]">
