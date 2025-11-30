@@ -17,6 +17,20 @@ export function AutoSyncProgressDialog() {
   const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Simulate incremental progress over time
+  // Auto-close after completion
+  React.useEffect(() => {
+    if (isCompleted) {
+      setProgress(100);
+      setDisplayType('completed');
+      // Auto-close after 2.5 seconds
+      const autoCloseTimer = setTimeout(() => {
+        endSync();
+      }, 2500);
+      return () => clearTimeout(autoCloseTimer);
+    }
+  }, [isCompleted, endSync]);
+
+  // Simulate progress while syncing
   React.useEffect(() => {
     if (isSyncing && !isCompleted) {
       if (!syncStartTimeRef.current) {
@@ -25,51 +39,31 @@ export function AutoSyncProgressDialog() {
         setDisplayType('import');
       }
       
-      // Increment progress every 2 seconds
       progressIntervalRef.current = setInterval(() => {
         const elapsed = Date.now() - (syncStartTimeRef.current || Date.now());
         const seconds = elapsed / 1000;
         
-        // Progress simulation: 5% → 95% over ~3 minutes
-        // Fast at start, slower near end (logarithmic-like)
         let newProgress = Math.min(95, 5 + (seconds * 0.5));
         
-        // Determine display type based on progress
         let newType = 'import';
-        if (newProgress >= 85) {
-          newType = 'images';
-        } else if (newProgress >= 70) {
-          newType = 'articles';
-        } else if (newProgress >= 55) {
-          newType = 'pages';
-        } else if (newProgress >= 40) {
-          newType = 'collections';
-        } else if (newProgress >= 20) {
-          newType = 'products';
-        }
+        if (newProgress >= 85) newType = 'images';
+        else if (newProgress >= 70) newType = 'articles';
+        else if (newProgress >= 55) newType = 'pages';
+        else if (newProgress >= 40) newType = 'collections';
+        else if (newProgress >= 20) newType = 'products';
         
         setProgress(Math.round(newProgress));
         setDisplayType(newType);
       }, 2000);
       
       return () => {
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       };
-    } else if (isCompleted) {
-      setProgress(100);
-      setDisplayType('completed');
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    } else {
+    } else if (!isSyncing) {
       syncStartTimeRef.current = null;
       setProgress(5);
       setDisplayType('import');
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     }
   }, [isSyncing, isCompleted]);
   
