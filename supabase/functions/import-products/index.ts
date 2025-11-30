@@ -1245,13 +1245,13 @@ Deno.serve(async (req: Request) => {
         for (const img of existingImages) {
           const isFromShopify = isShopifyCdnUrl(img.src);
           
-          // Preserve ONLY if:
-          // 1. NOT from Shopify CDN (truly generated/local image)
-          // 2. OR has optimization_count > 0 (was optimized, even if from Shopify)
-          if (!isFromShopify || img.optimization_count > 0) {
+          // Preserve ONLY truly local/generated images (NOT from Shopify CDN)
+          // All Shopify CDN images should be deleted and re-imported fresh
+          // regardless of optimization_count to ensure clean sync
+          if (!isFromShopify) {
             preservedImages.push(img);
           } else {
-            // Delete Shopify CDN images (will be re-imported fresh)
+            // Shopify CDN images → always delete and re-import
             imagesToDelete.push(img.id);
           }
         }
