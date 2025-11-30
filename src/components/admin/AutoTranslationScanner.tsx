@@ -521,14 +521,27 @@ export default function AutoTranslationScanner() {
                           <Wand2 className="h-5 w-5 text-green-500" />
                           Code Corrigé
                         </CardTitle>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(result.correctedCode, "code")}
-                        >
-                          {copiedField === "code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                          Copier
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setCode(result.correctedCode);
+                              toast.success("Code remplacé ! Copiez-le dans votre IDE.");
+                            }}
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Appliquer Fix
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(result.correctedCode, "code")}
+                          >
+                            {copiedField === "code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                            Copier
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -792,14 +805,27 @@ export default function AutoTranslationScanner() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Code corrigé</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(result.correctedCode, "dialog-code")}
-                        >
-                          {copiedField === "dialog-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                          Copier
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setCode(result.correctedCode);
+                              toast.success("Code remplacé ! Copiez-le dans votre IDE.");
+                            }}
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Appliquer Fix
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(result.correctedCode, "dialog-code")}
+                          >
+                            {copiedField === "dialog-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                            Copier
+                          </Button>
+                        </div>
                       </div>
                       <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre-wrap max-h-[200px] overflow-auto">
                         {result.correctedCode}
