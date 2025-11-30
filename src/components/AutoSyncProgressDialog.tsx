@@ -62,7 +62,7 @@ export function AutoSyncProgressDialog() {
       const tenMinutesAgo = new Date(Date.now() - 600000).toISOString();
       const { data, error } = await supabase
         .from('sync_history')
-        .select(`id, status, sync_type, items_synced, store_id`)
+        .select(`id, status, sync_type, items_synced, store_id, started_at`)
         .eq('user_id', user.id)
         .gte('started_at', tenMinutesAgo)
         .order('started_at', { ascending: false })
@@ -70,6 +70,25 @@ export function AutoSyncProgressDialog() {
         .maybeSingle();
 
       if (error || !data) return null;
+
+      // Auto-complete syncs stuck for more than 5 minutes
+      if (data.status === 'running' && data.started_at) {
+        const startedAt = new Date(data.started_at).getTime();
+        const fiveMinutesAgo = Date.now() - 300000;
+        if (startedAt < fiveMinutesAgo) {
+          console.log('⚠️ Sync stuck for >5min, auto-completing:', data.id);
+          // Mark as completed in DB
+          await supabase
+            .from('sync_history')
+            .update({ 
+              status: 'success', 
+              sync_type: 'completed',
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', data.id);
+          return { ...data, status: 'success', sync_type: 'completed' } as SyncData;
+        }
+      }
 
       let storeName = '';
       if (data.store_id) {
