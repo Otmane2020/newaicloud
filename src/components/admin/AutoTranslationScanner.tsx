@@ -1232,6 +1232,67 @@ ${formatObject(translations)}
                         </div>
                       )}
 
+                      {/* Auto-Add Translations Section */}
+                      {autoScanResults.totalIssues > 0 && (
+                        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg p-4 space-y-3">
+                          <h4 className="font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+                            <Sparkles className="h-5 w-5" />
+                            🎯 Ajouter automatiquement les traductions
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {autoScanResults.totalIssues} traductions détectées. Copiez le code ci-dessous et ajoutez-le à vos fichiers de traduction.
+                          </p>
+                          
+                          {/* Preview of translations */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">🇫🇷 Traductions FR</span>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    const frCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.fr, 'fr');
+                                    copyToClipboard(frCode, "auto-fr");
+                                  }}
+                                >
+                                  {copiedField === "auto-fr" ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+                                  Copier
+                                </Button>
+                              </div>
+                              <div className="bg-muted rounded p-2 max-h-32 overflow-y-auto">
+                                <pre className="text-xs font-mono whitespace-pre-wrap">
+                                  {JSON.stringify(autoScanResults.aggregatedTranslations.fr, null, 2).substring(0, 500)}
+                                  {JSON.stringify(autoScanResults.aggregatedTranslations.fr, null, 2).length > 500 && '...'}
+                                </pre>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">🇬🇧 Traductions EN</span>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    const enCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.en, 'en');
+                                    copyToClipboard(enCode, "auto-en");
+                                  }}
+                                >
+                                  {copiedField === "auto-en" ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+                                  Copier
+                                </Button>
+                              </div>
+                              <div className="bg-muted rounded p-2 max-h-32 overflow-y-auto">
+                                <pre className="text-xs font-mono whitespace-pre-wrap">
+                                  {JSON.stringify(autoScanResults.aggregatedTranslations.en, null, 2).substring(0, 500)}
+                                  {JSON.stringify(autoScanResults.aggregatedTranslations.en, null, 2).length > 500 && '...'}
+                                </pre>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Download Buttons */}
                       <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
                         <Button 
@@ -1240,27 +1301,27 @@ ${formatObject(translations)}
                           size="lg"
                         >
                           <FileText className="mr-2 h-5 w-5" />
-                          📥 Télécharger les Traductions
+                          📥 Télécharger Fichiers Complets
                         </Button>
                         <Button 
                           variant="outline"
                           onClick={() => {
                             const frCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.fr, 'fr');
-                            copyToClipboard(frCode, "auto-fr");
+                            copyToClipboard(frCode, "auto-fr-full");
                           }}
                         >
-                          {copiedField === "auto-fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                          Copier fr.ts
+                          {copiedField === "auto-fr-full" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier fr.ts complet
                         </Button>
                         <Button 
                           variant="outline"
                           onClick={() => {
                             const enCode = generateFullTranslationFile(autoScanResults.aggregatedTranslations.en, 'en');
-                            copyToClipboard(enCode, "auto-en");
+                            copyToClipboard(enCode, "auto-en-full");
                           }}
                         >
-                          {copiedField === "auto-en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                          Copier en.ts
+                          {copiedField === "auto-en-full" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier en.ts complet
                         </Button>
                       </div>
                     </CardContent>
