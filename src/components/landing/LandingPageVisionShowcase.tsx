@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
 import { 
@@ -8,22 +7,20 @@ import {
   ArrowRight, 
   Eye, 
   Zap,
-  Image,
-  MousePointerClick,
   CheckCircle2
 } from "lucide-react";
 import { useState } from "react";
+import sofaImage from "@/assets/sofa-product.jpg";
 
 export const LandingPageVisionShowcase = () => {
   const navigate = useNavigate();
-  const { t, language } = useTranslation();
-  const [isHovered, setIsHovered] = useState(false);
+  const { language } = useTranslation();
   const [showAfter, setShowAfter] = useState(false);
 
   const labels = {
     badge: language === 'fr' ? 'Vision AI Landing Pages' : 'Vision AI Landing Pages',
     title: language === 'fr' 
-      ? 'Des Landing Pages qui convertissent' 
+      ? 'Landing Pages qui convertissent' 
       : 'Landing Pages that Convert',
     subtitle: language === 'fr'
       ? "Notre IA analyse visuellement vos produits pour créer des pages de vente ultra-personnalisées"
@@ -31,223 +28,209 @@ export const LandingPageVisionShowcase = () => {
     before: language === 'fr' ? 'Avant' : 'Before',
     after: language === 'fr' ? 'Après Vision AI' : 'After Vision AI',
     cta: language === 'fr' ? 'Créer ma Landing Page' : 'Create my Landing Page',
+    productTitle: language === 'fr' ? 'Canapé Velours Premium' : 'Premium Velvet Sofa',
+    productDesc: language === 'fr' 
+      ? 'Design scandinave moderne avec coussin moelleux extra-confort'
+      : 'Modern Scandinavian design with extra-comfort plush cushions',
     features: language === 'fr' ? [
-      'Analyse visuelle des produits',
-      'Design responsive automatique',
-      'Optimisé pour la conversion',
-      'Publication Shopify en 1 clic'
+      'Analyse visuelle IA',
+      'Design responsive auto',
+      'Optimisé conversion',
+      '1-clic Shopify'
     ] : [
-      'Visual product analysis',
-      'Automatic responsive design',
-      'Optimized for conversion',
-      'One-click Shopify publish'
-    ]
+      'AI Visual Analysis',
+      'Auto Responsive',
+      'Conversion Ready',
+      '1-click Shopify'
+    ],
+    priceTag: '1 299 €',
+    badge1: language === 'fr' ? 'Livraison gratuite' : 'Free shipping',
+    badge2: language === 'fr' ? 'Garantie 5 ans' : '5-year warranty'
   };
 
   return (
-    <section className="relative py-16 sm:py-24 overflow-hidden">
-      {/* Background gradients */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-accent/30 rounded-full blur-3xl animate-pulse delay-700" />
-      
-      <div className="container relative mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12 sm:mb-16 space-y-4">
-          <Badge className="bg-gradient-to-r from-primary to-accent text-white border-0 px-4 py-2 text-sm">
-            <Eye className="w-4 h-4 mr-2" />
+    <section className="py-12 sm:py-20 bg-gradient-to-b from-background to-muted/30">
+      <div className="container mx-auto px-4">
+        {/* Header - Mobile First */}
+        <div className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4">
+          <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 px-3 py-1.5 text-xs sm:text-sm">
+            <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
             {labels.badge}
           </Badge>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
             {labels.title}
           </h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto text-gray-300">
+          <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto px-2">
             {labels.subtitle}
           </p>
         </div>
 
-        {/* Before/After Visual Comparison */}
-        <div className="max-w-5xl mx-auto">
-          <div 
-            className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-2xl cursor-pointer"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={() => setShowAfter(!showAfter)}
-          >
-            {/* Before State - Generic Product Page */}
-            <div 
-              className={`transition-all duration-700 ease-in-out ${showAfter ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
-              style={{ display: showAfter ? 'none' : 'block' }}
-            >
-              <div className="bg-white p-6 sm:p-10">
-                {/* Generic Product Page Mockup */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-32 mb-2" />
-                      <div className="h-3 bg-gray-100 rounded w-48" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center">
-                      <Image className="w-16 h-16 text-gray-300" />
-                    </div>
-                    <div className="space-y-4">
-                      <div className="h-6 bg-gray-200 rounded w-3/4" />
-                      <div className="h-4 bg-gray-100 rounded w-1/2" />
-                      <div className="space-y-2">
-                        <div className="h-3 bg-gray-100 rounded" />
-                        <div className="h-3 bg-gray-100 rounded w-5/6" />
-                        <div className="h-3 bg-gray-100 rounded w-4/6" />
-                      </div>
-                      <div className="h-10 bg-gray-200 rounded-lg w-32 mt-6" />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Before Label */}
-                <div className="absolute top-4 left-4">
-                  <Badge variant="secondary" className="bg-gray-800/80 text-white px-3 py-1.5">
-                    {labels.before}
-                  </Badge>
-                </div>
-              </div>
+        {/* Before/After Comparison - Mobile First */}
+        <div className="max-w-4xl mx-auto">
+          <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-border shadow-xl bg-card">
+            
+            {/* Toggle Tabs */}
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setShowAfter(false)}
+                className={`flex-1 py-3 sm:py-4 px-4 text-sm sm:text-base font-medium transition-all ${
+                  !showAfter 
+                    ? 'bg-muted text-foreground border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                {labels.before}
+              </button>
+              <button
+                onClick={() => setShowAfter(true)}
+                className={`flex-1 py-3 sm:py-4 px-4 text-sm sm:text-base font-medium transition-all flex items-center justify-center gap-2 ${
+                  showAfter 
+                    ? 'bg-gradient-to-r from-primary/10 to-accent/10 text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {labels.after}
+              </button>
             </div>
 
-            {/* After State - Vision AI Enhanced Landing Page */}
-            <div 
-              className={`transition-all duration-700 ease-in-out ${showAfter ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-              style={{ display: showAfter ? 'block' : 'none' }}
-            >
-              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-10">
-                {/* AI Enhanced Landing Page Mockup */}
-                <div className="space-y-6">
-                  {/* Hero Section with gradient */}
-                  <div className="relative rounded-xl overflow-hidden bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 p-8">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/40 via-transparent to-transparent" />
-                    <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                      <div className="space-y-4">
-                        <Badge className="bg-primary/80 text-white border-0">
-                          <Sparkles className="w-3 h-3 mr-1" /> Premium
+            {/* Content Area */}
+            <div className="relative min-h-[400px] sm:min-h-[450px]">
+              {/* Before State - Basic Product Display */}
+              <div 
+                className={`transition-all duration-500 ${showAfter ? 'opacity-0 absolute inset-0' : 'opacity-100'}`}
+              >
+                <div className="p-4 sm:p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+                    {/* Product Image - Plain */}
+                    <div className="w-full md:w-1/2">
+                      <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+                        <img 
+                          src={sofaImage} 
+                          alt="Sofa product" 
+                          className="w-full h-full object-cover grayscale-[30%] opacity-90"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Basic Product Info - Skeleton */}
+                    <div className="w-full md:w-1/2 space-y-3 sm:space-y-4">
+                      <div className="h-5 sm:h-6 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-muted rounded"></div>
+                        <div className="h-3 bg-muted rounded w-5/6"></div>
+                        <div className="h-3 bg-muted rounded w-4/6"></div>
+                      </div>
+                      <div className="pt-2">
+                        <div className="h-10 sm:h-12 bg-muted rounded-lg w-28 sm:w-32"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* After State - AI Enhanced Landing Page */}
+              <div 
+                className={`transition-all duration-500 ${showAfter ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}
+              >
+                <div className="p-4 sm:p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+                    {/* Enhanced Product Image */}
+                    <div className="w-full md:w-1/2">
+                      <div className="aspect-[4/3] rounded-xl overflow-hidden relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/10"></div>
+                        <img 
+                          src={sofaImage} 
+                          alt="Premium Velvet Sofa" 
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Vision AI Badge */}
+                        <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3">
+                          <Badge className="bg-background/90 text-foreground text-[10px] sm:text-xs backdrop-blur-sm shadow-lg">
+                            <Eye className="w-3 h-3 mr-1 text-primary" /> Vision AI
+                          </Badge>
+                        </div>
+                        <div className="absolute inset-0 ring-2 ring-primary/20 rounded-xl"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced Product Info */}
+                    <div className="w-full md:w-1/2 space-y-3 sm:space-y-4">
+                      <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                        <Sparkles className="w-3 h-3 mr-1" /> Premium
+                      </Badge>
+                      
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+                        {labels.productTitle}
+                      </h3>
+                      
+                      <p className="text-muted-foreground text-sm sm:text-base">
+                        {labels.productDesc}
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="border-green-500/50 text-green-600 bg-green-50 text-xs">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> {labels.badge1}
                         </Badge>
-                        <h3 className="text-2xl sm:text-3xl font-bold text-white">
-                          Lampe Designer Premium
-                        </h3>
-                        <p className="text-gray-300 text-sm">
-                          Éclairage d'ambiance sophistiqué avec détection automatique de luminosité
-                        </p>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="border-success text-success bg-success/10 text-xs">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> Eco-friendly
-                          </Badge>
-                          <Badge variant="outline" className="border-primary text-primary bg-primary/10 text-xs">
-                            <Zap className="w-3 h-3 mr-1" /> LED
-                          </Badge>
-                        </div>
-                        <Button className="bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/30">
-                          Acheter maintenant
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
+                        <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 text-xs">
+                          <Zap className="w-3 h-3 mr-1" /> {labels.badge2}
+                        </Badge>
                       </div>
-                      <div className="aspect-square rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-accent/20" />
-                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-200 to-amber-400 blur-sm opacity-80" />
-                        <div className="absolute bottom-2 right-2">
-                          <Badge className="bg-white/20 text-white text-[10px] backdrop-blur-sm">
-                            <Eye className="w-3 h-3 mr-1" /> Vision AI
-                          </Badge>
-                        </div>
+                      
+                      <div className="text-2xl sm:text-3xl font-bold text-foreground">
+                        {labels.priceTag}
                       </div>
+                      
+                      <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg hover:shadow-xl transition-all">
+                        {language === 'fr' ? 'Acheter maintenant' : 'Buy now'}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
                     </div>
                   </div>
                   
-                  {/* Features Grid */}
-                  <div className="grid grid-cols-3 gap-4">
-                    {['🎨 Design unique', '📦 Livraison express', '⭐ Garantie 2 ans'].map((feature, i) => (
-                      <div key={i} className="bg-white/5 rounded-lg p-3 text-center">
-                        <p className="text-white text-xs sm:text-sm">{feature}</p>
+                  {/* Feature highlights */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border">
+                    {['🎨', '📦', '⭐'].map((emoji, i) => (
+                      <div key={i} className="bg-muted/50 rounded-lg p-2 sm:p-3 text-center">
+                        <span className="text-lg sm:text-xl">{emoji}</span>
+                        <p className="text-foreground text-[10px] sm:text-xs mt-1">
+                          {language === 'fr' 
+                            ? ['Design unique', 'Express', 'Garantie'][i]
+                            : ['Unique design', 'Express', 'Warranty'][i]
+                          }
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
-                
-                {/* After Label */}
-                <div className="absolute top-4 left-4">
-                  <Badge className="bg-gradient-to-r from-primary to-accent text-white border-0 px-3 py-1.5 shadow-lg">
-                    <Sparkles className="w-3 h-3 mr-1.5 animate-pulse" />
-                    {labels.after}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* Interactive Hover Overlay */}
-            <div 
-              className={`absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isHovered && !showAfter ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            >
-              <div className="text-center space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/80 flex items-center justify-center animate-pulse">
-                  <MousePointerClick className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-white font-semibold">
-                  {language === 'fr' ? 'Cliquez pour voir la magie' : 'Click to see the magic'}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Toggle Button */}
-          <div className="flex justify-center mt-6">
-            <Button 
-              variant={showAfter ? "default" : "outline"}
-              size="lg"
-              onClick={() => setShowAfter(!showAfter)}
-              className={showAfter 
-                ? "bg-gradient-to-r from-primary to-accent text-white border-0" 
-                : "border-white/30 text-white hover:bg-white/10"
-              }
-            >
-              {showAfter ? (
-                <>
-                  <Eye className="w-4 h-4 mr-2" />
-                  {language === 'fr' ? 'Voir Avant' : 'See Before'}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {language === 'fr' ? 'Activer Vision AI' : 'Activate Vision AI'}
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Features List */}
-        <div className="mt-12 sm:mt-16 grid sm:grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-          {labels.features.map((feature, index) => (
-            <Card 
-              key={index} 
-              className="bg-white/5 border-white/10 p-4 text-center hover:bg-white/10 transition-colors"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-white text-sm">{feature}</span>
+          {/* Feature Pills - Mobile Optimized */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-6 sm:mt-8">
+            {labels.features.map((feature, index) => (
+              <div 
+                key={index} 
+                className="flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5 sm:px-4 sm:py-2 shadow-sm"
+              >
+                <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                <span className="text-foreground text-xs sm:text-sm">{feature}</span>
               </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-10 sm:mt-12">
+        <div className="text-center mt-8 sm:mt-12">
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
+            className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg hover:shadow-xl transition-all text-sm sm:text-base px-6 sm:px-8"
             onClick={() => navigate('/auth?mode=signup&plan=trial')}
           >
             {labels.cta}
-            <ArrowRight className="w-5 h-5 ml-2" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
           </Button>
         </div>
       </div>
