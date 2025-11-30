@@ -395,6 +395,41 @@ export default function AutoTranslationScanner() {
     }
   };
 
+  // Generate translation code formatted for fr.ts or en.ts
+  const generateTranslationCode = (translations: Record<string, unknown>, lang: 'fr' | 'en'): string => {
+    if (!translations || Object.keys(translations).length === 0) {
+      return `// Aucune traduction ${lang === 'fr' ? 'française' : 'anglaise'} à ajouter`;
+    }
+    
+    const lines: string[] = [];
+    lines.push(`// === Ajouter à src/lib/translations/${lang}.ts ===`);
+    lines.push(`// Fusionnez ces clés dans les sections existantes ou créez-les si nécessaire\n`);
+    
+    const formatObject = (obj: Record<string, unknown>, indent: number = 0): string[] => {
+      const result: string[] = [];
+      const spaces = '  '.repeat(indent);
+      
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          result.push(`${spaces}${key}: {`);
+          result.push(...formatObject(value as Record<string, unknown>, indent + 1));
+          result.push(`${spaces}},`);
+        } else if (typeof value === 'string') {
+          // Escape quotes in strings
+          const escapedValue = value.replace(/"/g, '\\"');
+          result.push(`${spaces}${key}: "${escapedValue}",`);
+        } else {
+          result.push(`${spaces}${key}: ${JSON.stringify(value)},`);
+        }
+      }
+      return result;
+    };
+    
+    lines.push(...formatObject(translations));
+    
+    return lines.join('\n');
+  };
+
   // Delete history item
   const deleteHistoryItem = async (id: string) => {
     try {
@@ -1023,40 +1058,65 @@ export default function AutoTranslationScanner() {
                   </Card>
                 )}
 
-                {/* Translations JSON */}
+                {/* Translations to add - Enhanced with formatted code */}
                 {(Object.keys(result.translationsFr).length > 0 || Object.keys(result.translationsEn).length > 0) && (
-                  <Card>
+                  <Card className="border-purple-500/30 bg-purple-500/5">
                     <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Languages className="h-5 w-5 text-purple-500" />
-                          Traductions à Ajouter
+                          Traductions à Ajouter aux Fichiers
                         </CardTitle>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(
-                            `// FR:\n${JSON.stringify(result.translationsFr, null, 2)}\n\n// EN:\n${JSON.stringify(result.translationsEn, null, 2)}`,
-                            "dialog-translations"
-                          )}
-                        >
-                          {copiedField === "dialog-translations" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                          Copier tout
-                        </Button>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => {
+                              const frCode = generateTranslationCode(result.translationsFr, 'fr');
+                              copyToClipboard(frCode, "fr-translations");
+                            }}
+                          >
+                            {copiedField === "fr-translations" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                            Copier pour fr.ts
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => {
+                              const enCode = generateTranslationCode(result.translationsEn, 'en');
+                              copyToClipboard(enCode, "en-translations");
+                            }}
+                          >
+                            {copiedField === "en-translations" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                            Copier pour en.ts
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                          <strong>Instructions:</strong> Copiez le code et ajoutez-le dans la section appropriée du fichier de traduction. 
+                          Fusionnez les clés avec les sections existantes si elles existent déjà.
+                        </p>
+                      </div>
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                          <h4 className="text-sm font-medium mb-2 text-blue-600">🇫🇷 Français</h4>
-                          <ScrollArea className="h-[120px]">
-                            <pre className="text-xs font-mono bg-blue-500/10 p-3 rounded-lg">{JSON.stringify(result.translationsFr, null, 2)}</pre>
+                          <h4 className="text-sm font-medium mb-2 text-blue-600">🇫🇷 src/lib/translations/fr.ts</h4>
+                          <ScrollArea className="h-[200px]">
+                            <pre className="text-xs font-mono bg-blue-500/10 p-3 rounded-lg whitespace-pre-wrap">
+                              {generateTranslationCode(result.translationsFr, 'fr')}
+                            </pre>
                           </ScrollArea>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium mb-2 text-red-600">🇬🇧 English</h4>
-                          <ScrollArea className="h-[120px]">
-                            <pre className="text-xs font-mono bg-red-500/10 p-3 rounded-lg">{JSON.stringify(result.translationsEn, null, 2)}</pre>
+                          <h4 className="text-sm font-medium mb-2 text-red-600">🇬🇧 src/lib/translations/en.ts</h4>
+                          <ScrollArea className="h-[200px]">
+                            <pre className="text-xs font-mono bg-red-500/10 p-3 rounded-lg whitespace-pre-wrap">
+                              {generateTranslationCode(result.translationsEn, 'en')}
+                            </pre>
                           </ScrollArea>
                         </div>
                       </div>
