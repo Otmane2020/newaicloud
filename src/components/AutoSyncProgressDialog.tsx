@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle2, Package, Image, FileText, Newspaper } from 'lucide-react';
-import { useTranslation } from '@/lib/language';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -24,7 +23,6 @@ const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; p
 
 export function AutoSyncProgressDialog() {
   const location = useLocation();
-  const { t, tf } = useTranslation();
   const [syncData, setSyncData] = React.useState<SyncData | null>(null);
   const [progress, setProgress] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
@@ -135,8 +133,8 @@ export function AutoSyncProgressDialog() {
             setVisible(false);
             
             if (data.status === 'success') {
-              toast.success(t.dialogs?.autoSync?.syncComplete || 'Synchronisation réussie', {
-                description: tf('dialogs.autoSync.itemsImported', { count: data.items_synced || 0 }) || `${data.items_synced || 0} éléments importés`,
+              toast.success('Synchronisation réussie', {
+                description: `${data.items_synced || 0} éléments importés`,
                 duration: 4000,
               });
             }
@@ -146,7 +144,7 @@ export function AutoSyncProgressDialog() {
               setProgress(0);
               setTargetProgress(0);
             }, 300);
-          }, 1000);
+          }, 1500);
         }
       }
     }, 2000);
@@ -155,7 +153,7 @@ export function AutoSyncProgressDialog() {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [checkForRunningSync, visible, t, tf]);
+  }, [checkForRunningSync, visible]);
 
   // Excluded pages
   const isOnboardingWithoutShopify = location.pathname.startsWith('/onboarding') && 
@@ -217,7 +215,7 @@ export function AutoSyncProgressDialog() {
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
               <CurrentIcon className="w-4 h-4 text-[#95bf46]" />
               <span className="text-sm font-medium text-foreground">
-                {currentConfig.label}
+                {isComplete ? 'Import terminé' : currentConfig.label}
               </span>
               {syncData.items_synced ? (
                 <span className="text-sm text-muted-foreground">
@@ -258,7 +256,7 @@ export function AutoSyncProgressDialog() {
           {/* Helper text */}
           <p className="text-center text-xs text-muted-foreground">
             {isComplete 
-              ? 'Redirection automatique...' 
+              ? 'Fermeture automatique...' 
               : 'Veuillez patienter pendant l\'import de vos données...'}
           </p>
         </div>
