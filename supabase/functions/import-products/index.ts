@@ -1298,15 +1298,31 @@ Deno.serve(async (req: Request) => {
       }
       
       // Filter images to insert - exclude those with matching URLs in preserved images
-      const imagesToInsert = allImages.filter(img => {
+      const imagesToInsertRaw = allImages.filter(img => {
         const existingUrls = existingUrlsByProduct.get(img.product_id);
         const normalizedSrc = cleanUrl(img.src);
         return !existingUrls || !existingUrls.has(normalizedSrc);
       });
       
-      const skippedImages = allImages.length - imagesToInsert.length;
+      const skippedImages = allImages.length - imagesToInsertRaw.length;
       if (skippedImages > 0) {
         console.log(`⏭️ Skipped ${skippedImages} images (already exist as generated/optimized)`);
+      }
+      
+      // CRITICAL FIX: Deduplicate by (product_id, shopify_image_id) to prevent batch failures
+      // Error: "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      const dedupeMap = new Map<string, typeof imagesToInsertRaw[0]>();
+      for (const img of imagesToInsertRaw) {
+        const key = `${img.product_id}-${img.shopify_image_id}`;
+        if (!dedupeMap.has(key)) {
+          dedupeMap.set(key, img);
+        }
+      }
+      const imagesToInsert = Array.from(dedupeMap.values());
+      
+      const duplicatesRemoved = imagesToInsertRaw.length - imagesToInsert.length;
+      if (duplicatesRemoved > 0) {
+        console.log(`🔄 Removed ${duplicatesRemoved} duplicate images (same product_id + shopify_image_id)`);
       }
       
       // STEP 4: Insert fresh images from Shopify
@@ -1314,7 +1330,7 @@ Deno.serve(async (req: Request) => {
         const IMAGE_BATCH_SIZE = 500;
         const imageBatches = Math.ceil(imagesToInsert.length / IMAGE_BATCH_SIZE);
         
-        console.log(`📦 Inserting ${imagesToInsert.length} fresh Shopify images in ${imageBatches} batches`);
+        console.log(`📦 Inserting ${imagesToInsert.length} deduplicated Shopify images in ${imageBatches} batches`);
         
         for (let i = 0; i < imagesToInsert.length; i += IMAGE_BATCH_SIZE) {
           const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
