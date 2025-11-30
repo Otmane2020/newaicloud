@@ -7,6 +7,17 @@ import { useLocation } from 'react-router-dom';
 import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
+// Map sync types to progress percentages
+const TYPE_PROGRESS: Record<string, number> = {
+  'products': 20,
+  'costs': 30,
+  'collections': 50,
+  'pages': 65,
+  'articles': 80,
+  'images': 95,
+  'completed': 100,
+};
+
 export function AutoSyncProgressDialog() {
   const { isSyncing, isCompleted, currentType, storeName, itemsSynced, endSync } = useAutoSyncProgress();
   const location = useLocation();
@@ -46,8 +57,8 @@ export function AutoSyncProgressDialog() {
     endSync();
   };
 
-  // Real progress: use itemsSynced, cap at 95% until completed
-  const progress = isCompleted ? 100 : Math.min(95, Math.max(1, itemsSynced));
+  // Progress based on sync_type (real-time from backend)
+  const progress = isCompleted ? 100 : (TYPE_PROGRESS[currentType] || 10);
 
   const getIcon = (type: string) => {
     if (isCompleted) {
@@ -55,6 +66,7 @@ export function AutoSyncProgressDialog() {
     }
     switch (type) {
       case 'products':
+      case 'costs':
         return <Package className="w-6 h-6" />;
       case 'collections':
         return <FolderOpen className="w-6 h-6" />;
@@ -71,7 +83,7 @@ export function AutoSyncProgressDialog() {
 
   const getTypeLabel = (type: string) => {
     const types = t.dialogs.autoSync.types as Record<string, string>;
-    if (!type || type === 'import' || type === 'products') return types['products'] || 'Products';
+    if (!type || type === 'products' || type === 'costs') return types['products'] || 'Products';
     return types[type] || type;
   };
 
@@ -137,7 +149,7 @@ export function AutoSyncProgressDialog() {
           <div className="w-full max-w-xs space-y-2">
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div 
-                className={`h-full transition-all duration-500 ease-out ${
+                className={`h-full transition-all duration-700 ease-out ${
                   isCompleted 
                     ? 'bg-gradient-to-r from-green-500 to-green-600' 
                     : 'bg-gradient-to-r from-primary to-primary-dark'
@@ -148,7 +160,7 @@ export function AutoSyncProgressDialog() {
             <p className="text-xs text-center text-muted-foreground">
               {isCompleted 
                 ? t.dialogs.autoSync.successMessage
-                : `${getTypeLabel(currentType)} • ${itemsSynced} items`
+                : `${getTypeLabel(currentType)} • ${progress}%`
               }
             </p>
           </div>

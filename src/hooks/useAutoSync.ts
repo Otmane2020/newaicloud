@@ -33,8 +33,10 @@ export const useAutoSync = (userId: string | undefined) => {
     console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
     
     // Helper to check sync status and handle completion
+    let checkCount = 0;
     const checkSyncStatus = async () => {
-      console.log('🔍 [AutoSync] Checking sync status...');
+      checkCount++;
+      console.log('🔍 [AutoSync] Checking sync status... (attempt', checkCount, ')');
       
       // Query syncs for this user - check both by ID and recent ones
       let latestSync = null;
@@ -49,7 +51,7 @@ export const useAutoSync = (userId: string | undefined) => {
         
         if (!error && data) {
           latestSync = data;
-          console.log('📊 [AutoSync] Found tracked sync:', latestSync.id, 'status:', latestSync.status);
+          console.log('📊 [AutoSync] Found tracked sync:', latestSync.id, 'status:', latestSync.status, 'type:', latestSync.sync_type);
         }
       }
       
@@ -70,13 +72,17 @@ export const useAutoSync = (userId: string | undefined) => {
           // Track this sync ID for future checks
           if (!currentSyncIdRef.current) {
             currentSyncIdRef.current = data.id;
+            console.log('🔗 [AutoSync] Now tracking sync ID:', currentSyncIdRef.current);
           }
-          console.log('📊 [AutoSync] Found recent sync:', latestSync.id, 'status:', latestSync.status);
+          console.log('📊 [AutoSync] Found recent sync:', latestSync.id, 'status:', latestSync.status, 'type:', latestSync.sync_type);
         }
       }
       
       if (!latestSync) {
-        console.log('⚠️ [AutoSync] No sync record found');
+        // Only log warning after a few attempts (sync record may still be creating)
+        if (checkCount > 3) {
+          console.log('⚠️ [AutoSync] No sync record found yet...');
+        }
         return false;
       }
       
@@ -174,9 +180,9 @@ export const useAutoSync = (userId: string | undefined) => {
       };
       findSyncId();
       
-      // Check immediately then every 3 seconds
+      // Check immediately then every 2 seconds
       checkSyncStatus();
-      syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+      syncCheckIntervalRef.current = setInterval(checkSyncStatus, 2000);
       
       // Global stuck timeout: force close after 2 minutes if dialog is stuck
       stuckTimeoutId = setTimeout(() => {
@@ -280,9 +286,9 @@ export const useAutoSync = (userId: string | undefined) => {
           console.log('✅ [AutoSync] Showing sync dialog and monitoring import');
           startSync(storeName);
           
-          // Check immediately then every 3 seconds
+          // Check immediately then every 2 seconds
           checkSyncStatus();
-          syncCheckIntervalRef.current = setInterval(checkSyncStatus, 3000);
+          syncCheckIntervalRef.current = setInterval(checkSyncStatus, 2000);
           
           // Global stuck timeout: force close after 2 minutes if dialog is stuck
           stuckTimeoutId = setTimeout(() => {
