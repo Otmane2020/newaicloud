@@ -179,16 +179,30 @@ serve(async (req) => {
     let hasErrors = false;
     const errorMessages: string[] = [];
 
+    // Helper function to update sync_history with current progress
+    const updateSyncProgress = async (syncType: string, itemsSynced: number) => {
+      try {
+        await supabase
+          .from("sync_history")
+          .update({ 
+            sync_type: syncType,
+            items_synced: itemsSynced,
+            duration_ms: Date.now() - startTime
+          })
+          .eq("id", historyEntry.id);
+        console.log(`📊 Progress updated: ${syncType} - ${itemsSynced} items`);
+      } catch (err) {
+        console.error(`⚠️ Failed to update progress:`, err);
+      }
+    };
+
     // Import based on selected types
     for (const type of importTypes) {
       try {
         console.log(`📥 Importing ${type}...`);
 
-        // Update sync_type to reflect current import step
-        await supabase
-          .from("sync_history")
-          .update({ sync_type: type })
-          .eq("id", historyEntry.id);
+        // Update sync_type to reflect current import step (with current total)
+        await updateSyncProgress(type, totalImported);
 
         const baseBody = {
           storeId: connection.id,
@@ -250,6 +264,9 @@ serve(async (req) => {
           const importedCount = result.data.totalImported || result.data.imported || result.data.count || 0;
           totalImported += importedCount;
           console.log(`✅ ${type} import completed: ${importedCount} items`);
+          
+          // 🔥 Update progress AFTER each successful import
+          await updateSyncProgress(type, totalImported);
         }
       } catch (error) {
         const errorMsg = `Error importing ${type}: ${error instanceof Error ? error.message : String(error)}`;
