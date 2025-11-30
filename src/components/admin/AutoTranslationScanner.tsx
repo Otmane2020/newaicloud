@@ -985,21 +985,32 @@ export default function AutoTranslationScanner() {
 
                 {/* Corrected Code */}
                 {result.correctedCode && (
-                  <Card>
+                  <Card className="border-green-500/30 bg-green-500/5">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Wand2 className="h-5 w-5 text-green-500" />
-                          Code Corrigé
+                          Code Corrigé (Prêt à copier)
                         </CardTitle>
                         <div className="flex gap-2">
                           <Button
                             variant="default"
                             size="sm"
+                            onClick={() => {
+                              setCode(result.correctedCode);
+                              toast.success("Code remplacé ! Copiez-le dans votre IDE.");
+                            }}
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Appliquer Fix
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => copyToClipboard(result.correctedCode, "dialog-fixed-code")}
                           >
                             {copiedField === "dialog-fixed-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                            Copier le code corrigé
+                            Copier
                           </Button>
                         </div>
                       </div>
