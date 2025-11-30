@@ -1518,6 +1518,27 @@ Deno.serve(async (req: Request) => {
         }
         
         console.log(`✅ Updated ${updatedCount} products with collection_ids`);
+        
+        // Step 5: Update products_count for all affected collections
+        const uniqueCollectionIds = [...new Set(Array.from(productCollections.values()).flat())];
+        console.log(`📊 Updating products_count for ${uniqueCollectionIds.length} collections...`);
+        
+        for (const collectionId of uniqueCollectionIds) {
+          const { count, error: countError } = await supabaseServiceClient
+            .from('shopify_products')
+            .select('id', { count: 'exact', head: true })
+            .contains('collection_ids', [collectionId])
+            .eq('seller_id', user.id);
+          
+          if (!countError && count !== null) {
+            await supabaseServiceClient
+              .from('shopify_collections')
+              .update({ products_count: count, updated_at: new Date().toISOString() })
+              .eq('id', collectionId);
+          }
+        }
+        
+        console.log(`✅ Collection products_count updated`);
       } else {
         console.log(`ℹ️ No collections found to link`);
       }
