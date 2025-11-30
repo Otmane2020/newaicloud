@@ -4,7 +4,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
-import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2, X } from 'lucide-react';
+import { Loader2, Package, FileText, Image, FolderOpen, Newspaper, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
 export function AutoSyncProgressDialog() {
@@ -119,8 +119,8 @@ export function AutoSyncProgressDialog() {
   };
 
   return (
-    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className={`sm:max-w-md ${isCompleted ? '' : '[&>button]:hidden'}`}>
+    <Dialog open={shouldShow} onOpenChange={(open) => { if (!open && isCompleted) handleClose(); }}>
+      <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => { if (!isCompleted) e.preventDefault(); }}>
         <VisuallyHidden>
           <DialogTitle>{t.dialogs.autoSync.title}</DialogTitle>
           <DialogDescription>{t.dialogs.autoSync.pleaseWait}</DialogDescription>
@@ -202,20 +202,11 @@ export function AutoSyncProgressDialog() {
               {t.dialogs.autoSync.closeButton}
             </Button>
           ) : (
-            <div className="space-y-3 text-center max-w-xs">
+            <div className="text-center max-w-xs">
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p className="font-medium">{t.dialogs.autoSync.pleaseWait}</p>
                 <p className="text-xs">{t.dialogs.autoSync.duration}</p>
               </div>
-              <Button 
-                onClick={handleClose} 
-                variant="ghost" 
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4 mr-1" />
-                {t.buttons?.close || 'Fermer'}
-              </Button>
             </div>
           )}
         </div>
