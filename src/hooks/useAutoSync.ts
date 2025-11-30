@@ -216,9 +216,21 @@ export const useAutoSync = (userId: string | undefined) => {
         async (payload) => {
           if (!isMounted) return;
           
+          // Ignore DELETE events (disconnection)
+          if (payload.eventType === 'DELETE') {
+            console.log('⏭️ [AutoSync] Ignoring DELETE event (store disconnection)');
+            return;
+          }
+          
           console.log('🆕 [AutoSync] Shopify connection event:', payload.eventType, payload.new);
           
           const connection = payload.new as any;
+          
+          // Safety check: ensure we have valid connection data
+          if (!connection || !connection.store_name) {
+            console.log('⏭️ [AutoSync] Invalid connection data, skipping');
+            return;
+          }
           
           // Debounce: prevent multiple triggers within 8 seconds
           const now = Date.now();
