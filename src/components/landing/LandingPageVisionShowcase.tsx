@@ -41,7 +41,9 @@ export const LandingPageVisionShowcase = () => {
     descHtml: language === 'fr'
       ? 'Sublimez votre intérieur avec ce canapé d\'exception en velours premium. Son design épuré aux lignes scandinaves apporte une touche d\'élégance à votre salon.'
       : 'Elevate your interior with this exceptional premium velvet sofa. Its clean Scandinavian-inspired design brings a touch of elegance to your living room.',
-    buyNow: language === 'fr' ? 'Acheter maintenant' : 'Buy now'
+    buyNow: language === 'fr' ? 'Acheter maintenant' : 'Buy now',
+    whiteBackground: language === 'fr' ? 'Fond blanc / studio' : 'White / Studio background',
+    generatedBackground: language === 'fr' ? 'Fond généré IA' : 'AI Generated background'
   };
 
   return (
@@ -73,29 +75,45 @@ export const LandingPageVisionShowcase = () => {
                 </Badge>
               </div>
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-full">
-                {/* Product Image - Desaturated */}
-                <div className="aspect-[16/10] bg-muted overflow-hidden">
+                {/* Product Image - White/Studio Background */}
+                <div className="aspect-[16/10] bg-muted overflow-hidden relative">
                   <img 
                     src={sofaImage} 
                     alt="Product" 
                     className="w-full h-full object-cover grayscale opacity-80"
                   />
+                  {/* White Background Label */}
+                  <div className="absolute bottom-2 right-2 z-20">
+                    <Badge variant="secondary" className="bg-white/90 text-muted-foreground text-[10px] backdrop-blur-sm shadow border">
+                      {labels.whiteBackground}
+                    </Badge>
+                  </div>
                 </div>
                 
                 {/* Raw Text Content */}
-                <div className="p-4 sm:p-6 space-y-3">
-                  <div className="h-5 bg-muted rounded w-2/3"></div>
-                  <div className="h-4 bg-muted rounded w-1/3"></div>
+                <div className="p-4 sm:p-6 space-y-4">
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                      {labels.productTitle}
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      {labels.productSubtitle}
+                    </p>
+                  </div>
                   
                   {/* Raw description - plain text */}
-                  <div className="pt-2 border-t border-border mt-4">
-                    <p className="text-muted-foreground text-sm font-mono bg-muted/50 p-3 rounded-lg">
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-muted-foreground text-sm font-mono bg-muted/50 p-3 rounded-lg leading-relaxed">
                       {labels.rawDesc}
                     </p>
                   </div>
                   
-                  <div className="pt-3">
-                    <div className="h-10 bg-muted rounded-lg w-32"></div>
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-2xl font-bold text-foreground">1 299 €</span>
+                    <Button size="sm" variant="secondary" className="shadow-sm">
+                      {labels.buyNow}
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -110,7 +128,7 @@ export const LandingPageVisionShowcase = () => {
                 </Badge>
               </div>
               <div className="rounded-xl border-2 border-primary/30 bg-card shadow-xl overflow-hidden h-full ring-4 ring-primary/10">
-                {/* Product Image - Enhanced */}
+                {/* Product Image - Generated Background */}
                 <div className="aspect-[16/10] overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
                   <img 
@@ -118,10 +136,10 @@ export const LandingPageVisionShowcase = () => {
                     alt="Premium Velvet Sofa" 
                     className="w-full h-full object-cover"
                   />
-                  {/* Vision AI Badge */}
+                  {/* Generated Background Label */}
                   <div className="absolute bottom-2 right-2 z-20">
-                    <Badge className="bg-background/90 text-foreground text-[10px] backdrop-blur-sm shadow">
-                      <Eye className="w-3 h-3 mr-1 text-primary" /> Vision AI
+                    <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground text-[10px] backdrop-blur-sm shadow border-0">
+                      <Sparkles className="w-3 h-3 mr-1" /> {labels.generatedBackground}
                     </Badge>
                   </div>
                 </div>
