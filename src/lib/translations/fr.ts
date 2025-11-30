@@ -2140,6 +2140,22 @@ export const translations = {
     seoChallenges: "Défis SEO du Jour",
     noChallenges: "Aucun défi disponible",
     noChallengesDesc: "De nouveaux défis arrivent bientôt !",
+    // Section labels
+    sections: {
+      heroSectionWithWelcomeBanner: "Hero Section avec Welcome Banner",
+      seoScoreCardMainSection: "SEO Score Card - Section Principale",
+      quickActionsBelowScore: "Quick Actions sous le score",
+      keyMetricsOptimizationFocus: "Métriques Clés - Focus sur l'Optimisation",
+      googleShopping: "Google Shopping",
+      referralSystem: "Système de Parrainage",
+      quickActionsEightActions: "Actions Rapides - 8 actions",
+      smartRecommendationsBanner: "Bannière de Recommandations Intelligentes",
+      onboardingTour: "Visite d'intégration",
+      aiRecommendations: "Recommandations IA",
+      quotaAlerts: "Alertes de Quota",
+      advancedAnalytics: "Analyses Avancées",
+      recentActivityTimeline: "Chronologie des Activités Récentes",
+    },
     cards: {
       aiOptimized: "Produits Optimisés IA",
       toOptimize: "À Optimiser",
