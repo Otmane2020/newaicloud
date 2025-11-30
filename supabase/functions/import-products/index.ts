@@ -1320,12 +1320,12 @@ Deno.serve(async (req: Request) => {
           const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
           const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
           
-          // Use upsert with onConflict on the actual unique constraint (shopify_image_id)
+          // Use upsert with composite constraint (product_id + shopify_image_id) to handle shared images across products
           const { error: imageError } = await supabaseServiceClient
             .from("product_images")
             .upsert(batch, { 
-              onConflict: 'shopify_image_id',
-              ignoreDuplicates: true // Skip duplicates instead of failing
+              onConflict: 'product_id,shopify_image_id',
+              ignoreDuplicates: false // Update duplicates instead of skipping
             });
 
           if (imageError) {
