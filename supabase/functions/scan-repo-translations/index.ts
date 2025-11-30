@@ -317,28 +317,58 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    let allRepoFiles: string[] = [];
-    let useFallback = false;
+    // Diagnostic info for debugging
+    const diagnostics = {
+      hasToken: !!GITHUB_TOKEN,
+      hasOwner: !!GITHUB_OWNER,
+      hasRepo: !!GITHUB_REPO,
+      owner: GITHUB_OWNER || 'NOT_SET',
+      repo: GITHUB_REPO || 'NOT_SET',
+    };
+    console.log('[scan-repo-translations] Diagnostics:', JSON.stringify(diagnostics));
 
-    // Try GitHub API first
-    if (GITHUB_TOKEN && GITHUB_OWNER && GITHUB_REPO) {
-      console.log(`[GitHub] Owner: ${GITHUB_OWNER}, Repo: ${GITHUB_REPO}`);
-      console.log('[GitHub] Listing all files from repository...');
-      allRepoFiles = await listRepoFiles(GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
-      
-      if (allRepoFiles.length === 0) {
-        console.warn('[GitHub] No files found - falling back to static file list');
-        useFallback = true;
-      }
-    } else {
-      console.warn('[GitHub] Credentials not configured - using fallback file list');
-      useFallback = true;
+    // Check if GitHub credentials are properly configured
+    if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
+      console.error('[scan-repo-translations] GitHub credentials not configured properly');
+      return new Response(JSON.stringify({
+        error: 'GitHub credentials not configured',
+        errorDetails: `Missing: ${!GITHUB_TOKEN ? 'GITHUB_TOKEN ' : ''}${!GITHUB_OWNER ? 'GITHUB_OWNER ' : ''}${!GITHUB_REPO ? 'GITHUB_REPO' : ''}`.trim(),
+        diagnostics,
+        totalFiles: 0,
+        filesScanned: 0,
+        filesWithIssues: 0,
+        totalIssues: 0,
+        issuesByType: { toast: 0, dialog: 0, alert: 0, prop: 0, jsx_text: 0, button: 0 },
+        issues: [],
+        aggregatedTranslations: { fr: {}, en: {} },
+        suggestion: 'Use batch scan mode instead - paste code directly'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Use fallback if GitHub failed
-    if (useFallback) {
-      allRepoFiles = FALLBACK_FILES;
-      console.log(`[Fallback] Using ${allRepoFiles.length} predefined files`);
+    console.log(`[GitHub] Owner: ${GITHUB_OWNER}, Repo: ${GITHUB_REPO}`);
+    console.log('[GitHub] Listing all files from repository...');
+    
+    const allRepoFiles = await listRepoFiles(GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
+    
+    if (allRepoFiles.length === 0) {
+      console.error('[scan-repo-translations] GitHub returned 0 files - check credentials and repo access');
+      return new Response(JSON.stringify({
+        error: 'GitHub returned no files',
+        errorDetails: 'Could not list repository files. Check that GITHUB_TOKEN has read access to the repository.',
+        diagnostics,
+        totalFiles: 0,
+        filesScanned: 0,
+        filesWithIssues: 0,
+        totalIssues: 0,
+        issuesByType: { toast: 0, dialog: 0, alert: 0, prop: 0, jsx_text: 0, button: 0 },
+        issues: [],
+        aggregatedTranslations: { fr: {}, en: {} },
+        suggestion: 'Use batch scan mode instead - paste code directly'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Sort files: priority patterns first
@@ -369,26 +399,19 @@ serve(async (req) => {
     };
     let filesScanned = 0;
     let filesWithIssues = 0;
+    let fetchErrors = 0;
 
     // Process files in batches of 3 for better performance
     const batchSize = 3;
-    const githubToken = GITHUB_TOKEN || '';
-    const githubOwner = GITHUB_OWNER || '';
-    const githubRepo = GITHUB_REPO || '';
     
     for (let i = 0; i < limitedFiles.length; i += batchSize) {
       const batch = limitedFiles.slice(i, i + batchSize);
       
       const batchPromises = batch.map(async (filePath: string) => {
-        // Skip fetching if using fallback (no GitHub credentials)
-        if (useFallback) {
-          console.log(`[Fallback] Skipping fetch for ${filePath} - using static list only`);
-          return { filePath, issues: [] };
-        }
-        
-        const content = await fetchFileFromGitHub(filePath, githubToken, githubOwner, githubRepo);
+        const content = await fetchFileFromGitHub(filePath, GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO);
         if (!content) {
           console.log(`[GitHub] Skipping ${filePath} - could not fetch`);
+          fetchErrors++;
           return { filePath, issues: [] };
         }
         
@@ -430,9 +453,13 @@ serve(async (req) => {
       aggregatedTranslations
     };
 
-    console.log(`[scan-repo-translations] Scan complete: ${result.totalIssues} issues found in ${filesWithIssues} files`);
+    console.log(`[scan-repo-translations] Scan complete: ${result.totalIssues} issues found in ${filesWithIssues} files (${fetchErrors} fetch errors)`);
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({
+      ...result,
+      diagnostics,
+      fetchErrors,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
@@ -444,7 +471,7 @@ serve(async (req) => {
       filesScanned: 0,
       filesWithIssues: 0,
       totalIssues: 0,
-      issuesByType: {},
+      issuesByType: { toast: 0, dialog: 0, alert: 0, prop: 0, jsx_text: 0, button: 0 },
       issues: [],
       aggregatedTranslations: { fr: {}, en: {} }
     }), {
