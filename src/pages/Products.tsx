@@ -387,10 +387,12 @@ export default function Products() {
           .from('sync_history')
           .insert({
             user_id: user.id,
-            sync_type: 'manual',
+            store_id: store.id,
+            sync_type: 'products',
             content_types: ['products', 'collections', 'pages', 'articles', 'images'],
             status: 'running',
             started_at: new Date().toISOString(),
+            items_synced: 0,
           })
           .select()
           .single();
@@ -438,7 +440,8 @@ export default function Products() {
                     shopName, 
                     apiSecret: storeData.access_token, 
                     storeId: store.id,
-                    syncMode: 'smart'
+                    syncMode: 'smart',
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -449,7 +452,8 @@ export default function Products() {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: store.id 
+                    storeId: store.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -460,7 +464,8 @@ export default function Products() {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: store.id 
+                    storeId: store.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -471,7 +476,8 @@ export default function Products() {
                   body: { 
                     shopName, 
                     authToken: storeData.access_token, 
-                    storeId: store.id 
+                    storeId: store.id,
+                    syncHistoryId: historyId
                   }
                 })
               );
@@ -481,7 +487,8 @@ export default function Products() {
                 supabase.functions.invoke('import-content-images', {
                   body: { 
                     storeId: store.id,
-                    types: ['collections', 'pages', 'articles', 'homepage'] 
+                    types: ['collections', 'pages', 'articles', 'homepage'],
+                    syncHistoryId: historyId
                   }
                 })
               );
