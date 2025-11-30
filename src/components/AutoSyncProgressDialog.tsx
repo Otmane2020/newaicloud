@@ -23,11 +23,20 @@ export function AutoSyncProgressDialog() {
   const location = useLocation();
   const { t, tf } = useTranslation();
   const [forceClosed, setForceClosed] = React.useState(false);
+  const [showCloseButton, setShowCloseButton] = React.useState(false);
 
-  // Reset forceClosed when a new sync starts
+  // Reset states when a new sync starts
   React.useEffect(() => {
     if (isSyncing && !isCompleted) {
       setForceClosed(false);
+      setShowCloseButton(false);
+      
+      // Show close button after 30 seconds if still syncing
+      const closeButtonTimer = setTimeout(() => {
+        setShowCloseButton(true);
+      }, 30000);
+      
+      return () => clearTimeout(closeButtonTimer);
     }
   }, [isSyncing, isCompleted]);
 
@@ -171,8 +180,18 @@ export function AutoSyncProgressDialog() {
               {t.dialogs.autoSync.closeButton}
             </Button>
           ) : (
-            <div className="text-center max-w-xs">
+            <div className="text-center max-w-xs space-y-3">
               <p className="text-xs text-muted-foreground">{t.dialogs.autoSync.pleaseWait}</p>
+              {showCloseButton && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleClose}
+                  className="text-xs"
+                >
+                  {t.dialogs.autoSync.closeButton || 'Close'}
+                </Button>
+              )}
             </div>
           )}
         </div>
