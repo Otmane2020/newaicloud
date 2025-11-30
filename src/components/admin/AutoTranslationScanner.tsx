@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, History, BarChart3, Copy, Check, Trash2, AlertTriangle, CheckCircle, Wand2, Languages, Sparkles, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { 
+  Loader2, History, BarChart3, Copy, Check, Trash2, AlertTriangle, CheckCircle, 
+  Wand2, Languages, Sparkles, RefreshCw, ChevronDown, ChevronRight, FileText, 
+  FolderOpen, Layout, Settings, PenTool, Globe, ShoppingCart 
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,8 +49,81 @@ interface AuditRecord {
   created_at: string;
 }
 
+interface FileCategory {
+  name: string;
+  icon: React.ReactNode;
+  files: string[];
+}
+
+// Registry of important files to scan
+const FILE_REGISTRY: FileCategory[] = [
+  {
+    name: "Pages",
+    icon: <Layout className="h-4 w-4" />,
+    files: [
+      "src/pages/Index.tsx",
+      "src/pages/Dashboard.tsx",
+      "src/pages/Products.tsx",
+      "src/pages/Collections.tsx",
+      "src/pages/Articles.tsx",
+      "src/pages/ArticleManagement.tsx",
+      "src/pages/Settings.tsx",
+      "src/pages/Pricing.tsx",
+      "src/pages/Auth.tsx",
+      "src/pages/Onboarding.tsx",
+    ],
+  },
+  {
+    name: "Blog Components",
+    icon: <PenTool className="h-4 w-4" />,
+    files: [
+      "src/components/blog/BlogWizard.tsx",
+      "src/components/blog/BlogOpportunities.tsx",
+      "src/components/blog/BlogCampaignMonitoring.tsx",
+      "src/components/blog/OpportunitiesSettings.tsx",
+    ],
+  },
+  {
+    name: "SEO Components",
+    icon: <Globe className="h-4 w-4" />,
+    files: [
+      "src/components/seo/SeoAuditReport.tsx",
+      "src/components/seo/ProductSeoTab.tsx",
+      "src/components/seo/CollectionSeoTab.tsx",
+      "src/components/seo/HomePageSeo.tsx",
+    ],
+  },
+  {
+    name: "Shopify Components",
+    icon: <ShoppingCart className="h-4 w-4" />,
+    files: [
+      "src/components/shopify/ShopifyConnectionWizard.tsx",
+      "src/components/shopify/ShopifyInstallGuide.tsx",
+      "src/components/shopify/StoreSelector.tsx",
+    ],
+  },
+  {
+    name: "Dashboard Components",
+    icon: <BarChart3 className="h-4 w-4" />,
+    files: [
+      "src/components/dashboard/DashboardStats.tsx",
+      "src/components/dashboard/QuickActions.tsx",
+      "src/components/dashboard/SyncStatus.tsx",
+    ],
+  },
+  {
+    name: "Settings Components",
+    icon: <Settings className="h-4 w-4" />,
+    files: [
+      "src/components/settings/GeneralSettings.tsx",
+      "src/components/settings/AutomationSettings.tsx",
+      "src/components/settings/NotificationSettings.tsx",
+    ],
+  },
+];
+
 export default function AutoTranslationScanner() {
-  const [activeTab, setActiveTab] = useState("analyze");
+  const [activeTab, setActiveTab] = useState("files");
   const [code, setCode] = useState("");
   const [fileName, setFileName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -53,6 +132,9 @@ export default function AutoTranslationScanner() {
   const [history, setHistory] = useState<AuditRecord[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [stats, setStats] = useState({ total: 0, fr: 0, en: 0, mixed: 0, scans: 0 });
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(["Pages"]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Load history
   const loadHistory = useCallback(async () => {
@@ -106,6 +188,32 @@ export default function AutoTranslationScanner() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  // Toggle category expansion
+  const toggleCategory = (name: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
+    );
+  };
+
+  // Handle file click - open dialog to paste content
+  const handleFileClick = (filePath: string) => {
+    setSelectedFile(filePath);
+    setFileName(filePath);
+    setCode("");
+    setResult(null);
+    setIsDialogOpen(true);
+  };
+
+  // Get file status from history
+  const getFileStatus = (filePath: string) => {
+    const record = history.find(h => h.file_path === filePath);
+    if (!record) return null;
+    return {
+      issues: record.total_issues,
+      date: new Date(record.created_at).toLocaleDateString(),
+    };
+  };
 
   // Analyze code with AI
   const analyzeCode = async () => {
@@ -218,12 +326,16 @@ export default function AutoTranslationScanner() {
           Scanner de Traductions IA
         </CardTitle>
         <CardDescription>
-          Collez du code React/TypeScript pour analyser ses textes en dur avec l'IA
+          Sélectionnez un fichier à scanner ou collez du code manuellement
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="files" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Fichiers
+            </TabsTrigger>
             <TabsTrigger value="analyze" className="flex items-center gap-2">
               <Wand2 className="h-4 w-4" />
               Analyse
@@ -237,6 +349,62 @@ export default function AutoTranslationScanner() {
               Stats
             </TabsTrigger>
           </TabsList>
+
+          {/* Files Tab */}
+          <TabsContent value="files" className="space-y-2">
+            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground mb-4">
+              <p>📁 Cliquez sur un fichier pour l'analyser. Vous devrez coller son contenu depuis votre IDE.</p>
+            </div>
+            <ScrollArea className="h-[400px]">
+              {FILE_REGISTRY.map((category) => (
+                <Collapsible
+                  key={category.name}
+                  open={expandedCategories.includes(category.name)}
+                  onOpenChange={() => toggleCategory(category.name)}
+                >
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 hover:bg-muted rounded-lg transition-colors">
+                    {expandedCategories.includes(category.name) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    {category.icon}
+                    <span className="font-medium">{category.name}</span>
+                    <Badge variant="secondary" className="ml-auto">
+                      {category.files.length}
+                    </Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-8 space-y-1">
+                    {category.files.map((file) => {
+                      const status = getFileStatus(file);
+                      return (
+                        <button
+                          key={file}
+                          onClick={() => handleFileClick(file)}
+                          className="flex items-center gap-2 w-full p-2 text-left hover:bg-muted rounded-lg transition-colors text-sm"
+                        >
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{file.split('/').pop()}</span>
+                          {status && (
+                            <div className="flex items-center gap-2">
+                              {status.issues === 0 ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">
+                                  {status.issues}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">{status.date}</span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </ScrollArea>
+          </TabsContent>
 
           {/* AI Analysis Tab */}
           <TabsContent value="analyze" className="space-y-4">
@@ -416,115 +584,234 @@ export default function AutoTranslationScanner() {
           </TabsContent>
 
           {/* History Tab */}
-          <TabsContent value="history" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
-                {history.length} analyse(s) enregistrée(s)
-              </p>
+          <TabsContent value="history">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-medium">Analyses récentes</h3>
               <Button variant="outline" size="sm" onClick={loadHistory} disabled={isLoadingHistory}>
                 {isLoadingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
             </div>
-            
             <ScrollArea className="h-[400px]">
               <div className="space-y-2">
-                {history.map((record) => (
-                  <Card key={record.id} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Languages className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-sm">{record.file_path || "Code sans nom"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(record.created_at).toLocaleString("fr-FR")}
-                          </p>
+                {history.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Aucune analyse enregistrée
+                  </p>
+                ) : (
+                  history.map((record) => (
+                    <div
+                      key={record.id}
+                      className="p-3 rounded-lg bg-muted/30 border border-border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm truncate max-w-[200px]">
+                            {record.file_path || "Code manuel"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {record.total_issues === 0 ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Badge variant="destructive">{record.total_issues}</Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteHistoryItem(record.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {record.total_issues > 0 ? (
-                          <Badge variant="destructive">{record.total_issues} issues</Badge>
-                        ) : (
-                          <Badge className="bg-green-500/20 text-green-500">OK</Badge>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => deleteHistoryItem(record.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                      <div className="flex gap-2 mt-2 text-xs">
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-500">🇫🇷 {record.fr_count}</Badge>
+                        <Badge variant="outline" className="bg-red-500/10 text-red-500">🇬🇧 {record.en_count}</Badge>
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-500">🔄 {record.mixed_count}</Badge>
+                        <span className="text-muted-foreground ml-auto">
+                          {new Date(record.created_at).toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                    {record.total_issues > 0 && (
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 text-xs">
-                          {record.fr_count} FR
-                        </Badge>
-                        <Badge variant="outline" className="bg-red-500/10 text-red-500 text-xs">
-                          {record.en_count} EN
-                        </Badge>
-                        <Badge variant="outline" className="bg-orange-500/10 text-orange-500 text-xs">
-                          {record.mixed_count} Mix
-                        </Badge>
-                      </div>
-                    )}
-                  </Card>
-                ))}
+                  ))
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
 
           {/* Stats Tab */}
-          <TabsContent value="stats" className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-primary">{stats.scans}</div>
-                <div className="text-sm text-muted-foreground">Fichiers scannés</div>
+          <TabsContent value="stats">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.scans}</div>
+                  <p className="text-xs text-muted-foreground">Scans effectués</p>
+                </CardContent>
               </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-destructive">{stats.total}</div>
-                <div className="text-sm text-muted-foreground">Total issues</div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-yellow-500">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Problèmes détectés</p>
+                </CardContent>
               </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-blue-500">{stats.fr}</div>
-                <div className="text-sm text-muted-foreground">Textes FR</div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-blue-500">{stats.fr}</div>
+                  <p className="text-xs text-muted-foreground">Textes FR</p>
+                </CardContent>
               </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-red-500">{stats.en}</div>
-                <div className="text-sm text-muted-foreground">Textes EN</div>
-              </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-orange-500">{stats.mixed}</div>
-                <div className="text-sm text-muted-foreground">Mixed</div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-red-500">{stats.en}</div>
+                  <p className="text-xs text-muted-foreground">Textes EN</p>
+                </CardContent>
               </Card>
             </div>
-
-            {/* Top problematic files */}
-            <Card className="p-4">
-              <h4 className="font-medium mb-4">Fichiers les plus problématiques</h4>
-              <div className="space-y-2">
-                {history
-                  .filter(r => r.total_issues > 0)
-                  .sort((a, b) => b.total_issues - a.total_issues)
-                  .slice(0, 10)
-                  .map((record, idx) => (
-                    <div 
-                      key={record.id}
-                      className="flex items-center justify-between p-2 rounded bg-muted/30"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-sm">#{idx + 1}</span>
-                        <span className="text-sm font-mono">{record.file_path}</span>
+            
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-base">Répartition par type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Français uniquement</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500" 
+                          style={{ width: `${stats.total > 0 ? (stats.fr / stats.total) * 100 : 0}%` }}
+                        />
                       </div>
-                      <Badge variant="destructive">{record.total_issues}</Badge>
+                      <span className="text-sm text-muted-foreground w-12 text-right">
+                        {stats.total > 0 ? Math.round((stats.fr / stats.total) * 100) : 0}%
+                      </span>
                     </div>
-                  ))}
-              </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Anglais uniquement</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-red-500" 
+                          style={{ width: `${stats.total > 0 ? (stats.en / stats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground w-12 text-right">
+                        {stats.total > 0 ? Math.round((stats.en / stats.total) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Mixte</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-orange-500" 
+                          style={{ width: `${stats.total > 0 ? (stats.mixed / stats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground w-12 text-right">
+                        {stats.total > 0 ? Math.round((stats.mixed / stats.total) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
       </CardContent>
+
+      {/* File Analysis Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Analyser: {selectedFile?.split('/').pop()}
+            </DialogTitle>
+            <DialogDescription>
+              Copiez le contenu du fichier depuis votre IDE et collez-le ci-dessous
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+            <div className="bg-muted/50 p-3 rounded-lg text-sm">
+              <p className="text-muted-foreground">
+                📋 <strong>Fichier:</strong> <code className="bg-background px-2 py-1 rounded">{selectedFile}</code>
+              </p>
+            </div>
+            
+            <textarea
+              placeholder="Collez le contenu du fichier ici..."
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="flex-1 min-h-[200px] p-3 font-mono text-sm bg-muted rounded-lg border border-border resize-none"
+            />
+            
+            <div className="flex gap-2">
+              <Button onClick={analyzeCode} disabled={isAnalyzing || !code.trim()} className="flex-1">
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyse en cours...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Analyser avec l'IA
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Fermer
+              </Button>
+            </div>
+
+            {/* Results in dialog */}
+            {result && (
+              <ScrollArea className="flex-1 max-h-[300px]">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      {result.summary.total === 0 ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                      )}
+                      <span className="font-medium">
+                        {result.summary.total} problème(s) détecté(s)
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {result.correctedCode && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Code corrigé</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(result.correctedCode, "dialog-code")}
+                        >
+                          {copiedField === "dialog-code" ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                          Copier
+                        </Button>
+                      </div>
+                      <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre-wrap max-h-[200px] overflow-auto">
+                        {result.correctedCode}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
