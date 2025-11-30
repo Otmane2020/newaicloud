@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       console.log('[list-google-ads-campaigns] No customer ID in profile, fetching...');
       
       // Fetch accessible customers
-      const customersResponse = await fetch('https://googleads.googleapis.com/v17/customers:listAccessibleCustomers', {
+      const customersResponse = await fetch('https://googleads.googleapis.com/v22/customers:listAccessibleCustomers', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
       ORDER BY campaign.name
     `;
 
-    const adsUrl = `https://googleads.googleapis.com/v17/customers/${normalizedCustomerId}:searchStream`;
+    const adsUrl = `https://googleads.googleapis.com/v22/customers/${normalizedCustomerId}/googleAds:searchStream`;
     console.log('[list-google-ads-campaigns] FINAL URL:', adsUrl);
 
     const adsResponse = await fetch(adsUrl, {
