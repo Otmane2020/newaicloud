@@ -22,23 +22,31 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+    // Support both normal mode (with auth header) and service mode (with userId in body)
+    const authHeader = req.headers.get("Authorization");
+    let userId: string;
+    
+    if (bodyCheck.userId) {
+      // Service mode: use provided userId
+      console.log(`🔧 [SYNC-COLLECTIONS] SERVICE MODE: Using provided userId: ${bodyCheck.userId}`);
+      userId = bodyCheck.userId;
+    } else if (authHeader) {
+      // Normal mode: validate JWT
+      const { data: { user }, error: userError } = await supabase.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
 
-    if (userError || !user) {
-      throw new Error("Unauthorized");
+      if (userError || !user) {
+        throw new Error("Unauthorized");
+      }
+      userId = user.id;
+    } else {
+      throw new Error("Missing authorization header or userId");
     }
 
-    console.log(`🚀 [SYNC-COLLECTIONS] Function invoked for user ${user.id}`);
+    console.log(`🚀 [SYNC-COLLECTIONS] Function invoked for user ${userId}`);
 
     // Use bodyCheck from earlier
     let storeId = bodyCheck.storeId;
@@ -49,12 +57,12 @@ Deno.serve(async (req: Request) => {
       const { data: connection, error: connectionError } = await supabase
         .from("shopify_connections")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("is_active", true)
         .single();
         
       if (connectionError || !connection) {
-        console.error(`❌ [SYNC-COLLECTIONS] No storeId provided and no active connection found for user ${user.id}`);
+        console.error(`❌ [SYNC-COLLECTIONS] No storeId provided and no active connection found for user ${userId}`);
         throw new Error("No storeId provided and no active Shopify connection found");
       }
       storeId = connection.id;
@@ -64,11 +72,11 @@ Deno.serve(async (req: Request) => {
         .from("shopify_connections")
         .select("*")
         .eq("id", storeId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
         
       if (connectionError || !connection) {
-        console.error(`❌ [SYNC-COLLECTIONS] Store ${storeId} not found or unauthorized for user ${user.id}`);
+        console.error(`❌ [SYNC-COLLECTIONS] Store ${storeId} not found or unauthorized for user ${userId}`);
         throw new Error("Store not found or unauthorized");
       }
       console.log(`✅ [SYNC-COLLECTIONS] Using specified store: ${connection.store_url} (store_id: ${storeId})`);
@@ -90,7 +98,7 @@ Deno.serve(async (req: Request) => {
     const { data: collections, error: collectionsError } = await supabase
       .from("shopify_collections")
       .select("id, shopify_collection_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("store_id", storeId);
 
     if (collectionsError) {
@@ -108,7 +116,7 @@ Deno.serve(async (req: Request) => {
     const { data: products, error: productsError } = await supabase
       .from("shopify_products")
       .select("id, shopify_id")
-      .eq("seller_id", user.id)
+      .eq("seller_id", userId)
       .eq("store_id", storeId);
 
     if (productsError) {
