@@ -672,15 +672,17 @@ Deno.serve(async (req: Request) => {
               image_url: v.node.image?.url || null
             };
           }),
-          images: node.images.edges.map((i: any) => {
-            // FIX: Use extractNumericId for proper GID parsing
+          // FIX: Transform images with proper ID extraction AND position
+          images: node.images.edges.map((i: any, index: number) => {
+            // Use extractNumericId for proper GID parsing
             const numericId = extractNumericId(i.node.id) || 0;
             return {
               id: numericId,
               src: i.node.url,
-              alt: i.node.altText,
-              width: i.node.width,
-              height: i.node.height
+              alt: i.node.altText || '',
+              width: i.node.width || null,
+              height: i.node.height || null,
+              position: index + 1
             };
           }),
           metafields_global_title_tag: node.seo?.title,
@@ -1045,7 +1047,7 @@ Deno.serve(async (req: Request) => {
     } else if (productsWithNoImages && productsWithNoImages.length > 0) {
       // Get image counts for these products - BATCHED to avoid "Bad Request" on large arrays
       const productIds = productsWithNoImages.map(p => p.id);
-      const QUERY_BATCH_SIZE = 500;
+      const QUERY_BATCH_SIZE = 100; // Reduced from 500 to 100 for reliability
       let allImageCounts: { product_id: string }[] = [];
       
       console.log(`📊 Checking image counts for ${productIds.length} products in batches of ${QUERY_BATCH_SIZE}`);
@@ -1070,8 +1072,8 @@ Deno.serve(async (req: Request) => {
       if (productsNeedingImages.length > 0) {
         console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching ALL from Shopify...`);
         
-        // Fetch images in batches of 50 products using GraphQL (no limit)
-        const FETCH_BATCH_SIZE = 50;
+        // Fetch images in batches - reduced to 20 for better reliability
+        const FETCH_BATCH_SIZE = 20;
         let imagesFetched = 0;
         const totalBatchCount = Math.ceil(productsNeedingImages.length / FETCH_BATCH_SIZE);
         
@@ -1153,9 +1155,9 @@ Deno.serve(async (req: Request) => {
             console.error(`⚠️ Error fetching images for batch ${batchNum}:`, fetchError);
           }
           
-          // Small delay between batches to avoid rate limits
+          // Increased delay between batches to avoid rate limits
           if (i + FETCH_BATCH_SIZE < productsNeedingImages.length) {
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
         
