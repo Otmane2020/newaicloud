@@ -393,7 +393,7 @@ const getAllFiles = (): string[] => {
 const TOTAL_FILES_COUNT = getAllFiles().length;
 
 export default function AutoTranslationScanner() {
-  const [activeTab, setActiveTab] = useState("files");
+  const [activeTab, setActiveTab] = useState("batch");
   const [code, setCode] = useState("");
   const [fileName, setFileName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -428,6 +428,17 @@ export default function AutoTranslationScanner() {
     en: Record<string, unknown>;
     totalKeys: number;
     issueCount: number;
+  } | null>(null);
+
+  // Batch import states
+  const [batchInput, setBatchInput] = useState("");
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [batchAnalysisResults, setBatchAnalysisResults] = useState<{
+    filesAnalyzed: number;
+    totalIssues: number;
+    issuesByType: Record<string, number>;
+    aggregatedFr: Record<string, unknown>;
+    aggregatedEn: Record<string, unknown>;
   } | null>(null);
 
   // Load history
@@ -755,6 +766,105 @@ ${formatObject(translations)}
     }
   };
 
+  // Process batch input - parse multiple files and analyze them
+  const processBatchInput = async () => {
+    if (!batchInput.trim()) {
+      toast.error("Collez du code à analyser");
+      return;
+    }
+
+    setIsBatchProcessing(true);
+    setBatchAnalysisResults(null);
+
+    try {
+      // Parse the batch input - supports multiple formats:
+      // 1. JSON array: [{"filePath": "...", "code": "..."}]
+      // 2. Separated by "=== FILE: path ===" markers
+      // 3. Single file content
+      
+      let filesToProcess: { filePath: string; code: string }[] = [];
+      
+      // Try JSON format first
+      try {
+        const parsed = JSON.parse(batchInput);
+        if (Array.isArray(parsed)) {
+          filesToProcess = parsed.filter(f => f.code && f.filePath);
+        }
+      } catch {
+        // Not JSON, try marker format
+        const markerRegex = /===\s*FILE:\s*([^\s=]+)\s*===\n([\s\S]*?)(?====\s*FILE:|$)/gi;
+        let match;
+        while ((match = markerRegex.exec(batchInput)) !== null) {
+          const [, filePath, code] = match;
+          if (code.trim()) {
+            filesToProcess.push({ filePath: filePath.trim(), code: code.trim() });
+          }
+        }
+        
+        // If no markers found, treat as single file
+        if (filesToProcess.length === 0) {
+          filesToProcess = [{ filePath: "manual_input.tsx", code: batchInput }];
+        }
+      }
+
+      if (filesToProcess.length === 0) {
+        toast.error("Aucun fichier valide trouvé dans l'entrée");
+        setIsBatchProcessing(false);
+        return;
+      }
+
+      toast.info(`Analyse de ${filesToProcess.length} fichier(s) en cours...`);
+
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke("auto-fix-translations", {
+        body: { codes: filesToProcess },
+      });
+
+      if (error) throw error;
+
+      // Store results
+      setBatchAnalysisResults({
+        filesAnalyzed: data.filesAnalyzed,
+        totalIssues: data.totalIssues,
+        issuesByType: data.issuesByType,
+        aggregatedFr: data.aggregatedTranslations?.fr || {},
+        aggregatedEn: data.aggregatedTranslations?.en || {},
+      });
+
+      // Count keys
+      const countKeys = (obj: Record<string, unknown>): number => {
+        let count = 0;
+        for (const value of Object.values(obj)) {
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            count += countKeys(value as Record<string, unknown>);
+          } else {
+            count++;
+          }
+        }
+        return count;
+      };
+
+      const totalKeys = countKeys(data.aggregatedTranslations?.fr || {}) + 
+                       countKeys(data.aggregatedTranslations?.en || {});
+
+      // Also update the aggregated translations for the download dialog
+      setAggregatedTranslations({
+        fr: data.aggregatedTranslations?.fr || {},
+        en: data.aggregatedTranslations?.en || {},
+        totalKeys,
+        issueCount: data.totalIssues,
+      });
+
+      toast.success(`✅ ${data.totalIssues} problèmes détectés dans ${data.filesAnalyzed} fichiers`);
+
+    } catch (error) {
+      console.error("Batch processing error:", error);
+      toast.error("Erreur lors du traitement batch");
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
   // Copy to clipboard
   const copyToClipboard = async (text: string, field: string) => {
     console.log("[AutoTranslationScanner] copyToClipboard called:", { field, textLength: text?.length });
@@ -889,7 +999,11 @@ ${formatObject(translations)}
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="batch" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              🚀 Batch
+            </TabsTrigger>
             <TabsTrigger value="files" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               Fichiers
@@ -907,6 +1021,160 @@ ${formatObject(translations)}
               Stats
             </TabsTrigger>
           </TabsList>
+
+          {/* BATCH TAB - Main Feature */}
+          <TabsContent value="batch" className="space-y-4">
+            <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                  🚀 Scanner Automatique de Traductions
+                </CardTitle>
+                <CardDescription>
+                  Collez le contenu de plusieurs fichiers pour détecter et corriger TOUS les problèmes de traduction (toasts, dialogs, textes hardcodés)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Instructions */}
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                  <h4 className="font-semibold text-amber-700 dark:text-amber-300 mb-2">📋 Comment utiliser</h4>
+                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Copiez le contenu des fichiers depuis votre IDE (VS Code, etc.)</li>
+                    <li>Utilisez le format: <code className="bg-muted px-1 rounded">=== FILE: chemin/fichier.tsx ===</code> pour séparer les fichiers</li>
+                    <li>Ou collez simplement un seul fichier</li>
+                    <li>Cliquez sur "Analyser & Corriger" pour générer toutes les traductions</li>
+                  </ol>
+                </div>
+
+                {/* Input Area */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Contenu des fichiers à analyser</label>
+                  <textarea
+                    placeholder={`=== FILE: src/pages/Dashboard.tsx ===
+// Collez le code ici...
+toast.success("Données sauvegardées");
+
+=== FILE: src/components/MyDialog.tsx ===
+// Collez un autre fichier...
+<DialogTitle>Confirmation</DialogTitle>
+
+Ou collez simplement un seul fichier...`}
+                    value={batchInput}
+                    onChange={(e) => setBatchInput(e.target.value)}
+                    className="w-full min-h-[300px] p-4 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{batchInput.length} caractères</span>
+                    <span>Format JSON ou marqueurs === FILE: === supportés</span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={processBatchInput} 
+                    disabled={isBatchProcessing || !batchInput.trim()}
+                    size="lg"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-lg py-6"
+                  >
+                    {isBatchProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Analyse IA en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="mr-2 h-5 w-5" />
+                        🔍 Analyser & Corriger TOUT
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => { setBatchInput(""); setBatchAnalysisResults(null); }}
+                    disabled={isBatchProcessing}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+
+                {/* Results */}
+                {batchAnalysisResults && (
+                  <Card className="border-green-500/50 bg-green-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <CheckCircle className="h-5 w-5" />
+                        ✅ Analyse terminée !
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 bg-blue-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-blue-500">{batchAnalysisResults.filesAnalyzed}</div>
+                          <div className="text-xs text-muted-foreground">Fichiers analysés</div>
+                        </div>
+                        <div className="p-3 bg-red-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-red-500">{batchAnalysisResults.totalIssues}</div>
+                          <div className="text-xs text-muted-foreground">Problèmes détectés</div>
+                        </div>
+                        <div className="p-3 bg-green-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-green-500">{batchAnalysisResults.issuesByType?.toast || 0}</div>
+                          <div className="text-xs text-muted-foreground">Toasts</div>
+                        </div>
+                        <div className="p-3 bg-purple-500/10 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-purple-500">{batchAnalysisResults.issuesByType?.dialog || 0}</div>
+                          <div className="text-xs text-muted-foreground">Dialogs</div>
+                        </div>
+                      </div>
+
+                      {/* Issue Type Details */}
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(batchAnalysisResults.issuesByType || {}).map(([type, count]) => (
+                          <Badge key={type} variant="outline" className="text-sm">
+                            {type}: {count}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      {/* Download Buttons */}
+                      <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+                        <Button 
+                          onClick={() => setShowFixAllDialog(true)}
+                          className="bg-green-600 hover:bg-green-700"
+                          size="lg"
+                        >
+                          <FileText className="mr-2 h-5 w-5" />
+                          📥 Télécharger les Traductions
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            const frCode = generateFullTranslationFile(batchAnalysisResults.aggregatedFr, 'fr');
+                            copyToClipboard(frCode, "batch-fr");
+                          }}
+                        >
+                          {copiedField === "batch-fr" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier fr.ts
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            const enCode = generateFullTranslationFile(batchAnalysisResults.aggregatedEn, 'en');
+                            copyToClipboard(enCode, "batch-en");
+                          }}
+                        >
+                          {copiedField === "batch-en" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copier en.ts
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Files Tab */}
           <TabsContent value="files" className="space-y-4">
