@@ -147,7 +147,7 @@ serve(async (req) => {
     `;
 
     const googleAdsResponse = await fetch(
-      `https://googleads.googleapis.com/v15/customers/${customerId}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: {
