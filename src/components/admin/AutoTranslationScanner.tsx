@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Search, History, BarChart3, Copy, Check, Trash2, AlertTriangle, CheckCircle, Wand2, FileCode, Languages, Sparkles, RefreshCw, ChevronDown, ChevronRight, FileText, FolderOpen, Layout, MessageSquare, Bell, ShoppingCart, PenTool, Globe, Settings } from "lucide-react";
+import { Loader2, History, BarChart3, Copy, Check, Trash2, AlertTriangle, CheckCircle, Wand2, Languages, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,131 +43,8 @@ interface AuditRecord {
   created_at: string;
 }
 
-interface FileCategory {
-  name: string;
-  icon: React.ReactNode;
-  files: { path: string; name: string }[];
-}
-
-// Comprehensive file registry organized by category - VERIFIED EXISTING FILES ONLY
-const FILE_REGISTRY: FileCategory[] = [
-  {
-    name: "📄 Pages",
-    icon: <Layout className="h-4 w-4" />,
-    files: [
-      { path: "src/pages/Index.tsx", name: "Index (Homepage)" },
-      { path: "src/pages/Dashboard.tsx", name: "Dashboard" },
-      { path: "src/pages/Products.tsx", name: "Products" },
-      { path: "src/pages/Collections.tsx", name: "Collections" },
-      { path: "src/pages/ArticleManagement.tsx", name: "Article Management" },
-      { path: "src/pages/Blog.tsx", name: "Blog" },
-      { path: "src/pages/BlogCampaignMonitoring.tsx", name: "Blog Campaign" },
-      { path: "src/pages/Pricing.tsx", name: "Pricing" },
-      { path: "src/pages/SuperAdmin.tsx", name: "Super Admin" },
-      { path: "src/pages/Auth.tsx", name: "Auth" },
-      { path: "src/pages/Onboarding.tsx", name: "Onboarding" },
-      { path: "src/pages/SEO.tsx", name: "SEO" },
-      { path: "src/pages/Shopping.tsx", name: "Google Shopping" },
-      { path: "src/pages/ShopifyApp.tsx", name: "Shopify App" },
-      { path: "src/pages/Integration.tsx", name: "Integration" },
-      { path: "src/pages/ProductDetail.tsx", name: "Product Detail" },
-      { path: "src/pages/Chat.tsx", name: "Chat" },
-    ]
-  },
-  {
-    name: "✍️ Blog & Content",
-    icon: <PenTool className="h-4 w-4" />,
-    files: [
-      { path: "src/components/blog/BlogWizard.tsx", name: "Blog Wizard" },
-      { path: "src/components/blog/ArticleWizard.tsx", name: "Article Wizard" },
-      { path: "src/components/blog/ArticleManagement.tsx", name: "Article Management" },
-      { path: "src/components/blog/ArticlePreviewDialog.tsx", name: "Article Preview Dialog" },
-      { path: "src/components/blog/CampaignWizard.tsx", name: "Campaign Wizard" },
-      { path: "src/components/blog/BlogOpportunities.tsx", name: "Blog Opportunities" },
-      { path: "src/components/blog/QuickPress.tsx", name: "Quick Press" },
-      { path: "src/components/blog/NetlinkingTable.tsx", name: "Netlinking Table" },
-    ]
-  },
-  {
-    name: "🔍 SEO Components",
-    icon: <Globe className="h-4 w-4" />,
-    files: [
-      { path: "src/components/seo/SeoOptimization.tsx", name: "SEO Optimization" },
-      { path: "src/components/seo/SeoAuditDashboard.tsx", name: "SEO Audit Dashboard" },
-      { path: "src/components/seo/SeoAuditReports.tsx", name: "SEO Audit Reports" },
-      { path: "src/components/seo/HomePageSeo.tsx", name: "Homepage SEO" },
-      { path: "src/components/seo/HomePageSeoAudit.tsx", name: "Homepage SEO Audit" },
-      { path: "src/components/seo/GoogleSearchPreview.tsx", name: "Google Search Preview" },
-      { path: "src/components/seo/GoogleShopping.tsx", name: "Google Shopping" },
-      { path: "src/components/seo/GoogleMerchant.tsx", name: "Google Merchant" },
-      { path: "src/components/seo/SmartPricingAI.tsx", name: "Smart Pricing AI" },
-      { path: "src/components/seo/TagOptimization.tsx", name: "Tag Optimization" },
-      { path: "src/components/seo/CollectionOptimization.tsx", name: "Collection Optimization" },
-      { path: "src/components/seo/PageOptimization.tsx", name: "Page Optimization" },
-      { path: "src/components/seo/SeoAltImage.tsx", name: "SEO Alt Image" },
-      { path: "src/components/seo/SeoAltImageList.tsx", name: "SEO Alt Image List" },
-    ]
-  },
-  {
-    name: "🎨 Dashboard Components",
-    icon: <Sparkles className="h-4 w-4" />,
-    files: [
-      { path: "src/components/dashboard/MetricCard.tsx", name: "Metric Card" },
-      { path: "src/components/dashboard/QuickActionCard.tsx", name: "Quick Action Card" },
-      { path: "src/components/dashboard/UsageWidget.tsx", name: "Usage Widget" },
-      { path: "src/components/dashboard/UsageLimits.tsx", name: "Usage Limits" },
-      { path: "src/components/dashboard/SubscriptionManagement.tsx", name: "Subscription Management" },
-      { path: "src/components/dashboard/ShopifyConnection.tsx", name: "Shopify Connection" },
-      { path: "src/components/dashboard/AIRecommendations.tsx", name: "AI Recommendations" },
-      { path: "src/components/dashboard/SeoScoreGauge.tsx", name: "SEO Score Gauge" },
-      { path: "src/components/dashboard/AccountSettings.tsx", name: "Account Settings" },
-    ]
-  },
-  {
-    name: "🔗 Integration Components",
-    icon: <FolderOpen className="h-4 w-4" />,
-    files: [
-      { path: "src/components/integration/ShopifyConnectionWizard.tsx", name: "Shopify Connection Wizard" },
-      { path: "src/components/integration/ShopifyConnectionDialog.tsx", name: "Shopify Connection Dialog" },
-      { path: "src/components/integration/ShopifyIntegrationTabs.tsx", name: "Shopify Integration Tabs" },
-      { path: "src/components/integration/ShopifySyncSettings.tsx", name: "Shopify Sync Settings" },
-      { path: "src/components/integration/SyncProgressDialog.tsx", name: "Sync Progress Dialog" },
-      { path: "src/components/integration/SyncResultDialog.tsx", name: "Sync Result Dialog" },
-    ]
-  },
-  {
-    name: "🎬 Landing Pages",
-    icon: <Layout className="h-4 w-4" />,
-    files: [
-      { path: "src/components/landing/LandingPagePreview.tsx", name: "Landing Page Preview" },
-      { path: "src/components/landing/LandingPageVisionShowcase.tsx", name: "Landing Vision Showcase" },
-      { path: "src/components/landing/PreferencesConfigurator.tsx", name: "Preferences Configurator" },
-    ]
-  },
-  {
-    name: "💳 Pricing Components",
-    icon: <ShoppingCart className="h-4 w-4" />,
-    files: [
-      { path: "src/components/pricing/PricingCard.tsx", name: "Pricing Card" },
-    ]
-  },
-  {
-    name: "⚙️ Admin Components",
-    icon: <Settings className="h-4 w-4" />,
-    files: [
-      { path: "src/components/admin/EmailInbox.tsx", name: "Email Inbox" },
-      { path: "src/components/admin/SystemStatusDashboard.tsx", name: "System Status Dashboard" },
-      { path: "src/components/admin/SystemEventLogs.tsx", name: "System Event Logs" },
-      { path: "src/components/admin/AdminToolbox.tsx", name: "Admin Toolbox" },
-      { path: "src/components/admin/GoogleAdsAdmin.tsx", name: "Google Ads Admin" },
-      { path: "src/components/admin/EmailTemplates.tsx", name: "Email Templates" },
-      { path: "src/components/admin/UserInsightPanel.tsx", name: "User Insight Panel" },
-    ]
-  }
-];
-
 export default function AutoTranslationScanner() {
-  const [activeTab, setActiveTab] = useState("files");
+  const [activeTab, setActiveTab] = useState("analyze");
   const [code, setCode] = useState("");
   const [fileName, setFileName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -178,9 +53,6 @@ export default function AutoTranslationScanner() {
   const [history, setHistory] = useState<AuditRecord[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [stats, setStats] = useState({ total: 0, fr: 0, en: 0, mixed: 0, scans: 0 });
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(["📄 Pages"]);
-  const [selectedFile, setSelectedFile] = useState<{ path: string; name: string } | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Load history
   const loadHistory = useCallback(async () => {
@@ -234,52 +106,6 @@ export default function AutoTranslationScanner() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
-
-  const handleFileClick = async (file: { path: string; name: string }) => {
-    setSelectedFile(file);
-    setFileName(file.path);
-    setCode("");
-    setResult(null);
-    setIsDialogOpen(true);
-    
-    // Auto-fetch file content from GitHub
-    try {
-      toast.info(`Chargement de ${file.name}...`);
-      const { data, error } = await supabase.functions.invoke("fetch-file-content", {
-        body: { filePath: file.path }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.content) {
-        setCode(data.content);
-        toast.success(`${file.name} chargé ! Cliquez sur Analyser.`);
-      } else {
-        toast.error("Fichier vide ou non trouvé");
-      }
-    } catch (error) {
-      console.error("Error fetching file:", error);
-      toast.error("Impossible de charger le fichier automatiquement. Collez le code manuellement.");
-    }
-  };
-
-  const toggleCategory = (categoryName: string) => {
-    setExpandedCategories(prev => 
-      prev.includes(categoryName) 
-        ? prev.filter(c => c !== categoryName)
-        : [...prev, categoryName]
-    );
-  };
-
-  const getFileStatus = (filePath: string) => {
-    const record = history.find(r => r.file_path === filePath);
-    if (!record) return null;
-    return {
-      issues: record.total_issues,
-      status: "scanned",
-      lastScanned: record.created_at
-    };
-  };
 
   // Analyze code with AI
   const analyzeCode = async () => {
@@ -392,16 +218,12 @@ export default function AutoTranslationScanner() {
           Scanner de Traductions IA
         </CardTitle>
         <CardDescription>
-          Cliquez sur un fichier pour analyser ses textes en dur avec l'IA
+          Collez du code React/TypeScript pour analyser ses textes en dur avec l'IA
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="files" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              Fichiers
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="analyze" className="flex items-center gap-2">
               <Wand2 className="h-4 w-4" />
               Analyse
@@ -415,80 +237,6 @@ export default function AutoTranslationScanner() {
               Stats
             </TabsTrigger>
           </TabsList>
-
-          {/* Files Tab - Main feature */}
-          <TabsContent value="files" className="space-y-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Cliquez sur un fichier pour analyser ses textes en dur. Le scanner détectera automatiquement 
-              les toasts, dialogs, boutons et autres textes à traduire.
-            </p>
-            
-            <ScrollArea className="h-[500px] pr-4">
-              <div className="space-y-2">
-                {FILE_REGISTRY.map((category) => (
-                  <Collapsible 
-                    key={category.name}
-                    open={expandedCategories.includes(category.name)}
-                    onOpenChange={() => toggleCategory(category.name)}
-                  >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        {category.icon}
-                        <span className="font-medium">{category.name}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {category.files.length}
-                        </Badge>
-                      </div>
-                      {expandedCategories.includes(category.name) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-2">
-                      <div className="grid gap-1 pl-4">
-                        {category.files.map((file) => {
-                          const status = getFileStatus(file.path);
-                          return (
-                            <button
-                              key={file.path}
-                              onClick={() => handleFileClick(file)}
-                              className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-left w-full group"
-                            >
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                                <span className="text-sm">{file.name}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {status ? (
-                                  <>
-                                    {status.issues > 0 ? (
-                                      <Badge variant="destructive" className="text-xs">
-                                        {status.issues} issues
-                                      </Badge>
-                                    ) : (
-                                      <Badge className="bg-green-500/20 text-green-500 text-xs">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        OK
-                                      </Badge>
-                                    )}
-                                  </>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">
-                                    Non scanné
-                                  </Badge>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
 
           {/* AI Analysis Tab */}
           <TabsContent value="analyze" className="space-y-4">
@@ -629,7 +377,7 @@ export default function AutoTranslationScanner() {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <FileCode className="h-5 w-5 text-purple-500" />
+                          <Languages className="h-5 w-5 text-purple-500" />
                           Traductions à Ajouter
                         </CardTitle>
                         <Button
@@ -684,7 +432,7 @@ export default function AutoTranslationScanner() {
                   <Card key={record.id} className="p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <FileCode className="h-5 w-5 text-muted-foreground" />
+                        <Languages className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="font-medium text-sm">{record.file_path || "Code sans nom"}</p>
                           <p className="text-xs text-muted-foreground">
@@ -776,71 +524,6 @@ export default function AutoTranslationScanner() {
           </TabsContent>
         </Tabs>
 
-        {/* File Analysis Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileCode className="h-5 w-5" />
-                Analyser: {selectedFile?.name}
-              </DialogTitle>
-              <DialogDescription>
-                Collez le contenu de <code className="bg-muted px-1 rounded">{selectedFile?.path}</code> pour lancer l'analyse
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Collez ici le code du fichier..."
-                className="w-full min-h-[300px] p-3 font-mono text-sm bg-muted rounded-lg border border-border resize-y"
-              />
-              
-              <Button 
-                onClick={async () => {
-                  await analyzeCode();
-                  if (result || !isAnalyzing) {
-                    setIsDialogOpen(false);
-                    setActiveTab("analyze");
-                  }
-                }}
-                disabled={isAnalyzing || !code.trim()}
-                className="w-full"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyse IA en cours...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Analyser avec Gemini 2.5 Flash
-                  </>
-                )}
-              </Button>
-
-              {result && result.issues.length > 0 && (
-                <Card className="p-4 border-yellow-500/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    <span className="font-medium">{result.issues.length} problème(s) détecté(s)</span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      setActiveTab("analyze");
-                    }}
-                  >
-                    Voir les détails
-                  </Button>
-                </Card>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </CardContent>
     </Card>
   );
