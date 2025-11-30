@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useLocation } from 'react-router-dom';
-import { Loader2, Package, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { toast } from 'sonner';
 
@@ -28,13 +28,12 @@ export function AutoSyncProgressDialog() {
             if (progressIntervalRef.current) {
               clearInterval(progressIntervalRef.current);
             }
-            return 95; // Pause at 95%
+            return 95;
           }
-          // Increment by random amount for natural feel
-          const increment = Math.random() * 3 + 1;
+          const increment = Math.random() * 4 + 2;
           return Math.min(prev + increment, 95);
         });
-      }, 150);
+      }, 200);
     }
 
     return () => {
@@ -49,7 +48,6 @@ export function AutoSyncProgressDialog() {
     if (isCompleted && !hasShownSuccessToast.current) {
       hasShownSuccessToast.current = true;
       
-      // Clear interval if still running
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
       }
@@ -57,22 +55,20 @@ export function AutoSyncProgressDialog() {
       // Jump to 100%
       setProgress(100);
 
-      // Wait a moment at 100%, then hide and show toast
+      // Wait briefly at 100%, then hide and show toast
       setTimeout(() => {
         setVisible(false);
         
-        // Show success toast
         toast.success(t.dialogs?.autoSync?.syncComplete || 'Import réussi', {
           description: tf('dialogs.autoSync.itemsImported', { count: itemsSynced }) || `${itemsSynced} éléments importés`,
           duration: 4000,
         });
         
-        // End sync
         setTimeout(() => {
           endSync();
           setProgress(0);
-        }, 500);
-      }, 400);
+        }, 300);
+      }, 600);
     }
   }, [isCompleted, itemsSynced, endSync, t, tf]);
 
@@ -88,48 +84,60 @@ export function AutoSyncProgressDialog() {
 
   if (!shouldShow) return null;
 
+  const isComplete = progress >= 100;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[400px] animate-in zoom-in-95 duration-300">
-        <div className="flex flex-col items-center gap-5">
-          {/* Spinner or Checkmark */}
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors duration-300 ${
-            progress >= 100 ? 'bg-green-100 dark:bg-green-950/50' : 'bg-primary/10'
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-[340px] animate-in zoom-in-95 duration-300">
+        {/* Header with icon */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+            isComplete 
+              ? 'bg-green-500/20' 
+              : 'bg-primary/10'
           }`}>
-            {progress >= 100 ? (
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+            {isComplete ? (
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
             ) : (
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
             )}
           </div>
-          
-          {/* Title */}
-          <div className="text-center">
-            <h3 className="font-semibold text-lg text-foreground">
-              {t.dialogs?.autoSync?.title || 'Synchronisation automatique'}
+          <div>
+            <h3 className="font-semibold text-foreground text-sm">
+              {isComplete 
+                ? (t.dialogs?.autoSync?.syncComplete || 'Import terminé')
+                : (t.dialogs?.autoSync?.title || 'Synchronisation en cours')
+              }
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {storeName || t.dialogs?.autoSync?.storeName || 'Votre boutique'}
+            <p className="text-xs text-muted-foreground">
+              {storeName || 'Votre boutique'}
             </p>
           </div>
+        </div>
 
+        {/* Progress section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              {isComplete 
+                ? `${itemsSynced} éléments importés`
+                : (t.dialogs?.autoSync?.pleaseWait || 'Import des données...')
+              }
+            </span>
+            <span className={`font-medium tabular-nums ${isComplete ? 'text-green-500' : 'text-foreground'}`}>
+              {Math.round(progress)}%
+            </span>
+          </div>
+          
           {/* Progress bar */}
-          <div className="w-full space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Package className="w-4 h-4 text-primary" />
-                <span>{t.dialogs?.autoSync?.pleaseWait || 'Veuillez patienter...'}</span>
-              </div>
-              <span className="font-medium text-foreground">{Math.round(progress)}%</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-300 ease-out rounded-full ${
-                  progress >= 100 ? 'bg-green-500' : 'bg-primary'
-                }`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ease-out rounded-full ${
+                isComplete ? 'bg-green-500' : 'bg-primary'
+              }`}
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
       </div>
