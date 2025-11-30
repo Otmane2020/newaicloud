@@ -7,7 +7,7 @@ interface AutoSyncContextType {
   storeName: string;
   itemsSynced: number;
   startSync: (storeName: string) => void;
-  updateType: (type: string) => void;
+  updateProgress: (type: string, items: number) => void;
   completeSync: (itemsSynced: number) => void;
   endSync: () => void;
 }
@@ -23,7 +23,6 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
   const autoCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const startSync = (name: string) => {
-    // Clear any pending auto-close
     if (autoCloseTimeoutRef.current) {
       clearTimeout(autoCloseTimeoutRef.current);
       autoCloseTimeoutRef.current = null;
@@ -35,27 +34,18 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
     setItemsSynced(0);
   };
 
-  const updateType = (type: string) => {
+  const updateProgress = (type: string, items: number) => {
     setCurrentType(type);
+    setItemsSynced(items);
   };
 
   const completeSync = (items: number) => {
     setIsCompleted(true);
     setItemsSynced(items);
     setCurrentType('completed');
-    
-    // Auto-close after 3 seconds
-    autoCloseTimeoutRef.current = setTimeout(() => {
-      setIsSyncing(false);
-      setIsCompleted(false);
-      setCurrentType('products');
-      setStoreName('');
-      setItemsSynced(0);
-    }, 3000);
   };
 
   const endSync = () => {
-    // Clear any pending auto-close
     if (autoCloseTimeoutRef.current) {
       clearTimeout(autoCloseTimeoutRef.current);
       autoCloseTimeoutRef.current = null;
@@ -67,7 +57,6 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
     setItemsSynced(0);
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (autoCloseTimeoutRef.current) {
@@ -84,7 +73,7 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
       storeName, 
       itemsSynced,
       startSync, 
-      updateType, 
+      updateProgress,
       completeSync,
       endSync 
     }}>
