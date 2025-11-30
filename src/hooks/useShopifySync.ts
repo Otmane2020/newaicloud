@@ -302,6 +302,35 @@ export const useShopifySync = () => {
 
       console.log('📊 [SYNC STATS] Total imported:', totalImported, 'Duration:', duration, 'ms');
 
+      // 🔥 CRITICAL: Sync product-collection links AFTER all imports are complete
+      if (types.includes('products') && types.includes('collections')) {
+        console.log('🔗 [SYNC LINKING] Syncing product-collection relationships...');
+        setCurrentSyncType('linking');
+        
+        if (historyId) {
+          await supabase
+            .from('sync_history')
+            .update({ sync_type: 'linking' })
+            .eq('id', historyId);
+        }
+        
+        try {
+          const linkResult = await supabase.functions.invoke('sync-product-collections', {
+            body: { storeId: storeToSync.id, userId: user.id }
+          });
+          
+          if (linkResult.error) {
+            console.error('❌ [SYNC LINKING ERROR]', linkResult.error);
+            errorMessages.push(`linking: ${linkResult.error.message}`);
+          } else {
+            console.log('✅ [SYNC LINKING] Product-collection sync complete:', linkResult.data);
+          }
+        } catch (linkError: any) {
+          console.error('❌ [SYNC LINKING EXCEPTION]', linkError);
+          errorMessages.push(`linking: ${linkError.message || 'Unknown error'}`);
+        }
+      }
+
       // Update history entry with completed status
       if (historyId) {
         console.log('📝 [SYNC HISTORY] Updating history entry:', historyId, 'status:', errorMessages.length > 0 ? 'failed' : 'success');
@@ -322,8 +351,6 @@ export const useShopifySync = () => {
           console.error('❌ [SYNC HISTORY UPDATE EXCEPTION]', historyUpdateError);
         }
       }
-
-      // Note: product-collection links are now synced automatically by import-products edge function
 
       if (errorMessages.length > 0) {
         toast.warning(`Synchronisation terminée avec des erreurs: ${totalImported} éléments importés`);
