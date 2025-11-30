@@ -255,6 +255,19 @@ Deno.serve(async (req: Request) => {
           errorCount++;
         } else {
           upsertedCount++;
+          
+          // 🔥 NEW: Update sync_history for live progress (every 5 collections)
+          const syncHistoryId = body.syncHistoryId;
+          if (syncHistoryId && upsertedCount % 5 === 0) {
+            await supabase
+              .from('sync_history')
+              .update({
+                items_synced: upsertedCount,
+                sync_type: 'collections'
+              })
+              .eq('id', syncHistoryId);
+            console.log(`📊 [LIVE PROGRESS] Collections: ${upsertedCount}/${allCollections.length}`);
+          }
         }
       } catch (error) {
         console.error(`❌ Error processing collection ${collection.id}:`, error);
