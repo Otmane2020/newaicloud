@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, Package, Image, FileText, Newspaper } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,15 +13,47 @@ interface SyncData {
   store_name?: string;
 }
 
+const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; progress: number }> = {
+  products: { icon: Package, label: 'Produits', progress: 25 },
+  collections: { icon: FileText, label: 'Collections', progress: 50 },
+  pages: { icon: FileText, label: 'Pages', progress: 65 },
+  articles: { icon: Newspaper, label: 'Articles', progress: 80 },
+  images: { icon: Image, label: 'Images', progress: 95 },
+  full: { icon: Package, label: 'Import complet', progress: 50 },
+};
+
 export function AutoSyncProgressDialog() {
   const location = useLocation();
   const { t, tf } = useTranslation();
   const [syncData, setSyncData] = React.useState<SyncData | null>(null);
   const [progress, setProgress] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
+  const [targetProgress, setTargetProgress] = React.useState(0);
   const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const pollIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const hasShownToastRef = React.useRef<string | null>(null);
+
+  // Smooth progress animation towards target
+  React.useEffect(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    progressIntervalRef.current = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= targetProgress) return targetProgress;
+        const diff = targetProgress - prev;
+        const increment = Math.max(0.3, diff * 0.08);
+        return Math.min(prev + increment, targetProgress);
+      });
+    }, 50);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [targetProgress]);
 
   // Poll sync_history for running syncs
   const checkForRunningSync = React.useCallback(async () => {
@@ -29,17 +61,10 @@ export function AutoSyncProgressDialog() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Check for running sync in last 10 minutes
       const tenMinutesAgo = new Date(Date.now() - 600000).toISOString();
       const { data, error } = await supabase
         .from('sync_history')
-        .select(`
-          id,
-          status,
-          sync_type,
-          items_synced,
-          store_id
-        `)
+        .select(`id, status, sync_type, items_synced, store_id`)
         .eq('user_id', user.id)
         .gte('started_at', tenMinutesAgo)
         .order('started_at', { ascending: false })
@@ -48,7 +73,6 @@ export function AutoSyncProgressDialog() {
 
       if (error || !data) return null;
 
-      // Get store name
       let storeName = '';
       if (data.store_id) {
         const { data: store } = await supabase
@@ -65,7 +89,7 @@ export function AutoSyncProgressDialog() {
     }
   }, []);
 
-  // Initial check and start polling
+  // Initial check and polling
   React.useEffect(() => {
     const initCheck = async () => {
       const data = await checkForRunningSync();
@@ -73,31 +97,22 @@ export function AutoSyncProgressDialog() {
       if (data && data.status === 'running') {
         setSyncData(data);
         setVisible(true);
-        setProgress(Math.min(90, (data.items_synced || 0) / 100 * 10 + 10));
-        
-        // Start progress animation
-        if (!progressIntervalRef.current) {
-          progressIntervalRef.current = setInterval(() => {
-            setProgress(prev => {
-              if (prev >= 95) return 95;
-              return Math.min(prev + Math.random() * 2 + 0.5, 95);
-            });
-          }, 300);
-        }
+        const config = syncTypeConfig[data.sync_type || 'full'] || syncTypeConfig.full;
+        setTargetProgress(config.progress);
       }
     };
 
     initCheck();
 
-    // Poll every 2 seconds
     pollIntervalRef.current = setInterval(async () => {
       const data = await checkForRunningSync();
       
       if (!data) {
-        // No sync found - hide if visible
         if (visible) {
           setVisible(false);
           setSyncData(null);
+          setProgress(0);
+          setTargetProgress(0);
         }
         return;
       }
@@ -107,30 +122,14 @@ export function AutoSyncProgressDialog() {
       if (data.status === 'running') {
         if (!visible) {
           setVisible(true);
-          setProgress(10);
-          
-          // Start progress animation
-          if (!progressIntervalRef.current) {
-            progressIntervalRef.current = setInterval(() => {
-              setProgress(prev => {
-                if (prev >= 95) return 95;
-                return Math.min(prev + Math.random() * 2 + 0.5, 95);
-              });
-            }, 300);
-          }
+          setProgress(0);
         }
+        const config = syncTypeConfig[data.sync_type || 'full'] || syncTypeConfig.full;
+        setTargetProgress(config.progress);
       } else if (data.status === 'success' || data.status === 'failed') {
-        // Sync completed
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-          progressIntervalRef.current = null;
-        }
-
-        // Show toast only once per sync
         if (hasShownToastRef.current !== data.id) {
           hasShownToastRef.current = data.id;
-          
-          setProgress(100);
+          setTargetProgress(100);
           
           setTimeout(() => {
             setVisible(false);
@@ -142,19 +141,19 @@ export function AutoSyncProgressDialog() {
               });
             }
             
-            setSyncData(null);
-          }, 500);
+            setTimeout(() => {
+              setSyncData(null);
+              setProgress(0);
+              setTargetProgress(0);
+            }, 300);
+          }, 1000);
         }
       }
     }, 2000);
 
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, [checkForRunningSync, visible, t, tf]);
 
@@ -171,62 +170,106 @@ export function AutoSyncProgressDialog() {
 
   if (!shouldShow || !syncData) return null;
 
-  const isComplete = progress >= 100;
-  const syncTypeLabels: Record<string, string> = {
-    products: 'Produits',
-    collections: 'Collections',
-    pages: 'Pages',
-    articles: 'Articles',
-    images: 'Images',
-    full: 'Import complet',
-  };
+  const isComplete = progress >= 99;
+  const currentConfig = syncTypeConfig[syncData.sync_type || 'full'] || syncTypeConfig.full;
+  const CurrentIcon = currentConfig.icon;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="bg-card border border-border rounded-lg shadow-lg p-4 w-[300px]">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-            isComplete ? 'bg-green-500/20' : 'bg-primary/10'
-          }`}>
-            {isComplete ? (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-            ) : (
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 w-[420px] relative overflow-hidden">
+        {/* Gradient background effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#95bf46]/5 via-transparent to-[#95bf46]/10 pointer-events-none" />
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {/* Shopify Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-2xl bg-[#95bf46]/10 flex items-center justify-center border border-[#95bf46]/20">
+              <img 
+                src="/shopify-logo.svg" 
+                alt="Shopify" 
+                className="w-12 h-12"
+              />
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-foreground text-sm">
-              {t.dialogs?.autoSync?.title || 'Synchronisation'}
+
+          {/* Title */}
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-semibold text-foreground mb-1">
+              {isComplete ? 'Import terminé !' : 'Synchronisation en cours'}
             </h3>
-            <p className="text-xs text-muted-foreground truncate">
-              {syncData.store_name || 'Votre boutique'}
+            <p className="text-sm text-muted-foreground">
+              {syncData.store_name || 'Votre boutique Shopify'}
             </p>
           </div>
-        </div>
 
-        {/* Stats */}
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            {syncTypeLabels[syncData.sync_type || ''] || 'Import'} 
-            {syncData.items_synced ? ` • ${syncData.items_synced}` : ''}
-          </span>
-          <span className={`font-medium tabular-nums ${isComplete ? 'text-green-500' : 'text-foreground'}`}>
-            {Math.round(progress)}%
-          </span>
-        </div>
+          {/* Current sync type indicator */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
+              isComplete ? 'bg-green-500/20' : 'bg-[#95bf46]/10'
+            }`}>
+              {isComplete ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              ) : (
+                <Loader2 className="w-5 h-5 animate-spin text-[#95bf46]" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
+              <CurrentIcon className="w-4 h-4 text-[#95bf46]" />
+              <span className="text-sm font-medium text-foreground">
+                {currentConfig.label}
+              </span>
+              {syncData.items_synced ? (
+                <span className="text-sm text-muted-foreground">
+                  • {syncData.items_synced}
+                </span>
+              ) : null}
+            </div>
+          </div>
 
-        {/* Progress bar */}
-        <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-300 ease-out rounded-full ${
-              isComplete ? 'bg-green-500' : 'bg-primary'
-            }`}
-            style={{ width: `${progress}%` }}
-          />
+          {/* Progress bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-muted-foreground">Progression</span>
+              <span className={`font-semibold tabular-nums ${isComplete ? 'text-green-500' : 'text-[#95bf46]'}`}>
+                {Math.round(progress)}%
+              </span>
+            </div>
+            <div className="h-3 bg-muted rounded-full overflow-hidden border border-border/30">
+              <div 
+                className={`h-full transition-all duration-500 ease-out rounded-full relative ${
+                  isComplete ? 'bg-green-500' : 'bg-gradient-to-r from-[#95bf46] to-[#5f8e3e]'
+                }`}
+                style={{ width: `${progress}%` }}
+              >
+                {!isComplete && (
+                  <div 
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+                      animation: 'shimmer 1.5s infinite',
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Helper text */}
+          <p className="text-center text-xs text-muted-foreground">
+            {isComplete 
+              ? 'Redirection automatique...' 
+              : 'Veuillez patienter pendant l\'import de vos données...'}
+          </p>
         </div>
       </div>
+      
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
