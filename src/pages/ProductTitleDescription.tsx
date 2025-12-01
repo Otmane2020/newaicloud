@@ -2027,16 +2027,68 @@ export default function ProductTitleDescription() {
 
         {/* Actions Bar */}
         <Card className="p-4 space-y-4">
-          {/* Search Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
-            <div className="relative flex-1 w-full max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t.contentOptimization.search.placeholder}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10"
-              />
+          {/* Filters Row */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 w-full">
+              <div className="relative flex-1 w-full max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t.contentOptimization.search.placeholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-10"
+                />
+              </div>
+              
+              <Select value={collectionFilter} onValueChange={(value) => {
+                setCollectionFilter(value);
+                setCollectionSearchTerm("");
+              }}>
+                <SelectTrigger className="w-full sm:w-[280px] h-10">
+                  <SelectValue placeholder={t.contentOptimization.filters.selectCollection} />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="p-2 pb-0">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder={t.contentOptimization.filters.selectCollection}
+                        value={collectionSearchTerm}
+                        onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                        className="h-9 pl-9"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <SelectItem value="all">
+                      {t.contentOptimization.filters.allCollections}
+                    </SelectItem>
+                    {collections
+                      .filter((collection) => 
+                        collectionSearchTerm === "" || 
+                        collection.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
+                      )
+                      .map((collection) => (
+                        <SelectItem key={collection.id} value={collection.id}>
+                          {collection.title}
+                        </SelectItem>
+                      ))
+                    }
+                  </div>
+                </SelectContent>
+              </Select>
+              
+              {collectionFilter !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCollectionFilter("all")}
+                  className="h-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -2187,62 +2239,6 @@ export default function ProductTitleDescription() {
                 Landing Pages ({selectedProducts.size})
               </Button>
             </div>
-          </div>
-          
-          {/* Collection Filter Row */}
-          <div className="flex items-center gap-3">
-            <Label className="text-sm font-medium whitespace-nowrap">
-              {t.contentOptimization.filters.selectCollection}
-            </Label>
-            <Select value={collectionFilter} onValueChange={(value) => {
-              setCollectionFilter(value);
-              setCollectionSearchTerm("");
-            }}>
-              <SelectTrigger className="w-full max-w-md h-10">
-                <SelectValue placeholder={t.contentOptimization.filters.allCollections} />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2 pb-0">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder={t.contentOptimization.filters.selectCollection}
-                      value={collectionSearchTerm}
-                      onChange={(e) => setCollectionSearchTerm(e.target.value)}
-                      className="h-9 pl-9"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <SelectItem value="all">
-                    {t.contentOptimization.filters.allCollections}
-                  </SelectItem>
-                  {collections
-                    .filter((collection) => 
-                      collectionSearchTerm === "" || 
-                      collection.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
-                    )
-                    .map((collection) => (
-                      <SelectItem key={collection.id} value={collection.id}>
-                        {collection.title}
-                      </SelectItem>
-                    ))
-                  }
-                </div>
-              </SelectContent>
-            </Select>
-            {collectionFilter !== "all" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCollectionFilter("all")}
-                className="h-10"
-              >
-                <X className="h-4 w-4 mr-1" />
-                {language === "fr" ? "Effacer" : "Clear"}
-              </Button>
-            )}
           </div>
         </Card>
 
