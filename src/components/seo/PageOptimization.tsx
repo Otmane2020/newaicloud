@@ -1205,31 +1205,46 @@ export function PageOptimization() {
                         </div>
                       </TableCell>
                        <TableCell>
-                        {page.seo_title && page.seo_description ? (
-                          <div 
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => setPreviewPageId(page.id)}
-                          >
-                            <GoogleSearchPreview
-                              title={
-                                page.handle === 'contact' && !page.seo_title
-                                  ? `Contact • ${selectedStore?.store_name || 'Votre boutique'}`
-                                  : page.seo_title
-                              }
-                              description={
-                                page.handle === 'contact' && !page.seo_description
-                                  ? `Contactez ${selectedStore?.store_name || 'notre équipe'} pour toute question, assistance ou information.`
-                                  : page.seo_description
-                              }
-                              url={`https://${storeDomain}/pages/${page.handle}`}
-                              compact
-                            />
-                          </div>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            Not optimized
-                          </Badge>
-                        )}
+                        <div 
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewPageId(page.id)}
+                        >
+                          {(() => {
+                            const storeName = selectedStore?.store_name?.includes('.myshopify.com')
+                              ? selectedStore?.store_name?.replace('.myshopify.com', '').split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                              : selectedStore?.store_name || selectedStore?.public_domain || "Votre boutique";
+                            const lang = selectedStore?.store_language || "fr";
+
+                            // AUTOMATIC MULTI-LANGUAGE SEO FOR CONTACT PAGE
+                            const seoTitle = page.handle === "contact"
+                              ? `Contact • ${storeName}`
+                              : page.seo_title || page.title;
+
+                            const seoDescription = page.handle === "contact"
+                              ? lang.startsWith("fr")
+                                ? `Contactez ${storeName} pour toute question, assistance ou information.`
+                                : `Contact ${storeName} for any question, assistance or information.`
+                              : page.seo_description || page.body_html?.replace(/<[^>]+>/g, '').substring(0, 160) || '';
+
+                            // Don't render if no SEO data and not contact page
+                            if (!page.seo_title && !page.seo_description && page.handle !== 'contact') {
+                              return (
+                                <Badge variant="outline" className="text-xs">
+                                  Not optimized
+                                </Badge>
+                              );
+                            }
+
+                            return (
+                              <GoogleSearchPreview
+                                title={seoTitle}
+                                description={seoDescription}
+                                url={`https://${storeDomain}/pages/${page.handle}`}
+                                compact
+                              />
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">

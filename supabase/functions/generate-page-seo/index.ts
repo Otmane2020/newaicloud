@@ -303,6 +303,54 @@ ${elements.bodyText}
           
           console.log(`🏪 Contact page - Commercial name extracted: "${storeCommercialName}" from store_label="${storeData.store_label}", store_name="${storeData.store_name}", store_url="${storeData.store_url}"`);
           
+          // 🎯 SHORTCUT FOR CONTACT PAGE - Skip AI generation, use template
+          if (isContactPage && storeCommercialName) {
+            const storeLanguage = storeData?.store_language || 'fr';
+            
+            const seoTitle = `Contact • ${storeCommercialName}`;
+            const seoDescription = storeLanguage.startsWith('fr')
+              ? `Contactez ${storeCommercialName} pour toute question, assistance ou information. Notre équipe vous répond rapidement.`
+              : `Contact ${storeCommercialName} for any question, assistance or information. Our team responds quickly.`;
+            
+            console.log(`🎯 Contact page SHORTCUT - Lang: ${storeLanguage}, Title: "${seoTitle}"`);
+            
+            // Update page directly without AI
+            const { error: updateError } = await supabaseClient
+              .from('shopify_pages')
+              .update({
+                seo_title: seoTitle,
+                seo_description: seoDescription,
+                optimized: true,
+                optimization_count: (page.optimization_count || 0) + 1,
+                last_optimization_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', pageId);
+
+            if (updateError) {
+              console.error('❌ Contact shortcut update error:', updateError);
+              throw updateError;
+            }
+
+            // Track usage
+            await supabaseClient.rpc('increment_usage', {
+              p_seller_id: user.id,
+              p_field: 'optimizations_count',
+              p_increment: 2
+            });
+
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                seo_title: seoTitle,
+                seo_description: seoDescription,
+                contact_shortcut: true,
+                language: storeLanguage
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
           textContent = `⚠️ PAGE DE CONTACT - INSTRUCTIONS OBLIGATOIRES ⚠️
 
 NOM COMMERCIAL DE LA BOUTIQUE : "${storeCommercialName}"
