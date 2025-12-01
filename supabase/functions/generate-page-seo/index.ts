@@ -253,11 +253,12 @@ ${elements.bodyText}
       const handleLower = page.handle?.toLowerCase() || '';
       const contentLower = baseContent.toLowerCase();
       
+      // Assigner à la variable globale (pas de const/let ici)
       isContactPage = titleLower.includes('contact') || 
-                           handleLower.includes('contact') ||
-                           titleLower.includes('nous joindre') ||
-                           titleLower.includes('contactez') ||
-                           contentLower.includes('formulaire de contact');
+                      handleLower.includes('contact') ||
+                      titleLower.includes('nous joindre') ||
+                      titleLower.includes('contactez') ||
+                      contentLower.includes('formulaire de contact');
       
       // Récupérer le nom commercial de la boutique pour les pages contact
       let storeCommercialName = '';
