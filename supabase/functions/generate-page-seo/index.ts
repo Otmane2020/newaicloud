@@ -267,14 +267,29 @@ ${elements.bodyText}
           .single();
         
         if (storeData) {
-          // Priorité: store_label (nom commercial) > store_name > extraction de l'URL
-          storeCommercialName = storeData.store_label || storeData.store_name || '';
-          
-          // Si pas de nom, extraire du domaine Shopify
-          if (!storeCommercialName && storeData.store_url) {
-            const urlParts = storeData.store_url.replace('.myshopify.com', '').split('.');
-            storeCommercialName = urlParts[0].charAt(0).toUpperCase() + urlParts[0].slice(1);
+          // Priorité: store_label (nom commercial explicite) UNIQUEMENT
+          // Ignorer store_name s'il contient .myshopify.com (c'est une URL, pas un nom)
+          if (storeData.store_label && storeData.store_label.trim()) {
+            storeCommercialName = storeData.store_label.trim();
+          } else if (storeData.store_name && !storeData.store_name.includes('.myshopify.com')) {
+            storeCommercialName = storeData.store_name.trim();
           }
+          
+          // Si toujours pas de nom, extraire proprement du domaine Shopify
+          if (!storeCommercialName) {
+            // Extraire depuis store_url ou store_name (s'il contient .myshopify.com)
+            const urlSource = storeData.store_url || storeData.store_name || '';
+            const match = urlSource.match(/([a-zA-Z0-9-]+)\.myshopify\.com/);
+            if (match) {
+              // Convertir "decora-home-2031" en "Decora Home 2031"
+              storeCommercialName = match[1]
+                .split('-')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            }
+          }
+          
+          console.log(`🏪 Contact page - Commercial name extracted: "${storeCommercialName}" from store_label="${storeData.store_label}", store_name="${storeData.store_name}", store_url="${storeData.store_url}"`);
           
           textContent = `⚠️ PAGE DE CONTACT - INSTRUCTIONS OBLIGATOIRES ⚠️
 
