@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
-import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
+
 import { ProgressBanner } from './ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
@@ -103,7 +103,7 @@ export function PageOptimization() {
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [showOptimizeAllConfirmDialog, setShowOptimizeAllConfirmDialog] = useState(false);
+  
   const [previewPageId, setPreviewPageId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
@@ -455,8 +455,8 @@ export function PageOptimization() {
       return;
     }
     
-    // Show confirmation dialog
-    setShowOptimizeAllConfirmDialog(true);
+    // Call directly without confirmation dialog
+    handleConfirmOptimizeAll();
   };
 
   const handleReoptimizeAllPages = async () => {
@@ -480,11 +480,8 @@ export function PageOptimization() {
     
     if (pagesToOptimize.length === 0) {
       toast.info('All pages are already optimized');
-      setShowOptimizeAllConfirmDialog(false);
       return;
     }
-
-    setShowOptimizeAllConfirmDialog(false);
     const pageIdsToOptimize = pagesToOptimize.map(p => p.id);
     
     // Use global context processor - continues even if user changes tabs
@@ -1413,16 +1410,6 @@ export function PageOptimization() {
         onClose={() => setShowResultsDialog(false)}
       />
 
-      
-      <OptimizationConfirmDialog
-        open={showOptimizeAllConfirmDialog}
-        onOpenChange={setShowOptimizeAllConfirmDialog}
-        onConfirm={handleConfirmOptimizeAll}
-        selectedCount={pages.filter(p => !p.optimized).length}
-        currentUsage={limits?.usage.optimizations_count || 0}
-        maxOptimizations={limits?.limits.max_optimizations || 0}
-        isTrialing={limits?.isTrialing || false}
-      />
 
       {/* Upgrade Dialog */}
       <UpgradeDialog

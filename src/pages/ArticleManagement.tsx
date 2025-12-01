@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
-import { ResultsDialog, ProgressDialog, SyncConfirmationDialog } from '@/components/seo/SeoWorkflowDialogs';
+import { ResultsDialog, ProgressDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateArticleSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
@@ -85,7 +85,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizing, setOptimizing] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -1159,18 +1158,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         total={progress.total}
       />
 
-      {/* Sync Confirmation Dialog */}
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        onConfirm={async () => {
-          await syncToShopify(optimizedArticles.map(a => a.id));
-          setShowSyncDialog(false);
-        }}
-        itemCount={optimizedArticles.length}
-        type="seo"
-        loading={false}
-      />
     </div>
   );
 });
