@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     const baseUrl = 'https://newai.sale';
     const urls: SitemapUrl[] = [];
 
-    // Static pages - high priority
+    // Static pages - high priority (newai.sale marketing pages)
     urls.push(
       { loc: `${baseUrl}/`, changefreq: 'daily', priority: 1.0 },
       { loc: `${baseUrl}/pricing`, changefreq: 'weekly', priority: 0.9 },
@@ -41,69 +41,6 @@ Deno.serve(async (req) => {
       { loc: `${baseUrl}/signup`, changefreq: 'monthly', priority: 0.3 },
       { loc: `${baseUrl}/login`, changefreq: 'monthly', priority: 0.3 },
     );
-
-    // Dynamic content - fetch from database
-    // Blog articles (public)
-    const { data: articles } = await supabase
-      .from('blog_articles')
-      .select('id, title, updated_at, published_at')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(100);
-
-    if (articles) {
-      articles.forEach(article => {
-        urls.push({
-          loc: `${baseUrl}/blog/${article.id}`,
-          lastmod: article.updated_at || article.published_at,
-          changefreq: 'weekly',
-          priority: 0.7,
-        });
-      });
-    }
-
-    // Products (if public)
-    const { data: products } = await supabase
-      .from('shopify_products')
-      .select('id, handle, updated_at')
-      .eq('status', 'active')
-      .not('handle', 'is', null)
-      .order('updated_at', { ascending: false })
-      .limit(500);
-
-    if (products) {
-      products.forEach(product => {
-        if (product.handle) {
-          urls.push({
-            loc: `${baseUrl}/products/${product.handle}`,
-            lastmod: product.updated_at,
-            changefreq: 'weekly',
-            priority: 0.6,
-          });
-        }
-      });
-    }
-
-    // Collections (if public)
-    const { data: collections } = await supabase
-      .from('shopify_collections')
-      .select('id, handle, updated_at')
-      .not('handle', 'is', null)
-      .order('updated_at', { ascending: false })
-      .limit(100);
-
-    if (collections) {
-      collections.forEach(collection => {
-        if (collection.handle) {
-          urls.push({
-            loc: `${baseUrl}/collections/${collection.handle}`,
-            lastmod: collection.updated_at,
-            changefreq: 'weekly',
-            priority: 0.6,
-          });
-        }
-      });
-    }
 
     // Generate XML sitemap
     const xml = generateSitemapXml(urls);
