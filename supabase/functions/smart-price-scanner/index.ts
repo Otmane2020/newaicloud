@@ -500,6 +500,7 @@ Return ONLY valid JSON, no markdown.`,
             if (price && price > 10 && price < 10000) {
               allPrices.push(price);
               visualSearchCount++;
+              shoppingCount++; // 🔥 Count as shopping result (real merchant price)
               
               allMerchants.push({
                 title: item.title || "Produit similaire",
@@ -563,18 +564,18 @@ Return ONLY valid JSON, no markdown.`,
 
     const processingTime = Date.now() - startTime;
 
-    // Keep top 10 merchants for storage
-    const merchantsToStore = allMerchants.slice(0, 10);
+    // Keep top 10 merchants for storage and top 5 for display
+    const finalMerchants = allMerchants.length > 0 ? allMerchants.slice(0, 10) : [];
 
     const result: ScanResult = {
       vision: visionAnalysis,
       searchQuery,
       price: priceStats,
-      merchants: allMerchants.slice(0, 5),
-      productsFound: shoppingCount + organicCount + visualSearchCount,
+      merchants: finalMerchants.slice(0, 5),
+      productsFound: finalMerchants.length,
       confidence: Math.round(confidence * 100) / 100,
       sources: {
-        shopping: shoppingCount,
+        shopping: finalMerchants.length, // Real merchant count from all sources
         organic: organicCount,
         visual: visualSearchCount,
       },
@@ -608,11 +609,11 @@ Return ONLY valid JSON, no markdown.`,
             price_avg: priceStats.avg,
             price_median: priceStats.median,
             currency: priceStats.currency,
-            merchants: merchantsToStore,
-            sources_shopping: shoppingCount,
+            merchants: finalMerchants,
+            sources_shopping: finalMerchants.length,
             sources_organic: organicCount,
             sources_images: visualSearchCount,
-            products_found: shoppingCount + organicCount + visualSearchCount,
+            products_found: finalMerchants.length,
             confidence: Math.round(confidence * 100) / 100,
             processing_time_ms: processingTime,
             image_url: imageUrl,
