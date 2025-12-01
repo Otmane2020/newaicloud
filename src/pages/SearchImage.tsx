@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,36 +9,71 @@ import { Loader2, Search, ExternalLink, TrendingUp, ShoppingBag } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-const SAMPLE_PRODUCTS = [
-  {
-    id: "1",
-    title: "Table à manger ovale en bois massif",
-    price: 649.99,
-    description: "Élégante table à manger avec base cannelée, design scandinave",
-    imageUrl: "https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800"
-  },
-  {
-    id: "2",
-    title: "Chaise de bureau ergonomique",
-    price: 199.99,
-    description: "Chaise pivotante avec soutien lombaire, tissu respirant",
-    imageUrl: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800"
-  },
-  {
-    id: "3",
-    title: "Lampe de table design moderne",
-    price: 89.99,
-    description: "Lampe LED avec variateur d'intensité, finition chrome",
-    imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800"
-  },
-  {
-    id: "4",
-    title: "Canapé 3 places en velours",
-    price: 1299.99,
-    description: "Canapé confortable avec pieds en bois, style contemporain",
-    imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800"
+const SHOPIFY_API_VERSION = '2025-07';
+const SHOPIFY_STORE_PERMANENT_DOMAIN = 'store-sync-optimizer-heqly.myshopify.com';
+const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
+const SHOPIFY_STOREFRONT_TOKEN = 'e63a0a4d8d2b11bc0c61386c8aaa978d';
+
+interface ShopifyProduct {
+  id: string;
+  title: string;
+  price: number;
+  description: string;
+  imageUrl: string;
+  handle: string;
+}
+
+const STOREFRONT_QUERY = `
+  query GetProducts($first: Int!) {
+    products(first: $first) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 1) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+        }
+      }
+    }
   }
-];
+`;
+
+async function storefrontApiRequest(query: string, variables: any = {}) {
+  const response = await fetch(SHOPIFY_STOREFRONT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.errors) {
+    throw new Error(`Error calling Shopify: ${data.errors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return data;
+}
 
 interface Merchant {
   title: string;
@@ -82,10 +117,43 @@ export default function SearchImage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [products, setProducts] = useState<ShopifyProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const { toast } = useToast();
 
+  useEffect(() => {
+    loadShopifyProducts();
+  }, []);
+
+  const loadShopifyProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const data = await storefrontApiRequest(STOREFRONT_QUERY, { first: 10 });
+      
+      const shopifyProducts: ShopifyProduct[] = data.data.products.edges.map((edge: any) => ({
+        id: edge.node.id,
+        title: edge.node.title,
+        price: parseFloat(edge.node.priceRange.minVariantPrice.amount),
+        description: edge.node.description,
+        imageUrl: edge.node.images.edges[0]?.node.url || '',
+        handle: edge.node.handle,
+      }));
+
+      setProducts(shopifyProducts);
+    } catch (error) {
+      console.error("Error loading Shopify products:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les produits",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   const handleProductSelect = (productId: string) => {
-    const product = SAMPLE_PRODUCTS.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (product) {
       setSelectedProduct(productId);
       handleUrlChange(product.imageUrl);
@@ -194,20 +262,22 @@ export default function SearchImage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="product-select">Produits exemples</Label>
-              <Select value={selectedProduct} onValueChange={handleProductSelect} disabled={loading}>
+              <Label htmlFor="product-select">Produits du catalogue</Label>
+              <Select value={selectedProduct} onValueChange={handleProductSelect} disabled={loading || loadingProducts}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un produit..." />
+                  <SelectValue placeholder={loadingProducts ? "Chargement..." : products.length === 0 ? "Aucun produit" : "Sélectionner un produit..."} />
                 </SelectTrigger>
                 <SelectContent>
-                  {SAMPLE_PRODUCTS.map((product) => (
+                  {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       <div className="flex items-center gap-3 py-1">
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.title} 
-                          className="w-10 h-10 object-cover rounded"
-                        />
+                        {product.imageUrl && (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.title} 
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{product.title}</p>
                           <p className="text-xs text-muted-foreground">{product.price.toFixed(2)} €</p>
