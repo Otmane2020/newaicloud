@@ -429,3 +429,352 @@ serve(async (req) => {
     },
   });
 });
+  // ========================================================================
+  // 2️⃣ DATAFORSEO SHOPPING — Progressive Search Strategy
+  // ========================================================================
+
+  if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
+    console.log("🛒 [SHOPPING] Starting DataForSEO Shopping search...");
+
+    const authToken = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
+
+    const simplifiedQuery = simplifyForShopping(searchQuery);
+
+    const searchAttempts = [
+      { query: searchQuery, label: "Original query" },
+      { query: simplifiedQuery, label: "Simplified query" },
+    ];
+
+    if (visionAnalysis?.category && visionAnalysis?.keywords?.length) {
+      const combo = `${visionAnalysis.category} ${visionAnalysis.keywords[0]}`;
+      searchAttempts.push({ query: combo, label: "Category + Keyword" });
+    }
+
+    console.log("🔍 [SHOPPING] Attempts:", searchAttempts);
+
+    for (let i = 0; i < searchAttempts.length; i++) {
+      const attempt = searchAttempts[i];
+
+      console.log(`🚀 [SHOPPING-${i + 1}] Trying: ${attempt.label} → "${attempt.query}"`);
+
+      try {
+        const res = await fetch(
+          "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify([
+              {
+                keyword: attempt.query,
+                location_code: getLocationCode(country),
+                language_code: country === "us" || country === "uk" ? "en" : country,
+                depth: 20,
+                device: "desktop",
+                os: "windows",
+              },
+            ]),
+          }
+        );
+
+        if (!res.ok) {
+          console.log(`❌ [SHOPPING-${i + 1}] HTTP error: ${res.status}`);
+          continue;
+        }
+
+        const data = await res.json();
+        const items = data.tasks?.[0]?.result?.[0]?.items || [];
+
+        console.log(`📦 [SHOPPING-${i + 1}] Items returned: ${items.length}`);
+
+        for (const item of items) {
+          const price =
+            parsePrice(item.price?.current) ||
+            parsePrice(item.price?.regular) ||
+            parsePrice(item.price?.value) ||
+            parsePrice(item.price_from) ||
+            parsePrice(item.price);
+
+          if (price && price > 0) {
+            shoppingCount++;
+            allPrices.push(price);
+
+            if (allMerchants.length < 10) {
+              allMerchants.push({
+                title: item.title || "Unknown product",
+                source: item.seller?.name || item.source || "Google Shopping",
+                price,
+                link: item.url || "",
+              });
+            }
+          }
+        }
+
+        if (shoppingCount > 0) {
+          console.log(`✅ [SHOPPING-${i + 1}] SUCCESS: Found ${shoppingCount} prices`);
+          break;
+        } else {
+          console.log(`⚠️ [SHOPPING-${i + 1}] No prices, trying next...`);
+        }
+      } catch (err) {
+        console.log(`❌ [SHOPPING-${i + 1}] Error:`, err);
+      }
+    }
+  } else {
+    console.log("⚠️ [SHOPPING] DataForSEO credentials missing → skipping shopping search.");
+  }
+
+  // ========================================================================
+  // 3️⃣ DATAFORSEO ORGANIC — Extract prices from titles/snippets
+  // ========================================================================
+
+  if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
+    console.log("🔎 [ORGANIC] Starting DataForSEO Organic search...");
+
+    const authToken = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
+
+    try {
+      const res = await fetch(
+        "https://api.dataforseo.com/v3/serp/google/organic/live/advanced",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify([
+            {
+              keyword: searchQuery + " prix",
+              location_code: getLocationCode(country),
+              language_code: country === "us" || country === "uk" ? "en" : country,
+              depth: 20,
+            },
+          ]),
+        }
+      );
+
+      if (!res.ok) {
+        console.log("❌ [ORGANIC] HTTP Error:", res.status);
+      } else {
+        const json = await res.json();
+        const results = json.tasks?.[0]?.result?.[0]?.items || [];
+
+        console.log(`📄 [ORGANIC] Items returned: ${results.length}`);
+
+        for (const item of results) {
+          const txt = item.title + " " + item.description;
+          const match = txt.match(/(\d+[,.]?\d*)\s*€/);
+
+          if (match) {
+            const price = parsePrice(match[1]);
+            if (price) {
+              organicCount++;
+              allPrices.push(price);
+            }
+          }
+        }
+
+        console.log(`💶 [ORGANIC] Prices extracted: ${organicCount}`);
+      }
+    } catch (err) {
+      console.log("❌ [ORGANIC] Error:", err);
+    }
+  }
+
+  // ========================================================================
+  // 4️⃣ SERPAPI — Google Images + Google Shopping (true fallback)
+  // ========================================================================
+
+  if (SERPAPI_KEY) {
+    console.log("🖼️ [SERPAPI] Starting SerpAPI image search...");
+
+    const url = new URL("https://serpapi.com/search.json");
+    url.searchParams.set("api_key", SERPAPI_KEY);
+    url.searchParams.set("engine", "google_images");
+    url.searchParams.set("q", searchQuery);
+    url.searchParams.set("gl", country);
+    url.searchParams.set("hl", country === "us" || country === "uk" ? "en" : country);
+    url.searchParams.set("ijn", "0");
+
+    try {
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        console.log("❌ [SERPAPI] HTTP Error:", res.status);
+      } else {
+        const json = await res.json();
+
+        // Shopping results (direct prices)
+        const shoppingResults = json.shopping_results || [];
+        console.log(`🛍️ [SERPAPI] Shopping results found: ${shoppingResults.length}`);
+
+        for (const result of shoppingResults) {
+          const price = result.extracted_price || parsePrice(result.price);
+
+          if (price && price > 10 && price < 20000) {
+            visualSearchCount++;
+            allPrices.push(price);
+
+            allMerchants.push({
+              title: result.title || "Produit similaire",
+              source: result.source || "Google Shopping",
+              price,
+              link: result.link || "",
+            });
+          }
+        }
+
+        // Images results — not used for price but logged
+        const imageResults = json.images_results || [];
+        console.log(`🖼️ [SERPAPI] Image results: ${imageResults.length}`);
+      }
+    } catch (err) {
+      console.log("❌ [SERPAPI] Error:", err);
+    }
+  } else {
+    console.log("⚠️ [SERPAPI] SERPAPI_KEY missing → skipping SerpAPI search.");
+  }
+
+  // ========================================================================
+  // 5️⃣ FUSION DES RÉSULTATS
+  // ========================================================================
+
+  console.log("📊 FUSION DES RESULTATS…");
+  console.log("🔢 Prices collected:", allPrices);
+  console.log("🏪 Merchants collected:", allMerchants.length);
+  // ========================================================================
+  // 6️⃣ CALCUL DES STATISTIQUES DE PRIX
+  // ========================================================================
+
+  const priceStats = calculatePriceStats(allPrices);
+  console.log("📈 Price Stats:", priceStats);
+
+  // ========================================================================
+  // 7️⃣ CONSTRUCTION LISTE MARCHANDS FINALE
+  // ========================================================================
+
+  const finalMerchants = allMerchants
+    .filter(m => m.price && m.price > 0)
+    .sort((a, b) => (a.price! - b.price!))
+    .slice(0, 10);
+
+  console.log("🏪 Final merchants:", finalMerchants);
+
+  // ========================================================================
+  // 8️⃣ SCORE DE CONFIANCE
+  // ========================================================================
+
+  let confidence = 0.2;
+
+  if (visionAnalysis?.title) confidence += 0.15;
+  if (visionAnalysis?.brand) confidence += 0.1;
+
+  if (shoppingCount >= 3) confidence += 0.35;
+  else if (shoppingCount >= 1) confidence += 0.2;
+
+  if (organicCount >= 2) confidence += 0.1;
+
+  if (visualSearchCount >= 3) confidence += 0.15;
+  else if (visualSearchCount >= 1) confidence += 0.08;
+
+  if (priceStats.min && priceStats.max && priceStats.max <= priceStats.min * 3) {
+    confidence += 0.05;
+  }
+
+  confidence = Math.min(confidence, 0.98);
+
+  console.log("🔒 Confidence score:", confidence);
+
+  // ========================================================================
+  // 9️⃣ BUILD DU RESULTAT FINAL
+  // ========================================================================
+
+  const result: ScanResult = {
+    vision: visionAnalysis,
+    searchQuery,
+    price: priceStats,
+    merchants: finalMerchants.slice(0, 5),
+    productsFound: finalMerchants.length,
+    confidence: Math.round(confidence * 100) / 100,
+    sources: {
+      shopping: shoppingCount,
+      organic: organicCount,
+      visual: visualSearchCount,
+    },
+    processingTime: Date.now() - startTime,
+  };
+
+  console.log("📦 FINAL RESULT:", result);
+
+  // ========================================================================
+  // 🔟 SAUVEGARDE DANS SUPABASE
+  // ========================================================================
+
+  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && authHeader) {
+    try {
+      console.log("🗄️ Saving to Supabase...");
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const record = {
+          product_id: productId || null,
+          variant_id: variantId || null,
+          user_id: user.id,
+          store_id: storeId || null,
+
+          vision_title: visionAnalysis?.title || null,
+          vision_brand: visionAnalysis?.brand || null,
+          vision_category: visionAnalysis?.category || null,
+          vision_keywords: visionAnalysis?.keywords || [],
+          vision_segment: visionAnalysis?.segment || null,
+
+          search_query: searchQuery,
+
+          price_min: priceStats.min,
+          price_max: priceStats.max,
+          price_avg: priceStats.avg,
+          price_median: priceStats.median,
+
+          currency: priceStats.currency,
+
+          merchants: finalMerchants,
+
+          sources_shopping: shoppingCount,
+          sources_organic: organicCount,
+          sources_images: visualSearchCount,
+
+          products_found: finalMerchants.length,
+          confidence: Math.round(confidence * 100) / 100,
+
+          processing_time_ms: result.processingTime,
+          image_url: imageUrl,
+        };
+
+        const { error } = await supabase
+          .from("price_scan_results")
+          .insert(record);
+
+        if (error) console.log("❌ Supabase save error:", error.message);
+        else console.log("✅ Saved to Supabase");
+      }
+    } catch (err) {
+      console.log("❌ Supabase Error:", err);
+    }
+  }
+
+  // ========================================================================
+  // 1️⃣1️⃣ RETURN FINAL → JSON CLEAN
+  // ========================================================================
+
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+}); // ← **FINALE ET UNIQUE FERMETURE**
