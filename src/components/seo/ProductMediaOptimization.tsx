@@ -219,21 +219,33 @@ export const ProductMediaOptimization = () => {
   const handleApplyWhiteBackground = async () => {
     if (!selectedImage || !whiteBgResult) return;
 
-    const product = products?.find(p => p.id === selectedImage.product_id);
-    if (!product) return;
+    // ✅ CRITICAL: Validate product_id exists before proceeding
+    const productId = selectedImage.product_id;
+    if (!productId) {
+      console.error('❌ [WhiteBg] Missing product_id on selected image');
+      toast.error('Erreur: Image sans produit associé');
+      return;
+    }
+
+    const product = products?.find(p => p.id === productId);
+    if (!product) {
+      console.error('❌ [WhiteBg] Product not found for id:', productId);
+      toast.error('Erreur: Produit non trouvé');
+      return;
+    }
 
     console.log(`🎨 [WhiteBg] Applying white background for product:`, {
-      productId: selectedImage.product_id,
+      productId,
       productTitle: product.title,
       imageId: selectedImage.id,
-      optimizedUrl: whiteBgResult
+      optimizedUrl: whiteBgResult.substring(0, 100) + '...'
     });
 
     try {
       // ✅ STEP 1: Apply image locally and save to history
       await applyOptimizedImage.mutateAsync({
         imageId: selectedImage.id,
-        productId: selectedImage.product_id,
+        productId: productId, // Now guaranteed to be string
         optimizedUrl: whiteBgResult,
         originalUrl: selectedImage.src,
         optimizationType: 'white_background',
@@ -241,6 +253,8 @@ export const ProductMediaOptimization = () => {
         resolution: '2000x2000',
         qualityScore: 95
       });
+
+      console.log('✅ [WhiteBg] applyOptimizedImage completed - image should be saved to history');
 
       console.log(`✅ [WhiteBg] Image applied locally, now syncing to Shopify...`);
 
@@ -368,13 +382,21 @@ export const ProductMediaOptimization = () => {
   const handleApplyVariant = async (variantId: string) => {
     if (!selectedImage) return;
 
+    // ✅ CRITICAL: Validate product_id exists
+    const productId = selectedImage.product_id;
+    if (!productId) {
+      console.error('❌ [AIVariant] Missing product_id on selected image');
+      toast.error('Erreur: Image sans produit associé');
+      return;
+    }
+
     const variant = backgroundVariants.find(v => v.variantId === variantId);
     if (!variant) return;
 
     try {
       await applyOptimizedImage.mutateAsync({
         imageId: selectedImage.id,
-        productId: selectedImage.product_id,
+        productId: productId, // Now guaranteed to be string
         optimizedUrl: variant.imageUrl,
         originalUrl: selectedImage.src,
         optimizationType: 'ai_background',
@@ -384,11 +406,14 @@ export const ProductMediaOptimization = () => {
         qualityScore: variant.qualityScore
       });
 
+      console.log('✅ [AIVariant] applyOptimizedImage completed - image should be saved to history');
+
       setShowVariantsSelector(false);
       setBackgroundVariants([]);
       setSelectedImage(null);
     } catch (error) {
       console.error('Error applying variant:', error);
+      toast.error('Erreur lors de l\'application de la variante');
     }
   };
 
@@ -690,14 +715,22 @@ export const ProductMediaOptimization = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-3 sm:py-4">
               <div className="space-y-2">
                 <p className="text-xs sm:text-sm font-medium">Original</p>
-                <div className="aspect-square rounded-lg overflow-hidden border">
-                  <img src={selectedImage.src} alt="Original" className="w-full h-full object-cover" />
+                <div className="relative w-full rounded-lg overflow-hidden border bg-muted" style={{ minHeight: '200px', maxHeight: '400px' }}>
+                  <img 
+                    src={selectedImage.src} 
+                    alt="Original" 
+                    className="w-full h-auto max-h-[400px] object-contain mx-auto" 
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <p className="text-xs sm:text-sm font-medium">Fond Blanc HD</p>
-                <div className="aspect-square rounded-lg overflow-hidden border bg-white">
-                  <img src={whiteBgResult} alt="Optimized" className="w-full h-full object-contain" />
+                <div className="relative w-full rounded-lg overflow-hidden border bg-white" style={{ minHeight: '200px', maxHeight: '400px' }}>
+                  <img 
+                    src={whiteBgResult} 
+                    alt="Optimized" 
+                    className="w-full h-auto max-h-[400px] object-contain mx-auto" 
+                  />
                 </div>
               </div>
             </div>
