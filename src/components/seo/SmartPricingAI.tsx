@@ -25,6 +25,7 @@ import {
   Sparkles,
   LayoutGrid,
   List,
+  Zap,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -54,6 +55,7 @@ import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
 import { useStore } from "@/contexts/StoreContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ImagePriceDebugDialog } from "@/components/seo/ImagePriceDebugDialog";
+import { SmartPriceDialog } from "@/components/seo/SmartPriceDialog";
 
 interface CompetitorPrice {
   url: string;
@@ -168,6 +170,23 @@ export function SmartPricingAI() {
   }>({ open: false, data: null });
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
+  const [smartPriceDialog, setSmartPriceDialog] = useState<{
+    open: boolean;
+    productId: string;
+    productTitle: string;
+    imageUrl: string | null;
+    currentPrice: number | null;
+    loading: boolean;
+    result: any | null;
+  }>({
+    open: false,
+    productId: "",
+    productTitle: "",
+    imageUrl: null,
+    currentPrice: null,
+    loading: false,
+    result: null,
+  });
 
   useEffect(() => {
     fetchData();
@@ -452,6 +471,81 @@ export function SmartPricingAI() {
     } catch (error) {
       console.error('Error generating SKU:', error);
       toast.error(t.smartPricing.errors.save);
+    }
+  };
+
+  const analyzeSmartPrice = async (productId: string, productTitle: string, imageUrl: string | null, currentPrice: number | null) => {
+    if (!imageUrl) {
+      toast.error("Image requise pour l'analyse Smart PRICE");
+      return;
+    }
+
+    setSmartPriceDialog({
+      open: true,
+      productId,
+      productTitle,
+      imageUrl,
+      currentPrice,
+      loading: true,
+      result: null,
+    });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("smart-price-scanner", {
+        body: { 
+          imageUrl,
+          productTitle,
+          productId,
+          storeId: selectedStore?.id,
+        },
+      });
+
+      if (error) throw error;
+
+      setSmartPriceDialog((prev) => ({
+        ...prev,
+        loading: false,
+        result: data,
+      }));
+
+      toast.success(`Analyse terminée : ${Math.round(data.confidence * 100)}% de confiance`);
+    } catch (error) {
+      console.error("Smart Price error:", error);
+      toast.error("Erreur lors de l'analyse Smart PRICE");
+      setSmartPriceDialog((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const applySmartPrice = async (price: number, isPromo: boolean) => {
+    const productId = smartPriceDialog.productId;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    try {
+      const updates: any = {};
+      
+      if (isPromo) {
+        // Appliquer comme prix promo (compare_at_price reste inchangé, price = prix smart)
+        updates.price = price;
+        await supabase
+          .from("shopify_products")
+          .update({ price })
+          .eq("id", productId);
+      } else {
+        // Appliquer comme prix régulier (price = prix smart, pas de promo)
+        updates.price = price;
+        updates.compare_at_price = null;
+        await supabase
+          .from("shopify_products")
+          .update({ price, compare_at_price: null })
+          .eq("id", productId);
+      }
+
+      toast.success(isPromo ? "Prix appliqué comme prix promo" : "Prix appliqué comme prix régulier");
+      await fetchData();
+    } catch (error) {
+      console.error("Error applying price:", error);
+      toast.error("Erreur lors de l'application du prix");
     }
   };
 
@@ -2627,6 +2721,26 @@ export function SmartPricingAI() {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                onClick={() => analyzeSmartPrice(product.id, product.title, product.image_url, product.price)}
+                                disabled={!product.image_url}
+                                className="h-7 px-2 gap-1 hover:bg-orange-600/10"
+                              >
+                                <Zap className="w-3.5 h-3.5 text-orange-600" />
+                                <span className="text-xs">Smart</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Smart PRICE - Analyse SERP du marché</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={() => analyzeVariantPricing(product.id, product.variants[0]?.id || product.id)}
                                 disabled={analyzingVariant === (product.variants[0]?.id || product.id)}
                                 className="h-7 px-2 gap-1 hover:bg-purple-600/10"
@@ -3067,6 +3181,18 @@ export function SmartPricingAI() {
         previews={whiteBgPreviews}
         onApply={handleApplyWhiteBackground}
         onRegenerate={handleRegenerateWhiteBg}
+      />
+
+      {/* Smart Price Dialog */}
+      <SmartPriceDialog
+        open={smartPriceDialog.open}
+        onClose={() => setSmartPriceDialog((prev) => ({ ...prev, open: false }))}
+        productTitle={smartPriceDialog.productTitle}
+        imageUrl={smartPriceDialog.imageUrl}
+        currentPrice={smartPriceDialog.currentPrice}
+        loading={smartPriceDialog.loading}
+        result={smartPriceDialog.result}
+        onApplyPrice={applySmartPrice}
       />
     </div>
   );
