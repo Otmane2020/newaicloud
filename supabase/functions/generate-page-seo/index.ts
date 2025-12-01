@@ -122,6 +122,8 @@ Deno.serve(async (req) => {
     let pageTitle = '';
     let textContent = '';
     let connection: any = null;
+    let page: any = null;
+    let isContactPage = false;
 
     if (isHomepage) {
       // Pour la page d'accueil, récupérer les infos complètes de la boutique
@@ -232,7 +234,7 @@ ${elements.bodyText}
       console.log(`Generating SEO for homepage of: ${pageTitle}`);
     } else {
       // Récupérer la page depuis la base de données
-      const { data: page, error: pageError } = await supabaseClient
+      const { data: pageData, error: pageError } = await supabaseClient
         .from('shopify_pages')
         .select('*')
         .eq('id', pageId)
@@ -240,6 +242,8 @@ ${elements.bodyText}
         .single();
 
       if (pageError) throw pageError;
+      
+      page = pageData;
 
       pageTitle = page.title;
       let baseContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 800) || '';
@@ -249,7 +253,7 @@ ${elements.bodyText}
       const handleLower = page.handle?.toLowerCase() || '';
       const contentLower = baseContent.toLowerCase();
       
-      const isContactPage = titleLower.includes('contact') || 
+      isContactPage = titleLower.includes('contact') || 
                            handleLower.includes('contact') ||
                            titleLower.includes('nous joindre') ||
                            titleLower.includes('contactez') ||
@@ -327,33 +331,34 @@ ${baseContent}
 
     // 🛡️ LANGUAGE GUARD - Detect language from content
     let rawStoreLanguage = 'fr';
+    const storeIdToUse = body.storeId || page?.store_id;
+    
     if (isHomepage && connection) {
       rawStoreLanguage = connection.store_language || 'fr';
-    } else {
-      const { data: pageData } = await supabaseClient
-        .from('shopify_pages')
-        .select('store_id')
-        .eq('id', pageId)
+    } else if (storeIdToUse) {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_language')
+        .eq('id', storeIdToUse)
         .single();
       
-      if (pageData?.store_id) {
-        const { data: storeData } = await supabaseClient
-          .from('shopify_connections')
-          .select('store_language')
-          .eq('id', pageData.store_id)
-          .single();
-        
-        if (storeData?.store_language) {
-          rawStoreLanguage = storeData.store_language;
-        }
+      if (storeData?.store_language) {
+        rawStoreLanguage = storeData.store_language;
       }
     }
 
-    const storeLanguage = resolveLanguage({
-      contentText: `${pageTitle || ""} ${textContent || ""}`,
-      storeLanguage: rawStoreLanguage
-    });
-    console.log(`🛡️ LANGUAGE GUARD: page - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${pageTitle?.substring(0,30)}..."`);
+    // Pour les pages contact, utiliser TOUJOURS la langue du store (pas de détection)
+    let storeLanguage: string;
+    if (isContactPage) {
+      storeLanguage = rawStoreLanguage;
+      console.log(`🛡️ LANGUAGE GUARD: page contact - langue forcée du store=${storeLanguage}, title="${pageTitle?.substring(0,30)}..."`);
+    } else {
+      storeLanguage = resolveLanguage({
+        contentText: `${pageTitle || ""} ${textContent || ""}`,
+        storeLanguage: rawStoreLanguage
+      });
+      console.log(`🛡️ LANGUAGE GUARD: page - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${pageTitle?.substring(0,30)}..."`);
+    }
 
     // Get store localization for SERP analysis
     let storeCountry = 'FR';
