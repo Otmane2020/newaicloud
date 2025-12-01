@@ -158,7 +158,7 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
   const { saveToHistory } = useImageOptimization();
@@ -210,6 +210,7 @@ export default function ProductTitleDescription() {
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
   const [statusFilter, setStatusFilter] = useState<"all" | "optimized" | "notOptimized" | "toSync">("all");
   const [collectionFilter, setCollectionFilter] = useState<string>("all");
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState<string>("");
   const [collections, setCollections] = useState<Array<{id: string, title: string}>>([]);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -252,6 +253,7 @@ export default function ProductTitleDescription() {
     setSearchTerm("");
     setStatusFilter("all");
     setCollectionFilter("all");
+    setCollectionSearchTerm("");
     setCurrentPage(1);
 
     if (selectedStore?.id) {
@@ -2024,32 +2026,17 @@ export default function ProductTitleDescription() {
         </div>
 
         {/* Actions Bar */}
-        <Card className="p-4">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
-            <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t.contentOptimization.search.placeholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
-                <SelectTrigger className="w-full sm:w-[240px]">
-                  <SelectValue placeholder={t.contentOptimization.filters.selectCollection} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t.contentOptimization.filters.allCollections}</SelectItem>
-                  {collections.map((collection) => (
-                    <SelectItem key={collection.id} value={collection.id}>
-                      {collection.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <Card className="p-4 space-y-4">
+          {/* Search Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+            <div className="relative flex-1 w-full max-w-lg">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t.contentOptimization.search.placeholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10"
+              />
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -2200,6 +2187,62 @@ export default function ProductTitleDescription() {
                 Landing Pages ({selectedProducts.size})
               </Button>
             </div>
+          </div>
+          
+          {/* Collection Filter Row */}
+          <div className="flex items-center gap-3">
+            <Label className="text-sm font-medium whitespace-nowrap">
+              {t.contentOptimization.filters.selectCollection}
+            </Label>
+            <Select value={collectionFilter} onValueChange={(value) => {
+              setCollectionFilter(value);
+              setCollectionSearchTerm("");
+            }}>
+              <SelectTrigger className="w-full max-w-md h-10">
+                <SelectValue placeholder={t.contentOptimization.filters.allCollections} />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2 pb-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder={t.contentOptimization.filters.selectCollection}
+                      value={collectionSearchTerm}
+                      onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                      className="h-9 pl-9"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <SelectItem value="all">
+                    {t.contentOptimization.filters.allCollections}
+                  </SelectItem>
+                  {collections
+                    .filter((collection) => 
+                      collectionSearchTerm === "" || 
+                      collection.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
+                    )
+                    .map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id}>
+                        {collection.title}
+                      </SelectItem>
+                    ))
+                  }
+                </div>
+              </SelectContent>
+            </Select>
+            {collectionFilter !== "all" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCollectionFilter("all")}
+                className="h-10"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {language === "fr" ? "Effacer" : "Clear"}
+              </Button>
+            )}
           </div>
         </Card>
 
