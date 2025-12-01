@@ -217,16 +217,24 @@ Deno.serve(async (req: Request) => {
           // Ensure we have all required fields
           if (!seoData.seo_description || seoData.seo_description.length < 50) {
             console.warn(`⚠️ AI generated insufficient description, creating fallback`);
-            const fallbackDesc = collection.body_html 
-              ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
-              : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`;
+            const fallbackDesc = storeLanguage === 'en'
+              ? (collection.body_html 
+                  ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+                  : `Discover our ${collection.title} collection with ${productTitles || 'our best products'}`)
+              : (collection.body_html 
+                  ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+                  : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`);
             seoData.seo_description = fallbackDesc;
           }
         } catch (parseError) {
           console.warn(`⚠️ Failed to parse AI response for ${collection_id}, using fallback`, parseError);
-          const fallbackDesc = collection.body_html 
-            ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
-            : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`;
+          const fallbackDesc = storeLanguage === 'en'
+            ? (collection.body_html 
+                ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+                : `Discover our ${collection.title} collection with ${productTitles || 'our best products'}`)
+            : (collection.body_html 
+                ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+                : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`);
           
           seoData = {
             seo_title: collection.title.substring(0, 60),

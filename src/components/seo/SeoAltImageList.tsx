@@ -319,7 +319,6 @@ export function SeoAltImageList() {
         description: 'Les images homepage ne peuvent pas être synchronisées avec Shopify. Utilisez l\'export CSV pour les intégrer manuellement.'
       });
       setShowResultsDialog(false);
-      setShowSyncDialog(false);
       return;
     }
     
@@ -341,9 +340,8 @@ export function SeoAltImageList() {
     const productIds = Array.from(imagesByProduct.keys());
     console.log(`🔄 Synchronisation de ${syncableImages.length} images pour ${productIds.length} produit(s)`);
 
-    setShowResultsDialog(false);
-    setShowSyncDialog(false);
-    setCurrentOperation('syncing');
+      setShowResultsDialog(false);
+      setCurrentOperation('syncing');
     setShowProgressDialog(true);
     setProgress({ current: 0, total: productIds.length });
 
@@ -1053,7 +1051,7 @@ export function SeoAltImageList() {
         onOpenChange={setShowResultsDialog}
         type="alt"
         items={optimizedItems}
-        onSyncClick={() => {
+        onSyncClick={async () => {
           setShowResultsDialog(false);
           
           // Filter images that have Shopify ID
@@ -1086,19 +1084,11 @@ export function SeoAltImageList() {
             };
           });
           setImagesToSync(imagesWithProduct);
-          setShowSyncDialog(true);
+          await handleSyncImages();
         }}
         onClose={() => setShowResultsDialog(false)}
       />
 
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        type="alt"
-        itemCount={imagesToSync.length}
-        onConfirm={handleSyncImages}
-        loading={currentOperation === 'syncing' && showProgressDialog}
-      />
 
       <SuccessDialog
         open={showSuccessDialog}

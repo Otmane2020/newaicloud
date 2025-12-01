@@ -320,7 +320,7 @@ const handleOptimizeArticle = async (articleId: string) => {
 
   const handleOpenSyncDialog = () => {
     setShowResultsDialog(false);
-    setShowSyncDialog(true);
+    handleConfirmSync();
   };
 
   const handleConfirmSync = async () => {
@@ -328,7 +328,6 @@ const handleOptimizeArticle = async (articleId: string) => {
     
     try {
       setSyncing(true);
-      setShowSyncDialog(false);
       
       for (const article of optimizedArticles) {
         const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
@@ -1230,14 +1229,6 @@ const handleOptimizeArticle = async (articleId: string) => {
         onClose={() => setShowResultsDialog(false)}
       />
 
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        onConfirm={handleConfirmSync}
-        itemCount={optimizedArticles.length}
-        type="seo"
-        loading={syncing}
-      />
 
       <UpgradeDialog
         open={showUpgradeDialog}

@@ -1669,22 +1669,14 @@ export function CollectionOptimization() {
           body_html: c.body_html || '',
           image_url: c.image_url || ''
         }))}
-        onSyncClick={() => {
+        onSyncClick={async () => {
           setCollectionsToSync(optimizedCollections);
           setShowResultsDialog(false);
-          setShowSyncDialog(true);
+          await handleSyncCollections();
         }}
         onClose={handleCloseResultsDialog}
       />
 
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        type="seo"
-        itemCount={collectionsToSync.length}
-        onConfirm={handleSyncCollections}
-        loading={syncing}
-      />
 
       <UpgradeDialog
         open={showUpgradeDialog}

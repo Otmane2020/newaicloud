@@ -1775,33 +1775,18 @@ export function SeoOptimization() {
         onOpenChange={setShowResultsDialog}
         type="seo"
         items={optimizedProducts}
-        onSyncClick={() => {
+        onSyncClick={async () => {
           setShowResultsDialog(false);
           const productsWithSeo = optimizedProducts.filter((p) => p.seo_title || p.seo_description);
           if (productsWithSeo.length > 0) {
             setProductsToSync(productsWithSeo);
-            setShowSyncDialog(true);
+            await handleSyncProducts(productsWithSeo.map(p => p.id));
           }
         }}
         onClose={handleCloseResultsDialog}
       />
 
       {/* Sync Confirmation Dialog */}
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        type="seo"
-        itemCount={productsToSync.length}
-        onConfirm={async () => {
-          setSyncing(true);
-          const productIds = productsToSync.map((p) => p.id);
-          await handleSyncProducts(productIds);
-          setShowSyncDialog(false);
-          setProductsToSync([]);
-          setSyncing(false);
-        }}
-        loading={syncing}
-      />
 
       {/* Shopify Sync Success Dialog */}
       <ShopifySyncSuccessDialog items={syncedItems} onClose={() => setSyncedItems([])} />
