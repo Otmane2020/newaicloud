@@ -3757,6 +3757,17 @@ export const translations = {
     },
   },
 
+  smartPrice: {
+    title: "Smart PRICE",
+    analyze: "Analyze",
+    applyRegular: "Apply as regular price",
+    applyPromo: "Apply as promo price",
+    confidence: "Confidence",
+    sources: "Sources",
+    merchants: "Merchants",
+    analyzing: "Analyzing...",
+  },
+
   blog: {
     title: "SEO AI Blog",
     description: "Create optimized articles with AI",
