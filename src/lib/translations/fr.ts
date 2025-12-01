@@ -3836,6 +3836,7 @@ export const translations = {
       viewOnShopify: "Voir sur Shopify",
       workOnSEO: "Travailler le SEO",
       previewArticle: "Aperçu de l'article",
+      publishToShopify: "Publier sur Shopify",
       steps: {
         start: "🚀 Démarrage de la génération IA...",
         analyzingProducts: "📦 Analyse des produits sélectionnés",
