@@ -46,7 +46,7 @@ export function GoogleAdsIntegration() {
         
         if (error || !data?.success) {
           console.error('❌ [GOOGLE-ADS] Error exchanging code:', error, data);
-          toast.error('Échec de connexion Google Ads');
+          toast.error(t.googleAds.toasts.connectionFailed);
           // Nettoyer l'URL
           window.history.replaceState({}, '', '/google-ads?tab=integration');
           return;
@@ -145,7 +145,7 @@ export function GoogleAdsIntegration() {
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
           console.log('ℹ️ [GOOGLE-ADS] Popup closed by user');
-          toast.info("Connexion annulée");
+          toast.info(t.googleAds.toasts.connectionCancelled);
         }
       }, 500);
       
@@ -172,16 +172,13 @@ export function GoogleAdsIntegration() {
             const errorMessage = error?.message || data?.error || 'Unknown error';
             
             if (errorMessage.includes('redirect_uri_mismatch')) {
-              toast.error(
-                "❌ Configuration incorrecte : L'URL de redirection ne correspond pas. Contactez le support.",
-                { duration: 10000 }
-              );
+              toast.error(t.googleAds.toasts.invalidCredentials, { duration: 10000 });
             } else if (errorMessage.includes('access_denied')) {
-              toast.error("Vous avez refusé l'accès à Google Ads.");
+              toast.error(t.googleAds.toasts.accessDenied);
             } else if (errorMessage.includes('invalid_client')) {
-              toast.error("Identifiants Google invalides. Veuillez contacter le support.");
+              toast.error(t.googleAds.toasts.invalidCredentials);
             } else {
-              toast.error(`Échec de connexion Google Ads: ${errorMessage}`);
+              toast.error(t.googleAds.toasts.connectionFailed);
             }
             
             // Log l'échec

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from '@/lib/language';
 import {
   Calendar,
   Clock,
@@ -44,6 +45,7 @@ interface BlogArticle {
 }
 
 export function ArticleLandingPage({ articleId }: ArticleLandingPageProps) {
+  const { t } = useTranslation();
   const [article, setArticle] = useState<BlogArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -101,7 +103,7 @@ export function ArticleLandingPage({ articleId }: ArticleLandingPageProps) {
       }
     } catch (err) {
       console.error('Error fetching article:', err);
-      toast.error('Erreur lors du chargement de l\'article');
+      toast.error(t.toasts.blog.articleLoadError);
     } finally {
       setLoading(false);
     }
@@ -133,7 +135,7 @@ export function ArticleLandingPage({ articleId }: ArticleLandingPageProps) {
     navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
-    toast.success('Lien copié !');
+    toast.success(t.toasts.blog.linkCopied);
   };
 
   const scrollToTop = () => {

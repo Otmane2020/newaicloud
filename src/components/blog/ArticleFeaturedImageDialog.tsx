@@ -183,13 +183,13 @@ export function ArticleFeaturedImageDialog({
           <img src={previewImageUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
           <div>
             <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
-            <p className="text-xs text-muted-foreground">Image mise à jour</p>
+            <p className="text-xs text-muted-foreground">{t.toasts.success.updated}</p>
           </div>
         </div>,
       );
     } catch (error: any) {
       console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application de l\'image');
+      toast.error(t.toasts.blog.imageApplyError);
     } finally {
       setIsApplying(false);
     }
@@ -340,16 +340,16 @@ export function ArticleFeaturedImageDialog({
       }
       
       if (syncResult?.success) {
-        toast.success("Image de l'article synchronisée avec Shopify ✅", { id: 'article-sync' });
+        toast.success(t.toasts.blog.imageSyncedShopify, { id: 'article-sync' });
       } else {
-        toast.warning("⚠️ Image enregistrée localement (sync Shopify partielle)", { id: 'article-sync' });
+        toast.warning(t.toasts.blog.imageSavedLocally, { id: 'article-sync' });
       }
       
       setShowSuccessDialog(false);
       onImageUpdated();
     } catch (err: any) {
       console.error("❌ [ARTICLE-IMAGE] Error:", err);
-      toast.error(err.message || "Erreur lors de la synchronisation", { id: 'article-sync' });
+      toast.error(err.message || t.toasts.error.sync, { id: 'article-sync' });
     } finally {
       setProcessingAlt(false);
     }

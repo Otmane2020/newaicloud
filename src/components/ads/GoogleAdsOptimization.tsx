@@ -74,11 +74,11 @@ export function GoogleAdsOptimization() {
 
       if (error) throw error;
       
-      toast.success('Stratégies IA générées');
+      toast.success(t.googleAds.toasts.strategiesGenerated);
       loadStrategies();
     } catch (error) {
       console.error('Error generating strategies:', error);
-      toast.error('Erreur lors de la génération des stratégies');
+      toast.error(t.googleAds.toasts.strategiesError);
     } finally {
       setGeneratingStrategies(false);
     }
