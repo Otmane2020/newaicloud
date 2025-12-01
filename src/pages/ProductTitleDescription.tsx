@@ -1792,39 +1792,40 @@ export default function ProductTitleDescription() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}>
-                {viewMode === "grid" ? <List className="h-4 w-4 mr-2" /> : <Grid3x3 className="h-4 w-4 mr-2" />}
-                {viewMode === "grid" ? "Liste" : "Grille"}
-              </Button>
-
-              {viewMode === "grid" && (
-                <div className="flex items-center gap-1 border rounded-md p-1">
-                  <Button
-                    variant={gridColumns === 2 ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setGridColumns(2)}
-                    className="h-8 px-3"
-                  >
-                    2
-                  </Button>
-                  <Button
-                    variant={gridColumns === 3 ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setGridColumns(3)}
-                    className="h-8 px-3"
-                  >
-                    3
-                  </Button>
-                  <Button
-                    variant={gridColumns === 4 ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setGridColumns(4)}
-                    className="h-8 px-3"
-                  >
-                    4
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center border rounded-md overflow-hidden">
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                  className="rounded-none h-8 px-3"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    if (viewMode === "grid") {
+                      // Cycle through 2, 3, 4 columns
+                      setGridColumns((prev) => {
+                        if (prev === 2) return 3;
+                        if (prev === 3) return 4;
+                        return 2;
+                      });
+                    } else {
+                      setViewMode("grid");
+                    }
+                  }}
+                  className="rounded-none h-8 px-3 relative"
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                  {viewMode === "grid" && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {gridColumns}
+                    </span>
+                  )}
+                </Button>
+              </div>
 
               <Button
                 variant="outline"
