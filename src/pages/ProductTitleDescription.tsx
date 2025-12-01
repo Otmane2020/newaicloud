@@ -210,6 +210,7 @@ export default function ProductTitleDescription() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
@@ -1796,6 +1797,35 @@ export default function ProductTitleDescription() {
                 {viewMode === "grid" ? "Liste" : "Grille"}
               </Button>
 
+              {viewMode === "grid" && (
+                <div className="flex items-center gap-1 border rounded-md p-1">
+                  <Button
+                    variant={gridColumns === 2 ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(2)}
+                    className="h-8 px-3"
+                  >
+                    2
+                  </Button>
+                  <Button
+                    variant={gridColumns === 3 ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(3)}
+                    className="h-8 px-3"
+                  >
+                    3
+                  </Button>
+                  <Button
+                    variant={gridColumns === 4 ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(4)}
+                    className="h-8 px-3"
+                  >
+                    4
+                  </Button>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"
@@ -2253,7 +2283,13 @@ export default function ProductTitleDescription() {
             /* Grid View */
             <div className="p-4">
               <TooltipProvider>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className={`grid gap-4 ${
+                  gridColumns === 2 
+                    ? 'grid-cols-1 sm:grid-cols-2' 
+                    : gridColumns === 3 
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                }`}>
                   {paginatedProducts.map((product) => (
                     <Card
                       key={product.id}
