@@ -4,9 +4,41 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, ExternalLink, TrendingUp, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+const SAMPLE_PRODUCTS = [
+  {
+    id: "1",
+    title: "Table à manger ovale en bois massif",
+    price: 649.99,
+    description: "Élégante table à manger avec base cannelée, design scandinave",
+    imageUrl: "https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800"
+  },
+  {
+    id: "2",
+    title: "Chaise de bureau ergonomique",
+    price: 199.99,
+    description: "Chaise pivotante avec soutien lombaire, tissu respirant",
+    imageUrl: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800"
+  },
+  {
+    id: "3",
+    title: "Lampe de table design moderne",
+    price: 89.99,
+    description: "Lampe LED avec variateur d'intensité, finition chrome",
+    imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800"
+  },
+  {
+    id: "4",
+    title: "Canapé 3 places en velours",
+    price: 1299.99,
+    description: "Canapé confortable avec pieds en bois, style contemporain",
+    imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800"
+  }
+];
 
 interface Merchant {
   title: string;
@@ -49,7 +81,20 @@ export default function SearchImage() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
   const { toast } = useToast();
+
+  const handleProductSelect = (productId: string) => {
+    const product = SAMPLE_PRODUCTS.find(p => p.id === productId);
+    if (product) {
+      setSelectedProduct(productId);
+      handleUrlChange(product.imageUrl);
+      toast({
+        title: "Produit sélectionné",
+        description: `${product.title} - ${product.price.toFixed(2)} €`,
+      });
+    }
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,6 +193,36 @@ export default function SearchImage() {
             <CardDescription>Uploadez une image ou fournissez une URL</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="product-select">Produits exemples</Label>
+              <Select value={selectedProduct} onValueChange={handleProductSelect} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un produit..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {SAMPLE_PRODUCTS.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      <div className="flex items-center gap-3 py-1">
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.title} 
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{product.title}</p>
+                          <p className="text-xs text-muted-foreground">{product.price.toFixed(2)} €</p>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="relative">
+              <div className="text-center text-sm text-muted-foreground my-2">ou</div>
+            </div>
+
             <div>
               <Label htmlFor="url-input">URL de l&apos;image</Label>
               <Input
