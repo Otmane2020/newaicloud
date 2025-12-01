@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Square, Palette, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Loader2, ImageOff, Wand2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -149,6 +149,59 @@ export default function Products() {
     } catch (error: any) {
       console.error('Error generating AI background:', error);
       toast.error(t.toasts.products.aiBackgroundError, {
+        description: error.message
+      });
+    } finally {
+      setGeneratingBgForProduct(null);
+      await refreshLimits();
+    }
+  };
+
+  // Handler pour générer un fond Smart (SERP + Vision AI)
+  const handleGenerateSmartBackground = async (product: Product) => {
+    console.log('[DEBUG] Smart Background clicked for product:', product.id, product.title);
+    
+    if (!product.image_url) {
+      console.log('[DEBUG] No image URL for product');
+      toast.error(t.toasts.products.noImage);
+      return;
+    }
+
+    setGeneratingBgForProduct(product.id);
+    console.log('[DEBUG] Starting smart background generation...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: { 
+          imageUrl: product.image_url,
+          productTitle: product.title,
+          imageType: 'main',
+          product_id: product.id,
+          bgMode: 'smart_serp',
+          productDescription: product.description || ''
+        }
+      });
+
+      console.log('[DEBUG] Smart background response:', data, error);
+
+      if (error) throw error;
+
+      if (data.success && data.imageUrl) {
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: data.imageUrl })
+          .eq('id', product.id);
+
+        if (updateError) throw updateError;
+
+        toast.success("Smart Background généré avec succès");
+        loadProducts();
+      } else {
+        throw new Error(data.error || t.toasts.products.generationError);
+      }
+    } catch (error: any) {
+      console.error('[DEBUG] Error generating smart background:', error);
+      toast.error("Erreur génération Smart Background", {
         description: error.message
       });
     } finally {
@@ -823,9 +876,10 @@ export default function Products() {
                               <Button
                                 variant="secondary"
                                 size="icon"
-                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm border border-gray-200"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  console.log('[DEBUG] White BG clicked for:', product.id);
                                   handleGenerateWhiteBackground(product);
                                 }}
                                 disabled={generatingBgForProduct === product.id}
@@ -833,7 +887,7 @@ export default function Products() {
                                 {generatingBgForProduct === product.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                  <Square className="h-3.5 w-3.5" />
+                                  <ImageOff className="h-3.5 w-3.5 text-gray-600" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -847,9 +901,10 @@ export default function Products() {
                               <Button
                                 variant="secondary"
                                 size="icon"
-                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm border border-purple-200"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  console.log('[DEBUG] AI BG clicked for:', product.id);
                                   handleGenerateAIBackground(product);
                                 }}
                                 disabled={generatingBgForProduct === product.id}
@@ -857,12 +912,37 @@ export default function Products() {
                                 {generatingBgForProduct === product.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                  <Palette className="h-3.5 w-3.5 text-purple-600" />
+                                  <Wand2 className="h-3.5 w-3.5 text-purple-600" />
                                 )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Générer fond AI</p>
+                              <p>Fond AI généré</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm border border-amber-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log('[DEBUG] Smart BG clicked for:', product.id);
+                                  handleGenerateSmartBackground(product);
+                                }}
+                                disabled={generatingBgForProduct === product.id}
+                              >
+                                {generatingBgForProduct === product.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Smart Background (SERP)</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
