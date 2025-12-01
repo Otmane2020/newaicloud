@@ -236,7 +236,7 @@ No markdown.`,
     }
 
     // ============================================================================
-    // PRÉPARATION
+    // PRÉPARATION + SEGMENT-BASED FILTERING
     // ============================================================================
     const allPrices: number[] = [];
     const allMerchants: Merchant[] = [];
@@ -244,6 +244,20 @@ No markdown.`,
     let shoppingCount = 0;
     let organicCount = 0;
     let visualCount = 0;
+
+    // Définir le prix minimum basé sur le segment détecté
+    const segmentMinPrice: Record<string, number> = {
+      "budget": 10,
+      "mid-range": 50,
+      "premium": 150,
+      "luxury": 500,
+    };
+    const minPriceForSegment = segmentMinPrice[vision?.segment || "mid-range"] || 50;
+
+    // Améliorer la requête pour les segments premium/luxury
+    if (vision?.segment === "premium" || vision?.segment === "luxury") {
+      searchQuery += " design haut de gamme";
+    }
 
     const simplified = simplifyQuery(searchQuery);
     const attempts = [
@@ -283,7 +297,7 @@ No markdown.`,
           for (const it of items) {
             const price = parsePrice(it.price?.current) || parsePrice(it.price?.regular) || parsePrice(it.price);
 
-            if (price && price > 1) {
+            if (price && price >= minPriceForSegment && price < 10000) {
               shoppingCount++;
               allPrices.push(price);
               allMerchants.push({
@@ -328,9 +342,15 @@ No markdown.`,
             const match = (it.title || it.description)?.match(/(\d+[,.]?\d*)\s*€/);
             if (match) {
               const p = parsePrice(match[1]);
-              if (p && p > 1) {
+              if (p && p >= minPriceForSegment && p < 10000) {
                 organicCount++;
                 allPrices.push(p);
+                allMerchants.push({
+                  title: it.title || "Produit trouvé",
+                  source: it.domain || new URL(it.url || "").hostname || "Web",
+                  price: p,
+                  link: it.url || "",
+                });
               }
             }
           }
@@ -356,7 +376,7 @@ No markdown.`,
         const shop = j.shopping_results || [];
         for (const it of shop) {
           const price = it.extracted_price || parsePrice(it.price);
-          if (price && price > 5 && price < 10000) {
+          if (price && price >= minPriceForSegment && price < 10000) {
             visualCount++;
             allPrices.push(price);
             allMerchants.push({
