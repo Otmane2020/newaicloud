@@ -1204,15 +1204,23 @@ export function PageOptimization() {
                           <p className="text-xs text-muted-foreground mt-1">{page.handle}</p>
                         </div>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
                         {page.seo_title && page.seo_description ? (
                           <div 
                             className="cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => setPreviewPageId(page.id)}
                           >
                             <GoogleSearchPreview
-                              title={page.seo_title}
-                              description={page.seo_description}
+                              title={
+                                page.handle === 'contact' && !page.seo_title
+                                  ? `Contact • ${selectedStore?.store_name || 'Votre boutique'}`
+                                  : page.seo_title
+                              }
+                              description={
+                                page.handle === 'contact' && !page.seo_description
+                                  ? `Contactez ${selectedStore?.store_name || 'notre équipe'} pour toute question, assistance ou information.`
+                                  : page.seo_description
+                              }
                               url={`https://${storeDomain}/pages/${page.handle}`}
                               compact
                             />
