@@ -386,7 +386,7 @@ export function PageOptimization() {
       async (page) => {
         try {
           const { error } = await supabase.functions.invoke('generate-page-seo', {
-            body: { pageId: page.id, force: true }
+            body: { pageId: page.id, storeId: selectedStore.id, force: true }
           });
           return !error;
         } catch (error: any) {
@@ -495,7 +495,7 @@ export function PageOptimization() {
       async (page) => {
         try {
           const { error } = await supabase.functions.invoke('generate-page-seo', {
-            body: { pageId: page.id, force: true }
+            body: { pageId: page.id, storeId: selectedStore.id, force: true }
           });
           return !error;
         } catch (error) {
@@ -613,7 +613,7 @@ export function PageOptimization() {
       setProgress({ current: 0, total: 1 });
 
       const { data, error } = await supabase.functions.invoke('generate-page-seo', {
-        body: { pageId, force: forceReoptimize }
+        body: { pageId, storeId: selectedStore.id, force: forceReoptimize }
       });
       
       if (error) throw error;
