@@ -303,8 +303,101 @@ STEPS:
 OUTPUT: ${targetDims.width}x${targetDims.height} image with THE SAME product on white background.
     `.trim();
 
+    // 3D Google Shopping prompt - Product rendered in 3D on white 1:1 background
+    const threeD_ShoppingPrompt = `
+⚠️⚠️⚠️ CRITICAL 3D GOOGLE SHOPPING MODE ⚠️⚠️⚠️
+
+You MUST recreate this product in HIGH-QUALITY 3D rendering style.
+
+The product is: "${productTitle || 'Unknown product'}"
+${serpData?.dimensions ? `📏 Dimensions: ${serpData.dimensions}` : ''}
+${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join(', ')}` : ''}
+${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
+
+🎯 YOUR TASK - 3D PRODUCT VISUALIZATION:
+1. ANALYZE the product in the input image carefully (shape, colors, materials, details)
+2. RECREATE the product as a PHOTOREALISTIC 3D render
+3. Place it on a PURE WHITE (#FFFFFF) background
+4. Format: SQUARE 1:1 (1024x1024 pixels) - MANDATORY
+
+📐 **FORMAT REQUIREMENT - NON-NEGOTIABLE**:
+Output MUST be EXACTLY 1024x1024 pixels (1:1 SQUARE).
+The canvas is a PERFECT SQUARE. Same width and height.
+
+🎨 **3D RENDERING STYLE**:
+- Professional 3D modeling/rendering aesthetic
+- Studio lighting with soft shadows
+- Product appears tangible, with depth and volume
+- Slightly elevated angle to show 3D dimensionality
+- Subtle reflection on floor/surface
+- Google Shopping compliant: clean, no text, no watermarks
+
+✅ QUALITY REQUIREMENTS:
+- Ultra-realistic 3D visualization
+- Product fills 70-80% of the frame
+- Pure white background for e-commerce
+- Professional catalog quality
+- Emphasize material textures (wood grain, fabric weave, metal sheen)
+
+OUTPUT: 1024x1024 pixel 3D rendered product on white background.
+    `.trim();
+
+    // 3D Generate prompt - Full 3D recreation with custom background
+    const threeD_GeneratePrompt = `
+⚠️⚠️⚠️ CREATIVE 3D PRODUCT RECREATION MODE ⚠️⚠️⚠️
+
+RECREATE this product as a stunning 3D visualization in a beautiful environment.
+
+The product is: "${productTitle || 'Unknown product'}"
+${serpData?.dimensions ? `📏 Dimensions: ${serpData.dimensions}` : ''}
+${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join(', ')}` : ''}
+${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
+
+🎯 YOUR TASK - CREATIVE 3D VISUALIZATION:
+1. ANALYZE the product in the input image (shape, colors, materials, ALL details)
+2. RECREATE it as a PHOTOREALISTIC 3D model
+3. Place it in a beautiful ${backgroundStyle} environment
+4. Create a magazine-quality 3D product visualization
+
+📐 **FORMAT REQUIREMENT**:
+${formatInstruction}
+
+🎨 **BACKGROUND STYLE**: ${styleInstruction}
+
+🖼️ **3D RENDERING SPECIFICATIONS**:
+- Cinematic 3D rendering quality
+- Professional studio/environmental lighting
+- Product with realistic shadows and reflections
+- Beautiful depth of field
+- Premium catalog aesthetic
+- Material textures emphasized (wood, fabric, metal, glass)
+
+✨ **CREATIVE DIRECTION**:
+- Make the product look DESIRABLE and PREMIUM
+- Environment should complement the product
+- Lighting should highlight product features
+- Think high-end furniture/product catalog
+- 3D visualization that tells a story
+
+⚠️ IMPORTANT:
+- Recreate the SAME product from the input (same shape, proportions, features)
+- But render it as a beautiful 3D visualization
+- NOT a photo edit - this should look like 3D CGI
+
+OUTPUT: Beautiful 3D rendered product in ${backgroundStyle} environment.
+    `.trim();
+
     // Select prompt based on mode
-    const photographyPrompt = mode === "google_shopping" ? googleShoppingPrompt : standardPrompt;
+    let photographyPrompt: string;
+    if (mode === "3d_google_shopping") {
+      photographyPrompt = threeD_ShoppingPrompt;
+    } else if (mode === "3d_generate") {
+      photographyPrompt = threeD_GeneratePrompt;
+    } else if (mode === "google_shopping") {
+      photographyPrompt = googleShoppingPrompt;
+    } else {
+      photographyPrompt = standardPrompt;
+    }
 
     console.log(`[white-bg] 📝 Prompt generated (${photographyPrompt.length} chars)`);
 

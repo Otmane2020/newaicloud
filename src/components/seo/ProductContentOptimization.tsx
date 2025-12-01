@@ -46,7 +46,7 @@ interface Product {
 }
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
-type BackgroundMode = 'white_shopping' | 'smart_serp';
+type BackgroundMode = 'white_shopping' | 'smart_serp' | '3d_shopping' | '3d_generate';
 
 export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -214,7 +214,7 @@ export const ProductContentOptimization = () => {
       }
 
       // Fetch SERP data if smart mode and no existing data
-      if (bgMode === 'smart_serp' && !serpData) {
+      if ((bgMode === 'smart_serp' || bgMode === '3d_generate') && !serpData) {
         console.log('🔍 [SmartBg] Fetching SERP data for:', product.title);
         const { data: serpResult } = await supabase.functions.invoke('search-similar-products-specs', {
           body: { productTitle: product.title, limit: 5 }
@@ -234,16 +234,24 @@ export const ProductContentOptimization = () => {
         }
       }
 
+      // Determine format: 3d_shopping forces 1:1 square
+      const effectiveFormat = bgMode === '3d_shopping' ? 'square' : formatMap[bgFormat];
+      
+      // Determine API mode
+      const apiMode = bgMode === '3d_shopping' ? '3d_google_shopping' 
+        : bgMode === '3d_generate' ? '3d_generate' 
+        : 'google_shopping';
+
       const result = await generateWhiteBackground.mutateAsync({
         imageUrl: image.src,
         productTitle: product.title,
         resolution: '2000x2000',
-        format: formatMap[bgFormat],
-        mode: bgMode === 'white_shopping' ? 'google_shopping' : 'google_shopping', // Both use google_shopping
+        format: effectiveFormat,
+        mode: apiMode,
         product_id: product.id,
-        serpData: bgMode === 'smart_serp' ? serpData : null,
-        visionAiData: bgMode === 'smart_serp' ? visionAiData : null,
-        productDescription: bgMode === 'smart_serp' ? productDescription : null
+        serpData: (bgMode === 'smart_serp' || bgMode === '3d_generate' || bgMode === '3d_shopping') ? serpData : null,
+        visionAiData: (bgMode === 'smart_serp' || bgMode === '3d_generate') ? visionAiData : null,
+        productDescription: (bgMode === 'smart_serp' || bgMode === '3d_generate') ? productDescription : null
       });
 
       if (result.imageUrl) {
@@ -643,18 +651,31 @@ export const ProductContentOptimization = () => {
                     White Background - Google Shopping
                   </div>
                 </SelectItem>
+                <SelectItem value="3d_shopping">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary">3D</span>
+                    3D Google Shopping 1×1 - White
+                  </div>
+                </SelectItem>
                 <SelectItem value="smart_serp">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
                     Smart Background - SERP + Vision AI
                   </div>
                 </SelectItem>
+                <SelectItem value="3d_generate">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-purple-500">3D</span>
+                    3D Generate - Recréer produit en 3D
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              {bgMode === 'white_shopping' 
-                ? 'Fond blanc pur, éclairage studio, conforme Google Merchant Center'
-                : 'Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel'}
+              {bgMode === 'white_shopping' && 'Fond blanc pur, éclairage studio, conforme Google Merchant Center'}
+              {bgMode === '3d_shopping' && 'Produit 3D réaliste sur fond blanc 1:1, conforme Google Shopping'}
+              {bgMode === 'smart_serp' && 'Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel'}
+              {bgMode === '3d_generate' && 'Recréation complète du produit en 3D avec modélisation réaliste'}
             </p>
           </div>
         </div>
@@ -681,17 +702,23 @@ export const ProductContentOptimization = () => {
                 
                 <div className="flex items-center gap-1">
                   <Badge variant="outline" className="text-[10px]">
-                    {bgFormat}
+                    {bgMode === '3d_shopping' ? '1:1' : bgFormat}
                   </Badge>
-                  <Badge variant={bgMode === 'smart_serp' ? 'default' : 'secondary'} className="text-[10px]">
-                    {bgMode === 'smart_serp' ? 'Smart' : 'White'}
+                  <Badge 
+                    variant={(bgMode === 'smart_serp' || bgMode === '3d_generate') ? 'default' : 'secondary'} 
+                    className="text-[10px]"
+                  >
+                    {bgMode === 'smart_serp' && 'Smart'}
+                    {bgMode === 'white_shopping' && 'White'}
+                    {bgMode === '3d_shopping' && '3D White'}
+                    {bgMode === '3d_generate' && '3D'}
                   </Badge>
                 </div>
 
                 <Button
                   size="sm"
                   className="w-full"
-                  variant={bgMode === 'smart_serp' ? 'default' : 'secondary'}
+                  variant={(bgMode === 'smart_serp' || bgMode === '3d_generate') ? 'default' : 'secondary'}
                   onClick={() => handleGenerateSmartBackground(product, 0)}
                   disabled={isGeneratingBg || !product.images[0]}
                 >
@@ -739,7 +766,12 @@ export const ProductContentOptimization = () => {
             </DialogTitle>
             <DialogDescription>
               {isGeneratingBg 
-                ? `Mode: ${bgMode === 'smart_serp' ? 'Smart SERP + Vision AI' : 'White Background'} | Format: ${bgFormat}`
+                ? `Mode: ${
+                    bgMode === 'smart_serp' ? 'Smart SERP + Vision AI' : 
+                    bgMode === '3d_shopping' ? '3D Google Shopping 1:1' :
+                    bgMode === '3d_generate' ? '3D Generate' :
+                    'White Background'
+                  } | Format: ${bgMode === '3d_shopping' ? '1:1' : bgFormat}`
                 : 'Aperçu du background optimisé - Cliquez sur Appliquer pour synchroniser'}
             </DialogDescription>
           </DialogHeader>

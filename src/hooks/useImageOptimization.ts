@@ -100,7 +100,7 @@ export const useImageOptimization = () => {
       productTitle: string;
       resolution?: string;
       format?: 'square' | 'portrait' | 'landscape';
-      mode?: 'standard' | 'google_shopping';
+      mode?: 'standard' | 'google_shopping' | '3d_google_shopping' | '3d_generate';
       serpData?: any;
       visionAiData?: any;
       productDescription?: string;
