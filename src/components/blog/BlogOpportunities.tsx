@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, CheckCircle } from "lucide-react";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -506,24 +506,44 @@ export function BlogOpportunities() {
             {opportunities.length} {t.blog.submenu.opportunitiesDesc}
           </p>
         </div>
-        <Button
-          onClick={handleRegenerate}
-          disabled={regenerating}
-          size="lg"
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-        >
-          {regenerating ? (
-            <>
-              <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-              {t.common.loading}
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5 mr-2" />
-              {t.blog.createNew}
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            size="lg"
+            variant="outline"
+          >
+            {regenerating ? (
+              <>
+                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                {t.common.loading}
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-5 h-5 mr-2" />
+                {t.blog.dialogs.opportunities.regenerate}
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            {regenerating ? (
+              <>
+                <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                {t.common.loading}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 mr-2" />
+                {t.blog.createNew}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {opportunities.map((opp) => {
