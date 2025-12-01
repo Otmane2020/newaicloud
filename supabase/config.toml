@@ -9,8 +9,12 @@ schedule = "0 * * * *"
 function = "trigger-hourly-sync"
 
 [cron.process-scheduled-articles]
-schedule = "0 9,14 * * *"
+schedule = "0 * * * *"
 function = "process-scheduled-articles"
+
+[cron.daily-sitemap-generation]
+schedule = "0 4 * * *"
+function = "generate-sitemap"
 
 [functions.trigger-hourly-sync]
 verify_jwt = false
