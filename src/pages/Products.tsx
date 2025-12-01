@@ -63,7 +63,7 @@ export default function Products() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [generatingBgForProduct, setGeneratingBgForProduct] = useState<string | null>(null);
+  const [generatingBg, setGeneratingBg] = useState<{ productId: string; type: 'white' | 'ai' | 'smart' } | null>(null);
   const ITEMS_PER_PAGE = 20;
 
   // Scroll to top when page changes
@@ -78,7 +78,7 @@ export default function Products() {
       return;
     }
 
-    setGeneratingBgForProduct(product.id);
+    setGeneratingBg({ productId: product.id, type: 'white' });
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-white-background', {
@@ -108,11 +108,11 @@ export default function Products() {
       }
     } catch (error: any) {
       console.error('Error generating white background:', error);
-      toast.error(t.toasts.products.whiteBackgroundError, {
+        toast.error(t.toasts.products.whiteBackgroundError, {
         description: error.message
       });
     } finally {
-      setGeneratingBgForProduct(null);
+      setGeneratingBg(null);
       await refreshLimits();
     }
   };
@@ -124,7 +124,7 @@ export default function Products() {
       return;
     }
 
-    setGeneratingBgForProduct(product.id);
+    setGeneratingBg({ productId: product.id, type: 'ai' });
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
@@ -152,7 +152,7 @@ export default function Products() {
         description: error.message
       });
     } finally {
-      setGeneratingBgForProduct(null);
+      setGeneratingBg(null);
       await refreshLimits();
     }
   };
@@ -167,7 +167,7 @@ export default function Products() {
       return;
     }
 
-    setGeneratingBgForProduct(product.id);
+    setGeneratingBg({ productId: product.id, type: 'smart' });
     console.log('[DEBUG] Starting smart background generation...');
     
     try {
@@ -205,7 +205,7 @@ export default function Products() {
         description: error.message
       });
     } finally {
-      setGeneratingBgForProduct(null);
+      setGeneratingBg(null);
       await refreshLimits();
     }
   };
@@ -882,9 +882,9 @@ export default function Products() {
                                   console.log('[DEBUG] White BG clicked for:', product.id);
                                   handleGenerateWhiteBackground(product);
                                 }}
-                                disabled={generatingBgForProduct === product.id}
+                                disabled={generatingBg?.productId === product.id && generatingBg?.type === 'white'}
                               >
-                                {generatingBgForProduct === product.id ? (
+                                {generatingBg?.productId === product.id && generatingBg?.type === 'white' ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
                                   <ImageOff className="h-3.5 w-3.5 text-gray-600" />
@@ -907,9 +907,9 @@ export default function Products() {
                                   console.log('[DEBUG] AI BG clicked for:', product.id);
                                   handleGenerateAIBackground(product);
                                 }}
-                                disabled={generatingBgForProduct === product.id}
+                                disabled={generatingBg?.productId === product.id && generatingBg?.type === 'ai'}
                               >
-                                {generatingBgForProduct === product.id ? (
+                                {generatingBg?.productId === product.id && generatingBg?.type === 'ai' ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
                                   <Wand2 className="h-3.5 w-3.5 text-purple-600" />
@@ -932,9 +932,9 @@ export default function Products() {
                                   console.log('[DEBUG] Smart BG clicked for:', product.id);
                                   handleGenerateSmartBackground(product);
                                 }}
-                                disabled={generatingBgForProduct === product.id}
+                                disabled={generatingBg?.productId === product.id && generatingBg?.type === 'smart'}
                               >
-                                {generatingBgForProduct === product.id ? (
+                                {generatingBg?.productId === product.id && generatingBg?.type === 'smart' ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
                                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
