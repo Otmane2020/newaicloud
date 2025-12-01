@@ -197,7 +197,6 @@ serve(async (req) => {
   // -------------------------------------------------------
   
   return new Response(JSON.stringify({ part: "paste bloc 2 now" }), { headers: cors });
-});
 // ================== BLOC 2 / 3 ==================
 // CONTINUATION - paste after Organic section
 
