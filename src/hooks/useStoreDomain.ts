@@ -91,7 +91,15 @@ export function useStoreDomain() {
               return cleanUrl;
             }
 
-            // Last resort: use placeholder
+            // Last resort: use myshopify.com domain if available
+            if (selectedStore.store_url && selectedStore.store_url.includes('.myshopify.com')) {
+              const myshopifyDomain = selectedStore.store_url
+                .replace(/^https?:\/\//, '')
+                .replace(/\/$/, '');
+              console.log('⚠️ [DOMAIN] Using .myshopify.com domain as fallback:', myshopifyDomain);
+              return myshopifyDomain;
+            }
+            
             console.log('⚠️ [DOMAIN] No valid domain found, using placeholder');
             return 'example.com';
           })();
