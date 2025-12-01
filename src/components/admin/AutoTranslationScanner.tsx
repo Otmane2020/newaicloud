@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
 
 interface DetectedIssue {
   type: string;
@@ -393,6 +394,7 @@ const getAllFiles = (): string[] => {
 const TOTAL_FILES_COUNT = getAllFiles().length;
 
 export default function AutoTranslationScanner() {
+  const { t, tf } = useTranslation();
   const [activeTab, setActiveTab] = useState("batch");
   const [code, setCode] = useState("");
   const [fileName, setFileName] = useState("");
@@ -554,7 +556,7 @@ export default function AutoTranslationScanner() {
   // Analyze code with AI
   const analyzeCode = async () => {
     if (!code.trim()) {
-      toast.error("Veuillez coller du code à analyser");
+      toast.error(t.translationScanner.pasteCode);
       return;
     }
 
@@ -591,13 +593,13 @@ export default function AutoTranslationScanner() {
       }
 
       if (data.issues?.length > 0) {
-        toast.success(`${data.issues.length} problème(s) de traduction détecté(s)`);
+        toast.success(tf('codeAnalyzer.issuesDetected', { count: data.issues.length }));
       } else {
-        toast.success("Aucun problème de traduction détecté !");
+        toast.success(t.translationScanner.noIssues);
       }
     } catch (error) {
       console.error("Analysis error:", error);
-      toast.error("Erreur lors de l'analyse");
+      toast.error(t.translationScanner.analysisError);
     } finally {
       setIsAnalyzing(false);
     }
@@ -662,10 +664,10 @@ export default function AutoTranslationScanner() {
       });
       
       setShowFixAllDialog(true);
-      toast.success(`${totalKeys} clés de traduction agrégées`);
+      toast.success(tf('codeAnalyzer.issuesDetected', { count: totalKeys }));
     } catch (error) {
       console.error("Aggregation error:", error);
-      toast.error("Erreur lors de l'agrégation");
+      toast.error(t.translationScanner.aggregationError);
     } finally {
       setIsFixingAll(false);
     }
@@ -720,7 +722,7 @@ ${formatObject(translations)}
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    toast.success(`Fichier ${lang}.ts téléchargé`);
+    toast.success(tf('toasts.success.saved', {}));
   };
 
   // Copy all translations for a language
@@ -788,10 +790,10 @@ ${formatObject(translations)}
       results.filesSummary.sort((a, b) => b.total - a.total);
 
       setBulkResults(results);
-      toast.success(`Analyse terminée: ${results.totalToasts} toasts, ${results.totalDialogs} dialogs trouvés`);
+      toast.success(tf('codeAnalyzer.issuesDetected', { count: results.totalToasts + results.totalDialogs }));
     } catch (error) {
       console.error("Bulk scan error:", error);
-      toast.error("Erreur lors du scan global");
+      toast.error(t.translationScanner.globalScanError);
     } finally {
       setIsBulkScanning(false);
     }
@@ -800,7 +802,7 @@ ${formatObject(translations)}
   // Process batch input - parse multiple files and analyze them
   const processBatchInput = async () => {
     if (!batchInput.trim()) {
-      toast.error("Collez du code à analyser");
+      toast.error(t.translationScanner.pasteCode);
       return;
     }
 
@@ -839,12 +841,12 @@ ${formatObject(translations)}
       }
 
       if (filesToProcess.length === 0) {
-        toast.error("Aucun fichier valide trouvé dans l'entrée");
+        toast.error(t.translationScanner.noValidFiles);
         setIsBatchProcessing(false);
         return;
       }
 
-      toast.info(`Analyse de ${filesToProcess.length} fichier(s) en cours...`);
+      toast.info(t.toasts.info.processing);
 
       // Call the edge function
       const { data, error } = await supabase.functions.invoke("auto-fix-translations", {
@@ -886,11 +888,11 @@ ${formatObject(translations)}
         issueCount: data.totalIssues,
       });
 
-      toast.success(`✅ ${data.totalIssues} problèmes détectés dans ${data.filesAnalyzed} fichiers`);
+      toast.success(tf('codeAnalyzer.issuesDetected', { count: data.totalIssues }));
 
     } catch (error) {
       console.error("Batch processing error:", error);
-      toast.error("Erreur lors du traitement batch");
+      toast.error(t.translationScanner.batchError);
     } finally {
       setIsBatchProcessing(false);
     }
@@ -904,8 +906,8 @@ ${formatObject(translations)}
     setAutoScanError(null);
 
     try {
-      toast.info("🔍 Scanner automatique démarré - lecture des fichiers depuis GitHub...");
-      setAutoScanProgress("Lecture des fichiers depuis GitHub et analyse IA...");
+      toast.info(t.translationScanner.scannerStarted);
+      setAutoScanProgress(t.toasts.info.processing);
 
       const { data, error } = await supabase.functions.invoke("scan-repo-translations", {
         body: { maxFiles: 50 }, // Limit to avoid timeout
@@ -928,12 +930,12 @@ ${formatObject(translations)}
       // Check if no files were scanned
       if (data.filesScanned === 0) {
         setAutoScanError({
-          error: "Aucun fichier scanné",
-          errorDetails: "Le scan GitHub n'a trouvé aucun fichier à analyser.",
-          suggestion: "Utilisez le mode manuel (copier-coller) ci-dessous.",
+          error: t.translationScanner.noFilesScanned,
+          errorDetails: t.translationScanner.noFilesScanned,
+          suggestion: t.translationScanner.noFilesScanned,
           diagnostics: data.diagnostics,
         });
-        toast.warning("Aucun fichier scanné - utilisez le mode manuel");
+        toast.warning(t.translationScanner.noFilesScanned);
         return;
       }
 
@@ -968,7 +970,7 @@ ${formatObject(translations)}
       });
 
       setAutoScanProgress("");
-      toast.success(`✅ Scan terminé: ${data.totalIssues} problèmes dans ${data.filesWithIssues} fichiers`);
+      toast.success(tf('codeAnalyzer.issuesDetected', { count: data.totalIssues }));
 
     } catch (error) {
       console.error("Auto GitHub scan error:", error);
@@ -988,14 +990,14 @@ ${formatObject(translations)}
     console.log("[AutoTranslationScanner] copyToClipboard called:", { field, textLength: text?.length });
     if (!text) {
       console.error("[AutoTranslationScanner] No text to copy");
-      toast.error("Aucun texte à copier");
+      toast.error(t.translationScanner.nothingToCopy);
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
-      toast.success("Copié dans le presse-papiers !");
+      toast.success(t.translationScanner.copied);
       console.log("[AutoTranslationScanner] Successfully copied to clipboard");
     } catch (error) {
       console.error("[AutoTranslationScanner] Clipboard error:", error);
@@ -1011,10 +1013,10 @@ ${formatObject(translations)}
         document.body.removeChild(textarea);
         setCopiedField(field);
         setTimeout(() => setCopiedField(null), 2000);
-        toast.success("Copié (méthode alternative) !");
+        toast.success(t.translationScanner.copiedAlt);
       } catch (fallbackError) {
         console.error("[AutoTranslationScanner] Fallback copy failed:", fallbackError);
-        toast.error("Erreur de copie - Copiez manuellement");
+        toast.error(t.translationScanner.copyError);
       }
     }
   };
@@ -1025,13 +1027,13 @@ ${formatObject(translations)}
     
     if (!translations || typeof translations !== 'object') {
       console.warn("[AutoTranslationScanner] Invalid translations object");
-      return `// Aucune traduction ${lang === 'fr' ? 'française' : 'anglaise'} à ajouter`;
+      return `// ${lang === 'fr' ? 'Aucune traduction française' : 'No English translations'} à ajouter`;
     }
     
     const keys = Object.keys(translations);
     if (keys.length === 0) {
       console.warn("[AutoTranslationScanner] Empty translations object");
-      return `// Aucune traduction ${lang === 'fr' ? 'française' : 'anglaise'} à ajouter`;
+      return `// ${lang === 'fr' ? 'Aucune traduction française' : 'No English translations'} à ajouter`;
     }
     
     const lines: string[] = [];
@@ -1070,9 +1072,9 @@ ${formatObject(translations)}
     try {
       await supabase.from("translation_audit_results").delete().eq("id", id);
       setHistory(prev => prev.filter(h => h.id !== id));
-      toast.success("Supprimé");
+      toast.success(t.translationScanner.deleted);
     } catch {
-      toast.error("Erreur de suppression");
+      toast.error(t.translationScanner.deleteError);
     }
   };
 

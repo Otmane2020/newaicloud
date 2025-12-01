@@ -72,7 +72,7 @@ const CATEGORIES = [
 ];
 
 export function BlogSeoManagementAdmin() {
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("articles");
   const [articles, setArticles] = useState<PromotionalArticle[]>([]);
@@ -123,8 +123,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error loading articles:', error);
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorLoading,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -157,16 +157,16 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Articles planifiés",
-        description: `${data.scheduled} articles planifiés pour les ${days} prochains jours`
+        title: t.toasts.success.saved,
+        description: tf('smartPricingExtended.pricesSynced', { count: data.scheduled })
       });
 
       loadScheduledArticles();
     } catch (error: unknown) {
       console.error('Error scheduling articles:', error);
       toast({
-        title: "Erreur lors de la planification",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.toasts.error.generic,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -179,8 +179,8 @@ const loadArticles = async () => {
       setIsProcessing(true);
       
       toast({
-        title: "Traitement en cours",
-        description: "Génération et publication des articles planifiés..."
+        title: t.toasts.info.processing,
+        description: t.toasts.info.generating
       });
 
       const { data, error } = await supabase.functions.invoke('process-scheduled-articles', {
@@ -190,8 +190,8 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Traitement terminé",
-        description: `${data.generated} générés, ${data.published} publiés${data.failed > 0 ? `, ${data.failed} échecs` : ''}`
+        title: t.toasts.success.taskCompleted,
+        description: tf('smartPricingExtended.pricesSynced', { count: data.generated })
       });
 
       loadScheduledArticles();
@@ -199,8 +199,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error processing scheduled articles:', error);
       toast({
-        title: "Erreur lors du traitement",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.toasts.error.generic,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -222,7 +222,7 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Article généré",
+        title: t.blogSeoManagement.contentGenerated,
         description: data.title
       });
 
@@ -230,8 +230,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error generating article:', error);
       toast({
-        title: "Erreur lors de la génération",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorGenerating,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
       loadScheduledArticles();
@@ -247,7 +247,7 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Article publié",
+        title: t.blogSeoManagement.articlePublished,
         description: data.title
       });
 
@@ -256,15 +256,15 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error publishing article:', error);
       toast({
-        title: "Erreur lors de la publication",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.toasts.error.generic,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     }
   };
 
   const deleteScheduledArticle = async (articleId: string) => {
-    if (!confirm("Supprimer cet article planifié ?")) return;
+    if (!confirm(t.blogSeoManagement.confirmDelete)) return;
 
     try {
       const { error } = await supabase
@@ -275,15 +275,15 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Article supprimé"
+        title: t.blogSeoManagement.articleDeleted
       });
 
       loadScheduledArticles();
     } catch (error: unknown) {
       console.error('Error deleting scheduled article:', error);
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.toasts.error.generic,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     }
@@ -321,8 +321,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error generating suggestions:', error);
       toast({
-        title: "Erreur lors de la génération",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorGenerating,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -349,8 +349,8 @@ const loadArticles = async () => {
   const generateArticleContent = async () => {
     if (!articleForm.title) {
       toast({
-        title: "Titre requis",
-        description: "Entrez d'abord un titre",
+        title: t.blogSeoManagement.titleRequired,
+        description: t.blogSeoManagement.enterTitleFirst,
         variant: "destructive"
       });
       return;
@@ -378,14 +378,14 @@ const loadArticles = async () => {
       }));
 
       toast({
-        title: "Contenu généré",
-        description: "Vérifiez avant de publier"
+        title: t.blogSeoManagement.contentGenerated,
+        description: t.blogSeoManagement.reviewBeforePublish
       });
     } catch (error: unknown) {
       console.error('Error generating content:', error);
       toast({
-        title: "Erreur lors de la génération",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorGeneratingContent,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -396,8 +396,8 @@ const loadArticles = async () => {
   const createArticle = async () => {
     if (!articleForm.title || !articleForm.content) {
       toast({
-        title: "Champs requis",
-        description: "Le titre et le contenu sont requis",
+        title: t.blogSeoManagement.fieldsRequired,
+        description: t.blogSeoManagement.titleContentRequired,
         variant: "destructive"
       });
       return;
@@ -424,8 +424,8 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Article créé",
-        description: articleForm.published ? "Article publié avec succès" : "Article enregistré en brouillon"
+        title: t.blogSeoManagement.articleCreated,
+        description: articleForm.published ? t.blogSeoManagement.articlePublished : t.blogSeoManagement.articleSavedDraft
       });
 
       setIsCreateDialogOpen(false);
@@ -434,8 +434,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error creating article:', error);
       toast({
-        title: "Erreur lors de la création",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorCreating,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -470,8 +470,8 @@ const loadArticles = async () => {
       if (error) throw error;
 
       toast({
-        title: "Article mis à jour",
-        description: "Modifications enregistrées"
+        title: t.blogSeoManagement.articleUpdated,
+        description: t.blogSeoManagement.changesSaved
       });
 
       setIsEditDialogOpen(false);
@@ -481,8 +481,8 @@ const loadArticles = async () => {
     } catch (error: unknown) {
       console.error('Error updating article:', error);
       toast({
-        title: "Erreur lors de la mise à jour",
-        description: error instanceof Error ? error.message : "Erreur inconnue",
+        title: t.blogSeoManagement.errorUpdating,
+        description: error instanceof Error ? error.message : t.toasts.error.generic,
         variant: "destructive"
       });
     } finally {
@@ -491,7 +491,7 @@ const loadArticles = async () => {
   };
 
   const deleteArticle = async (articleId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) {
+    if (!confirm(t.blogSeoManagement.confirmDelete)) {
       return;
     }
 
