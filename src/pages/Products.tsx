@@ -870,7 +870,7 @@ export default function Products() {
                         </div>
                         
                         {/* Background actions - always visible */}
-                        <div className="absolute top-2 right-2 flex gap-1 transition-opacity">
+                        <div className="hidden absolute top-2 right-2 flex gap-1 transition-opacity">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
