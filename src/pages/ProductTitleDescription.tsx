@@ -36,6 +36,9 @@ import {
   Check,
   Grid3x3,
   List,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -99,12 +102,13 @@ interface ProductVariant {
   option1?: string | null;
   option2?: string | null;
   option3?: string | null;
+  price?: number;
+  cost_price?: number;
+  sku?: string | null;
+  shopify_variant_id?: number | null;
   image_id?: string | null;
   image_url?: string | null;
-  sku?: string | null;
-  price?: number | null;
   compare_at_price?: number | null;
-  cost_price?: number | null;
 }
 
 interface ProductImage {
@@ -226,6 +230,11 @@ export default function ProductTitleDescription() {
   const [galleryProduct, setGalleryProduct] = useState<Product | null>(null);
   const [showSmartBgDialog, setShowSmartBgDialog] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
+  
+  // Inline editing states
+  const [editingField, setEditingField] = useState<{productId: string, field: string} | null>(null);
+  const [editingValue, setEditingValue] = useState<string>("");
+  const [savingField, setSavingField] = useState<boolean>(false);
 
   useEffect(() => {
     console.log("🔄 [STORE_CHANGE] Store changed to:", selectedStore?.id, selectedStore?.store_name);
@@ -465,6 +474,104 @@ export default function ProductTitleDescription() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [currentPage]);
+
+  // Inline editing handlers
+  const startEditing = (productId: string, field: string, currentValue: string) => {
+    setEditingField({ productId, field });
+    setEditingValue(currentValue || "");
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setEditingValue("");
+  };
+
+  const saveField = async (product: Product) => {
+    if (!editingField) return;
+    
+    setSavingField(true);
+    try {
+      const { productId, field } = editingField;
+      
+      // Préparer les données à sauvegarder selon le champ
+      let updateData: any = {};
+      let variantUpdate: any = null;
+      
+      if (field === "title") {
+        updateData.title = editingValue;
+      } else if (field === "vendor") {
+        updateData.vendor = editingValue;
+      } else if (field === "sku" && product.variants?.[0]) {
+        variantUpdate = { sku: editingValue };
+      } else if (field === "price" && product.variants?.[0]) {
+        variantUpdate = { price: parseFloat(editingValue) };
+      } else if (field === "cost" && product.variants?.[0]) {
+        variantUpdate = { cost_price: parseFloat(editingValue) };
+      }
+      
+      // Sauvegarder en base de données
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from("shopify_products")
+          .update(updateData)
+          .eq("id", productId);
+          
+        if (error) throw error;
+      }
+      
+      if (variantUpdate && product.variants?.[0]) {
+        const { error } = await supabase
+          .from("product_variants")
+          .update(variantUpdate)
+          .eq("id", product.variants[0].id);
+          
+        if (error) throw error;
+      }
+      
+      // Synchroniser avec Shopify si le produit a un shopify_id
+      if (product.shopify_id) {
+        const syncData: any = {};
+        
+        if (field === "title") syncData.title = editingValue;
+        if (field === "vendor") syncData.vendor = editingValue;
+        if (field === "sku" && product.variants?.[0]) {
+          syncData.variant_id = product.variants[0].shopify_variant_id;
+          syncData.sku = editingValue;
+        }
+        if (field === "price" && product.variants?.[0]) {
+          syncData.variant_id = product.variants[0].shopify_variant_id;
+          syncData.price = parseFloat(editingValue);
+        }
+        if (field === "cost" && product.variants?.[0]) {
+          syncData.variant_id = product.variants[0].shopify_variant_id;
+          syncData.cost = parseFloat(editingValue);
+        }
+        
+        // Appeler l'edge function de synchronisation
+        if (Object.keys(syncData).length > 0) {
+          await supabase.functions.invoke("sync-seo-to-shopify", {
+            body: {
+              product_id: productId,
+              shopify_product_id: product.shopify_id,
+              ...syncData
+            }
+          });
+        }
+      }
+      
+      toast.success(t.toasts.success.saved);
+      
+      // Rafraîchir les produits
+      await fetchProducts();
+      cancelEditing();
+      
+    } catch (error) {
+      console.error("Error saving field:", error);
+      toast.error(t.toasts.error.generic);
+    } finally {
+      setSavingField(false);
+    }
+  };
 
   // 🚨 DEBUG LOGS - Ultra visible debugging
   useEffect(() => {
@@ -2612,42 +2719,251 @@ export default function ProductTitleDescription() {
 
                        {/* Product info */}
                        <div className="flex-1 flex flex-col p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
-                         {/* Title section - fixed height */}
+                         {/* Title section - editable */}
                          <div className="min-h-[3rem]">
-                           <h3 className="font-semibold text-sm line-clamp-2">
-                             {product.seo_title || product.title}
-                           </h3>
+                           {editingField?.productId === product.id && editingField?.field === "title" ? (
+                             <div className="flex items-start gap-1">
+                               <Input
+                                 value={editingValue}
+                                 onChange={(e) => setEditingValue(e.target.value)}
+                                 className="h-8 text-sm"
+                                 autoFocus
+                                 onKeyDown={(e) => {
+                                   if (e.key === "Enter") saveField(product);
+                                   if (e.key === "Escape") cancelEditing();
+                                 }}
+                               />
+                               <Button
+                                 size="icon"
+                                 variant="ghost"
+                                 className="h-8 w-8 flex-shrink-0"
+                                 onClick={() => saveField(product)}
+                                 disabled={savingField}
+                               >
+                                 {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                               </Button>
+                               <Button
+                                 size="icon"
+                                 variant="ghost"
+                                 className="h-8 w-8 flex-shrink-0"
+                                 onClick={cancelEditing}
+                               >
+                                 <X className="h-3 w-3" />
+                               </Button>
+                             </div>
+                           ) : (
+                             <div 
+                               className="group flex items-start gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
+                               onClick={() => startEditing(product.id, "title", product.seo_title || product.title)}
+                             >
+                               <h3 className="font-semibold text-sm line-clamp-2 flex-1">
+                                 {product.seo_title || product.title}
+                               </h3>
+                               <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
+                             </div>
+                           )}
                          </div>
 
-                         {/* Vendor badge */}
-                         {product.vendor && (
-                           <Badge variant="outline" className="w-fit text-[10px] px-2 py-0">
-                             {product.vendor}
-                           </Badge>
+                         {/* Vendor badge - editable */}
+                         {editingField?.productId === product.id && editingField?.field === "vendor" ? (
+                           <div className="flex items-center gap-1">
+                             <Input
+                               value={editingValue}
+                               onChange={(e) => setEditingValue(e.target.value)}
+                               className="h-7 text-xs"
+                               autoFocus
+                               placeholder="Marque"
+                               onKeyDown={(e) => {
+                                 if (e.key === "Enter") saveField(product);
+                                 if (e.key === "Escape") cancelEditing();
+                               }}
+                             />
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-7 w-7 flex-shrink-0"
+                               onClick={() => saveField(product)}
+                               disabled={savingField}
+                             >
+                               {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                             </Button>
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-7 w-7 flex-shrink-0"
+                               onClick={cancelEditing}
+                             >
+                               <X className="h-3 w-3" />
+                             </Button>
+                           </div>
+                         ) : product.vendor ? (
+                           <div 
+                             className="group flex items-center gap-2 w-fit cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
+                             onClick={() => startEditing(product.id, "vendor", product.vendor || "")}
+                           >
+                             <Badge variant="outline" className="text-[10px] px-2 py-0">
+                               {product.vendor}
+                             </Badge>
+                             <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           </div>
+                         ) : (
+                           <div 
+                             className="group flex items-center gap-2 w-fit cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
+                             onClick={() => startEditing(product.id, "vendor", "")}
+                           >
+                             <Badge variant="outline" className="text-[10px] px-2 py-0 text-muted-foreground">
+                               + Ajouter marque
+                             </Badge>
+                             <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           </div>
                          )}
 
-                         {/* SKU */}
-                         <p className="text-xs text-muted-foreground font-mono">
-                           SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
-                         </p>
-                         
-                         {/* Price info */}
-                         <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
-                           <div>
-                             <span className="text-muted-foreground">Prix: </span>
-                             <span className="font-semibold">
-                               {(product as any).variants?.[0]?.price 
-                                 ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
-                                 : '—'}
-                             </span>
+                         {/* SKU - editable */}
+                         {editingField?.productId === product.id && editingField?.field === "sku" ? (
+                           <div className="flex items-center gap-1">
+                             <span className="text-muted-foreground text-[10px]">SKU:</span>
+                             <Input
+                               value={editingValue}
+                               onChange={(e) => setEditingValue(e.target.value)}
+                               className="h-7 text-xs font-mono w-32"
+                               autoFocus
+                               onKeyDown={(e) => {
+                                 if (e.key === "Enter") saveField(product);
+                                 if (e.key === "Escape") cancelEditing();
+                               }}
+                             />
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-7 w-7 flex-shrink-0"
+                               onClick={() => saveField(product)}
+                               disabled={savingField}
+                             >
+                               {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                             </Button>
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-7 w-7 flex-shrink-0"
+                               onClick={cancelEditing}
+                             >
+                               <X className="h-3 w-3" />
+                             </Button>
                            </div>
-                           <div>
-                             <span className="text-muted-foreground">Coût: </span>
-                             <span className="font-medium">
-                               {(product as any).variants?.[0]?.cost_price 
-                                 ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
-                                 : '—'}
-                             </span>
+                         ) : (
+                           <div 
+                             className="group flex items-center gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
+                             onClick={() => startEditing(product.id, "sku", (product as any).sku || (product as any).variants?.[0]?.sku || "")}
+                           >
+                             <p className="text-xs text-muted-foreground font-mono">
+                               SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                             </p>
+                             <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           </div>
+                         )}
+                         
+                         {/* Price info - editable */}
+                         <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
+                           {/* Prix */}
+                           <div className="flex-1">
+                             {editingField?.productId === product.id && editingField?.field === "price" ? (
+                               <div className="flex items-center gap-1">
+                                 <span className="text-muted-foreground text-[10px]">Prix:</span>
+                                 <Input
+                                   type="number"
+                                   step="0.01"
+                                   value={editingValue}
+                                   onChange={(e) => setEditingValue(e.target.value)}
+                                   className="h-6 text-xs w-20"
+                                   autoFocus
+                                   onKeyDown={(e) => {
+                                     if (e.key === "Enter") saveField(product);
+                                     if (e.key === "Escape") cancelEditing();
+                                   }}
+                                 />
+                                 <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="h-6 w-6"
+                                   onClick={() => saveField(product)}
+                                   disabled={savingField}
+                                 >
+                                   {savingField ? <Loader2 className="h-2 w-2 animate-spin" /> : <Check className="h-2 w-2" />}
+                                 </Button>
+                                 <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="h-6 w-6"
+                                   onClick={cancelEditing}
+                                 >
+                                   <X className="h-2 w-2" />
+                                 </Button>
+                               </div>
+                             ) : (
+                               <div 
+                                 className="group flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded px-1"
+                                 onClick={() => startEditing(product.id, "price", (product as any).variants?.[0]?.price?.toString() || "")}
+                               >
+                                 <span className="text-muted-foreground">Prix: </span>
+                                 <span className="font-semibold">
+                                   {(product as any).variants?.[0]?.price 
+                                     ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
+                                     : '—'}
+                                 </span>
+                                 <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                               </div>
+                             )}
+                           </div>
+                           
+                           {/* Coût */}
+                           <div className="flex-1">
+                             {editingField?.productId === product.id && editingField?.field === "cost" ? (
+                               <div className="flex items-center gap-1">
+                                 <span className="text-muted-foreground text-[10px]">Coût:</span>
+                                 <Input
+                                   type="number"
+                                   step="0.01"
+                                   value={editingValue}
+                                   onChange={(e) => setEditingValue(e.target.value)}
+                                   className="h-6 text-xs w-20"
+                                   autoFocus
+                                   onKeyDown={(e) => {
+                                     if (e.key === "Enter") saveField(product);
+                                     if (e.key === "Escape") cancelEditing();
+                                   }}
+                                 />
+                                 <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="h-6 w-6"
+                                   onClick={() => saveField(product)}
+                                   disabled={savingField}
+                                 >
+                                   {savingField ? <Loader2 className="h-2 w-2 animate-spin" /> : <Check className="h-2 w-2" />}
+                                 </Button>
+                                 <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="h-6 w-6"
+                                   onClick={cancelEditing}
+                                 >
+                                   <X className="h-2 w-2" />
+                                 </Button>
+                               </div>
+                             ) : (
+                               <div 
+                                 className="group flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded px-1"
+                                 onClick={() => startEditing(product.id, "cost", (product as any).variants?.[0]?.cost_price?.toString() || "")}
+                               >
+                                 <span className="text-muted-foreground">Coût: </span>
+                                 <span className="font-medium">
+                                   {(product as any).variants?.[0]?.cost_price 
+                                     ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
+                                     : '—'}
+                                 </span>
+                                 <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                               </div>
+                             )}
                            </div>
                          </div>
 
