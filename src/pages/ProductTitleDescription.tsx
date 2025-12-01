@@ -1219,9 +1219,13 @@ export default function ProductTitleDescription() {
           if (!preview?.generatedUrl) continue;
 
           if (imageType === "primary") {
-            await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
+            // Update main product image in shopify_products
+            await supabase.from("shopify_products").update({ 
+              image_url: preview.generatedUrl,
+              updated_at: new Date().toISOString()
+            }).eq("id", productId);
             
-            // Save to history for primary image
+            // 🔥 CRITICAL FIX: Also update the product_images entry for position 1
             const { data: primaryImage } = await supabase
               .from("product_images")
               .select("id")
@@ -1230,6 +1234,16 @@ export default function ProductTitleDescription() {
               .maybeSingle();
             
             if (primaryImage) {
+              // Update the src URL in product_images to show the new image
+              await supabase
+                .from("product_images")
+                .update({ 
+                  src: preview.generatedUrl,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("id", primaryImage.id);
+              
+              // Save to history after updating the image
               await saveToHistory({
                 productId,
                 imageId: primaryImage.id,
@@ -1241,6 +1255,32 @@ export default function ProductTitleDescription() {
                 resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
                 qualityScore: 95
               });
+            } else {
+              // If no primary image exists, create one
+              const { data: newPrimaryImage } = await supabase
+                .from("product_images")
+                .insert({
+                  product_id: productId,
+                  src: preview.generatedUrl,
+                  alt_text: `${preview.productTitle} - Fond blanc IA`,
+                  position: 1,
+                })
+                .select()
+                .single();
+              
+              if (newPrimaryImage) {
+                await saveToHistory({
+                  productId,
+                  imageId: newPrimaryImage.id,
+                  optimizationType: "white_background",
+                  originalUrl: preview.originalUrl,
+                  optimizedUrl: preview.generatedUrl,
+                  aiModel: "gemini-2.5-flash-image-preview",
+                  aiPrompt: `White background generation - ${format} format`,
+                  resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
+                  qualityScore: 95
+                });
+              }
             }
           } else {
             const maxPosition = await supabase
@@ -1471,7 +1511,29 @@ export default function ProductTitleDescription() {
           }
         } else {
           // Mode simple: mettre à jour l'image principale du produit
-          await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
+          await supabase.from("shopify_products").update({ 
+            image_url: preview.generatedUrl,
+            updated_at: new Date().toISOString()
+          }).eq("id", productId);
+          
+          // 🔥 CRITICAL FIX: Also update product_images entry for position 1
+          const { data: primaryImage } = await supabase
+            .from("product_images")
+            .select("id")
+            .eq("product_id", productId)
+            .eq("position", 1)
+            .maybeSingle();
+          
+          if (primaryImage) {
+            // Update the src URL in product_images to show the new image
+            await supabase
+              .from("product_images")
+              .update({ 
+                src: preview.generatedUrl,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", primaryImage.id);
+          }
         }
 
         // Save to history if user is authenticated
