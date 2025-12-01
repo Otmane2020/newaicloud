@@ -44,7 +44,7 @@ export function BlogOpportunities() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardInitialData, setWizardInitialData] = useState<any>(null);
   const [wizardAutoGenerate, setWizardAutoGenerate] = useState(false);
-  const [generatedArticle, setGeneratedArticle] = useState<{ id: string; title: string; shopifyUrl?: string } | null>(null);
+  const [generatedArticle, setGeneratedArticle] = useState<{ id: string; title: string; content: string; shopifyUrl?: string } | null>(null);
   const [collections, setCollections] = useState<any[]>([]);
   const [userId, setUserId] = useState<string>('');
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
@@ -338,6 +338,7 @@ export function BlogOpportunities() {
         setGeneratedArticle({
           id: data.article.id,
           title: data.article.title || opp.title,
+          content: data.article.content || '',
           shopifyUrl
         });
       } else {

@@ -194,13 +194,23 @@ async function generateArticle(
       try {
         const { data: storeData } = await supabase
           .from("shopify_connections")
-          .select("store_name, store_url")
+          .select("store_name, store_url, public_domain")
           .eq("id", store_id)
           .single();
         
         if (storeData) {
           storeName = storeData.store_name || storeName;
-          storeUrl = storeData.store_url || "";
+          
+          // ✅ Prioritize public_domain, fallback to store_url
+          const rawUrl = storeData.public_domain || storeData.store_url || "";
+          
+          // ✅ Normalize URL to always include https://
+          if (rawUrl) {
+            storeUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+              ? rawUrl
+              : `https://${rawUrl}`;
+          }
+          
           console.log("🏪 Store info:", { storeName, storeUrl });
         }
       } catch (err) {

@@ -53,14 +53,14 @@ Deno.serve(async (req) => {
     // NewAI blog articles (promotional_articles table)
     const { data: blogArticles } = await supabase
       .from('promotional_articles')
-      .select('id, title, updated_at, created_at')
+      .select('id, slug, title, updated_at, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 
     if (blogArticles) {
       blogArticles.forEach(article => {
         urls.push({
-          loc: `${baseUrl}/blog-NewAI/${article.id}`,
+          loc: `${baseUrl}/blog-newai/${article.slug || article.id}`,
           lastmod: article.updated_at || article.created_at,
           changefreq: 'weekly',
           priority: 0.7,

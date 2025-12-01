@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Sparkles, FileText, Tag, CheckCircle, ExternalLink, Eye, Settings } from "lucide-react";
+import { Sparkles, FileText, Tag, CheckCircle, ExternalLink, Eye, Settings, X } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { useNavigate } from "react-router-dom";
+import { ArticlePreviewDialog } from "./ArticlePreviewDialog";
 
 interface ArticleGenerationProgressProps {
   open: boolean;
   onClose: () => void;
-  generatedArticle?: { id: string; title: string; shopifyUrl?: string } | null;
+  generatedArticle?: { id: string; title: string; content: string; shopifyUrl?: string } | null;
   onViewArticle?: (articleId: string) => void;
 }
 
@@ -24,6 +25,7 @@ export function ArticleGenerationProgress({
   const [progress, setProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   const messages = [
     { progress: 0, message: t.blog.articleGeneration.steps.start, icon: Sparkles },
@@ -50,13 +52,7 @@ export function ArticleGenerationProgress({
       setProgress(100);
       setCurrentMessage(t.blog.articleGeneration.steps.complete);
       setIsComplete(true);
-      
-      // Auto-close after 3 seconds
-      const timer = setTimeout(() => {
-        onClose();
-      }, 3000);
-      
-      return () => clearTimeout(timer);
+      return;
     }
     
     let currentStep = 0;
@@ -71,7 +67,7 @@ export function ArticleGenerationProgress({
     }, 1500);
     
     return () => clearInterval(interval);
-  }, [open, generatedArticle, onClose]);
+  }, [open, generatedArticle]);
   
   const handleViewArticle = () => {
     if (generatedArticle && onViewArticle) {
@@ -89,11 +85,26 @@ export function ArticleGenerationProgress({
     onClose();
     navigate('/seo?tab=articles');
   };
+
+  const handlePreview = () => {
+    setShowPreview(true);
+  };
   
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <div className="flex flex-col items-center gap-6 py-8">
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-6 py-8">
           {isComplete && generatedArticle ? (
             <>
               <div className="relative">
@@ -113,11 +124,11 @@ export function ArticleGenerationProgress({
               
               <div className="flex flex-col gap-3 w-full">
                 <Button 
-                  onClick={handleViewArticle}
+                  onClick={handlePreview}
                   className="w-full"
                 >
                   <Eye className="mr-2 h-4 w-4" />
-                  {t.blog.articleGeneration.viewArticle}
+                  {t.blog.articleGeneration.previewArticle}
                 </Button>
                 
                 <Button 
@@ -172,5 +183,20 @@ export function ArticleGenerationProgress({
         </div>
       </DialogContent>
     </Dialog>
+
+    {generatedArticle && (
+      <ArticlePreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        article={{
+          title: generatedArticle.title,
+          content: generatedArticle.content,
+          featured_image: null,
+          meta_description: null,
+          seo_title: null,
+        }}
+      />
+    )}
+    </>
   );
 }
