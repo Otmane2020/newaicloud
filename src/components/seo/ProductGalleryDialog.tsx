@@ -16,6 +16,7 @@ import {
   Save,
   Image as ImageIcon,
   X,
+  Trash2,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
@@ -67,6 +68,7 @@ export function ProductGalleryDialog({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && product?.id) {
@@ -133,23 +135,82 @@ export function ProductGalleryDialog({
     setDragOverIndex(null);
   };
 
-  const handleSaveOrder = async () => {
+  const handleDeleteImage = async (imageId: string, imagePosition: number) => {
     if (!product || !storeId) return;
-    setSaving(true);
+    
+    setDeletingImageId(imageId);
     try {
-      // Update local database positions
-      for (const img of images) {
+      const imageToDelete = images.find(img => img.id === imageId);
+      
+      // Delete from Shopify first if it has a shopify_image_id
+      if (product.shopify_id && imageToDelete?.shopify_image_id) {
+        const { error: shopifyError } = await supabase.functions.invoke("sync-product-images-to-shopify", {
+          body: {
+            productId: product.id,
+            shopifyProductId: product.shopify_id,
+            storeId,
+            deleteImageIds: [imageToDelete.shopify_image_id],
+          },
+        });
+        
+        if (shopifyError) {
+          console.error("Shopify delete error:", shopifyError);
+          toast.warning("Image supprimée localement, erreur de sync Shopify");
+        }
+      }
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("product_images")
+        .delete()
+        .eq("id", imageId);
+      
+      if (dbError) throw dbError;
+      
+      // Update positions of remaining images
+      const remainingImages = images.filter(img => img.id !== imageId);
+      const reorderedImages = remainingImages.map((img, idx) => ({
+        ...img,
+        position: idx + 1,
+      }));
+      
+      // Update positions in database
+      for (const img of reorderedImages) {
         await supabase
           .from("product_images")
           .update({ position: img.position })
           .eq("id", img.id);
       }
+      
+      setImages(reorderedImages);
+      toast.success("Image supprimée avec succès");
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeletingImageId(null);
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    if (!product || !storeId) return;
+    setSaving(true);
+    try {
+      // Update local database positions with proper batch update
+      const updates = images.map(img => 
+        supabase
+          .from("product_images")
+          .update({ position: img.position })
+          .eq("id", img.id)
+      );
+      
+      await Promise.all(updates);
 
       // Sync to Shopify if connected
       if (product.shopify_id) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          // Only include images that have a shopify_image_id for reordering
+          // Include all images with proper ordering
           const shopifyImages = images
             .filter(img => img.shopify_image_id)
             .map((img, idx) => ({
@@ -186,6 +247,7 @@ export function ProductGalleryDialog({
       }
       
       setHasChanges(false);
+      await loadImages(); // Reload to confirm changes
     } catch (error) {
       console.error("Error saving order:", error);
       toast.error("Erreur lors de la sauvegarde");
@@ -236,7 +298,7 @@ export function ProductGalleryDialog({
                         onDragEnd={handleDragEnd}
                         className={`
                           relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing
-                          transition-all duration-200
+                          transition-all duration-200 group
                           ${draggedIndex === index ? "opacity-50 scale-95" : ""}
                           ${dragOverIndex === index ? "border-primary ring-2 ring-primary/20" : "border-border"}
                           hover:border-primary/50
@@ -262,8 +324,23 @@ export function ProductGalleryDialog({
                         <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
                           {index + 1}
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors">
-                          <GripVertical className="h-6 w-6 text-white opacity-0 hover:opacity-100 drop-shadow-lg" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteImage(image.id, image.position || index + 1);
+                          }}
+                          disabled={deletingImageId === image.id}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/90 disabled:opacity-50"
+                          title="Supprimer l'image"
+                        >
+                          {deletingImageId === image.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </button>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none">
+                          <GripVertical className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 drop-shadow-lg" />
                         </div>
                       </div>
                     ))}
