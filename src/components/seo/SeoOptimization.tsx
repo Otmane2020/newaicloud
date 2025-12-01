@@ -22,7 +22,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { TrialLimitDialog } from "@/components/TrialLimitDialog";
 import { TrialLimitBanner } from "@/components/TrialLimitBanner";
-import { OptimizationConfirmDialog } from "./OptimizationConfirmDialog";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from "@/lib/seoQuality";
@@ -151,7 +151,7 @@ export function SeoOptimization() {
   const [syncedItems, setSyncedItems] = useState<
     Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }>
   >([]);
-  const [showBulkOptimizeConfirmDialog, setShowBulkOptimizeConfirmDialog] = useState(false);
+  
 
   const fetchProducts = async () => {
     if (!selectedStore) {
@@ -548,8 +548,11 @@ export function SeoOptimization() {
       return;
     }
     
-    // Show confirmation dialog
-    setShowBulkOptimizeConfirmDialog(true);
+    // Call directly without confirmation dialog
+    setActiveTab("not-enriched");
+    setTimeout(() => {
+      handleGenerateAllSeo();
+    }, 100);
   };
 
   const handleSelectAll = () => {
@@ -1113,8 +1116,11 @@ export function SeoOptimization() {
                   setShowUpgradeDialog(true);
                   return;
                 }
-                // Show confirmation dialog
-                setShowBulkOptimizeConfirmDialog(true);
+                // Call directly without confirmation dialog
+                setActiveTab("not-enriched");
+                setTimeout(() => {
+                  handleGenerateAllSeo();
+                }, 100);
               }}
               disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
               variant="outline"
@@ -1791,21 +1797,6 @@ export function SeoOptimization() {
       {/* Shopify Sync Success Dialog */}
       <ShopifySyncSuccessDialog items={syncedItems} onClose={() => setSyncedItems([])} />
 
-      {/* Bulk Optimization Confirmation Dialog */}
-      <OptimizationConfirmDialog
-        open={showBulkOptimizeConfirmDialog}
-        onOpenChange={setShowBulkOptimizeConfirmDialog}
-        onConfirm={() => {
-          setActiveTab("not-enriched");
-          setTimeout(() => {
-            handleGenerateAllSeo();
-          }, 100);
-        }}
-        selectedCount={notEnrichedCount}
-        currentUsage={limits?.usage.optimizations_count || 0}
-        maxOptimizations={limits?.limits.max_optimizations || 0}
-        isTrialing={limits?.isTrialing || false}
-      />
 
       {limits?.shouldForcePayment ? (
         <TrialLimitDialog

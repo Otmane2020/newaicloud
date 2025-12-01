@@ -58,7 +58,7 @@ import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/O
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
-import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
+
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
 import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
@@ -187,7 +187,7 @@ export default function ProductTitleDescription() {
   } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [showOptimizationConfirm, setShowOptimizationConfirm] = useState(false);
+  
   const [showLandingDialog, setShowLandingDialog] = useState(false);
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
@@ -1805,7 +1805,7 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
-                  setShowOptimizationConfirm(true);
+                  handleOptimizeSelected();
                 }}
                 disabled={generating || selectedProducts.size === 0}
               >
@@ -3219,15 +3219,6 @@ export default function ProductTitleDescription() {
         mainImageUrl={filteredProducts[0]?.image_url}
       />
 
-      <OptimizationConfirmDialog
-        open={showOptimizationConfirm}
-        onOpenChange={setShowOptimizationConfirm}
-        onConfirm={() => handleOptimizeSelected()}
-        selectedCount={selectedProducts.size}
-        currentUsage={limits?.usage.optimizations_count || 0}
-        maxOptimizations={limits?.limits.max_optimizations || 50}
-        isTrialing={limits?.isTrialing || false}
-      />
 
       <UpgradeDialog
         open={showUpgradeDialog}
