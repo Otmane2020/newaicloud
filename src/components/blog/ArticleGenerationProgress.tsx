@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Sparkles, FileText, Tag, CheckCircle, ExternalLink, Eye } from "lucide-react";
+import { Sparkles, FileText, Tag, CheckCircle, ExternalLink, Eye, Settings } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { useNavigate } from "react-router-dom";
 
 interface ArticleGenerationProgressProps {
   open: boolean;
@@ -19,6 +20,7 @@ export function ArticleGenerationProgress({
   onViewArticle 
 }: ArticleGenerationProgressProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -48,7 +50,13 @@ export function ArticleGenerationProgress({
       setProgress(100);
       setCurrentMessage(t.blog.articleGeneration.steps.complete);
       setIsComplete(true);
-      return;
+      
+      // Auto-close after 3 seconds
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
     
     let currentStep = 0;
@@ -63,7 +71,7 @@ export function ArticleGenerationProgress({
     }, 1500);
     
     return () => clearInterval(interval);
-  }, [open, generatedArticle]);
+  }, [open, generatedArticle, onClose]);
   
   const handleViewArticle = () => {
     if (generatedArticle && onViewArticle) {
@@ -75,6 +83,11 @@ export function ArticleGenerationProgress({
     if (generatedArticle?.shopifyUrl) {
       window.open(generatedArticle.shopifyUrl, '_blank');
     }
+  };
+
+  const handleOptimizeSEO = () => {
+    onClose();
+    navigate('/seo?tab=articles');
   };
   
   return (
@@ -105,6 +118,15 @@ export function ArticleGenerationProgress({
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   {t.blog.articleGeneration.viewArticle}
+                </Button>
+                
+                <Button 
+                  onClick={handleOptimizeSEO}
+                  variant="default"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  {t.blog.articleGeneration.workOnSEO}
                 </Button>
                 
                 {generatedArticle.shopifyUrl && (
