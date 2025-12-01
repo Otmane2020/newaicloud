@@ -130,6 +130,12 @@ export default function SearchImage() {
       setLoadingProducts(true);
       const data = await storefrontApiRequest(STOREFRONT_QUERY, { first: 10 });
       
+      if (!data?.data?.products?.edges) {
+        console.warn("No products found in Shopify response");
+        setProducts([]);
+        return;
+      }
+
       const shopifyProducts: ShopifyProduct[] = data.data.products.edges.map((edge: any) => ({
         id: edge.node.id,
         title: edge.node.title,
@@ -140,13 +146,21 @@ export default function SearchImage() {
       }));
 
       setProducts(shopifyProducts);
+      
+      if (shopifyProducts.length === 0) {
+        toast({
+          title: "Aucun produit",
+          description: "Votre catalogue Shopify est vide. Ajoutez des produits pour les analyser.",
+        });
+      }
     } catch (error) {
       console.error("Error loading Shopify products:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les produits",
+        description: "Impossible de charger les produits Shopify",
         variant: "destructive",
       });
+      setProducts([]);
     } finally {
       setLoadingProducts(false);
     }
