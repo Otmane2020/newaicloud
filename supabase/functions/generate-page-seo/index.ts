@@ -271,7 +271,7 @@ ${elements.bodyText}
         
         const { data: storeData, error: storeError } = await supabaseClient
           .from('shopify_connections')
-          .select('store_name, store_label, store_phone, store_email, store_address, store_url, store_language')
+          .select('store_name, store_label, store_phone, store_address, store_url, store_language')
           .eq('id', storeIdToUse)
           .eq('user_id', user.id)
           .single();
@@ -316,7 +316,6 @@ RÈGLES CRITIQUES POUR LE SEO DE CETTE PAGE :
 
 INFORMATIONS DE CONTACT DISPONIBLES :
 ${storeData.store_phone ? `- Téléphone: ${storeData.store_phone}` : '- Téléphone: non renseigné'}
-${storeData.store_email ? `- Email: ${storeData.store_email}` : '- Email: non renseigné'}
 ${storeData.store_address ? `- Adresse: ${storeData.store_address}` : '- Adresse: non renseignée'}
 
 CONTENU ACTUEL DE LA PAGE :
