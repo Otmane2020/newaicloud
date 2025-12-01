@@ -42,7 +42,7 @@ interface ScanResult {
   sources: {
     shopping: number;
     organic: number;
-    images: number;
+    visual: number;
   };
   processingTime: number;
 }
@@ -196,8 +196,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const DATAFORSEO_LOGIN = Deno.env.get("DATAFORSEO_LOGIN");
     const DATAFORSEO_PASSWORD = Deno.env.get("DATAFORSEO_PASSWORD");
-    const GOOGLE_CSE_API_KEY = Deno.env.get("GOOGLE_CSE_API_KEY");
-    const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID");
+    const SERPAPI_KEY = Deno.env.get("SERPAPI_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -296,7 +295,7 @@ Return ONLY valid JSON, no markdown.`,
     const allMerchants: Merchant[] = [];
     let shoppingCount = 0;
     let organicCount = 0;
-    let imagesCount = 0;
+    let visualSearchCount = 0;
 
     // =================================================================
     // 2️⃣ DATAFORSEO SHOPPING API - Progressive search strategy
@@ -471,46 +470,65 @@ Return ONLY valid JSON, no markdown.`,
     }
 
     // =================================================================
-    // 4️⃣ GOOGLE IMAGES CSE - Visual search
+    // 4️⃣ SERPAPI GOOGLE IMAGES — Find competitors with REAL prices (100% flexible)
     // =================================================================
-    if (GOOGLE_CSE_API_KEY && GOOGLE_CSE_ID) {
+    if (SERPAPI_KEY) {
       try {
-        console.log("🖼️ [IMAGES] Searching Google Images for:", searchQuery);
+        console.log("🔍 [SERPAPI] Searching Google Images for:", searchQuery);
         
-        const imageSearchUrl = new URL("https://www.googleapis.com/customsearch/v1");
-        imageSearchUrl.searchParams.set("key", GOOGLE_CSE_API_KEY);
-        imageSearchUrl.searchParams.set("cx", GOOGLE_CSE_ID);
-        imageSearchUrl.searchParams.set("q", searchQuery + " prix €");
-        imageSearchUrl.searchParams.set("searchType", "image");
-        imageSearchUrl.searchParams.set("num", "10");
+        // Build SerpApi URL
+        const serpApiUrl = new URL("https://serpapi.com/search.json");
+        serpApiUrl.searchParams.set("api_key", SERPAPI_KEY);
+        serpApiUrl.searchParams.set("engine", "google_images");
+        serpApiUrl.searchParams.set("q", searchQuery);
+        serpApiUrl.searchParams.set("gl", country);
+        serpApiUrl.searchParams.set("hl", country === "uk" || country === "us" ? "en" : country);
+        serpApiUrl.searchParams.set("ijn", "0");
         
-        const imageResponse = await fetch(imageSearchUrl.toString());
+        const serpResponse = await fetch(serpApiUrl.toString());
         
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          const items = imageData.items || [];
+        if (serpResponse.ok) {
+          const serpData = await serpResponse.json();
           
-          console.log(`📊 [IMAGES] Google CSE returned ${items.length} results`);
+          // 1️⃣ Extract shopping_results (DIRECT PRICES from Google Shopping!)
+          const shoppingItems = serpData.shopping_results || [];
+          console.log(`💰 [SERPAPI] Found ${shoppingItems.length} shopping results with prices`);
           
-          items.forEach((item: any) => {
-            // Check if page snippet contains price
-            const priceMatch = (item.snippet || item.title || "").match(/(\d+[,.]?\d*)\s*€/);
-            if (priceMatch) {
-              const price = parsePrice(priceMatch[1]);
-              if (price && price > 1) {
-                allPrices.push(price);
-                imagesCount++;
-              }
+          for (const item of shoppingItems) {
+            const price = item.extracted_price || parsePrice(item.price);
+            
+            if (price && price > 10 && price < 10000) {
+              allPrices.push(price);
+              visualSearchCount++;
+              
+              allMerchants.push({
+                title: item.title || "Produit similaire",
+                source: item.source || "Google Shopping",
+                price,
+                link: item.link || "",
+              });
+              
+              console.log(`💰 [SERPAPI] ${item.source}: ${price}€`);
             }
-          });
+          }
           
-          console.log(`✅ [IMAGES] Found ${imagesCount} price mentions`);
+          // 2️⃣ Also check images_results for product pages
+          const imageItems = serpData.images_results || [];
+          console.log(`🖼️ [SERPAPI] Found ${imageItems.length} image results`);
+          
+          for (const item of imageItems.slice(0, 10)) {
+            // Check if it's marked as a product page
+            if (item.is_product && item.link) {
+              console.log(`📦 [SERPAPI] Product page found: ${item.source} - ${item.link}`);
+            }
+          }
+          
+          console.log(`✅ [SERPAPI] Total prices found: ${visualSearchCount}`);
         } else {
-          const errorText = await imageResponse.text();
-          console.error(`❌ [IMAGES] API error: ${imageResponse.status}`, errorText.substring(0, 200));
+          console.error(`❌ [SERPAPI] API error: ${serpResponse.status}`);
         }
       } catch (err) {
-        console.error("❌ [IMAGES] Error:", err instanceof Error ? err.message : "Unknown error");
+        console.error("❌ [SERPAPI] Error:", err instanceof Error ? err.message : "Unknown error");
       }
     }
 
@@ -527,7 +545,12 @@ Return ONLY valid JSON, no markdown.`,
     if (shoppingCount >= 3) confidence += 0.35;
     else if (shoppingCount >= 1) confidence += 0.2;
     if (organicCount >= 2) confidence += 0.1;
-    if (imagesCount >= 1) confidence += 0.05;
+    
+    // Visual search (SerpApi) = highly reliable source with real prices
+    if (visualSearchCount >= 5) confidence += 0.25;
+    else if (visualSearchCount >= 3) confidence += 0.15;
+    else if (visualSearchCount >= 1) confidence += 0.08;
+    
     if (priceStats.min && priceStats.max) {
       // Bonus if price range is coherent (max < 3x min)
       if (priceStats.max <= priceStats.min * 3) confidence += 0.05;
@@ -548,12 +571,12 @@ Return ONLY valid JSON, no markdown.`,
       searchQuery,
       price: priceStats,
       merchants: allMerchants.slice(0, 5),
-      productsFound: shoppingCount + organicCount + imagesCount,
+      productsFound: shoppingCount + organicCount + visualSearchCount,
       confidence: Math.round(confidence * 100) / 100,
       sources: {
         shopping: shoppingCount,
         organic: organicCount,
-        images: imagesCount,
+        visual: visualSearchCount,
       },
       processingTime,
     };
@@ -588,8 +611,8 @@ Return ONLY valid JSON, no markdown.`,
             merchants: merchantsToStore,
             sources_shopping: shoppingCount,
             sources_organic: organicCount,
-            sources_images: imagesCount,
-            products_found: shoppingCount + organicCount + imagesCount,
+            sources_images: visualSearchCount,
+            products_found: shoppingCount + organicCount + visualSearchCount,
             confidence: Math.round(confidence * 100) / 100,
             processing_time_ms: processingTime,
             image_url: imageUrl,

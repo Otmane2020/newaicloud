@@ -38,7 +38,7 @@ interface ScanResult {
   sources: {
     shopping: number;
     organic: number;
-    images: number;
+    visual: number;
   };
   processingTime: number;
 }
@@ -258,7 +258,7 @@ export default function SearchImage() {
                     Shopping: {result.sources.shopping}
                   </Badge>
                   <Badge variant="outline">SERP: {result.sources.organic}</Badge>
-                  <Badge variant="outline">Images: {result.sources.images}</Badge>
+                  <Badge variant="outline">Visual: {result.sources.visual}</Badge>
                 </div>
 
                 {/* Liste marchands */}
