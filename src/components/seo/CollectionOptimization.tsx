@@ -27,6 +27,7 @@ import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
+import { useStoreDomain } from '@/hooks/useStoreDomain';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import { GenerateDescriptionDialog } from './GenerateDescriptionDialog';
 import {
@@ -141,11 +142,7 @@ export function CollectionOptimization() {
   const [selectedCollectionForDescription, setSelectedCollectionForDescription] = useState<Collection | null>(null);
 
   // Get store domain with automatic fetching and caching
-  const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
-    ? selectedStore.public_domain
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
-    ? 'example.com'
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
+  const { domain: storeDomain } = useStoreDomain();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

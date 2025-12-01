@@ -59,6 +59,7 @@ import {
 } from '@/components/ui/select';
 import { useStore } from '@/contexts/StoreContext';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useStoreDomain } from '@/hooks/useStoreDomain';
 import {
   Pagination,
   PaginationContent,
@@ -114,11 +115,7 @@ export function PageOptimization() {
   const { processBulkOperation, state: optimizationState } = useOptimization();
 
   // Get store domain with automatic fetching and caching
-  const storeDomain = selectedStore?.public_domain && !selectedStore.public_domain.includes('.myshopify.com')
-    ? selectedStore.public_domain
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '').includes('.myshopify.com')
-    ? 'example.com'
-    : selectedStore?.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'example.com';
+  const { domain: storeDomain } = useStoreDomain();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
